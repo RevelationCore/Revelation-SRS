@@ -1,5 +1,4 @@
-import { ForbiddenError } from '@revelation-srs/domain';
-import { hasPermission } from '@revelation-srs/domain';
+import { ForbiddenError, hasPermission } from '@revelation-srs/domain';
 import type { Permission } from '@revelation-srs/domain';
 import type { FastifyReply, FastifyRequest, preHandlerHookHandler } from 'fastify';
 
@@ -13,10 +12,10 @@ import type { FastifyReply, FastifyRequest, preHandlerHookHandler } from 'fastif
  *   });
  */
 export function requirePermission(permission: Permission): preHandlerHookHandler {
-  return async function checkPermission(
+  return function checkPermission(
     request: FastifyRequest,
     _reply: FastifyReply,
-  ): Promise<void> {
+  ): void {
     if (!hasPermission(request.user.roles, permission)) {
       throw new ForbiddenError(
         `Role(s) ${request.user.roles.join(', ')} do not have permission '${permission}'`,

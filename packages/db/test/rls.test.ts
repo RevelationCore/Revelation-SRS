@@ -4,6 +4,7 @@ import { sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { withTenantContext } from '../src/rls.js';
+
 import { createTestBitemporalTable, startTestDb, type TestContext } from './setup.js';
 
 let ctx: TestContext;
@@ -14,7 +15,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await ctx.container.stop();
+  await ctx?.container.stop();
 });
 
 describe('Row-Level Security', () => {

@@ -1,5 +1,4 @@
 import { sql } from 'drizzle-orm';
-
 import type { Db } from '@revelation-srs/db';
 import { RuleNotConfiguredError } from '@revelation-srs/domain';
 
@@ -31,9 +30,8 @@ interface RuleRow {
 /**
  * Evaluates configured institutional business rules.
  *
- * Rules are stored bitemporally in the academic_rule table (defined in
- * Phase 4 migrations).  Programme-specific rules take precedence over
- * tenant-wide defaults.
+   * Rules are stored bitemporally in the academic_rule table. Programme-specific
+   * rules take precedence over tenant-wide defaults.
  *
  * See docs/architecture/configuration-rules-framework.md.
  */
@@ -48,7 +46,9 @@ export class RulesEngine {
     ruleType: RuleTypeCode,
     ruleKey:  string,
   ): Promise<T> {
-    const cacheKey = `${ctx.tenantId}:${ctx.programmeId}:${ruleType}:${ruleKey}`;
+    // Include date in cache key so historical and current lookups are separate entries
+    const asOfDay  = (ctx.asOfDate ?? new Date()).toISOString().slice(0, 10);
+    const cacheKey = `${ctx.tenantId}:${ctx.programmeId}:${ruleType}:${ruleKey}:${asOfDay}`;
     const cached   = this.cache.get(cacheKey);
 
     if (cached && cached.expiresAt > Date.now()) {
@@ -69,7 +69,7 @@ export class RulesEngine {
             AND recorded_until IS NULL
           ORDER BY programme_id NULLS LAST
           LIMIT 1`,
-    ) as RuleRow[];
+    ) as unknown as RuleRow[];
 
     if (rows.length === 0) {
       throw new RuleNotConfiguredError(

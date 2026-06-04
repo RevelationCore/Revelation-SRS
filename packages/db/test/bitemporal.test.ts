@@ -1,13 +1,26 @@
 import { randomUUID } from 'node:crypto';
 
 import { sql } from 'drizzle-orm';
+import { pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { withTenantContext } from '../src/rls.js';
-import { bitemporalUpdate } from '../src/temporal.js';
+import { bitemporalUpdate, currentVersionWhere } from '../src/temporal.js';
+
 import { createTestBitemporalTable, startTestDb, type TestContext } from './setup.js';
 
 let ctx: TestContext;
+
+const testEntity = pgTable('test_entity', {
+  versionId:     uuid('version_id').primaryKey().defaultRandom(),
+  id:            uuid('id').notNull(),
+  tenantId:      uuid('tenant_id').notNull(),
+  code:          text('code').notNull(),
+  description:   text('description'),
+  validFrom:     timestamp('valid_from', { withTimezone: true }).notNull(),
+  validTo:       timestamp('valid_to', { withTimezone: true }),
+  recordedAt:    timestamp('recorded_at', { withTimezone: true }).notNull().defaultNow(),
+  recordedUntil: timestamp('recorded_until', { withTimezone: true }),
+});
 
 beforeAll(async () => {
   ctx = await startTestDb();
@@ -15,7 +28,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await ctx.container.stop();
+  await ctx?.container.stop();
 });
 
 describe('Bitemporal pattern', () => {
@@ -48,22 +61,19 @@ describe('Bitemporal pattern', () => {
           VALUES (${logicalId}, ${ctx.tenantA}, 'TST-002', 'original', ${t0})`,
     );
 
-    // The bitemporalUpdate function works via raw SQL; adjust for the test table
-    const updateNow = new Date();
-    await ctx.db.execute(
-      sql`UPDATE test_entity SET recorded_until = ${updateNow}
-          WHERE id = ${logicalId} AND recorded_until IS NULL`,
+    await bitemporalUpdate(
+      ctx.db,
+      testEntity,
+      logicalId,
+      ctx.tenantA,
+      { description: 'updated' },
     );
-    const originalRow = await ctx.db.execute(
-      sql`SELECT * FROM test_entity WHERE id = ${logicalId} AND recorded_until = ${updateNow}`,
-    ) as Array<Record<string, unknown>>;
-    expect(originalRow).toHaveLength(1);
 
-    // Insert the new version
-    await ctx.db.execute(
-      sql`INSERT INTO test_entity (id, tenant_id, code, description, valid_from)
-          VALUES (${logicalId}, ${ctx.tenantA}, 'TST-002', 'updated', ${t0})`,
-    );
+    const closed = await ctx.db.execute(
+      sql`SELECT * FROM test_entity WHERE id = ${logicalId} AND recorded_until IS NOT NULL`,
+    ) as Array<Record<string, unknown>>;
+    expect(closed).toHaveLength(1);
+    expect(closed[0]?.['description']).toBe('original');
 
     // Only one current version should exist
     const current = await ctx.db.execute(
@@ -77,6 +87,35 @@ describe('Bitemporal pattern', () => {
       sql`SELECT * FROM test_entity WHERE id = ${logicalId}`,
     ) as Array<Record<string, unknown>>;
     expect(all).toHaveLength(2);
+  });
+
+  it('currentVersionWhere excludes future-dated and expired-valid rows', async () => {
+    const futureId = randomUUID();
+    const expiredId = randomUUID();
+
+    await ctx.db.execute(
+      sql`INSERT INTO test_entity (id, tenant_id, code, description, valid_from)
+          VALUES (${futureId}, ${ctx.tenantA}, 'TST-FUTURE', 'future', ${new Date('2999-01-01T00:00:00Z')})`,
+    );
+
+    await ctx.db.execute(
+      sql`INSERT INTO test_entity (id, tenant_id, code, description, valid_from, valid_to)
+          VALUES (${expiredId}, ${ctx.tenantA}, 'TST-EXPIRED', 'expired',
+                  ${new Date('2020-01-01T00:00:00Z')}, ${new Date('2020-12-31T00:00:00Z')})`,
+    );
+
+    const futureRows = await ctx.db
+      .select()
+      .from(testEntity)
+      .where(currentVersionWhere(testEntity, futureId, ctx.tenantA));
+
+    const expiredRows = await ctx.db
+      .select()
+      .from(testEntity)
+      .where(currentVersionWhere(testEntity, expiredId, ctx.tenantA));
+
+    expect(futureRows).toHaveLength(0);
+    expect(expiredRows).toHaveLength(0);
   });
 
   it('point-in-time query returns the historically correct version', async () => {

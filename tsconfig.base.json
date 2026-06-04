@@ -13,6 +13,14 @@
     "sourceMap":                       true,
     "esModuleInterop":                 true,
     "resolveJsonModule":               true,
+    "baseUrl":                         ".",
+    "paths": {
+      "@revelation-srs/auth":   ["packages/auth/src/index.ts"],
+      "@revelation-srs/db":     ["packages/db/src/index.ts"],
+      "@revelation-srs/domain": ["packages/domain/src/index.ts"],
+      "@revelation-srs/testing":["packages/testing/src/index.ts"],
+      "@revelation-srs/workflow":["packages/workflow/src/index.ts"]
+    },
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck":                    true
   }

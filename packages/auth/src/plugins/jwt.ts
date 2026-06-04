@@ -1,3 +1,4 @@
+import { createRemoteJWKSet, jwtVerify, type JWTPayload } from 'jose';
 import jwt from '@fastify/jwt';
 import type { FastifyInstance } from 'fastify';
 import fp from 'fastify-plugin';
@@ -5,68 +6,106 @@ import fp from 'fastify-plugin';
 import type { AuthenticatedUser } from '../types.js';
 
 export interface JwtPluginOptions {
-  /**
-   * Symmetric secret for development / testing.
-   * In production, configure KEYCLOAK_JWKS_URL instead and this is ignored.
-   */
+  /** Symmetric secret - development and test only (HS256). */
   secret?: string;
-  /** Keycloak JWKS endpoint URL for RS256 verification in production. */
+  /** Keycloak JWKS endpoint - staging and production (RS256). */
   jwksUrl?: string;
 }
 
+type RawClaims = JWTPayload & {
+  sub:                 string;
+  tenant_id:           string;
+  realm_roles?:        string[];
+  name?:               string;
+  email?:              string;
+  preferred_username?: string;
+  iss?:                string;
+  aud?:                string | string[];
+};
+
+type SrsJwtRequest = {
+  srsVerify<T>(): Promise<T>;
+};
+
 /**
- * Registers JWT authentication.
+ * JWT authentication plugin.
  *
- * - Development: HS256 with shared secret (JWT_SECRET env var).
- * - Production: RS256 verified against Keycloak JWKS endpoint.
+ * Mode selection:
+ *   - jwksUrl set -> RS256, validates against Keycloak JWKS (production).
+ *   - secret set  -> HS256, symmetric secret (development / tests).
  *
- * Every route is automatically protected by jwtPlugin's preValidation hook.
- * Unauthenticated requests receive 401.
+ * Routes that set `config: { skipAuth: true }` are exempted from the hook,
+ * enabling health/readiness probes to remain unauthenticated.
  */
 async function jwtPlugin(
   fastify: FastifyInstance,
   opts: JwtPluginOptions,
 ): Promise<void> {
   if (!opts.secret && !opts.jwksUrl) {
-    throw new Error('Auth plugin requires either secret or jwksUrl');
+    throw new Error('srs-jwt: either secret or jwksUrl must be provided');
   }
 
+  // Register @fastify/jwt for HS256 development mode and token signing in tests
   await fastify.register(jwt, {
-    secret:    opts.secret ?? 'replace-with-keycloak-jwks',
+    secret:    opts.secret ?? 'unused-when-jwks-is-active',
     namespace: 'srs',
     jwtVerify: 'srsVerify',
     jwtSign:   'srsSign',
   });
 
-  // Attach authentication as a global preValidation hook (can be skipped per-route)
+  // Build JWKS fetcher once for the lifetime of the process (handles key rotation)
+  const jwks = opts.jwksUrl ? createRemoteJWKSet(new URL(opts.jwksUrl)) : null;
+
   fastify.addHook('preValidation', async (request, reply) => {
+    // Exempt probes and any route that explicitly opts out
+    if (request.routeOptions.config?.skipAuth === true) return;
+
+    const authHeader = request.headers.authorization;
+    const token      = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+
+    if (!token) {
+      return reply.code(401).send({
+        type:     'https://srs.example.com/errors/unauthorized',
+        title:    'Unauthorized',
+        status:   401,
+        detail:   'Missing Authorization header',
+        instance: request.url,
+      });
+    }
+
     try {
-      const decoded = await request.jwtVerify<{
-        sub:                string;
-        tenant_id:          string;
-        realm_roles?:       string[];
-        name?:              string;
-        email?:             string;
-        preferred_username?: string;
-      }>();
+      let claims: RawClaims;
+
+      if (jwks) {
+        // Production path - RS256 against Keycloak JWKS
+        const { payload } = await jwtVerify<RawClaims>(token, jwks);
+        claims = payload;
+      } else {
+        // Development path - HS256 symmetric secret
+        claims = await (request as typeof request & SrsJwtRequest).srsVerify<RawClaims>();
+      }
+
+      if (!claims.sub || !claims.tenant_id) {
+        throw new Error('JWT is missing required subject or tenant claim');
+      }
 
       const user: AuthenticatedUser = {
-        sub:               decoded.sub,
-        tenantId:          decoded.tenant_id,
-        roles:             (decoded.realm_roles ?? []) as AuthenticatedUser['roles'],
-        displayName:       decoded.name ?? '',
-        email:             decoded.email ?? '',
-        preferredUsername: decoded.preferred_username ?? '',
+        sub:               claims.sub,
+        tenantId:          claims.tenant_id,
+        roles:             (claims.realm_roles ?? []) as AuthenticatedUser['roles'],
+        displayName:       claims.name ?? '',
+        email:             claims.email ?? '',
+        preferredUsername: claims.preferred_username ?? '',
       };
 
       request.user     = user;
       request.tenantId = user.tenantId;
     } catch {
-      await reply.code(401).send({
+      return reply.code(401).send({
         type:     'https://srs.example.com/errors/unauthorized',
         title:    'Unauthorized',
         status:   401,
-        detail:   'Missing or invalid authentication token',
+        detail:   'Invalid or expired token',
         instance: request.url,
       });
     }

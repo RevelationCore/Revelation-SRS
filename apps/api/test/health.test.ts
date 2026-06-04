@@ -21,6 +21,9 @@ let app: Awaited<ReturnType<typeof buildApp>>;
 
 beforeAll(async () => {
   app = await buildApp(TEST_CONFIG);
+  app.get('/api/v1/__test-protected', async (_req, reply) => {
+    await reply.send({ ok: true });
+  });
   await app.ready();
 });
 
@@ -58,13 +61,16 @@ describe('GET /ready', () => {
   });
 });
 
+describe('GET /metrics', () => {
+  it('does not require authentication', async () => {
+    const res = await app.inject({ method: 'GET', url: '/metrics' });
+    expect(res.statusCode).not.toBe(401);
+    expect(res.body).toContain('srs_api_uptime_seconds');
+  });
+});
+
 describe('Unauthenticated request to a protected route', () => {
   it('returns 401 when no token is provided', async () => {
-    // Register a protected test route
-    app.get('/api/v1/__test-protected', async (_req, reply) => {
-      await reply.send({ ok: true });
-    });
-
     const res = await app.inject({ method: 'GET', url: '/api/v1/__test-protected' });
     expect(res.statusCode).toBe(401);
   });

@@ -24,7 +24,7 @@ export interface AuditEntry {
  * Must be called for every write operation and for reads of sensitive /
  * special-category data as defined by the data subject register.
  *
- * The audit table has no RLS — it is written by the application role using
+ * The audit table has no RLS - it is written by the application role using
  * a dedicated INSERT privilege, and read only by the system-administrator
  * role (BYPASSRLS).
  */

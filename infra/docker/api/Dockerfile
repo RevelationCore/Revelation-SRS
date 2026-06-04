@@ -1,6 +1,6 @@
 # ── Stage 1: dependencies ──────────────────────────────────────────────────────
 FROM node:22-alpine AS deps
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
 WORKDIR /app
 
 # Copy workspace manifests only (cache busts only when deps change)

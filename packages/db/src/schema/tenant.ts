@@ -2,7 +2,7 @@ import { boolean, jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-c
 
 /**
  * One row per institution.  All user-data tables carry tenant_id FK to this table.
- * No RLS on this table — it is read by system administrator role only.
+ * No RLS on this table - it is read by system administrator role only.
  */
 export const tenants = pgTable('tenant', {
   id:            uuid('id').primaryKey().defaultRandom(),

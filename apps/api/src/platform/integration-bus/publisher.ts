@@ -31,6 +31,12 @@ export class IntegrationBusPublisher {
 
   async close(): Promise<void> {
     await this.nc?.drain();
+    this.nc = null;
+    this.js = null;
+  }
+
+  isConnected(): boolean {
+    return this.nc !== null && !this.nc.isClosed();
   }
 
   async publish<TPayload>(

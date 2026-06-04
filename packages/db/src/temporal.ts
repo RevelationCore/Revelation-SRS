@@ -1,16 +1,18 @@
 import { randomUUID } from 'node:crypto';
 
-import { and, gt, isNull, lte, or, sql } from 'drizzle-orm';
+import { and, gt, isNull, lte, or, sql, type SQL, type SQLWrapper } from 'drizzle-orm';
 import { timestamp, uuid } from 'drizzle-orm/pg-core';
-import type { PgDatabase, PgTableWithColumns, TableConfig } from 'drizzle-orm/pg-core';
+import type { PgTableWithColumns, TableConfig } from 'drizzle-orm/pg-core';
+
+import type { Db } from './pool.js';
 
 /**
  * Standard columns for every bitemporal table.
  *
- * Physical PK: version_id — unique row identifier.
- * Logical ID:  id          — stable entity identifier shared by all versions.
+ * Physical PK: version_id - unique row identifier per recorded version.
+ * Logical ID:  id          - stable entity identifier shared by all versions.
  *
- * See docs/architecture/data-model.md §Bitemporal Pattern.
+ * See docs/architecture/data-model.md sectionBitemporal Pattern.
  */
 export const bitemporalColumns = {
   versionId:     uuid('version_id').primaryKey().defaultRandom(),
@@ -22,9 +24,9 @@ export const bitemporalColumns = {
 };
 
 /**
- * Raw SQL constraints to execute after CREATE TABLE for every bitemporal table.
- * Cannot be expressed as Drizzle column definitions because they are
- * index-level constraints, not column-level.
+ * SQL constraints for every bitemporal table - applied in migrations, not by
+ * Drizzle column definitions, because they involve partial/expression indexes.
+ * Also used in Testcontainers test setup for ephemeral tables.
  */
 export function bitemporalConstraintsSql(tableName: string): string {
   return `
@@ -34,81 +36,92 @@ export function bitemporalConstraintsSql(tableName: string): string {
       ADD CONSTRAINT "${tableName}_temporal_check_recorded"
         CHECK (recorded_until IS NULL OR recorded_until > recorded_at);
 
-    CREATE UNIQUE INDEX "${tableName}_unique_logical_transaction"
+    CREATE UNIQUE INDEX IF NOT EXISTS "${tableName}_unique_logical_transaction"
       ON "${tableName}" (tenant_id, id, recorded_at);
 
-    CREATE UNIQUE INDEX "${tableName}_current_version_unique"
+    CREATE UNIQUE INDEX IF NOT EXISTS "${tableName}_current_version_unique"
       ON "${tableName}" (tenant_id, id)
       WHERE recorded_until IS NULL;
   `;
 }
 
-/** Drizzle helper: the four bitemporal column references on a table. */
+// Minimal structural interface for a bitemporal Drizzle table's column objects.
 type BitemporalTable = {
-  id:            { readonly _: { readonly dataType: 'string' } };
-  validFrom:     { readonly _: { readonly dataType: 'date' } };
-  validTo:       { readonly _: { readonly dataType: 'date' } };
-  recordedAt:    { readonly _: { readonly dataType: 'date' } };
-  recordedUntil: { readonly _: { readonly dataType: 'date' } };
-  tenantId:      { readonly _: { readonly dataType: 'string' } };
+  id:            SQLWrapper;
+  tenantId:      SQLWrapper;
+  validFrom:     SQLWrapper;
+  validTo:       SQLWrapper;
+  recordedAt:    SQLWrapper;
+  recordedUntil: SQLWrapper;
   [col: string]: unknown;
 };
 
-/** WHERE clause selecting the current state of a logical entity. */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function currentVersionWhere(table: BitemporalTable, logicalId: string, tenantId: string): any {
+/**
+ * WHERE clause returning the current state of a logical entity.
+ *
+ * "Current" means:
+ *   - transaction-time current: recorded_until IS NULL
+ *   - valid-time current:       valid_from <= now AND (valid_to IS NULL OR valid_to > now)
+ *
+ * Use pointInTimeWhere() for historical reads.
+ */
+export function currentVersionWhere(table: BitemporalTable, logicalId: string, tenantId: string): SQL | undefined {
+  const now = new Date();
   return and(
-    sql`${table.id as unknown as ReturnType<typeof uuid>} = ${logicalId}`,
-    sql`${table.tenantId as unknown as ReturnType<typeof uuid>} = ${tenantId}`,
-    isNull(table.recordedUntil as unknown as ReturnType<typeof timestamp>),
-  );
-}
-
-/** WHERE clause for a point-in-time read (valid time + transaction time). */
-export function pointInTimeWhere(
-  table: BitemporalTable,
-  options: {
-    logicalId?: string;
-    tenantId?:  string;
-    validAt?:   Date;
-    recordedAt?: Date;
-  },
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-): any {
-  const vt = options.validAt  ?? new Date();
-  const tt = options.recordedAt ?? new Date();
-
-  return and(
-    options.logicalId
-      ? sql`${table.id as unknown as ReturnType<typeof uuid>} = ${options.logicalId}`
-      : undefined,
-    options.tenantId
-      ? sql`${table.tenantId as unknown as ReturnType<typeof uuid>} = ${options.tenantId}`
-      : undefined,
-    lte(table.validFrom  as unknown as ReturnType<typeof timestamp>, vt),
+    sql`${table.id} = ${logicalId}`,
+    sql`${table.tenantId} = ${tenantId}`,
+    isNull(table.recordedUntil),
+    lte(table.validFrom, now),
     or(
-      isNull(table.validTo  as unknown as ReturnType<typeof timestamp>),
-      gt(table.validTo  as unknown as ReturnType<typeof timestamp>, vt),
-    ),
-    lte(table.recordedAt  as unknown as ReturnType<typeof timestamp>, tt),
-    or(
-      isNull(table.recordedUntil  as unknown as ReturnType<typeof timestamp>),
-      gt(table.recordedUntil  as unknown as ReturnType<typeof timestamp>, tt),
+      isNull(table.validTo),
+      gt(table.validTo, now),
     ),
   );
 }
 
 /**
- * Perform a bitemporal update:
- * 1. Close the current version  (set recorded_until = now)
- * 2. Insert a new version with the same logical id and patched values.
+ * WHERE clause for a point-in-time read on both axes.
  *
- * Runs inside a transaction. Throws if no current version is found.
+ * validAt    - the valid-time query point (default: now)
+ * recordedAt - the transaction-time query point (default: now)
+ */
+export function pointInTimeWhere(
+  table: BitemporalTable,
+  options: {
+    logicalId?:  string;
+    tenantId?:   string;
+    validAt?:    Date;
+    recordedAt?: Date;
+  },
+): SQL | undefined {
+  const vt = options.validAt   ?? new Date();
+  const tt = options.recordedAt ?? new Date();
+
+  return and(
+    options.logicalId ? sql`${table.id} = ${options.logicalId}` : undefined,
+    options.tenantId  ? sql`${table.tenantId} = ${options.tenantId}` : undefined,
+    lte(table.validFrom, vt),
+    or(isNull(table.validTo), gt(table.validTo, vt)),
+    lte(table.recordedAt, tt),
+    or(isNull(table.recordedUntil), gt(table.recordedUntil, tt)),
+  );
+}
+
+/**
+ * Perform a bitemporal update:
+ * 1. Close the current transaction-time row (set recorded_until = now).
+ * 2. Insert a new version with the same logical id and patched field values.
+ *
+ * Runs inside a single transaction. Throws if no transaction-current row
+ * exists for the given logical id and tenant.
+ *
+ * validFrom / validTo optionally override the valid-time window.
+ * If not supplied, the values from the closed row are carried forward.
  */
 export async function bitemporalUpdate<
   TTable extends PgTableWithColumns<TableConfig>,
 >(
-  db: PgDatabase<Record<string, unknown>>,
+  db:        Db,
   table:     TTable,
   logicalId: string,
   tenantId:  string,
@@ -117,50 +130,46 @@ export async function bitemporalUpdate<
   validTo?:   Date | null,
 ): Promise<void> {
   await db.transaction(async (tx) => {
-    const now = new Date();
+    const now       = new Date();
+    const tableName = (table as unknown as { _: { name: string } })._.name;
 
-    // 1. Close current version
-    await tx.execute(
+    // 1. Close the current version (recorded_until IS NULL)
+    const closeResult = await tx.execute(
       sql`UPDATE ${table}
           SET recorded_until = ${now}
           WHERE id = ${logicalId}
             AND tenant_id = ${tenantId}
-            AND recorded_until IS NULL`,
-    );
-
-    // 2. Read what we just closed to carry forward unchanged fields
-    const rows = await tx.execute(
-      sql`SELECT * FROM ${table}
-          WHERE id = ${logicalId}
-            AND tenant_id = ${tenantId}
-            AND recorded_until = ${now}
-          LIMIT 1`,
+            AND recorded_until IS NULL
+          RETURNING *`,
     ) as Array<Record<string, unknown>>;
 
-    if (rows.length === 0) {
-      throw new Error(`bitemporalUpdate: no current version for id=${logicalId} tenant=${tenantId}`);
+    if (closeResult.length === 0) {
+      throw new Error(
+        `bitemporalUpdate: no transaction-current version found for id=${logicalId} tenant=${tenantId} in table ${tableName}`,
+      );
     }
 
-    const current = rows[0] as Record<string, unknown>;
+    const closed = closeResult[0] as Record<string, unknown>;
 
-    // 3. Build the new version row
+    // 2. Compose the new version row
     const newRow: Record<string, unknown> = {
-      ...current,
+      ...closed,
       ...patch,
       version_id:     randomUUID(),
       recorded_at:    now,
       recorded_until: null,
-      valid_from:     validFrom ?? current['valid_from'],
-      valid_to:       validTo !== undefined ? validTo : current['valid_to'],
+      valid_from:     validFrom ?? closed['valid_from'],
+      valid_to:       validTo !== undefined ? validTo : closed['valid_to'],
     };
 
-    // Build dynamic INSERT
+    // 3. Insert with parameterised values. Column names come from the row
+    // returned by PostgreSQL plus caller patch keys, so callers must use
+    // physical snake_case column names when patching.
     const cols = Object.keys(newRow).map((k) => `"${k}"`).join(', ');
-    const vals = Object.values(newRow);
-    const placeholders = vals.map((_, i) => `$${i + 1}`).join(', ');
+    const vals = Object.values(newRow).map((value) => sql`${value}`);
 
     await tx.execute(
-      sql.raw(`INSERT INTO "${(table as unknown as { _: { name: string } })._.name}" (${cols}) VALUES (${placeholders})`, vals),
+      sql`INSERT INTO ${table} ${sql.raw(`(${cols})`)} VALUES (${sql.join(vals, sql`, `)})`,
     );
   });
 }

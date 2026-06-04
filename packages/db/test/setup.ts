@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
 import { sql } from 'drizzle-orm';
-import { PostgreSqlContainer, type StartedPostgreSqlContainer } from 'testcontainers';
+import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 
 import { createDb, type Db } from '../src/pool.js';
 import { rlsPolicySql } from '../src/rls.js';

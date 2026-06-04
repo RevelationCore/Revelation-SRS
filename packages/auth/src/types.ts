@@ -1,10 +1,11 @@
+import type { TenantScopedDb } from '@revelation-srs/db';
 import type { Role } from '@revelation-srs/domain';
 
 /** Parsed JWT claims attached to every authenticated request. */
 export interface AuthenticatedUser {
   /** Keycloak subject (UUID). */
   sub: string;
-  /** Tenant UUID — from the custom `tenant_id` claim added by Keycloak mapper. */
+  /** Tenant UUID - from the custom `tenant_id` claim added by Keycloak mapper. */
   tenantId: string;
   /** Realm roles assigned to the user. */
   roles: Role[];
@@ -21,5 +22,9 @@ declare module 'fastify' {
   interface FastifyRequest {
     user: AuthenticatedUser;
     tenantId: string;
+    withDb<T>(fn: (db: TenantScopedDb) => Promise<T>): Promise<T>;
+  }
+  interface FastifyContextConfig {
+    skipAuth?: boolean;
   }
 }

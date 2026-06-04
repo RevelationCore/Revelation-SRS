@@ -1,4 +1,4 @@
-/** Typed environment configuration — read once at startup. */
+/** Typed environment configuration - read once at startup. */
 export interface Config {
   port:         number;
   logLevel:     string;

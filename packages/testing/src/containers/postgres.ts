@@ -1,6 +1,6 @@
-import { PostgreSqlContainer, type StartedPostgreSqlContainer } from 'testcontainers';
+import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 
-import { createDb, type Db } from '@revelation-srs/db';
+import { createDb, type Db } from '../../../db/src/pool.js';
 
 export interface PostgresTestEnvironment {
   container: StartedPostgreSqlContainer;

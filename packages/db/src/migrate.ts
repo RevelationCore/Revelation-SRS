@@ -9,5 +9,5 @@ const db = createDb(connectionString);
 
 await migrate(db, { migrationsFolder: './migrations' });
 
-console.log('Migrations applied successfully');
+console.warn('Migrations applied successfully');
 process.exit(0);

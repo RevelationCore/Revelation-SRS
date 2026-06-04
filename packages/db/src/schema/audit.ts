@@ -3,11 +3,11 @@ import { jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 /**
  * Append-only, immutable audit trail.
  *
- * No RLS — readable only by the system-administrator PostgreSQL role
+ * No RLS - readable only by the system-administrator PostgreSQL role
  * (BYPASSRLS).  Application roles access audit records via a scoped
  * service API, never by direct SELECT.
  *
- * See docs/architecture/security-architecture.md §Audit of Security Events.
+ * See docs/architecture/security-architecture.md sectionAudit of Security Events.
  */
 export const auditRecords = pgTable('audit_record', {
   id:                 uuid('id').primaryKey().defaultRandom(),

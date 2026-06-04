@@ -1,10 +1,10 @@
-import { boolean, jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { boolean, jsonb, pgTable, smallint, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 
 import { tenants } from './tenant.js';
 
 /**
  * Platform catalogue of supported integration contracts.
- * One row per contract ID — shared across all tenants.
+ * One row per contract ID - shared across all tenants.
  * No RLS (read by all authenticated roles; written by system administrator).
  */
 export const integrationContracts = pgTable('integration_contract', {
@@ -21,7 +21,7 @@ export const integrationContracts = pgTable('integration_contract', {
 
 /**
  * Tenant-specific enabled adapter and endpoint configuration for a contract.
- * Subject to RLS — each tenant only sees its own registrations.
+ * Subject to RLS - each tenant only sees its own registrations.
  */
 export const integrationRegistrations = pgTable('integration_registration', {
   id:                      uuid('id').primaryKey().defaultRandom(),
@@ -38,45 +38,47 @@ export const integrationRegistrations = pgTable('integration_registration', {
   secretRef:               text('secret_ref'),
   replaySupported:         boolean('replay_supported').notNull().default(false),
   retryPolicy:             jsonb('retry_policy').$type<{
-    maxAttempts:       number;
+    maxAttempts:        number;
     backoffCoefficient: number;
-    initialInterval:   string;
-    deadLetterSubject: string;
+    initialInterval:    string;
+    deadLetterSubject:  string;
   }>(),
-  enabled:                 boolean('enabled').notNull().default(false),
-  configuration:           jsonb('configuration').notNull().$type<Record<string, unknown>>().default({}),
-  lastHealthCheckAt:       timestamp('last_health_check_at', { withTimezone: true }),
-  healthStatusCode:        text('health_status_code'),
-  lastSuccessfulExchangeAt: timestamp('last_successful_exchange_at', { withTimezone: true }),
-  registeredAt:            timestamp('registered_at', { withTimezone: true }).notNull().defaultNow(),
-  lastUpdatedAt:           timestamp('last_updated_at', { withTimezone: true }).notNull().defaultNow(),
+  enabled:                  boolean('enabled').notNull().default(false),
+  configuration:            jsonb('configuration').notNull().$type<Record<string, unknown>>().default({}),
+  lastHealthCheckAt:        timestamp('last_health_check_at',         { withTimezone: true }),
+  healthStatusCode:         text('health_status_code'),
+  lastSuccessfulExchangeAt: timestamp('last_successful_exchange_at',  { withTimezone: true }),
+  registeredAt:             timestamp('registered_at',  { withTimezone: true }).notNull().defaultNow(),
+  lastUpdatedAt:            timestamp('last_updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
+// UNIQUE (tenant_id, integration_code) enforced in migration DDL
 
 /**
- * Append-only inbound/outbound exchange ledger.
- * One row per message/file exchange attempt.
+ * Append-only inbound/outbound exchange ledger for idempotency, retry,
+ * replay, and reconciliation.  One row per exchange attempt.
  * Subject to RLS.
  */
 export const integrationExchanges = pgTable('integration_exchange', {
-  id:                      uuid('id').primaryKey().defaultRandom(),
-  tenantId:                uuid('tenant_id').notNull().references(() => tenants.id),
-  integrationRegistrationId: uuid('integration_registration_id').notNull().references(() => integrationRegistrations.id),
-  contractId:              text('contract_id').notNull(),
-  directionCode:           text('direction_code').notNull(),
-  exchangeTypeCode:        text('exchange_type_code').notNull(),
-  idempotencyKey:          text('idempotency_key').notNull(),
-  correlationId:           uuid('correlation_id'),
-  sourceReference:         text('source_reference'),
-  statusCode:              text('status_code').notNull(),
-  attemptCount:            text('attempt_count').notNull().default('0'),
-  lastAttemptAt:           timestamp('last_attempt_at', { withTimezone: true }),
-  lastError:               text('last_error'),
-  payloadHash:             text('payload_hash'),
-  payloadSummary:          jsonb('payload_summary'),
-  receivedAt:              timestamp('received_at', { withTimezone: true }),
-  sentAt:                  timestamp('sent_at', { withTimezone: true }),
-  createdAt:               timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  id:                         uuid('id').primaryKey().defaultRandom(),
+  tenantId:                   uuid('tenant_id').notNull().references(() => tenants.id),
+  integrationRegistrationId:  uuid('integration_registration_id').notNull().references(() => integrationRegistrations.id),
+  contractId:                 text('contract_id').notNull(),
+  directionCode:              text('direction_code').notNull(),
+  exchangeTypeCode:           text('exchange_type_code').notNull(),
+  idempotencyKey:             text('idempotency_key').notNull(),
+  correlationId:              uuid('correlation_id'),
+  sourceReference:            text('source_reference'),
+  statusCode:                 text('status_code').notNull(),
+  attemptCount:               smallint('attempt_count').notNull().default(0), // was TEXT - fixed P3-006
+  lastAttemptAt:              timestamp('last_attempt_at', { withTimezone: true }),
+  lastError:                  text('last_error'),
+  payloadHash:                text('payload_hash'),
+  payloadSummary:             jsonb('payload_summary'),
+  receivedAt:                 timestamp('received_at', { withTimezone: true }),
+  sentAt:                     timestamp('sent_at',     { withTimezone: true }),
+  createdAt:                  timestamp('created_at',  { withTimezone: true }).notNull().defaultNow(),
 });
+// UNIQUE (tenant_id, integration_registration_id, idempotency_key) enforced in migration DDL
 
 export type IntegrationContract        = typeof integrationContracts.$inferSelect;
 export type IntegrationRegistration    = typeof integrationRegistrations.$inferSelect;

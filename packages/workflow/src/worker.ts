@@ -1,4 +1,4 @@
-import { Worker } from '@temporalio/worker';
+import { NativeConnection, Worker } from '@temporalio/worker';
 
 import { auditActivities } from './activities/audit.activities.js';
 
@@ -17,12 +17,16 @@ export async function startWorker(options: {
   namespace:        string;
   taskQueue:        string;
 }): Promise<Worker> {
+  const connection = await NativeConnection.connect({
+    address: options.temporalAddress,
+  });
+
   const worker = await Worker.create({
     workflowsPath: new URL('./workflows/index.js', import.meta.url).pathname,
     activities:    { ...auditActivities },
     taskQueue:     options.taskQueue,
     namespace:     options.namespace,
-    connection:    { address: options.temporalAddress },
+    connection,
   });
 
   return worker;

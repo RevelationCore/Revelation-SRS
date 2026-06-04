@@ -5,27 +5,33 @@
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "exports": { ".": { "import": "./dist/index.js", "types": "./dist/index.d.ts" } },
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
   "scripts": {
-    "build":     "tsc -p tsconfig.json",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
-    "dev":       "tsc -p tsconfig.json --watch",
-    "generate":  "drizzle-kit generate",
-    "migrate":   "node --import tsx/esm src/migrate.ts",
-    "test":      "vitest run --reporter=verbose",
-    "test:int":  "vitest run --reporter=verbose --config vitest.int.config.ts"
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -b tsconfig.json",
+    "dev": "tsc -p tsconfig.json --watch",
+    "generate": "drizzle-kit generate",
+    "migrate": "node --import tsx/esm src/migrate.ts",
+    "test": "vitest run --reporter=verbose",
+    "test:int": "vitest run --reporter=verbose --config vitest.int.config.ts"
   },
   "dependencies": {
     "drizzle-orm": "^0.36.0",
-    "postgres":    "^3.4.0"
+    "postgres": "^3.4.0"
   },
   "devDependencies": {
     "@revelation-srs/domain": "workspace:*",
-    "@types/node":             "^22.0.0",
-    "drizzle-kit":             "^0.28.0",
-    "testcontainers":          "^10.0.0",
-    "tsx":                     "^4.0.0",
-    "typescript":              "^5.5.0",
-    "vitest":                  "^2.0.0"
+    "@testcontainers/postgresql": "^12.0.1",
+    "@types/node": "^22.0.0",
+    "drizzle-kit": "^0.28.0",
+    "testcontainers": "^10.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.5.0",
+    "vitest": "^2.0.0"
   }
 }

@@ -2,6 +2,8 @@
   "name": "revelation-srs",
   "private": true,
   "version": "0.0.1",
+  "type": "module",
+  "packageManager": "pnpm@9.15.9",
   "description": "Open source Student Records System for UK Higher Education",
   "license": "AGPL-3.0-only",
   "engines": { "node": ">=22.0.0", "pnpm": ">=9.0.0" },

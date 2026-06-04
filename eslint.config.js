@@ -11,7 +11,12 @@ export default [
     files: ['**/*.ts'],
     languageOptions: {
       parser:        tsparser,
-      parserOptions: { project: true, ecmaVersion: 2022, sourceType: 'module' },
+      parserOptions: {
+        project: './tsconfig.eslint.json',
+        tsconfigRootDir: import.meta.dirname,
+        ecmaVersion: 2022,
+        sourceType: 'module',
+      },
     },
     plugins: {
       '@typescript-eslint': tseslint,

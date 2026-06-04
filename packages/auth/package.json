@@ -5,20 +5,28 @@
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "exports": { ".": { "import": "./dist/index.js", "types": "./dist/index.d.ts" } },
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
   "scripts": {
-    "build":     "tsc -p tsconfig.json",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
-    "dev":       "tsc -p tsconfig.json --watch"
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -b tsconfig.json",
+    "dev": "tsc -p tsconfig.json --watch"
   },
   "dependencies": {
     "@fastify/jwt": "^9.0.0",
-    "fastify":      "^5.0.0"
+    "@revelation-srs/db": "workspace:*",
+    "fastify": "^5.0.0",
+    "fastify-plugin": "^5.0.0",
+    "jose": "^5.9.6"
   },
   "devDependencies": {
     "@revelation-srs/domain": "workspace:*",
-    "@types/node":             "^22.0.0",
-    "typescript":              "^5.5.0"
+    "@types/node": "^22.0.0",
+    "typescript": "^5.5.0"
   },
   "peerDependencies": {
     "fastify": "^5.0.0"

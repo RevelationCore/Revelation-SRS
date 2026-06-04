@@ -1,5 +1,8 @@
 import { sql } from 'drizzle-orm';
-import type { PgDatabase } from 'drizzle-orm/pg-core';
+
+import type { Db } from './pool.js';
+
+export type TenantScopedDb = Parameters<Parameters<Db['transaction']>[0]>[0];
 
 /**
  * Enable Row-Level Security on a table and create the standard tenant
@@ -30,15 +33,15 @@ export function rlsPolicySql(tableName: string): string {
  * current transaction and will not leak to the next caller of the connection.
  */
 export async function withTenantContext<T>(
-  db: PgDatabase<Record<string, unknown>>,
+  db: Db,
   tenantId: string,
-  fn: (tx: PgDatabase<Record<string, unknown>>) => Promise<T>,
+  fn: (tx: TenantScopedDb) => Promise<T>,
 ): Promise<T> {
   return db.transaction(async (tx) => {
     await tx.execute(
       sql`SELECT set_config('app.current_tenant_id', ${tenantId}, true)`,
     );
-    return fn(tx as PgDatabase<Record<string, unknown>>);
+    return fn(tx);
   });
 }
 
@@ -49,7 +52,7 @@ export async function withTenantContext<T>(
  * on every new request, so leakage between requests is prevented.
  */
 export async function setTenantContext(
-  db: PgDatabase<Record<string, unknown>>,
+  db: Db,
   tenantId: string,
 ): Promise<void> {
   await db.execute(
