@@ -237,7 +237,7 @@
 |---|---|---|---|
 | EWP-001 | The system shall provide the Enterprise Web Portal with authoritative student data: enrolment status, timetable, module registrations, grades, notifications, and exam timetable. | F012 | M |
 | EWP-002 | The system shall receive student self-service updates from the Enterprise Web Portal: personal data changes, module selections, and declaration submissions. | F011 | M |
-| EWP-003 | The system shall receive personalised communications from the CRM and surface them to students via the portal. | F058 | S |
+| EWP-003 | The SRS Core shall not hold authoritative personalised communications from CRM. Where the Revelation Enterprise Web Portal is deployed, CRM-to-portal communications may be surfaced by the portal as a non-SIS-facing integration and shall not create authoritative SRS records. | F058 | C |
 
 ---
 

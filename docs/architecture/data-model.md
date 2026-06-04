@@ -11,7 +11,7 @@
 1. Every table that represents a fact that changes over time is **bitemporal** — see §Bitemporal Pattern.
 2. Every row in every table carries a **`tenant_id`** and is subject to **row-level security** (RLS) — see §Multi-Tenancy.
 3. There are **no soft-delete flags**. Historical states are preserved by bitemporal dating; truly deleted data uses hard DELETE only under an approved erasure workflow with audit trail.
-4. **UUIDs** (v4) are used as all primary keys. No sequential integer IDs that could leak record counts or ordering information.
+4. **UUIDs** (v4) are used as all identifiers. No sequential integer IDs that could leak record counts or ordering information.
 5. **`TIMESTAMPTZ`** for all timestamps (timezone-aware, stored in UTC).
 6. **`TEXT`** for all string fields (PostgreSQL's `TEXT` is equivalent to `VARCHAR(n)` in performance; length constraints are applied where domain-meaningful via CHECK).
 
@@ -19,14 +19,41 @@
 
 ## Bitemporal Pattern
 
-All temporally mutable tables include four columns defining two independent time axes.
+Bitemporal tables distinguish **logical identity** from **row version identity**.
+
+- `id` is the stable logical identifier for the real-world fact, such as an enrolment, mark, fee liability, or programme.
+- `version_id` is the physical primary key for a specific recorded version of that fact.
+- Foreign keys normally reference logical `id` values and join to the version that was valid at the relevant valid-time and transaction-time.
+- Generated artefacts and formal decisions that must bind to an exact historical version may additionally store `*_version_id` fields.
+
+All bitemporal tables include the following standard columns:
 
 | Column | Type | Description |
 |---|---|---|
+| `version_id` | `UUID PK` | Unique physical row version identifier |
+| `id` | `UUID NOT NULL` | Stable logical identifier shared by all versions of the same fact |
 | `valid_from` | `TIMESTAMPTZ NOT NULL` | When this fact became true in the real world |
 | `valid_to` | `TIMESTAMPTZ` | When this fact ceased to be true (`NULL` = still true) |
 | `recorded_at` | `TIMESTAMPTZ NOT NULL DEFAULT now()` | When this row was inserted into the database |
 | `recorded_until` | `TIMESTAMPTZ` | When this row was superseded by a correction (`NULL` = current record) |
+
+### Required constraints for every bitemporal table
+
+```sql
+PRIMARY KEY (version_id);
+
+-- A logical fact may have many recorded versions, but not two identical
+-- transaction-start versions.
+UNIQUE (tenant_id, id, recorded_at);
+
+CHECK (valid_to IS NULL OR valid_to > valid_from);
+CHECK (recorded_until IS NULL OR recorded_until > recorded_at);
+
+-- Only one current transaction-time version per logical fact.
+CREATE UNIQUE INDEX {table}_current_version_unique
+  ON {table} (tenant_id, id)
+  WHERE recorded_until IS NULL;
+```
 
 ### Current state query predicate
 ```sql
@@ -45,16 +72,28 @@ WHERE valid_from     <= $vt
 ```
 
 ### Updating a bitemporal record
-Never `UPDATE` a bitemporal row. Instead:
-1. `UPDATE` the existing row: set `recorded_until = NOW()`.
-2. `INSERT` a new row with the updated values, `recorded_at = NOW()`, `recorded_until = NULL`, and updated `valid_from` / `valid_to` as appropriate.
+Never mutate the domain fields of a bitemporal row. Instead:
+1. Close the current row version by setting `recorded_until = NOW()`.
+2. Insert a new row with the same logical `id`, a new `version_id`, the updated domain values, `recorded_at = NOW()`, `recorded_until = NULL`, and updated `valid_from` / `valid_to` as appropriate.
 
 This is encapsulated in a shared `bitemporalUpdate(table, id, patch, validFrom?, validTo?)` helper in `packages/db`.
+
+### Referencing bitemporal records
+
+| Reference type | Usage | Columns |
+|---|---|---|
+| Logical reference | Operational relationships that should resolve to the correct version at query time | `{entity}_id` |
+| Exact version reference | Generated artefacts, board packs, regulatory returns, or corrections that must prove the exact source row used | `{entity}_id`, `{entity}_version_id` |
+| Snapshot | Immutable external artefact where source structures may evolve | `snapshot JSONB`, plus source transaction-time metadata |
+
+Example: `module_registration.enrolment_id` is a logical reference. An `exam_board_candidate_profile` stores a snapshot and may also store source version IDs for the exact `module_result` and `progression_decision` rows used when the pack was generated.
 
 ### Reusable Drizzle column helper
 ```typescript
 // packages/db/src/temporal.ts
 export const bitemporalColumns = {
+  versionId:     uuid('version_id').primaryKey().defaultRandom(),
+  id:            uuid('id').notNull(),
   validFrom:      timestamp('valid_from',    { withTimezone: true }).notNull(),
   validTo:        timestamp('valid_to',      { withTimezone: true }),
   recordedAt:     timestamp('recorded_at',   { withTimezone: true }).notNull().defaultNow(),
@@ -85,51 +124,104 @@ The application sets `app.current_tenant_id` on every connection obtained from t
 
 ---
 
-## Entity Relationship Diagram
+## Domain-Level Entity Relationship Diagram
+
+The diagram below shows aggregate roots and major relationships. Detailed table-level relationships are defined in the entity sections that follow. This document intentionally avoids one giant diagram for every table because the remediated model spans admissions, core records, assessment, governance, statutory exchange, integration state, and enterprise feedback.
 
 ```mermaid
 erDiagram
     TENANT ||--o{ PERSON : "has"
+    TENANT ||--o{ STUDENT_APPLICATION : "receives"
     TENANT ||--o{ PROGRAMME : "offers"
     TENANT ||--o{ MODULE : "defines"
     TENANT ||--o{ ACADEMIC_PERIOD : "has"
     TENANT ||--o{ ACADEMIC_RULE : "configures"
+    TENANT ||--o{ INTEGRATION_CONTRACT : "publishes"
     TENANT ||--o{ INTEGRATION_REGISTRATION : "configures"
 
     PERSON ||--o{ PERSON_IDENTITY : "has history"
+    PERSON ||--o{ STUDENT_ADDRESS : "has"
+    PERSON ||--o{ STUDENT_CONTACT_METHOD : "has"
+    PERSON ||--o{ DISABILITY_DECLARATION : "declares"
+    PERSON ||--o{ IDENTITY_VERIFICATION_CHECK : "verified by"
     PERSON ||--o{ ENROLMENT : "has"
+    PERSON ||--o{ VISA_STATUS : "has"
+    PERSON ||--o{ HESA_IDENTIFIER_ASSIGNMENT : "assigned"
+
+    STUDENT_APPLICATION ||--o{ ADMISSIONS_OFFER : "has"
+    STUDENT_APPLICATION ||--o{ UCAS_EXCHANGE_RECORD : "exchanged via"
 
     PROGRAMME ||--o{ ENROLMENT : "governs"
+    PROGRAMME ||--o{ PROGRAMME_ROUTE : "has"
+    PROGRAMME ||--o{ PROGRAMME_RULE_SET : "uses"
+    AWARDING_BODY ||--o{ PROGRAMME : "awards"
     MODULE ||--o{ MODULE_OFFERING : "delivered as"
+    MODULE ||--o{ MODULE_RELATIONSHIP : "requires"
+    MODULE ||--o{ ASSESSMENT_PATTERN : "defines"
+    PROGRAMME ||--o{ LEARNING_OUTCOME : "defines"
+    MODULE ||--o{ LEARNING_OUTCOME : "defines"
     ACADEMIC_PERIOD ||--o{ MODULE_OFFERING : "contains"
 
     ENROLMENT ||--o{ MODULE_REGISTRATION : "includes"
+    ENROLMENT ||--o{ FEE_LIABILITY : "incurs"
+    ENROLMENT ||--o{ STUDENT_HOLD : "may have"
+    ENROLMENT ||--o{ REENROLMENT_CONFIRMATION : "confirms"
     ENROLMENT ||--o{ PROGRESSION_DECISION : "results in"
     ENROLMENT ||--o{ AWARD : "leads to"
     ENROLMENT ||--o{ REASONABLE_ADJUSTMENT : "has"
     ENROLMENT ||--o{ EXCEPTIONAL_CIRCUMSTANCES : "may have"
+    ENROLMENT ||--o{ ATTENDANCE_RECORD : "records"
+    ENROLMENT ||--o{ ABSENCE_ALERT : "raises"
+    ENROLMENT ||--o{ STAFF_ASSIGNMENT : "assigned"
+    ENROLMENT ||--o{ RESEARCH_MILESTONE : "records"
+    ENROLMENT ||--o{ STUDENT_RISK_FLAG : "may have"
 
     MODULE_OFFERING ||--o{ MODULE_REGISTRATION : "enrolled via"
     MODULE_OFFERING ||--o{ ASSESSMENT_COMPONENT : "assessed by"
+    MODULE_OFFERING ||--o{ TIMETABLED_ACTIVITY : "scheduled as"
 
     MODULE_REGISTRATION ||--o{ MARK : "receives"
     MODULE_REGISTRATION ||--o{ MODULE_RESULT : "produces"
 
     ASSESSMENT_COMPONENT ||--o{ MARK : "graded in"
+    ASSESSMENT_COMPONENT ||--o{ EXAM_ENTRY : "entered for"
 
     EXAM_BOARD ||--o{ MODULE_RESULT : "ratifies"
     EXAM_BOARD ||--o{ PROGRESSION_DECISION : "ratifies"
     EXAM_BOARD ||--o{ AWARD : "confers"
+    EXAM_BOARD ||--o{ EXAM_BOARD_DATA_PACK : "generates"
+    EXAM_BOARD ||--o{ EXAM_BOARD_MEMBER_ATTENDANCE : "records"
+    EXAM_BOARD ||--o{ EXTERNAL_EXAMINER_SIGNOFF : "receives"
 
     ENROLMENT ||--o{ MISCONDUCT_OUTCOME : "may have"
     ASSESSMENT_COMPONENT ||--o{ MISCONDUCT_OUTCOME : "related to"
+
+    REASONABLE_ADJUSTMENT ||--o{ ADJUSTMENT_DISTRIBUTION : "distributed as"
+    REASONABLE_ADJUSTMENT ||--o{ EXAM_ACCOMMODATION_DISTRIBUTION : "distributed to exams"
+    EXAM_ENTRY ||--o{ EXAM_CANDIDATE : "assigned"
+    EXAM_ENTRY ||--o{ EXAM_TIMETABLE_ENTRY : "scheduled"
+
+    ENROLMENT ||--o{ SLC_NOTIFICATION : "notifies"
+    ENROLMENT ||--o{ SLC_ENTITLEMENT : "has"
+    ENROLMENT ||--o{ SLC_PAYMENT_STATUS : "has"
+    ENROLMENT ||--o{ CAS_REQUEST : "requires"
+    ENROLMENT ||--o{ UKVI_COMPLIANCE_CASE : "may trigger"
+    HESA_RETURN ||--o{ HESA_SUBMISSION : "submitted as"
+    HESA_RETURN ||--o{ HESA_VALIDATION_ISSUE : "has"
+
+    ENROLMENT ||--o{ STUDENT_DOCUMENT : "generates"
+    STUDENT_DOCUMENT ||--o{ DOCUMENT_ARCHIVE_CONFIRMATION : "archived by"
+    INTEGRATION_CONTRACT ||--o{ INTEGRATION_REGISTRATION : "registered by tenant"
+    INTEGRATION_REGISTRATION ||--o{ INTEGRATION_EXCHANGE : "exchanges"
 ```
 
 ---
 
 ## Core Entity Definitions
 
-Tables are grouped by domain. All tables include `tenant_id` (omitted from field lists for brevity) and the standard bitemporal columns where marked *(bitemporal)*.
+Tables are grouped by domain. All tables include `tenant_id` (omitted from field lists for brevity) and are subject to RLS unless explicitly stated otherwise.
+
+For non-bitemporal tables, `id UUID PK` means the physical primary key. For bitemporal tables, `id UUID` in the entity tables means the stable logical identifier; `version_id UUID PK` and the other bitemporal columns are supplied by the standard bitemporal pattern above.
 
 ---
 
@@ -153,6 +245,7 @@ Tables are grouped by domain. All tables include `tenant_id` (omitted from field
 | `id` | `UUID PK` | |
 | `student_number` | `TEXT NOT NULL` | Human-readable; unique per tenant (UNIQUE on tenant_id + student_number) |
 | `hesa_id` | `TEXT` | Assigned by HESA; nullable until received |
+| `person_status_code` | `TEXT NOT NULL` | `prospective` / `student` / `alumnus` / `deceased` / `merged` |
 | `source_system` | `TEXT NOT NULL` | `ucas` / `direct` / `manual` |
 | `source_reference` | `TEXT` | E.g. UCAS personal ID |
 | `created_at` | `TIMESTAMPTZ NOT NULL` | |
@@ -161,7 +254,7 @@ Tables are grouped by domain. All tables include `tenant_id` (omitted from field
 
 | Column | Type | Notes |
 |---|---|---|
-| `id` | `UUID PK` | |
+| `id` | `UUID NOT NULL` | Stable logical identifier; physical PK is `version_id` from bitemporal columns |
 | `person_id` | `UUID FK → person` | |
 | `legal_first_name` | `TEXT NOT NULL` | |
 | `legal_family_name` | `TEXT NOT NULL` | |
@@ -182,10 +275,13 @@ Tables are grouped by domain. All tables include `tenant_id` (omitted from field
 
 | Column | Type | Notes |
 |---|---|---|
-| `id` | `UUID PK` | |
+| `id` | `UUID NOT NULL` | Stable logical identifier; physical PK is `version_id` from bitemporal columns |
 | `code` | `TEXT NOT NULL` | Unique per tenant + valid time |
 | `title` | `TEXT NOT NULL` | |
 | `qualification_type_code` | `TEXT NOT NULL` | HESA qualification type |
+| `awarding_body_id` | `UUID FK → awarding_body` | |
+| `owning_school` | `TEXT` | Institution-specific school/faculty owner |
+| `credit_framework_code` | `TEXT NOT NULL` | E.g. `CATS`, `ECTS`, institutional framework |
 | `fheq_level` | `SMALLINT NOT NULL` | 4–8 |
 | `credit_total` | `SMALLINT NOT NULL` | Total credits required |
 | `duration_years` | `SMALLINT NOT NULL` | |
@@ -197,11 +293,12 @@ Tables are grouped by domain. All tables include `tenant_id` (omitted from field
 
 | Column | Type | Notes |
 |---|---|---|
-| `id` | `UUID PK` | |
+| `id` | `UUID NOT NULL` | Stable logical identifier; physical PK is `version_id` from bitemporal columns |
 | `code` | `TEXT NOT NULL` | |
 | `title` | `TEXT NOT NULL` | |
 | `credit_value` | `SMALLINT NOT NULL` | |
 | `fheq_level` | `SMALLINT NOT NULL` | |
+| `default_assessment_pattern_id` | `UUID FK → assessment_pattern` | Nullable; current default catalogue pattern |
 | `source_system_reference` | `TEXT` | CM system module ID |
 | *(bitemporal columns)* | | |
 
@@ -232,7 +329,7 @@ Tables are grouped by domain. All tables include `tenant_id` (omitted from field
 
 | Column | Type | Notes |
 |---|---|---|
-| `id` | `UUID PK` | |
+| `id` | `UUID NOT NULL` | Stable logical identifier; physical PK is `version_id` from bitemporal columns |
 | `person_id` | `UUID FK → person` | |
 | `programme_id` | `UUID FK → programme` | |
 | `status_code` | `TEXT NOT NULL` | `enrolled` / `intermitting` / `withdrawn` / `suspended` / `graduated` |
@@ -252,7 +349,7 @@ Tables are grouped by domain. All tables include `tenant_id` (omitted from field
 
 | Column | Type | Notes |
 |---|---|---|
-| `id` | `UUID PK` | |
+| `id` | `UUID NOT NULL` | Stable logical identifier; physical PK is `version_id` from bitemporal columns |
 | `enrolment_id` | `UUID FK → enrolment` | |
 | `module_offering_id` | `UUID FK → module_offering` | |
 | `status_code` | `TEXT NOT NULL` | `registered` / `withdrawn` / `completed` |
@@ -274,15 +371,34 @@ Tables are grouped by domain. All tables include `tenant_id` (omitted from field
 | `max_mark` | `NUMERIC(5,2) NOT NULL DEFAULT 100` | |
 | `is_mandatory` | `BOOLEAN NOT NULL DEFAULT true` | |
 
-### mark *(bitemporal — marks can be corrected pre-ratification)*
+### assessment_submission *(append-only with correction/supersession support)*
 
 | Column | Type | Notes |
 |---|---|---|
 | `id` | `UUID PK` | |
 | `module_registration_id` | `UUID FK → module_registration` | |
 | `assessment_component_id` | `UUID FK → assessment_component` | |
+| `source_system_code` | `TEXT NOT NULL` | `vle` / `manual` / institutional code |
+| `source_submission_reference` | `TEXT NOT NULL` | VLE/submission system reference |
+| `submitted_at` | `TIMESTAMPTZ` | Student submission time if known |
+| `submission_status_code` | `TEXT NOT NULL` | `submitted` / `late` / `missing` / `superseded` |
+| `artefact_reference` | `TEXT` | Opaque reference to submitted work where SRS stores or proxies it |
+| `received_at` | `TIMESTAMPTZ NOT NULL DEFAULT now()` | When SRS received the submission context |
+| `superseded_at` | `TIMESTAMPTZ` | |
+
+### mark *(bitemporal — marks can be corrected pre-ratification)*
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID NOT NULL` | Stable logical identifier; physical PK is `version_id` from bitemporal columns |
+| `module_registration_id` | `UUID FK → module_registration` | |
+| `assessment_component_id` | `UUID FK → assessment_component` | |
+| `assessment_submission_id` | `UUID FK → assessment_submission` | Nullable; mark may be manually entered without a submission artefact |
 | `raw_mark` | `NUMERIC(5,2) NOT NULL` | Mark as received |
 | `adjusted_mark` | `NUMERIC(5,2)` | After penalty suppression or adjustment |
+| `attempt_number` | `SMALLINT NOT NULL DEFAULT 1` | `1` = first sit, `2` = first resit, etc. |
+| `mark_status_code` | `TEXT NOT NULL DEFAULT 'provisional'` | `provisional` / `confirmed` |
+| `moderation_state_code` | `TEXT` | `not-required` / `pending` / `moderated` / `queried` |
 | `penalty_applied` | `BOOLEAN NOT NULL DEFAULT false` | Whether a late submission penalty was applied |
 | `source_system_code` | `TEXT` | `vle` / `manual` / etc. |
 | `is_resit` | `BOOLEAN NOT NULL DEFAULT false` | |
@@ -294,7 +410,7 @@ Tables are grouped by domain. All tables include `tenant_id` (omitted from field
 
 | Column | Type | Notes |
 |---|---|---|
-| `id` | `UUID PK` | |
+| `id` | `UUID NOT NULL` | Stable logical identifier; physical PK is `version_id` from bitemporal columns |
 | `module_registration_id` | `UUID FK → module_registration` | |
 | `aggregate_mark` | `NUMERIC(5,2) NOT NULL` | Calculated from marks + weightings |
 | `result_code` | `TEXT NOT NULL` | `pass` / `fail` / `compensated` / `condoned` / `deferred` |
@@ -320,7 +436,7 @@ Tables are grouped by domain. All tables include `tenant_id` (omitted from field
 
 | Column | Type | Notes |
 |---|---|---|
-| `id` | `UUID PK` | |
+| `id` | `UUID NOT NULL` | Stable logical identifier; physical PK is `version_id` from bitemporal columns |
 | `enrolment_id` | `UUID FK → enrolment` | |
 | `academic_year` | `TEXT NOT NULL` | |
 | `decision_code` | `TEXT NOT NULL` | `progress` / `resit` / `repeat-year` / `withdraw` |
@@ -329,11 +445,11 @@ Tables are grouped by domain. All tables include `tenant_id` (omitted from field
 | `locked` | `BOOLEAN NOT NULL DEFAULT false` | |
 | *(bitemporal columns)* | | |
 
-### award
+### award *(bitemporal — award/certificate facts can be corrected post-ratification)*
 
 | Column | Type | Notes |
 |---|---|---|
-| `id` | `UUID PK` | |
+| `id` | `UUID NOT NULL` | Stable logical identifier; physical PK is `version_id` from bitemporal columns |
 | `enrolment_id` | `UUID FK → enrolment` | |
 | `qualification_code` | `TEXT NOT NULL` | HESA qualification type |
 | `classification_code` | `TEXT` | `1` / `2.1` / `2.2` / `3` / `pass` / `merit` / `distinction` |
@@ -341,7 +457,7 @@ Tables are grouped by domain. All tables include `tenant_id` (omitted from field
 | `exam_board_id` | `UUID FK → exam_board` | |
 | `hear_generated_at` | `TIMESTAMPTZ` | |
 | `certificate_issued_at` | `TIMESTAMPTZ` | |
-| `created_at` | `TIMESTAMPTZ NOT NULL` | |
+| *(bitemporal columns)* | | |
 
 ---
 
@@ -349,7 +465,7 @@ Tables are grouped by domain. All tables include `tenant_id` (omitted from field
 
 | Column | Type | Notes |
 |---|---|---|
-| `id` | `UUID PK` | |
+| `id` | `UUID NOT NULL` | Stable logical identifier; physical PK is `version_id` from bitemporal columns |
 | `enrolment_id` | `UUID FK → enrolment` | |
 | `adjustment_type_code` | `TEXT NOT NULL` | E.g. `extra-time` / `separate-room` / `deadline-extension` |
 | `description` | `TEXT` | |
@@ -379,7 +495,7 @@ Tables are grouped by domain. All tables include `tenant_id` (omitted from field
 
 | Column | Type | Notes |
 |---|---|---|
-| `id` | `UUID PK` | |
+| `id` | `UUID NOT NULL` | Stable logical identifier; physical PK is `version_id` from bitemporal columns |
 | `enrolment_id` | `UUID FK → enrolment` | |
 | `module_offering_id` | `UUID FK → module_offering` | |
 | `assessment_component_id` | `UUID FK → assessment_component` | Nullable; specific component if applicable |
@@ -398,18 +514,44 @@ Tables are grouped by domain. All tables include `tenant_id` (omitted from field
 | `exam_board_id` | `UUID FK → exam_board` | |
 | `included_in_pack_at` | `TIMESTAMPTZ NOT NULL` | |
 
+### misconduct_case_reference *(bitemporal — external AI case metadata)*
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID` | Logical misconduct case reference ID |
+| `enrolment_id` | `UUID FK → enrolment` | |
+| `source_system_code` | `TEXT NOT NULL` | `academic-integrity` / institutional code |
+| `source_case_reference` | `TEXT NOT NULL` | External case reference |
+| `case_status_code` | `TEXT NOT NULL` | `open` / `concluded` / `withdrawn` |
+| `opened_at` | `TIMESTAMPTZ` | |
+| `concluded_at` | `TIMESTAMPTZ` | |
+| *(bitemporal columns)* | | |
+
 ### misconduct_outcome *(bitemporal — can be corrected pre-ratification)*
 
 | Column | Type | Notes |
 |---|---|---|
-| `id` | `UUID PK` | |
+| `id` | `UUID NOT NULL` | Stable logical identifier; physical PK is `version_id` from bitemporal columns |
 | `enrolment_id` | `UUID FK → enrolment` | |
+| `misconduct_case_reference_id` | `UUID FK → misconduct_case_reference` | |
 | `assessment_component_id` | `UUID FK → assessment_component` | Nullable (programme-level cases) |
 | `outcome_code` | `TEXT NOT NULL` | `upheld` / `not-upheld` |
 | `penalty_code` | `TEXT` | E.g. `mark-reduction` / `module-fail` / `exclusion` |
-| `penalty_effect` | `JSONB` | Structured effect on mark/module/progression |
 | `effective_date` | `DATE NOT NULL` | |
 | `source_case_reference` | `TEXT` | |
+| *(bitemporal columns)* | | |
+
+### misconduct_penalty_effect *(bitemporal — structured penalty impact)*
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID` | Logical penalty effect ID |
+| `misconduct_outcome_id` | `UUID FK → misconduct_outcome` | |
+| `effect_type_code` | `TEXT NOT NULL` | `mark-reduction` / `mark-cap` / `module-fail` / `progression-block` / `exclusion` |
+| `affected_mark_id` | `UUID FK → mark` | Nullable |
+| `affected_module_registration_id` | `UUID FK → module_registration` | Nullable |
+| `affected_enrolment_id` | `UUID FK → enrolment` | Nullable |
+| `effect_value` | `JSONB` | Structured details, e.g. cap value or exclusion period |
 | *(bitemporal columns)* | | |
 
 ---
@@ -418,7 +560,7 @@ Tables are grouped by domain. All tables include `tenant_id` (omitted from field
 
 | Column | Type | Notes |
 |---|---|---|
-| `id` | `UUID PK` | |
+| `id` | `UUID NOT NULL` | Stable logical identifier; physical PK is `version_id` from bitemporal columns |
 | `programme_id` | `UUID FK → programme` | Nullable for tenant-wide rules |
 | `rule_type_code` | `TEXT NOT NULL` | `progression` / `classification` / `compensation` / `late-penalty` / `resit-cap` |
 | `rule_key` | `TEXT NOT NULL` | Identifies the specific rule within a type |
@@ -452,23 +594,70 @@ Tables are grouped by domain. All tables include `tenant_id` (omitted from field
 
 ---
 
-### integration_registration *(plugin registry)*
+### integration_contract *(catalogue of supported integration contracts)*
 
 | Column | Type | Notes |
 |---|---|---|
 | `id` | `UUID PK` | |
-| `integration_code` | `TEXT NOT NULL` | E.g. `vle-moodle-v2` |
+| `contract_id` | `TEXT NOT NULL UNIQUE` | Stable logical contract ID, e.g. `vle-course-provisioning.v1` |
 | `display_name` | `TEXT NOT NULL` | |
-| `pattern_type` | `TEXT NOT NULL` | `rest` / `event` / `file` |
+| `owner_module_code` | `TEXT NOT NULL` | `student-identity` / `enrolment` / `assessment` / `regulatory` / etc. |
+| `direction_code` | `TEXT NOT NULL` | `inbound` / `outbound` / `bidirectional` / `context` |
+| `pattern_type` | `TEXT NOT NULL` | `rest` / `event` / `file` / `mixed` |
+| `current_contract_version` | `TEXT NOT NULL` | Semver or statutory cycle/year |
+| `data_classification_code` | `TEXT NOT NULL` | `standard` / `sensitive` / `special-category` |
+| `created_at` | `TIMESTAMPTZ NOT NULL DEFAULT now()` | |
+
+### integration_registration *(tenant plugin registry)*
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID PK` | |
+| `integration_contract_id` | `UUID FK → integration_contract` | |
+| `integration_code` | `TEXT NOT NULL` | Tenant-specific adapter code, e.g. `vle-moodle-prod` |
+| `display_name` | `TEXT NOT NULL` | |
 | `contract_version` | `TEXT NOT NULL` | Semver |
+| `transport_code` | `TEXT NOT NULL` | `rest` / `event` / `sftp` / `https-file` |
+| `subject_filter` | `TEXT` | NATS subject filter for event consumers |
+| `consumer_group` | `TEXT` | NATS durable consumer group name |
+| `endpoint_url` | `TEXT` | External REST endpoint where applicable |
+| `file_schedule` | `TEXT` | Cron expression or `manual` |
+| `secret_ref` | `TEXT` | OpenBao path to credentials; never the credential value |
+| `replay_supported` | `BOOLEAN NOT NULL DEFAULT false` | Whether backfill can be requested |
+| `retry_policy` | `JSONB` | `{ maxAttempts, backoffCoefficient, initialInterval, deadLetterSubject }` |
 | `enabled` | `BOOLEAN NOT NULL DEFAULT false` | |
 | `configuration` | `JSONB NOT NULL DEFAULT '{}'` | Encrypted at application layer |
 | `last_health_check_at` | `TIMESTAMPTZ` | |
 | `health_status_code` | `TEXT` | `healthy` / `degraded` / `unreachable` |
+| `last_successful_exchange_at` | `TIMESTAMPTZ` | |
 | `registered_at` | `TIMESTAMPTZ NOT NULL DEFAULT now()` | |
 | `last_updated_at` | `TIMESTAMPTZ NOT NULL DEFAULT now()` | |
 
----
+Unique constraint: `(tenant_id, integration_code)`.
+
+### integration_exchange *(append-only integration message/exchange ledger)*
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID PK` | |
+| `integration_registration_id` | `UUID FK → integration_registration` | |
+| `contract_id` | `TEXT NOT NULL` | Denormalised for audit/search |
+| `direction_code` | `TEXT NOT NULL` | `inbound` / `outbound` |
+| `exchange_type_code` | `TEXT NOT NULL` | Contract-specific exchange/action type |
+| `idempotency_key` | `TEXT NOT NULL` | External or generated duplicate-suppression key |
+| `correlation_id` | `UUID` | Request/event correlation ID |
+| `source_reference` | `TEXT` | External message, file, or transaction reference |
+| `status_code` | `TEXT NOT NULL` | `received` / `validated` / `processed` / `sent` / `failed` / `dead-lettered` |
+| `attempt_count` | `SMALLINT NOT NULL DEFAULT 0` | |
+| `last_attempt_at` | `TIMESTAMPTZ` | |
+| `last_error` | `TEXT` | Sanitised error summary |
+| `payload_hash` | `TEXT` | Hash of canonical payload or file |
+| `payload_summary` | `JSONB` | Minimal audit/search payload, not full sensitive content |
+| `received_at` | `TIMESTAMPTZ` | Inbound only |
+| `sent_at` | `TIMESTAMPTZ` | Outbound only |
+| `created_at` | `TIMESTAMPTZ NOT NULL DEFAULT now()` | |
+
+Unique constraint: `(tenant_id, integration_registration_id, idempotency_key)`.
 
 ---
 
@@ -478,7 +667,7 @@ Tables are grouped by domain. All tables include `tenant_id` (omitted from field
 
 | Column | Type | Notes |
 |---|---|---|
-| `id` | `UUID PK` | |
+| `id` | `UUID NOT NULL` | Stable logical identifier; physical PK is `version_id` from bitemporal columns |
 | `person_id` | `UUID FK → person` | Nullable until student record created |
 | `source_system_code` | `TEXT NOT NULL` | `ucas` / `direct` / `crm` |
 | `source_reference` | `TEXT` | E.g. UCAS application number |
@@ -493,7 +682,7 @@ Tables are grouped by domain. All tables include `tenant_id` (omitted from field
 
 | Column | Type | Notes |
 |---|---|---|
-| `id` | `UUID PK` | |
+| `id` | `UUID NOT NULL` | Stable logical identifier; physical PK is `version_id` from bitemporal columns |
 | `student_application_id` | `UUID FK → student_application` | |
 | `offer_type_code` | `TEXT NOT NULL` | `conditional` / `unconditional` |
 | `conditions_description` | `TEXT` | |
@@ -509,7 +698,7 @@ Tables are grouped by domain. All tables include `tenant_id` (omitted from field
 
 | Column | Type | Notes |
 |---|---|---|
-| `id` | `UUID PK` | |
+| `id` | `UUID NOT NULL` | Stable logical identifier; physical PK is `version_id` from bitemporal columns |
 | `person_id` | `UUID FK → person` | |
 | `status_code` | `TEXT NOT NULL` | `requested` / `verified` / `failed` / `fraud-flagged` |
 | `confidence_score` | `NUMERIC(5,2)` | |
@@ -523,7 +712,7 @@ Tables are grouped by domain. All tables include `tenant_id` (omitted from field
 
 | Column | Type | Notes |
 |---|---|---|
-| `id` | `UUID PK` | |
+| `id` | `UUID NOT NULL` | Stable logical identifier; physical PK is `version_id` from bitemporal columns |
 | `person_id` | `UUID FK → person` | |
 | `disability_category_code` | `TEXT NOT NULL` | HESA disability coding |
 | `declaration_status_code` | `TEXT NOT NULL` | `declared` / `withdrawn` / `updated` |
@@ -534,7 +723,7 @@ Tables are grouped by domain. All tables include `tenant_id` (omitted from field
 
 | Column | Type | Notes |
 |---|---|---|
-| `id` | `UUID PK` | |
+| `id` | `UUID NOT NULL` | Stable logical identifier; physical PK is `version_id` from bitemporal columns |
 | `person_id` | `UUID FK → person` | |
 | `address_type_code` | `TEXT NOT NULL` | `home` / `term` / `correspondence` |
 | `line1` | `TEXT NOT NULL` | |
@@ -542,6 +731,19 @@ Tables are grouped by domain. All tables include `tenant_id` (omitted from field
 | `city` | `TEXT` | |
 | `postcode` | `TEXT` | |
 | `country_code` | `TEXT NOT NULL` | ISO 3166-1 alpha-2 |
+| *(bitemporal columns)* | | |
+
+### student_contact_method *(bitemporal)*
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID` | Logical contact method ID |
+| `person_id` | `UUID FK → person` | |
+| `contact_type_code` | `TEXT NOT NULL` | `institutional-email` / `personal-email` / `mobile-phone` / `landline` |
+| `contact_value` | `TEXT NOT NULL` | Email address or phone number |
+| `is_primary` | `BOOLEAN NOT NULL DEFAULT false` | Primary within contact type |
+| `verified_at` | `TIMESTAMPTZ` | |
+| `source_system_reference` | `TEXT` | Source reference where imported |
 | *(bitemporal columns)* | | |
 
 ---
@@ -561,17 +763,41 @@ Tables are grouped by domain. All tables include `tenant_id` (omitted from field
 
 | Column | Type | Notes |
 |---|---|---|
-| `id` | `UUID PK` | |
+| `id` | `UUID NOT NULL` | Stable logical identifier; physical PK is `version_id` from bitemporal columns |
 | `programme_id` | `UUID FK → programme` | |
 | `route_code` | `TEXT NOT NULL` | |
 | `title` | `TEXT NOT NULL` | |
+| *(bitemporal columns)* | | |
+
+### programme_rule_set *(bitemporal — cohort/rule binding)*
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID` | Logical rule-set binding ID |
+| `programme_id` | `UUID FK → programme` | |
+| `programme_route_id` | `UUID FK → programme_route` | Nullable; route-specific rule binding |
+| `entry_academic_year` | `TEXT` | Nullable; cohort-specific binding |
+| `rule_set_code` | `TEXT NOT NULL` | Institution-defined rule set identifier |
+| `description` | `TEXT` | |
+| *(bitemporal columns)* | | |
+
+### assessment_pattern *(bitemporal — catalogue-level assessment structure)*
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID` | Logical assessment pattern ID |
+| `module_id` | `UUID FK → module` | |
+| `pattern_code` | `TEXT NOT NULL` | Institution or CM pattern code |
+| `description` | `TEXT` | |
+| `component_schema` | `JSONB NOT NULL` | Catalogue-level component structure before delivery offering |
+| `source_system_reference` | `TEXT` | CM system pattern/version ID |
 | *(bitemporal columns)* | | |
 
 ### module_relationship *(bitemporal)*
 
 | Column | Type | Notes |
 |---|---|---|
-| `id` | `UUID PK` | |
+| `id` | `UUID NOT NULL` | Stable logical identifier; physical PK is `version_id` from bitemporal columns |
 | `module_id` | `UUID FK → module` | The module that has the requirement |
 | `related_module_id` | `UUID FK → module` | The required/excluded module |
 | `relationship_type_code` | `TEXT NOT NULL` | `prerequisite` / `co-requisite` / `exclusion` |
@@ -581,12 +807,14 @@ Tables are grouped by domain. All tables include `tenant_id` (omitted from field
 
 | Column | Type | Notes |
 |---|---|---|
-| `id` | `UUID PK` | |
-| `owner_type` | `TEXT NOT NULL` | `programme` / `module` |
-| `owner_id` | `UUID NOT NULL` | FK to programme or module |
+| `id` | `UUID` | Logical learning outcome ID |
+| `programme_id` | `UUID FK → programme` | Nullable; exactly one of programme/module must be set |
+| `module_id` | `UUID FK → module` | Nullable; exactly one of programme/module must be set |
 | `outcome_code` | `TEXT NOT NULL` | |
 | `description` | `TEXT NOT NULL` | |
 | *(bitemporal columns)* | | |
+
+Constraint: exactly one of `programme_id` or `module_id` must be non-null.
 
 ---
 
@@ -596,7 +824,7 @@ Tables are grouped by domain. All tables include `tenant_id` (omitted from field
 
 | Column | Type | Notes |
 |---|---|---|
-| `id` | `UUID PK` | |
+| `id` | `UUID NOT NULL` | Stable logical identifier; physical PK is `version_id` from bitemporal columns |
 | `enrolment_id` | `UUID FK → enrolment` | |
 | `academic_year` | `TEXT NOT NULL` | |
 | `fee_amount` | `NUMERIC(10,2) NOT NULL` | |
@@ -622,13 +850,28 @@ Tables are grouped by domain. All tables include `tenant_id` (omitted from field
 
 | Column | Type | Notes |
 |---|---|---|
-| `id` | `UUID PK` | |
+| `id` | `UUID NOT NULL` | Stable logical identifier; physical PK is `version_id` from bitemporal columns |
 | `enrolment_id` | `UUID FK → enrolment` | |
 | `hold_type_code` | `TEXT NOT NULL` | `financial` / `library` / `compliance` / `disciplinary` / `document` |
 | `reason` | `TEXT` | |
 | `applied_by_actor_id` | `TEXT NOT NULL` | |
 | `applied_at` | `TIMESTAMPTZ NOT NULL` | |
 | `released_at` | `TIMESTAMPTZ` | |
+| *(bitemporal columns)* | | |
+
+### student_obligation *(bitemporal — external or institutional obligation)*
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID` | Logical obligation ID |
+| `enrolment_id` | `UUID FK → enrolment` | |
+| `source_system_code` | `TEXT NOT NULL` | `library` / `finance` / `registry` / `compliance` |
+| `obligation_type_code` | `TEXT NOT NULL` | `fine` / `loan-overdue` / `document-required` / `payment-due` / `other` |
+| `source_reference` | `TEXT` | External system reference |
+| `description` | `TEXT` | |
+| `amount` | `NUMERIC(10,2)` | Nullable; financial obligations only |
+| `due_at` | `TIMESTAMPTZ` | |
+| `status_code` | `TEXT NOT NULL` | `open` / `satisfied` / `waived` / `cancelled` |
 | *(bitemporal columns)* | | |
 
 ### reenrolment_period
@@ -646,7 +889,7 @@ Tables are grouped by domain. All tables include `tenant_id` (omitted from field
 
 | Column | Type | Notes |
 |---|---|---|
-| `id` | `UUID PK` | |
+| `id` | `UUID NOT NULL` | Stable logical identifier; physical PK is `version_id` from bitemporal columns |
 | `enrolment_id` | `UUID FK → enrolment` | |
 | `reenrolment_period_id` | `UUID FK → reenrolment_period` | |
 | `status_code` | `TEXT NOT NULL` | `pending` / `confirmed` / `lapsed` |
@@ -671,6 +914,18 @@ Tables are grouped by domain. All tables include `tenant_id` (omitted from field
 | `published_at` | `TIMESTAMPTZ NOT NULL` | When received from TTB |
 | `superseded_at` | `TIMESTAMPTZ` | When replaced by a new publication |
 
+### student_timetable_entry *(bitemporal — student-visible timetable membership)*
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID` | Logical timetable entry ID |
+| `enrolment_id` | `UUID FK → enrolment` | |
+| `timetabled_activity_id` | `UUID FK → timetabled_activity` | |
+| `module_registration_id` | `UUID FK → module_registration` | Nullable for non-module activities |
+| `visibility_status_code` | `TEXT NOT NULL` | `visible` / `hidden` / `cancelled` |
+| `published_to_student_at` | `TIMESTAMPTZ` | |
+| *(bitemporal columns)* | | |
+
 ### attendance_record *(append-only with correction support)*
 
 | Column | Type | Notes |
@@ -680,7 +935,8 @@ Tables are grouped by domain. All tables include `tenant_id` (omitted from field
 | `timetabled_activity_id` | `UUID FK → timetabled_activity` | Nullable for unscheduled check-ins |
 | `status_code` | `TEXT NOT NULL` | `present` / `absent-authorised` / `absent-unauthorised` / `late` |
 | `recorded_by_system` | `TEXT NOT NULL` | Source AM system |
-| `recorded_at` | `TIMESTAMPTZ NOT NULL DEFAULT now()` | |
+| `source_recorded_at` | `TIMESTAMPTZ` | Timestamp supplied by Attendance Monitoring |
+| `received_at` | `TIMESTAMPTZ NOT NULL DEFAULT now()` | When SRS received the record |
 | `corrected_at` | `TIMESTAMPTZ` | If corrected; original row retained |
 | `correction_reason` | `TEXT` | |
 | `ukvi_relevant` | `BOOLEAN NOT NULL DEFAULT false` | Whether this event counts toward UKVI compliance |
@@ -689,13 +945,28 @@ Tables are grouped by domain. All tables include `tenant_id` (omitted from field
 
 | Column | Type | Notes |
 |---|---|---|
-| `id` | `UUID PK` | |
+| `id` | `UUID NOT NULL` | Stable logical identifier; physical PK is `version_id` from bitemporal columns |
 | `enrolment_id` | `UUID FK → enrolment` | |
 | `alert_type_code` | `TEXT NOT NULL` | `consecutive-absences` / `threshold-breach` / `ukvi-threshold-breach` |
 | `threshold_value` | `NUMERIC(5,2)` | E.g. attendance percentage |
 | `current_value` | `NUMERIC(5,2)` | |
 | `status_code` | `TEXT NOT NULL` | `open` / `reviewed` / `escalated` / `resolved` |
 | `raised_at` | `TIMESTAMPTZ NOT NULL` | |
+| *(bitemporal columns)* | | |
+
+### engagement_summary *(bitemporal snapshot)*
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID` | Logical engagement summary ID |
+| `enrolment_id` | `UUID FK → enrolment` | |
+| `summary_period_start` | `DATE NOT NULL` | |
+| `summary_period_end` | `DATE NOT NULL` | |
+| `attendance_percentage` | `NUMERIC(5,2)` | |
+| `absence_count` | `INT` | |
+| `ukvi_threshold_status_code` | `TEXT` | `ok` / `warning` / `breach` / `not-applicable` |
+| `source_system_code` | `TEXT NOT NULL` | `attendance` / `bi` / `srs` |
+| `calculated_at` | `TIMESTAMPTZ NOT NULL` | |
 | *(bitemporal columns)* | | |
 
 ---
@@ -706,7 +977,7 @@ Tables are grouped by domain. All tables include `tenant_id` (omitted from field
 
 | Column | Type | Notes |
 |---|---|---|
-| `id` | `UUID PK` | |
+| `id` | `UUID NOT NULL` | Stable logical identifier; physical PK is `version_id` from bitemporal columns |
 | `enrolment_id` | `UUID FK → enrolment` | |
 | `assessment_component_id` | `UUID FK → assessment_component` | |
 | `entry_status_code` | `TEXT NOT NULL` | `entered` / `withdrawn` / `absent` / `sat` |
@@ -760,9 +1031,15 @@ Tables are grouped by domain. All tables include `tenant_id` (omitted from field
 | `exam_board_id` | `UUID FK → exam_board` | |
 | `version` | `SMALLINT NOT NULL DEFAULT 1` | Increments when pack is regenerated |
 | `generated_at` | `TIMESTAMPTZ NOT NULL` | When the pack was generated |
+| `generated_by_actor_id` | `TEXT NOT NULL` | User/system actor that generated the pack |
 | `source_transaction_time` | `TIMESTAMPTZ NOT NULL` | The `recorded_at` cutoff used for source data — enables exact reproduction |
 | `candidate_count` | `INT NOT NULL` | |
 | `publication_state_code` | `TEXT NOT NULL` | `draft` / `distributed` / `superseded` |
+| `artefact_uri` | `TEXT` | Object/document store URI for rendered pack |
+| `content_hash` | `TEXT` | Hash of canonical rendered artefact |
+| `format_code` | `TEXT` | `pdf` / `html` / `json` |
+| `schema_version` | `TEXT` | Board-pack schema/template version |
+| `retention_class_code` | `TEXT NOT NULL` | Links to data retention policy |
 | `superseded_by_id` | `UUID FK → exam_board_data_pack` | Nullable |
 
 ### exam_board_candidate_profile *(append-only per pack version)*
@@ -800,7 +1077,7 @@ Tables are grouped by domain. All tables include `tenant_id` (omitted from field
 
 | Column | Type | Notes |
 |---|---|---|
-| `id` | `UUID PK` | |
+| `id` | `UUID NOT NULL` | Stable logical identifier; physical PK is `version_id` from bitemporal columns |
 | `enrolment_id` | `UUID FK → enrolment` | |
 | `case_type_code` | `TEXT NOT NULL` | `appeal` / `administrative-correction` |
 | `grounds` | `TEXT` | |
@@ -846,11 +1123,19 @@ Tables are grouped by domain. All tables include `tenant_id` (omitted from field
 | `academic_year` | `TEXT NOT NULL` | E.g. `2024-25` |
 | `return_type_code` | `TEXT NOT NULL` | `student` / `AP` |
 | `generated_at` | `TIMESTAMPTZ NOT NULL` | |
+| `generated_by_actor_id` | `TEXT NOT NULL` | |
 | `source_transaction_time` | `TIMESTAMPTZ NOT NULL` | Bitemporal cutoff for source data |
 | `student_count` | `INT NOT NULL` | |
 | `status_code` | `TEXT NOT NULL` | `generated` / `validated` / `submitted` / `accepted` / `rejected` |
+| `artefact_uri` | `TEXT` | Stored HESA return file / payload URI |
+| `content_hash` | `TEXT` | Hash of submitted/generated artefact |
+| `format_code` | `TEXT NOT NULL` | HESA format, e.g. `xml` |
+| `schema_version` | `TEXT NOT NULL` | HESA coding manual/schema version |
+| `retention_class_code` | `TEXT NOT NULL` | Links to retention policy |
 | `submitted_at` | `TIMESTAMPTZ` | |
 | `accepted_at` | `TIMESTAMPTZ` | |
+
+Status semantics: `hesa_return` is an immutable generated artefact/version. Submission attempts, validation responses, and acceptance/rejection outcomes are recorded as append-only `hesa_submission`, `hesa_validation_issue`, and `integration_exchange` rows. `status_code`, `submitted_at`, and `accepted_at` on `hesa_return` are denormalised lifecycle summary fields updated only by controlled system actions after the corresponding append-only evidence row has been written atomically.
 
 ### hesa_submission *(append-only — each submission attempt)*
 
@@ -868,7 +1153,7 @@ Tables are grouped by domain. All tables include `tenant_id` (omitted from field
 
 | Column | Type | Notes |
 |---|---|---|
-| `id` | `UUID PK` | |
+| `id` | `UUID NOT NULL` | Stable logical identifier; physical PK is `version_id` from bitemporal columns |
 | `hesa_return_id` | `UUID FK → hesa_return` | |
 | `issue_code` | `TEXT NOT NULL` | HESA rule code |
 | `severity_code` | `TEXT NOT NULL` | `error` / `warning` |
@@ -902,7 +1187,7 @@ Tables are grouped by domain. All tables include `tenant_id` (omitted from field
 
 | Column | Type | Notes |
 |---|---|---|
-| `id` | `UUID PK` | |
+| `id` | `UUID NOT NULL` | Stable logical identifier; physical PK is `version_id` from bitemporal columns |
 | `enrolment_id` | `UUID FK → enrolment` | |
 | `academic_year` | `TEXT NOT NULL` | |
 | `tuition_fee_loan_amount` | `NUMERIC(10,2)` | |
@@ -914,7 +1199,7 @@ Tables are grouped by domain. All tables include `tenant_id` (omitted from field
 
 | Column | Type | Notes |
 |---|---|---|
-| `id` | `UUID PK` | |
+| `id` | `UUID NOT NULL` | Stable logical identifier; physical PK is `version_id` from bitemporal columns |
 | `enrolment_id` | `UUID FK → enrolment` | |
 | `payment_type_code` | `TEXT NOT NULL` | `tuition-fee` / `maintenance` |
 | `status_code` | `TEXT NOT NULL` | `pending` / `released` / `overpaid` / `recovered` |
@@ -926,7 +1211,7 @@ Tables are grouped by domain. All tables include `tenant_id` (omitted from field
 
 | Column | Type | Notes |
 |---|---|---|
-| `id` | `UUID PK` | |
+| `id` | `UUID NOT NULL` | Stable logical identifier; physical PK is `version_id` from bitemporal columns |
 | `enrolment_id` | `UUID FK → enrolment` | |
 | `request_type_code` | `TEXT NOT NULL` | `new` / `renewal` |
 | `status_code` | `TEXT NOT NULL` | `draft` / `submitted` / `assigned` / `issued` |
@@ -948,7 +1233,7 @@ Tables are grouped by domain. All tables include `tenant_id` (omitted from field
 
 | Column | Type | Notes |
 |---|---|---|
-| `id` | `UUID PK` | |
+| `id` | `UUID NOT NULL` | Stable logical identifier; physical PK is `version_id` from bitemporal columns |
 | `person_id` | `UUID FK → person` | |
 | `visa_type_code` | `TEXT NOT NULL` | `student` / `graduate` / `other` |
 | `status_code` | `TEXT NOT NULL` | `granted` / `refused` / `curtailed` / `expired` |
@@ -960,13 +1245,27 @@ Tables are grouped by domain. All tables include `tenant_id` (omitted from field
 
 | Column | Type | Notes |
 |---|---|---|
-| `id` | `UUID PK` | |
+| `id` | `UUID NOT NULL` | Stable logical identifier; physical PK is `version_id` from bitemporal columns |
 | `enrolment_id` | `UUID FK → enrolment` | |
 | `trigger_type_code` | `TEXT NOT NULL` | `attendance-threshold` / `visa-status-change` |
 | `status_code` | `TEXT NOT NULL` | `open` / `under-review` / `resolved` / `reported-to-ukvi` |
 | `workflow_instance_id` | `TEXT` | |
 | `opened_at` | `TIMESTAMPTZ NOT NULL` | |
 | *(bitemporal columns)* | | |
+
+### sponsor_evidence_record *(append-only — UKVI inspection evidence)*
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID PK` | |
+| `ukvi_compliance_case_id` | `UUID FK → ukvi_compliance_case` | Nullable; evidence may be retained outside a specific case |
+| `enrolment_id` | `UUID FK → enrolment` | |
+| `evidence_type_code` | `TEXT NOT NULL` | `attendance-summary` / `contact-log` / `visa-document` / `sponsor-report` |
+| `artefact_uri` | `TEXT` | Stored evidence artefact URI where applicable |
+| `content_hash` | `TEXT` | Hash of evidence artefact where applicable |
+| `summary` | `TEXT` | Minimal human-readable description |
+| `retention_class_code` | `TEXT NOT NULL` | Links to retention policy |
+| `created_at` | `TIMESTAMPTZ NOT NULL DEFAULT now()` | |
 
 ---
 
@@ -976,19 +1275,22 @@ Tables are grouped by domain. All tables include `tenant_id` (omitted from field
 
 | Column | Type | Notes |
 |---|---|---|
-| `id` | `UUID PK` | |
-| `enrolment_id` | `UUID FK → enrolment` | |
+| `id` | `UUID NOT NULL` | Stable logical identifier; physical PK is `version_id` from bitemporal columns |
+| `enrolment_id` | `UUID FK → enrolment` | Nullable for module-level staff assignments |
+| `module_offering_id` | `UUID FK → module_offering` | Nullable for student-level tutor/supervisor assignments |
 | `assignment_type_code` | `TEXT NOT NULL` | `personal-tutor` / `supervisor` / `module-tutor` |
 | `staff_actor_id` | `TEXT NOT NULL` | HR / Keycloak identity |
 | `staff_display_name` | `TEXT NOT NULL` | |
 | `source_system_reference` | `TEXT` | HR system assignment ID |
 | *(bitemporal columns)* | | |
 
+Constraint: at least one of `enrolment_id` or `module_offering_id` must be non-null.
+
 ### research_milestone *(bitemporal)*
 
 | Column | Type | Notes |
 |---|---|---|
-| `id` | `UUID PK` | |
+| `id` | `UUID NOT NULL` | Stable logical identifier; physical PK is `version_id` from bitemporal columns |
 | `enrolment_id` | `UUID FK → enrolment` | |
 | `milestone_type_code` | `TEXT NOT NULL` | `confirmation-of-registration` / `upgrade` / `thesis-submission` / `viva` |
 | `outcome_code` | `TEXT` | E.g. `pass` / `pass-with-corrections` / `resubmission` |
@@ -1000,11 +1302,25 @@ Tables are grouped by domain. All tables include `tenant_id` (omitted from field
 
 ## Additional Entities — Enterprise Integration Feedback
 
+### account_access_state *(bitemporal — IAM account feedback)*
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID` | Logical access-state ID |
+| `person_id` | `UUID FK → person` | |
+| `source_system_code` | `TEXT NOT NULL` | `iam` / institutional IAM code |
+| `account_identifier` | `TEXT` | IAM account/user reference |
+| `account_state_code` | `TEXT NOT NULL` | `active` / `locked` / `disabled` / `pending` |
+| `role_assignment_summary` | `JSONB` | Summary of IAM-side assignments received; SRS RBAC remains authoritative for SRS permissions |
+| `source_system_reference` | `TEXT` | IAM event/reference ID |
+| `received_at` | `TIMESTAMPTZ NOT NULL` | |
+| *(bitemporal columns)* | | |
+
 ### student_risk_flag *(bitemporal)*
 
 | Column | Type | Notes |
 |---|---|---|
-| `id` | `UUID PK` | |
+| `id` | `UUID NOT NULL` | Stable logical identifier; physical PK is `version_id` from bitemporal columns |
 | `enrolment_id` | `UUID FK → enrolment` | |
 | `flag_type_code` | `TEXT NOT NULL` | E.g. `at-risk-retention` / `academic-concern` |
 | `source_system_code` | `TEXT NOT NULL` | `bi` / `vle` / `attendance` |
@@ -1017,7 +1333,7 @@ Tables are grouped by domain. All tables include `tenant_id` (omitted from field
 
 | Column | Type | Notes |
 |---|---|---|
-| `id` | `UUID PK` | |
+| `id` | `UUID NOT NULL` | Stable logical identifier; physical PK is `version_id` from bitemporal columns |
 | `source_system_code` | `TEXT NOT NULL` | `dw` / `hesa` |
 | `entity_type` | `TEXT` | Affected entity type |
 | `entity_id` | `UUID` | Affected record |
@@ -1035,25 +1351,85 @@ Tables are grouped by domain. All tables include `tenant_id` (omitted from field
 | `document_type_code` | `TEXT NOT NULL` | `transcript` / `certificate` / `enrolment-confirmation` / `hear` |
 | `version` | `SMALLINT NOT NULL DEFAULT 1` | |
 | `generated_at` | `TIMESTAMPTZ NOT NULL` | |
-| `edrms_reference` | `TEXT` | Populated after archival |
-| `archived_at` | `TIMESTAMPTZ` | |
+| `generated_by_actor_id` | `TEXT NOT NULL` | User/system actor |
+| `artefact_uri` | `TEXT NOT NULL` | Object/document store URI |
+| `content_hash` | `TEXT NOT NULL` | Hash of canonical artefact |
+| `format_code` | `TEXT NOT NULL` | `pdf` / `html` / `json` / `xml` |
+| `schema_version` | `TEXT` | Template/schema version |
+| `retention_class_code` | `TEXT NOT NULL` | Links to retention policy |
+
+### document_archive_confirmation *(append-only — EDRMS acknowledgement)*
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID PK` | |
+| `student_document_id` | `UUID FK → student_document` | |
+| `integration_exchange_id` | `UUID FK → integration_exchange` | |
+| `edrms_reference` | `TEXT NOT NULL` | EDRMS archive/document ID |
+| `archive_status_code` | `TEXT NOT NULL` | `archived` / `rejected` / `superseded` |
+| `document_link` | `TEXT` | EDRMS link or opaque reference |
+| `archived_at` | `TIMESTAMPTZ NOT NULL` | |
+| `access_log_reference` | `TEXT` | EDRMS access-log reference where supplied |
+
+### policy_publication_notice *(bitemporal — CMS policy/regulatory notice)*
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID` | Logical notice ID |
+| `source_system_reference` | `TEXT NOT NULL` | CMS publication ID |
+| `policy_type_code` | `TEXT NOT NULL` | `regulatory` / `procedure` / `course-information` / `consumer-terms` |
+| `title` | `TEXT NOT NULL` | |
+| `published_at` | `TIMESTAMPTZ NOT NULL` | |
+| `effective_from` | `DATE` | Policy effective date if supplied |
+| `target_scope` | `JSONB` | Programme/cohort/faculty targeting |
+| `status_code` | `TEXT NOT NULL` | `received` / `annotated` / `superseded` |
+| *(bitemporal columns)* | | |
 
 ---
 
-## Modifications to Existing Entities
+## Remediation Consolidation Notes
 
-The following existing entities require changes identified during Phase 2 remediation.
+The Phase 2 remediation changes are incorporated directly into the entity definitions above. There is no separate "modifications to apply" table; `data-model.md` is the canonical logical schema source for Phase 3 DDL design.
 
-| Entity | Required change |
-|---|---|
-| `person` | Add `status_code` (`prospective` / `enrolled` / `graduated` / `deceased`) for statuses not represented by enrolment alone (SID-009) |
-| `programme` | Add `awarding_body_id FK → awarding_body`, `owning_school`, `credit_framework_code` |
-| `module` | Add `assessment_pattern_description` (reference to catalogue-level assessment before delivery offering) |
-| `mark` | Add `attempt_number SMALLINT` (1 = first sit, 2 = first resit, etc.), `mark_status_code` (`provisional` / `confirmed`), `moderation_state_code` |
-| `award` | Make bitemporal to support post-ratification correction and certificate reissue |
-| `exceptional_circumstances` | Already updated above (made bitemporal, added scope and outcome reason) |
-| `reasonable_adjustment` | Already updated above (removed timestamp columns; use `adjustment_distribution`) |
-| `integration_registration` | Extended in integration-layer.md |
+Key applied changes include:
+
+- `person` now carries person lifecycle status, while `enrolment` carries enrolment lifecycle status.
+- `programme` includes awarding body, owning school, and credit framework fields.
+- `module` links to a structured catalogue-level `assessment_pattern`.
+- `mark` links to `assessment_submission` where submission context exists.
+- `award` is bitemporal so post-ratification corrections and certificate reissues can be reconstructed.
+- `reasonable_adjustment` uses `adjustment_distribution` for per-target distribution state.
+- `exceptional_circumstances` and `misconduct_outcome` are bitemporal.
+- `integration_contract`, `integration_registration`, and `integration_exchange` are the canonical integration registry and exchange-state model.
+
+---
+
+## Append-Only and Status History Rules
+
+Tables labelled append-only are immutable except for explicitly named operational acknowledgement fields where the document says otherwise. Where an append-only concept needs status history, prefer a new status/exchange row over mutating the original business fact.
+
+| Pattern | Tables | Rule |
+|---|---|---|
+| Immutable artefact/version | `exam_board_data_pack`, `exam_board_candidate_profile`, `student_document`, `hesa_return`, `hesa_submission` | Create a new row for each generated version or attempt. |
+| Integration exchange ledger | `integration_exchange`, `ucas_exchange_record`, `slc_notification`, `document_archive_confirmation` | Create a new row per inbound/outbound exchange. |
+| Source event with correction marker | `attendance_record`, `assessment_submission` | Retain the original source event; corrections create a new row or mark supersession without changing the original domain values. |
+| Bitemporal status fact | `student_hold`, `fee_liability`, `absence_alert`, `ukvi_compliance_case`, `student_risk_flag`, `data_quality_issue` | Use the bitemporal update pattern for status changes. |
+
+---
+
+## Data Classification and Read Audit
+
+Every table is assigned a default data classification. Implementations may classify individual fields more restrictively than their table default.
+
+| Classification | Tables / examples | Required controls |
+|---|---|---|
+| `standard` | `programme`, `module`, `academic_period`, `module_offering`, non-sensitive configuration | Tenant RLS, authenticated access, write audit. |
+| `personal` | `person`, `person_identity`, `student_address`, `student_contact_method`, `student_application`, `enrolment`, `module_registration`, `student_document` | Tenant RLS, scoped RBAC, write audit, DSAR inclusion. |
+| `sensitive` | `mark`, `module_result`, `progression_decision`, `award`, `fee_liability`, `payment_confirmation`, `student_hold`, `attendance_record`, `absence_alert`, `engagement_summary`, `student_risk_flag`, `data_quality_issue`, `staff_assignment`, `research_milestone` | Scoped RBAC, read audit where configured by data subject register, write audit. |
+| `special-category` | `disability_declaration`, `reasonable_adjustment`, `exceptional_circumstances`, health-related Wellbeing references, relevant `student_risk_flag` records | Explicit role assignment, mandatory read audit, minimised payloads in events and integrations. |
+| `regulatory` | `hesa_return`, `hesa_submission`, `hesa_validation_issue`, `slc_entitlement`, `slc_payment_status`, `cas_request`, `visa_status`, `ukvi_compliance_case`, `sponsor_evidence_record` | Retention class, audit, immutable exchange evidence, controlled export. |
+
+Read access to `special-category` tables is always audited. Read access to `sensitive` and `regulatory` tables is audited according to the data subject register and role-specific policy.
 
 ---
 
@@ -1061,9 +1437,9 @@ The following existing entities require changes identified during Phase 2 remedi
 
 | Convention | Rule |
 |---|---|
-| Table names | `snake_case`, plural noun: `enrolments`, `module_registrations` |
+| Table names | `snake_case`, singular noun in logical docs and generated Drizzle schema: `enrolment`, `module_registration` |
 | Column names | `snake_case`: `valid_from`, `tenant_id` |
-| Primary keys | Always named `id`, type `UUID` |
+| Primary keys | Non-bitemporal tables use `id UUID PK`; bitemporal tables use `version_id UUID PK` plus logical `id UUID` |
 | Foreign keys | Named `{referenced_table_singular}_id`: `person_id`, `enrolment_id` |
 | Status/type columns | Suffix `_code`; stored as `TEXT` with CHECK constraint against allowed values |
 | Timestamps | Suffix `_at` for events, `_from`/`_to`/`_until` for ranges |

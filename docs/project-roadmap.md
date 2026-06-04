@@ -39,7 +39,7 @@ Two worked examples are carried through the later phases to validate the archite
 
 **Work items**
 
-1. **Core SRS functional requirements** — derived from the 70 reference model flows (F001–F070) and the 33 systems and actors. Each requirement is stated as a testable capability, assigned a unique identifier (REQ-xxx), and traced to the reference model flow(s) it satisfies.
+1. **Core SRS functional requirements** — derived from the published reference model flows across the F001–F070 identifier range and the 33 systems and actors. Reference model version 2.1 contains 69 interactions and no F054. Each requirement is stated as a testable capability, assigned a unique identifier (REQ-xxx), and traced to the reference model flow(s) it satisfies.
 
 2. **Non-functional requirements** — derived directly from the core principles. Covers: performance targets (§17), accessibility standard (§15), security controls (§6), regulatory obligations (§7), data retention classes (§16), availability and recovery objectives.
 
@@ -63,7 +63,7 @@ Two worked examples are carried through the later phases to validate the archite
 
 ---
 
-## Phase 2 — Architecture and Design *(complete — remediation applied)*
+## Phase 2 — Architecture and Design *(complete — remediation pass 2 applied)*
 
 **Goal**: Define the target architecture at a level of detail sufficient to guide consistent implementation across all subsequent phases. Resolve all structural decisions before any code is written.
 
@@ -106,7 +106,12 @@ Two worked examples are carried through the later phases to validate the archite
 - [x] `docs/architecture/deployment-architecture.md`
 - [x] `docs/decisions/ADR-012` through `ADR-014`
 - [x] `docs/architecture/integration-contract-catalogue.md` — full contract catalogue for all 33 systems and flows
-- [x] Phase 2 remediation applied: reference model corrections, data model expanded (~50 additional entities), event taxonomy completed (~60 additional events), plugin registry extended, workflow catalogue event names aligned, out-of-scope flows explicitly marked
+- [x] `docs/architecture/event-coverage-matrix.md` — entity/operation to domain-event coverage
+- [x] `docs/architecture/workflow-traceability-matrix.md` — W001-W012 mapping to entities, events, contracts, and audit
+- [x] `docs/architecture/api-resource-catalogue.md` — expanded data model to REST/API resource surface
+- [x] `docs/architecture/data-subject-coverage-matrix.md` — expanded data model reconciliation against data subject register
+- [x] Phase 2 remediation applied: reference model corrections, data model expanded, event taxonomy completed, plugin registry extended, workflow catalogue event names aligned, out-of-scope flows explicitly marked
+- [x] Phase 2 remediation pass 2 applied: data model made canonical for bitemporal version identity, integration registry/exchange schema, generated artefact metadata, HESA status semantics, data classification, missing operational entities, and pre-Phase-3 coverage matrices
 
 **Exit criterion**: Architecture documents reviewed and agreed. No unresolved structural decisions. ADRs baselined.
 
