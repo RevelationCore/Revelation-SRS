@@ -38,7 +38,12 @@ Revelation SRS is a fully open source Student Information System designed specif
 | [System Architecture](docs/architecture/system-architecture.md) | Component diagram, modular monolith design, repository structure |
 | [Data Model](docs/architecture/data-model.md) | Entity model, bitemporal schema pattern, multi-tenancy via RLS |
 | [Integration Layer](docs/architecture/integration-layer.md) | Event bus topology, REST API gateway, file exchange framework, plugin registry |
-| [Domain Events](docs/architecture/domain-events.md) | Complete event taxonomy (~35 events) with payload schemas and consumers |
+| [Domain Events](docs/architecture/domain-events.md) | Complete event taxonomy (~95 events) with payload schemas and consumers |
+| [Integration Contract Catalogue](docs/architecture/integration-contract-catalogue.md) | Named contracts for all 69 reference model flows with failure handling and replay |
+| [Event Coverage Matrix](docs/architecture/event-coverage-matrix.md) | Every entity/operation mapped to its domain event or no-event rationale |
+| [Workflow Traceability Matrix](docs/architecture/workflow-traceability-matrix.md) | W001–W012 mapped to entities, events, contracts, and audit obligations |
+| [API Resource Catalogue](docs/architecture/api-resource-catalogue.md) | All entities mapped to REST resource class, endpoints, and permissions |
+| [Data Subject Coverage Matrix](docs/architecture/data-subject-coverage-matrix.md) | Data model reconciled against data subject register |
 | [API Standards](docs/architecture/api-standards.md) | URL conventions, RFC 7807 errors, cursor pagination, OpenAPI toolchain |
 | [Security Architecture](docs/architecture/security-architecture.md) | Keycloak multi-realm, RBAC, RLS, auth flows, secrets management |
 | [Configuration Rules Framework](docs/architecture/configuration-rules-framework.md) | Institutional business rules stored as bitemporal, versioned configuration |
@@ -81,7 +86,8 @@ Full rationale: [docs/decisions/technology-stack.md](docs/decisions/technology-s
 | 0 | Principles and Planning | Complete |
 | 1 | Requirements and Domain Definition | Complete |
 | 2 | Architecture and Design | Complete |
-| **3** | **Platform Foundation** | **In progress** |
+| **3** | **Platform Foundation** | **Complete** |
+| **4** | **Core SRS: Student Identity and Enrolment** | **In progress** |
 | 4 | Core SRS: Student Identity and Enrolment | Pending |
 | 5 | Core SRS: Assessment, Progression, Awards | Pending |
 | 6 | Core SRS: Regulatory Compliance | Pending |
@@ -97,22 +103,62 @@ Full plan: [docs/project-roadmap.md](docs/project-roadmap.md)
 
 ## Getting Started
 
-> Developer setup instructions will be added in Phase 3 when the repository scaffolding and Docker Compose stack are built. Until then, the documentation above represents the complete output of Phases 0–2.
+### Prerequisites
 
-**Prerequisites (when available):**
-- macOS with [OrbStack](https://orbstack.dev) (or any Docker-compatible runtime)
-- Node.js 22 LTS and pnpm
-- Docker Compose
+- [OrbStack](https://orbstack.dev) (macOS) or any Docker-compatible runtime
+- [Node.js 22 LTS](https://nodejs.org)
+- [pnpm 9+](https://pnpm.io): `npm install -g pnpm`
+
+### Local development
 
 ```bash
-# Clone
-git clone https://github.com/your-org/revelation-srs.git
-cd revelation-srs
+# 1. Clone
+git clone https://github.com/RevelationCore/Revelation-SRS.git
+cd Revelation-SRS
 
-# (Phase 3 and later)
+# 2. Copy environment template and set secrets
 cp .env.example .env
-docker compose up -d
-pnpm install && pnpm dev
+
+# 3. Start all platform services (PostgreSQL, NATS, Temporal, Keycloak, observability)
+docker compose -f infra/compose/docker-compose.yml up -d
+
+# 4. Install dependencies
+pnpm install
+
+# 5. Run database migrations
+pnpm migrate
+
+# 6. Start all application services in watch mode
+pnpm dev
+```
+
+### Service endpoints (local development)
+
+| Service | URL |
+|---|---|
+| SRS API | http://localhost:3000 |
+| API health | http://localhost:3000/health |
+| Swagger UI | http://localhost:3000/documentation |
+| Temporal UI | http://localhost:8233 |
+| Keycloak admin | http://localhost:8081 (admin / admin) |
+| Grafana | http://localhost:3001 (admin / admin) |
+| Prometheus | http://localhost:9090 |
+| NATS monitoring | http://localhost:8222 |
+
+### Running tests
+
+```bash
+# Unit tests (no Docker required)
+pnpm test
+
+# Integration tests (Testcontainers — Docker required)
+pnpm test:int
+
+# Type check only
+pnpm typecheck
+
+# Lint
+pnpm lint
 ```
 
 ---
@@ -137,6 +183,8 @@ pnpm install && pnpm dev
 | [ADR-014](docs/decisions/ADR-014-multitenancy-isolation.md) | PostgreSQL Row-Level Security |
 
 ---
+
+## Reference Model
 
 ## Reference Model
 

@@ -1,0 +1,172 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "22"
+  PNPM_VERSION: "9"
+
+jobs:
+
+  # ── 1. Typecheck + Lint ────────────────────────────────────────────────────
+  typecheck-and-lint:
+    name: Typecheck & Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with: { version: "${{ env.PNPM_VERSION }}" }
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "${{ env.NODE_VERSION }}"
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Type-check all packages
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+  # ── 2. Unit tests ─────────────────────────────────────────────────────────
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with: { version: "${{ env.PNPM_VERSION }}" }
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "${{ env.NODE_VERSION }}"
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: pnpm build
+
+      - name: Run unit tests
+        run: pnpm test
+        env:
+          DATABASE_URL: postgres://srs:srs@localhost:5432/srs
+          JWT_SECRET:   test-secret
+
+  # ── 3. Integration tests (Testcontainers) ─────────────────────────────────
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with: { version: "${{ env.PNPM_VERSION }}" }
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "${{ env.NODE_VERSION }}"
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: pnpm build
+
+      - name: Run integration tests (Testcontainers — Docker required)
+        run: pnpm test:int
+        env:
+          DATABASE_URL: postgres://srs:srs@localhost:5432/srs
+          JWT_SECRET:   test-secret
+          TESTCONTAINERS_RYUK_DISABLED: "true"
+
+  # ── 4. Container image build + vulnerability scan ─────────────────────────
+  container-build:
+    name: Container Build & Scan
+    runs-on: ubuntu-latest
+    needs: [typecheck-and-lint, unit-tests]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build API image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file:    infra/docker/api/Dockerfile
+          push:    false
+          tags:    revelation-srs/api:${{ github.sha }}
+          cache-from: type=gha
+          cache-to:   type=gha,mode=max
+
+      - name: Trivy vulnerability scan
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          image-ref:     revelation-srs/api:${{ github.sha }}
+          format:        table
+          exit-code:     "1"
+          severity:      CRITICAL,HIGH
+          ignore-unfixed: true
+
+  # ── 5. OpenAPI contract validation ────────────────────────────────────────
+  openapi-validation:
+    name: OpenAPI Validation
+    runs-on: ubuntu-latest
+    needs: [typecheck-and-lint]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with: { version: "${{ env.PNPM_VERSION }}" }
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "${{ env.NODE_VERSION }}"
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: pnpm build
+
+      - name: Generate OpenAPI spec (when API has routes)
+        run: |
+          if [ -f apps/api/scripts/generate-openapi.ts ]; then
+            pnpm --filter @revelation-srs/api generate-openapi
+          else
+            echo "OpenAPI generation not yet configured (Phase 4+)"
+          fi
+
+  # ── 6. npm audit ─────────────────────────────────────────────────────────
+  dependency-audit:
+    name: Dependency Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with: { version: "${{ env.PNPM_VERSION }}" }
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "${{ env.NODE_VERSION }}"
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Audit dependencies
+        run: pnpm audit --audit-level=high

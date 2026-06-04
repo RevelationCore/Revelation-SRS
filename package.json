@@ -1,0 +1,32 @@
+{
+  "name": "revelation-srs",
+  "private": true,
+  "version": "0.0.1",
+  "description": "Open source Student Records System for UK Higher Education",
+  "license": "AGPL-3.0-only",
+  "engines": { "node": ">=22.0.0", "pnpm": ">=9.0.0" },
+  "scripts": {
+    "build":       "pnpm -r build",
+    "typecheck":   "pnpm -r typecheck",
+    "lint":        "eslint .",
+    "lint:fix":    "eslint . --fix",
+    "test":        "pnpm -r test",
+    "test:int":    "pnpm -r test:int",
+    "dev":         "pnpm --parallel -r dev",
+    "migrate":     "pnpm --filter @revelation-srs/db migrate",
+    "migrate:gen": "pnpm --filter @revelation-srs/db generate"
+  },
+  "devDependencies": {
+    "@eslint/js":                      "^9.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser":        "^8.0.0",
+    "eslint":                           "^9.0.0",
+    "eslint-plugin-import-x":           "^4.0.0",
+    "typescript":                       "^5.5.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "typescript": "^5.5.0"
+    }
+  }
+}

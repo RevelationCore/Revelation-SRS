@@ -117,7 +117,7 @@ Two worked examples are carried through the later phases to validate the archite
 
 ---
 
-## Phase 3 — Platform Foundation *(current)*
+## Phase 3 — Platform Foundation *(complete)*
 
 **Goal**: Build the technical substrate on which all domain functionality will be built. No business logic in this phase — only cross-cutting infrastructure. Every subsequent phase depends on this being correct.
 
@@ -156,16 +156,27 @@ Two worked examples are carried through the later phases to validate the archite
 8. **Containerisation and deployment** — `Dockerfile` for every service (non-root, pinned base image), Docker Compose manifest (single-command local environment), secrets injection pattern, image scanning in CI.
 
 **Deliverables**
-- Working repository with CI/CD passing
-- Database foundation with bitemporal and multi-tenancy patterns proven by tests
-- All cross-cutting infrastructure services deployed and verified in local environment
-- Platform foundation verified by a suite of infrastructure-level integration tests
+- [x] pnpm monorepo scaffold (`package.json`, `pnpm-workspace.yaml`, `tsconfig.base.json`, `eslint.config.js`)
+- [x] `packages/domain` — event envelope, permissions, domain errors
+- [x] `packages/db` — Drizzle schema (tenant, audit_record, integration_contract/registration/exchange), bitemporal helpers, RLS helpers, pool; integration tests for bitemporal patterns and cross-tenant RLS
+- [x] `packages/auth` — Fastify JWT plugin, tenant context plugin, RBAC `requirePermission` middleware
+- [x] `packages/testing` — Testcontainers PostgreSQL helper
+- [x] `packages/workflow` — Temporal worker setup, audit activities scaffold
+- [x] `apps/api` — Fastify application (plugins, CORS, helmet, rate limiter), audit service, event publisher (NATS JetStream), rules engine, health + ready endpoints
+- [x] `infra/compose/docker-compose.yml` — PostgreSQL, NATS, Temporal, Keycloak, Prometheus, Grafana, Loki
+- [x] `infra/docker/api/Dockerfile` — multi-stage, non-root
+- [x] `.github/workflows/ci.yml` — typecheck, lint, unit tests, integration tests, container build + Trivy scan, dependency audit
+- [x] `.gitignore`, `.env.example`
 
 **Exit criterion**: CI pipeline green. All platform infrastructure components deployed locally. Bitemporal, audit, workflow, and integration layer proven by tests before any domain code is written.
 
 ---
 
-## Phase 4 — Core SRS: Student Identity and Enrolment
+## Phase 4 — Core SRS: Student Identity and Enrolment *(current)*
+
+---
+
+## Phase 4 — Core SRS: Student Identity and Enrolment *(current)*
 
 **Goal**: Implement the authoritative student record — from the point of admission through to active enrolment and module registration. This is the central hub all other phases depend on.
 

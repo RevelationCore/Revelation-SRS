@@ -1,0 +1,48 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build output
+dist/
+build/
+*.js.map
+*.d.ts.map
+
+# TypeScript incremental compilation
+*.tsbuildinfo
+
+# Environment files (never commit secrets)
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Docker volumes (local dev data)
+infra/compose/keycloak/*.json
+!infra/compose/keycloak/.gitkeep
+
+# Migrations output (generated — commit migrations folder but not intermediate state)
+packages/db/migrations/meta/_snapshot.json
+
+# pnpm
+.pnpm-store/

@@ -1,0 +1,42 @@
+{
+  "name": "@revelation-srs/api",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build":     "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "dev":       "tsx watch src/main.ts",
+    "start":     "node dist/main.js",
+    "test":      "vitest run --reporter=verbose",
+    "test:int":  "vitest run --reporter=verbose --config vitest.int.config.ts",
+    "test:watch":"vitest --reporter=verbose"
+  },
+  "dependencies": {
+    "@fastify/cors":         "^10.0.0",
+    "@fastify/helmet":       "^12.0.0",
+    "@fastify/jwt":          "^9.0.0",
+    "@fastify/rate-limit":   "^10.0.0",
+    "@fastify/swagger":      "^9.0.0",
+    "@fastify/swagger-ui":   "^5.0.0",
+    "@opentelemetry/api":                        "^1.9.0",
+    "@opentelemetry/auto-instrumentations-node": "^0.46.0",
+    "@opentelemetry/sdk-node":                   "^0.52.0",
+    "@revelation-srs/auth":   "workspace:*",
+    "@revelation-srs/db":     "workspace:*",
+    "@revelation-srs/domain": "workspace:*",
+    "@sinclair/typebox":     "^0.34.0",
+    "fastify":               "^5.0.0",
+    "fastify-plugin":        "^5.0.0",
+    "nats":                  "^2.26.0",
+    "pino":                  "^9.0.0"
+  },
+  "devDependencies": {
+    "@revelation-srs/testing": "workspace:*",
+    "@types/node":              "^22.0.0",
+    "testcontainers":           "^10.0.0",
+    "tsx":                      "^4.0.0",
+    "typescript":               "^5.5.0",
+    "vitest":                   "^2.0.0"
+  }
+}

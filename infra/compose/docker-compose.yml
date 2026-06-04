@@ -1,0 +1,172 @@
+version: "3.9"
+
+# ── Revelation SRS — local development stack ──────────────────────────────────
+#
+# Single-command local environment:  docker compose up -d
+# Services start in dependency order.  Applications use 'pnpm dev' separately.
+#
+# Default ports match docs/decisions/technology-stack.md §Local Development Stack.
+
+name: revelation-srs
+
+services:
+
+  # ── PostgreSQL 16 ─────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: srs-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER:     srs
+      POSTGRES_PASSWORD: srs
+      POSTGRES_DB:       srs
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test:     ["CMD-SHELL", "pg_isready -U srs -d srs"]
+      interval: 5s
+      timeout:  5s
+      retries:  10
+
+  # ── NATS JetStream ────────────────────────────────────────────────────────────
+  nats:
+    image: nats:2-alpine
+    container_name: srs-nats
+    restart: unless-stopped
+    command: ["-js", "-m", "8222"]
+    ports:
+      - "4222:4222"   # client
+      - "8222:8222"   # monitoring
+    healthcheck:
+      test:     ["CMD-SHELL", "wget -qO- http://localhost:8222/healthz || exit 1"]
+      interval: 5s
+      timeout:  5s
+      retries:  10
+
+  # ── Temporal (development — in-memory; data lost on restart) ─────────────────
+  temporal:
+    image: temporalio/auto-setup:1.24
+    container_name: srs-temporal
+    restart: unless-stopped
+    environment:
+      - DB=postgresql
+      - DB_PORT=5432
+      - POSTGRES_USER=srs
+      - POSTGRES_PWD=srs
+      - POSTGRES_SEEDS=postgres
+    ports:
+      - "7233:7233"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:     ["CMD", "tctl", "--address", "localhost:7233", "cluster", "health"]
+      interval: 10s
+      timeout:  10s
+      retries:  10
+      start_period: 30s
+
+  # ── Temporal Web UI ───────────────────────────────────────────────────────────
+  temporal-ui:
+    image: temporalio/ui:2.28
+    container_name: srs-temporal-ui
+    restart: unless-stopped
+    environment:
+      TEMPORAL_ADDRESS:  temporal:7233
+      TEMPORAL_CORS_ORIGINS: http://localhost:8080
+    ports:
+      - "8233:8080"
+    depends_on:
+      - temporal
+
+  # ── Keycloak (Quarkus distribution) ──────────────────────────────────────────
+  keycloak:
+    image: quay.io/keycloak/keycloak:26
+    container_name: srs-keycloak
+    restart: unless-stopped
+    command: start-dev --import-realm
+    environment:
+      KC_DB:               postgres
+      KC_DB_URL:           jdbc:postgresql://postgres:5432/srs
+      KC_DB_USERNAME:      srs
+      KC_DB_PASSWORD:      srs
+      KC_DB_SCHEMA:        keycloak
+      KEYCLOAK_ADMIN:      admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    ports:
+      - "8081:8080"
+    volumes:
+      - ./keycloak:/opt/keycloak/data/import:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:     ["CMD-SHELL", "curl -sf http://localhost:8080/health/ready || exit 1"]
+      interval: 15s
+      timeout:  10s
+      retries:  10
+      start_period: 60s
+
+  # ── Prometheus ────────────────────────────────────────────────────────────────
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    container_name: srs-prometheus
+    restart: unless-stopped
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --web.enable-lifecycle
+
+  # ── Grafana ───────────────────────────────────────────────────────────────────
+  grafana:
+    image: grafana/grafana:11.0.0
+    container_name: srs-grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP:     "false"
+    ports:
+      - "3001:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
+
+  # ── Loki ──────────────────────────────────────────────────────────────────────
+  loki:
+    image: grafana/loki:3.0.0
+    container_name: srs-loki
+    restart: unless-stopped
+    ports:
+      - "3100:3100"
+    volumes:
+      - loki_data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+
+  # ── Promtail (log shipper) ────────────────────────────────────────────────────
+  promtail:
+    image: grafana/promtail:3.0.0
+    container_name: srs-promtail
+    restart: unless-stopped
+    volumes:
+      - /var/log:/var/log:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - ./promtail/promtail.yml:/etc/promtail/config.yml:ro
+    command: -config.file=/etc/promtail/config.yml
+    depends_on:
+      - loki
+
+volumes:
+  postgres_data:
+  prometheus_data:
+  grafana_data:
+  loki_data:
