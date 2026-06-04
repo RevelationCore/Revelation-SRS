@@ -19,38 +19,37 @@ All tiers use the same container images; differences are in composition and conf
 
 ## Local Development Stack (Docker Compose)
 
-The complete development environment starts with `docker compose up` from the repository root. OrbStack provides the Docker runtime on macOS.
+The complete development environment starts from the Compose directory with `docker compose up -d`, or from the repository root with `docker compose -f infra/compose/docker-compose.yml up -d`. OrbStack provides the Docker runtime on macOS.
 
 ```
 infra/compose/
 ├── docker-compose.yml          # Core stack (database, messaging, auth, workflow, observability)
-├── docker-compose.apps.yml     # Application services (override for local dev)
-├── docker-compose.adapters.yml # Optional: external adapters for integration testing
-└── .env.example                # Required environment variables (no secrets; values in .env)
+├── init/                       # PostgreSQL first-run bootstrap scripts
+├── keycloak/                   # Optional realm import files
+├── prometheus/
+├── grafana/
+├── loki/
+└── promtail/
 ```
 
 ### Service inventory
 
 ```mermaid
 graph TB
-    subgraph Compose["docker compose up"]
+    subgraph Compose["infra/compose docker compose up"]
         PG["postgres:16\nPort 5432"]
         NATS["nats:2 (JetStream)\nPort 4222 · 8222 (monitor)"]
-        KC["keycloak:26 (Quarkus)\nPort 8080"]
-        TMP["temporalite\n(embedded Temporal)\nPort 7233 · 8233 (UI)"]
+        KC["keycloak:26 (Quarkus)\nPort 8081"]
+        TMP["temporalio/auto-setup\nPort 7233"]
+        TUI["temporalio/ui\nPort 8233"]
         PROM["prom/prometheus\nPort 9090"]
         GRF["grafana/grafana\nPort 3001"]
         LOKI["grafana/loki\nPort 3100"]
         PRTL["grafana/promtail\n(log shipper)"]
-
-        API["apps/api\n(Node.js — dev server)\nPort 3000"]
-        PORTAL["apps/portal\n(Vite dev server)\nPort 5173"]
-        ADMIN["apps/admin\n(Vite dev server)\nPort 5174"]
-        WEL["modules/wellbeing\n(Node.js — dev server)\nPort 3001"]
     end
 ```
 
-**Temporalite** is the embedded single-binary Temporal development server. It requires no separate database (stores state in memory) and has the Temporal UI built in. It is replaced by a production-grade Temporal Server with PostgreSQL backend in staging/production.
+The local stack uses `temporalio/auto-setup` with PostgreSQL persistence and a separate Temporal UI container. The PostgreSQL init scripts create the Keycloak schema used by the local identity provider.
 
 ### Resource allocation guidance (Mac Mini)
 
@@ -69,10 +68,11 @@ A Mac Mini with **8 GB RAM** comfortably runs the full stack. 16 GB+ is recommen
 ### Single-command setup
 
 ```bash
-cp .env.example .env          # Add development secrets
+cd infra/compose
 docker compose up -d          # Start all platform services
-pnpm install                  # Install Node.js dependencies
-pnpm dev                      # Start application services in watch mode
+cd ../..
+corepack pnpm install         # Install Node.js dependencies
+corepack pnpm --filter @revelation-srs/api dev  # Start the API in watch mode
 ```
 
 ---
@@ -83,29 +83,7 @@ pnpm dev                      # Start application services in watch mode
 
 Every service follows this structure:
 
-```dockerfile
-# infra/docker/api/Dockerfile
-FROM node:22-alpine AS base
-WORKDIR /app
-RUN addgroup -S srs && adduser -S srs -G srs    # Non-root user
-
-FROM base AS deps
-COPY package.json pnpm-lock.yaml ./
-RUN corepack enable && pnpm install --frozen-lockfile
-
-FROM base AS build
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
-RUN pnpm build
-
-FROM base AS runtime
-COPY --from=build /app/dist ./dist
-COPY --from=deps /app/node_modules ./node_modules
-USER srs
-EXPOSE 3000
-HEALTHCHECK --interval=30s CMD wget -qO- http://localhost:3000/health || exit 1
-CMD ["node", "dist/main.js"]
-```
+See `infra/docker/api/Dockerfile` for the current multi-stage API image. It uses Node 22 Alpine, activates `pnpm@9.15.9`, builds workspace packages, and runs the API as a non-root user.
 
 Rules applied to all images:
 - Non-root user (`srs` or service-specific).

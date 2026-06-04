@@ -133,7 +133,7 @@ Rules are cached in memory per tenant with a 5-minute TTL. The cache is invalida
 
 ## Rule Administration API
 
-Tenant administrators configure rules via a dedicated admin API endpoint.
+Tenant administrators configure rules via a dedicated admin API endpoint. The Phase 3 platform provides the `academic_rule` schema and runtime lookup service; these administration endpoints are delivered with the first domain phase that needs tenant rule management.
 
 ```
 GET    /api/v1/academic-rules?ruleType={type}&programmeId={id}

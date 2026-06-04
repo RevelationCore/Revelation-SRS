@@ -9,7 +9,7 @@
 ## Principles
 
 1. Every table that represents a fact that changes over time is **bitemporal** — see §Bitemporal Pattern.
-2. Every row in every table carries a **`tenant_id`** and is subject to **row-level security** (RLS) — see §Multi-Tenancy.
+2. Every tenant-owned user-data row carries a **`tenant_id`** and is subject to **row-level security** (RLS) — see §Multi-Tenancy. Platform catalogue tables such as `tenant`, `integration_contract`, and `value_set` are not tenant-owned and are governed separately.
 3. There are **no soft-delete flags**. Historical states are preserved by bitemporal dating; truly deleted data uses hard DELETE only under an approved erasure workflow with audit trail.
 4. **UUIDs** (v4) are used as all identifiers. No sequential integer IDs that could leak record counts or ordering information.
 5. **`TIMESTAMPTZ`** for all timestamps (timezone-aware, stored in UTC).
@@ -76,7 +76,7 @@ Never mutate the domain fields of a bitemporal row. Instead:
 1. Close the current row version by setting `recorded_until = NOW()`.
 2. Insert a new row with the same logical `id`, a new `version_id`, the updated domain values, `recorded_at = NOW()`, `recorded_until = NULL`, and updated `valid_from` / `valid_to` as appropriate.
 
-This is encapsulated in a shared `bitemporalUpdate(table, id, patch, validFrom?, validTo?)` helper in `packages/db`.
+This is encapsulated in a shared `bitemporalUpdate(db, table, id, tenantId, patch, validFrom?, validTo?)` helper in `packages/db`.
 
 ### Referencing bitemporal records
 
@@ -105,22 +105,23 @@ export const bitemporalColumns = {
 
 ## Multi-Tenancy Pattern
 
-Every table includes `tenant_id UUID NOT NULL` as a foreign key to the `tenant` table.
+Every tenant-owned table includes `tenant_id UUID NOT NULL` as a foreign key to the `tenant` table. Platform catalogue tables without tenant-owned rows do not carry `tenant_id`.
 
 Tenant isolation is enforced at the **PostgreSQL row-level security** layer:
 
 ```sql
--- Set once per database connection after authentication
-SET app.current_tenant_id = '<tenant-uuid>';
+-- Set inside the transaction used for a tenant-scoped operation
+SELECT set_config('app.current_tenant_id', '<tenant-uuid>', true);
 
 -- Example RLS policy (applied to every user-data table)
 ALTER TABLE person ENABLE ROW LEVEL SECURITY;
+ALTER TABLE person FORCE ROW LEVEL SECURITY;
 
 CREATE POLICY tenant_isolation ON person
-  USING (tenant_id = current_setting('app.current_tenant_id')::uuid);
+  USING (tenant_id = current_setting('app.current_tenant_id', true)::uuid);
 ```
 
-The application sets `app.current_tenant_id` on every connection obtained from the pool, derived from the authenticated user's JWT `tenant_id` claim. The `system_administrator` role bypasses RLS (`BYPASSRLS`) for platform-level operations, which are separately audit-logged.
+The application exposes a request-scoped `request.withDb(...)` accessor that wraps tenant-scoped database work in `withTenantContext()`. That helper sets `app.current_tenant_id` with `SET LOCAL` semantics inside a transaction, derived from the authenticated user's JWT `tenant_id` claim. The `system_administrator` PostgreSQL role bypasses RLS (`BYPASSRLS`) only for platform-level operations, which are separately audit-logged.
 
 ---
 
@@ -136,7 +137,6 @@ erDiagram
     TENANT ||--o{ MODULE : "defines"
     TENANT ||--o{ ACADEMIC_PERIOD : "has"
     TENANT ||--o{ ACADEMIC_RULE : "configures"
-    TENANT ||--o{ INTEGRATION_CONTRACT : "publishes"
     TENANT ||--o{ INTEGRATION_REGISTRATION : "configures"
 
     PERSON ||--o{ PERSON_IDENTITY : "has history"

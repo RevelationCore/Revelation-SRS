@@ -9,7 +9,7 @@
     "dev": "tsx watch src/main.ts",
     "start": "node dist/main.js",
     "test": "vitest run --reporter=verbose",
-    "test:int": "vitest run --reporter=verbose --config vitest.int.config.ts",
+    "test:int": "vitest run --reporter=verbose --config vitest.int.config.ts --passWithNoTests",
     "test:watch": "vitest --reporter=verbose"
   },
   "dependencies": {

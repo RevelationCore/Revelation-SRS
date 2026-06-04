@@ -62,7 +62,7 @@ The primary pattern for asynchronous, high-volume, and real-time integration. Th
 | `SRS_WORKFLOW` | `srs.workflow.*` | 7 days | Notification service |
 | `SRS_AUDIT` | `srs.audit.*` | 365 days | DW, compliance tooling |
 
-All streams use **`WorkQueuePolicy`** — messages are acknowledged by the consumer once processed. Unacknowledged messages are redelivered up to the configured `MaxDeliver` count, then moved to a dead-letter subject.
+The Phase 3 platform provides the NATS JetStream deployment and publishing library. Stream provisioning, durable consumers, retry policy, and dead-letter handling are implemented with the first adapters that subscribe to each stream.
 
 ### Dead-Letter Policy
 
@@ -121,12 +121,13 @@ All REST endpoints are served by the SRS Core Fastify application. There is no s
 ```
 Request → Fastify
             → CORS middleware
-            → JWT validation plugin (Keycloak JWKS)
-            → Tenant context plugin (sets app.current_tenant_id)
+            → JWT validation plugin (Keycloak JWKS or development HS256)
+            → Tenant context plugin (provides request.withDb)
             → Rate limiting plugin
             → Route handler
               → JSON Schema validation (automatic, schema-first)
               → Domain module service
+              → Tenant-scoped database work through request.withDb / withTenantContext
               → Audit write
               → Response
 ```
@@ -145,7 +146,7 @@ Bulk data exchange with external systems and statutory bodies that do not suppor
 
 ### Architecture
 
-The File Exchange Framework is a library within `apps/api/src/platform/file-exchange/`. It provides:
+The File Exchange Framework is the target library shape for statutory and bulk exchanges. Phase 3 captures the contract and registry model; the concrete processors are implemented with the statutory exchange phases. It provides:
 
 ```
 inbound-processor/

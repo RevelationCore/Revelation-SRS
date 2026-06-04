@@ -25,7 +25,7 @@ Principle §20 requires automated tests at unit, integration, contract, performa
 
 **Vitest**: TypeScript-native test runner; compatible with Vite's transform pipeline; fast parallel execution; drop-in Jest-compatible API; `vi.mock()` for unit isolation. Free and open source (MIT).
 
-**Testcontainers**: Spins up real Docker containers (PostgreSQL, NATS, Temporal) for integration tests; tests run against actual infrastructure, not mocks. Prevents the divergence between mock and real behaviour that undermines integration test value. Free and open source (Apache 2.0).
+**Testcontainers**: Spins up real Docker containers for integration tests; Phase 3 uses PostgreSQL containers for migration, RLS, and bitemporal verification. NATS and Temporal container coverage is added when consumer and workflow behaviours are implemented. Tests run against actual infrastructure, not mocks. Free and open source (Apache 2.0).
 
 **Supertest**: HTTP assertion library for Fastify route testing at the integration level without a running server. MIT.
 
@@ -44,7 +44,7 @@ Principle §20 requires automated tests at unit, integration, contract, performa
 ## Consequences
 
 - Unit tests (`*.test.ts`) use Vitest with in-process mocks for external dependencies.
-- Integration tests (`*.integration.test.ts`) use Testcontainers to start real PostgreSQL and NATS instances; they test the full stack from API endpoint to database.
+- Integration tests (`*.int.test.ts` where a separate integration suite is needed, or package-level Testcontainers suites) use real infrastructure. Phase 3 covers PostgreSQL with Testcontainers; API integration tests are introduced with the first domain endpoints.
 - Bitemporal query correctness is verified by integration tests that insert known data and assert on time-travel queries.
 - Contract tests run Dredd against a locally started application instance and the published OpenAPI spec.
 - Playwright E2E tests run against the full application stack in Docker Compose; axe-core accessibility checks are embedded in every page-level Playwright test.

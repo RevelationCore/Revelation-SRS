@@ -78,4 +78,18 @@ describe('Row-Level Security', () => {
 
     expect(rowsAsB).toHaveLength(0);
   });
+
+  it('rejects writes where the row tenant does not match the active tenant context', async () => {
+    const id = randomUUID();
+    const now = new Date();
+
+    await expect(
+      withAppContext(ctx.db, ctx.tenantA, async (tx: TenantScopedDb) =>
+        tx.execute(
+          sql`INSERT INTO test_entity (id, tenant_id, code, valid_from)
+              VALUES (${id}, ${ctx.tenantB}, 'RLS-WRITE-BLOCKED', ${now})`,
+        ) as Promise<Array<Record<string, unknown>>>,
+      ),
+    ).rejects.toThrow();
+  });
 });

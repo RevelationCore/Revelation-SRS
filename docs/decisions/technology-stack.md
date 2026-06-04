@@ -41,27 +41,28 @@
 
 ## Local Development Stack
 
-Running `docker compose up` on a Mac Mini with OrbStack starts the complete local environment:
+Running `docker compose up -d` from `infra/compose` on a Mac Mini with OrbStack starts the local platform services:
 
 | Service | Purpose | Port (default) |
 |---|---|---|
 | PostgreSQL 16 | Primary database | 5432 |
 | NATS JetStream | Message broker | 4222 (client), 8222 (monitoring) |
-| Temporal Server | Workflow engine | 7233 (gRPC), 8080 (UI) |
+| Temporal Server | Workflow engine | 7233 (gRPC) |
+| Temporal UI | Workflow visibility | 8233 |
 | Keycloak (Quarkus) | Identity provider | 8081 |
 | Prometheus | Metrics | 9090 |
 | Grafana | Dashboards | 3001 |
 | Loki | Log aggregation | 3100 |
 | Promtail | Log shipper | — |
-| SRS API | Backend services | 3000 |
-| SRS Frontend | Student portal / admin UI | 5173 (dev server) |
+| SRS API | Backend service, run separately with `corepack pnpm --filter @revelation-srs/api dev` | 3000 |
+| SRS Frontend | Student portal / admin UI, added in the frontend phase | 5173 (dev server) |
 
 ## Key Architectural Constraints from Stack Choices
 
 1. **TypeScript strict mode throughout** — no `any`, no unchecked index access. Type errors are build failures.
 2. **Schema-first APIs** — Fastify JSON Schema on all routes; OpenAPI spec generated from schema, not hand-written.
-3. **Real infrastructure in integration tests** — Testcontainers; no mocking of PostgreSQL, NATS, or Temporal in integration tests.
-4. **Bitemporal via Drizzle + PostgreSQL `tstzrange`** — reusable column helpers; query helpers tested independently.
+3. **Real infrastructure in integration tests** — Testcontainers for PostgreSQL in Phase 3; NATS and Temporal container tests are added when adapter and workflow behaviours are implemented.
+4. **Bitemporal via Drizzle + explicit timestamp columns** — reusable column helpers; query helpers tested independently.
 5. **Temporal workflows are code** — versioned, unit-tested, and reviewed in PRs like any other code.
 6. **One realm per tenant in Keycloak** — tenant provisioning automates realm creation via Keycloak Admin API.
 7. **Secrets never in images or source** — enforced by Trivy scanning and `git-secrets` pre-commit hook in CI.

@@ -35,7 +35,7 @@ graph LR
     WT --> WF_EVENTS
 ```
 
-The Temporal Server uses **PostgreSQL as its persistence backend** — the same cluster as the SRS application, using a dedicated `temporal` schema. This simplifies the deployment topology on the Mac Mini.
+The local Temporal Server uses **PostgreSQL as its persistence backend** through the `temporalio/auto-setup` container in `infra/compose/docker-compose.yml`. Production uses the same persistence pattern with production-grade Temporal Server configuration.
 
 ---
 
@@ -57,29 +57,13 @@ Namespace creation is automated as part of tenant provisioning.
 packages/workflow/
 ├── src/
 │   ├── workflows/
-│   │   ├── admissions.workflow.ts
-│   │   ├── reasonable-adjustment.workflow.ts
-│   │   ├── exceptional-circumstances.workflow.ts
-│   │   ├── misconduct.workflow.ts
-│   │   ├── exam-board.workflow.ts
-│   │   ├── appeal-correction.workflow.ts
-│   │   ├── withdrawal.workflow.ts
-│   │   ├── hesa-return.workflow.ts
-│   │   ├── ukvi-compliance.workflow.ts
-│   │   ├── re-enrolment.workflow.ts
-│   │   ├── award-graduation.workflow.ts
-│   │   └── cas-creation.workflow.ts
+│   │   └── index.ts              # Phase 3 minimal audit workflow scaffold
 │   ├── activities/
-│   │   ├── student.activities.ts
-│   │   ├── enrolment.activities.ts
-│   │   ├── assessment.activities.ts
-│   │   ├── regulatory.activities.ts
-│   │   ├── notification.activities.ts
 │   │   └── audit.activities.ts
-│   ├── signals.ts          # Signal type definitions (human task responses)
-│   ├── queries.ts          # Query type definitions (state inspection)
-│   └── worker.ts           # Worker registration and startup
+│   └── worker.ts                  # Worker registration and startup
 ```
+
+Domain-specific workflows, signals, queries, and activities are added in the phases that introduce those processes.
 
 ---
 
@@ -252,10 +236,10 @@ Old instances (started before the patch) skip the new step; new instances execut
 
 ## Worker Registration
 
-Each service that executes workflow activities registers a Temporal worker on startup:
+Each service that executes workflow activities registers a Temporal worker on startup. Phase 3 provides the reusable worker bootstrap in `packages/workflow/src/worker.ts`; domain services add their own activities and task queues when their workflows are introduced.
 
 ```typescript
-// apps/api/src/worker.ts (or modules/wellbeing/src/worker.ts)
+// Target pattern for a domain service worker
 const worker = await Worker.create({
   workflowsPath: require.resolve('../../packages/workflow/src/workflows'),
   activities:    { ...enrolmentActivities, ...notificationActivities, ...auditActivities },
@@ -265,4 +249,4 @@ const worker = await Worker.create({
 await worker.run();
 ```
 
-The Core API worker handles all core SRS workflow activities. The Wellbeing module registers its own worker for Wellbeing-specific activities (adjustment case management, EC determination).
+The Core API worker handles core SRS workflow activities once those workflows are implemented. First-party modules register their own workers for module-specific activities.

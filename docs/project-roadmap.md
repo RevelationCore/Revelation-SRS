@@ -131,7 +131,7 @@ Two worked examples are carried through the later phases to validate the archite
    - PostgreSQL schema with migration toolchain
    - Multi-tenancy framework (tenant table, tenant-scoped foreign keys, row-level security policies)
    - Bitemporal record framework — reusable table patterns, query helpers, and test utilities for valid-time and transaction-time columns
-   - Audit trail tables and trigger/service infrastructure — append-only, covering all write operations from any origin
+   - Audit trail table and service infrastructure — append-only foundation; domain write coverage is added as write operations are implemented
 
 3. **Authentication and authorisation**
    - OAuth 2.0 / OIDC integration with institutional IAM
@@ -139,40 +139,36 @@ Two worked examples are carried through the later phases to validate the archite
    - RBAC framework — role definitions, permission matrix, middleware
    - Row-level security enforcement at database layer
 
-4. **Workflow engine integration** — embedded workflow engine, durable execution, human task assignment, deadline and escalation support, failure/compensation handling, workflow-to-audit-trail bridge.
+4. **Workflow engine integration** — Temporal package, worker bootstrap, and a minimal audit workflow scaffold. Domain-specific human task assignment, deadline/escalation, and compensation paths are implemented in the phases that introduce those workflows.
 
 5. **Integration layer core**
-   - Message broker deployment and topic provisioning
-   - Event publishing library (consistent envelope format, correlation ID, schema validation)
-   - Event subscription framework (consumer group management, retry, dead-letter)
+   - Message broker deployment
+   - Event publishing library (consistent envelope format, correlation ID, classification metadata)
+   - Event subscription framework design; concrete consumers, retry handling, and dead-letter processing are implemented with the first adapters
    - REST API gateway (routing, auth middleware, versioning, RFC 7807 error handling)
-   - File exchange framework (inbound validation, outbound generation, SFTP transport adapter)
+   - File exchange framework design; concrete inbound/outbound processors and SFTP adapters are implemented with statutory exchanges
    - Plugin registry — registration, versioning, health check polling, enable/disable lifecycle
 
-6. **Configuration-driven rules engine** — runtime rule evaluation service, rule storage schema (bitemporal), administration API, audit of rule changes.
+6. **Configuration-driven rules engine** — runtime rule evaluation service and bitemporal rule storage schema. Administration APIs and audit of rule changes are implemented with the first rule-management workflows.
 
-7. **Observability stack** — structured JSON logging with correlation IDs, Prometheus metrics exposition, distributed trace context propagation, `/health` and `/ready` endpoints on all services, alerting configuration.
+7. **Observability stack** — structured JSON logging with correlation IDs, Prometheus metrics exposition, API `/health`, `/ready`, and `/metrics` endpoints, plus Compose health checks for platform services. Distributed tracing and alert rules are expanded as cross-service flows are implemented.
 
-8. **Containerisation and deployment** — `Dockerfile` for every service (non-root, pinned base image), Docker Compose manifest (single-command local environment), secrets injection pattern, image scanning in CI.
+8. **Containerisation and deployment** — API `Dockerfile` (non-root, pinned pnpm activation), Docker Compose manifest for the platform services, secrets injection pattern, image scanning in CI.
 
 **Deliverables**
 - [x] pnpm monorepo scaffold (`package.json`, `pnpm-workspace.yaml`, `tsconfig.base.json`, `eslint.config.js`)
 - [x] `packages/domain` — event envelope, permissions, domain errors
-- [x] `packages/db` — Drizzle schema (tenant, audit_record, integration_contract/registration/exchange), bitemporal helpers, RLS helpers, pool; integration tests for bitemporal patterns and cross-tenant RLS
+- [x] `packages/db` — Drizzle schema and migrations (tenant, audit_record, integration_contract/registration/exchange, academic_rule, value_set/field_value_set), bitemporal helpers, RLS helpers, pool; Testcontainers coverage for migrations, bitemporal patterns, and cross-tenant RLS
 - [x] `packages/auth` — Fastify JWT plugin, tenant context plugin, RBAC `requirePermission` middleware
 - [x] `packages/testing` — Testcontainers PostgreSQL helper
-- [x] `packages/workflow` — Temporal worker setup, audit activities scaffold
-- [x] `apps/api` — Fastify application (plugins, CORS, helmet, rate limiter), audit service, event publisher (NATS JetStream), rules engine, health + ready endpoints
-- [x] `infra/compose/docker-compose.yml` — PostgreSQL, NATS, Temporal, Keycloak, Prometheus, Grafana, Loki
+- [x] `packages/workflow` — Temporal worker setup, audit activity, and minimal workflow scaffold
+- [x] `apps/api` — Fastify application (plugins, CORS, helmet, rate limiter), audit service, event publisher (NATS JetStream), rules engine, value-set service/routes, health/ready/metrics endpoints
+- [x] `infra/compose/docker-compose.yml` — PostgreSQL, NATS, Temporal, Temporal UI, Keycloak, Prometheus, Grafana, Loki, Promtail
 - [x] `infra/docker/api/Dockerfile` — multi-stage, non-root
 - [x] `.github/workflows/ci.yml` — typecheck, lint, unit tests, integration tests, container build + Trivy scan, dependency audit
 - [x] `.gitignore`, `.env.example`
 
-**Exit criterion**: CI pipeline green. All platform infrastructure components deployed locally. Bitemporal, audit, workflow, and integration layer proven by tests before any domain code is written.
-
----
-
-## Phase 4 — Core SRS: Student Identity and Enrolment *(current)*
+**Exit criterion**: CI pipeline green. All platform infrastructure components deployed locally. Bitemporal storage, migrations, RLS, API health/readiness, and platform scaffolds proven by tests before any domain code is written. Adapter-specific integration consumers, file exchange processors, and domain workflows are proven in the phases that introduce those behaviours.
 
 ---
 

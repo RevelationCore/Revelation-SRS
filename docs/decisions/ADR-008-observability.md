@@ -9,7 +9,7 @@ Principle §18 requires structured logging, Prometheus-compatible metrics, distr
 
 ## Decision
 
-**OpenTelemetry** for instrumentation (traces and metrics).
+**OpenTelemetry** for instrumentation (traces and metrics) as the tracing layer is introduced.
 **Prometheus** for metrics storage and alerting rules.
 **Grafana** for dashboards and alert routing.
 **Grafana Loki** for log aggregation and retention.
@@ -41,9 +41,9 @@ Principle §18 requires structured logging, Prometheus-compatible metrics, distr
 
 ## Consequences
 
-- Every service is instrumented with `@opentelemetry/sdk-node` at startup; no per-route instrumentation code is required.
+- Phase 3 exposes Prometheus-compatible API metrics and structured logs. OpenTelemetry instrumentation is introduced as services begin making cross-boundary calls that need distributed traces.
 - All log output is structured JSON; Promtail ships logs from Docker to Loki.
 - Correlation IDs are injected into every request by Fastify middleware and propagated as OpenTelemetry trace context and as a structured log field.
-- Prometheus scrape targets are defined in `prometheus.yml`; alert rules are version-controlled alongside the application.
-- The full observability stack (Prometheus, Grafana, Loki, Promtail, OpenTelemetry Collector) runs as Docker Compose services in both local development and production environments.
+- Prometheus scrape targets are defined in `prometheus.yml`; alert rules are version-controlled alongside the application as operational requirements mature.
+- The Phase 3 observability stack (Prometheus, Grafana, Loki, Promtail) runs as Docker Compose services in local development. An OpenTelemetry Collector is added when distributed tracing is enabled.
 - Log retention policy is configured in Loki; default is 90 days in development, configurable per deployment.
