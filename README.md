@@ -1,0 +1,168 @@
+# Revelation SRS
+
+An open source Student Records System for UK Higher Education.
+
+> **Status**: Architecture and design complete — platform foundation (Phase 3) in progress.
+
+---
+
+## What is Revelation SRS?
+
+Revelation SRS is a fully open source Student Information System designed specifically for the UK HE sector. It provides institutions with a standards-aligned, adaptable alternative to proprietary SRS platforms, built from the ground up on the [Revelation Student Records Enterprise Reference Model](docs/reference/revelation-student-records-reference-model.md) — a published reference architecture covering 33 systems, actors, and 70 integration flows across the UK HE enterprise.
+
+### Key characteristics
+
+- **UK HE-native** — domain model, terminology, regulatory obligations (HESA, UCAS, SLC, UKVI, OfS), and workflow design follow UK HE conventions throughout.
+- **Pluggable architecture** — external systems and SRS modules integrate through a versioned, event-driven integration layer. Institutions substitute their own VLE, Finance, HR, or other systems without modifying core code.
+- **Bitemporal data** — all records that change over time store both valid-time and transaction-time history, enabling reconstruction of any past state for audit, regulatory returns, and board paper verification.
+- **Workflow-driven governance** — long-running processes (admissions, reasonable adjustments, exam board ratification, appeals) are managed by a durable workflow engine with human task assignment, deadline enforcement, and full audit trail.
+- **Multi-tenant** — a single deployment serves multiple institutions with complete database-layer data isolation.
+- **AGPL v3** — modifications made available over a network must be published under the same licence, keeping the ecosystem open.
+
+---
+
+## Documentation
+
+| Document | Description |
+|---|---|
+| [Core Principles](docs/core-principles.md) | 20 non-negotiable principles governing design, development, and operation |
+| [Project Roadmap](docs/project-roadmap.md) | 11-phase development plan from requirements to open source release |
+| [Domain Glossary](docs/domain-glossary.md) | Authoritative definitions of all UK HE domain terms used in the system |
+| **Requirements** | |
+| [Functional Requirements](docs/requirements/functional-requirements.md) | 140+ testable requirements traced to reference model flows |
+| [Non-Functional Requirements](docs/requirements/non-functional-requirements.md) | Performance, security, accessibility, privacy, and compliance requirements |
+| [Actor Catalogue](docs/requirements/actor-catalogue.md) | Human and system actors; RBAC role hierarchy |
+| [Workflow Catalogue](docs/requirements/workflow-catalogue.md) | 12 fully specified business process workflows with state machines |
+| [Data Subject Register](docs/requirements/data-subject-register.md) | Personal data categories, lawful basis, sensitivity, and retention |
+| **Architecture** | |
+| [System Architecture](docs/architecture/system-architecture.md) | Component diagram, modular monolith design, repository structure |
+| [Data Model](docs/architecture/data-model.md) | Entity model, bitemporal schema pattern, multi-tenancy via RLS |
+| [Integration Layer](docs/architecture/integration-layer.md) | Event bus topology, REST API gateway, file exchange framework, plugin registry |
+| [Domain Events](docs/architecture/domain-events.md) | Complete event taxonomy (~35 events) with payload schemas and consumers |
+| [API Standards](docs/architecture/api-standards.md) | URL conventions, RFC 7807 errors, cursor pagination, OpenAPI toolchain |
+| [Security Architecture](docs/architecture/security-architecture.md) | Keycloak multi-realm, RBAC, RLS, auth flows, secrets management |
+| [Configuration Rules Framework](docs/architecture/configuration-rules-framework.md) | Institutional business rules stored as bitemporal, versioned configuration |
+| [Workflow Engine Integration](docs/architecture/workflow-engine-integration.md) | Temporal integration: workflow patterns, human tasks, audit bridge |
+| [Deployment Architecture](docs/architecture/deployment-architecture.md) | Docker Compose (local + single institution), Kubernetes (multi-institution) |
+| **Reference Model** | |
+| [Reference Model Article](docs/reference/revelation-student-records-reference-model.md) | The Revelation Student Records Enterprise Reference Model (v2.1) |
+| [Reference Model JSON](docs/reference/revelation-student-records-enterprise-reference-model-2.1.json) | Full model JSON (33 systems, 70 flows) |
+| **Decisions** | |
+| [Technology Stack](docs/decisions/technology-stack.md) | Complete stack summary with licence and ADR references |
+| [ADR Index](#architecture-decision-records) | All architecture decision records |
+
+---
+
+## Technology Stack
+
+All components are open source and free to use under this project's licence.
+
+| Concern | Technology |
+|---|---|
+| Language / runtime | TypeScript + Node.js 22 LTS |
+| API framework | Fastify |
+| Database | PostgreSQL 16 + Drizzle ORM |
+| Message broker | NATS JetStream |
+| Workflow engine | Temporal |
+| Identity provider | Keycloak (Quarkus) |
+| Frontend | React 18 + Vite + Radix UI + Tailwind CSS |
+| Observability | OpenTelemetry + Prometheus + Grafana + Loki |
+| Testing | Vitest + Testcontainers + Playwright + axe-core |
+| CI/CD | GitHub Actions |
+
+Full rationale: [docs/decisions/technology-stack.md](docs/decisions/technology-stack.md)
+
+---
+
+## Project Status
+
+| Phase | Title | Status |
+|---|---|---|
+| 0 | Principles and Planning | Complete |
+| 1 | Requirements and Domain Definition | Complete |
+| 2 | Architecture and Design | Complete |
+| **3** | **Platform Foundation** | **In progress** |
+| 4 | Core SRS: Student Identity and Enrolment | Pending |
+| 5 | Core SRS: Assessment, Progression, Awards | Pending |
+| 6 | Core SRS: Regulatory Compliance | Pending |
+| 7 | Integration Layer: Published Interfaces | Pending |
+| 8 | Example First-Party Module: Wellbeing | Pending |
+| 9 | Example External Integration: VLE | Pending |
+| 10 | User Interfaces | Pending |
+| 11 | Hardening and Open Source Release | Pending |
+
+Full plan: [docs/project-roadmap.md](docs/project-roadmap.md)
+
+---
+
+## Getting Started
+
+> Developer setup instructions will be added in Phase 3 when the repository scaffolding and Docker Compose stack are built. Until then, the documentation above represents the complete output of Phases 0–2.
+
+**Prerequisites (when available):**
+- macOS with [OrbStack](https://orbstack.dev) (or any Docker-compatible runtime)
+- Node.js 22 LTS and pnpm
+- Docker Compose
+
+```bash
+# Clone
+git clone https://github.com/your-org/revelation-srs.git
+cd revelation-srs
+
+# (Phase 3 and later)
+cp .env.example .env
+docker compose up -d
+pnpm install && pnpm dev
+```
+
+---
+
+## Architecture Decision Records
+
+| ADR | Decision |
+|---|---|
+| [ADR-001](docs/decisions/ADR-001-programming-language-and-runtime.md) | TypeScript + Node.js 22 LTS |
+| [ADR-002](docs/decisions/ADR-002-api-framework.md) | Fastify |
+| [ADR-003](docs/decisions/ADR-003-database-and-orm.md) | PostgreSQL 16 + Drizzle ORM |
+| [ADR-004](docs/decisions/ADR-004-message-broker.md) | NATS JetStream |
+| [ADR-005](docs/decisions/ADR-005-workflow-engine.md) | Temporal |
+| [ADR-006](docs/decisions/ADR-006-identity-provider.md) | Keycloak (Quarkus) |
+| [ADR-007](docs/decisions/ADR-007-frontend.md) | React 18 + Vite + Radix UI + Tailwind CSS |
+| [ADR-008](docs/decisions/ADR-008-observability.md) | OpenTelemetry + Prometheus + Grafana + Loki |
+| [ADR-009](docs/decisions/ADR-009-testing.md) | Vitest + Testcontainers + Playwright + axe-core + k6 |
+| [ADR-010](docs/decisions/ADR-010-secrets-management.md) | `.env` (dev) + OpenBao (production) |
+| [ADR-011](docs/decisions/ADR-011-ci-cd.md) | GitHub Actions |
+| [ADR-012](docs/decisions/ADR-012-architectural-style.md) | Modular monolith (core); separate services (modules + adapters) |
+| [ADR-013](docs/decisions/ADR-013-bitemporal-storage.md) | Four-column bitemporal timestamps |
+| [ADR-014](docs/decisions/ADR-014-multitenancy-isolation.md) | PostgreSQL Row-Level Security |
+
+---
+
+## Reference Model
+
+Revelation SRS is built on the **Revelation Student Records Enterprise Reference Model v2.1** — a published reference architecture for UK HE student records ecosystems.
+
+- [Reference model article](https://revelationcore.com/blogs/the-revelation-student-records-reference-model.html)
+- [Local copy — article](docs/reference/revelation-student-records-reference-model.md)
+- [Local copy — JSON model](docs/reference/revelation-student-records-enterprise-reference-model-2.1.json)
+
+The reference model is © RevelationCore 2026, licensed [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/).
+
+---
+
+## Contributing
+
+Contribution guidelines will be published as part of Phase 11 (open source release). Until the first release, the project is in active early development. If you have questions or would like to get involved, please open an issue.
+
+---
+
+## Licence
+
+Revelation SRS is licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0)**.
+
+Under this licence:
+- You may use, study, modify, and distribute the software freely.
+- If you make a modified version available over a network, you must publish the source under the same licence.
+- Commercial use is permitted; closed-source derivatives are not.
+
+See [LICENSE](LICENSE) for the full licence text.
