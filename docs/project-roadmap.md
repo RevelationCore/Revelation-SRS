@@ -63,7 +63,7 @@ Two worked examples are carried through the later phases to validate the archite
 
 ---
 
-## Phase 2 — Architecture and Design *(complete)*
+## Phase 2 — Architecture and Design *(complete — remediation applied)*
 
 **Goal**: Define the target architecture at a level of detail sufficient to guide consistent implementation across all subsequent phases. Resolve all structural decisions before any code is written.
 
@@ -105,6 +105,8 @@ Two worked examples are carried through the later phases to validate the archite
 - [x] `docs/architecture/workflow-engine-integration.md`
 - [x] `docs/architecture/deployment-architecture.md`
 - [x] `docs/decisions/ADR-012` through `ADR-014`
+- [x] `docs/architecture/integration-contract-catalogue.md` — full contract catalogue for all 33 systems and flows
+- [x] Phase 2 remediation applied: reference model corrections, data model expanded (~50 additional entities), event taxonomy completed (~60 additional events), plugin registry extended, workflow catalogue event names aligned, out-of-scope flows explicitly marked
 
 **Exit criterion**: Architecture documents reviewed and agreed. No unresolved structural decisions. ADRs baselined.
 

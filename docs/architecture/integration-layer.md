@@ -202,7 +202,22 @@ The plugin registry is the runtime record of all active integrations for a tenan
 
 ### Schema
 
-See `integration_registration` table in [data-model.md](data-model.md).
+The `integration_registration` table (see [data-model.md](data-model.md)) is extended with the following fields to support the full contract catalogue:
+
+| Field | Type | Description |
+|---|---|---|
+| `contract_id` | `TEXT NOT NULL` | Stable logical contract ID, e.g. `vle-course-provisioning.v1` |
+| `direction_code` | `TEXT NOT NULL` | `inbound` / `outbound` / `bidirectional` / `context` |
+| `owner_module_code` | `TEXT NOT NULL` | Core module responsible: `enrolment` / `assessment` / `exam-board` / etc. |
+| `subject_filter` | `TEXT` | NATS subject filter for event consumers |
+| `consumer_group` | `TEXT` | NATS durable consumer group name |
+| `endpoint_url` | `TEXT` | External REST endpoint (encrypted at rest) |
+| `file_schedule` | `TEXT` | Cron expression or `manual` |
+| `transport_code` | `TEXT` | `rest` / `event` / `sftp` / `https-file` |
+| `secret_ref` | `TEXT` | OpenBao path to credentials — never the credential value |
+| `last_successful_exchange_at` | `TIMESTAMPTZ` | Health and reconciliation signal |
+| `replay_supported` | `BOOLEAN NOT NULL DEFAULT false` | Whether backfill can be requested |
+| `retry_policy` | `JSONB` | `{ maxAttempts, backoffCoefficient, initialInterval, deadLetterSubject }` |
 
 ### Lifecycle
 

@@ -48,7 +48,7 @@
 - SLC enrolment confirmation sent
 - UKVI CAS creation initiated (if international)
 - UCAS enrolment confirmation transmitted
-- Domain event `student.enrolled` published
+- Domain event `srs.student.enrolled` published
 
 ### Deadline enforcement
 - Offer acceptance: configurable per offer type (default 28 days)
@@ -97,7 +97,7 @@
 - Approved adjustment outcome transmitted to SIS core
 - SIS records adjustment bitemporally against student record
 - SIS distributes to VLE, Attendance Monitoring, Exam Scheduling
-- Domain event `adjustment.approved` published
+- Domain event `srs.adjustment.approved` published
 
 ---
 
@@ -134,7 +134,7 @@
 - Approved EC outcome transmitted to SIS core (F066)
 - SIS records EC flag bitemporally against student and module
 - Flag surfaced in next Exam Board data pack
-- Domain event `exceptional-circumstances.approved` published
+- Domain event `srs.exceptional-circumstances.flagged` published
 
 ---
 
@@ -178,7 +178,7 @@
 - Outcome and penalty transmitted to SIS (F069)
 - SIS records against student and assessment
 - Misconduct flag surfaced in Exam Board data pack
-- Domain event `misconduct.outcome-recorded` published
+- Domain event `srs.misconduct.outcome-recorded` published
 
 ---
 
@@ -215,7 +215,7 @@
 
 ### On reaching `records_locked`
 - All academic records covered by the board are locked in SIS
-- Domain event `exam-board.ratified` published
+- Domain event `srs.exam-board.ratified` published
 - Downstream systems notified (VLE, portal, SLC if applicable)
 - Post-ratification, only W006 (appeal/correction) can unlock records
 
@@ -257,7 +257,7 @@
 - SIS record lock overridden under this workflow's authorisation
 - Amendment recorded with full before/after values, authorising actor, and appeal reference
 - Amended record re-locked
-- Domain event `record.amended-post-ratification` published
+- Domain event `srs.record.amended-post-ratification` published
 
 ---
 
@@ -293,7 +293,7 @@
 - SLC notified of change
 - UKVI notified if student is sponsored
 - IAM account status updated
-- Domain event `student.withdrawn` or `student.intermission-started` published
+- Domain event `srs.student.status-changed` (newStatus: withdrawn / intermitting) published
 
 ---
 
@@ -428,7 +428,7 @@
 - Enrolment status updated to Graduated (bitemporally)
 - EDRMS notified of certificate record (F023)
 - IAM account status updated
-- Domain event `student.graduated` published
+- Domain event `srs.student.graduated` published
 
 ---
 

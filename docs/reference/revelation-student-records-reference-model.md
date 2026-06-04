@@ -6,7 +6,7 @@
 
 ## Overview
 
-This comprehensive reference architecture document describes an updated student records system model for UK higher education institutions. The model expands from the original 24 systems and 26 flows to **33 systems and actors** and **69 flows**, encompassing operational systems, statutory bodies, student support, examination operations, and academic governance.
+This comprehensive reference architecture document describes an updated student records system model for UK higher education institutions. The model covers **33 systems and actors** and **69 published interactions** across flow identifiers F001–F070 (F054 is absent from version 2.1 — see note below).
 
 ---
 
@@ -30,15 +30,21 @@ The model establishes several governing principles:
 
 ## Model Structure
 
-The reference model organises 70 logical flows across six categories:
+The reference model organises **69 published interactions** across five categories within the flow identifier range F001–F070. F054 is absent from version 2.1 (see note below).
 
 | Category | Flow IDs | Count | Description |
 |---|---|---|---|
 | Core SIS Integrations | F001–F026 | 26 | Foundational integrations with teaching, learning, operational, and administrative systems |
 | Analytics, Administration & Research | F027–F044 | 18 | Business intelligence, HR, payroll, and research systems |
 | UK Statutory & Regulatory Flows | F045–F052 | 8 | UCAS, HESA, Student Loans Company, and UKVI |
-| Wellbeing, Adjustments & Student Context | F053, F055–F060 | 7 | Disability support and reasonable adjustments |
+| Wellbeing, Adjustments & Student Context | F053, F055–F060 | 7 | Disability support and reasonable adjustments (F054 absent — see note) |
 | Examinations, Governance, Assurance & Academic Integrity | F061–F070 | 10 | Examination operations, academic governance, and misconduct management |
+
+> **Note — F054:** Flow identifier F054 is not present in reference model version 2.1. The sequence moves directly from F053 to F055. Revelation SRS does not define a local requirement for F054; if an updated upstream model is published that includes F054, this document will be updated accordingly.
+
+> **Note — Non-SIS-facing flows:** F055 (VLE→BI), F056 (AM→BI), F057 (DW→BI), and F058 (CRM→EWP) do not involve the SIS directly. They describe enterprise ecosystem flows between other systems. Revelation SRS treats these as **reference context** rather than SRS-owned requirements unless the SRS explicitly brokers them through its integration layer.
+
+> **Note — ESB:** The Enterprise Service Bus (ESB) is included as a system actor in the reference model but has no flows assigned to it. In Revelation SRS, the ESB role is fulfilled by the internal integration layer. ESB should be treated as an optional institutional integration pattern — present where an institution routes integrations through an enterprise bus — not as a required Revelation SRS adapter.
 
 ---
 
@@ -70,6 +76,8 @@ The model describes 33 systems and actors across domains:
 - **HR** — Human Resources
 - **PAY** — Payroll
 - **EDRMS** — Electronic Document & Records Management
+
+### Campus & Facilities
 - **ACC** — Accommodation & Conferences
 - **EST** — Estates
 

@@ -383,3 +383,60 @@
 | PLT-INT-004 | The system shall maintain a plugin registry recording all active integrations, their contract versions, enabled status, and health. | — | M |
 | PLT-INT-005 | Integration failures shall be logged, alerted, and retried according to a configured retry and dead-letter policy. Failures shall not result in silent data loss. | — | M |
 | PLT-INT-006 | The system shall validate all inbound data against the integration contract before processing. Invalid data shall be rejected with a structured error response and logged. | — | M |
+
+---
+
+## 32. CRM Integration (CRM)
+
+> **Scope note:** F006 (SIS→CRM) was absent from the original requirements. It is added here as Should Have.
+
+| ID | Requirement | Flows | Priority |
+|---|---|---|---|
+| CRM-001 | The system shall transmit student enrolment status and progression updates to the CRM system, enabling accurate engagement records and post-enrolment communications. | F006 | S |
+| CRM-002 | The system shall notify the CRM of student withdrawal, intermission, and graduation events. | F006 | S |
+
+---
+
+## 33. Estates Integration (EST)
+
+> **Scope note:** F019 and F020 (SIS↔Estates) were absent from the original requirements. Added as Could Have.
+
+| ID | Requirement | Flows | Priority |
+|---|---|---|---|
+| EST-001 | The system shall provide the Estates system with enrolment volumes, timetable data, and occupancy forecasts to support campus facilities planning. | F019 | C |
+| EST-002 | The system shall receive room allocation confirmations and availability updates from the Estates system. | F020 | C |
+
+---
+
+## 34. Content Management Integration (CMS)
+
+> **Scope note:** F041 and F042 were absent from the original requirements. Added as Could Have; F042 supports CMA consumer protection and regulatory publication obligations.
+
+| ID | Requirement | Flows | Priority |
+|---|---|---|---|
+| CMS-001 | The system shall provide the Content Management System with student cohort and programme data to enable targeted and personalised content delivery. | F041 | C |
+| CMS-002 | The system shall receive notifications from the CMS when significant regulatory, policy, or procedural documents are published that require annotation against student records. | F042 | C |
+
+---
+
+## 35. IT Service Management Integration (ITSM)
+
+> **Scope note:** F043 and F044 were absent from the original requirements. Added as Could Have.
+
+| ID | Requirement | Flows | Priority |
+|---|---|---|---|
+| ITSM-001 | The system shall provide the IT Service Management platform with student identity, enrolment status, and system access details for incident context. | F043 | C |
+| ITSM-002 | The system shall receive notifications from ITSM of resolved service requests or incidents that result in changes to a student's account status. | F044 | C |
+
+---
+
+## Reference Flows — Out of Scope
+
+The following reference model flows do not involve the SIS directly. They describe enterprise ecosystem flows between other systems and are treated as **reference context** only. Revelation SRS does not own or implement these flows unless a future decision explicitly brings them in scope.
+
+| Flow | Direction | Reason excluded |
+|---|---|---|
+| F055 | VLE → BI | Non-SIS-facing; BI integration covered by F027/F028 (SIS→BI, BI→SIS) |
+| F056 | AM → BI | Non-SIS-facing; Attendance data reaches BI via F029 DW extract |
+| F057 | DW → BI | Non-SIS-facing; internal analytics infrastructure |
+| F058 | CRM → EWP | Non-SIS-facing; portal communications owned by CRM/EWP, not SRS |

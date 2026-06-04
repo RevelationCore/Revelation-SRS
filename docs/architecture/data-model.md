@@ -345,7 +345,7 @@ Tables are grouped by domain. All tables include `tenant_id` (omitted from field
 
 ---
 
-### reasonable_adjustment *(bitemporal — adjustments have effective periods)*
+### reasonable_adjustment *(bitemporal)*
 
 | Column | Type | Notes |
 |---|---|---|
@@ -356,25 +356,49 @@ Tables are grouped by domain. All tables include `tenant_id` (omitted from field
 | `scope_code` | `TEXT NOT NULL` | `all` / `exam` / `coursework` / `attendance` |
 | `approved_at` | `TIMESTAMPTZ NOT NULL` | |
 | `source_case_reference` | `TEXT` | Reference from Wellbeing system |
-| `distributed_to_vle_at` | `TIMESTAMPTZ` | |
-| `distributed_to_exams_at` | `TIMESTAMPTZ` | |
-| `distributed_to_attendance_at` | `TIMESTAMPTZ` | |
 | *(bitemporal columns)* | | |
 
-### exceptional_circumstances
+> Distribution state is tracked per target system in `adjustment_distribution` (see below), not as timestamp columns here.
+
+### adjustment_distribution *(append-only status rows — one per target system per adjustment)*
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID PK` | |
+| `adjustment_id` | `UUID FK → reasonable_adjustment` | |
+| `target_system_code` | `TEXT NOT NULL` | `vle` / `attendance` / `exams` |
+| `status_code` | `TEXT NOT NULL` | `pending` / `distributed` / `failed` / `superseded` |
+| `contract_version` | `TEXT NOT NULL` | Version of integration contract used |
+| `attempt_count` | `SMALLINT NOT NULL DEFAULT 0` | |
+| `last_attempt_at` | `TIMESTAMPTZ` | |
+| `last_error` | `TEXT` | |
+| `distributed_at` | `TIMESTAMPTZ` | Set on success |
+| `created_at` | `TIMESTAMPTZ NOT NULL DEFAULT now()` | |
+
+### exceptional_circumstances *(bitemporal — outcomes can be corrected)*
 
 | Column | Type | Notes |
 |---|---|---|
 | `id` | `UUID PK` | |
 | `enrolment_id` | `UUID FK → enrolment` | |
 | `module_offering_id` | `UUID FK → module_offering` | |
+| `assessment_component_id` | `UUID FK → assessment_component` | Nullable; specific component if applicable |
 | `outcome_code` | `TEXT NOT NULL` | `upheld` / `not-upheld` |
+| `outcome_reason` | `TEXT` | |
 | `determination_date` | `DATE NOT NULL` | |
-| `source_case_reference` | `TEXT` | Reference from Wellbeing system |
-| `surfaced_to_board` | `BOOLEAN NOT NULL DEFAULT false` | |
-| `created_at` | `TIMESTAMPTZ NOT NULL` | |
+| `source_case_reference` | `TEXT` | |
+| *(bitemporal columns)* | | |
 
-### misconduct_outcome
+### exceptional_circumstances_board_visibility *(append-only)*
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID PK` | |
+| `exceptional_circumstances_id` | `UUID FK → exceptional_circumstances` | |
+| `exam_board_id` | `UUID FK → exam_board` | |
+| `included_in_pack_at` | `TIMESTAMPTZ NOT NULL` | |
+
+### misconduct_outcome *(bitemporal — can be corrected pre-ratification)*
 
 | Column | Type | Notes |
 |---|---|---|
@@ -383,9 +407,10 @@ Tables are grouped by domain. All tables include `tenant_id` (omitted from field
 | `assessment_component_id` | `UUID FK → assessment_component` | Nullable (programme-level cases) |
 | `outcome_code` | `TEXT NOT NULL` | `upheld` / `not-upheld` |
 | `penalty_code` | `TEXT` | E.g. `mark-reduction` / `module-fail` / `exclusion` |
+| `penalty_effect` | `JSONB` | Structured effect on mark/module/progression |
 | `effective_date` | `DATE NOT NULL` | |
 | `source_case_reference` | `TEXT` | |
-| `created_at` | `TIMESTAMPTZ NOT NULL` | |
+| *(bitemporal columns)* | | |
 
 ---
 
@@ -442,6 +467,593 @@ Tables are grouped by domain. All tables include `tenant_id` (omitted from field
 | `health_status_code` | `TEXT` | `healthy` / `degraded` / `unreachable` |
 | `registered_at` | `TIMESTAMPTZ NOT NULL DEFAULT now()` | |
 | `last_updated_at` | `TIMESTAMPTZ NOT NULL DEFAULT now()` | |
+
+---
+
+---
+
+## Additional Entities — Admissions and Identity
+
+### student_application *(bitemporal — status progresses through admissions cycle)*
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID PK` | |
+| `person_id` | `UUID FK → person` | Nullable until student record created |
+| `source_system_code` | `TEXT NOT NULL` | `ucas` / `direct` / `crm` |
+| `source_reference` | `TEXT` | E.g. UCAS application number |
+| `ucas_personal_id` | `TEXT` | |
+| `programme_id` | `UUID FK → programme` | |
+| `entry_academic_year` | `TEXT NOT NULL` | |
+| `ucas_cycle_code` | `TEXT` | |
+| `status_code` | `TEXT NOT NULL` | `received` / `offer-made` / `accepted` / `conditions-pending` / `enrolled` / `withdrawn` / `declined` / `no-show` |
+| *(bitemporal columns)* | | |
+
+### admissions_offer *(bitemporal)*
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID PK` | |
+| `student_application_id` | `UUID FK → student_application` | |
+| `offer_type_code` | `TEXT NOT NULL` | `conditional` / `unconditional` |
+| `conditions_description` | `TEXT` | |
+| `offer_date` | `DATE NOT NULL` | |
+| `acceptance_deadline` | `DATE` | |
+| `accepted_at` | `TIMESTAMPTZ` | |
+| `declined_at` | `TIMESTAMPTZ` | |
+| `conditions_met_at` | `TIMESTAMPTZ` | |
+| `conditions_failed_at` | `TIMESTAMPTZ` | |
+| *(bitemporal columns)* | | |
+
+### identity_verification_check *(bitemporal)*
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID PK` | |
+| `person_id` | `UUID FK → person` | |
+| `status_code` | `TEXT NOT NULL` | `requested` / `verified` / `failed` / `fraud-flagged` |
+| `confidence_score` | `NUMERIC(5,2)` | |
+| `fraud_flag` | `BOOLEAN NOT NULL DEFAULT false` | |
+| `provider_reference` | `TEXT` | OIV system reference |
+| `requested_at` | `TIMESTAMPTZ NOT NULL` | |
+| `completed_at` | `TIMESTAMPTZ` | |
+| *(bitemporal columns)* | | |
+
+### disability_declaration *(bitemporal — special category)*
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID PK` | |
+| `person_id` | `UUID FK → person` | |
+| `disability_category_code` | `TEXT NOT NULL` | HESA disability coding |
+| `declaration_status_code` | `TEXT NOT NULL` | `declared` / `withdrawn` / `updated` |
+| `declared_at` | `TIMESTAMPTZ NOT NULL` | |
+| *(bitemporal columns)* | | |
+
+### student_address *(bitemporal)*
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID PK` | |
+| `person_id` | `UUID FK → person` | |
+| `address_type_code` | `TEXT NOT NULL` | `home` / `term` / `correspondence` |
+| `line1` | `TEXT NOT NULL` | |
+| `line2` | `TEXT` | |
+| `city` | `TEXT` | |
+| `postcode` | `TEXT` | |
+| `country_code` | `TEXT NOT NULL` | ISO 3166-1 alpha-2 |
+| *(bitemporal columns)* | | |
+
+---
+
+## Additional Entities — Programme and Module Catalogue
+
+### awarding_body
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID PK` | |
+| `code` | `TEXT NOT NULL` | |
+| `name` | `TEXT NOT NULL` | |
+| `active` | `BOOLEAN NOT NULL DEFAULT true` | |
+
+### programme_route *(bitemporal — route/pathway/specialism)*
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID PK` | |
+| `programme_id` | `UUID FK → programme` | |
+| `route_code` | `TEXT NOT NULL` | |
+| `title` | `TEXT NOT NULL` | |
+| *(bitemporal columns)* | | |
+
+### module_relationship *(bitemporal)*
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID PK` | |
+| `module_id` | `UUID FK → module` | The module that has the requirement |
+| `related_module_id` | `UUID FK → module` | The required/excluded module |
+| `relationship_type_code` | `TEXT NOT NULL` | `prerequisite` / `co-requisite` / `exclusion` |
+| *(bitemporal columns)* | | |
+
+### learning_outcome *(bitemporal)*
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID PK` | |
+| `owner_type` | `TEXT NOT NULL` | `programme` / `module` |
+| `owner_id` | `UUID NOT NULL` | FK to programme or module |
+| `outcome_code` | `TEXT NOT NULL` | |
+| `description` | `TEXT NOT NULL` | |
+| *(bitemporal columns)* | | |
+
+---
+
+## Additional Entities — Enrolment, Fees, and Holds
+
+### fee_liability *(bitemporal)*
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID PK` | |
+| `enrolment_id` | `UUID FK → enrolment` | |
+| `academic_year` | `TEXT NOT NULL` | |
+| `fee_amount` | `NUMERIC(10,2) NOT NULL` | |
+| `fee_type_code` | `TEXT NOT NULL` | `tuition` / `registration` / `resit` |
+| `funding_source_code` | `TEXT NOT NULL` | `slc` / `self` / `employer` / `international` |
+| `status_code` | `TEXT NOT NULL` | `outstanding` / `paid` / `waived` / `in-dispute` |
+| *(bitemporal columns)* | | |
+
+### payment_confirmation *(append-only)*
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID PK` | |
+| `enrolment_id` | `UUID FK → enrolment` | |
+| `fee_liability_id` | `UUID FK → fee_liability` | Nullable (partial payments) |
+| `payment_source_code` | `TEXT NOT NULL` | `slc` / `student` / `employer` |
+| `amount` | `NUMERIC(10,2) NOT NULL` | |
+| `payment_reference` | `TEXT` | Finance system / SLC reference |
+| `confirmed_at` | `TIMESTAMPTZ NOT NULL` | |
+| `created_at` | `TIMESTAMPTZ NOT NULL DEFAULT now()` | |
+
+### student_hold *(bitemporal)*
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID PK` | |
+| `enrolment_id` | `UUID FK → enrolment` | |
+| `hold_type_code` | `TEXT NOT NULL` | `financial` / `library` / `compliance` / `disciplinary` / `document` |
+| `reason` | `TEXT` | |
+| `applied_by_actor_id` | `TEXT NOT NULL` | |
+| `applied_at` | `TIMESTAMPTZ NOT NULL` | |
+| `released_at` | `TIMESTAMPTZ` | |
+| *(bitemporal columns)* | | |
+
+### reenrolment_period
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID PK` | |
+| `academic_year` | `TEXT NOT NULL` | |
+| `programme_id` | `UUID FK → programme` | Nullable = all programmes |
+| `opens_at` | `TIMESTAMPTZ NOT NULL` | |
+| `closes_at` | `TIMESTAMPTZ NOT NULL` | |
+| `reminder_at` | `TIMESTAMPTZ` | |
+
+### reenrolment_confirmation *(bitemporal)*
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID PK` | |
+| `enrolment_id` | `UUID FK → enrolment` | |
+| `reenrolment_period_id` | `UUID FK → reenrolment_period` | |
+| `status_code` | `TEXT NOT NULL` | `pending` / `confirmed` / `lapsed` |
+| `confirmed_at` | `TIMESTAMPTZ` | |
+| *(bitemporal columns)* | | |
+
+---
+
+## Additional Entities — Timetable, Attendance, and Engagement
+
+### timetabled_activity *(versioned by TTB publication)*
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID PK` | |
+| `module_offering_id` | `UUID FK → module_offering` | |
+| `activity_type_code` | `TEXT NOT NULL` | `lecture` / `seminar` / `lab` / `tutorial` |
+| `scheduled_start` | `TIMESTAMPTZ NOT NULL` | |
+| `scheduled_end` | `TIMESTAMPTZ NOT NULL` | |
+| `room_reference` | `TEXT` | From Timetabling / Estates |
+| `source_activity_id` | `TEXT` | TTB system activity ID |
+| `published_at` | `TIMESTAMPTZ NOT NULL` | When received from TTB |
+| `superseded_at` | `TIMESTAMPTZ` | When replaced by a new publication |
+
+### attendance_record *(append-only with correction support)*
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID PK` | |
+| `enrolment_id` | `UUID FK → enrolment` | |
+| `timetabled_activity_id` | `UUID FK → timetabled_activity` | Nullable for unscheduled check-ins |
+| `status_code` | `TEXT NOT NULL` | `present` / `absent-authorised` / `absent-unauthorised` / `late` |
+| `recorded_by_system` | `TEXT NOT NULL` | Source AM system |
+| `recorded_at` | `TIMESTAMPTZ NOT NULL DEFAULT now()` | |
+| `corrected_at` | `TIMESTAMPTZ` | If corrected; original row retained |
+| `correction_reason` | `TEXT` | |
+| `ukvi_relevant` | `BOOLEAN NOT NULL DEFAULT false` | Whether this event counts toward UKVI compliance |
+
+### absence_alert *(bitemporal — alerts can be resolved)*
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID PK` | |
+| `enrolment_id` | `UUID FK → enrolment` | |
+| `alert_type_code` | `TEXT NOT NULL` | `consecutive-absences` / `threshold-breach` / `ukvi-threshold-breach` |
+| `threshold_value` | `NUMERIC(5,2)` | E.g. attendance percentage |
+| `current_value` | `NUMERIC(5,2)` | |
+| `status_code` | `TEXT NOT NULL` | `open` / `reviewed` / `escalated` / `resolved` |
+| `raised_at` | `TIMESTAMPTZ NOT NULL` | |
+| *(bitemporal columns)* | | |
+
+---
+
+## Additional Entities — Exam Operations
+
+### exam_entry *(bitemporal)*
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID PK` | |
+| `enrolment_id` | `UUID FK → enrolment` | |
+| `assessment_component_id` | `UUID FK → assessment_component` | |
+| `entry_status_code` | `TEXT NOT NULL` | `entered` / `withdrawn` / `absent` / `sat` |
+| `sent_to_exams_at` | `TIMESTAMPTZ` | |
+| *(bitemporal columns)* | | |
+
+### exam_candidate
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID PK` | |
+| `exam_entry_id` | `UUID FK → exam_entry` | |
+| `candidate_number` | `TEXT NOT NULL` | Anonymous identifier for exam room |
+| `seat_reference` | `TEXT` | |
+| `assigned_at` | `TIMESTAMPTZ NOT NULL DEFAULT now()` | |
+
+### exam_timetable_entry *(versioned by publication)*
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID PK` | |
+| `exam_entry_id` | `UUID FK → exam_entry` | |
+| `scheduled_start` | `TIMESTAMPTZ NOT NULL` | |
+| `scheduled_end` | `TIMESTAMPTZ NOT NULL` | |
+| `venue_reference` | `TEXT` | |
+| `room_reference` | `TEXT` | |
+| `published_at` | `TIMESTAMPTZ NOT NULL` | |
+| `superseded_at` | `TIMESTAMPTZ` | |
+
+### exam_accommodation_distribution *(per-target status)*
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID PK` | |
+| `adjustment_id` | `UUID FK → reasonable_adjustment` | |
+| `exam_entry_id` | `UUID FK → exam_entry` | |
+| `status_code` | `TEXT NOT NULL` | `pending` / `distributed` / `failed` |
+| `distributed_at` | `TIMESTAMPTZ` | |
+| `attempt_count` | `SMALLINT NOT NULL DEFAULT 0` | |
+| `last_error` | `TEXT` | |
+
+---
+
+## Additional Entities — Exam Board Governance
+
+### exam_board_data_pack *(append-only — immutable generated artefact)*
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID PK` | |
+| `exam_board_id` | `UUID FK → exam_board` | |
+| `version` | `SMALLINT NOT NULL DEFAULT 1` | Increments when pack is regenerated |
+| `generated_at` | `TIMESTAMPTZ NOT NULL` | When the pack was generated |
+| `source_transaction_time` | `TIMESTAMPTZ NOT NULL` | The `recorded_at` cutoff used for source data — enables exact reproduction |
+| `candidate_count` | `INT NOT NULL` | |
+| `publication_state_code` | `TEXT NOT NULL` | `draft` / `distributed` / `superseded` |
+| `superseded_by_id` | `UUID FK → exam_board_data_pack` | Nullable |
+
+### exam_board_candidate_profile *(append-only per pack version)*
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID PK` | |
+| `data_pack_id` | `UUID FK → exam_board_data_pack` | |
+| `enrolment_id` | `UUID FK → enrolment` | |
+| `profile_snapshot` | `JSONB NOT NULL` | Full candidate profile as at pack generation time |
+
+### exam_board_member_attendance *(append-only)*
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID PK` | |
+| `exam_board_id` | `UUID FK → exam_board` | |
+| `actor_id` | `TEXT NOT NULL` | Keycloak subject |
+| `actor_display_name` | `TEXT NOT NULL` | |
+| `role_code` | `TEXT NOT NULL` | `chair` / `member` / `observer` |
+| `attended_at` | `TIMESTAMPTZ NOT NULL` | |
+
+### external_examiner_signoff *(append-only)*
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID PK` | |
+| `exam_board_id` | `UUID FK → exam_board` | |
+| `examiner_actor_id` | `TEXT NOT NULL` | Keycloak subject |
+| `examiner_display_name` | `TEXT NOT NULL` | |
+| `commentary` | `TEXT` | |
+| `confirmed_at` | `TIMESTAMPTZ NOT NULL` | |
+
+### post_ratification_case *(bitemporal — case status changes)*
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID PK` | |
+| `enrolment_id` | `UUID FK → enrolment` | |
+| `case_type_code` | `TEXT NOT NULL` | `appeal` / `administrative-correction` |
+| `grounds` | `TEXT` | |
+| `status_code` | `TEXT NOT NULL` | `submitted` / `under-review` / `upheld` / `dismissed` / `not-eligible` |
+| `workflow_instance_id` | `TEXT` | Temporal workflow ID |
+| `submitted_at` | `TIMESTAMPTZ NOT NULL` | |
+| *(bitemporal columns)* | | |
+
+### post_ratification_amendment *(append-only — authorised changes to locked records)*
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID PK` | |
+| `post_ratification_case_id` | `UUID FK → post_ratification_case` | |
+| `entity_type` | `TEXT NOT NULL` | |
+| `entity_id` | `UUID NOT NULL` | |
+| `before_value` | `JSONB NOT NULL` | |
+| `after_value` | `JSONB NOT NULL` | |
+| `authorised_by_actor_id` | `TEXT NOT NULL` | |
+| `amended_at` | `TIMESTAMPTZ NOT NULL` | |
+
+---
+
+## Additional Entities — Regulatory Exchange State
+
+### ucas_exchange_record *(append-only)*
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID PK` | |
+| `student_application_id` | `UUID FK → student_application` | |
+| `exchange_type_code` | `TEXT NOT NULL` | `application-received` / `offer-sent` / `enrolment-confirmed` / `withdrawal-notified` / `deferral-notified` / `no-show-notified` |
+| `exchange_direction` | `TEXT NOT NULL` | `inbound` / `outbound` |
+| `exchange_reference` | `TEXT` | UCAS transaction reference |
+| `exchanged_at` | `TIMESTAMPTZ NOT NULL` | |
+| `payload_summary` | `JSONB` | Key fields for audit; not full message |
+
+### hesa_return *(append-only — each return is a new record)*
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID PK` | |
+| `academic_year` | `TEXT NOT NULL` | E.g. `2024-25` |
+| `return_type_code` | `TEXT NOT NULL` | `student` / `AP` |
+| `generated_at` | `TIMESTAMPTZ NOT NULL` | |
+| `source_transaction_time` | `TIMESTAMPTZ NOT NULL` | Bitemporal cutoff for source data |
+| `student_count` | `INT NOT NULL` | |
+| `status_code` | `TEXT NOT NULL` | `generated` / `validated` / `submitted` / `accepted` / `rejected` |
+| `submitted_at` | `TIMESTAMPTZ` | |
+| `accepted_at` | `TIMESTAMPTZ` | |
+
+### hesa_submission *(append-only — each submission attempt)*
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID PK` | |
+| `hesa_return_id` | `UUID FK → hesa_return` | |
+| `attempt_number` | `SMALLINT NOT NULL` | |
+| `submitted_at` | `TIMESTAMPTZ NOT NULL` | |
+| `response_received_at` | `TIMESTAMPTZ` | |
+| `outcome_code` | `TEXT` | `accepted` / `rejected` |
+| `hesa_submission_reference` | `TEXT` | |
+
+### hesa_validation_issue *(bitemporal — issues can be resolved)*
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID PK` | |
+| `hesa_return_id` | `UUID FK → hesa_return` | |
+| `issue_code` | `TEXT NOT NULL` | HESA rule code |
+| `severity_code` | `TEXT NOT NULL` | `error` / `warning` |
+| `description` | `TEXT NOT NULL` | |
+| `affected_student_id` | `UUID FK → person` | Nullable for global issues |
+| `status_code` | `TEXT NOT NULL` | `open` / `resolved` / `deferred` |
+| *(bitemporal columns)* | | |
+
+### hesa_identifier_assignment
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID PK` | |
+| `person_id` | `UUID FK → person` | |
+| `hesa_id` | `TEXT NOT NULL` | |
+| `academic_year` | `TEXT NOT NULL` | Year in which identifier was first assigned |
+| `assigned_at` | `TIMESTAMPTZ NOT NULL` | |
+
+### slc_notification *(append-only)*
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID PK` | |
+| `enrolment_id` | `UUID FK → enrolment` | |
+| `notification_type_code` | `TEXT NOT NULL` | `enrolment-confirmed` / `status-changed` / `withdrawal` / `intermission` |
+| `academic_year` | `TEXT NOT NULL` | |
+| `sent_at` | `TIMESTAMPTZ NOT NULL` | |
+| `slc_reference` | `TEXT` | |
+
+### slc_entitlement *(bitemporal)*
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID PK` | |
+| `enrolment_id` | `UUID FK → enrolment` | |
+| `academic_year` | `TEXT NOT NULL` | |
+| `tuition_fee_loan_amount` | `NUMERIC(10,2)` | |
+| `entitlement_status_code` | `TEXT NOT NULL` | `entitled` / `suspended` / `recovered` |
+| `received_at` | `TIMESTAMPTZ NOT NULL` | |
+| *(bitemporal columns)* | | |
+
+### slc_payment_status *(bitemporal)*
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID PK` | |
+| `enrolment_id` | `UUID FK → enrolment` | |
+| `payment_type_code` | `TEXT NOT NULL` | `tuition-fee` / `maintenance` |
+| `status_code` | `TEXT NOT NULL` | `pending` / `released` / `overpaid` / `recovered` |
+| `amount` | `NUMERIC(10,2)` | |
+| `received_at` | `TIMESTAMPTZ NOT NULL` | |
+| *(bitemporal columns)* | | |
+
+### cas_request *(bitemporal — request status progresses)*
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID PK` | |
+| `enrolment_id` | `UUID FK → enrolment` | |
+| `request_type_code` | `TEXT NOT NULL` | `new` / `renewal` |
+| `status_code` | `TEXT NOT NULL` | `draft` / `submitted` / `assigned` / `issued` |
+| `submitted_at` | `TIMESTAMPTZ` | |
+| *(bitemporal columns)* | | |
+
+### cas_assignment
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID PK` | |
+| `cas_request_id` | `UUID FK → cas_request` | |
+| `cas_reference` | `TEXT NOT NULL` | UKVI CAS reference |
+| `assigned_at` | `TIMESTAMPTZ NOT NULL` | |
+| `issued_to_student_at` | `TIMESTAMPTZ` | |
+| `expires_at` | `DATE` | |
+
+### visa_status *(bitemporal)*
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID PK` | |
+| `person_id` | `UUID FK → person` | |
+| `visa_type_code` | `TEXT NOT NULL` | `student` / `graduate` / `other` |
+| `status_code` | `TEXT NOT NULL` | `granted` / `refused` / `curtailed` / `expired` |
+| `expiry_date` | `DATE` | |
+| `received_from_ukvi_at` | `TIMESTAMPTZ NOT NULL` | |
+| *(bitemporal columns)* | | |
+
+### ukvi_compliance_case *(bitemporal)*
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID PK` | |
+| `enrolment_id` | `UUID FK → enrolment` | |
+| `trigger_type_code` | `TEXT NOT NULL` | `attendance-threshold` / `visa-status-change` |
+| `status_code` | `TEXT NOT NULL` | `open` / `under-review` / `resolved` / `reported-to-ukvi` |
+| `workflow_instance_id` | `TEXT` | |
+| `opened_at` | `TIMESTAMPTZ NOT NULL` | |
+| *(bitemporal columns)* | | |
+
+---
+
+## Additional Entities — Staff Assignments and Research
+
+### staff_assignment *(bitemporal)*
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID PK` | |
+| `enrolment_id` | `UUID FK → enrolment` | |
+| `assignment_type_code` | `TEXT NOT NULL` | `personal-tutor` / `supervisor` / `module-tutor` |
+| `staff_actor_id` | `TEXT NOT NULL` | HR / Keycloak identity |
+| `staff_display_name` | `TEXT NOT NULL` | |
+| `source_system_reference` | `TEXT` | HR system assignment ID |
+| *(bitemporal columns)* | | |
+
+### research_milestone *(bitemporal)*
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID PK` | |
+| `enrolment_id` | `UUID FK → enrolment` | |
+| `milestone_type_code` | `TEXT NOT NULL` | `confirmation-of-registration` / `upgrade` / `thesis-submission` / `viva` |
+| `outcome_code` | `TEXT` | E.g. `pass` / `pass-with-corrections` / `resubmission` |
+| `milestone_date` | `DATE NOT NULL` | |
+| `source_system_reference` | `TEXT` | CRIS reference |
+| *(bitemporal columns)* | | |
+
+---
+
+## Additional Entities — Enterprise Integration Feedback
+
+### student_risk_flag *(bitemporal)*
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID PK` | |
+| `enrolment_id` | `UUID FK → enrolment` | |
+| `flag_type_code` | `TEXT NOT NULL` | E.g. `at-risk-retention` / `academic-concern` |
+| `source_system_code` | `TEXT NOT NULL` | `bi` / `vle` / `attendance` |
+| `severity_code` | `TEXT NOT NULL` | `low` / `medium` / `high` |
+| `status_code` | `TEXT NOT NULL` | `open` / `actioned` / `resolved` |
+| `raised_at` | `TIMESTAMPTZ NOT NULL` | |
+| *(bitemporal columns)* | | |
+
+### data_quality_issue *(bitemporal)*
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID PK` | |
+| `source_system_code` | `TEXT NOT NULL` | `dw` / `hesa` |
+| `entity_type` | `TEXT` | Affected entity type |
+| `entity_id` | `UUID` | Affected record |
+| `issue_description` | `TEXT NOT NULL` | |
+| `status_code` | `TEXT NOT NULL` | `open` / `under-investigation` / `resolved` / `deferred` |
+| `received_at` | `TIMESTAMPTZ NOT NULL` | |
+| *(bitemporal columns)* | | |
+
+### student_document *(append-only — each version is a new row)*
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID PK` | |
+| `enrolment_id` | `UUID FK → enrolment` | |
+| `document_type_code` | `TEXT NOT NULL` | `transcript` / `certificate` / `enrolment-confirmation` / `hear` |
+| `version` | `SMALLINT NOT NULL DEFAULT 1` | |
+| `generated_at` | `TIMESTAMPTZ NOT NULL` | |
+| `edrms_reference` | `TEXT` | Populated after archival |
+| `archived_at` | `TIMESTAMPTZ` | |
+
+---
+
+## Modifications to Existing Entities
+
+The following existing entities require changes identified during Phase 2 remediation.
+
+| Entity | Required change |
+|---|---|
+| `person` | Add `status_code` (`prospective` / `enrolled` / `graduated` / `deceased`) for statuses not represented by enrolment alone (SID-009) |
+| `programme` | Add `awarding_body_id FK → awarding_body`, `owning_school`, `credit_framework_code` |
+| `module` | Add `assessment_pattern_description` (reference to catalogue-level assessment before delivery offering) |
+| `mark` | Add `attempt_number SMALLINT` (1 = first sit, 2 = first resit, etc.), `mark_status_code` (`provisional` / `confirmed`), `moderation_state_code` |
+| `award` | Make bitemporal to support post-ratification correction and certificate reissue |
+| `exceptional_circumstances` | Already updated above (made bitemporal, added scope and outcome reason) |
+| `reasonable_adjustment` | Already updated above (removed timestamp columns; use `adjustment_distribution`) |
+| `integration_registration` | Extended in integration-layer.md |
 
 ---
 
