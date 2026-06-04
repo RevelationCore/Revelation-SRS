@@ -4,7 +4,7 @@ import { sql } from 'drizzle-orm';
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 
 import { createDb, type Db } from '../src/pool.js';
-import { rlsPolicySql } from '../src/rls.js';
+import { rlsPolicySql, type TenantScopedDb } from '../src/rls.js';
 import { bitemporalConstraintsSql } from '../src/temporal.js';
 
 export interface TestContext {
@@ -67,6 +67,9 @@ export async function startTestDb(): Promise<TestContext> {
 /**
  * Create a minimal bitemporal test table and enable RLS.
  * Used by bitemporal.test.ts and rls.test.ts.
+ *
+ * Also creates a non-privileged srs_app role (no BYPASSRLS) so that
+ * withAppContext() can test true RLS filtering within the same connection.
  */
 export async function createTestBitemporalTable(db: Db): Promise<void> {
   await db.execute(sql`
@@ -79,14 +82,41 @@ export async function createTestBitemporalTable(db: Db): Promise<void> {
       valid_from    TIMESTAMPTZ NOT NULL,
       valid_to      TIMESTAMPTZ,
       recorded_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
-      recorded_until TIMESTAMPTZ,
-      CONSTRAINT test_entity_temporal_check_valid
-        CHECK (valid_to IS NULL OR valid_to > valid_from),
-      CONSTRAINT test_entity_temporal_check_recorded
-        CHECK (recorded_until IS NULL OR recorded_until > recorded_at)
+      recorded_until TIMESTAMPTZ
     );
   `);
 
   await db.execute(sql.raw(bitemporalConstraintsSql('test_entity')));
   await db.execute(sql.raw(rlsPolicySql('test_entity')));
+
+  // Create a non-superuser application role so RLS tests can drop privileges.
+  await db.execute(sql.raw(`
+    DO $$ BEGIN
+      IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'srs_app') THEN
+        CREATE ROLE srs_app NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS;
+      END IF;
+    END $$;
+    GRANT srs_app TO CURRENT_USER;
+    GRANT SELECT, INSERT, UPDATE, DELETE ON test_entity TO srs_app;
+    GRANT SELECT ON tenant TO srs_app;
+  `));
+}
+
+/**
+ * Execute fn inside a transaction that (a) drops to the srs_app role so RLS
+ * is enforced and (b) sets the tenant context for the RLS policy.
+ *
+ * The superuser connection is required to SET ROLE; srs_app itself cannot
+ * escalate privileges back.
+ */
+export async function withAppContext<T>(
+  db: Db,
+  tenantId: string,
+  fn: (tx: TenantScopedDb) => Promise<T>,
+): Promise<T> {
+  return db.transaction(async (tx) => {
+    await tx.execute(sql.raw("SET LOCAL ROLE srs_app"));
+    await tx.execute(sql`SELECT set_config('app.current_tenant_id', ${tenantId}, true)`);
+    return fn(tx);
+  });
 }

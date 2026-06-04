@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import { and, gt, isNull, lte, or, sql, type SQL, type SQLWrapper } from 'drizzle-orm';
+import { and, getTableName, gt, isNull, lte, or, sql, type SQL, type SQLWrapper } from 'drizzle-orm';
 import { timestamp, uuid } from 'drizzle-orm/pg-core';
 import type { PgTableWithColumns, TableConfig } from 'drizzle-orm/pg-core';
 
@@ -53,7 +53,6 @@ type BitemporalTable = {
   validTo:       SQLWrapper;
   recordedAt:    SQLWrapper;
   recordedUntil: SQLWrapper;
-  [col: string]: unknown;
 };
 
 /**
@@ -131,7 +130,7 @@ export async function bitemporalUpdate<
 ): Promise<void> {
   await db.transaction(async (tx) => {
     const now       = new Date();
-    const tableName = (table as unknown as { _: { name: string } })._.name;
+    const tableName = getTableName(table);
 
     // 1. Close the current version (recorded_until IS NULL)
     const closeResult = await tx.execute(

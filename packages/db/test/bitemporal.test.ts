@@ -4,7 +4,7 @@ import { sql } from 'drizzle-orm';
 import { pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { bitemporalUpdate, currentVersionWhere } from '../src/temporal.js';
+import { bitemporalUpdate, currentVersionWhere, pointInTimeWhere } from '../src/temporal.js';
 
 import { createTestBitemporalTable, startTestDb, type TestContext } from './setup.js';
 
@@ -118,48 +118,74 @@ describe('Bitemporal pattern', () => {
     expect(expiredRows).toHaveLength(0);
   });
 
-  it('point-in-time query returns the historically correct version', async () => {
+  it('pointInTimeWhere returns the correct version on both temporal axes', async () => {
     const logicalId = randomUUID();
-    const t0 = new Date('2024-09-01T00:00:00Z');
-    const t1 = new Date('2025-02-01T00:00:00Z');
 
-    // Insert version 1: valid from t0 to t1
+    // Transaction-time T0: version 1 is known (valid 2024-09-01 → 2025-02-01).
+    // Transaction-time T1: version 2 supersedes it (valid from 2025-02-01 onwards).
+    // Only one row has recorded_until IS NULL at any moment, satisfying the
+    // current-version unique index while still giving two historical records.
+    const txT0   = new Date('2024-08-01T00:00:00Z');
+    const txT1   = new Date('2025-01-01T00:00:00Z');
+    const validT0 = new Date('2024-09-01T00:00:00Z');
+    const validT1 = new Date('2025-02-01T00:00:00Z');
+
+    // Version 1: valid t0→t1, recorded at T0, closed (superseded) at T1.
     await ctx.db.execute(
       sql`INSERT INTO test_entity
-          (id, tenant_id, code, description, valid_from, valid_to, recorded_at)
-          VALUES (${logicalId}, ${ctx.tenantA}, 'TST-003', 'year-one', ${t0}, ${t1}, ${new Date()})`,
+          (id, tenant_id, code, description, valid_from, valid_to, recorded_at, recorded_until)
+          VALUES (${logicalId}, ${ctx.tenantA}, 'TST-003', 'year-one',
+                  ${validT0}, ${validT1}, ${txT0}, ${txT1})`,
     );
 
-    // Insert version 2: valid from t1 onwards (current)
+    // Version 2: valid t1 onwards, recorded at T1, still current.
     await ctx.db.execute(
       sql`INSERT INTO test_entity
           (id, tenant_id, code, description, valid_from, recorded_at)
-          VALUES (${logicalId}, ${ctx.tenantA}, 'TST-003', 'year-two', ${t1}, ${new Date()})`,
+          VALUES (${logicalId}, ${ctx.tenantA}, 'TST-003', 'year-two', ${validT1}, ${txT1})`,
     );
 
-    const midPoint = new Date('2024-11-15T00:00:00Z');
-    const atT0 = await ctx.db.execute(
-      sql`SELECT description FROM test_entity
-          WHERE id = ${logicalId}
-            AND valid_from <= ${midPoint}
-            AND (valid_to IS NULL OR valid_to > ${midPoint})
-            AND recorded_until IS NULL`,
-    ) as Array<Record<string, unknown>>;
+    // As-of transaction time T0.5 and valid time in the year-one window → year-one.
+    const yearOneRows = await ctx.db
+      .select()
+      .from(testEntity)
+      .where(pointInTimeWhere(testEntity, {
+        logicalId,
+        tenantId:   ctx.tenantA,
+        validAt:    new Date('2024-11-15T00:00:00Z'),
+        recordedAt: new Date('2024-09-15T00:00:00Z'),
+      }));
 
-    expect(atT0).toHaveLength(1);
-    expect(atT0[0]?.['description']).toBe('year-one');
+    expect(yearOneRows).toHaveLength(1);
+    expect(yearOneRows[0]?.description).toBe('year-one');
 
-    const afterT1 = new Date('2025-06-01T00:00:00Z');
-    const atT1 = await ctx.db.execute(
-      sql`SELECT description FROM test_entity
-          WHERE id = ${logicalId}
-            AND valid_from <= ${afterT1}
-            AND (valid_to IS NULL OR valid_to > ${afterT1})
-            AND recorded_until IS NULL`,
-    ) as Array<Record<string, unknown>>;
+    // As-of transaction time after T1 and valid time in the year-two window → year-two.
+    const yearTwoRows = await ctx.db
+      .select()
+      .from(testEntity)
+      .where(pointInTimeWhere(testEntity, {
+        logicalId,
+        tenantId:   ctx.tenantA,
+        validAt:    new Date('2025-06-01T00:00:00Z'),
+        recordedAt: new Date('2025-06-01T00:00:00Z'),
+      }));
 
-    expect(atT1).toHaveLength(1);
-    expect(atT1[0]?.['description']).toBe('year-two');
+    expect(yearTwoRows).toHaveLength(1);
+    expect(yearTwoRows[0]?.description).toBe('year-two');
+
+    // Valid-time in the year-one window BUT as-of a time after T1 → nothing
+    // (version 1 was closed at T1, and version 2 does not cover this valid window).
+    const goneRows = await ctx.db
+      .select()
+      .from(testEntity)
+      .where(pointInTimeWhere(testEntity, {
+        logicalId,
+        tenantId:   ctx.tenantA,
+        validAt:    new Date('2024-11-15T00:00:00Z'),
+        recordedAt: new Date('2025-06-01T00:00:00Z'),
+      }));
+
+    expect(goneRows).toHaveLength(0);
   });
 
   it('current version unique index prevents two current versions for the same logical id', async () => {

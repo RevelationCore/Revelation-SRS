@@ -3,9 +3,9 @@ import { randomUUID } from 'node:crypto';
 import { sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { withTenantContext } from '../src/rls.js';
+import type { TenantScopedDb } from '../src/rls.js';
 
-import { createTestBitemporalTable, startTestDb, type TestContext } from './setup.js';
+import { createTestBitemporalTable, startTestDb, withAppContext, type TestContext } from './setup.js';
 
 let ctx: TestContext;
 
@@ -24,21 +24,21 @@ describe('Row-Level Security', () => {
     const idB = randomUUID();
     const now  = new Date();
 
-    // Insert a record for each tenant without RLS (direct write)
+    // Insert records for both tenants without RLS (superuser direct write)
     await ctx.db.execute(
       sql`INSERT INTO test_entity (id, tenant_id, code, valid_from)
           VALUES (${idA}, ${ctx.tenantA}, 'RLS-A', ${now}),
                  (${idB}, ${ctx.tenantB}, 'RLS-B', ${now})`,
     );
 
-    // Querying as tenant A should only return tenant A's row
-    const rowsAsA = await withTenantContext(ctx.db, ctx.tenantA, async (tx) => {
-      return tx.execute(
+    // Querying as tenant A through the non-privileged app role must only return tenant A's row
+    const rowsAsA = await withAppContext(ctx.db, ctx.tenantA, async (tx: TenantScopedDb) =>
+      tx.execute(
         sql`SELECT code FROM test_entity WHERE code IN ('RLS-A', 'RLS-B')`,
-      ) as Promise<Array<Record<string, unknown>>>;
-    });
+      ) as Promise<Array<Record<string, unknown>>>,
+    );
 
-    expect(rowsAsA.map((r) => r['code'])).toEqual(['RLS-A']);
+    expect(rowsAsA.map((r: Record<string, unknown>) => r['code'])).toEqual(['RLS-A']);
   });
 
   it('a query scoped to tenant B cannot see tenant A records', async () => {
@@ -52,13 +52,13 @@ describe('Row-Level Security', () => {
                  (${idB}, ${ctx.tenantB}, 'RLS-D', ${now})`,
     );
 
-    const rowsAsB = await withTenantContext(ctx.db, ctx.tenantB, async (tx) => {
-      return tx.execute(
+    const rowsAsB = await withAppContext(ctx.db, ctx.tenantB, async (tx: TenantScopedDb) =>
+      tx.execute(
         sql`SELECT code FROM test_entity WHERE code IN ('RLS-C', 'RLS-D')`,
-      ) as Promise<Array<Record<string, unknown>>>;
-    });
+      ) as Promise<Array<Record<string, unknown>>>,
+    );
 
-    expect(rowsAsB.map((r) => r['code'])).toEqual(['RLS-D']);
+    expect(rowsAsB.map((r: Record<string, unknown>) => r['code'])).toEqual(['RLS-D']);
   });
 
   it('a write to a tenant A row is not visible when querying as tenant B', async () => {
@@ -70,11 +70,11 @@ describe('Row-Level Security', () => {
           VALUES (${idA}, ${ctx.tenantA}, 'RLS-E', ${now})`,
     );
 
-    const rowsAsB = await withTenantContext(ctx.db, ctx.tenantB, async (tx) => {
-      return tx.execute(
+    const rowsAsB = await withAppContext(ctx.db, ctx.tenantB, async (tx: TenantScopedDb) =>
+      tx.execute(
         sql`SELECT code FROM test_entity WHERE id = ${idA}`,
-      ) as Promise<Array<Record<string, unknown>>>;
-    });
+      ) as Promise<Array<Record<string, unknown>>>,
+    );
 
     expect(rowsAsB).toHaveLength(0);
   });
