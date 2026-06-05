@@ -15,6 +15,34 @@
       "when": 1748995201000,
       "tag": "0001_seed_value_sets",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1748995202000,
+      "tag": "0002_phase4_domain_schema",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1748995203000,
+      "tag": "0003_seed_phase4_field_mappings",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1748995204000,
+      "tag": "0004_phase5_assessment_schema",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1748995205000,
+      "tag": "0005_seed_phase5_field_mappings",
+      "breakpoints": true
     }
   ]
 }

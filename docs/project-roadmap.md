@@ -178,6 +178,8 @@ Two worked examples are carried through the later phases to validate the archite
 
 **Prerequisites**: Phase 3 complete.
 
+**Stage baseline**: Stage 0 stabilisation, Stage 1 student identity core, Stage 2 enrolment lifecycle, Stage 3 catalogue/calendar completion, Stage 4 module registration, and Stage 5 tenant administration recorded in `docs/phase-4-stage-0-status.md`.
+
 **Work items**
 
 1. **Tenant administration** — institution provisioning, tenant configuration management, configuration-scoped rule sets.

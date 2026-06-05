@@ -27,6 +27,16 @@ export class IntegrationBusPublisher {
   async connect(): Promise<void> {
     this.nc = await connect({ servers: this.natsUrl });
     this.js = this.nc.jetstream();
+    await this.ensureStream();
+  }
+
+  private async ensureStream(): Promise<void> {
+    const jsm = await this.nc!.jetstreamManager();
+    try {
+      await jsm.streams.info('SRS_EVENTS');
+    } catch {
+      await jsm.streams.add({ name: 'SRS_EVENTS', subjects: ['srs.>'] });
+    }
   }
 
   async close(): Promise<void> {

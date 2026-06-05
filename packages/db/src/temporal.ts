@@ -129,13 +129,15 @@ export async function bitemporalUpdate<
   validTo?:   Date | null,
 ): Promise<void> {
   await db.transaction(async (tx) => {
-    const now       = new Date();
     const tableName = getTableName(table);
 
-    // 1. Close the current version (recorded_until IS NULL)
+    // 1. Close the current version using the database clock (NOW()) to avoid
+    //    microsecond-precision mismatches between JS Date and PostgreSQL timestamps.
+    //    RETURNING recorded_until gives us the exact timestamp to use as recorded_at
+    //    on the new version, guaranteeing recorded_until > recorded_at is satisfied.
     const closeResult = await tx.execute(
       sql`UPDATE ${table}
-          SET recorded_until = ${now}
+          SET recorded_until = NOW()
           WHERE id = ${logicalId}
             AND tenant_id = ${tenantId}
             AND recorded_until IS NULL
@@ -150,12 +152,17 @@ export async function bitemporalUpdate<
 
     const closed = closeResult[0] as Record<string, unknown>;
 
+    // Use the database-generated recorded_until as recorded_at for the new row.
+    // This guarantees the new row's recorded_at is strictly after the closed row's
+    // recorded_at, so all temporal constraints are satisfied.
+    const newRecordedAt = closed['recorded_until'];
+
     // 2. Compose the new version row
     const newRow: Record<string, unknown> = {
       ...closed,
       ...patch,
       version_id:     randomUUID(),
-      recorded_at:    now,
+      recorded_at:    newRecordedAt,
       recorded_until: null,
       valid_from:     validFrom ?? closed['valid_from'],
       valid_to:       validTo !== undefined ? validTo : closed['valid_to'],

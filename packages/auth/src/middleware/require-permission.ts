@@ -15,11 +15,15 @@ export function requirePermission(permission: Permission): preHandlerHookHandler
   return function checkPermission(
     request: FastifyRequest,
     _reply: FastifyReply,
+    done,
   ): void {
     if (!hasPermission(request.user.roles, permission)) {
-      throw new ForbiddenError(
+      done(new ForbiddenError(
         `Role(s) ${request.user.roles.join(', ')} do not have permission '${permission}'`,
-      );
+      ));
+      return;
     }
+
+    done();
   };
 }

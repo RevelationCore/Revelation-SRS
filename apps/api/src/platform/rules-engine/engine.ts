@@ -1,10 +1,11 @@
 import { sql } from 'drizzle-orm';
-import type { Db } from '@revelation-srs/db';
+import { withTenantContext, type Db } from '@revelation-srs/db';
 import { RuleNotConfiguredError } from '@revelation-srs/domain';
 
 export type RuleTypeCode =
   | 'pass-mark'
   | 'late-penalty'
+  | 'late-penalty-rate'
   | 'late-penalty-cap'
   | 'resit-mark-cap'
   | 'compensation-threshold'
@@ -15,7 +16,8 @@ export type RuleTypeCode =
   | 'classification-boundary'
   | 'classification-algorithm'
   | 'classification-discretion-zone'
-  | 'award-credit-requirement';
+  | 'award-credit-requirement'
+  | 'max-credits-per-period';
 
 export interface RuleContext {
   tenantId:    string;
@@ -57,18 +59,27 @@ export class RulesEngine {
 
     const asOf = ctx.asOfDate ?? new Date();
 
-    // Programme-specific rule first, tenant-wide default as fallback
-    const rows = await this.db.execute(
-      sql`SELECT rule_value FROM academic_rule
-          WHERE tenant_id = ${ctx.tenantId}
-            AND rule_type_code = ${ruleType}
-            AND rule_key = ${ruleKey}
-            AND (programme_id = ${ctx.programmeId} OR programme_id IS NULL)
-            AND valid_from <= ${asOf}
-            AND (valid_to IS NULL OR valid_to > ${asOf})
-            AND recorded_until IS NULL
-          ORDER BY programme_id NULLS LAST
-          LIMIT 1`,
+    // Build programme filter: if a programmeId is provided, match it first
+    // (programme-specific rule takes precedence) then fall back to tenant-wide
+    // defaults (programme_id IS NULL). When no programmeId is set, only look
+    // for tenant-wide defaults to avoid a UUID type error on empty string.
+    const programmeCondition = ctx.programmeId
+      ? sql`(programme_id = ${ctx.programmeId}::uuid OR programme_id IS NULL)`
+      : sql`programme_id IS NULL`;
+
+    const rows = await withTenantContext(this.db, ctx.tenantId, async (tx) =>
+      tx.execute(
+        sql`SELECT rule_value FROM academic_rule
+            WHERE tenant_id = ${ctx.tenantId}
+              AND rule_type_code = ${ruleType}
+              AND rule_key = ${ruleKey}
+              AND ${programmeCondition}
+              AND valid_from <= ${asOf}
+              AND (valid_to IS NULL OR valid_to > ${asOf})
+              AND recorded_until IS NULL
+            ORDER BY programme_id NULLS LAST
+            LIMIT 1`,
+      ),
     ) as unknown as RuleRow[];
 
     if (rows.length === 0) {
@@ -107,5 +118,15 @@ export class RulesEngine {
       ctx, 'classification-boundary', 'undergraduate',
     );
     return rule.boundaries;
+  }
+
+  async getMaxCreditsPerPeriod(ctx: RuleContext): Promise<number | null> {
+    try {
+      const rule = await this.getRule<{ maxCredits: number }>(ctx, 'max-credits-per-period', 'per-period');
+      return rule.maxCredits;
+    } catch (err) {
+      if (err instanceof RuleNotConfiguredError) return null;
+      throw err;
+    }
   }
 }
