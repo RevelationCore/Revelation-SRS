@@ -101,10 +101,10 @@ export async function buildApp(
   const marks = new MarkService(db, eventBus, rules, moduleResults);
   const adjustments = new AdjustmentService(db, eventBus, valueSets);
   const exceptionalCircumstances = new ExceptionalCircumstancesService(db, eventBus);
-  const misconduct = new MisconductService(db, valueSets);
-  const boards = new BoardService(db, eventBus, valueSets);
+  const misconduct = new MisconductService(db, valueSets, eventBus);
   const progression = new ProgressionService(db, eventBus, rules);
   const awards      = new AwardService(db, eventBus, rules, enrolments);
+  const boards = new BoardService(db, eventBus, valueSets, awards);
   const hear        = new HearService(db);
   const corrections = new CorrectionService(db, eventBus, marks, moduleResults, progression);
 
@@ -228,27 +228,33 @@ export async function buildApp(
     if ((routeOptions.schema as { hide?: boolean } | undefined)?.hide) return;
 
     const tagMap: Array<[string, string]> = [
-      ['/adjustments',          'adjustments'],
+      // More-specific patterns must precede their containing segments
+      ['/adjustments',               'adjustments'],
       ['/exceptional-circumstances', 'circumstances'],
-      ['/misconduct-outcomes',  'circumstances'],
-      ['/exam-boards',          'governance'],
-      ['/progression',          'progression'],
-      ['/students',             'students'],
-      ['/enrolments',           'enrolments'],
-      ['/marks',                'assessment'],
-      ['/result',               'assessment'],
-      ['/module-registrations', 'module-registrations'],
-      ['/programmes',           'catalogue'],
-      ['/modules',              'catalogue'],
-      ['/learning-outcomes',    'catalogue'],
-      ['/academic-periods',     'calendar'],
-      ['/components',           'assessment'],
-      ['/module-offerings',     'calendar'],
-      ['/value-sets',           'value-sets'],
-      ['/fields/',              'value-sets'],
-      ['/tenants',              'tenant-admin'],
-      ['/academic-rules',       'tenant-admin'],
-      ['/tenant/',              'tenant-admin'],
+      ['/misconduct-outcomes',       'circumstances'],
+      ['/correction-cases',          'governance'],
+      ['/exam-boards',               'governance'],
+      ['/ratification',              'governance'],
+      ['/hear',                      'progression'],
+      ['/award',                     'progression'],
+      ['/classification',            'progression'],
+      ['/progression',               'progression'],
+      ['/students',                  'students'],
+      ['/enrolments',                'enrolments'],
+      ['/marks',                     'assessment'],
+      ['/result',                    'assessment'],
+      ['/module-registrations',      'module-registrations'],
+      ['/programmes',                'catalogue'],
+      ['/modules',                   'catalogue'],
+      ['/learning-outcomes',         'catalogue'],
+      ['/academic-periods',          'calendar'],
+      ['/components',                'assessment'],
+      ['/module-offerings',          'calendar'],
+      ['/value-sets',                'value-sets'],
+      ['/fields/',                   'value-sets'],
+      ['/tenants',                   'tenant-admin'],
+      ['/academic-rules',            'tenant-admin'],
+      ['/tenant/',                   'tenant-admin'],
     ];
 
     for (const [prefix, tag] of tagMap) {

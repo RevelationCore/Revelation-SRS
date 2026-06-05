@@ -1,7 +1,7 @@
 # Phase 5 Implementation Plan — Assessment, Progression, and Awards
 
 > Date: 2026-06-05
-> Status: In progress — Stage 7 progression engine implemented; integration verification pending
+> Status: Implemented through Stage 11 — focused Phase 5 regression verification passed
 > Prerequisite: Phase 4 complete (all exit criteria passing)
 
 ---
@@ -656,7 +656,7 @@ Verification passed:
 
 ### Stage 7 Execution Status
 
-**Status**: Implemented — 2026-06-05; focused integration verification pending Docker/Testcontainers access
+**Status**: Complete — 2026-06-05
 
 Implemented:
 - `ProgressionService` with progression evaluation, bitemporal decision replacement, current decision read, and decision history
@@ -671,12 +671,7 @@ Verification passed:
 - `pnpm typecheck`
 - `pnpm exec eslint apps/api/src/platform/progression/progression-service.ts apps/api/src/routes/progression.ts apps/api/src/app.ts apps/api/test/progression.int.test.ts`
 - `pnpm --filter @revelation-srs/api test`
-
-Verification pending:
 - `pnpm --filter @revelation-srs/api exec vitest run --config vitest.int.config.ts test/progression.int.test.ts --reporter=verbose`
-- `pnpm --filter @revelation-srs/api exec vitest run --config vitest.int.config.ts --reporter=verbose`
-
-The pending integration runs require Docker/Testcontainers access; the escalation request was blocked by the environment usage limit during this implementation pass.
 
 ---
 
@@ -711,6 +706,16 @@ The pending integration runs require Docker/Testcontainers access; the escalatio
 - Award conferral calls `transitionStatus` (not a direct update); transition ledger row is created; person status advances to `alumnus`
 - PRG-005: HEAR timestamp recorded (stub; full generation in Stage 10)
 - All events published
+
+### Stage 8 Execution Status
+
+**Status**: Complete — 2026-06-05
+
+Implemented and verified:
+- Classification uses locked ratified module results and configurable classification algorithms/boundaries
+- Award conferral requires a ratified board covering the enrolment and a classification matching the calculated recommendation
+- Award conferral transitions enrolments through the standard graduation path and publishes `srs.award.conferred`
+- Regression coverage rejects unratified-board award conferral
 
 ---
 
@@ -759,6 +764,16 @@ The pending integration runs require Docker/Testcontainers access; the escalatio
   - Subsequent unauthorised mutations (via the normal PATCH route) still return 403
 - End-to-end test: mark → ratify → lock verified → open case → uphold → amend → verify new value → verify still locked
 
+### Stage 9 Execution Status
+
+**Status**: Complete — 2026-06-05
+
+Implemented and verified:
+- Correction cases, status transitions, amendment application, and listing routes
+- Amendment application now writes the entity change and amendment ledger in one transaction
+- Amendment attempts are scoped to the correction case enrolment
+- Regression coverage rejects cross-enrolment amendments
+
 ---
 
 ## Stage 10 — HEAR Generation (PRG-005)
@@ -787,6 +802,16 @@ The pending integration runs require Docker/Testcontainers access; the escalatio
 - HEAR document is only generated for awarded enrolments
 - Student can read their own HEAR via `student:read:own`
 
+### Stage 10 Execution Status
+
+**Status**: Complete — 2026-06-05
+
+Implemented and verified:
+- Structured HEAR document generation and read routes
+- HEAR generation requires a conferred award
+- HEAR module-result collection is restricted to locked ratified module results
+- Own-student and board-reader access controls are covered
+
 ---
 
 ## Stage 11 — Event Consumer Tests and OpenAPI
@@ -801,7 +826,7 @@ Create `apps/api/test/events/phase5-event-consumer-tests.int.test.ts` covering a
 |---|---|
 | Assessment events | `srs.assessment.mark-received`, `srs.assessment.mark-updated`, `srs.assessment.module-result-calculated`, `srs.assessment.module-result-ratified` |
 | Adjustment events | `srs.adjustment.approved`, `srs.adjustment.distributed`, `srs.adjustment.expired` |
-| EC and misconduct events | `srs.circumstances.exceptional-circumstances-flagged`, `srs.circumstances.exceptional-circumstances-updated` |
+| EC and misconduct events | `srs.circumstances.exceptional-circumstances-flagged`, `srs.circumstances.exceptional-circumstances-updated`, `srs.circumstances.misconduct-outcome-recorded` |
 | Exam board events | `srs.governance.exam-board-data-pack-ready`, `srs.governance.exam-board-ratified`, `srs.governance.record-locked` |
 | Progression and award events | `srs.progression.decided`, `srs.award.conferred` |
 | Post-ratification events | `srs.governance.record-amended-post-ratification` |
@@ -816,6 +841,15 @@ Each test verifies: event subject, data classification, payload shape (at minimu
 ### Verification
 
 All event consumer tests pass. OpenAPI spec covers all Phase 5 resources with correct tags.
+
+### Stage 11 Execution Status
+
+**Status**: Complete — 2026-06-05
+
+Implemented and verified:
+- Phase 5 event consumer tests cover assessment, adjustment, circumstances, governance, progression, award, and post-ratification events
+- OpenAPI smoke coverage verifies Phase 5 route tags and resource paths
+- Focused Phase 5 regression run passed: `pnpm --filter @revelation-srs/api exec vitest run --config vitest.int.config.ts test/awards.int.test.ts test/hear.int.test.ts test/exam-boards.int.test.ts test/correction-cases.int.test.ts test/events/phase5-event-consumer-tests.int.test.ts --reporter=verbose`
 
 ---
 

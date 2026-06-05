@@ -163,6 +163,22 @@ export function examBoardRoutes(fastify: FastifyInstance): void {
     },
   );
 
+  fastify.get(
+    '/exam-boards/:boardId/data-packs/:dataPackId/candidates/:enrolmentId',
+    {
+      schema: {
+        params: Type.Object({ boardId: Type.String(), dataPackId: Type.String(), enrolmentId: Type.String() }),
+        response: { 200: CandidateProfileSchema, 404: ErrorSchema },
+      },
+      preHandler: [requirePermission('exam-board:read')],
+    },
+    async (request, reply) => {
+      const { dataPackId, enrolmentId } = request.params as { boardId: string; dataPackId: string; enrolmentId: string };
+      const profile = await fastify.boardService.getCandidateProfileByPack(dataPackId, enrolmentId, request.tenantId);
+      await reply.send(candidateProfileToWire(profile));
+    },
+  );
+
   fastify.post(
     '/exam-boards/:boardId/attendance',
     {

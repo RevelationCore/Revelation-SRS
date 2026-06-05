@@ -2,9 +2,13 @@ import { randomUUID } from 'node:crypto';
 
 import { and, eq, isNull } from 'drizzle-orm';
 import {
+  marks,
+  moduleRegistrations,
+  moduleResults,
   postRatificationAmendments,
   postRatificationCases,
   enrolments,
+  progressionDecisions,
   type Db,
   withTenantContext,
 } from '@revelation-srs/db';
@@ -97,7 +101,7 @@ export class CorrectionService {
     await withTenantContext(this.db, tenantId, async (tx) => {
       await tx.insert(postRatificationCases).values({
         versionId:    randomUUID(),
-        id:           caseId as `${string}-${string}-${string}-${string}-${string}`,
+        id:           caseId,
         tenantId:     tenantId as `${string}-${string}-${string}-${string}-${string}`,
         enrolmentId:  input.enrolmentId as `${string}-${string}-${string}-${string}-${string}`,
         caseTypeCode: input.caseTypeCode,
@@ -173,20 +177,19 @@ export class CorrectionService {
       );
     }
 
-    // Dispatch to the correct service and capture the before-value
-    const beforeValue = await this.#dispatchAmendment(tenantId, input, actorId);
-
     const amendmentId = randomUUID();
     const now         = new Date();
 
     await withTenantContext(this.db, tenantId, async (tx) => {
+      const beforeValue = await this.#dispatchAmendment(tx, tenantId, currentCase.enrolmentId, input, actorId, now);
+
       await tx.insert(postRatificationAmendments).values({
-        id:           amendmentId as `${string}-${string}-${string}-${string}-${string}`,
+        id:           amendmentId,
         tenantId:     tenantId as `${string}-${string}-${string}-${string}-${string}`,
         caseId:       caseId as `${string}-${string}-${string}-${string}-${string}`,
         entityType:   input.entityType,
         entityId:     input.entityId as `${string}-${string}-${string}-${string}-${string}`,
-        beforeValue:  beforeValue as Record<string, unknown>,
+        beforeValue,
         afterValue:   input.afterValue,
         authorisedBy: actorId,
         amendedAt:    now,
@@ -230,33 +233,185 @@ export class CorrectionService {
   // ── Private helpers ─────────────────────────────────────────────────────────
 
   async #dispatchAmendment(
+    tx: Parameters<Parameters<typeof withTenantContext>[2]>[0],
     tenantId: string,
+    caseEnrolmentId: string,
     input:    ApplyAmendmentInput,
     actorId:  string,
+    now: Date,
   ): Promise<unknown> {
     switch (input.entityType) {
       case 'mark': {
-        const markPatch: { rawMark?: number; adjustedMark?: number; penaltyApplied?: boolean; penaltyPercent?: number | null } = {};
-        if (input.afterValue['rawMark']        != null) markPatch.rawMark        = Number(input.afterValue['rawMark']);
-        if (input.afterValue['adjustedMark']   != null) markPatch.adjustedMark   = Number(input.afterValue['adjustedMark']);
-        if (input.afterValue['penaltyApplied'] != null) markPatch.penaltyApplied = Boolean(input.afterValue['penaltyApplied']);
+        const rows = await tx.select({
+          versionId: marks.versionId,
+          id: marks.id,
+          tenantId: marks.tenantId,
+          moduleRegistrationId: marks.moduleRegistrationId,
+          assessmentComponentId: marks.assessmentComponentId,
+          assessmentSubmissionId: marks.assessmentSubmissionId,
+          attemptNumber: marks.attemptNumber,
+          rawMark: marks.rawMark,
+          adjustedMark: marks.adjustedMark,
+          penaltyApplied: marks.penaltyApplied,
+          penaltyPercent: marks.penaltyPercent,
+          locked: marks.locked,
+          sourceSystem: marks.sourceSystem,
+          actorId: marks.actorId,
+          validFrom: marks.validFrom,
+          validTo: marks.validTo,
+          recordedAt: marks.recordedAt,
+          recordedUntil: marks.recordedUntil,
+          enrolmentId: moduleRegistrations.enrolmentId,
+        })
+          .from(marks)
+          .innerJoin(moduleRegistrations, eq(marks.moduleRegistrationId, moduleRegistrations.id))
+          .where(and(
+            eq(marks.id, input.entityId as `${string}-${string}-${string}-${string}-${string}`),
+            eq(marks.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
+            eq(moduleRegistrations.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
+            isNull(marks.recordedUntil),
+          )).limit(1);
+        const current = rows[0];
+        if (!current) throw new NotFoundError('Mark', input.entityId);
+        this.#assertCaseOwnsEntity(caseEnrolmentId, current.enrolmentId, input.entityType, input.entityId);
+
+        const rawMark = input.afterValue['rawMark'] != null ? Number(input.afterValue['rawMark']) : Number(current.rawMark);
+        const adjustedMark = input.afterValue['adjustedMark'] != null ? Number(input.afterValue['adjustedMark']) : Number(current.adjustedMark);
+        const penaltyApplied = input.afterValue['penaltyApplied'] != null
+          ? Boolean(input.afterValue['penaltyApplied'])
+          : current.penaltyApplied;
+        let penaltyPercent = current.penaltyPercent === null ? null : Number(current.penaltyPercent);
         if ('penaltyPercent' in input.afterValue) {
-          markPatch.penaltyPercent = input.afterValue['penaltyPercent'] != null ? Number(input.afterValue['penaltyPercent']) : null;
+          penaltyPercent = input.afterValue['penaltyPercent'] != null ? Number(input.afterValue['penaltyPercent']) : null;
         }
-        return this.markService.applyLockedAmendment(input.entityId, tenantId, markPatch, actorId);
+
+        await tx.update(marks)
+          .set({ recordedUntil: now, validTo: now })
+          .where(and(
+            eq(marks.id, input.entityId as `${string}-${string}-${string}-${string}-${string}`),
+            eq(marks.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
+            isNull(marks.recordedUntil),
+          ));
+        await tx.insert(marks).values({
+          versionId: randomUUID(),
+          id: input.entityId as `${string}-${string}-${string}-${string}-${string}`,
+          tenantId: tenantId as `${string}-${string}-${string}-${string}-${string}`,
+          moduleRegistrationId: current.moduleRegistrationId,
+          assessmentComponentId: current.assessmentComponentId,
+          assessmentSubmissionId: current.assessmentSubmissionId,
+          attemptNumber: current.attemptNumber,
+          rawMark: rawMark.toFixed(2),
+          adjustedMark: adjustedMark.toFixed(2),
+          penaltyApplied,
+          penaltyPercent: penaltyPercent?.toFixed(2) ?? null,
+          locked: true,
+          sourceSystem: current.sourceSystem,
+          actorId,
+          validFrom: now,
+          validTo: null,
+          recordedAt: now,
+          recordedUntil: null,
+        });
+        return this.#markBeforeValue(current);
       }
 
       case 'module_result': {
-        const resultPatch: { aggregateMark?: number; resultCode?: string } = {};
-        if (input.afterValue['aggregateMark'] != null) resultPatch.aggregateMark = Number(input.afterValue['aggregateMark']);
-        if (input.afterValue['resultCode']    != null) resultPatch.resultCode    = String(input.afterValue['resultCode']);
-        return this.moduleResultService.applyLockedAmendment(input.entityId, tenantId, resultPatch, actorId);
+        const rows = await tx.select({
+          id: moduleResults.id,
+          moduleRegistrationId: moduleResults.moduleRegistrationId,
+          aggregateMark: moduleResults.aggregateMark,
+          resultCode: moduleResults.resultCode,
+          locked: moduleResults.locked,
+          calculatedAt: moduleResults.calculatedAt,
+          validFrom: moduleResults.validFrom,
+          validTo: moduleResults.validTo,
+          recordedAt: moduleResults.recordedAt,
+          recordedUntil: moduleResults.recordedUntil,
+          enrolmentId: moduleRegistrations.enrolmentId,
+        })
+          .from(moduleResults)
+          .innerJoin(moduleRegistrations, eq(moduleResults.moduleRegistrationId, moduleRegistrations.id))
+          .where(and(
+            eq(moduleResults.id, input.entityId as `${string}-${string}-${string}-${string}-${string}`),
+            eq(moduleResults.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
+            eq(moduleRegistrations.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
+            isNull(moduleResults.recordedUntil),
+          )).limit(1);
+        const current = rows[0];
+        if (!current) throw new NotFoundError('ModuleResult', input.entityId);
+        this.#assertCaseOwnsEntity(caseEnrolmentId, current.enrolmentId, input.entityType, input.entityId);
+
+        const aggregateMark = input.afterValue['aggregateMark'] != null
+          ? Number(input.afterValue['aggregateMark'])
+          : Number(current.aggregateMark);
+        const resultCodeValue = input.afterValue['resultCode'];
+        const resultCode = typeof resultCodeValue === 'string'
+          ? resultCodeValue
+          : current.resultCode;
+
+        await tx.update(moduleResults)
+          .set({ recordedUntil: now, validTo: now })
+          .where(and(
+            eq(moduleResults.id, input.entityId as `${string}-${string}-${string}-${string}-${string}`),
+            eq(moduleResults.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
+            isNull(moduleResults.recordedUntil),
+          ));
+        await tx.insert(moduleResults).values({
+          versionId: randomUUID(),
+          id: input.entityId as `${string}-${string}-${string}-${string}-${string}`,
+          tenantId: tenantId as `${string}-${string}-${string}-${string}-${string}`,
+          moduleRegistrationId: current.moduleRegistrationId,
+          aggregateMark: aggregateMark.toFixed(2),
+          resultCode,
+          locked: true,
+          calculatedAt: now,
+          validFrom: now,
+          validTo: null,
+          recordedAt: now,
+          recordedUntil: null,
+        });
+        return this.#moduleResultBeforeValue(current);
       }
 
       case 'progression_decision': {
-        const decisionPatch: { decisionCode?: string } = {};
-        if (input.afterValue['decisionCode'] != null) decisionPatch.decisionCode = String(input.afterValue['decisionCode']);
-        return this.progressionService.applyLockedAmendment(input.entityId, tenantId, decisionPatch, actorId);
+        const rows = await tx.select().from(progressionDecisions).where(and(
+          eq(progressionDecisions.id, input.entityId as `${string}-${string}-${string}-${string}-${string}`),
+          eq(progressionDecisions.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
+          isNull(progressionDecisions.recordedUntil),
+        )).limit(1);
+        const current = rows[0];
+        if (!current) throw new NotFoundError('ProgressionDecision', input.entityId);
+        this.#assertCaseOwnsEntity(caseEnrolmentId, current.enrolmentId, input.entityType, input.entityId);
+
+        const decisionCodeValue = input.afterValue['decisionCode'];
+        const decisionCode = typeof decisionCodeValue === 'string'
+          ? decisionCodeValue
+          : current.decisionCode;
+
+        await tx.update(progressionDecisions)
+          .set({ recordedUntil: now, validTo: now })
+          .where(and(
+            eq(progressionDecisions.id, input.entityId as `${string}-${string}-${string}-${string}-${string}`),
+            eq(progressionDecisions.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
+            isNull(progressionDecisions.recordedUntil),
+          ));
+        await tx.insert(progressionDecisions).values({
+          versionId: randomUUID(),
+          id: input.entityId as `${string}-${string}-${string}-${string}-${string}`,
+          tenantId: tenantId as `${string}-${string}-${string}-${string}-${string}`,
+          enrolmentId: current.enrolmentId,
+          academicYear: current.academicYear,
+          yearOfStudy: current.yearOfStudy,
+          decisionCode,
+          examBoardId: current.examBoardId,
+          locked: true,
+          actorId,
+          validFrom: now,
+          validTo: null,
+          recordedAt: now,
+          recordedUntil: null,
+        });
+        return this.#progressionBeforeValue(current);
       }
 
       default:
@@ -264,6 +419,73 @@ export class CorrectionService {
           `Unsupported entity type '${input.entityType as string}' for post-ratification amendment`,
         );
     }
+  }
+
+  #assertCaseOwnsEntity(caseEnrolmentId: string, entityEnrolmentId: string, entityType: string, entityId: string): void {
+    if (caseEnrolmentId !== entityEnrolmentId) {
+      throw new ValidationError(
+        `Correction case enrolment does not match ${entityType} '${entityId}'`,
+        [{ field: 'entityId', message: 'Entity does not belong to the correction case enrolment' }],
+      );
+    }
+  }
+
+  #markBeforeValue(row: {
+    id: string;
+    moduleRegistrationId: string;
+    assessmentComponentId: string;
+    assessmentSubmissionId: string | null;
+    attemptNumber: number;
+    rawMark: string;
+    adjustedMark: string;
+    penaltyApplied: boolean;
+    penaltyPercent: string | null;
+    locked: boolean;
+    sourceSystem: string | null;
+  }): Record<string, unknown> {
+    return {
+      markId: row.id,
+      moduleRegistrationId: row.moduleRegistrationId,
+      assessmentComponentId: row.assessmentComponentId,
+      assessmentSubmissionId: row.assessmentSubmissionId,
+      attemptNumber: row.attemptNumber,
+      rawMark: Number(row.rawMark),
+      adjustedMark: Number(row.adjustedMark),
+      penaltyApplied: row.penaltyApplied,
+      penaltyPercent: row.penaltyPercent === null ? null : Number(row.penaltyPercent),
+      locked: row.locked,
+      sourceSystem: row.sourceSystem,
+    };
+  }
+
+  #moduleResultBeforeValue(row: {
+    id: string;
+    moduleRegistrationId: string;
+    aggregateMark: string;
+    resultCode: string;
+    locked: boolean;
+    calculatedAt: Date;
+  }): Record<string, unknown> {
+    return {
+      moduleResultId: row.id,
+      moduleRegistrationId: row.moduleRegistrationId,
+      aggregateMark: Number(row.aggregateMark),
+      resultCode: row.resultCode,
+      locked: row.locked,
+      calculatedAt: row.calculatedAt.toISOString(),
+    };
+  }
+
+  #progressionBeforeValue(row: typeof progressionDecisions.$inferSelect): Record<string, unknown> {
+    return {
+      progressionDecisionId: row.id,
+      enrolmentId: row.enrolmentId,
+      academicYear: row.academicYear,
+      yearOfStudy: row.yearOfStudy,
+      decisionCode: row.decisionCode,
+      examBoardId: row.examBoardId,
+      locked: row.locked,
+    };
   }
 
   async #getCurrentCase(caseId: string, tenantId: string): Promise<CorrectionCaseDto | null> {

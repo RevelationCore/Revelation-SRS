@@ -89,7 +89,7 @@ describe('Exam boards and data packs', () => {
       penaltyCode: 'mark-cap',
       penaltyEffects: expect.arrayContaining([expect.objectContaining({ targetEntityId: markId })]) as Array<{ targetEntityId: string }>,
     }));
-    expect(profileData.preBoardRecommendation).toMatchObject({ type: 'not-evaluated' });
+    expect(profileData.preBoardRecommendation).toMatchObject({ type: 'calculated' });
 
     const event = capturedEvents.find((captured) => captured.type === 'srs.governance.exam-board-data-pack-ready');
     expect(event).toBeDefined();
@@ -165,6 +165,13 @@ describe('Exam boards and data packs', () => {
     const outsideMarkId = await ingestMark(outside, 64);
     const boardId = await createBoard(covered.academicPeriodId);
     const chairJwt = await ctx.makeJwt({ roles: ['exam-board-chair'] });
+    const progression = await ctx.app.inject({
+      method: 'POST',
+      url: `/api/v1/enrolments/${covered.enrolmentId}/progression`,
+      headers: { authorization: `Bearer ${jwt}` },
+      payload: { academicYear: '2027-28' },
+    });
+    expect(progression.statusCode).toBe(201);
 
     await signoffBoard(boardId, chairJwt);
     const ratification = await ratifyBoard(boardId, chairJwt);
@@ -192,6 +199,22 @@ describe('Exam boards and data packs', () => {
     });
     expect(coveredResult.json<{ locked: boolean }>().locked).toBe(true);
 
+    const lockedProgression = await ctx.app.inject({
+      method: 'GET',
+      url: `/api/v1/enrolments/${covered.enrolmentId}/progression?academicYear=2027-28`,
+      headers: { authorization: `Bearer ${jwt}` },
+    });
+    expect(lockedProgression.json<{ locked: boolean; examBoardId: string | null }>())
+      .toMatchObject({ locked: true, examBoardId: boardId });
+
+    const blockedProgression = await ctx.app.inject({
+      method: 'POST',
+      url: `/api/v1/enrolments/${covered.enrolmentId}/progression`,
+      headers: { authorization: `Bearer ${jwt}` },
+      payload: { academicYear: '2027-28' },
+    });
+    expect(blockedProgression.statusCode).toBe(403);
+
     const lockedPatch = await ctx.app.inject({
       method: 'PATCH',
       url: `/api/v1/marks/${coveredMarkId}`,
@@ -216,7 +239,7 @@ describe('Exam boards and data packs', () => {
     expect(lockedEvent?.classification).toBe('standard');
     expect(lockedEvent?.payload as { examBoardId: string; lockedEntityTypes: string[] }).toMatchObject({
       examBoardId: boardId,
-      lockedEntityTypes: ['module_result', 'mark'],
+      lockedEntityTypes: ['module_result', 'mark', 'progression_decision'],
     });
 
     const moduleResultEvent = capturedEvents.find((event) => event.type === 'srs.assessment.module-result-ratified');
@@ -230,6 +253,47 @@ describe('Exam boards and data packs', () => {
       moduleRegistrationId: covered.moduleRegistrationId,
       aggregateMark: 71,
     });
+  });
+
+  it('rejects duplicate ratification with 422', async () => {
+    const fixture = await createBoardFixture('BRD107');
+    await ingestMark(fixture, 75);
+    const boardId = await createBoard(fixture.academicPeriodId);
+    const chairJwt = await ctx.makeJwt({ roles: ['exam-board-chair'] });
+
+    await signoffBoard(boardId, chairJwt);
+    const first = await ratifyBoard(boardId, chairJwt);
+    expect(first.statusCode).toBe(204);
+
+    const second = await ratifyBoard(boardId, chairJwt);
+    expect(second.statusCode).toBe(422);
+  });
+
+  it('cross-tenant isolation: board, data pack, and candidate profile from tenant A are invisible to tenant B', async () => {
+    const fixture = await createBoardFixture('BRD108');
+    await ingestMark(fixture, 55);
+    const boardId = await createBoard(fixture.academicPeriodId);
+    const pack = await generatePack(boardId);
+    expect(pack.statusCode).toBe(201);
+
+    const tenantBJwt = await ctx.makeJwt({ tenantId: ctx.secondTenantId });
+
+    const boardResp = await ctx.app.inject({
+      method: 'GET',
+      url: `/api/v1/exam-boards/${boardId}`,
+      headers: { authorization: `Bearer ${tenantBJwt}` },
+    });
+    expect(boardResp.statusCode).toBe(404);
+
+    const packResp = await ctx.app.inject({
+      method: 'GET',
+      url: `/api/v1/exam-boards/${boardId}/data-pack`,
+      headers: { authorization: `Bearer ${tenantBJwt}` },
+    });
+    expect(packResp.statusCode).toBe(404);
+
+    const profileResp = await getCandidateProfile(boardId, fixture.enrolmentId, tenantBJwt);
+    expect(profileResp.statusCode).toBe(404);
   });
 });
 

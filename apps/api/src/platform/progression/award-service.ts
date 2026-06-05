@@ -2,8 +2,10 @@ import { randomUUID } from 'node:crypto';
 
 import { and, eq, isNull } from 'drizzle-orm';
 import {
+  academicPeriods,
   awards,
   enrolments,
+  examBoards,
   moduleOfferings,
   moduleRegistrations,
   moduleResults,
@@ -107,6 +109,14 @@ export class AwardService {
     actorId: string,
   ): Promise<string> {
     const enrolment = await this.#getEnrolment(enrolmentId, tenantId);
+    await this.#ensureRatifiedBoardCoversEnrolment(input.examBoardId, enrolmentId, tenantId);
+    const recommendation = await this.calculateClassification(enrolmentId, tenantId);
+    if (recommendation.classificationCode !== input.classificationCode) {
+      throw new ValidationError(
+        `Requested classification '${input.classificationCode}' does not match calculated recommendation '${recommendation.classificationCode}'`,
+        [{ field: 'classificationCode', message: 'Classification must match the current calculated recommendation' }],
+      );
+    }
 
     const existing = await this.#getCurrentAward(enrolmentId, tenantId);
     if (existing) {
@@ -119,7 +129,7 @@ export class AwardService {
     await withTenantContext(this.db, tenantId, async (tx) => {
       await tx.insert(awards).values({
         versionId:           randomUUID(),
-        id:                  awardId as `${string}-${string}-${string}-${string}-${string}`,
+        id:                  awardId,
         tenantId:            tenantId as `${string}-${string}-${string}-${string}-${string}`,
         enrolmentId:         enrolmentId as `${string}-${string}-${string}-${string}-${string}`,
         personId:            enrolment.personId as `${string}-${string}-${string}-${string}-${string}`,
@@ -214,6 +224,7 @@ export class AwardService {
           eq(moduleRegistrations.enrolmentId,   enrolmentId as `${string}-${string}-${string}-${string}-${string}`),
           eq(moduleOfferings.tenantId,          tenantId as `${string}-${string}-${string}-${string}-${string}`),
           eq(modules.tenantId,                  tenantId as `${string}-${string}-${string}-${string}-${string}`),
+          eq(moduleResults.locked,              true),
           isNull(moduleResults.recordedUntil),
           isNull(moduleRegistrations.recordedUntil),
           isNull(modules.recordedUntil),
@@ -224,6 +235,46 @@ export class AwardService {
       resultCode:    row.resultCode,
       creditValue:   row.creditValue ?? 0,
     }));
+  }
+
+  async #ensureRatifiedBoardCoversEnrolment(examBoardId: string, enrolmentId: string, tenantId: string): Promise<void> {
+    const boardRows = await withTenantContext(this.db, tenantId, async (tx) =>
+      tx.select().from(examBoards).where(and(
+        eq(examBoards.id, examBoardId as `${string}-${string}-${string}-${string}-${string}`),
+        eq(examBoards.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
+      )).limit(1),
+    );
+    const board = boardRows[0];
+    if (!board) throw new NotFoundError('ExamBoard', examBoardId);
+    if (!board.ratifiedAt) {
+      throw new ValidationError(
+        `Exam board '${examBoardId}' must be ratified before conferring an award`,
+        [{ field: 'examBoardId', message: 'Board is not ratified' }],
+      );
+    }
+
+    const coveredRows = await withTenantContext(this.db, tenantId, async (tx) =>
+      tx.select({ id: moduleRegistrations.id })
+        .from(moduleRegistrations)
+        .innerJoin(moduleOfferings, eq(moduleRegistrations.moduleOfferingId, moduleOfferings.id))
+        .innerJoin(academicPeriods, eq(moduleOfferings.academicPeriodId, academicPeriods.id))
+        .where(and(
+          eq(moduleRegistrations.enrolmentId, enrolmentId as `${string}-${string}-${string}-${string}-${string}`),
+          eq(moduleRegistrations.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
+          eq(moduleOfferings.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
+          eq(academicPeriods.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
+          eq(academicPeriods.academicYear, board.academicYear),
+          ...(board.academicPeriodId ? [eq(moduleOfferings.academicPeriodId, board.academicPeriodId)] : []),
+          isNull(moduleRegistrations.recordedUntil),
+        ))
+        .limit(1),
+    );
+    if (coveredRows.length === 0) {
+      throw new ValidationError(
+        `Exam board '${examBoardId}' does not cover enrolment '${enrolmentId}'`,
+        [{ field: 'examBoardId', message: 'Board does not cover this enrolment' }],
+      );
+    }
   }
 
   async #getCurrentAward(enrolmentId: string, tenantId: string): Promise<AwardDto | null> {

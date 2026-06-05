@@ -1,4 +1,3 @@
-import { sql } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import type { IntegrationBusPublisher } from '../src/platform/integration-bus/publisher.js';
@@ -108,6 +107,7 @@ describe('Classification recommendation', () => {
 describe('Award conferral', () => {
   it('confers an award, records HEAR stub, transitions enrolment to graduated, and publishes event', async () => {
     const fixture = await createAwardFixture('AWD201');
+    await seedRatifiedResult(fixture, 'AWD201A', 65, 20);
     const examBoardId = await createExamBoard();
 
     const award = await conferAward(fixture, examBoardId, 'BSc', 'upper-second');
@@ -165,6 +165,7 @@ describe('Award conferral', () => {
 
   it('does not re-transition a student already in graduated status', async () => {
     const fixture = await createAwardFixture('AWD202');
+    await seedRatifiedResult(fixture, 'AWD202A', 72, 20);
     const examBoardId = await createExamBoard();
 
     // Manually graduate the enrolment first
@@ -189,6 +190,7 @@ describe('Award conferral', () => {
 
   it('rejects a duplicate award on the same enrolment', async () => {
     const fixture = await createAwardFixture('AWD203');
+    await seedRatifiedResult(fixture, 'AWD203A', 72, 20);
     const examBoardId = await createExamBoard();
 
     const first = await conferAward(fixture, examBoardId, 'BSc', 'first');
@@ -198,8 +200,18 @@ describe('Award conferral', () => {
     expect(second.statusCode).toBe(422);
   });
 
+  it('rejects award conferral against an unratified board', async () => {
+    const fixture = await createAwardFixture('AWD206');
+    await seedRatifiedResult(fixture, 'AWD206A', 72, 20);
+    const examBoardId = await createUnratifiedExamBoard();
+
+    const award = await conferAward(fixture, examBoardId, 'BSc', 'first');
+    expect(award.statusCode).toBe(422);
+  });
+
   it('does not expose awards through another tenant', async () => {
     const fixture = await createAwardFixture('AWD204');
+    await seedRatifiedResult(fixture, 'AWD204A', 72, 20);
     const examBoardId = await createExamBoard();
     await conferAward(fixture, examBoardId, 'BSc', 'first');
 
@@ -214,6 +226,7 @@ describe('Award conferral', () => {
 
   it('requires exam-board:ratify to confer an award', async () => {
     const fixture = await createAwardFixture('AWD205');
+    await seedRatifiedResult(fixture, 'AWD205A', 72, 20);
     const examBoardId = await createExamBoard();
     const res = await conferAward(fixture, examBoardId, 'BSc', 'first', jwt);  // registry-admin, not chair
     expect(res.statusCode).toBe(403);
@@ -300,9 +313,33 @@ async function seedRatifiedResult(fixture: AwardFixture, moduleCode: string, mar
     payload: { assessmentComponentId, rawMark: mark },
   });
   expect(markRes.statusCode).toBe(201);
+
+  const boardId = await createExamBoard(academicPeriodId);
+  await signoffBoard(boardId);
+  await ratifyBoard(boardId);
 }
 
-async function createExamBoard(): Promise<string> {
+async function createExamBoard(academicPeriodId?: string): Promise<string> {
+  const res = await ctx.app.inject({
+    method: 'POST',
+    url: '/api/v1/exam-boards',
+    headers: { authorization: `Bearer ${jwt}` },
+    payload: {
+      boardTypeCode: 'award',
+      academicYear: '2025-26',
+      ...(academicPeriodId ? { academicPeriodId } : {}),
+    },
+  });
+  expect(res.statusCode).toBe(201);
+  const examBoardId = res.json<{ examBoardId: string }>().examBoardId;
+  if (!academicPeriodId) {
+    await signoffBoard(examBoardId);
+    await ratifyBoard(examBoardId);
+  }
+  return examBoardId;
+}
+
+async function createUnratifiedExamBoard(): Promise<string> {
   const res = await ctx.app.inject({
     method: 'POST',
     url: '/api/v1/exam-boards',
@@ -311,6 +348,25 @@ async function createExamBoard(): Promise<string> {
   });
   expect(res.statusCode).toBe(201);
   return res.json<{ examBoardId: string }>().examBoardId;
+}
+
+async function signoffBoard(examBoardId: string): Promise<void> {
+  const res = await ctx.app.inject({
+    method: 'POST',
+    url: `/api/v1/exam-boards/${examBoardId}/external-examiner-signoff`,
+    headers: { authorization: `Bearer ${chairJwt}` },
+    payload: { commentary: 'Ready for award conferral' },
+  });
+  expect(res.statusCode).toBe(201);
+}
+
+async function ratifyBoard(examBoardId: string): Promise<void> {
+  const res = await ctx.app.inject({
+    method: 'POST',
+    url: `/api/v1/exam-boards/${examBoardId}/ratification`,
+    headers: { authorization: `Bearer ${chairJwt}` },
+  });
+  expect(res.statusCode).toBe(204);
 }
 
 async function conferAward(

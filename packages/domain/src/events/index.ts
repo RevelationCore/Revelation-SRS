@@ -23,6 +23,7 @@ export * from './adjustment/distributed.v1.js';
 export * from './adjustment/expired.v1.js';
 export * from './circumstances/exceptional-circumstances-flagged.v1.js';
 export * from './circumstances/exceptional-circumstances-updated.v1.js';
+export * from './circumstances/misconduct-outcome-recorded.v1.js';
 export * from './governance/exam-board-data-pack-ready.v1.js';
 export * from './governance/exam-board-ratified.v1.js';
 export * from './governance/record-locked.v1.js';
@@ -59,6 +60,7 @@ export const EVENT_TYPES = {
   ADJUSTMENT_EXPIRED:                       'srs.adjustment.expired',
   CIRCUMSTANCES_EC_FLAGGED:                 'srs.circumstances.exceptional-circumstances-flagged',
   CIRCUMSTANCES_EC_UPDATED:                 'srs.circumstances.exceptional-circumstances-updated',
+  CIRCUMSTANCES_MISCONDUCT_OUTCOME_RECORDED: 'srs.circumstances.misconduct-outcome-recorded',
   GOVERNANCE_EXAM_BOARD_DATA_PACK_READY:    'srs.governance.exam-board-data-pack-ready',
   GOVERNANCE_EXAM_BOARD_RATIFIED:           'srs.governance.exam-board-ratified',
   GOVERNANCE_RECORD_LOCKED:                 'srs.governance.record-locked',

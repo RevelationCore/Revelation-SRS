@@ -265,6 +265,18 @@ async function createHearFixture(code: string): Promise<HearFixture> {
     payload: { boardTypeCode: 'award', academicYear: '2025-26' },
   });
   const examBoardId = board.json<{ examBoardId: string }>().examBoardId;
+  await ctx.app.inject({
+    method: 'POST',
+    url: `/api/v1/exam-boards/${examBoardId}/external-examiner-signoff`,
+    headers: { authorization: `Bearer ${chairJwt}` },
+    payload: { commentary: 'Ready for HEAR fixture' },
+  });
+  const ratification = await ctx.app.inject({
+    method: 'POST',
+    url: `/api/v1/exam-boards/${examBoardId}/ratification`,
+    headers: { authorization: `Bearer ${chairJwt}` },
+  });
+  expect(ratification.statusCode).toBe(204);
 
   const award = await ctx.app.inject({
     method: 'POST', url: `/api/v1/enrolments/${enrolmentId}/award`, headers: { authorization: `Bearer ${chairJwt}` },

@@ -12,8 +12,10 @@ import {
   type Db,
   withTenantContext,
 } from '@revelation-srs/db';
-import { NotFoundError, ValidationError } from '@revelation-srs/domain';
+import { EVENT_TYPES, NotFoundError, ValidationError } from '@revelation-srs/domain';
+import type { CircumstancesMisconductOutcomeRecordedV1Payload } from '@revelation-srs/domain';
 
+import type { IntegrationBusPublisher } from '../integration-bus/publisher.js';
 import type { ValueSetService } from '../value-sets/service.js';
 
 export interface MisconductPenaltyEffectInput {
@@ -64,6 +66,7 @@ export class MisconductService {
   constructor(
     private readonly db: Db,
     private readonly valueSets: ValueSetService,
+    private readonly eventBus: IntegrationBusPublisher,
   ) {}
 
   async recordMisconductOutcome(
@@ -129,6 +132,27 @@ export class MisconductService {
         })));
       }
     });
+
+    if (this.eventBus.isConnected()) {
+      const payload: CircumstancesMisconductOutcomeRecordedV1Payload = {
+        misconductCaseId,
+        misconductOutcomeId,
+        enrolmentId: input.enrolmentId,
+        personId,
+        caseReference: input.caseReference,
+        caseStatusCode: input.caseStatusCode ?? 'closed',
+        penaltyCode: input.penaltyCode,
+        effectiveDate: input.effectiveDate,
+      };
+      await this.eventBus.publish(
+        EVENT_TYPES.CIRCUMSTANCES_MISCONDUCT_OUTCOME_RECORDED,
+        '1.0.0',
+        tenantId,
+        actorId,
+        'sensitive',
+        payload,
+      );
+    }
 
     return misconductOutcomeId;
   }

@@ -1,4 +1,3 @@
-import { sql } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import type { IntegrationBusPublisher } from '../src/platform/integration-bus/publisher.js';
@@ -270,6 +269,27 @@ describe('Amendment guards', () => {
     expect(body.aggregateMark).toBe(71);
     expect(body.resultCode).toBe('pass');
     expect(body.locked).toBe(true);
+  });
+
+  it('rejects amendment when the entity belongs to a different enrolment', async () => {
+    const caseFixture = await createCorrectionFixture('COR304A');
+    const targetFixture = await createCorrectionFixture('COR304B');
+    await ratifyBoard(targetFixture.examBoardId);
+
+    const { caseId } = await openCase(caseFixture.enrolmentId);
+    await upholdCase(caseId);
+
+    const amend = await ctx.app.inject({
+      method:  'POST',
+      url:     `/api/v1/correction-cases/${caseId}/amendments`,
+      headers: { authorization: `Bearer ${chairJwt}` },
+      payload: {
+        entityType: 'mark',
+        entityId:   targetFixture.markId,
+        afterValue: { rawMark: 80, adjustedMark: 80 },
+      },
+    });
+    expect(amend.statusCode).toBe(422);
   });
 });
 

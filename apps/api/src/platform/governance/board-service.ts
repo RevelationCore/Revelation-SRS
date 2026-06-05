@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import { and, eq, inArray, isNull } from 'drizzle-orm';
+import { and, eq, gt, inArray, isNull, lte, or, sql } from 'drizzle-orm';
 import {
   academicPeriods,
   adjustmentDistributions,
@@ -21,6 +21,7 @@ import {
   moduleResults,
   personIdentities,
   persons,
+  progressionDecisions,
   reasonableAdjustments,
   type Db,
   withTenantContext,
@@ -33,6 +34,7 @@ import type {
   GovernanceRecordLockedV1Payload,
 } from '@revelation-srs/domain';
 
+import type { AwardService } from '../progression/award-service.js';
 import type { IntegrationBusPublisher } from '../integration-bus/publisher.js';
 import type { ValueSetService } from '../value-sets/service.js';
 
@@ -123,14 +125,23 @@ interface CoveredModuleResult {
 
 export class BoardService {
   constructor(
-    private readonly db: Db,
-    private readonly eventBus: IntegrationBusPublisher,
-    private readonly valueSets: ValueSetService,
+    private readonly db:          Db,
+    private readonly eventBus:    IntegrationBusPublisher,
+    private readonly valueSets:   ValueSetService,
+    private readonly awardService?: AwardService,
   ) {}
 
   async createExamBoard(tenantId: string, input: CreateExamBoardInput, actorId: string): Promise<string> {
     await this.#validateBoardType(tenantId, input.boardTypeCode);
-    if (input.academicPeriodId) await this.#ensureAcademicPeriod(input.academicPeriodId, tenantId);
+    if (input.academicPeriodId) {
+      const academicPeriodYear = await this.#ensureAcademicPeriod(input.academicPeriodId, tenantId);
+      if (academicPeriodYear !== input.academicYear) {
+        throw new ValidationError(
+          `Academic period '${input.academicPeriodId}' belongs to '${academicPeriodYear}', not '${input.academicYear}'`,
+          [{ field: 'academicPeriodId', message: 'Academic period must belong to the board academic year' }],
+        );
+      }
+    }
 
     const rows = await withTenantContext(this.db, tenantId, async (tx) =>
       tx.insert(examBoards).values({
@@ -156,19 +167,38 @@ export class BoardService {
 
   async generateDataPack(examBoardId: string, tenantId: string, actorId: string): Promise<string> {
     const board = await this.#getBoard(examBoardId, tenantId);
+
+    if (board.ratifiedAt) {
+      throw new ValidationError(
+        `Exam board '${examBoardId}' has already been ratified; data packs cannot be regenerated after ratification`,
+        [{ field: 'examBoardId', message: 'Board is already ratified' }],
+      );
+    }
+
     const sourceTransactionTime = new Date();
-    const previousPack = await this.#getCurrentDataPack(examBoardId, tenantId);
-    const packVersion = previousPack ? previousPack.packVersion + 1 : 1;
     const dataPackId = randomUUID();
     const candidates = await this.#buildCandidateProfiles(board, tenantId, sourceTransactionTime);
+    let packVersion = 1;
 
     await withTenantContext(this.db, tenantId, async (tx) => {
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${`${tenantId}:${examBoardId}:data-pack`}))`);
+
+      const previousRows = await tx.select().from(examBoardDataPacks).where(and(
+        eq(examBoardDataPacks.examBoardId, examBoardId as `${string}-${string}-${string}-${string}-${string}`),
+        eq(examBoardDataPacks.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
+        isNull(examBoardDataPacks.supersededById),
+      )).limit(1);
+      const previousPack = previousRows[0] ? dataPackToDto(previousRows[0]) : null;
+      packVersion = previousPack ? previousPack.packVersion + 1 : 1;
+
       await tx.insert(examBoardDataPacks).values({
         id: dataPackId,
         tenantId: tenantId as `${string}-${string}-${string}-${string}-${string}`,
         examBoardId: examBoardId as `${string}-${string}-${string}-${string}-${string}`,
         packVersion,
-        supersededById: null,
+        supersededById: previousPack
+          ? previousPack.dataPackId as `${string}-${string}-${string}-${string}-${string}`
+          : null,
         sourceTransactionTime,
         candidateCount: candidates.length,
         generatedAt: sourceTransactionTime,
@@ -180,6 +210,13 @@ export class BoardService {
           .set({ supersededById: dataPackId })
           .where(and(
             eq(examBoardDataPacks.id, previousPack.dataPackId as `${string}-${string}-${string}-${string}-${string}`),
+            eq(examBoardDataPacks.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
+          ));
+
+        await tx.update(examBoardDataPacks)
+          .set({ supersededById: null })
+          .where(and(
+            eq(examBoardDataPacks.id, dataPackId),
             eq(examBoardDataPacks.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
           ));
       }
@@ -219,11 +256,11 @@ export class BoardService {
     return pack;
   }
 
-  async getCandidateProfile(examBoardId: string, enrolmentId: string, tenantId: string): Promise<CandidateProfileDto> {
-    const pack = await this.getDataPack(examBoardId, tenantId);
+  /** Returns the candidate profile for a specific data pack. */
+  async getCandidateProfileByPack(dataPackId: string, enrolmentId: string, tenantId: string): Promise<CandidateProfileDto> {
     const rows = await withTenantContext(this.db, tenantId, async (tx) =>
       tx.select().from(examBoardCandidateProfiles).where(and(
-        eq(examBoardCandidateProfiles.dataPackId, pack.dataPackId as `${string}-${string}-${string}-${string}-${string}`),
+        eq(examBoardCandidateProfiles.dataPackId, dataPackId as `${string}-${string}-${string}-${string}-${string}`),
         eq(examBoardCandidateProfiles.enrolmentId, enrolmentId as `${string}-${string}-${string}-${string}-${string}`),
         eq(examBoardCandidateProfiles.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
       )).limit(1),
@@ -231,14 +268,13 @@ export class BoardService {
 
     const row = rows[0];
     if (!row) throw new NotFoundError('ExamBoardCandidateProfile', enrolmentId);
-    return {
-      candidateProfileId: row.id,
-      dataPackId: row.dataPackId,
-      enrolmentId: row.enrolmentId,
-      personId: row.personId,
-      profileData: row.profileData as Record<string, unknown>,
-      createdAt: row.createdAt,
-    };
+    return profileRowToDto(row);
+  }
+
+  /** Returns the candidate profile from the current (non-superseded) data pack. */
+  async getCandidateProfile(examBoardId: string, enrolmentId: string, tenantId: string): Promise<CandidateProfileDto> {
+    const pack = await this.getDataPack(examBoardId, tenantId);
+    return this.getCandidateProfileByPack(pack.dataPackId, enrolmentId, tenantId);
   }
 
   async recordMemberAttendance(examBoardId: string, tenantId: string, actorId: string, roleCode: string): Promise<string> {
@@ -289,8 +325,11 @@ export class BoardService {
     const coveredResults = await this.#getCoveredModuleResults(board, tenantId);
     const moduleResultIds = coveredResults.map((result) => result.moduleResultId);
     const moduleRegistrationIds = coveredResults.map((result) => result.moduleRegistrationId);
+    const coveredProgressionDecisions = await this.#getCoveredProgressionDecisions(board, tenantId);
+    const progressionDecisionIds = coveredProgressionDecisions.map((decision) => decision.progressionDecisionId);
     const ratifiedAt = new Date();
     let lockedMarkCount = 0;
+    let lockedProgressionCount = 0;
 
     await withTenantContext(this.db, tenantId, async (tx) => {
       await tx.update(examBoards)
@@ -321,6 +360,21 @@ export class BoardService {
           .returning({ id: marks.id });
         lockedMarkCount = lockedMarks.length;
       }
+
+      if (progressionDecisionIds.length > 0) {
+        const lockedProgression = await tx.update(progressionDecisions)
+          .set({
+            locked: true,
+            examBoardId,
+          })
+          .where(and(
+            eq(progressionDecisions.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
+            inArray(progressionDecisions.id, progressionDecisionIds as Array<`${string}-${string}-${string}-${string}-${string}`>),
+            isNull(progressionDecisions.recordedUntil),
+          ))
+          .returning({ id: progressionDecisions.id });
+        lockedProgressionCount = lockedProgression.length;
+      }
     });
 
     if (!this.eventBus.isConnected()) return;
@@ -343,8 +397,10 @@ export class BoardService {
 
     const lockedPayload: GovernanceRecordLockedV1Payload = {
       examBoardId,
-      lockedEntityTypes: ['module_result', 'mark'],
-      lockedCount: coveredResults.length + lockedMarkCount,
+      lockedEntityTypes: progressionDecisionIds.length > 0
+        ? ['module_result', 'mark', 'progression_decision']
+        : ['module_result', 'mark'],
+      lockedCount: coveredResults.length + lockedMarkCount + lockedProgressionCount,
     };
     await this.eventBus.publish(
       EVENT_TYPES.GOVERNANCE_RECORD_LOCKED,
@@ -375,12 +431,14 @@ export class BoardService {
     }
   }
 
+  // ── Private helpers ─────────────────────────────────────────────────────────
+
   async #buildCandidateProfiles(
     board: BoardRow,
     tenantId: string,
     sourceTransactionTime: Date,
   ): Promise<Array<{ enrolmentId: string; personId: string; profileData: Record<string, unknown> }>> {
-    const registrations = await this.#getBoardRegistrations(board, tenantId);
+    const registrations = await this.#getBoardRegistrations(board, tenantId, sourceTransactionTime);
     const boardContextDate = board.meetingDate ? new Date(`${board.meetingDate}T00:00:00.000Z`) : sourceTransactionTime;
     const byEnrolment = new Map<string, CandidateRegistration[]>();
     for (const registration of registrations) {
@@ -394,12 +452,13 @@ export class BoardService {
       const candidate = rows[0]!;
       const registrationIds = rows.map((row) => row.moduleRegistrationId);
       const moduleOfferingIds = rows.map((row) => row.moduleOfferingId);
-      const [results, markRows, adjustments, ecs, misconduct] = await Promise.all([
-        this.#getModuleResults(registrationIds, tenantId),
-        this.#getMarks(registrationIds, tenantId),
-        this.#getAdjustmentIndicators(enrolmentId, tenantId, boardContextDate),
-        this.#getEcFlags(enrolmentId, moduleOfferingIds, tenantId),
-        this.#getMisconductFlags(enrolmentId, tenantId),
+      const [results, markRows, adjustments, ecs, misconduct, recommendation] = await Promise.all([
+        this.#getModuleResults(registrationIds, tenantId, sourceTransactionTime),
+        this.#getMarks(registrationIds, tenantId, sourceTransactionTime),
+        this.#getAdjustmentIndicators(enrolmentId, tenantId, boardContextDate, sourceTransactionTime),
+        this.#getEcFlags(enrolmentId, moduleOfferingIds, tenantId, sourceTransactionTime),
+        this.#getMisconductFlags(enrolmentId, tenantId, sourceTransactionTime),
+        this.#getClassificationRecommendation(enrolmentId, tenantId),
       ]);
 
       profiles.push({
@@ -431,10 +490,7 @@ export class BoardService {
           adjustments,
           exceptionalCircumstances: ecs,
           misconduct,
-          preBoardRecommendation: {
-            type: 'not-evaluated',
-            reason: 'Classification and progression recommendation is implemented in later Phase 5 stages',
-          },
+          preBoardRecommendation: recommendation,
         },
       });
     }
@@ -442,7 +498,26 @@ export class BoardService {
     return profiles;
   }
 
-  async #getBoardRegistrations(board: BoardRow, tenantId: string): Promise<CandidateRegistration[]> {
+  async #getClassificationRecommendation(enrolmentId: string, tenantId: string): Promise<Record<string, unknown>> {
+    if (!this.awardService) {
+      return { type: 'not-available', reason: 'Classification service not configured' };
+    }
+    try {
+      const rec = await this.awardService.calculateClassification(enrolmentId, tenantId);
+      return {
+        type:               'calculated',
+        aggregateMark:      rec.aggregateMark,
+        classificationCode: rec.classificationCode,
+        algorithm:          rec.algorithm,
+        boundariesApplied:  rec.boundariesApplied,
+        note:               'Pre-board recommendation only — not ratified',
+      };
+    } catch {
+      return { type: 'not-evaluated', reason: 'Insufficient data to calculate recommendation' };
+    }
+  }
+
+  async #getBoardRegistrations(board: BoardRow, tenantId: string, asOf?: Date): Promise<CandidateRegistration[]> {
     const rows = await withTenantContext(this.db, tenantId, async (tx) =>
       tx.select({
         enrolmentId: enrolments.id,
@@ -470,14 +545,23 @@ export class BoardService {
           eq(academicPeriods.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
           eq(academicPeriods.academicYear, board.academicYear),
           ...(board.academicPeriodId ? [eq(moduleOfferings.academicPeriodId, board.academicPeriodId as `${string}-${string}-${string}-${string}-${string}`)] : []),
-          isNull(moduleRegistrations.recordedUntil),
-          isNull(enrolments.recordedUntil),
-          isNull(personIdentities.recordedUntil),
+          eq(enrolments.statusCode, 'enrolled'),
+          inArray(moduleRegistrations.statusCode, ['registered', 'completed']),
+          this.#currentAt(moduleRegistrations.recordedAt, moduleRegistrations.recordedUntil, asOf),
+          this.#currentAt(enrolments.recordedAt, enrolments.recordedUntil, asOf),
+          this.#currentAt(personIdentities.recordedAt, personIdentities.recordedUntil, asOf),
         )),
     );
     return rows;
   }
 
+  /**
+   * Returns the module results covered by this board for ratification locking.
+   *
+   * Scopes by the academic period's academic year (matching the board's year) rather
+   * than enrolments.academicYearOfEntry, so returning students whose modules fall
+   * in the board's year are correctly included regardless of their enrollment year.
+   */
   async #getCoveredModuleResults(board: BoardRow, tenantId: string): Promise<CoveredModuleResult[]> {
     const rows = await withTenantContext(this.db, tenantId, async (tx) =>
       tx.select({
@@ -488,20 +572,17 @@ export class BoardService {
       })
         .from(moduleResults)
         .innerJoin(moduleRegistrations, eq(moduleResults.moduleRegistrationId, moduleRegistrations.id))
-        .innerJoin(enrolments, eq(moduleRegistrations.enrolmentId, enrolments.id))
         .innerJoin(moduleOfferings, eq(moduleRegistrations.moduleOfferingId, moduleOfferings.id))
         .innerJoin(academicPeriods, eq(moduleOfferings.academicPeriodId, academicPeriods.id))
         .where(and(
           eq(moduleResults.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
           eq(moduleRegistrations.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
-          eq(enrolments.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
           eq(moduleOfferings.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
           eq(academicPeriods.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
-          eq(enrolments.academicYearOfEntry, board.academicYear),
+          eq(academicPeriods.academicYear, board.academicYear),
           ...(board.academicPeriodId ? [eq(moduleOfferings.academicPeriodId, board.academicPeriodId as `${string}-${string}-${string}-${string}-${string}`)] : []),
           isNull(moduleResults.recordedUntil),
           isNull(moduleRegistrations.recordedUntil),
-          isNull(enrolments.recordedUntil),
         )),
     );
 
@@ -513,14 +594,31 @@ export class BoardService {
     }));
   }
 
-  async #getModuleResults(moduleRegistrationIds: string[], tenantId: string): Promise<Array<Record<string, unknown>>> {
+  async #getCoveredProgressionDecisions(board: BoardRow, tenantId: string): Promise<Array<{ progressionDecisionId: string }>> {
+    const registrations = await this.#getBoardRegistrations(board, tenantId);
+    const enrolmentIds = [...new Set(registrations.map((registration) => registration.enrolmentId))];
+    if (enrolmentIds.length === 0) return [];
+
+    return withTenantContext(this.db, tenantId, async (tx) =>
+      tx.select({ progressionDecisionId: progressionDecisions.id }).from(progressionDecisions).where(and(
+        eq(progressionDecisions.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
+        eq(progressionDecisions.academicYear, board.academicYear),
+        inArray(progressionDecisions.enrolmentId, enrolmentIds as Array<`${string}-${string}-${string}-${string}-${string}`>),
+        isNull(progressionDecisions.recordedUntil),
+      )),
+    );
+  }
+
+  async #getModuleResults(moduleRegistrationIds: string[], tenantId: string, asOf?: Date): Promise<Array<Record<string, unknown>>> {
+    if (moduleRegistrationIds.length === 0) return [];
     const rows = await withTenantContext(this.db, tenantId, async (tx) =>
       tx.select().from(moduleResults).where(and(
         eq(moduleResults.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
-        isNull(moduleResults.recordedUntil),
+        inArray(moduleResults.moduleRegistrationId, moduleRegistrationIds as Array<`${string}-${string}-${string}-${string}-${string}`>),
+        this.#currentAt(moduleResults.recordedAt, moduleResults.recordedUntil, asOf),
       )),
     );
-    return rows.filter((row) => moduleRegistrationIds.includes(row.moduleRegistrationId)).map((row) => ({
+    return rows.map((row) => ({
       moduleResultId: row.id,
       moduleRegistrationId: row.moduleRegistrationId,
       aggregateMark: Number(row.aggregateMark),
@@ -530,7 +628,8 @@ export class BoardService {
     }));
   }
 
-  async #getMarks(moduleRegistrationIds: string[], tenantId: string): Promise<Array<Record<string, unknown>>> {
+  async #getMarks(moduleRegistrationIds: string[], tenantId: string, asOf?: Date): Promise<Array<Record<string, unknown>>> {
+    if (moduleRegistrationIds.length === 0) return [];
     const rows = await withTenantContext(this.db, tenantId, async (tx) =>
       tx.select({
         markId: marks.id,
@@ -549,17 +648,18 @@ export class BoardService {
         .where(and(
           eq(marks.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
           eq(assessmentComponents.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
-          isNull(marks.recordedUntil),
+          inArray(marks.moduleRegistrationId, moduleRegistrationIds as Array<`${string}-${string}-${string}-${string}-${string}`>),
+          this.#currentAt(marks.recordedAt, marks.recordedUntil, asOf),
         )),
     );
-    return rows.filter((row) => moduleRegistrationIds.includes(row.moduleRegistrationId)).map((row) => ({
+    return rows.map((row) => ({
       ...row,
       rawMark: Number(row.rawMark),
       adjustedMark: Number(row.adjustedMark),
     }));
   }
 
-  async #getAdjustmentIndicators(enrolmentId: string, tenantId: string, activeAt: Date): Promise<Array<Record<string, unknown>>> {
+  async #getAdjustmentIndicators(enrolmentId: string, tenantId: string, activeAt: Date, asOf?: Date): Promise<Array<Record<string, unknown>>> {
     const rows = await withTenantContext(this.db, tenantId, async (tx) =>
       tx.select({
         adjustmentId: reasonableAdjustments.id,
@@ -579,7 +679,7 @@ export class BoardService {
         .where(and(
           eq(reasonableAdjustments.enrolmentId, enrolmentId as `${string}-${string}-${string}-${string}-${string}`),
           eq(reasonableAdjustments.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
-          isNull(reasonableAdjustments.recordedUntil),
+          this.#currentAt(reasonableAdjustments.recordedAt, reasonableAdjustments.recordedUntil, asOf),
         )),
     );
     const byAdjustment = new Map<string, {
@@ -607,12 +707,12 @@ export class BoardService {
     return [...byAdjustment.values()];
   }
 
-  async #getEcFlags(enrolmentId: string, moduleOfferingIds: string[], tenantId: string): Promise<Array<Record<string, unknown>>> {
+  async #getEcFlags(enrolmentId: string, moduleOfferingIds: string[], tenantId: string, asOf?: Date): Promise<Array<Record<string, unknown>>> {
     const rows = await withTenantContext(this.db, tenantId, async (tx) =>
       tx.select().from(exceptionalCircumstances).where(and(
         eq(exceptionalCircumstances.enrolmentId, enrolmentId as `${string}-${string}-${string}-${string}-${string}`),
         eq(exceptionalCircumstances.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
-        isNull(exceptionalCircumstances.recordedUntil),
+        this.#currentAt(exceptionalCircumstances.recordedAt, exceptionalCircumstances.recordedUntil, asOf),
       )),
     );
     return rows
@@ -625,7 +725,7 @@ export class BoardService {
       }));
   }
 
-  async #getMisconductFlags(enrolmentId: string, tenantId: string): Promise<Array<Record<string, unknown>>> {
+  async #getMisconductFlags(enrolmentId: string, tenantId: string, asOf?: Date): Promise<Array<Record<string, unknown>>> {
     const rows = await withTenantContext(this.db, tenantId, async (tx) =>
       tx.select({
         misconductCaseId: misconductCaseReferences.id,
@@ -641,32 +741,41 @@ export class BoardService {
           eq(misconductOutcomes.enrolmentId, enrolmentId as `${string}-${string}-${string}-${string}-${string}`),
           eq(misconductOutcomes.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
           eq(misconductCaseReferences.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
-          isNull(misconductOutcomes.recordedUntil),
-          isNull(misconductCaseReferences.recordedUntil),
+          this.#currentAt(misconductOutcomes.recordedAt, misconductOutcomes.recordedUntil, asOf),
+          this.#currentAt(misconductCaseReferences.recordedAt, misconductCaseReferences.recordedUntil, asOf),
         )),
     );
-    const effects = await this.#getMisconductEffects(rows.map((row) => row.misconductOutcomeId), tenantId);
+    const effects = await this.#getMisconductEffects(rows.map((row) => row.misconductOutcomeId), tenantId, asOf);
     return rows.map((row) => ({
       ...row,
       penaltyEffects: effects.filter((effect) => effect.misconductOutcomeId === row.misconductOutcomeId),
     }));
   }
 
-  async #getMisconductEffects(outcomeIds: string[], tenantId: string): Promise<Array<Record<string, unknown>>> {
+  async #getMisconductEffects(outcomeIds: string[], tenantId: string, asOf?: Date): Promise<Array<Record<string, unknown>>> {
     if (outcomeIds.length === 0) return [];
     const rows = await withTenantContext(this.db, tenantId, async (tx) =>
       tx.select().from(misconductPenaltyEffects).where(and(
         eq(misconductPenaltyEffects.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
-        isNull(misconductPenaltyEffects.recordedUntil),
+        inArray(misconductPenaltyEffects.misconductOutcomeId, outcomeIds as Array<`${string}-${string}-${string}-${string}-${string}`>),
+        this.#currentAt(misconductPenaltyEffects.recordedAt, misconductPenaltyEffects.recordedUntil, asOf),
       )),
     );
-    return rows.filter((row) => outcomeIds.includes(row.misconductOutcomeId)).map((row) => ({
+    return rows.map((row) => ({
       penaltyEffectId: row.id,
       misconductOutcomeId: row.misconductOutcomeId,
       targetEntityType: row.targetEntityType,
       targetEntityId: row.targetEntityId,
       penaltyDetail: row.penaltyDetail,
     }));
+  }
+
+  #currentAt(recordedAt: unknown, recordedUntil: unknown, asOf?: Date) {
+    if (!asOf) return isNull(recordedUntil as never);
+    return and(
+      lte(recordedAt as never, asOf),
+      or(isNull(recordedUntil as never), gt(recordedUntil as never, asOf)),
+    );
   }
 
   async #getBoard(examBoardId: string, tenantId: string): Promise<BoardRow> {
@@ -704,14 +813,15 @@ export class BoardService {
     return rows[0] ? dataPackToDto(rows[0]) : null;
   }
 
-  async #ensureAcademicPeriod(academicPeriodId: string, tenantId: string): Promise<void> {
+  async #ensureAcademicPeriod(academicPeriodId: string, tenantId: string): Promise<string> {
     const rows = await withTenantContext(this.db, tenantId, async (tx) =>
-      tx.select({ id: academicPeriods.id }).from(academicPeriods).where(and(
+      tx.select({ academicYear: academicPeriods.academicYear }).from(academicPeriods).where(and(
         eq(academicPeriods.id, academicPeriodId as `${string}-${string}-${string}-${string}-${string}`),
         eq(academicPeriods.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
       )).limit(1),
     );
     if (rows.length === 0) throw new NotFoundError('AcademicPeriod', academicPeriodId);
+    return rows[0]!.academicYear;
   }
 
   async #validateBoardType(tenantId: string, boardTypeCode: string): Promise<void> {
@@ -748,5 +858,16 @@ function dataPackToDto(row: typeof examBoardDataPacks.$inferSelect): DataPackDto
     candidateCount: row.candidateCount,
     generatedAt: row.generatedAt,
     generatedBy: row.generatedBy,
+  };
+}
+
+function profileRowToDto(row: typeof examBoardCandidateProfiles.$inferSelect): CandidateProfileDto {
+  return {
+    candidateProfileId: row.id,
+    dataPackId: row.dataPackId,
+    enrolmentId: row.enrolmentId,
+    personId: row.personId,
+    profileData: row.profileData as Record<string, unknown>,
+    createdAt: row.createdAt,
   };
 }

@@ -381,6 +381,11 @@ CREATE TABLE IF NOT EXISTS "exam_board_data_pack" (
 
 CREATE INDEX IF NOT EXISTS "exam_board_data_pack_board_idx"
   ON "exam_board_data_pack" ("exam_board_id");
+CREATE UNIQUE INDEX IF NOT EXISTS "exam_board_data_pack_current_unique"
+  ON "exam_board_data_pack" ("tenant_id", "exam_board_id")
+  WHERE superseded_by_id IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS "exam_board_data_pack_version_unique"
+  ON "exam_board_data_pack" ("tenant_id", "exam_board_id", "pack_version");
 
 ALTER TABLE "exam_board_data_pack" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "exam_board_data_pack" FORCE ROW LEVEL SECURITY;
