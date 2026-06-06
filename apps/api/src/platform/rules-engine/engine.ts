@@ -17,7 +17,8 @@ export type RuleTypeCode =
   | 'classification-algorithm'
   | 'classification-discretion-zone'
   | 'award-credit-requirement'
-  | 'max-credits-per-period';
+  | 'max-credits-per-period'
+  | 'ukvi-attendance-threshold';
 
 export interface RuleContext {
   tenantId:    string;

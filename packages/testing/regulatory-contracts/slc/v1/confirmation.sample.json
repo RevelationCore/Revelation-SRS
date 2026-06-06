@@ -1,0 +1,11 @@
+{
+  "confirmations": [
+    {
+      "slcReference": "SLC1234567",
+      "programmeCode": "BSC-COMP",
+      "confirmationType": "enrolment",
+      "feeAmount": "9250.00",
+      "startDate": "2027-09-20"
+    }
+  ]
+}

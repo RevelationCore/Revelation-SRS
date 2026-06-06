@@ -1,0 +1,7 @@
+{
+  "notificationId": "SLC-NOT-001",
+  "slcReference": "SLC1234567",
+  "notificationTypeCode": "payment-received",
+  "effectiveDate": "2027-10-15",
+  "amount": "2312.50"
+}

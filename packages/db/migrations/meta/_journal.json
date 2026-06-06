@@ -43,6 +43,20 @@
       "when": 1748995205000,
       "tag": "0005_seed_phase5_field_mappings",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1748995206000,
+      "tag": "0006_phase6_regulatory_schema",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1748995207000,
+      "tag": "0007_seed_phase6_field_mappings",
+      "breakpoints": true
     }
   ]
 }

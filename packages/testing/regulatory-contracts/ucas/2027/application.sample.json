@@ -1,0 +1,17 @@
+{
+  "ucasPersonalId": "1234567890",
+  "cycle": "2027",
+  "statusCode": "confirmed",
+  "applicant": {
+    "familyName": "Singh",
+    "givenNames": "Amara",
+    "dateOfBirth": "2008-04-12"
+  },
+  "choices": [
+    {
+      "choiceNumber": 1,
+      "programmeCode": "BSC-COMP",
+      "decisionCode": "confirmed"
+    }
+  ]
+}

@@ -466,6 +466,21 @@ export class EnrolmentService {
         createdAt:      now,
       });
 
+      // Queue an SLC status-change notification when the enrolment has an SLC reference and
+      // transitions to a status that SLC must be notified of (withdrawal or intermission).
+      if (
+        current.slcReference &&
+        (newStatus === 'withdrawn' || newStatus === 'intermitting')
+      ) {
+        await tx.insert(enrolmentDownstreamTriggers).values({
+          tenantId:        tenantId as `${string}-${string}-${string}-${string}-${string}`,
+          enrolmentId:     enrolmentId as `${string}-${string}-${string}-${string}-${string}`,
+          triggerTypeCode: 'slc-confirmation',
+          statusCode:      'pending',
+          payloadSummary:  { slcReference: current.slcReference, notificationType: newStatus },
+        });
+      }
+
       await this.#updatePersonStatusFromEnrolments(current.personId, tenantId, tx);
     });
 

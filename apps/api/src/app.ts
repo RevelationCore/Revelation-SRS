@@ -20,6 +20,7 @@ import { CatalogueService } from './platform/catalogue/service.js';
 import { ExceptionalCircumstancesService } from './platform/circumstances/ec-service.js';
 import { MisconductService } from './platform/circumstances/misconduct-service.js';
 import { EnrolmentService } from './platform/enrolment/service.js';
+import { ExamEntryService } from './platform/assessment/exam-entry-service.js';
 import { BoardService } from './platform/governance/board-service.js';
 import { IntegrationBusPublisher } from './platform/integration-bus/publisher.js';
 import { AwardService } from './platform/progression/award-service.js';
@@ -27,6 +28,13 @@ import { HearService } from './platform/progression/hear-service.js';
 import { ProgressionService } from './platform/progression/progression-service.js';
 import { CorrectionService } from './platform/governance/correction-service.js';
 import { ModuleRegistrationService } from './platform/registration/service.js';
+import { RegulatoryExchangeService } from './platform/regulatory/exchange-service.js';
+import { FoiService } from './platform/regulatory/foi-service.js';
+import { HesaService } from './platform/regulatory/hesa-service.js';
+import { OfsService } from './platform/regulatory/ofs-service.js';
+import { SlcService } from './platform/regulatory/slc-service.js';
+import { UcasService } from './platform/regulatory/ucas-service.js';
+import { UkviService } from './platform/regulatory/ukvi-service.js';
 import { RulesEngine } from './platform/rules-engine/engine.js';
 import { StudentService } from './platform/students/service.js';
 import { TenantAdminService } from './platform/tenant-admin/service.js';
@@ -42,6 +50,12 @@ import { moduleResultRoutes } from './routes/module-results.js';
 import { moduleRegistrationsRoutes } from './routes/module-registrations.js';
 import { programmesRoutes } from './routes/programmes.js';
 import { progressionRoutes } from './routes/progression.js';
+import { regulatoryFoiRoutes } from './routes/regulatory-foi.js';
+import { regulatoryHesaRoutes } from './routes/regulatory-hesa.js';
+import { regulatoryOfsRoutes } from './routes/regulatory-ofs.js';
+import { regulatorySlcRoutes } from './routes/regulatory-slc.js';
+import { regulatoryUcasRoutes } from './routes/regulatory-ucas.js';
+import { regulatoryUkviRoutes } from './routes/regulatory-ukvi.js';
 import { studentRoutes } from './routes/students.js';
 import { tenantAdminRoutes } from './routes/tenant-admin.js';
 import { valueSetsRoutes } from './routes/value-sets.js';
@@ -107,6 +121,14 @@ export async function buildApp(
   const boards = new BoardService(db, eventBus, valueSets, awards);
   const hear        = new HearService(db);
   const corrections = new CorrectionService(db, eventBus, marks, moduleResults, progression);
+  const regulatoryExchanges = new RegulatoryExchangeService(db);
+  const ucas = new UcasService(db, valueSets, eventBus, students, enrolments, regulatoryExchanges);
+  const hesa = new HesaService(db, eventBus, students, regulatoryExchanges);
+  const slc = new SlcService(db, eventBus, valueSets, enrolments, regulatoryExchanges);
+  const ukvi = new UkviService(db, eventBus, valueSets, rules, regulatoryExchanges);
+  const ofs = new OfsService(db, eventBus);
+  const foi = new FoiService(db, valueSets);
+  const examEntries = new ExamEntryService(db, eventBus, regulatoryExchanges);
 
   // Decorate the Fastify instance so plugins and routes can access shared services
   fastify.decorate('config',          config);
@@ -132,6 +154,14 @@ export async function buildApp(
   fastify.decorate('awardService',       awards);
   fastify.decorate('hearService',        hear);
   fastify.decorate('correctionService',  corrections);
+  fastify.decorate('regulatoryExchangeService', regulatoryExchanges);
+  fastify.decorate('ucasService',        ucas);
+  fastify.decorate('hesaService',        hesa);
+  fastify.decorate('slcService',         slc);
+  fastify.decorate('ukviService',        ukvi);
+  fastify.decorate('ofsService',         ofs);
+  fastify.decorate('foiService',         foi);
+  fastify.decorate('examEntryService',   examEntries);
 
   // - Security plugins -
 
@@ -210,6 +240,7 @@ export async function buildApp(
         { name: 'circumstances',        description: 'Exceptional circumstances and misconduct outcomes' },
         { name: 'governance',           description: 'Exam boards, data packs, and governance workflows' },
         { name: 'progression',          description: 'Progression decisions, awards, and outcomes' },
+        { name: 'regulatory',           description: 'Regulatory compliance and statutory exchanges' },
         { name: 'tenant-admin',         description: 'Tenant administration and configuration' },
         { name: 'value-sets',           description: 'Value set management' },
       ],
@@ -234,11 +265,14 @@ export async function buildApp(
       ['/misconduct-outcomes',       'circumstances'],
       ['/correction-cases',          'governance'],
       ['/exam-boards',               'governance'],
+      ['/exam-entry',                'governance'],
+      ['/exam-timetable',            'governance'],
       ['/ratification',              'governance'],
       ['/hear',                      'progression'],
       ['/award',                     'progression'],
       ['/classification',            'progression'],
       ['/progression',               'progression'],
+      ['/regulatory',                'regulatory'],
       ['/students',                  'students'],
       ['/enrolments',                'enrolments'],
       ['/marks',                     'assessment'],
@@ -274,6 +308,12 @@ export async function buildApp(
   await fastify.register(examBoardRoutes,           { prefix: '/api/v1' });
   await fastify.register(progressionRoutes,         { prefix: '/api/v1' });
   await fastify.register(correctionCasesRoutes,     { prefix: '/api/v1' });
+  await fastify.register(regulatoryHesaRoutes,      { prefix: '/api/v1' });
+  await fastify.register(regulatorySlcRoutes,       { prefix: '/api/v1' });
+  await fastify.register(regulatoryUcasRoutes,      { prefix: '/api/v1' });
+  await fastify.register(regulatoryUkviRoutes,      { prefix: '/api/v1' });
+  await fastify.register(regulatoryOfsRoutes,       { prefix: '/api/v1' });
+  await fastify.register(regulatoryFoiRoutes,       { prefix: '/api/v1' });
   await fastify.register(studentRoutes,             { prefix: '/api/v1' });
   await fastify.register(enrolmentRoutes,           { prefix: '/api/v1' });
   await fastify.register(programmesRoutes,          { prefix: '/api/v1' });
@@ -320,6 +360,14 @@ declare module 'fastify' {
     awardService:       AwardService;
     hearService:        HearService;
     correctionService:  CorrectionService;
+    regulatoryExchangeService: RegulatoryExchangeService;
+    ucasService:        UcasService;
+    hesaService:        HesaService;
+    slcService:         SlcService;
+    ukviService:        UkviService;
+    ofsService:         OfsService;
+    foiService:         FoiService;
+    examEntryService:   ExamEntryService;
   }
   interface FastifyContextConfig {
     skipAuth?: boolean;

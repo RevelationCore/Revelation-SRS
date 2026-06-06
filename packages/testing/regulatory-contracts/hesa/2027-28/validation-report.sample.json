@@ -1,0 +1,18 @@
+{
+  "academicYear": "2027-28",
+  "returnReference": "HESA-2027-28-001",
+  "issues": [
+    {
+      "studentReference": "0000000000001",
+      "fieldCode": "MODE",
+      "severityCode": "warning",
+      "message": "Mode of study should be reviewed before final submission"
+    }
+  ],
+  "identifierAssignments": [
+    {
+      "studentReference": "0000000000001",
+      "hesaId": "HESA0000000001"
+    }
+  ]
+}

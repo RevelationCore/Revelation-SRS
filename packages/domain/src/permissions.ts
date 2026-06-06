@@ -10,6 +10,7 @@ export const ROLES = [
   'external-examiner',
   'integrity-officer',
   'registry-administrator',
+  'regulatory-officer',
   'finance-administrator',
   'dpo',
   'tenant-administrator',
@@ -59,6 +60,8 @@ export const PERMISSION_ROLES = {
   'circumstances:write':                ['registry-administrator'] as Role[],
   'progression:read':                   ['registry-administrator', 'exam-board-chair', 'exam-board-member'] as Role[],
   'progression:write':                  ['registry-administrator'] as Role[],
+  'regulatory:read':                    ['registry-administrator', 'regulatory-officer'] as Role[],
+  'regulatory:write':                   ['registry-administrator', 'regulatory-officer'] as Role[],
 } as const;
 
 export type Permission = keyof typeof PERMISSION_ROLES;

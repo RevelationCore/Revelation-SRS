@@ -27,6 +27,8 @@ beforeAll(async () => {
   await applyMigration('0003_seed_phase4_field_mappings.sql');
   await applyMigration('0004_phase5_assessment_schema.sql');
   await applyMigration('0005_seed_phase5_field_mappings.sql');
+  await applyMigration('0006_phase6_regulatory_schema.sql');
+  await applyMigration('0007_seed_phase6_field_mappings.sql');
 });
 
 afterAll(async () => {
@@ -417,6 +419,200 @@ describe('Phase 5 migrations', () => {
       entity_name: 'post_ratification_case',
       field_name: 'status_code',
       value_set_code: 'post-ratification-case-status-code',
+    });
+  });
+});
+
+describe('Phase 6 migrations', () => {
+  it('creates all Phase 6 foundation tables', async () => {
+    const rows = await db.execute(sql`
+      SELECT table_name
+      FROM information_schema.tables
+      WHERE table_schema = 'public'
+        AND table_name IN (
+          'ucas_application',
+          'hesa_student_return',
+          'hesa_student_return_record',
+          'hesa_submission',
+          'hesa_validation_report',
+          'hesa_validation_issue',
+          'hesa_identifier_assignment',
+          'slc_notification',
+          'ukvi_cas_request',
+          'ukvi_attendance_report',
+          'ukvi_visa_status',
+          'ukvi_compliance_alert',
+          'ofs_extract',
+          'foi_request',
+          'foi_extract',
+          'student_regulatory_profile',
+          'exam_entry',
+          'exam_timetable_receipt'
+        )
+    `) as Array<{ table_name: string }>;
+
+    expect(rows.map((r) => r.table_name).sort()).toEqual([
+      'exam_entry',
+      'exam_timetable_receipt',
+      'foi_extract',
+      'foi_request',
+      'hesa_identifier_assignment',
+      'hesa_student_return',
+      'hesa_student_return_record',
+      'hesa_submission',
+      'hesa_validation_issue',
+      'hesa_validation_report',
+      'ofs_extract',
+      'slc_notification',
+      'student_regulatory_profile',
+      'ucas_application',
+      'ukvi_attendance_report',
+      'ukvi_cas_request',
+      'ukvi_compliance_alert',
+      'ukvi_visa_status',
+    ]);
+  });
+
+  it('enables and forces RLS on Phase 6 tables', async () => {
+    const rows = await db.execute(sql`
+      SELECT relname, relrowsecurity, relforcerowsecurity
+      FROM pg_class
+      WHERE relname IN (
+        'ucas_application',
+        'hesa_student_return',
+        'hesa_student_return_record',
+        'hesa_submission',
+        'hesa_validation_report',
+        'hesa_validation_issue',
+        'hesa_identifier_assignment',
+        'slc_notification',
+        'ukvi_cas_request',
+        'ukvi_attendance_report',
+        'ukvi_visa_status',
+        'ukvi_compliance_alert',
+        'ofs_extract',
+        'foi_request',
+        'foi_extract',
+        'student_regulatory_profile',
+        'exam_entry',
+        'exam_timetable_receipt'
+      )
+    `) as Array<{ relname: string; relrowsecurity: boolean; relforcerowsecurity: boolean }>;
+
+    expect(rows).toHaveLength(18);
+    for (const row of rows) {
+      expect(row.relrowsecurity).toBe(true);
+      expect(row.relforcerowsecurity).toBe(true);
+    }
+  });
+
+  it('creates bitemporal indexes on Phase 6 bitemporal tables', async () => {
+    const rows = await db.execute(sql`
+      SELECT indexname
+      FROM pg_indexes
+      WHERE schemaname = 'public'
+        AND indexname IN (
+          'ucas_application_unique_logical_transaction',
+          'ucas_application_current_version_unique',
+          'ukvi_cas_request_unique_logical_transaction',
+          'ukvi_cas_request_current_version_unique',
+          'ukvi_visa_status_unique_logical_transaction',
+          'ukvi_visa_status_current_version_unique',
+          'foi_request_unique_logical_transaction',
+          'foi_request_current_version_unique',
+          'student_regulatory_profile_unique_logical_transaction',
+          'student_regulatory_profile_current_version_unique',
+          'exam_entry_unique_logical_transaction',
+          'exam_entry_current_version_unique'
+        )
+    `) as Array<{ indexname: string }>;
+
+    expect(rows.map((r) => r.indexname).sort()).toEqual([
+      'exam_entry_current_version_unique',
+      'exam_entry_unique_logical_transaction',
+      'foi_request_current_version_unique',
+      'foi_request_unique_logical_transaction',
+      'student_regulatory_profile_current_version_unique',
+      'student_regulatory_profile_unique_logical_transaction',
+      'ucas_application_current_version_unique',
+      'ucas_application_unique_logical_transaction',
+      'ukvi_cas_request_current_version_unique',
+      'ukvi_cas_request_unique_logical_transaction',
+      'ukvi_visa_status_current_version_unique',
+      'ukvi_visa_status_unique_logical_transaction',
+    ]);
+  });
+
+  it('seeds Phase 6 value sets, field mappings, and integration contracts', async () => {
+    const sets = await db.execute(sql`
+      SELECT set_code
+      FROM value_set
+      WHERE set_code IN (
+        'ucas-application-status-code',
+        'hesa-return-status-code',
+        'hesa-validation-severity-code',
+        'slc-notification-type-code',
+        'cas-status-code',
+        'ukvi-visa-status-code',
+        'ukvi-alert-type-code',
+        'ofs-extract-type-code',
+        'regulatory-report-status-code',
+        'foi-request-status-code',
+        'exam-entry-status-code'
+      )
+    `) as Array<{ set_code: string }>;
+
+    const mappings = await db.execute(sql`
+      SELECT entity_name, field_name, value_set_code
+      FROM field_value_set
+      WHERE entity_name IN (
+        'ucas_application',
+        'hesa_student_return',
+        'hesa_validation_issue',
+        'slc_notification',
+        'ukvi_cas_request',
+        'ukvi_visa_status',
+        'ukvi_compliance_alert',
+        'ofs_extract',
+        'foi_request',
+        'exam_entry'
+      )
+      ORDER BY entity_name, field_name
+    `) as Array<{ entity_name: string; field_name: string; value_set_code: string }>;
+
+    const contracts = await db.execute(sql`
+      SELECT contract_id
+      FROM integration_contract
+      WHERE contract_id IN (
+        'ucas-admissions-exchange.{cycle}',
+        'hesa-student-return.{year}',
+        'slc-enrolment-exchange.v1',
+        'ukvi-sponsor-compliance.v1',
+        'exam-scheduling.v1'
+      )
+    `) as Array<{ contract_id: string }>;
+
+    expect(sets).toHaveLength(11);
+    expect(contracts).toHaveLength(5);
+    expect(mappings).toContainEqual({
+      entity_name: 'ucas_application',
+      field_name: 'status_code',
+      value_set_code: 'ucas-application-status-code',
+    });
+    expect(mappings).toContainEqual({
+      entity_name: 'hesa_validation_issue',
+      field_name: 'severity_code',
+      value_set_code: 'hesa-validation-severity-code',
+    });
+    expect(mappings).toContainEqual({
+      entity_name: 'exam_entry',
+      field_name: 'status_code',
+      value_set_code: 'exam-entry-status-code',
+    });
+    expect(mappings).toContainEqual({
+      entity_name: 'ofs_extract',
+      field_name: 'status_code',
+      value_set_code: 'regulatory-report-status-code',
     });
   });
 });

@@ -48,6 +48,9 @@ export async function startTestApp(opts: StartTestAppOptions = {}): Promise<Test
   await applyMigration(db, '0003_seed_phase4_field_mappings.sql');
   await applyMigration(db, '0004_phase5_assessment_schema.sql');
   await applyMigration(db, '0005_seed_phase5_field_mappings.sql');
+  await applyMigration(db, '0006_phase6_regulatory_schema.sql');
+  await applyMigration(db, '0007_seed_phase6_field_mappings.sql');
+  await applyMigration(db, '0008_phase6_remediation.sql');
 
   // Seed a tenant for tests
   const tenantId = '00000000-0000-0000-0000-000000000001';

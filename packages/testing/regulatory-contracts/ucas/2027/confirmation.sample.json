@@ -1,0 +1,11 @@
+{
+  "cycle": "2027",
+  "confirmations": [
+    {
+      "ucasPersonalId": "1234567890",
+      "programmeCode": "BSC-COMP",
+      "confirmationType": "enrolled",
+      "confirmedAt": "2027-09-20T09:00:00.000Z"
+    }
+  ]
+}

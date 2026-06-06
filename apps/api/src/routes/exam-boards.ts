@@ -1,7 +1,9 @@
 import { Type } from '@sinclair/typebox';
 import { requirePermission } from '@revelation-srs/auth';
+import { hasPermission } from '@revelation-srs/domain';
 import type { FastifyInstance } from 'fastify';
 
+import type { ExamEntryDto, ExamScheduleInput, ExamTimetableDto } from '../platform/assessment/exam-entry-service.js';
 import type {
   CandidateProfileDto,
   CreateExamBoardInput,
@@ -45,6 +47,33 @@ const CandidateProfileSchema = Type.Object({
   personId: Type.String(),
   profileData: Type.Record(Type.String(), Type.Unknown()),
   createdAt: Type.String(),
+});
+
+const ExamEntrySchema = Type.Object({
+  examEntryId: Type.String(),
+  moduleRegistrationId: Type.String(),
+  examBoardId: Type.String(),
+  candidateNumber: Type.Union([Type.String(), Type.Null()]),
+  scheduledDate: Type.Union([Type.String(), Type.Null()]),
+  roomReference: Type.Union([Type.String(), Type.Null()]),
+  statusCode: Type.String(),
+  accommodations: Type.Record(Type.String(), Type.Unknown()),
+  validFrom: Type.String(),
+  recordedAt: Type.String(),
+});
+
+const ExamTimetableSchema = Type.Intersect([
+  ExamEntrySchema,
+  Type.Object({ personId: Type.String() }),
+]);
+
+const ExamScheduleBody = Type.Object({
+  candidates: Type.Array(Type.Object({
+    moduleRegistrationId: Type.String(),
+    candidateNumber: Type.String(),
+    scheduledDate: Type.String({ format: 'date' }),
+    room: Type.String(),
+  })),
 });
 
 const CreateExamBoardBody = Type.Object({
@@ -180,6 +209,138 @@ export function examBoardRoutes(fastify: FastifyInstance): void {
   );
 
   fastify.post(
+    '/exam-boards/:boardId/exam-entries/generate',
+    {
+      schema: {
+        params: Type.Object({ boardId: Type.String() }),
+        response: {
+          200: Type.Object({ entryCount: Type.Number(), entries: Type.Array(ExamEntrySchema) }),
+          404: ErrorSchema,
+          422: ErrorSchema,
+        },
+      },
+      preHandler: [requirePermission('exam-board:write')],
+    },
+    async (request, reply) => {
+      const { boardId } = request.params as { boardId: string };
+      const result = await fastify.examEntryService.generateExamEntries(boardId, request.tenantId, request.user.sub);
+      await fastify.audit.record({
+        tenantId: request.tenantId,
+        entityType: 'exam_entry',
+        entityId: crypto.randomUUID(),
+        actionType: 'create',
+        actorType: 'user',
+        actorId: request.user.sub,
+        actorDisplayName: request.user.displayName,
+        correlationId: request.id,
+      });
+      await reply.send({ entryCount: result.entryCount, entries: result.entries.map(examEntryToWire) });
+    },
+  );
+
+  fastify.get(
+    '/exam-boards/:boardId/exam-entries',
+    {
+      schema: {
+        params: Type.Object({ boardId: Type.String() }),
+        response: { 200: Type.Array(ExamEntrySchema), 404: ErrorSchema },
+      },
+      preHandler: [requirePermission('exam-board:read')],
+    },
+    async (request, reply) => {
+      const { boardId } = request.params as { boardId: string };
+      const entries = await fastify.examEntryService.listExamEntries(boardId, request.tenantId);
+      await reply.send(entries.map(examEntryToWire));
+    },
+  );
+
+  fastify.post(
+    '/exam-boards/:boardId/exam-schedule',
+    {
+      schema: {
+        params: Type.Object({ boardId: Type.String() }),
+        body: ExamScheduleBody,
+        response: {
+          201: Type.Object({ receiptId: Type.String(), updatedCount: Type.Number() }),
+          404: ErrorSchema,
+        },
+      },
+      preHandler: [requirePermission('integration:manage')],
+    },
+    async (request, reply) => {
+      const { boardId } = request.params as { boardId: string };
+      const result = await fastify.examEntryService.processScheduleData(
+        boardId,
+        request.tenantId,
+        request.body as ExamScheduleInput,
+        request.user.sub,
+      );
+      await fastify.audit.record({
+        tenantId: request.tenantId,
+        entityType: 'exam_timetable_receipt',
+        entityId: result.receiptId,
+        actionType: 'create',
+        actorType: 'user',
+        actorId: request.user.sub,
+        actorDisplayName: request.user.displayName,
+        correlationId: request.id,
+      });
+      await reply.code(201).send(result);
+    },
+  );
+
+  fastify.get(
+    '/module-registrations/:moduleRegistrationId/exam-entry',
+    {
+      schema: {
+        params: Type.Object({ moduleRegistrationId: Type.String() }),
+        response: { 200: ExamEntrySchema, 404: ErrorSchema },
+      },
+      preHandler: [requirePermission('mark:read:all')],
+    },
+    async (request, reply) => {
+      const { moduleRegistrationId } = request.params as { moduleRegistrationId: string };
+      const entry = await fastify.examEntryService.getExamEntry(moduleRegistrationId, request.tenantId);
+      await reply.send(examEntryToWire(entry));
+    },
+  );
+
+  fastify.get(
+    '/module-registrations/:moduleRegistrationId/exam-timetable',
+    {
+      schema: {
+        params: Type.Object({ moduleRegistrationId: Type.String() }),
+        response: { 200: ExamTimetableSchema, 403: ErrorSchema, 404: ErrorSchema },
+      },
+    },
+    async (request, reply) => {
+      const { moduleRegistrationId } = request.params as { moduleRegistrationId: string };
+      const roles = request.user.roles;
+      const hasAll = hasPermission(roles, 'mark:read:all');
+      const hasOwn = hasPermission(roles, 'student:read:own');
+      if (!hasAll && !hasOwn) {
+        return reply.code(403).send({
+          type: 'https://srs.example.com/errors/forbidden',
+          title: 'Forbidden',
+          status: 403,
+          detail: 'Requires mark:read:all or student:read:own',
+        });
+      }
+
+      const timetable = await fastify.examEntryService.getExamTimetable(moduleRegistrationId, request.tenantId);
+      if (!hasAll && hasOwn && timetable.personId !== request.user.sub) {
+        return reply.code(403).send({
+          type: 'https://srs.example.com/errors/forbidden',
+          title: 'Forbidden',
+          status: 403,
+          detail: 'You may only access your own exam timetable',
+        });
+      }
+      await reply.send(examTimetableToWire(timetable));
+    },
+  );
+
+  fastify.post(
     '/exam-boards/:boardId/attendance',
     {
       schema: {
@@ -288,4 +449,16 @@ function candidateProfileToWire(profile: CandidateProfileDto) {
     ...profile,
     createdAt: profile.createdAt.toISOString(),
   };
+}
+
+function examEntryToWire(entry: ExamEntryDto) {
+  return {
+    ...entry,
+    validFrom: entry.validFrom.toISOString(),
+    recordedAt: entry.recordedAt.toISOString(),
+  };
+}
+
+function examTimetableToWire(timetable: ExamTimetableDto) {
+  return examEntryToWire(timetable);
 }

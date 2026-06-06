@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<StudentReturn academicYear="2027-28">
+  <Student>
+    <HUSID>0000000000001</HUSID>
+    <SURNAME>Singh</SURNAME>
+    <FNAMES>Amara</FNAMES>
+    <BIRTHDTE>2008-04-12</BIRTHDTE>
+    <MODE>01</MODE>
+    <YEARPRG>1</YEARPRG>
+  </Student>
+</StudentReturn>

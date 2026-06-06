@@ -30,6 +30,21 @@ export * from './governance/record-locked.v1.js';
 export * from './governance/record-amended-post-ratification.v1.js';
 export * from './progression/decided.v1.js';
 export * from './award/conferred.v1.js';
+export * from './regulatory/ucas-application-received.v1.js';
+export * from './regulatory/ucas-confirmation-sent.v1.js';
+export * from './regulatory/hesa-return-generated.v1.js';
+export * from './regulatory/hesa-return-submitted.v1.js';
+export * from './regulatory/hesa-id-assigned.v1.js';
+export * from './regulatory/slc-confirmation-sent.v1.js';
+export * from './regulatory/slc-notification-received.v1.js';
+export * from './regulatory/ukvi-cas-requested.v1.js';
+export * from './regulatory/ukvi-cas-assigned.v1.js';
+export * from './regulatory/ukvi-attendance-submitted.v1.js';
+export * from './regulatory/ukvi-visa-status-updated.v1.js';
+export * from './regulatory/ukvi-compliance-alert-raised.v1.js';
+export * from './regulatory/ofs-extract-generated.v1.js';
+export * from './governance/exam-entry-submitted.v1.js';
+export * from './governance/exam-schedule-received.v1.js';
 
 /** Canonical NATS subject names for all domain events. */
 export const EVENT_TYPES = {
@@ -67,4 +82,20 @@ export const EVENT_TYPES = {
   GOVERNANCE_RECORD_AMENDED:                'srs.governance.record-amended-post-ratification',
   PROGRESSION_DECIDED:                      'srs.progression.decided',
   AWARD_CONFERRED:                          'srs.award.conferred',
+  // ── Phase 6 ──────────────────────────────────────────────────────────────
+  REGULATORY_UCAS_APPLICATION_RECEIVED:      'srs.regulatory.ucas-application-received',
+  REGULATORY_UCAS_CONFIRMATION_SENT:         'srs.regulatory.ucas-confirmation-sent',
+  REGULATORY_HESA_RETURN_GENERATED:          'srs.regulatory.hesa-return-generated',
+  REGULATORY_HESA_RETURN_SUBMITTED:          'srs.regulatory.hesa-return-submitted',
+  REGULATORY_HESA_ID_ASSIGNED:               'srs.regulatory.hesa-id-assigned',
+  REGULATORY_SLC_CONFIRMATION_SENT:          'srs.regulatory.slc-confirmation-sent',
+  REGULATORY_SLC_NOTIFICATION_RECEIVED:      'srs.regulatory.slc-notification-received',
+  REGULATORY_UKVI_CAS_REQUESTED:             'srs.regulatory.ukvi-cas-requested',
+  REGULATORY_UKVI_CAS_ASSIGNED:              'srs.regulatory.ukvi-cas-assigned',
+  REGULATORY_UKVI_ATTENDANCE_SUBMITTED:      'srs.regulatory.ukvi-attendance-submitted',
+  REGULATORY_UKVI_VISA_STATUS_UPDATED:       'srs.regulatory.ukvi-visa-status-updated',
+  REGULATORY_UKVI_COMPLIANCE_ALERT:          'srs.regulatory.ukvi-compliance-alert-raised',
+  REGULATORY_OFS_EXTRACT_GENERATED:          'srs.regulatory.ofs-extract-generated',
+  GOVERNANCE_EXAM_ENTRY_SUBMITTED:           'srs.governance.exam-entry-submitted',
+  GOVERNANCE_EXAM_SCHEDULE_RECEIVED:         'srs.governance.exam-schedule-received',
 } as const;

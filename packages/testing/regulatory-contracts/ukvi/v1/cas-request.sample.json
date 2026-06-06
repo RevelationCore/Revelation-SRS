@@ -1,0 +1,12 @@
+{
+  "requests": [
+    {
+      "enrolmentReference": "ENR-001",
+      "familyName": "Singh",
+      "givenNames": "Amara",
+      "programmeCode": "BSC-COMP",
+      "startDate": "2027-09-20",
+      "expectedEndDate": "2030-06-30"
+    }
+  ]
+}

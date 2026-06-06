@@ -13,3 +13,5 @@ export * from './adjustment.js';
 export * from './circumstances.js';
 export * from './governance.js';
 export * from './progression.js';
+export * from './regulatory.js';
+export * from './examEntry.js';

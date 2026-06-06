@@ -1,0 +1,11 @@
+{
+  "examBoardId": "00000000-0000-4000-8000-000000000001",
+  "candidates": [
+    {
+      "moduleRegistrationId": "00000000-0000-4000-8000-000000000002",
+      "candidateNumber": "C10001",
+      "scheduledDate": "2028-05-12",
+      "room": "HALL-A"
+    }
+  ]
+}

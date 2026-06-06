@@ -49,6 +49,8 @@ Stages 1–5 have no ordering dependencies on each other once Stage 0 is in plac
 
 ## Stage 0 — Foundation: Schema, Domain Events, Value Sets, Permissions
 
+**Status**: Complete — implemented in migrations `0006_phase6_regulatory_schema.sql` and `0007_seed_phase6_field_mappings.sql`, Drizzle schema exports, Phase 6 event contracts, regulatory permissions, exchange ledger helper, and pinned contract fixtures.
+
 **Scope**: All Phase 6 tables in one migration, RLS enabled, value sets seeded, domain event contracts defined, integration contracts seeded for each regulatory body, and new permissions added. No service or route code; only structural substrate.
 
 ### Database migration (`0006_phase6_regulatory_schema.sql`)
@@ -108,6 +110,7 @@ New value sets:
 - `ukvi-visa-status-code` — `granted`, `refused`, `curtailed`, `expired`, `lapse-of-leave`
 - `ukvi-alert-type-code` — `attendance-threshold-breach`, `visa-curtailed`, `sponsor-compliance-breach`
 - `ofs-extract-type-code` — `b3-student-outcomes`, `access-participation-progress`, `prevent-duty`
+- `regulatory-report-status-code` — `draft`, `generated`, `submitted`, `accepted`, `rejected`
 - `foi-request-status-code` — `received`, `in-progress`, `extended`, `responded`, `refused`
 - `exam-entry-status-code` — `pending`, `submitted-to-scheduling`, `scheduled`, `cancelled`
 
@@ -120,10 +123,10 @@ Seed into `integration_contract` (platform-wide, no tenant scope):
 ```sql
 INSERT INTO integration_contract (contract_id, display_name, owner_module_code, direction_code, pattern_type, current_contract_version, data_classification_code)
 VALUES
-  ('ucas-admissions-exchange.{cycle}', 'UCAS Admissions Exchange', 'regulatory', 'bidirectional', 'file-and-api', '1.0.0', 'personal-regulatory'),
+  ('ucas-admissions-exchange.{cycle}', 'UCAS Admissions Exchange', 'regulatory', 'bidirectional', 'file-and-api', '1.0.0', 'personal'),
   ('hesa-student-return.{year}',       'HESA Student Return',      'regulatory', 'bidirectional', 'file',          '1.0.0', 'regulatory'),
-  ('slc-enrolment-exchange.v1',        'SLC Enrolment Exchange',   'regulatory', 'bidirectional', 'file-and-api', '1.0.0', 'sensitive-regulatory'),
-  ('ukvi-sponsor-compliance.v1',       'UKVI Sponsor Compliance',  'regulatory', 'bidirectional', 'api-and-file', '1.0.0', 'sensitive-regulatory');
+  ('slc-enrolment-exchange.v1',        'SLC Enrolment Exchange',   'regulatory', 'bidirectional', 'file-and-api', '1.0.0', 'sensitive'),
+  ('ukvi-sponsor-compliance.v1',       'UKVI Sponsor Compliance',  'regulatory', 'bidirectional', 'api-and-file', '1.0.0', 'sensitive');
 ```
 
 ### Exchange ledger helper
@@ -213,6 +216,8 @@ Add a new `regulatory-officer` role to the `Role` union and the following permis
 
 ## Stage 1 — UCAS Admissions Exchange (UCR-001, UCR-002, UCR-003, UCR-004)
 
+**Status**: Complete — implemented UCAS ingestion/list/link routes, confirmed-application auto enrolment, outbound confirmation generation from Phase 4 downstream triggers, exchange ledger writes, audit records, and focused integration coverage.
+
 **Scope**: Inbound UCAS application data is ingested and staged; confirmed acceptances trigger enrolment creation. Outbound: pending `ucas-confirmation` downstream triggers (queued in Phase 4) are resolved into formatted confirmation records and marked as processed. Clearing period support (UCR-004) is implemented as an application status variant, not a separate flow.
 
 ### Implementation
@@ -264,17 +269,19 @@ Add a new `regulatory-officer` role to the `Role` union and the following permis
 
 ## Stage 2 — HESA Student Return (HES-001, HES-002, HES-003, HES-004, HES-005)
 
+**Status**: Complete — implemented HESA return generation, structural validation, XML submission-file evidence, inbound validation report processing, HESA ID assignment propagation, manual submission confirmation, amendment generation, routes, audit records, and focused integration coverage.
+
 **Scope**: HESA is the most complex regulatory obligation. This stage implements the extraction pipeline, HESA business rule validation, submission file generation, inbound validation report processing, and HESA ID propagation. Full HESA coding manual compliance requires institutional configuration; this stage defines the framework and maps all data fields available from Phases 4–5.
 
 ### Implementation
 
 **Service** `apps/api/src/platform/regulatory/hesa-service.ts`:
 - `generateStudentReturn(tenantId, academicYear, actorId)`:
-  1. Creates `hesa_student_return` row with `status = 'draft'`
+  1. Creates `hesa_student_return` row with `status_code = 'draft'`
   2. Queries all current enrolments for the academic year (joining persons, personal identities, programmes, module registrations, module results, awards)
   3. For each enrolment, assembles the HESA field set using `#mapStudentToHesa(enrolment, tenantId)` — returns a JSONB object keyed by HESA field codes (e.g. `HUSID`, `SURNAME`, `FNAMES`, `BIRTHDTE`, `SEXID`, `MODE`, `MSTUFEE`, `YEARPRG`, `QUALAID`, etc.)
   4. Inserts one `hesa_student_return_record` row per enrolment
-  5. Updates `hesa_student_return.status` to `draft` with record count
+  5. Updates `hesa_student_return.status_code` to `draft` with record count
   6. Publishes `srs.regulatory.hesa-return-generated` (regulatory classification)
   7. Returns `returnId`
 - `validateReturn(returnId, tenantId, actorId)`:
@@ -366,6 +373,8 @@ Full HESA business rule coverage (which runs to hundreds of rules in the coding 
 
 ## Stage 3 — Student Loans Company Exchange (SLC-001, SLC-002, SLC-003)
 
+**Status**: Complete — implemented SLC confirmation generation from downstream triggers, status-change notifications, inbound notification recording, exchange ledger writes, sensitive event publication, routes, audit records, and focused integration coverage.
+
 **Scope**: Enrolment confirmations and status-change notifications are sent to SLC, triggering tuition fee loan release. Inbound SLC notifications (entitlement, payment, overpayment) are received and recorded. Pending `slc-confirmation` downstream triggers from Phase 4 are processed here.
 
 ### Implementation
@@ -415,6 +424,8 @@ Full HESA business rule coverage (which runs to hundreds of rules in the coding 
 
 ## Stage 4 — UKVI Compliance (UKV-001, UKV-002, UKV-003, UKV-004, UKV-005)
 
+**Status**: Complete — implemented UKVI CAS request generation from downstream triggers, bitemporal CAS assignment recording, attendance compliance report generation, inbound visa status recording, compliance alert raise/evaluate/resolve flows, routes, audit records, and focused integration coverage.
+
 **Scope**: CAS creation requests are generated for students requiring a Student visa. Ongoing attendance compliance data is submitted to UKVI. Inbound visa status updates are received and recorded. The compliance alert mechanism flags students whose attendance falls below the configured threshold.
 
 ### Implementation
@@ -426,11 +437,11 @@ Full HESA business rule coverage (which runs to hundreds of rules in the coding 
   3. Inserts `ukvi_cas_request` row with `status_code = 'pending'`
   4. Records `integration_exchange` through `RegulatoryExchangeService.recordExchange` (outbound, idempotency key `ukvi-cas:{triggerId}`)
   5. Sets trigger `status_code = 'processed'` and `sent_at = now`
-  6. Publishes `srs.regulatory.ukvi-cas-requested` (sensitive-regulatory classification)
+  6. Publishes `srs.regulatory.ukvi-cas-requested` (sensitive classification)
   7. Returns `{ processedCount, casRequests: Array<{ casRequestId, enrolmentId, personData }> }`
 - `recordCasAssignment(casRequestId, casReference, tenantId, actorId)`:
   1. Closes the current `ukvi_cas_request` version; inserts new version with `status_code = 'assigned'` and `cas_reference`
-  2. Publishes `srs.regulatory.ukvi-cas-assigned` (sensitive-regulatory classification)
+  2. Publishes `srs.regulatory.ukvi-cas-assigned` (sensitive classification)
 - `generateAttendanceReport(tenantId, academicPeriodId, actorId)`:
   1. Queries all active sponsored students using assigned current `ukvi_cas_request` rows and/or current `student_regulatory_profile.ukvi_sponsorship_required = true` for the academic period
   2. Fetches their attendance data (from the integration layer; attendance monitoring pushes `srs.enrolment.module-registration-completed` events which the SRS uses as a proxy for attendance — see Key Decisions)
@@ -444,7 +455,7 @@ Full HESA business rule coverage (which runs to hundreds of rules in the coding 
   2. Inserts `ukvi_visa_status` row (bitemporal)
   3. If status is `curtailed` or `refused`: inserts `ukvi_compliance_alert` with `alert_type_code = 'visa-curtailed'`; publishes alert event
   4. Records `integration_exchange` through `RegulatoryExchangeService.recordExchange` (inbound)
-  5. Publishes `srs.regulatory.ukvi-visa-status-updated` (sensitive-regulatory)
+  5. Publishes `srs.regulatory.ukvi-visa-status-updated` (sensitive classification)
 - `evaluateComplianceAlerts(tenantId, actorId)`:
   1. Fetches the configured UKVI attendance compliance threshold from the rules engine (rule type: `ukvi-attendance-threshold`, default 10 unauthorised absences per 8-week period per UKVI guidance)
   2. Evaluates each active sponsored student's attendance proxy data against the threshold
@@ -482,11 +493,13 @@ Full HESA business rule coverage (which runs to hundreds of rules in the coding 
 - `evaluateComplianceAlerts` raises an alert for students above threshold; does not duplicate open alerts
 - Alert resolution sets `resolved_at` and prevents re-raising for the same breach within the same period
 - Cross-tenant isolation
-- All events published with sensitive-regulatory classification
+- All events published with sensitive classification and regulatory subject names
 
 ---
 
 ## Stage 5 — OfS Reporting and FOI Support (OFS-001, OFS-002, OFS-003, OFS-004, OFS-005)
+
+**Status**: Complete — implemented OfS B3 and participation extract generation/retrieval, FOI request intake with statutory deadline calculation, aggregate-safe FOI extract generation, bitemporal FOI status updates, routes, audit records, and focused integration coverage.
 
 **Scope**: Structured data extracts for OfS B3 condition reporting and access and participation plan progress. FOI request logging and data extract generation for authorised responses. These are reporting and extract capabilities, not exchange flows — there is no regulatory body integration; all outputs are downloaded by authorised staff.
 
@@ -553,6 +566,8 @@ Full HESA business rule coverage (which runs to hundreds of rules in the coding 
 
 ## Stage 6 — Exam Entry and Scheduling Exchange (GOV-008, GOV-009)
 
+**Status**: Complete — implemented exam entry generation from current exam board data packs, accommodation forwarding, exam scheduling exchange ledger records, inbound timetable receipt processing with bitemporal entry updates, student-facing timetable routes, audit records, and focused integration coverage.
+
 **Scope**: Deferred from Phase 5. Exam entry data is generated per exam board and provided to the Exam Scheduling system. The SRS receives finalised timetable, seating, and candidate number data back and makes it available to students. Approved accommodation adjustments (from Phase 5 reasonable adjustments) are included in exam entries.
 
 ### Implementation
@@ -604,6 +619,8 @@ Full HESA business rule coverage (which runs to hundreds of rules in the coding 
 
 ## Stage 7 — Event Consumer Tests and OpenAPI
 
+**Status**: Complete — implemented Phase 6 event consumer coverage, downstream trigger processing coverage, pinned contract fixture checks, OpenAPI tag/resource checks, and focused integration verification for all Phase 6 resources.
+
 **Scope**: Event consumer tests for all Phase 6 domain events. OpenAPI tag verification for the `regulatory` and extended `governance` tags.
 
 ### Event consumer tests
@@ -633,7 +650,7 @@ Create `apps/api/test/regulatory-contract-fixtures.int.test.ts`:
 - HESA generated XML validates against the pinned minimal XML structure and field ordering fixture for the selected academic year
 - HESA validation report processing accepts the pinned report fixture and normalises expected issues/HESA ID assignments
 - SLC confirmation and inbound notification payloads match the pinned v1 fixtures
-- UKVI CAS, visa-status, and attendance payloads match pinned v1 fixtures, including sensitive-regulatory classification expectations
+- UKVI CAS, visa-status, and attendance payloads match pinned v1 fixtures, including sensitive classification expectations
 - Exam Scheduling timetable receipt accepts the pinned v1 timetable fixture and updates entries bitemporally
 
 These are contract fixture tests, not live external conformance tests. They satisfy the Phase 6 exit criterion by pinning representative published-spec structures in-repo; live SFTP/API certification belongs to Phase 7.
@@ -697,7 +714,7 @@ Contract fixture tests pass for UCAS, HESA, SLC, UKVI, and Exam Scheduling paylo
 
 **UKVI attendance data is acknowledged as incomplete until Phase 9.** Phase 6 generates attendance compliance reports from enrolment and module registration data (which the SRS does own). Granular absence data requires the Attendance Monitoring integration (Phase 9). `ukvi_attendance_report.report_payload` includes a `_attendance_data_completeness` field so institutions and auditors understand the data gap.
 
-**Classification for regulatory events**: UCAS events are `personal`; HESA events are `regulatory`; SLC events are `sensitive`; UKVI events are `sensitive-regulatory`. OfS extracts are `regulatory`. This classification drives NATS subject routing, audit depth, and retention policies under Phase 2's data classification model.
+**Classification for regulatory events**: UCAS events are `personal`; HESA events are `regulatory`; SLC events are `sensitive`; UKVI events are `sensitive` with regulatory subject names. OfS extracts are `regulatory`. This classification drives NATS subject routing, audit depth, and retention policies under Phase 2's data classification model.
 
 **FOI extract scope is permission-gated by legal basis.** By default, `foi-service.generateExtract` returns only aggregate non-PII data. A `legal_basis` field on `foi_request` (set at intake) unlocks PII fields for requests where data protection legislation requires it. This is a defence-in-depth control, not a replacement for access control — `regulatory:write` is still required for the route.
 
