@@ -5,7 +5,7 @@
 
 ## Context
 
-Principle §18 requires structured logging, Prometheus-compatible metrics, distributed tracing, health endpoints, alerting, and log retention. All components must be open source, self-hosted, and runnable in Docker alongside the application services.
+Principle §19 requires structured logging, Prometheus-compatible metrics, distributed tracing, health endpoints, alerting, and log retention. All components must be open source, self-hosted, and runnable in Docker alongside the application services.
 
 ## Decision
 

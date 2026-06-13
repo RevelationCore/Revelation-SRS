@@ -5,7 +5,7 @@
 
 ## Context
 
-Phase 10 requires a student-facing portal and a staff administrative interface. Both must meet WCAG 2.1 Level AA (principle §15). The frontend stack must be open source, TypeScript-based (consistent with ADR-001), and produce accessible, responsive interfaces. Server-side rendering is not a hard requirement at this stage; a client-side single-page application consuming the REST APIs is appropriate.
+Phase 10 requires a student-facing portal and a staff administrative interface. Both must meet WCAG 2.1 Level AA (principle §16). The frontend stack must be open source, TypeScript-based (consistent with ADR-001), and produce accessible, responsive interfaces. Server-side rendering is not a hard requirement at this stage; a client-side single-page application consuming the REST APIs is appropriate.
 
 ## Decision
 

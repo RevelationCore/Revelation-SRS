@@ -5,7 +5,7 @@
 
 ## Context
 
-Principle §20 requires automated tests at unit, integration, contract, performance, security, and accessibility levels, all running in CI. The testing stack must be TypeScript-native, open source, and support testing against real infrastructure (PostgreSQL, NATS, Temporal) rather than mocks where integration correctness matters.
+Principle §21 requires automated tests at unit, integration, contract, performance, security, and accessibility levels, all running in CI. The testing stack must be TypeScript-native, open source, and support testing against real infrastructure (PostgreSQL, NATS, Temporal) rather than mocks where integration correctness matters.
 
 ## Decision
 

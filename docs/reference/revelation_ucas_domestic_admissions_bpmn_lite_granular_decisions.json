@@ -1,0 +1,5090 @@
+{
+  "model": {
+    "TITLE": {
+      "value": "UCAS and International Admissions to Enrolment - Granular BPMN Lite",
+      "inputType": "text"
+    },
+    "MODELTYPE": {
+      "value": "BPMN_LITE",
+      "inputType": "select",
+      "refData": "MODELTYPE"
+    },
+    "LAYOUT": {
+      "value": "HorizontalFlow",
+      "inputType": "select",
+      "refData": "LAYOUTTYPE"
+    },
+    "VIEW": {
+      "value": "Architecture",
+      "inputType": "select",
+      "refData": "VIEWTYPE"
+    },
+    "Purpose": {
+      "value": "Granular BPMN-lite model showing ungrouped actors, systems, hand-offs, and data exchanges for UK domestic undergraduate admissions through UCAS and international direct/agent admissions from course registration to student enrolment.",
+      "inputType": "text"
+    },
+    "Scope": {
+      "value": "Domestic UK undergraduate admissions via UCAS and international admissions via direct university and authorised agent channels; includes course publication, application, assessment, immigration/CAS pre-checks, offers, applicant replies, deposits/evidence, results or condition confirmation, clearing, record creation, enrolment and induction handover.",
+      "inputType": "text"
+    },
+    "ArchitecturePattern": {
+      "value": "Student Records/SIS is the authoritative applicant-to-student record and outcome system; UCAS, direct application portals, agent channels, CRM, Curriculum, Finance, Accommodation, Identity, Immigration Compliance/CAS and Student Services own their domain processes and exchange confirmed data with SIS.",
+      "inputType": "text"
+    },
+    "Version": {
+      "value": "2.1-granular-decisions",
+      "inputType": "text"
+    },
+    "CreatedByRole": {
+      "value": "Solution Architect - UK University",
+      "inputType": "text"
+    },
+    "CycleExample": {
+      "value": "September intake cycle; dates expressed as relative UK UCAS lifecycle windows",
+      "inputType": "text"
+    },
+    "SourceSchema": {
+      "value": "https://github.com/RevelationCore/Revelation/blob/main/schema/revelation-model.schema.json",
+      "inputType": "url"
+    },
+    "ReferenceAlignment": {
+      "value": "Revelation Student Records reference model: Student Records as authoritative system, UCAS admissions exchange, finance/SLC, accommodation, identity, wellbeing and statutory reporting boundaries.",
+      "inputType": "textarea"
+    },
+    "DecisionGatewayModellingStandard": {
+      "value": "Every decision gateway is modelled as an explicit BPMN-lite XOR gateway with at least two outgoing routes. Each outgoing interaction is labelled with RouteLabel, GatewayType and Condition metadata. Gateways include owner, rule, timeframe and policy/source metadata.",
+      "inputType": "textarea"
+    },
+    "DecisionGatewayCount": {
+      "value": "12",
+      "inputType": "number"
+    },
+    "NodeCount": {
+      "value": "132",
+      "inputType": "number"
+    },
+    "InteractionCount": {
+      "value": "172",
+      "inputType": "number"
+    },
+    "DecisionGatewayAudit": {
+      "value": "PASSED: all decision gateways have at least two outgoing labelled routes, including international source, sponsorship and CAS readiness routes.",
+      "inputType": "textarea"
+    }
+  },
+  "systems": [
+    {
+      "ID": "LANE_STUDENT",
+      "TEXT": "Applicant / Student",
+      "TYPE": "BPMN_SWIMLANE_HORIZONTAL",
+      "Swimlane": "Applicant / Student",
+      "Layer": "Actor/System Lane",
+      "Sequence": "0"
+    },
+    {
+      "ID": "LANE_UCAS",
+      "TEXT": "UCAS",
+      "TYPE": "BPMN_SWIMLANE_HORIZONTAL",
+      "Swimlane": "UCAS",
+      "Layer": "Actor/System Lane",
+      "Sequence": "1"
+    },
+    {
+      "ID": "LANE_PORTFOLIO",
+      "TEXT": "Portfolio & Planning",
+      "TYPE": "BPMN_SWIMLANE_HORIZONTAL",
+      "Swimlane": "Portfolio & Planning",
+      "Layer": "Actor/System Lane",
+      "Sequence": "2"
+    },
+    {
+      "ID": "LANE_CURRIC",
+      "TEXT": "Curriculum Management",
+      "TYPE": "BPMN_SWIMLANE_HORIZONTAL",
+      "Swimlane": "Curriculum Management",
+      "Layer": "Actor/System Lane",
+      "Sequence": "3"
+    },
+    {
+      "ID": "LANE_MARKETING",
+      "TEXT": "Marketing / Web",
+      "TYPE": "BPMN_SWIMLANE_HORIZONTAL",
+      "Swimlane": "Marketing / Web",
+      "Layer": "Actor/System Lane",
+      "Sequence": "4"
+    },
+    {
+      "ID": "LANE_ADMISSIONS",
+      "TEXT": "Admissions Operations",
+      "TYPE": "BPMN_SWIMLANE_HORIZONTAL",
+      "Swimlane": "Admissions Operations",
+      "Layer": "Actor/System Lane",
+      "Sequence": "5"
+    },
+    {
+      "ID": "LANE_ACADEMIC",
+      "TEXT": "Academic Selector / School",
+      "TYPE": "BPMN_SWIMLANE_HORIZONTAL",
+      "Swimlane": "Academic Selector / School",
+      "Layer": "Actor/System Lane",
+      "Sequence": "6"
+    },
+    {
+      "ID": "LANE_CRM",
+      "TEXT": "CRM / Communications",
+      "TYPE": "BPMN_SWIMLANE_HORIZONTAL",
+      "Swimlane": "CRM / Communications",
+      "Layer": "Actor/System Lane",
+      "Sequence": "7"
+    },
+    {
+      "ID": "LANE_SIS",
+      "TEXT": "Student Records / SIS",
+      "TYPE": "BPMN_SWIMLANE_HORIZONTAL",
+      "Swimlane": "Student Records / SIS",
+      "Layer": "Actor/System Lane",
+      "Sequence": "8"
+    },
+    {
+      "ID": "LANE_SERVICES",
+      "TEXT": "Accommodation & Student Services",
+      "TYPE": "BPMN_SWIMLANE_HORIZONTAL",
+      "Swimlane": "Accommodation & Student Services",
+      "Layer": "Actor/System Lane",
+      "Sequence": "9"
+    },
+    {
+      "ID": "LANE_FINANCE",
+      "TEXT": "Finance / Student Finance Liaison",
+      "TYPE": "BPMN_SWIMLANE_HORIZONTAL",
+      "Swimlane": "Finance / Student Finance Liaison",
+      "Layer": "Actor/System Lane",
+      "Sequence": "10"
+    },
+    {
+      "ID": "LANE_ID",
+      "TEXT": "Identity, Access & Enrolment Platform",
+      "TYPE": "BPMN_SWIMLANE_HORIZONTAL",
+      "Swimlane": "Identity, Access & Enrolment Platform",
+      "Layer": "Actor/System Lane",
+      "Sequence": "11"
+    },
+    {
+      "ID": "LANE_REG",
+      "TEXT": "Registry / Reporting",
+      "TYPE": "BPMN_SWIMLANE_HORIZONTAL",
+      "Swimlane": "Registry / Reporting",
+      "Layer": "Actor/System Lane",
+      "Sequence": "12"
+    },
+    {
+      "ID": "SYS_UCAS",
+      "TEXT": "UCAS admissions exchange / UCAS Hub",
+      "TYPE": "BPMN_DATA_STORE",
+      "Swimlane": "UCAS",
+      "SystemRole": "External Admissions Platform",
+      "Layer": "System/Data Store",
+      "Timeframe": "Whole cycle"
+    },
+    {
+      "ID": "SYS_COURSE",
+      "TEXT": "Course catalogue / curriculum system",
+      "TYPE": "BPMN_DATA_STORE",
+      "Swimlane": "Curriculum Management",
+      "SystemRole": "Source System",
+      "Layer": "System/Data Store",
+      "Timeframe": "Whole cycle"
+    },
+    {
+      "ID": "SYS_WEB",
+      "TEXT": "University course pages",
+      "TYPE": "BPMN_DATA_STORE",
+      "Swimlane": "Marketing / Web",
+      "SystemRole": "Digital Channel",
+      "Layer": "System/Data Store",
+      "Timeframe": "Whole cycle"
+    },
+    {
+      "ID": "SYS_CRM",
+      "TEXT": "Applicant CRM",
+      "TYPE": "BPMN_DATA_STORE",
+      "Swimlane": "CRM / Communications",
+      "SystemRole": "Engagement System",
+      "Layer": "System/Data Store",
+      "Timeframe": "Whole cycle"
+    },
+    {
+      "ID": "SYS_SIS",
+      "TEXT": "Student Records / SIS",
+      "TYPE": "BPMN_DATA_STORE",
+      "Swimlane": "Student Records / SIS",
+      "SystemRole": "Authoritative Record",
+      "Layer": "System/Data Store",
+      "Timeframe": "Whole cycle"
+    },
+    {
+      "ID": "SYS_DOC",
+      "TEXT": "Document management / evidence store",
+      "TYPE": "BPMN_DATA_STORE",
+      "Swimlane": "Admissions Operations",
+      "SystemRole": "Evidence Repository",
+      "Layer": "System/Data Store",
+      "Timeframe": "Whole cycle"
+    },
+    {
+      "ID": "SYS_FIN",
+      "TEXT": "Finance / fees system",
+      "TYPE": "BPMN_DATA_STORE",
+      "Swimlane": "Finance / Student Finance Liaison",
+      "SystemRole": "Finance System",
+      "Layer": "System/Data Store",
+      "Timeframe": "Whole cycle"
+    },
+    {
+      "ID": "SYS_ACC",
+      "TEXT": "Accommodation system",
+      "TYPE": "BPMN_DATA_STORE",
+      "Swimlane": "Accommodation & Student Services",
+      "SystemRole": "Domain System",
+      "Layer": "System/Data Store",
+      "Timeframe": "Whole cycle"
+    },
+    {
+      "ID": "SYS_WELL",
+      "TEXT": "Student services / wellbeing case system",
+      "TYPE": "BPMN_DATA_STORE",
+      "Swimlane": "Accommodation & Student Services",
+      "SystemRole": "Domain System",
+      "Layer": "System/Data Store",
+      "Timeframe": "Whole cycle"
+    },
+    {
+      "ID": "SYS_IDM",
+      "TEXT": "Identity and access management",
+      "TYPE": "BPMN_DATA_STORE",
+      "Swimlane": "Identity, Access & Enrolment Platform",
+      "SystemRole": "Identity System",
+      "Layer": "System/Data Store",
+      "Timeframe": "Whole cycle"
+    },
+    {
+      "ID": "SYS_ENROL",
+      "TEXT": "Online enrolment platform",
+      "TYPE": "BPMN_DATA_STORE",
+      "Swimlane": "Identity, Access & Enrolment Platform",
+      "SystemRole": "Enrolment System",
+      "Layer": "System/Data Store",
+      "Timeframe": "Whole cycle"
+    },
+    {
+      "ID": "SYS_DW",
+      "TEXT": "Data warehouse / statutory reporting mart",
+      "TYPE": "BPMN_DATA_STORE",
+      "Swimlane": "Registry / Reporting",
+      "SystemRole": "Reporting System",
+      "Layer": "System/Data Store",
+      "Timeframe": "Whole cycle"
+    },
+    {
+      "ID": "EVT_START",
+      "TEXT": "Annual UCAS admissions cycle initiated",
+      "TYPE": "BPMN_TIMER_START_INTERRUPTING",
+      "Swimlane": "Portfolio & Planning",
+      "Phase": "0 Initiation",
+      "Timeframe": "Jan-Apr T-18 to T-15 months",
+      "Owner": "Planning",
+      "Layer": "Event"
+    },
+    {
+      "ID": "P01",
+      "TEXT": "Confirm recruitment targets and portfolio assumptions",
+      "TYPE": "Targets; capacity; market insight",
+      "Swimlane": "Portfolio & Planning",
+      "Phase": "1 Course portfolio",
+      "Timeframe": "Jan-Apr T-18 to T-15 months",
+      "Owner": "Planning",
+      "SupportingSystem": "",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "P02",
+      "TEXT": "Approve new courses and material amendments",
+      "TYPE": "Programme specs; PSRB constraints",
+      "Swimlane": "Curriculum Management",
+      "Phase": "1 Course portfolio",
+      "Timeframe": "Apr-Jun T-17 to T-15 months",
+      "Owner": "Quality Office / Academic Board",
+      "SupportingSystem": "SYS_COURSE",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "P03",
+      "TEXT": "Create or update course catalogue records",
+      "TYPE": "Course code; award; mode; location",
+      "Swimlane": "Curriculum Management",
+      "Phase": "1 Course portfolio",
+      "Timeframe": "May-Jul T-16 to T-14 months",
+      "Owner": "Curriculum Team",
+      "SupportingSystem": "SYS_COURSE",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "P04",
+      "TEXT": "Confirm admissions criteria and selection rules",
+      "TYPE": "Entry requirements; contextual rules",
+      "Swimlane": "Admissions Operations",
+      "Phase": "1 Course portfolio",
+      "Timeframe": "May-Jul T-16 to T-14 months",
+      "Owner": "Admissions Policy Lead",
+      "SupportingSystem": "SYS_SIS",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "P05",
+      "TEXT": "Validate fees, funding status and capacity controls",
+      "TYPE": "Fee; home status rules; capacity",
+      "Swimlane": "Finance / Student Finance Liaison",
+      "Phase": "1 Course portfolio",
+      "Timeframe": "May-Jul T-16 to T-14 months",
+      "Owner": "Finance",
+      "SupportingSystem": "SYS_FIN",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "P06",
+      "TEXT": "Register courses and vacancies with UCAS",
+      "TYPE": "UCAS course records",
+      "Swimlane": "Admissions Operations",
+      "Phase": "2 UCAS course setup",
+      "Timeframe": "Jun-Jul T-15 to T-14 months",
+      "Owner": "Admissions Data Team",
+      "SupportingSystem": "SYS_UCAS",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "P07",
+      "TEXT": "Publish UCAS searchable course data",
+      "TYPE": "UCAS course listing",
+      "Swimlane": "UCAS",
+      "Phase": "2 UCAS course setup",
+      "Timeframe": "Jul-Sep T-14 to T-12 months",
+      "Owner": "UCAS",
+      "SupportingSystem": "SYS_UCAS",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "P08",
+      "TEXT": "Publish university course pages and open-day content",
+      "TYPE": "Course content; calls to action",
+      "Swimlane": "Marketing / Web",
+      "Phase": "2 UCAS course setup",
+      "Timeframe": "Jul-Sep T-14 to T-12 months",
+      "Owner": "Marketing",
+      "SupportingSystem": "SYS_WEB",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "P09",
+      "TEXT": "Synchronise course, CRM and SIS reference data",
+      "TYPE": "Course instance; admissions cycle; campus",
+      "Swimlane": "Student Records / SIS",
+      "Phase": "2 UCAS course setup",
+      "Timeframe": "Jul-Sep T-14 to T-12 months",
+      "Owner": "SIS Product Owner",
+      "SupportingSystem": "SYS_SIS",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "EVT_APPS_OPEN",
+      "TEXT": "UCAS application window opens",
+      "TYPE": "BPMN_MESSAGE_START_INTERRUPTING",
+      "Swimlane": "UCAS",
+      "Phase": "3 Apply",
+      "Timeframe": "Sep T-12 months",
+      "Owner": "UCAS",
+      "Layer": "Event"
+    },
+    {
+      "ID": "A01",
+      "TEXT": "Research courses and attend open-day activity",
+      "TYPE": "Course information",
+      "Swimlane": "Applicant / Student",
+      "Phase": "3 Apply",
+      "Timeframe": "Sep-Jan T-12 to T-8 months",
+      "Owner": "Applicant",
+      "SupportingSystem": "SYS_WEB",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "A02",
+      "TEXT": "Register UCAS account and complete profile",
+      "TYPE": "Applicant profile",
+      "Swimlane": "Applicant / Student",
+      "Phase": "3 Apply",
+      "Timeframe": "Sep-Jan T-12 to T-8 months",
+      "Owner": "Applicant",
+      "SupportingSystem": "SYS_UCAS",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "A03",
+      "TEXT": "Select course choices and submit application",
+      "TYPE": "Course choices; personal statement; reference",
+      "Swimlane": "Applicant / Student",
+      "Phase": "3 Apply",
+      "Timeframe": "Sep-Jan T-12 to T-8 months",
+      "Owner": "Applicant",
+      "SupportingSystem": "SYS_UCAS",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "A04",
+      "TEXT": "Validate application and collect application fee",
+      "TYPE": "Validated application",
+      "Swimlane": "UCAS",
+      "Phase": "3 Apply",
+      "Timeframe": "Sep-Jan T-12 to T-8 months",
+      "Owner": "UCAS",
+      "SupportingSystem": "SYS_UCAS",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "A05",
+      "TEXT": "Transmit application to university",
+      "TYPE": "UCAS application transaction",
+      "Swimlane": "UCAS",
+      "Phase": "3 Apply",
+      "Timeframe": "Sep-Jan T-12 to T-8 months",
+      "Owner": "UCAS",
+      "SupportingSystem": "SYS_UCAS",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "A06",
+      "TEXT": "Import application into admissions staging",
+      "TYPE": "Application record",
+      "Swimlane": "Admissions Operations",
+      "Phase": "3 Apply",
+      "Timeframe": "Daily from Sep-Jan",
+      "Owner": "Admissions Data Team",
+      "SupportingSystem": "SYS_SIS",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "A07",
+      "TEXT": "Create or match applicant record in SIS",
+      "TYPE": "Applicant identity; UCAS PID",
+      "Swimlane": "Student Records / SIS",
+      "Phase": "3 Apply",
+      "Timeframe": "Daily from Sep-Jan",
+      "Owner": "SIS",
+      "SupportingSystem": "SYS_SIS",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "A08",
+      "TEXT": "Create CRM prospect/applicant journey",
+      "TYPE": "Applicant contact; consent; segment",
+      "Swimlane": "CRM / Communications",
+      "Phase": "3 Apply",
+      "Timeframe": "Daily from Sep-Jan",
+      "Owner": "CRM",
+      "SupportingSystem": "SYS_CRM",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "A09",
+      "TEXT": "Acknowledge receipt and provide applicant portal link",
+      "TYPE": "Acknowledgement email/SMS",
+      "Swimlane": "CRM / Communications",
+      "Phase": "3 Apply",
+      "Timeframe": "Daily from Sep-Jan",
+      "Owner": "CRM",
+      "SupportingSystem": "SYS_CRM",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "S01",
+      "TEXT": "Check completeness, residency and fee-status indicators",
+      "TYPE": "Fee status evidence; missing data",
+      "Swimlane": "Admissions Operations",
+      "Phase": "4 Assessment",
+      "Timeframe": "Oct-Mar T-11 to T-6 months",
+      "Owner": "Admissions",
+      "SupportingSystem": "SYS_SIS",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "G01",
+      "TEXT": "Is academic review or interview required?",
+      "TYPE": "BPMN_XOR_GATEWAY",
+      "Swimlane": "Admissions Operations",
+      "Phase": "4 Assessment",
+      "Timeframe": "Oct-Mar T-11 to T-6 months",
+      "Owner": "Admissions",
+      "SupportingSystem": "SYS_SIS",
+      "Data": "BPMN_XOR_GATEWAY",
+      "Control": "",
+      "Layer": "Decision Gateway",
+      "GatewayType": "Exclusive",
+      "DecisionRule": "Selection routing based on programme admissions rules, interview/audition requirements and risk/contextual indicators.",
+      "PolicySource": "Admissions Policy and programme selection criteria",
+      "MinimumOutgoingRoutes": "2",
+      "RouteLabelling": "All outgoing interactions must have RouteLabel and Condition metadata"
+    },
+    {
+      "ID": "S02",
+      "TEXT": "Route application to academic selector",
+      "TYPE": "Application pack",
+      "Swimlane": "Admissions Operations",
+      "Phase": "4 Assessment",
+      "Timeframe": "Oct-Mar T-11 to T-6 months",
+      "Owner": "Admissions",
+      "SupportingSystem": "SYS_SIS",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "S03",
+      "TEXT": "Assess academic fit and predicted qualifications",
+      "TYPE": "Grades; portfolio; reference",
+      "Swimlane": "Academic Selector / School",
+      "Phase": "4 Assessment",
+      "Timeframe": "Oct-Mar T-11 to T-6 months",
+      "Owner": "Academic Selector",
+      "SupportingSystem": "SYS_SIS",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "S04",
+      "TEXT": "Invite applicant to interview, audition or portfolio review",
+      "TYPE": "Interview invite",
+      "Swimlane": "Admissions Operations",
+      "Phase": "4 Assessment",
+      "Timeframe": "Oct-Mar T-11 to T-6 months",
+      "Owner": "Admissions",
+      "SupportingSystem": "SYS_CRM",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "S05",
+      "TEXT": "Book and attend selection event",
+      "TYPE": "Interview booking",
+      "Swimlane": "Applicant / Student",
+      "Phase": "4 Assessment",
+      "Timeframe": "Oct-Mar T-11 to T-6 months",
+      "Owner": "Applicant",
+      "SupportingSystem": "SYS_CRM",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "S06",
+      "TEXT": "Record selection outcome and recommendation",
+      "TYPE": "Recommend offer/reject",
+      "Swimlane": "Academic Selector / School",
+      "Phase": "4 Assessment",
+      "Timeframe": "Oct-Mar T-11 to T-6 months",
+      "Owner": "Academic Selector",
+      "SupportingSystem": "SYS_SIS",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "S07",
+      "TEXT": "Apply contextual admissions and compliance checks",
+      "TYPE": "Contextual flag; safeguarding; fraud",
+      "Swimlane": "Admissions Operations",
+      "Phase": "4 Assessment",
+      "Timeframe": "Oct-Mar T-11 to T-6 months",
+      "Owner": "Admissions",
+      "SupportingSystem": "SYS_SIS",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "G02",
+      "TEXT": "Decision outcome?",
+      "TYPE": "BPMN_XOR_GATEWAY",
+      "Swimlane": "Admissions Operations",
+      "Phase": "4 Assessment",
+      "Timeframe": "Oct-Mar T-11 to T-6 months",
+      "Owner": "Admissions",
+      "SupportingSystem": "SYS_SIS",
+      "Data": "BPMN_XOR_GATEWAY",
+      "Control": "",
+      "Layer": "Decision Gateway",
+      "GatewayType": "Exclusive",
+      "DecisionRule": "Formal decision outcome after completeness, academic, contextual and compliance checks.",
+      "PolicySource": "Admissions Policy, entry requirements and delegated admissions authority",
+      "MinimumOutgoingRoutes": "2",
+      "RouteLabelling": "All outgoing interactions must have RouteLabel and Condition metadata"
+    },
+    {
+      "ID": "S08",
+      "TEXT": "Request missing information or evidence",
+      "TYPE": "Evidence request",
+      "Swimlane": "Admissions Operations",
+      "Phase": "4 Assessment",
+      "Timeframe": "Oct-Mar T-11 to T-6 months",
+      "Owner": "Admissions",
+      "SupportingSystem": "SYS_DOC",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "S09",
+      "TEXT": "Upload evidence or respond to query",
+      "TYPE": "Documents; clarification",
+      "Swimlane": "Applicant / Student",
+      "Phase": "4 Assessment",
+      "Timeframe": "Oct-Mar T-11 to T-6 months",
+      "Owner": "Applicant",
+      "SupportingSystem": "SYS_DOC",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "S10",
+      "TEXT": "Make conditional, unconditional or unsuccessful decision",
+      "TYPE": "Formal decision",
+      "Swimlane": "Admissions Operations",
+      "Phase": "5 Offer making",
+      "Timeframe": "Nov-May T-10 to T-4 months",
+      "Owner": "Admissions",
+      "SupportingSystem": "SYS_SIS",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "O01",
+      "TEXT": "Send decision to UCAS",
+      "TYPE": "Decision transaction",
+      "Swimlane": "Student Records / SIS",
+      "Phase": "5 Offer making",
+      "Timeframe": "Nov-May T-10 to T-4 months",
+      "Owner": "SIS/Admissions",
+      "SupportingSystem": "SYS_UCAS",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "O02",
+      "TEXT": "Publish offer outcome to applicant",
+      "TYPE": "Offer/rejection",
+      "Swimlane": "UCAS",
+      "Phase": "5 Offer making",
+      "Timeframe": "Nov-May T-10 to T-4 months",
+      "Owner": "UCAS",
+      "SupportingSystem": "SYS_UCAS",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "O03",
+      "TEXT": "Send tailored offer-holder communications",
+      "TYPE": "Offer comms",
+      "Swimlane": "CRM / Communications",
+      "Phase": "5 Offer making",
+      "Timeframe": "Nov-May T-10 to T-4 months",
+      "Owner": "CRM",
+      "SupportingSystem": "SYS_CRM",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "O04",
+      "TEXT": "Attend applicant day and compare choices",
+      "TYPE": "Engagement data",
+      "Swimlane": "Applicant / Student",
+      "Phase": "6 Applicant reply",
+      "Timeframe": "Feb-Jun T-7 to T-3 months",
+      "Owner": "Applicant",
+      "SupportingSystem": "SYS_CRM",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "O05",
+      "TEXT": "Choose firm and insurance replies in UCAS",
+      "TYPE": "Firm/insurance decision",
+      "Swimlane": "Applicant / Student",
+      "Phase": "6 Applicant reply",
+      "Timeframe": "Apr-Jun T-5 to T-3 months",
+      "Owner": "Applicant",
+      "SupportingSystem": "SYS_UCAS",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "O06",
+      "TEXT": "Transmit applicant replies to university",
+      "TYPE": "Reply transaction",
+      "Swimlane": "UCAS",
+      "Phase": "6 Applicant reply",
+      "Timeframe": "Apr-Jun T-5 to T-3 months",
+      "Owner": "UCAS",
+      "SupportingSystem": "SYS_UCAS",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "O07",
+      "TEXT": "Update SIS offer status and forecasting",
+      "TYPE": "Firm/insurance status",
+      "Swimlane": "Student Records / SIS",
+      "Phase": "6 Applicant reply",
+      "Timeframe": "Apr-Jun T-5 to T-3 months",
+      "Owner": "SIS",
+      "SupportingSystem": "SYS_SIS",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "O08",
+      "TEXT": "Segment firm offer-holders for conversion activity",
+      "TYPE": "Firm population",
+      "Swimlane": "CRM / Communications",
+      "Phase": "6 Applicant reply",
+      "Timeframe": "Apr-Jun T-5 to T-3 months",
+      "Owner": "CRM",
+      "SupportingSystem": "SYS_CRM",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "B01",
+      "TEXT": "Open accommodation and support pre-arrival services",
+      "TYPE": "Eligibility rules",
+      "Swimlane": "Accommodation & Student Services",
+      "Phase": "7 Pre-arrival",
+      "Timeframe": "May-Aug T-4 to T-1 months",
+      "Owner": "Student Services",
+      "SupportingSystem": "SYS_ACC",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "B02",
+      "TEXT": "Apply for accommodation or support services",
+      "TYPE": "Accommodation application; disability support",
+      "Swimlane": "Applicant / Student",
+      "Phase": "7 Pre-arrival",
+      "Timeframe": "May-Aug T-4 to T-1 months",
+      "Owner": "Applicant",
+      "SupportingSystem": "SYS_ACC",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "B03",
+      "TEXT": "Exchange firm-applicant eligibility with accommodation",
+      "TYPE": "Firm applicant status",
+      "Swimlane": "Student Records / SIS",
+      "Phase": "7 Pre-arrival",
+      "Timeframe": "May-Aug T-4 to T-1 months",
+      "Owner": "SIS",
+      "SupportingSystem": "SYS_ACC",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "B04",
+      "TEXT": "Assess fee status and student finance indicators",
+      "TYPE": "Fee liability; SLC indicator",
+      "Swimlane": "Finance / Student Finance Liaison",
+      "Phase": "7 Pre-arrival",
+      "Timeframe": "Jun-Sep T-3 to intake",
+      "Owner": "Finance",
+      "SupportingSystem": "SYS_FIN",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "B05",
+      "TEXT": "Prepare confirmation rules and capacity tolerances",
+      "TYPE": "Confirmation rules; tariff rules",
+      "Swimlane": "Admissions Operations",
+      "Phase": "8 Confirmation preparation",
+      "Timeframe": "Jun-Jul T-3 to T-2 months",
+      "Owner": "Admissions",
+      "SupportingSystem": "SYS_SIS",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "B06",
+      "TEXT": "Test UCAS results and decision processing interfaces",
+      "TYPE": "Interface test evidence",
+      "Swimlane": "Student Records / SIS",
+      "Phase": "8 Confirmation preparation",
+      "Timeframe": "Jul T-2 months",
+      "Owner": "SIS/IT",
+      "SupportingSystem": "SYS_UCAS",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "R01",
+      "TEXT": "Receive qualification results from UCAS",
+      "TYPE": "Qualification results",
+      "Swimlane": "UCAS",
+      "Phase": "9 Results and confirmation",
+      "Timeframe": "Aug T-1 month",
+      "Owner": "UCAS",
+      "SupportingSystem": "SYS_UCAS",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "R02",
+      "TEXT": "Import results and match to applicants",
+      "TYPE": "Results match",
+      "Swimlane": "Student Records / SIS",
+      "Phase": "9 Results and confirmation",
+      "Timeframe": "Aug T-1 month",
+      "Owner": "SIS",
+      "SupportingSystem": "SYS_SIS",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "G03",
+      "TEXT": "Meets offer conditions?",
+      "TYPE": "BPMN_XOR_GATEWAY",
+      "Swimlane": "Admissions Operations",
+      "Phase": "9 Results and confirmation",
+      "Timeframe": "Aug T-1 month",
+      "Owner": "Admissions",
+      "SupportingSystem": "SYS_SIS",
+      "Data": "BPMN_XOR_GATEWAY",
+      "Control": "",
+      "Layer": "Decision Gateway",
+      "GatewayType": "Exclusive",
+      "DecisionRule": "Confirmation outcome based on matched qualifications, offer conditions, capacity and near-miss rules.",
+      "PolicySource": "Confirmation and Clearing policy, UCAS results processing rules",
+      "MinimumOutgoingRoutes": "2",
+      "RouteLabelling": "All outgoing interactions must have RouteLabel and Condition metadata"
+    },
+    {
+      "ID": "R03",
+      "TEXT": "Confirm place and make applicant unconditional firm",
+      "TYPE": "UF decision",
+      "Swimlane": "Admissions Operations",
+      "Phase": "9 Results and confirmation",
+      "Timeframe": "Aug T-1 month",
+      "Owner": "Admissions",
+      "SupportingSystem": "SYS_SIS",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "R04",
+      "TEXT": "Review near-miss candidates against capacity",
+      "TYPE": "Near-miss recommendation",
+      "Swimlane": "Academic Selector / School",
+      "Phase": "9 Results and confirmation",
+      "Timeframe": "Aug T-1 month",
+      "Owner": "Academic School",
+      "SupportingSystem": "SYS_SIS",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "R05",
+      "TEXT": "Reject or release unsuccessful applicant",
+      "TYPE": "Unsuccessful decision",
+      "Swimlane": "Admissions Operations",
+      "Phase": "9 Results and confirmation",
+      "Timeframe": "Aug T-1 month",
+      "Owner": "Admissions",
+      "SupportingSystem": "SYS_UCAS",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "R06",
+      "TEXT": "Send confirmation decision to UCAS",
+      "TYPE": "Confirmation transaction",
+      "Swimlane": "Student Records / SIS",
+      "Phase": "9 Results and confirmation",
+      "Timeframe": "Aug T-1 month",
+      "Owner": "SIS",
+      "SupportingSystem": "SYS_UCAS",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "R07",
+      "TEXT": "Notify applicant of confirmed place",
+      "TYPE": "UCAS status update",
+      "Swimlane": "UCAS",
+      "Phase": "9 Results and confirmation",
+      "Timeframe": "Aug T-1 month",
+      "Owner": "UCAS",
+      "SupportingSystem": "SYS_UCAS",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "C01",
+      "TEXT": "Declare vacancies and publish Clearing availability",
+      "TYPE": "Vacancy list",
+      "Swimlane": "Admissions Operations",
+      "Phase": "10 Clearing",
+      "Timeframe": "Jul-Sep T-2 to intake",
+      "Owner": "Admissions",
+      "SupportingSystem": "SYS_UCAS",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "C02",
+      "TEXT": "Contact university through Clearing",
+      "TYPE": "Clearing enquiry",
+      "Swimlane": "Applicant / Student",
+      "Phase": "10 Clearing",
+      "Timeframe": "Jul-Sep T-2 to intake",
+      "Owner": "Applicant",
+      "SupportingSystem": "SYS_CRM",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "C03",
+      "TEXT": "Capture Clearing enquiry and qualifications",
+      "TYPE": "Clearing application",
+      "Swimlane": "Admissions Operations",
+      "Phase": "10 Clearing",
+      "Timeframe": "Jul-Sep T-2 to intake",
+      "Owner": "Admissions",
+      "SupportingSystem": "SYS_CRM",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "C04",
+      "TEXT": "Make rapid Clearing eligibility decision",
+      "TYPE": "Clearing decision",
+      "Swimlane": "Admissions Operations",
+      "Phase": "10 Clearing",
+      "Timeframe": "Jul-Sep T-2 to intake",
+      "Owner": "Admissions",
+      "SupportingSystem": "SYS_SIS",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "C05",
+      "TEXT": "Add Clearing choice in UCAS",
+      "TYPE": "Clearing choice",
+      "Swimlane": "Applicant / Student",
+      "Phase": "10 Clearing",
+      "Timeframe": "Jul-Sep T-2 to intake",
+      "Owner": "Applicant",
+      "SupportingSystem": "SYS_UCAS",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "C06",
+      "TEXT": "Accept Clearing applicant and issue decision",
+      "TYPE": "Clearing acceptance",
+      "Swimlane": "Student Records / SIS",
+      "Phase": "10 Clearing",
+      "Timeframe": "Jul-Sep T-2 to intake",
+      "Owner": "SIS/Admissions",
+      "SupportingSystem": "SYS_UCAS",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "M01",
+      "TEXT": "Convert confirmed applicant to student record",
+      "TYPE": "Student number; programme instance",
+      "Swimlane": "Student Records / SIS",
+      "Phase": "11 Matriculation",
+      "Timeframe": "Aug-Sep intake",
+      "Owner": "Registry/SIS",
+      "SupportingSystem": "SYS_SIS",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "M02",
+      "TEXT": "Create digital identity and access accounts",
+      "TYPE": "Identity attributes",
+      "Swimlane": "Identity, Access & Enrolment Platform",
+      "Phase": "11 Matriculation",
+      "Timeframe": "Aug-Sep intake",
+      "Owner": "IAM",
+      "SupportingSystem": "SYS_IDM",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "M03",
+      "TEXT": "Invite student to online enrolment",
+      "TYPE": "Enrolment invite",
+      "Swimlane": "CRM / Communications",
+      "Phase": "12 Enrolment",
+      "Timeframe": "Aug-Sep intake",
+      "Owner": "CRM",
+      "SupportingSystem": "SYS_CRM",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "M04",
+      "TEXT": "Complete online registration, declarations and identity checks",
+      "TYPE": "Registration answers; ID evidence",
+      "Swimlane": "Applicant / Student",
+      "Phase": "12 Enrolment",
+      "Timeframe": "Aug-Sep intake",
+      "Owner": "Student",
+      "SupportingSystem": "SYS_ENROL",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "M05",
+      "TEXT": "Confirm fee liability and payment/loan arrangements",
+      "TYPE": "Fee assessment; payment status",
+      "Swimlane": "Finance / Student Finance Liaison",
+      "Phase": "12 Enrolment",
+      "Timeframe": "Aug-Sep intake",
+      "Owner": "Finance",
+      "SupportingSystem": "SYS_FIN",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "M06",
+      "TEXT": "Allocate accommodation and support arrangements",
+      "TYPE": "Room allocation; support plan",
+      "Swimlane": "Accommodation & Student Services",
+      "Phase": "12 Enrolment",
+      "Timeframe": "Aug-Sep intake",
+      "Owner": "Accommodation / Student Services",
+      "SupportingSystem": "SYS_ACC",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "M07",
+      "TEXT": "Complete enrolment and set student active",
+      "TYPE": "Enrolled status",
+      "Swimlane": "Registry / Reporting",
+      "Phase": "12 Enrolment",
+      "Timeframe": "Sep intake",
+      "Owner": "Registry",
+      "SupportingSystem": "SYS_SIS",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "M08",
+      "TEXT": "Provision learning, library and campus access",
+      "TYPE": "Entitlements",
+      "Swimlane": "Identity, Access & Enrolment Platform",
+      "Phase": "13 Induction handover",
+      "Timeframe": "Sep-Oct intake",
+      "Owner": "IAM",
+      "SupportingSystem": "SYS_IDM",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "M09",
+      "TEXT": "Run induction, welcome and course start checks",
+      "TYPE": "Attendance/engagement",
+      "Swimlane": "Academic Selector / School",
+      "Phase": "13 Induction handover",
+      "Timeframe": "Sep-Oct intake",
+      "Owner": "School",
+      "SupportingSystem": "SYS_SIS",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "M10",
+      "TEXT": "Reconcile census, SLC and statutory reporting population",
+      "TYPE": "Census population; HESA/SLC data",
+      "Swimlane": "Registry / Reporting",
+      "Phase": "14 Post-enrolment control",
+      "Timeframe": "Oct-Nov intake",
+      "Owner": "Registry",
+      "SupportingSystem": "SYS_DW",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "EVT_END",
+      "TEXT": "Student enrolled and included in reporting population",
+      "TYPE": "BPMN_END_EVENT",
+      "Swimlane": "Registry / Reporting",
+      "Phase": "14 Post-enrolment control",
+      "Timeframe": "Oct-Nov intake",
+      "Owner": "Registry",
+      "Layer": "Event"
+    },
+    {
+      "ID": "G00",
+      "TEXT": "Course approved for UCAS publication?",
+      "TYPE": "BPMN_XOR_GATEWAY",
+      "Swimlane": "Portfolio & Planning",
+      "Phase": "1 Course portfolio",
+      "Timeframe": "Apr-Jul T-17 to T-14 months",
+      "Owner": "Academic Registry / Planning",
+      "SupportingSystem": "SYS_COURSE",
+      "Data": "Course approval, capacity, fees",
+      "Control": "Quality approval and portfolio governance",
+      "Layer": "Decision Gateway",
+      "GatewayType": "Exclusive",
+      "DecisionRule": "Only approved courses with confirmed UCAS codes, fees, capacity and admissions criteria may be released to UCAS.",
+      "PolicySource": "Portfolio approval, academic quality approval and fees governance",
+      "MinimumOutgoingRoutes": "2",
+      "RouteLabelling": "All outgoing interactions must have RouteLabel and Condition metadata"
+    },
+    {
+      "ID": "S10A",
+      "TEXT": "Create offer and record offer conditions",
+      "TYPE": "Offer decision",
+      "Swimlane": "Admissions Operations",
+      "Phase": "5 Offer making",
+      "Timeframe": "Nov-May T-10 to T-4 months",
+      "Owner": "Admissions",
+      "SupportingSystem": "SYS_SIS",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "S10B",
+      "TEXT": "Record unsuccessful decision and reason",
+      "TYPE": "Reject decision",
+      "Swimlane": "Admissions Operations",
+      "Phase": "5 Offer making",
+      "Timeframe": "Nov-May T-10 to T-4 months",
+      "Owner": "Admissions",
+      "SupportingSystem": "SYS_SIS",
+      "Data": "",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "G04",
+      "TEXT": "Applicant reply outcome?",
+      "TYPE": "BPMN_XOR_GATEWAY",
+      "Swimlane": "UCAS",
+      "Phase": "7 Applicant reply",
+      "Timeframe": "Apr-Jun T-5 to T-3 months",
+      "Owner": "Applicant / UCAS",
+      "SupportingSystem": "SYS_UCAS",
+      "Data": "Applicant reply",
+      "Control": "UCAS applicant reply rules",
+      "Layer": "Decision Gateway",
+      "GatewayType": "Exclusive",
+      "DecisionRule": "Provider continues pre-arrival only for firm/insurance accepted applicants; decline/withdraw/no-reply exits active admissions pipeline.",
+      "PolicySource": "UCAS reply processing and university admissions policy",
+      "MinimumOutgoingRoutes": "2",
+      "RouteLabelling": "All outgoing interactions must have RouteLabel and Condition metadata"
+    },
+    {
+      "ID": "EVT_APP_WITHDRAWN",
+      "TEXT": "Application declined, withdrawn or reply deadline missed",
+      "TYPE": "BPMN_END_EVENT",
+      "Swimlane": "Applicant / Student",
+      "Phase": "7 Applicant reply",
+      "Timeframe": "Apr-Jun T-5 to T-3 months",
+      "Owner": "Applicant / UCAS",
+      "SupportingSystem": "SYS_UCAS",
+      "Data": "Applicant reply status",
+      "Control": "",
+      "Layer": "Lifecycle Event"
+    },
+    {
+      "ID": "G05",
+      "TEXT": "Clearing applicant eligible and vacancy available?",
+      "TYPE": "BPMN_XOR_GATEWAY",
+      "Swimlane": "Admissions Operations",
+      "Phase": "10 Clearing",
+      "Timeframe": "Aug-Sep T-1 to T+0 months",
+      "Owner": "Admissions",
+      "SupportingSystem": "SYS_SIS",
+      "Data": "Clearing enquiry, qualifications, vacancy",
+      "Control": "Clearing policy and capacity tolerance",
+      "Layer": "Decision Gateway",
+      "GatewayType": "Exclusive",
+      "DecisionRule": "Clearing acceptance requires applicant qualifications, fee/status eligibility and a live vacancy/capacity tolerance.",
+      "PolicySource": "Clearing policy, course capacity and admissions criteria",
+      "MinimumOutgoingRoutes": "2",
+      "RouteLabelling": "All outgoing interactions must have RouteLabel and Condition metadata"
+    },
+    {
+      "ID": "EVT_CLEARING_UNSUCCESSFUL",
+      "TEXT": "Clearing enquiry closed unsuccessful",
+      "TYPE": "BPMN_END_EVENT",
+      "Swimlane": "Applicant / Student",
+      "Phase": "10 Clearing",
+      "Timeframe": "Aug-Sep T-1 to T+0 months",
+      "Owner": "Admissions",
+      "SupportingSystem": "SYS_CRM",
+      "Data": "Clearing enquiry outcome",
+      "Control": "",
+      "Layer": "Lifecycle Event"
+    },
+    {
+      "ID": "G06",
+      "TEXT": "Online registration complete?",
+      "TYPE": "BPMN_XOR_GATEWAY",
+      "Swimlane": "Applicant / Student",
+      "Phase": "12 Enrolment",
+      "Timeframe": "Sep T+0 months",
+      "Owner": "Registry",
+      "SupportingSystem": "SYS_ENROL",
+      "Data": "Registration submission",
+      "Control": "Enrolment regulations",
+      "Layer": "Decision Gateway",
+      "GatewayType": "Exclusive",
+      "DecisionRule": "Student can progress to enrolment only when mandatory registration, declarations and identity checks are complete.",
+      "PolicySource": "University enrolment regulations and identity-check policy",
+      "MinimumOutgoingRoutes": "2",
+      "RouteLabelling": "All outgoing interactions must have RouteLabel and Condition metadata"
+    },
+    {
+      "ID": "M04A",
+      "TEXT": "Chase outstanding registration evidence or declaration",
+      "TYPE": "Chaser task",
+      "Swimlane": "Registry",
+      "Phase": "12 Enrolment",
+      "Timeframe": "Sep T+0 months",
+      "Owner": "Registry",
+      "SupportingSystem": "SYS_CRM",
+      "Data": "Outstanding enrolment task",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "G07",
+      "TEXT": "Fee liability and payment arrangement confirmed?",
+      "TYPE": "BPMN_XOR_GATEWAY",
+      "Swimlane": "Finance",
+      "Phase": "12 Enrolment",
+      "Timeframe": "Sep T+0 months",
+      "Owner": "Finance",
+      "SupportingSystem": "SYS_FIN",
+      "Data": "Fee liability, SLC/payment status",
+      "Control": "Fees and enrolment policy",
+      "Layer": "Decision Gateway",
+      "GatewayType": "Exclusive",
+      "DecisionRule": "Student is financially clear for enrolment when fee liability and payment or loan arrangements are confirmed, or an approved exception is recorded.",
+      "PolicySource": "Tuition fee policy, SLC rules and enrolment regulations",
+      "MinimumOutgoingRoutes": "2",
+      "RouteLabelling": "All outgoing interactions must have RouteLabel and Condition metadata"
+    },
+    {
+      "ID": "M05A",
+      "TEXT": "Resolve fee assessment, SLC or payment exception",
+      "TYPE": "Finance exception task",
+      "Swimlane": "Finance",
+      "Phase": "12 Enrolment",
+      "Timeframe": "Sep T+0 months",
+      "Owner": "Finance",
+      "SupportingSystem": "SYS_FIN",
+      "Data": "Finance exception",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "G08",
+      "TEXT": "Final enrolment criteria satisfied?",
+      "TYPE": "BPMN_XOR_GATEWAY",
+      "Swimlane": "Registry",
+      "Phase": "12 Enrolment",
+      "Timeframe": "Sep T+0 months",
+      "Owner": "Registry",
+      "SupportingSystem": "SYS_SIS",
+      "Data": "Registration, finance, identity and service checks",
+      "Control": "Enrolment regulations",
+      "Layer": "Decision Gateway",
+      "GatewayType": "Exclusive",
+      "DecisionRule": "Set student active only when registration, identity, finance and required service checks have passed or approved exceptions are recorded.",
+      "PolicySource": "University enrolment regulations and student records policy",
+      "MinimumOutgoingRoutes": "2",
+      "RouteLabelling": "All outgoing interactions must have RouteLabel and Condition metadata"
+    },
+    {
+      "ID": "M07A",
+      "TEXT": "Hold enrolment and resolve outstanding exceptions",
+      "TYPE": "Enrolment exception task",
+      "Swimlane": "Registry",
+      "Phase": "12 Enrolment",
+      "Timeframe": "Sep T+0 months",
+      "Owner": "Registry",
+      "SupportingSystem": "SYS_SIS",
+      "Data": "Enrolment exception",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "LANE_INTL",
+      "TEXT": "International Recruitment / Agents",
+      "TYPE": "BPMN_SWIMLANE_HORIZONTAL",
+      "Swimlane": "International Recruitment / Agents",
+      "Layer": "Actor/System Lane",
+      "Sequence": "13"
+    },
+    {
+      "ID": "LANE_COMPLIANCE",
+      "TEXT": "Immigration Compliance / CAS",
+      "TYPE": "BPMN_SWIMLANE_HORIZONTAL",
+      "Swimlane": "Immigration Compliance / CAS",
+      "Layer": "Actor/System Lane",
+      "Sequence": "14"
+    },
+    {
+      "ID": "SYS_INTL_PORTAL",
+      "TEXT": "Direct international application portal",
+      "TYPE": "BPMN_DATA_STORE",
+      "Swimlane": "International Recruitment / Agents",
+      "SystemRole": "Digital Admissions Channel",
+      "Layer": "System/Data Store",
+      "Timeframe": "Whole cycle"
+    },
+    {
+      "ID": "SYS_AGENT",
+      "TEXT": "Agent partner portal",
+      "TYPE": "BPMN_DATA_STORE",
+      "Swimlane": "International Recruitment / Agents",
+      "SystemRole": "Partner Channel",
+      "Layer": "System/Data Store",
+      "Timeframe": "Whole cycle"
+    },
+    {
+      "ID": "SYS_CAS",
+      "TEXT": "CAS / immigration compliance system",
+      "TYPE": "BPMN_DATA_STORE",
+      "Swimlane": "Immigration Compliance / CAS",
+      "SystemRole": "Compliance System",
+      "Layer": "System/Data Store",
+      "Timeframe": "Whole cycle"
+    },
+    {
+      "ID": "EVT_INTL_APPS_OPEN",
+      "TEXT": "International direct and agent application window opens",
+      "TYPE": "BPMN_MESSAGE_START_INTERRUPTING",
+      "Swimlane": "International Recruitment / Agents",
+      "Phase": "3 Apply - International",
+      "Timeframe": "Sep-Aug rolling or intake-specific window",
+      "Owner": "International Recruitment",
+      "Layer": "Event"
+    },
+    {
+      "ID": "I01",
+      "TEXT": "Publish international course, scholarship and agent availability",
+      "TYPE": "International recruitment publication",
+      "Swimlane": "International Recruitment / Agents",
+      "Phase": "2 International course setup",
+      "Timeframe": "Sep-Aug rolling or intake-specific window",
+      "Owner": "International Recruitment",
+      "SupportingSystem": "SYS_WEB",
+      "Data": "International course availability; scholarship information; agent availability",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "I02",
+      "TEXT": "Research international entry, visa and funding requirements",
+      "TYPE": "International applicant research",
+      "Swimlane": "Applicant / Student",
+      "Phase": "3 Apply - International",
+      "Timeframe": "Sep-Aug rolling or intake-specific window",
+      "Owner": "Applicant",
+      "SupportingSystem": "SYS_WEB",
+      "Data": "Course, visa, scholarship and funding information",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "I03",
+      "TEXT": "Submit direct international application",
+      "TYPE": "Direct international application",
+      "Swimlane": "Applicant / Student",
+      "Phase": "3 Apply - International",
+      "Timeframe": "Sep-Aug rolling or intake-specific window",
+      "Owner": "Applicant",
+      "SupportingSystem": "SYS_INTL_PORTAL",
+      "Data": "Direct application; overseas qualifications; English evidence; passport details",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "I04",
+      "TEXT": "Submit agent-supported international application",
+      "TYPE": "Agent-supported application",
+      "Swimlane": "International Recruitment / Agents",
+      "Phase": "3 Apply - International",
+      "Timeframe": "Sep-Aug rolling or intake-specific window",
+      "Owner": "Agent / International Recruitment",
+      "SupportingSystem": "SYS_AGENT",
+      "Data": "Agent nomination; applicant consent; overseas qualifications; passport details",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "I05",
+      "TEXT": "Validate international application source and consent",
+      "TYPE": "International application validation",
+      "Swimlane": "International Recruitment / Agents",
+      "Phase": "3 Apply - International",
+      "Timeframe": "Sep-Aug rolling or intake-specific window",
+      "Owner": "International Recruitment",
+      "SupportingSystem": "SYS_CRM",
+      "Data": "Source channel; agent relationship; consent; duplicate source reference",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "I06",
+      "TEXT": "Import international application into admissions staging",
+      "TYPE": "International admissions staging",
+      "Swimlane": "Admissions Operations",
+      "Phase": "3 Apply - International",
+      "Timeframe": "Sep-Aug rolling or intake-specific window",
+      "Owner": "Admissions",
+      "SupportingSystem": "SYS_SIS",
+      "Data": "Source-neutral admissions application; international source reference",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "I07",
+      "TEXT": "Assess overseas qualifications and English language evidence",
+      "TYPE": "International academic evidence assessment",
+      "Swimlane": "Admissions Operations",
+      "Phase": "4 Assessment - International",
+      "Timeframe": "Rolling or intake-specific",
+      "Owner": "Admissions",
+      "SupportingSystem": "SYS_SIS",
+      "Data": "Overseas qualifications; English language evidence; equivalency assessment",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "I08",
+      "TEXT": "Verify passport, ATAS, sanctions and visa risk evidence",
+      "TYPE": "Immigration compliance pre-check",
+      "Swimlane": "Immigration Compliance / CAS",
+      "Phase": "4 Assessment - International",
+      "Timeframe": "Rolling or intake-specific",
+      "Owner": "Immigration Compliance",
+      "SupportingSystem": "SYS_CAS",
+      "Data": "Passport; visa history; ATAS requirement; sanctions/embargo checks",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "I09",
+      "TEXT": "Request missing international evidence",
+      "TYPE": "International evidence request",
+      "Swimlane": "Admissions Operations",
+      "Phase": "4 Assessment - International",
+      "Timeframe": "Rolling or intake-specific",
+      "Owner": "Admissions",
+      "SupportingSystem": "SYS_DOC",
+      "Data": "Missing qualifications, English, passport, ATAS or funding evidence",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "I10",
+      "TEXT": "Record international compliance hold or rejection recommendation",
+      "TYPE": "Compliance hold/reject recommendation",
+      "Swimlane": "Immigration Compliance / CAS",
+      "Phase": "4 Assessment - International",
+      "Timeframe": "Rolling or intake-specific",
+      "Owner": "Immigration Compliance",
+      "SupportingSystem": "SYS_CAS",
+      "Data": "Compliance hold reason; sponsorship risk; rejection recommendation",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "I11",
+      "TEXT": "Send direct or agent offer and international conditions",
+      "TYPE": "International offer communication",
+      "Swimlane": "International Recruitment / Agents",
+      "Phase": "5 Offer and reply - International",
+      "Timeframe": "Rolling or intake-specific",
+      "Owner": "Admissions / International Recruitment",
+      "SupportingSystem": "SYS_CRM",
+      "Data": "Offer conditions; deposit requirement; scholarship outcome; reply deadline",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "I12",
+      "TEXT": "Issue CAS and confirm international sponsorship in SIS",
+      "TYPE": "CAS issue and sponsorship confirmation",
+      "Swimlane": "Immigration Compliance / CAS",
+      "Phase": "11 Confirmation - International",
+      "Timeframe": "Pre-arrival after conditions/deposit",
+      "Owner": "Immigration Compliance",
+      "SupportingSystem": "SYS_CAS",
+      "Data": "CAS number; sponsorship confirmation; visa status",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "I13",
+      "TEXT": "Chase deposit, English, visa or financial evidence",
+      "TYPE": "International conversion chase",
+      "Swimlane": "CRM / Communications",
+      "Phase": "5 Offer and reply - International",
+      "Timeframe": "Rolling or intake-specific",
+      "Owner": "International Recruitment / CRM",
+      "SupportingSystem": "SYS_CRM",
+      "Data": "Outstanding deposit; English language; financial evidence; visa evidence",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "I14",
+      "TEXT": "Update CRM and agent on international applicant status",
+      "TYPE": "International status update",
+      "Swimlane": "CRM / Communications",
+      "Phase": "5 Offer and reply - International",
+      "Timeframe": "Rolling or intake-specific",
+      "Owner": "International Recruitment / CRM",
+      "SupportingSystem": "SYS_CRM",
+      "Data": "Application status; offer status; CAS status; handoff outcome",
+      "Control": "",
+      "Layer": "Process Step"
+    },
+    {
+      "ID": "G09",
+      "TEXT": "International application source?",
+      "TYPE": "BPMN_XOR_GATEWAY",
+      "Swimlane": "Applicant / Student",
+      "Phase": "International Admissions",
+      "Timeframe": "Sep-Aug rolling or intake-specific window",
+      "Owner": "Applicant / International Recruitment",
+      "SupportingSystem": "SYS_SIS",
+      "Data": "BPMN_XOR_GATEWAY",
+      "Control": "International applicants may apply directly through the university portal or through an authorised agent/partner channel.",
+      "Layer": "Decision Gateway",
+      "GatewayType": "Exclusive",
+      "DecisionRule": "International applicants may apply directly through the university portal or through an authorised agent/partner channel.",
+      "PolicySource": "International recruitment policy and agent management rules",
+      "MinimumOutgoingRoutes": "2",
+      "RouteLabelling": "All outgoing interactions must have RouteLabel and Condition metadata"
+    },
+    {
+      "ID": "G10",
+      "TEXT": "International evidence and sponsorship route viable?",
+      "TYPE": "BPMN_XOR_GATEWAY",
+      "Swimlane": "Immigration Compliance / CAS",
+      "Phase": "International Admissions",
+      "Timeframe": "Rolling or intake-specific",
+      "Owner": "Immigration Compliance",
+      "SupportingSystem": "SYS_SIS",
+      "Data": "BPMN_XOR_GATEWAY",
+      "Control": "Application may proceed only when overseas qualifications, English evidence and immigration sponsorship risk are acceptable or resolvable.",
+      "Layer": "Decision Gateway",
+      "GatewayType": "Exclusive",
+      "DecisionRule": "Application may proceed only when overseas qualifications, English evidence and immigration sponsorship risk are acceptable or resolvable.",
+      "PolicySource": "International admissions policy, UKVI sponsor guidance, ATAS and sanctions checks",
+      "MinimumOutgoingRoutes": "2",
+      "RouteLabelling": "All outgoing interactions must have RouteLabel and Condition metadata"
+    },
+    {
+      "ID": "G11",
+      "TEXT": "International acceptance, deposit and CAS pre-check complete?",
+      "TYPE": "BPMN_XOR_GATEWAY",
+      "Swimlane": "Immigration Compliance / CAS",
+      "Phase": "International Admissions",
+      "Timeframe": "Pre-arrival after conditions/deposit",
+      "Owner": "Admissions / Immigration Compliance",
+      "SupportingSystem": "SYS_SIS",
+      "Data": "BPMN_XOR_GATEWAY",
+      "Control": "International conversion may progress only when the applicant accepts, required deposit/financial checks are complete, conditions are satisfied or waived, and CAS pre-checks pass.",
+      "Layer": "Decision Gateway",
+      "GatewayType": "Exclusive",
+      "DecisionRule": "International conversion may progress only when the applicant accepts, required deposit/financial checks are complete, conditions are satisfied or waived, and CAS pre-checks pass.",
+      "PolicySource": "International admissions policy, tuition fee deposit policy and UKVI sponsor guidance",
+      "MinimumOutgoingRoutes": "2",
+      "RouteLabelling": "All outgoing interactions must have RouteLabel and Condition metadata"
+    }
+  ],
+  "interactions": [
+    {
+      "ID": "F001",
+      "FROMID": "EVT_START",
+      "TOID": "P01",
+      "TEXT": "Cycle trigger",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "1 Course portfolio",
+      "DataExchange": "Cycle trigger"
+    },
+    {
+      "ID": "F002",
+      "FROMID": "P01",
+      "TOID": "P02",
+      "TEXT": "Portfolio decisions drive curriculum approval",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "1 Course portfolio",
+      "DataExchange": "Portfolio decisions drive curriculum approval"
+    },
+    {
+      "ID": "F003",
+      "FROMID": "P02",
+      "TOID": "SYS_COURSE",
+      "TEXT": "Approved course stored",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "",
+      "DataExchange": "Approved course stored"
+    },
+    {
+      "ID": "F004",
+      "FROMID": "SYS_COURSE",
+      "TOID": "P03",
+      "TEXT": "Catalogue data available",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "1 Course portfolio",
+      "DataExchange": "Catalogue data available"
+    },
+    {
+      "ID": "F005",
+      "FROMID": "P03",
+      "TOID": "P04",
+      "TEXT": "Course data informs admissions criteria",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "1 Course portfolio",
+      "DataExchange": "Course data informs admissions criteria"
+    },
+    {
+      "ID": "F006",
+      "FROMID": "P04",
+      "TOID": "P05",
+      "TEXT": "Admissions criteria informs fees/capacity validation",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "1 Course portfolio",
+      "DataExchange": "Admissions criteria informs fees/capacity validation"
+    },
+    {
+      "ID": "F008",
+      "FROMID": "P06",
+      "TOID": "SYS_UCAS",
+      "TEXT": "UCAS course records submitted",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "",
+      "DataExchange": "UCAS course records submitted"
+    },
+    {
+      "ID": "F009",
+      "FROMID": "SYS_UCAS",
+      "TOID": "P07",
+      "TEXT": "UCAS publishes course",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "2 UCAS course setup",
+      "DataExchange": "UCAS publishes course"
+    },
+    {
+      "ID": "F010",
+      "FROMID": "P03",
+      "TOID": "P08",
+      "TEXT": "Course content feeds web publication",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "2 UCAS course setup",
+      "DataExchange": "Course content feeds web publication"
+    },
+    {
+      "ID": "F011",
+      "FROMID": "P08",
+      "TOID": "SYS_WEB",
+      "TEXT": "Course pages published",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "",
+      "DataExchange": "Course pages published"
+    },
+    {
+      "ID": "F012",
+      "FROMID": "P03",
+      "TOID": "P09",
+      "TEXT": "Course instances synchronised to SIS",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "2 UCAS course setup",
+      "DataExchange": "Course instances synchronised to SIS"
+    },
+    {
+      "ID": "F013",
+      "FROMID": "P09",
+      "TOID": "SYS_SIS",
+      "TEXT": "SIS admissions reference data updated",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "",
+      "DataExchange": "SIS admissions reference data updated"
+    },
+    {
+      "ID": "F014",
+      "FROMID": "P07",
+      "TOID": "EVT_APPS_OPEN",
+      "TEXT": "Applications can open",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "3 Apply",
+      "DataExchange": "Applications can open"
+    },
+    {
+      "ID": "F015",
+      "FROMID": "EVT_APPS_OPEN",
+      "TOID": "A01",
+      "TEXT": "Applicant researches live courses",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "3 Apply",
+      "DataExchange": "Applicant researches live courses"
+    },
+    {
+      "ID": "F016",
+      "FROMID": "SYS_WEB",
+      "TOID": "A01",
+      "TEXT": "University content informs applicant",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "3 Apply",
+      "DataExchange": "University content informs applicant"
+    },
+    {
+      "ID": "F017",
+      "FROMID": "A01",
+      "TOID": "A02",
+      "TEXT": "Applicant decides to apply",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "3 Apply",
+      "DataExchange": "Applicant decides to apply"
+    },
+    {
+      "ID": "F018",
+      "FROMID": "A02",
+      "TOID": "SYS_UCAS",
+      "TEXT": "UCAS account/profile created",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "",
+      "DataExchange": "UCAS account/profile created"
+    },
+    {
+      "ID": "F019",
+      "FROMID": "A02",
+      "TOID": "A03",
+      "TEXT": "Applicant completes choices",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "3 Apply",
+      "DataExchange": "Applicant completes choices"
+    },
+    {
+      "ID": "F020",
+      "FROMID": "A03",
+      "TOID": "SYS_UCAS",
+      "TEXT": "Application submitted",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "",
+      "DataExchange": "Application submitted"
+    },
+    {
+      "ID": "F021",
+      "FROMID": "SYS_UCAS",
+      "TOID": "A04",
+      "TEXT": "UCAS validates application",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "3 Apply",
+      "DataExchange": "UCAS validates application"
+    },
+    {
+      "ID": "F022",
+      "FROMID": "A04",
+      "TOID": "A05",
+      "TEXT": "Validated application ready for provider",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "3 Apply",
+      "DataExchange": "Validated application ready for provider"
+    },
+    {
+      "ID": "F023",
+      "FROMID": "A05",
+      "TOID": "A06",
+      "TEXT": "Application transferred to university",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "3 Apply",
+      "DataExchange": "Application transferred to university"
+    },
+    {
+      "ID": "F024",
+      "FROMID": "A06",
+      "TOID": "SYS_SIS",
+      "TEXT": "Application imported to staging",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "",
+      "DataExchange": "Application imported to staging"
+    },
+    {
+      "ID": "F025",
+      "FROMID": "A06",
+      "TOID": "A07",
+      "TEXT": "Applicant matching initiated",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "3 Apply",
+      "DataExchange": "Applicant matching initiated"
+    },
+    {
+      "ID": "F026",
+      "FROMID": "A07",
+      "TOID": "SYS_SIS",
+      "TEXT": "Applicant record created/matched",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "",
+      "DataExchange": "Applicant record created/matched"
+    },
+    {
+      "ID": "F027",
+      "FROMID": "A07",
+      "TOID": "A08",
+      "TEXT": "Applicant contact and status sent to CRM",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "3 Apply",
+      "DataExchange": "Applicant contact and status sent to CRM"
+    },
+    {
+      "ID": "F028",
+      "FROMID": "A08",
+      "TOID": "SYS_CRM",
+      "TEXT": "CRM journey created",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "",
+      "DataExchange": "CRM journey created"
+    },
+    {
+      "ID": "F029",
+      "FROMID": "SYS_CRM",
+      "TOID": "A09",
+      "TEXT": "Acknowledgement generated",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "3 Apply",
+      "DataExchange": "Acknowledgement generated"
+    },
+    {
+      "ID": "F030",
+      "FROMID": "A09",
+      "TOID": "A01",
+      "TEXT": "Applicant can access portal and updates",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "3 Apply",
+      "DataExchange": "Applicant can access portal and updates"
+    },
+    {
+      "ID": "F031",
+      "FROMID": "A07",
+      "TOID": "S01",
+      "TEXT": "Application ready for admissions checks",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "4 Assessment",
+      "DataExchange": "Application ready for admissions checks"
+    },
+    {
+      "ID": "F032",
+      "FROMID": "S01",
+      "TOID": "G01",
+      "TEXT": "Selection route determined",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "4 Assessment",
+      "DataExchange": "Selection route determined"
+    },
+    {
+      "ID": "F033",
+      "FROMID": "G01",
+      "TOID": "S02",
+      "TEXT": "Academic review required",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "4 Assessment",
+      "DataExchange": "Academic review required",
+      "RouteLabel": "Academic review required",
+      "GatewayType": "Exclusive",
+      "Condition": "Programme requires academic selector judgement or applicant is borderline/contextual."
+    },
+    {
+      "ID": "F034",
+      "FROMID": "S02",
+      "TOID": "S03",
+      "TEXT": "Application routed to school",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "4 Assessment",
+      "DataExchange": "Application routed to school"
+    },
+    {
+      "ID": "F035",
+      "FROMID": "S03",
+      "TOID": "S06",
+      "TEXT": "Review without event complete",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "4 Assessment",
+      "DataExchange": "Review without event complete"
+    },
+    {
+      "ID": "F036",
+      "FROMID": "G01",
+      "TOID": "S04",
+      "TEXT": "Interview/audition required",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "4 Assessment",
+      "DataExchange": "Interview/audition required",
+      "RouteLabel": "Interview/audition required",
+      "GatewayType": "Exclusive",
+      "Condition": "Course requires selection event or portfolio review."
+    },
+    {
+      "ID": "F037",
+      "FROMID": "S04",
+      "TOID": "SYS_CRM",
+      "TEXT": "Invite issued via CRM",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "",
+      "DataExchange": "Invite issued via CRM"
+    },
+    {
+      "ID": "F038",
+      "FROMID": "SYS_CRM",
+      "TOID": "S05",
+      "TEXT": "Applicant receives booking request",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "4 Assessment",
+      "DataExchange": "Applicant receives booking request"
+    },
+    {
+      "ID": "F039",
+      "FROMID": "S05",
+      "TOID": "S06",
+      "TEXT": "Selection event outcome captured",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "4 Assessment",
+      "DataExchange": "Selection event outcome captured"
+    },
+    {
+      "ID": "F040",
+      "FROMID": "S06",
+      "TOID": "S07",
+      "TEXT": "Recommendation returned to admissions",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "4 Assessment",
+      "DataExchange": "Recommendation returned to admissions"
+    },
+    {
+      "ID": "F041",
+      "FROMID": "S07",
+      "TOID": "G02",
+      "TEXT": "Decision gate",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "4 Assessment",
+      "DataExchange": "Decision gate"
+    },
+    {
+      "ID": "F042",
+      "FROMID": "G02",
+      "TOID": "S08",
+      "TEXT": "More information required",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "4 Assessment",
+      "DataExchange": "More information required",
+      "RouteLabel": "More information required",
+      "GatewayType": "Exclusive",
+      "Condition": "Application cannot be decided until evidence/query is resolved."
+    },
+    {
+      "ID": "F043",
+      "FROMID": "S08",
+      "TOID": "SYS_DOC",
+      "TEXT": "Evidence request logged",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "",
+      "DataExchange": "Evidence request logged"
+    },
+    {
+      "ID": "F044",
+      "FROMID": "SYS_DOC",
+      "TOID": "S09",
+      "TEXT": "Applicant uploads evidence",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "4 Assessment",
+      "DataExchange": "Applicant uploads evidence"
+    },
+    {
+      "ID": "F045",
+      "FROMID": "S09",
+      "TOID": "S01",
+      "TEXT": "Evidence re-enters admissions checks",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "4 Assessment",
+      "DataExchange": "Evidence re-enters admissions checks"
+    },
+    {
+      "ID": "F047",
+      "FROMID": "S10",
+      "TOID": "SYS_SIS",
+      "TEXT": "Decision recorded in SIS",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "",
+      "DataExchange": "Decision recorded in SIS"
+    },
+    {
+      "ID": "F048",
+      "FROMID": "S10",
+      "TOID": "O01",
+      "TEXT": "Decision outbound to UCAS",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "5 Offer making",
+      "DataExchange": "Decision outbound to UCAS"
+    },
+    {
+      "ID": "F049",
+      "FROMID": "O01",
+      "TOID": "SYS_UCAS",
+      "TEXT": "Decision transaction transmitted",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "",
+      "DataExchange": "Decision transaction transmitted"
+    },
+    {
+      "ID": "F050",
+      "FROMID": "SYS_UCAS",
+      "TOID": "O02",
+      "TEXT": "UCAS displays decision",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "5 Offer making",
+      "DataExchange": "UCAS displays decision"
+    },
+    {
+      "ID": "F051",
+      "FROMID": "O02",
+      "TOID": "O04",
+      "TEXT": "Applicant considers outcome",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "6 Applicant reply",
+      "DataExchange": "Applicant considers outcome"
+    },
+    {
+      "ID": "F052",
+      "FROMID": "S10",
+      "TOID": "O03",
+      "TEXT": "Offer-holder journey triggered",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "5 Offer making",
+      "DataExchange": "Offer-holder journey triggered"
+    },
+    {
+      "ID": "F053",
+      "FROMID": "O03",
+      "TOID": "SYS_CRM",
+      "TEXT": "CRM sends tailored comms",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "",
+      "DataExchange": "CRM sends tailored comms"
+    },
+    {
+      "ID": "F054",
+      "FROMID": "SYS_CRM",
+      "TOID": "O04",
+      "TEXT": "Applicant day / conversion engagement",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "6 Applicant reply",
+      "DataExchange": "Applicant day / conversion engagement"
+    },
+    {
+      "ID": "F055",
+      "FROMID": "O04",
+      "TOID": "O05",
+      "TEXT": "Applicant submits firm/insurance reply",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "6 Applicant reply",
+      "DataExchange": "Applicant submits firm/insurance reply"
+    },
+    {
+      "ID": "F056",
+      "FROMID": "O05",
+      "TOID": "SYS_UCAS",
+      "TEXT": "UCAS reply recorded",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "",
+      "DataExchange": "UCAS reply recorded"
+    },
+    {
+      "ID": "F057",
+      "FROMID": "SYS_UCAS",
+      "TOID": "O06",
+      "TEXT": "Reply transmitted to provider",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "6 Applicant reply",
+      "DataExchange": "Reply transmitted to provider"
+    },
+    {
+      "ID": "F059",
+      "FROMID": "O07",
+      "TOID": "SYS_SIS",
+      "TEXT": "SIS status updated",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "",
+      "DataExchange": "SIS status updated"
+    },
+    {
+      "ID": "F060",
+      "FROMID": "O07",
+      "TOID": "O08",
+      "TEXT": "Firm population sent to CRM",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "6 Applicant reply",
+      "DataExchange": "Firm population sent to CRM"
+    },
+    {
+      "ID": "F061",
+      "FROMID": "O08",
+      "TOID": "SYS_CRM",
+      "TEXT": "Conversion segments updated",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "",
+      "DataExchange": "Conversion segments updated"
+    },
+    {
+      "ID": "F062",
+      "FROMID": "O07",
+      "TOID": "B01",
+      "TEXT": "Confirmed offer-holder population enables services",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "7 Pre-arrival",
+      "DataExchange": "Confirmed offer-holder population enables services"
+    },
+    {
+      "ID": "F063",
+      "FROMID": "B01",
+      "TOID": "B02",
+      "TEXT": "Student services available to applicant",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "7 Pre-arrival",
+      "DataExchange": "Student services available to applicant"
+    },
+    {
+      "ID": "F064",
+      "FROMID": "B02",
+      "TOID": "SYS_ACC",
+      "TEXT": "Accommodation/support application submitted",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "",
+      "DataExchange": "Accommodation/support application submitted"
+    },
+    {
+      "ID": "F065",
+      "FROMID": "O07",
+      "TOID": "B03",
+      "TEXT": "Eligibility extract generated",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "7 Pre-arrival",
+      "DataExchange": "Eligibility extract generated"
+    },
+    {
+      "ID": "F066",
+      "FROMID": "B03",
+      "TOID": "SYS_ACC",
+      "TEXT": "Accommodation receives eligibility",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "",
+      "DataExchange": "Accommodation receives eligibility"
+    },
+    {
+      "ID": "F067",
+      "FROMID": "O07",
+      "TOID": "B04",
+      "TEXT": "Finance receives firm applicant population",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "7 Pre-arrival",
+      "DataExchange": "Finance receives firm applicant population"
+    },
+    {
+      "ID": "F068",
+      "FROMID": "B04",
+      "TOID": "SYS_FIN",
+      "TEXT": "Fee finance indicators recorded",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "",
+      "DataExchange": "Fee finance indicators recorded"
+    },
+    {
+      "ID": "F069",
+      "FROMID": "O07",
+      "TOID": "B05",
+      "TEXT": "Confirmation population prepared",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "8 Confirmation preparation",
+      "DataExchange": "Confirmation population prepared"
+    },
+    {
+      "ID": "F070",
+      "FROMID": "B05",
+      "TOID": "B06",
+      "TEXT": "Rules tested against interfaces",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "8 Confirmation preparation",
+      "DataExchange": "Rules tested against interfaces"
+    },
+    {
+      "ID": "F071",
+      "FROMID": "B06",
+      "TOID": "SYS_UCAS",
+      "TEXT": "Results interface readiness confirmed",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "",
+      "DataExchange": "Results interface readiness confirmed"
+    },
+    {
+      "ID": "F072",
+      "FROMID": "SYS_UCAS",
+      "TOID": "R01",
+      "TEXT": "UCAS releases results",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "9 Results and confirmation",
+      "DataExchange": "UCAS releases results"
+    },
+    {
+      "ID": "F073",
+      "FROMID": "R01",
+      "TOID": "R02",
+      "TEXT": "Results file imported",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "9 Results and confirmation",
+      "DataExchange": "Results file imported"
+    },
+    {
+      "ID": "F074",
+      "FROMID": "R02",
+      "TOID": "SYS_SIS",
+      "TEXT": "Results matched",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "",
+      "DataExchange": "Results matched"
+    },
+    {
+      "ID": "F075",
+      "FROMID": "R02",
+      "TOID": "G03",
+      "TEXT": "Offer conditions evaluated",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "9 Results and confirmation",
+      "DataExchange": "Offer conditions evaluated"
+    },
+    {
+      "ID": "F076",
+      "FROMID": "G03",
+      "TOID": "R03",
+      "TEXT": "Conditions met",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "9 Results and confirmation",
+      "DataExchange": "Conditions met",
+      "RouteLabel": "Conditions met",
+      "GatewayType": "Exclusive",
+      "Condition": "Applicant has satisfied all offer conditions."
+    },
+    {
+      "ID": "F077",
+      "FROMID": "R03",
+      "TOID": "SYS_SIS",
+      "TEXT": "Unconditional firm recorded",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "",
+      "DataExchange": "Unconditional firm recorded"
+    },
+    {
+      "ID": "F078",
+      "FROMID": "G03",
+      "TOID": "R04",
+      "TEXT": "Near miss requires review",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "9 Results and confirmation",
+      "DataExchange": "Near miss requires review",
+      "RouteLabel": "Near miss",
+      "GatewayType": "Exclusive",
+      "Condition": "Applicant missed conditions but falls within tolerance/review rules."
+    },
+    {
+      "ID": "F079",
+      "FROMID": "R04",
+      "TOID": "R03",
+      "TEXT": "Accept near miss within capacity",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "9 Results and confirmation",
+      "DataExchange": "Accept near miss within capacity"
+    },
+    {
+      "ID": "F080",
+      "FROMID": "R04",
+      "TOID": "R05",
+      "TEXT": "Do not accept near miss",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "9 Results and confirmation",
+      "DataExchange": "Do not accept near miss"
+    },
+    {
+      "ID": "F081",
+      "FROMID": "G03",
+      "TOID": "R05",
+      "TEXT": "Conditions not met",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "9 Results and confirmation",
+      "DataExchange": "Conditions not met",
+      "RouteLabel": "Conditions not met",
+      "GatewayType": "Exclusive",
+      "Condition": "Applicant missed conditions and does not meet review tolerance."
+    },
+    {
+      "ID": "F082",
+      "FROMID": "R05",
+      "TOID": "SYS_UCAS",
+      "TEXT": "Reject/release decision sent",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "",
+      "DataExchange": "Reject/release decision sent"
+    },
+    {
+      "ID": "F083",
+      "FROMID": "R03",
+      "TOID": "R06",
+      "TEXT": "Confirmation decision prepared",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "9 Results and confirmation",
+      "DataExchange": "Confirmation decision prepared"
+    },
+    {
+      "ID": "F084",
+      "FROMID": "R06",
+      "TOID": "SYS_UCAS",
+      "TEXT": "Confirmation transaction sent",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "",
+      "DataExchange": "Confirmation transaction sent"
+    },
+    {
+      "ID": "F085",
+      "FROMID": "SYS_UCAS",
+      "TOID": "R07",
+      "TEXT": "Applicant UCAS status updated",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "9 Results and confirmation",
+      "DataExchange": "Applicant UCAS status updated"
+    },
+    {
+      "ID": "F086",
+      "FROMID": "R07",
+      "TOID": "M01",
+      "TEXT": "Confirmed applicant eligible for student conversion",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "11 Matriculation",
+      "DataExchange": "Confirmed applicant eligible for student conversion"
+    },
+    {
+      "ID": "F087",
+      "FROMID": "R03",
+      "TOID": "C01",
+      "TEXT": "Remaining capacity calculated",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "10 Clearing",
+      "DataExchange": "Remaining capacity calculated"
+    },
+    {
+      "ID": "F088",
+      "FROMID": "C01",
+      "TOID": "SYS_UCAS",
+      "TEXT": "Clearing vacancies published",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "",
+      "DataExchange": "Clearing vacancies published"
+    },
+    {
+      "ID": "F089",
+      "FROMID": "C01",
+      "TOID": "SYS_WEB",
+      "TEXT": "Clearing course pages updated",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "",
+      "DataExchange": "Clearing course pages updated"
+    },
+    {
+      "ID": "F090",
+      "FROMID": "SYS_WEB",
+      "TOID": "C02",
+      "TEXT": "Applicant finds vacancy",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "10 Clearing",
+      "DataExchange": "Applicant finds vacancy"
+    },
+    {
+      "ID": "F091",
+      "FROMID": "C02",
+      "TOID": "C03",
+      "TEXT": "Enquiry captured",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "10 Clearing",
+      "DataExchange": "Enquiry captured"
+    },
+    {
+      "ID": "F092",
+      "FROMID": "C03",
+      "TOID": "SYS_CRM",
+      "TEXT": "Clearing enquiry record created",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "",
+      "DataExchange": "Clearing enquiry record created"
+    },
+    {
+      "ID": "F093",
+      "FROMID": "C03",
+      "TOID": "C04",
+      "TEXT": "Qualifications assessed quickly",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "10 Clearing",
+      "DataExchange": "Qualifications assessed quickly"
+    },
+    {
+      "ID": "F096",
+      "FROMID": "C05",
+      "TOID": "SYS_UCAS",
+      "TEXT": "Clearing choice submitted",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "",
+      "DataExchange": "Clearing choice submitted"
+    },
+    {
+      "ID": "F097",
+      "FROMID": "SYS_UCAS",
+      "TOID": "C06",
+      "TEXT": "Clearing choice received",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "10 Clearing",
+      "DataExchange": "Clearing choice received"
+    },
+    {
+      "ID": "F098",
+      "FROMID": "C06",
+      "TOID": "SYS_SIS",
+      "TEXT": "Accepted Clearing applicant recorded",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "",
+      "DataExchange": "Accepted Clearing applicant recorded"
+    },
+    {
+      "ID": "F099",
+      "FROMID": "C06",
+      "TOID": "M01",
+      "TEXT": "Clearing applicant converted to student",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "11 Matriculation",
+      "DataExchange": "Clearing applicant converted to student"
+    },
+    {
+      "ID": "F100",
+      "FROMID": "M01",
+      "TOID": "SYS_SIS",
+      "TEXT": "Student record created",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "",
+      "DataExchange": "Student record created"
+    },
+    {
+      "ID": "F101",
+      "FROMID": "SYS_SIS",
+      "TOID": "M02",
+      "TEXT": "Identity attributes sent",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "11 Matriculation",
+      "DataExchange": "Identity attributes sent"
+    },
+    {
+      "ID": "F102",
+      "FROMID": "M02",
+      "TOID": "SYS_IDM",
+      "TEXT": "Account provisioned",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "",
+      "DataExchange": "Account provisioned"
+    },
+    {
+      "ID": "F103",
+      "FROMID": "M01",
+      "TOID": "M03",
+      "TEXT": "Enrolment invitation population generated",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "12 Enrolment",
+      "DataExchange": "Enrolment invitation population generated"
+    },
+    {
+      "ID": "F104",
+      "FROMID": "M03",
+      "TOID": "SYS_CRM",
+      "TEXT": "Invite sent",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "",
+      "DataExchange": "Invite sent"
+    },
+    {
+      "ID": "F105",
+      "FROMID": "SYS_CRM",
+      "TOID": "M04",
+      "TEXT": "Student completes enrolment",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "12 Enrolment",
+      "DataExchange": "Student completes enrolment"
+    },
+    {
+      "ID": "F106",
+      "FROMID": "M04",
+      "TOID": "SYS_ENROL",
+      "TEXT": "Enrolment data captured",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "",
+      "DataExchange": "Enrolment data captured"
+    },
+    {
+      "ID": "F108",
+      "FROMID": "M05",
+      "TOID": "SYS_FIN",
+      "TEXT": "Fee/payment/loan status updated",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "",
+      "DataExchange": "Fee/payment/loan status updated"
+    },
+    {
+      "ID": "F110",
+      "FROMID": "M06",
+      "TOID": "SYS_ACC",
+      "TEXT": "Accommodation/support allocation updated",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "",
+      "DataExchange": "Accommodation/support allocation updated"
+    },
+    {
+      "ID": "F114",
+      "FROMID": "SYS_SIS",
+      "TOID": "M08",
+      "TEXT": "Entitlements sent to IAM",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "13 Induction handover",
+      "DataExchange": "Entitlements sent to IAM"
+    },
+    {
+      "ID": "F115",
+      "FROMID": "M08",
+      "TOID": "SYS_IDM",
+      "TEXT": "Access provisioned",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "",
+      "DataExchange": "Access provisioned"
+    },
+    {
+      "ID": "F116",
+      "FROMID": "SYS_IDM",
+      "TOID": "M09",
+      "TEXT": "Student can access induction systems",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "13 Induction handover",
+      "DataExchange": "Student can access induction systems"
+    },
+    {
+      "ID": "F117",
+      "FROMID": "M09",
+      "TOID": "SYS_SIS",
+      "TEXT": "Start-of-study engagement recorded",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "",
+      "DataExchange": "Start-of-study engagement recorded"
+    },
+    {
+      "ID": "F118",
+      "FROMID": "SYS_SIS",
+      "TOID": "M10",
+      "TEXT": "Enrolment/census data extracted",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "14 Post-enrolment control",
+      "DataExchange": "Enrolment/census data extracted"
+    },
+    {
+      "ID": "F119",
+      "FROMID": "M10",
+      "TOID": "SYS_DW",
+      "TEXT": "Reporting mart updated",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "",
+      "DataExchange": "Reporting mart updated"
+    },
+    {
+      "ID": "F120",
+      "FROMID": "M10",
+      "TOID": "EVT_END",
+      "TEXT": "Lifecycle closed for intake reporting",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "14 Post-enrolment control",
+      "DataExchange": "Lifecycle closed for intake reporting"
+    },
+    {
+      "ID": "F036A",
+      "FROMID": "G01",
+      "TOID": "S07",
+      "TEXT": "No academic review or interview required",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "4 Assessment",
+      "DataExchange": "Standard admissions checks continue",
+      "RouteLabel": "Standard route",
+      "GatewayType": "Exclusive",
+      "Condition": "Application is complete and does not require academic selector or selection event."
+    },
+    {
+      "ID": "F007A",
+      "FROMID": "P05",
+      "TOID": "G00",
+      "TEXT": "Publication readiness assessed",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "1 Course portfolio",
+      "DataExchange": "Validated course, fee and capacity data"
+    },
+    {
+      "ID": "F007B",
+      "FROMID": "G00",
+      "TOID": "P06",
+      "TEXT": "Yes - release to UCAS setup",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "1 Course portfolio",
+      "DataExchange": "Approved course record",
+      "RouteLabel": "Yes",
+      "GatewayType": "Exclusive",
+      "Condition": "Course is fully approved and complete for UCAS publication."
+    },
+    {
+      "ID": "F007C",
+      "FROMID": "G00",
+      "TOID": "P02",
+      "TEXT": "No - return for approval or amendment",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "1 Course portfolio",
+      "DataExchange": "Approval exception",
+      "RouteLabel": "No",
+      "GatewayType": "Exclusive",
+      "Condition": "Course is not approved or has missing/invalid course, fee, capacity or criteria data."
+    },
+    {
+      "ID": "F046A",
+      "FROMID": "G02",
+      "TOID": "S10A",
+      "TEXT": "Offer decision",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "5 Offer making",
+      "DataExchange": "Offer decision and conditions",
+      "RouteLabel": "Offer",
+      "GatewayType": "Exclusive",
+      "Condition": "Applicant meets requirements or is approved through contextual/academic review."
+    },
+    {
+      "ID": "F046B",
+      "FROMID": "G02",
+      "TOID": "S10B",
+      "TEXT": "Unsuccessful decision",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "5 Offer making",
+      "DataExchange": "Reject decision and reason",
+      "RouteLabel": "Reject",
+      "GatewayType": "Exclusive",
+      "Condition": "Applicant does not meet selection criteria or compliance checks fail."
+    },
+    {
+      "ID": "F046C",
+      "FROMID": "S10A",
+      "TOID": "S10",
+      "TEXT": "Offer outcome ready for formal UCAS decision",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "5 Offer making",
+      "DataExchange": "Offer decision"
+    },
+    {
+      "ID": "F046D",
+      "FROMID": "S10B",
+      "TOID": "S10",
+      "TEXT": "Unsuccessful outcome ready for formal UCAS decision",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "5 Offer making",
+      "DataExchange": "Unsuccessful decision"
+    },
+    {
+      "ID": "F058A",
+      "FROMID": "O06",
+      "TOID": "G04",
+      "TEXT": "Reply outcome evaluated",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "7 Applicant reply",
+      "DataExchange": "UCAS applicant reply"
+    },
+    {
+      "ID": "F058B",
+      "FROMID": "G04",
+      "TOID": "O07",
+      "TEXT": "Firm or insurance accepted",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "7 Applicant reply",
+      "DataExchange": "Accepted reply status",
+      "RouteLabel": "Firm/Insurance",
+      "GatewayType": "Exclusive",
+      "Condition": "Applicant selects the university as firm or insurance choice."
+    },
+    {
+      "ID": "F058C",
+      "FROMID": "G04",
+      "TOID": "EVT_APP_WITHDRAWN",
+      "TEXT": "Declined, withdrawn or no reply",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "7 Applicant reply",
+      "DataExchange": "Closed application status",
+      "RouteLabel": "Decline/Withdraw/No reply",
+      "GatewayType": "Exclusive",
+      "Condition": "Applicant declines the offer, withdraws, or misses the reply deadline."
+    },
+    {
+      "ID": "F094A",
+      "FROMID": "C04",
+      "TOID": "G05",
+      "TEXT": "Clearing decision evaluated",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "10 Clearing",
+      "DataExchange": "Clearing decision inputs"
+    },
+    {
+      "ID": "F094B",
+      "FROMID": "G05",
+      "TOID": "SYS_SIS",
+      "TEXT": "Yes - record provisional Clearing decision",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "10 Clearing",
+      "DataExchange": "Clearing provisional acceptance",
+      "RouteLabel": "Eligible",
+      "GatewayType": "Exclusive",
+      "Condition": "Applicant is eligible and vacancy/capacity is available."
+    },
+    {
+      "ID": "F095A",
+      "FROMID": "G05",
+      "TOID": "C05",
+      "TEXT": "Yes - applicant adds Clearing choice",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "10 Clearing",
+      "DataExchange": "Instruction to add Clearing choice",
+      "RouteLabel": "Eligible",
+      "GatewayType": "Exclusive",
+      "Condition": "Applicant is eligible and must add the choice in UCAS."
+    },
+    {
+      "ID": "F095B",
+      "FROMID": "G05",
+      "TOID": "EVT_CLEARING_UNSUCCESSFUL",
+      "TEXT": "No - close unsuccessful Clearing enquiry",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "10 Clearing",
+      "DataExchange": "Unsuccessful Clearing outcome",
+      "RouteLabel": "Not eligible/no vacancy",
+      "GatewayType": "Exclusive",
+      "Condition": "Applicant is not eligible or no vacancy/capacity remains."
+    },
+    {
+      "ID": "F106A",
+      "FROMID": "SYS_ENROL",
+      "TOID": "G06",
+      "TEXT": "Registration completion status returned",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "12 Enrolment",
+      "DataExchange": "Online registration status"
+    },
+    {
+      "ID": "F107A",
+      "FROMID": "G06",
+      "TOID": "M05",
+      "TEXT": "Yes - proceed to fee confirmation",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "12 Enrolment",
+      "DataExchange": "Completed registration",
+      "RouteLabel": "Complete",
+      "GatewayType": "Exclusive",
+      "Condition": "All mandatory registration questions, declarations and identity checks are complete."
+    },
+    {
+      "ID": "F109A",
+      "FROMID": "G06",
+      "TOID": "M06",
+      "TEXT": "Yes - confirm service entitlements",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "12 Enrolment",
+      "DataExchange": "Completed registration",
+      "RouteLabel": "Complete",
+      "GatewayType": "Exclusive",
+      "Condition": "Student has completed registration and can receive service allocation updates."
+    },
+    {
+      "ID": "F111A",
+      "FROMID": "G06",
+      "TOID": "M07",
+      "TEXT": "Yes - Registry can complete enrolment",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "12 Enrolment",
+      "DataExchange": "Completed registration",
+      "RouteLabel": "Complete",
+      "GatewayType": "Exclusive",
+      "Condition": "Registration is complete and ready for final enrolment checks."
+    },
+    {
+      "ID": "F107B",
+      "FROMID": "G06",
+      "TOID": "M04A",
+      "TEXT": "No - chase missing registration evidence",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "12 Enrolment",
+      "DataExchange": "Missing registration data",
+      "RouteLabel": "Incomplete",
+      "GatewayType": "Exclusive",
+      "Condition": "Mandatory registration evidence, declaration or identity check is incomplete."
+    },
+    {
+      "ID": "F107C",
+      "FROMID": "M04A",
+      "TOID": "M04",
+      "TEXT": "Applicant/student completes outstanding registration task",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "12 Enrolment",
+      "DataExchange": "Outstanding registration task response"
+    },
+    {
+      "ID": "F112A",
+      "FROMID": "M05",
+      "TOID": "G07",
+      "TEXT": "Finance clearance evaluated",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "12 Enrolment",
+      "DataExchange": "Fee and payment/loan arrangement"
+    },
+    {
+      "ID": "F112B",
+      "FROMID": "G07",
+      "TOID": "M07",
+      "TEXT": "Yes - finance clearance contributes to enrolment",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "12 Enrolment",
+      "DataExchange": "Finance clearance",
+      "RouteLabel": "Cleared",
+      "GatewayType": "Exclusive",
+      "Condition": "Fee liability and payment/loan arrangement are confirmed, or approved exception exists."
+    },
+    {
+      "ID": "F112C",
+      "FROMID": "G07",
+      "TOID": "M05A",
+      "TEXT": "No - resolve finance exception",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "12 Enrolment",
+      "DataExchange": "Finance exception",
+      "RouteLabel": "Not cleared",
+      "GatewayType": "Exclusive",
+      "Condition": "Fee assessment, SLC, sponsor, or payment arrangement is incomplete or in exception."
+    },
+    {
+      "ID": "F112D",
+      "FROMID": "M05A",
+      "TOID": "M05",
+      "TEXT": "Exception resolved and finance status updated",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "12 Enrolment",
+      "DataExchange": "Resolved finance exception"
+    },
+    {
+      "ID": "F113A",
+      "FROMID": "M07",
+      "TOID": "G08",
+      "TEXT": "Final enrolment controls evaluated",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "12 Enrolment",
+      "DataExchange": "Enrolment control status"
+    },
+    {
+      "ID": "F113B",
+      "FROMID": "G08",
+      "TOID": "SYS_SIS",
+      "TEXT": "Yes - set student enrolled and active",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "12 Enrolment",
+      "DataExchange": "Active student status",
+      "RouteLabel": "Enrol",
+      "GatewayType": "Exclusive",
+      "Condition": "All final enrolment controls have passed or approved exceptions exist."
+    },
+    {
+      "ID": "F113C",
+      "FROMID": "G08",
+      "TOID": "M07A",
+      "TEXT": "No - hold enrolment pending exceptions",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "12 Enrolment",
+      "DataExchange": "Held enrolment status",
+      "RouteLabel": "Hold",
+      "GatewayType": "Exclusive",
+      "Condition": "One or more mandatory controls remain incomplete without approved exception."
+    },
+    {
+      "ID": "F113D",
+      "FROMID": "M07A",
+      "TOID": "M07",
+      "TEXT": "Exception resolved and final enrolment retried",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "12 Enrolment",
+      "DataExchange": "Resolved enrolment exception"
+    },
+    {
+      "ID": "F119A",
+      "FROMID": "G09",
+      "TOID": "I03",
+      "TEXT": "Direct application route selected",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "3 Apply - International",
+      "DataExchange": "Direct application route selected",
+      "GatewayType": "Exclusive",
+      "RouteLabel": "Direct",
+      "Condition": "Applicant applies through the university direct international application portal."
+    },
+    {
+      "ID": "F119B",
+      "FROMID": "G09",
+      "TOID": "I04",
+      "TEXT": "Agent-supported route selected",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "3 Apply - International",
+      "DataExchange": "Agent-supported route selected",
+      "GatewayType": "Exclusive",
+      "RouteLabel": "Agent/partner",
+      "Condition": "Applicant applies through an authorised agent or partner channel."
+    },
+    {
+      "ID": "F121",
+      "FROMID": "I04",
+      "TOID": "SYS_AGENT",
+      "TEXT": "Agent-supported international application submitted",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "",
+      "DataExchange": "Agent-supported international application submitted"
+    },
+    {
+      "ID": "F122",
+      "FROMID": "SYS_INTL_PORTAL",
+      "TOID": "I05",
+      "TEXT": "Direct application available for source validation",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "3 Apply - International",
+      "DataExchange": "Direct application available for source validation"
+    },
+    {
+      "ID": "F123",
+      "FROMID": "SYS_AGENT",
+      "TOID": "I05",
+      "TEXT": "Agent application available for source validation",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "3 Apply - International",
+      "DataExchange": "Agent application available for source validation"
+    },
+    {
+      "ID": "F124",
+      "FROMID": "I05",
+      "TOID": "SYS_CRM",
+      "TEXT": "International source and consent captured",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "",
+      "DataExchange": "International source and consent captured"
+    },
+    {
+      "ID": "F125",
+      "FROMID": "I05",
+      "TOID": "I06",
+      "TEXT": "Validated international application ready for Admissions",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "3 Apply - International",
+      "DataExchange": "Validated international application ready for Admissions"
+    },
+    {
+      "ID": "F126",
+      "FROMID": "I06",
+      "TOID": "SYS_SIS",
+      "TEXT": "International application imported to staging",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "",
+      "DataExchange": "International application imported to staging"
+    },
+    {
+      "ID": "F127",
+      "FROMID": "I06",
+      "TOID": "A07",
+      "TEXT": "International applicant matching initiated",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "3 Apply - International",
+      "DataExchange": "International applicant matching initiated"
+    },
+    {
+      "ID": "F128",
+      "FROMID": "A07",
+      "TOID": "I07",
+      "TEXT": "International applicant requires overseas evidence assessment",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "4 Assessment - International",
+      "DataExchange": "International applicant requires overseas evidence assessment"
+    },
+    {
+      "ID": "F129",
+      "FROMID": "I07",
+      "TOID": "I08",
+      "TEXT": "Academic evidence ready for immigration pre-check",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "4 Assessment - International",
+      "DataExchange": "Academic evidence ready for immigration pre-check"
+    },
+    {
+      "ID": "F130",
+      "FROMID": "I08",
+      "TOID": "SYS_CAS",
+      "TEXT": "Immigration and sponsorship pre-check recorded",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "",
+      "DataExchange": "Immigration and sponsorship pre-check recorded"
+    },
+    {
+      "ID": "F131",
+      "FROMID": "I08",
+      "TOID": "G10",
+      "TEXT": "International compliance route evaluated",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "4 Assessment - International",
+      "DataExchange": "International compliance route evaluated"
+    },
+    {
+      "ID": "F132A",
+      "FROMID": "G10",
+      "TOID": "S01",
+      "TEXT": "Proceed to standard admissions assessment",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "4 Assessment - International",
+      "DataExchange": "Proceed to standard admissions assessment",
+      "GatewayType": "Exclusive",
+      "RouteLabel": "Viable",
+      "Condition": "Evidence and sponsorship route are acceptable, or any residual conditions can be managed through the standard admissions decision."
+    },
+    {
+      "ID": "F132B",
+      "FROMID": "G10",
+      "TOID": "I09",
+      "TEXT": "Evidence required before decision",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "4 Assessment - International",
+      "DataExchange": "Evidence required before decision",
+      "GatewayType": "Exclusive",
+      "RouteLabel": "Evidence required",
+      "Condition": "Missing or unclear qualification, English, passport, ATAS, funding or visa evidence must be resolved before decision."
+    },
+    {
+      "ID": "F132C",
+      "FROMID": "G10",
+      "TOID": "I10",
+      "TEXT": "Compliance hold or rejection recommended",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "4 Assessment - International",
+      "DataExchange": "Compliance hold or rejection recommended",
+      "GatewayType": "Exclusive",
+      "RouteLabel": "Not viable",
+      "Condition": "Sponsorship, sanctions, fraud, visa history or policy risk means the application cannot proceed without formal hold/rejection action."
+    },
+    {
+      "ID": "F133",
+      "FROMID": "I09",
+      "TOID": "SYS_DOC",
+      "TEXT": "International evidence request logged",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "",
+      "DataExchange": "International evidence request logged"
+    },
+    {
+      "ID": "F134",
+      "FROMID": "I09",
+      "TOID": "S09",
+      "TEXT": "Applicant uploads international evidence",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "4 Assessment - International",
+      "DataExchange": "Applicant uploads international evidence"
+    },
+    {
+      "ID": "F135",
+      "FROMID": "S09",
+      "TOID": "I07",
+      "TEXT": "Updated international evidence reassessed",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "4 Assessment - International",
+      "DataExchange": "Updated international evidence reassessed"
+    },
+    {
+      "ID": "F136",
+      "FROMID": "I10",
+      "TOID": "S10B",
+      "TEXT": "Compliance recommendation informs unsuccessful decision",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "4 Assessment - International",
+      "DataExchange": "Compliance recommendation informs unsuccessful decision"
+    },
+    {
+      "ID": "F137",
+      "FROMID": "S10A",
+      "TOID": "I11",
+      "TEXT": "International offer requires direct or agent communication",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "5 Offer and reply - International",
+      "DataExchange": "International offer requires direct or agent communication"
+    },
+    {
+      "ID": "F138",
+      "FROMID": "I11",
+      "TOID": "SYS_CRM",
+      "TEXT": "International offer communication recorded",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "",
+      "DataExchange": "International offer communication recorded"
+    },
+    {
+      "ID": "F139",
+      "FROMID": "I11",
+      "TOID": "I14",
+      "TEXT": "CRM and agent status updated for offer",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "5 Offer and reply - International",
+      "DataExchange": "CRM and agent status updated for offer"
+    },
+    {
+      "ID": "F140",
+      "FROMID": "I11",
+      "TOID": "G11",
+      "TEXT": "International offer response and CAS readiness evaluated",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "5 Offer and reply - International",
+      "DataExchange": "International offer response and CAS readiness evaluated"
+    },
+    {
+      "ID": "F141A",
+      "FROMID": "G11",
+      "TOID": "I12",
+      "TEXT": "Accepted and CAS-ready",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "11 Confirmation - International",
+      "DataExchange": "Accepted and CAS-ready",
+      "GatewayType": "Exclusive",
+      "RouteLabel": "Accepted/CAS-ready",
+      "Condition": "Applicant has accepted, satisfied or had conditions waived, completed required deposit or financial checks, and passed CAS pre-checks."
+    },
+    {
+      "ID": "F141B",
+      "FROMID": "G11",
+      "TOID": "I13",
+      "TEXT": "Deposit or evidence outstanding",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "5 Offer and reply - International",
+      "DataExchange": "Deposit or evidence outstanding",
+      "GatewayType": "Exclusive",
+      "RouteLabel": "Outstanding evidence",
+      "Condition": "Acceptance, deposit, English language, financial evidence or visa/CAS evidence remains incomplete."
+    },
+    {
+      "ID": "F141C",
+      "FROMID": "G11",
+      "TOID": "EVT_APP_WITHDRAWN",
+      "TEXT": "Declined, withdrawn or no reply",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "5 Offer and reply - International",
+      "DataExchange": "Declined, withdrawn or no reply",
+      "GatewayType": "Exclusive",
+      "RouteLabel": "Decline/Withdraw/No reply",
+      "Condition": "Applicant declines, withdraws, fails to respond, or does not meet required pre-CAS deadlines."
+    },
+    {
+      "ID": "F142",
+      "FROMID": "I13",
+      "TOID": "SYS_CRM",
+      "TEXT": "International conversion chase recorded",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "",
+      "DataExchange": "International conversion chase recorded"
+    },
+    {
+      "ID": "F143",
+      "FROMID": "I13",
+      "TOID": "I11",
+      "TEXT": "Outstanding international conditions rechecked",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "5 Offer and reply - International",
+      "DataExchange": "Outstanding international conditions rechecked"
+    },
+    {
+      "ID": "F144",
+      "FROMID": "I12",
+      "TOID": "SYS_CAS",
+      "TEXT": "CAS issued and sponsorship confirmed",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "",
+      "DataExchange": "CAS issued and sponsorship confirmed"
+    },
+    {
+      "ID": "F145",
+      "FROMID": "I12",
+      "TOID": "SYS_SIS",
+      "TEXT": "International sponsorship status updated in SIS",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "",
+      "DataExchange": "International sponsorship status updated in SIS"
+    },
+    {
+      "ID": "F146",
+      "FROMID": "I12",
+      "TOID": "M01",
+      "TEXT": "CAS-ready international applicant converted to student record",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "12 Enrolment",
+      "DataExchange": "CAS-ready international applicant converted to student record"
+    },
+    {
+      "ID": "F147",
+      "FROMID": "I14",
+      "TOID": "SYS_AGENT",
+      "TEXT": "Agent status notification available where applicable",
+      "TYPE": "->",
+      "InteractionKind": "Sequence/Data Flow",
+      "LifecycleStage": "",
+      "DataExchange": "Agent status notification available where applicable"
+    }
+  ],
+  "layouts": {
+    "granular-horizontal": {
+      "systems": {
+        "LANE_STUDENT": {
+          "isSelected": false,
+          "geometry": {
+            "x": 0,
+            "y": 0,
+            "width": 3400,
+            "height": 230
+          }
+        },
+        "LANE_UCAS": {
+          "isSelected": false,
+          "geometry": {
+            "x": 0,
+            "y": 260,
+            "width": 3400,
+            "height": 230
+          }
+        },
+        "LANE_PORTFOLIO": {
+          "isSelected": false,
+          "geometry": {
+            "x": 0,
+            "y": 520,
+            "width": 3400,
+            "height": 230
+          }
+        },
+        "LANE_CURRIC": {
+          "isSelected": false,
+          "geometry": {
+            "x": 0,
+            "y": 780,
+            "width": 3400,
+            "height": 230
+          }
+        },
+        "LANE_MARKETING": {
+          "isSelected": false,
+          "geometry": {
+            "x": 0,
+            "y": 1040,
+            "width": 3400,
+            "height": 230
+          }
+        },
+        "LANE_ADMISSIONS": {
+          "isSelected": false,
+          "geometry": {
+            "x": 0,
+            "y": 1300,
+            "width": 3400,
+            "height": 230
+          }
+        },
+        "LANE_ACADEMIC": {
+          "isSelected": false,
+          "geometry": {
+            "x": 0,
+            "y": 1560,
+            "width": 3400,
+            "height": 230
+          }
+        },
+        "LANE_CRM": {
+          "isSelected": false,
+          "geometry": {
+            "x": 0,
+            "y": 1820,
+            "width": 3400,
+            "height": 230
+          }
+        },
+        "LANE_SIS": {
+          "isSelected": false,
+          "geometry": {
+            "x": 0,
+            "y": 2080,
+            "width": 3400,
+            "height": 230
+          }
+        },
+        "LANE_SERVICES": {
+          "isSelected": false,
+          "geometry": {
+            "x": 0,
+            "y": 2340,
+            "width": 3400,
+            "height": 230
+          }
+        },
+        "LANE_FINANCE": {
+          "isSelected": false,
+          "geometry": {
+            "x": 0,
+            "y": 2600,
+            "width": 3400,
+            "height": 230
+          }
+        },
+        "LANE_ID": {
+          "isSelected": false,
+          "geometry": {
+            "x": 0,
+            "y": 2860,
+            "width": 3400,
+            "height": 230
+          }
+        },
+        "LANE_REG": {
+          "isSelected": false,
+          "geometry": {
+            "x": 0,
+            "y": 3120,
+            "width": 3400,
+            "height": 230
+          }
+        },
+        "SYS_UCAS": {
+          "isSelected": false,
+          "geometry": {
+            "x": 450,
+            "y": 315,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "SYS_COURSE": {
+          "isSelected": false,
+          "geometry": {
+            "x": 450,
+            "y": 835,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "SYS_WEB": {
+          "isSelected": false,
+          "geometry": {
+            "x": 450,
+            "y": 1095,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "SYS_CRM": {
+          "isSelected": false,
+          "geometry": {
+            "x": 450,
+            "y": 1875,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "SYS_SIS": {
+          "isSelected": false,
+          "geometry": {
+            "x": 450,
+            "y": 2135,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "SYS_DOC": {
+          "isSelected": false,
+          "geometry": {
+            "x": 450,
+            "y": 1355,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "SYS_FIN": {
+          "isSelected": false,
+          "geometry": {
+            "x": 450,
+            "y": 2655,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "SYS_ACC": {
+          "isSelected": false,
+          "geometry": {
+            "x": 450,
+            "y": 2395,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "SYS_WELL": {
+          "isSelected": false,
+          "geometry": {
+            "x": 640,
+            "y": 2395,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "SYS_IDM": {
+          "isSelected": false,
+          "geometry": {
+            "x": 450,
+            "y": 2915,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "SYS_ENROL": {
+          "isSelected": false,
+          "geometry": {
+            "x": 640,
+            "y": 2915,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "SYS_DW": {
+          "isSelected": false,
+          "geometry": {
+            "x": 450,
+            "y": 3175,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "EVT_START": {
+          "isSelected": false,
+          "geometry": {
+            "x": 450,
+            "y": 575,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "P01": {
+          "isSelected": false,
+          "geometry": {
+            "x": 640,
+            "y": 575,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "P02": {
+          "isSelected": false,
+          "geometry": {
+            "x": 640,
+            "y": 835,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "P03": {
+          "isSelected": false,
+          "geometry": {
+            "x": 830,
+            "y": 835,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "P04": {
+          "isSelected": false,
+          "geometry": {
+            "x": 640,
+            "y": 1355,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "P05": {
+          "isSelected": false,
+          "geometry": {
+            "x": 640,
+            "y": 2655,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "P06": {
+          "isSelected": false,
+          "geometry": {
+            "x": 830,
+            "y": 1355,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "P07": {
+          "isSelected": false,
+          "geometry": {
+            "x": 640,
+            "y": 315,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "P08": {
+          "isSelected": false,
+          "geometry": {
+            "x": 640,
+            "y": 1095,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "P09": {
+          "isSelected": false,
+          "geometry": {
+            "x": 640,
+            "y": 2135,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "EVT_APPS_OPEN": {
+          "isSelected": false,
+          "geometry": {
+            "x": 830,
+            "y": 315,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "A01": {
+          "isSelected": false,
+          "geometry": {
+            "x": 450,
+            "y": 55,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "A02": {
+          "isSelected": false,
+          "geometry": {
+            "x": 640,
+            "y": 55,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "A03": {
+          "isSelected": false,
+          "geometry": {
+            "x": 830,
+            "y": 55,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "A04": {
+          "isSelected": false,
+          "geometry": {
+            "x": 1020,
+            "y": 315,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "A05": {
+          "isSelected": false,
+          "geometry": {
+            "x": 1210,
+            "y": 315,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "A06": {
+          "isSelected": false,
+          "geometry": {
+            "x": 1020,
+            "y": 1355,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "A07": {
+          "isSelected": false,
+          "geometry": {
+            "x": 830,
+            "y": 2135,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "A08": {
+          "isSelected": false,
+          "geometry": {
+            "x": 640,
+            "y": 1875,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "A09": {
+          "isSelected": false,
+          "geometry": {
+            "x": 830,
+            "y": 1875,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "S01": {
+          "isSelected": false,
+          "geometry": {
+            "x": 1210,
+            "y": 1355,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "G01": {
+          "isSelected": false,
+          "geometry": {
+            "x": 1400,
+            "y": 1355,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "S02": {
+          "isSelected": false,
+          "geometry": {
+            "x": 1590,
+            "y": 1355,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "S03": {
+          "isSelected": false,
+          "geometry": {
+            "x": 450,
+            "y": 1615,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "S04": {
+          "isSelected": false,
+          "geometry": {
+            "x": 1780,
+            "y": 1355,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "S05": {
+          "isSelected": false,
+          "geometry": {
+            "x": 1020,
+            "y": 55,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "S06": {
+          "isSelected": false,
+          "geometry": {
+            "x": 640,
+            "y": 1615,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "S07": {
+          "isSelected": false,
+          "geometry": {
+            "x": 1970,
+            "y": 1355,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "G02": {
+          "isSelected": false,
+          "geometry": {
+            "x": 2160,
+            "y": 1355,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "S08": {
+          "isSelected": false,
+          "geometry": {
+            "x": 2350,
+            "y": 1355,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "S09": {
+          "isSelected": false,
+          "geometry": {
+            "x": 1210,
+            "y": 55,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "S10": {
+          "isSelected": false,
+          "geometry": {
+            "x": 2540,
+            "y": 1355,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "O01": {
+          "isSelected": false,
+          "geometry": {
+            "x": 1020,
+            "y": 2135,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "O02": {
+          "isSelected": false,
+          "geometry": {
+            "x": 1400,
+            "y": 315,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "O03": {
+          "isSelected": false,
+          "geometry": {
+            "x": 1020,
+            "y": 1875,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "O04": {
+          "isSelected": false,
+          "geometry": {
+            "x": 1400,
+            "y": 55,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "O05": {
+          "isSelected": false,
+          "geometry": {
+            "x": 1590,
+            "y": 55,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "O06": {
+          "isSelected": false,
+          "geometry": {
+            "x": 1590,
+            "y": 315,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "O07": {
+          "isSelected": false,
+          "geometry": {
+            "x": 1210,
+            "y": 2135,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "O08": {
+          "isSelected": false,
+          "geometry": {
+            "x": 1210,
+            "y": 1875,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "B01": {
+          "isSelected": false,
+          "geometry": {
+            "x": 830,
+            "y": 2395,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "B02": {
+          "isSelected": false,
+          "geometry": {
+            "x": 1780,
+            "y": 55,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "B03": {
+          "isSelected": false,
+          "geometry": {
+            "x": 1400,
+            "y": 2135,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "B04": {
+          "isSelected": false,
+          "geometry": {
+            "x": 830,
+            "y": 2655,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "B05": {
+          "isSelected": false,
+          "geometry": {
+            "x": 2730,
+            "y": 1355,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "B06": {
+          "isSelected": false,
+          "geometry": {
+            "x": 1590,
+            "y": 2135,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "R01": {
+          "isSelected": false,
+          "geometry": {
+            "x": 1780,
+            "y": 315,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "R02": {
+          "isSelected": false,
+          "geometry": {
+            "x": 1780,
+            "y": 2135,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "G03": {
+          "isSelected": false,
+          "geometry": {
+            "x": 2920,
+            "y": 1355,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "R03": {
+          "isSelected": false,
+          "geometry": {
+            "x": 3110,
+            "y": 1355,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "R04": {
+          "isSelected": false,
+          "geometry": {
+            "x": 830,
+            "y": 1615,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "R05": {
+          "isSelected": false,
+          "geometry": {
+            "x": 3300,
+            "y": 1355,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "R06": {
+          "isSelected": false,
+          "geometry": {
+            "x": 1970,
+            "y": 2135,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "R07": {
+          "isSelected": false,
+          "geometry": {
+            "x": 1970,
+            "y": 315,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "C01": {
+          "isSelected": false,
+          "geometry": {
+            "x": 3490,
+            "y": 1355,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "C02": {
+          "isSelected": false,
+          "geometry": {
+            "x": 1970,
+            "y": 55,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "C03": {
+          "isSelected": false,
+          "geometry": {
+            "x": 3680,
+            "y": 1355,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "C04": {
+          "isSelected": false,
+          "geometry": {
+            "x": 3870,
+            "y": 1355,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "C05": {
+          "isSelected": false,
+          "geometry": {
+            "x": 2160,
+            "y": 55,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "C06": {
+          "isSelected": false,
+          "geometry": {
+            "x": 2160,
+            "y": 2135,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "M01": {
+          "isSelected": false,
+          "geometry": {
+            "x": 2350,
+            "y": 2135,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "M02": {
+          "isSelected": false,
+          "geometry": {
+            "x": 830,
+            "y": 2915,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "M03": {
+          "isSelected": false,
+          "geometry": {
+            "x": 1400,
+            "y": 1875,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "M04": {
+          "isSelected": false,
+          "geometry": {
+            "x": 2350,
+            "y": 55,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "M05": {
+          "isSelected": false,
+          "geometry": {
+            "x": 1020,
+            "y": 2655,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "M06": {
+          "isSelected": false,
+          "geometry": {
+            "x": 1020,
+            "y": 2395,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "M07": {
+          "isSelected": false,
+          "geometry": {
+            "x": 640,
+            "y": 3175,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "M08": {
+          "isSelected": false,
+          "geometry": {
+            "x": 1020,
+            "y": 2915,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "M09": {
+          "isSelected": false,
+          "geometry": {
+            "x": 1020,
+            "y": 1615,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "M10": {
+          "isSelected": false,
+          "geometry": {
+            "x": 830,
+            "y": 3175,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "EVT_END": {
+          "isSelected": false,
+          "geometry": {
+            "x": 1020,
+            "y": 3175,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "LANE_INTL": {
+          "isSelected": false,
+          "geometry": {
+            "x": 0,
+            "y": 3380,
+            "width": 4300,
+            "height": 230
+          }
+        },
+        "LANE_COMPLIANCE": {
+          "isSelected": false,
+          "geometry": {
+            "x": 0,
+            "y": 3640,
+            "width": 4300,
+            "height": 230
+          }
+        },
+        "SYS_INTL_PORTAL": {
+          "isSelected": false,
+          "geometry": {
+            "x": 450,
+            "y": 3435,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "SYS_AGENT": {
+          "isSelected": false,
+          "geometry": {
+            "x": 640,
+            "y": 3435,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "SYS_CAS": {
+          "isSelected": false,
+          "geometry": {
+            "x": 450,
+            "y": 3695,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "EVT_INTL_APPS_OPEN": {
+          "isSelected": false,
+          "geometry": {
+            "x": 640,
+            "y": 3435,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "I01": {
+          "isSelected": false,
+          "geometry": {
+            "x": 450,
+            "y": 3435,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "I02": {
+          "isSelected": false,
+          "geometry": {
+            "x": 450,
+            "y": 55,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "G09": {
+          "isSelected": false,
+          "geometry": {
+            "x": 640,
+            "y": 55,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "I03": {
+          "isSelected": false,
+          "geometry": {
+            "x": 830,
+            "y": 55,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "I04": {
+          "isSelected": false,
+          "geometry": {
+            "x": 830,
+            "y": 3435,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "I05": {
+          "isSelected": false,
+          "geometry": {
+            "x": 1020,
+            "y": 3435,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "I06": {
+          "isSelected": false,
+          "geometry": {
+            "x": 1210,
+            "y": 1355,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "I07": {
+          "isSelected": false,
+          "geometry": {
+            "x": 1400,
+            "y": 1355,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "I08": {
+          "isSelected": false,
+          "geometry": {
+            "x": 1590,
+            "y": 3695,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "G10": {
+          "isSelected": false,
+          "geometry": {
+            "x": 1780,
+            "y": 3695,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "I09": {
+          "isSelected": false,
+          "geometry": {
+            "x": 1970,
+            "y": 1355,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "I10": {
+          "isSelected": false,
+          "geometry": {
+            "x": 1970,
+            "y": 3695,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "I11": {
+          "isSelected": false,
+          "geometry": {
+            "x": 2350,
+            "y": 3435,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "G11": {
+          "isSelected": false,
+          "geometry": {
+            "x": 2540,
+            "y": 3695,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "I12": {
+          "isSelected": false,
+          "geometry": {
+            "x": 2730,
+            "y": 3695,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "I13": {
+          "isSelected": false,
+          "geometry": {
+            "x": 2730,
+            "y": 1875,
+            "width": 150,
+            "height": 80
+          }
+        },
+        "I14": {
+          "isSelected": false,
+          "geometry": {
+            "x": 2540,
+            "y": 1875,
+            "width": 150,
+            "height": 80
+          }
+        }
+      },
+      "edges": {
+        "F001": {
+          "isSelected": false
+        },
+        "F002": {
+          "isSelected": false
+        },
+        "F003": {
+          "isSelected": false
+        },
+        "F004": {
+          "isSelected": false
+        },
+        "F005": {
+          "isSelected": false
+        },
+        "F006": {
+          "isSelected": false
+        },
+        "F007": {
+          "isSelected": false
+        },
+        "F008": {
+          "isSelected": false
+        },
+        "F009": {
+          "isSelected": false
+        },
+        "F010": {
+          "isSelected": false
+        },
+        "F011": {
+          "isSelected": false
+        },
+        "F012": {
+          "isSelected": false
+        },
+        "F013": {
+          "isSelected": false
+        },
+        "F014": {
+          "isSelected": false
+        },
+        "F015": {
+          "isSelected": false
+        },
+        "F016": {
+          "isSelected": false
+        },
+        "F017": {
+          "isSelected": false
+        },
+        "F018": {
+          "isSelected": false
+        },
+        "F019": {
+          "isSelected": false
+        },
+        "F020": {
+          "isSelected": false
+        },
+        "F021": {
+          "isSelected": false
+        },
+        "F022": {
+          "isSelected": false
+        },
+        "F023": {
+          "isSelected": false
+        },
+        "F024": {
+          "isSelected": false
+        },
+        "F025": {
+          "isSelected": false
+        },
+        "F026": {
+          "isSelected": false
+        },
+        "F027": {
+          "isSelected": false
+        },
+        "F028": {
+          "isSelected": false
+        },
+        "F029": {
+          "isSelected": false
+        },
+        "F030": {
+          "isSelected": false
+        },
+        "F031": {
+          "isSelected": false
+        },
+        "F032": {
+          "isSelected": false
+        },
+        "F033": {
+          "isSelected": false
+        },
+        "F034": {
+          "isSelected": false
+        },
+        "F035": {
+          "isSelected": false
+        },
+        "F036": {
+          "isSelected": false
+        },
+        "F037": {
+          "isSelected": false
+        },
+        "F038": {
+          "isSelected": false
+        },
+        "F039": {
+          "isSelected": false
+        },
+        "F040": {
+          "isSelected": false
+        },
+        "F041": {
+          "isSelected": false
+        },
+        "F042": {
+          "isSelected": false
+        },
+        "F043": {
+          "isSelected": false
+        },
+        "F044": {
+          "isSelected": false
+        },
+        "F045": {
+          "isSelected": false
+        },
+        "F046": {
+          "isSelected": false
+        },
+        "F047": {
+          "isSelected": false
+        },
+        "F048": {
+          "isSelected": false
+        },
+        "F049": {
+          "isSelected": false
+        },
+        "F050": {
+          "isSelected": false
+        },
+        "F051": {
+          "isSelected": false
+        },
+        "F052": {
+          "isSelected": false
+        },
+        "F053": {
+          "isSelected": false
+        },
+        "F054": {
+          "isSelected": false
+        },
+        "F055": {
+          "isSelected": false
+        },
+        "F056": {
+          "isSelected": false
+        },
+        "F057": {
+          "isSelected": false
+        },
+        "F058": {
+          "isSelected": false
+        },
+        "F059": {
+          "isSelected": false
+        },
+        "F060": {
+          "isSelected": false
+        },
+        "F061": {
+          "isSelected": false
+        },
+        "F062": {
+          "isSelected": false
+        },
+        "F063": {
+          "isSelected": false
+        },
+        "F064": {
+          "isSelected": false
+        },
+        "F065": {
+          "isSelected": false
+        },
+        "F066": {
+          "isSelected": false
+        },
+        "F067": {
+          "isSelected": false
+        },
+        "F068": {
+          "isSelected": false
+        },
+        "F069": {
+          "isSelected": false
+        },
+        "F070": {
+          "isSelected": false
+        },
+        "F071": {
+          "isSelected": false
+        },
+        "F072": {
+          "isSelected": false
+        },
+        "F073": {
+          "isSelected": false
+        },
+        "F074": {
+          "isSelected": false
+        },
+        "F075": {
+          "isSelected": false
+        },
+        "F076": {
+          "isSelected": false
+        },
+        "F077": {
+          "isSelected": false
+        },
+        "F078": {
+          "isSelected": false
+        },
+        "F079": {
+          "isSelected": false
+        },
+        "F080": {
+          "isSelected": false
+        },
+        "F081": {
+          "isSelected": false
+        },
+        "F082": {
+          "isSelected": false
+        },
+        "F083": {
+          "isSelected": false
+        },
+        "F084": {
+          "isSelected": false
+        },
+        "F085": {
+          "isSelected": false
+        },
+        "F086": {
+          "isSelected": false
+        },
+        "F087": {
+          "isSelected": false
+        },
+        "F088": {
+          "isSelected": false
+        },
+        "F089": {
+          "isSelected": false
+        },
+        "F090": {
+          "isSelected": false
+        },
+        "F091": {
+          "isSelected": false
+        },
+        "F092": {
+          "isSelected": false
+        },
+        "F093": {
+          "isSelected": false
+        },
+        "F094": {
+          "isSelected": false
+        },
+        "F095": {
+          "isSelected": false
+        },
+        "F096": {
+          "isSelected": false
+        },
+        "F097": {
+          "isSelected": false
+        },
+        "F098": {
+          "isSelected": false
+        },
+        "F099": {
+          "isSelected": false
+        },
+        "F100": {
+          "isSelected": false
+        },
+        "F101": {
+          "isSelected": false
+        },
+        "F102": {
+          "isSelected": false
+        },
+        "F103": {
+          "isSelected": false
+        },
+        "F104": {
+          "isSelected": false
+        },
+        "F105": {
+          "isSelected": false
+        },
+        "F106": {
+          "isSelected": false
+        },
+        "F107": {
+          "isSelected": false
+        },
+        "F108": {
+          "isSelected": false
+        },
+        "F109": {
+          "isSelected": false
+        },
+        "F110": {
+          "isSelected": false
+        },
+        "F111": {
+          "isSelected": false
+        },
+        "F112": {
+          "isSelected": false
+        },
+        "F113": {
+          "isSelected": false
+        },
+        "F114": {
+          "isSelected": false
+        },
+        "F115": {
+          "isSelected": false
+        },
+        "F116": {
+          "isSelected": false
+        },
+        "F117": {
+          "isSelected": false
+        },
+        "F118": {
+          "isSelected": false
+        },
+        "F119": {
+          "isSelected": false
+        },
+        "F120": {
+          "isSelected": false
+        },
+        "F111A": {
+          "isSelected": false
+        },
+        "F112A": {
+          "isSelected": false
+        },
+        "F112B": {
+          "isSelected": false
+        },
+        "F112C": {
+          "isSelected": false
+        },
+        "F112D": {
+          "isSelected": false
+        },
+        "F113A": {
+          "isSelected": false
+        },
+        "F113B": {
+          "isSelected": false
+        },
+        "F113C": {
+          "isSelected": false
+        },
+        "F113D": {
+          "isSelected": false
+        },
+        "F119A": {
+          "isSelected": false
+        },
+        "F119B": {
+          "isSelected": false
+        },
+        "F121": {
+          "isSelected": false
+        },
+        "F122": {
+          "isSelected": false
+        },
+        "F123": {
+          "isSelected": false
+        },
+        "F124": {
+          "isSelected": false
+        },
+        "F125": {
+          "isSelected": false
+        },
+        "F126": {
+          "isSelected": false
+        },
+        "F127": {
+          "isSelected": false
+        },
+        "F128": {
+          "isSelected": false
+        },
+        "F129": {
+          "isSelected": false
+        },
+        "F130": {
+          "isSelected": false
+        },
+        "F131": {
+          "isSelected": false
+        },
+        "F132A": {
+          "isSelected": false
+        },
+        "F132B": {
+          "isSelected": false
+        },
+        "F132C": {
+          "isSelected": false
+        },
+        "F133": {
+          "isSelected": false
+        },
+        "F134": {
+          "isSelected": false
+        },
+        "F135": {
+          "isSelected": false
+        },
+        "F136": {
+          "isSelected": false
+        },
+        "F137": {
+          "isSelected": false
+        },
+        "F138": {
+          "isSelected": false
+        },
+        "F139": {
+          "isSelected": false
+        },
+        "F140": {
+          "isSelected": false
+        },
+        "F141A": {
+          "isSelected": false
+        },
+        "F141B": {
+          "isSelected": false
+        },
+        "F141C": {
+          "isSelected": false
+        },
+        "F142": {
+          "isSelected": false
+        },
+        "F143": {
+          "isSelected": false
+        },
+        "F144": {
+          "isSelected": false
+        },
+        "F145": {
+          "isSelected": false
+        },
+        "F146": {
+          "isSelected": false
+        },
+        "F147": {
+          "isSelected": false
+        }
+      },
+      "isHydrated": true
+    }
+  }
+}

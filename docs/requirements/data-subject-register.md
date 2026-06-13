@@ -2,7 +2,7 @@
 
 > Status: Draft — Phase 1
 > Last updated: 2026-06-04
-> This register documents every category of personal data held by Revelation SRS, the lawful basis for processing, the sensitivity classification, and the applicable retention period. It satisfies the requirement of UK GDPR Article 30 (Records of Processing Activities) and supports principles §7 and §16.
+> This register documents every category of personal data held by Revelation SRS, the lawful basis for processing, the sensitivity classification, and the applicable retention period. It satisfies the requirement of UK GDPR Article 30 (Records of Processing Activities) and supports principles §7 and §17.
 >
 > **Sensitivity tiers**:
 > - **Standard Personal** — identifiable personal data with no special sensitivity

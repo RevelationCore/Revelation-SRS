@@ -17,6 +17,28 @@ All tiers use the same container images; differences are in composition and conf
 
 ---
 
+## Environment Lifecycle
+
+Each deployment tier supports a controlled environment lifecycle. The expected baseline environments are:
+
+| Environment | Purpose |
+|---|---|
+| **Development** | Local or shared engineering environment for feature work and integration debugging. |
+| **Test** | Automated integration, contract, migration, accessibility, and regression testing. |
+| **UAT** | Institution-led acceptance testing using configured workflows, roles, feature flags, and representative data. |
+| **Pre-production** | Production-like rehearsal environment for release candidates, operational runbooks, migrations, integrations, and performance checks. |
+| **Production** | Live service of record. |
+
+Additional environments may be created for training, sandbox demonstrations, supplier integration testing, or major change programmes.
+
+The same built artefact is promoted between environments. Promotion changes configuration, secrets, tenant data, feature flags, integration endpoints, and approval metadata; it does not rebuild application code. Each environment has isolated databases, secrets, identity configuration, plugin registrations, observability streams, and integration endpoints.
+
+Non-production environments must be production-like where it matters for safety: migrations, workflow execution, feature flag evaluation, integration contracts, audit, row-level security, and operational monitoring. Production data must not be copied into non-production without anonymisation, minimisation, access control, and explicit approval under privacy and security governance.
+
+UAT and pre-production may connect to external test endpoints or simulators. They must never send live statutory, financial, admissions, identity, or student communications traffic unless the environment has been explicitly approved for that purpose.
+
+---
+
 ## Local Development Stack (Docker Compose)
 
 The complete development environment starts from the Compose directory with `docker compose up -d`, or from the repository root with `docker compose -f infra/compose/docker-compose.yml up -d`. OrbStack provides the Docker runtime on macOS.

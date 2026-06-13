@@ -16,6 +16,8 @@ Revelation SRS is a fully open source Student Information System designed specif
 - **Pluggable architecture** — external systems and SRS modules integrate through a versioned, event-driven integration layer. Institutions substitute their own VLE, Finance, HR, or other systems without modifying core code.
 - **Bitemporal data** — all records that change over time store both valid-time and transaction-time history, enabling reconstruction of any past state for audit, regulatory returns, and board paper verification.
 - **Workflow-driven governance** — long-running processes (admissions, reasonable adjustments, exam board ratification, appeals) are managed by a durable workflow engine with human task assignment, deadline enforcement, and full audit trail.
+- **Feature-flagged process variation** — tenant administrators can enable modules, process variants, workflow steps, communications, and staged rollouts without forking the core platform.
+- **Environment promotion** — the same release artefacts can move through test, UAT, pre-production, and production with isolated data, secrets, integrations, and feature flag state.
 - **Multi-tenant** — a single deployment serves multiple institutions with complete database-layer data isolation.
 - **AGPL v3** — modifications made available over a network must be published under the same licence, keeping the ecosystem open.
 
@@ -25,7 +27,7 @@ Revelation SRS is a fully open source Student Information System designed specif
 
 | Document | Description |
 |---|---|
-| [Core Principles](docs/core-principles.md) | 20 non-negotiable principles governing design, development, and operation |
+| [Core Principles](docs/core-principles.md) | 21 non-negotiable principles governing design, development, and operation |
 | [Project Roadmap](docs/project-roadmap.md) | 11-phase development plan from requirements to open source release |
 | [Domain Glossary](docs/domain-glossary.md) | Authoritative definitions of all UK HE domain terms used in the system |
 | **Requirements** | |

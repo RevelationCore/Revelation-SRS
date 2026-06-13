@@ -5,7 +5,7 @@
 
 ## Context
 
-An HTTP API framework is required for all REST API surfaces. The framework must support TypeScript natively, produce OpenAPI 3.x specifications (principle §12), enforce JSON Schema validation at request boundaries, and perform well under the load targets defined in principle §17.
+An HTTP API framework is required for all REST API surfaces. The framework must support TypeScript natively, produce OpenAPI 3.x specifications (principle §12), enforce JSON Schema validation at request boundaries, and perform well under the load targets defined in principle §18.
 
 ## Decision
 

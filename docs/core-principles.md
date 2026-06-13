@@ -143,9 +143,9 @@ The primary persistence layer is a relational database (PostgreSQL). Data integr
 
 ---
 
-## 9. Containerised Deployment
+## 9. Containerised Deployment and Environment Promotion
 
-All services are containerised. The deployment topology is defined as code and version-controlled alongside the application. A single-command local developer environment is a hard requirement.
+All services are containerised. The deployment topology is defined as code and version-controlled alongside the application. A single-command local developer environment is a hard requirement, and the same release artefacts must be promotable through test, UAT, pre-production, and production environments without rebuild or code change.
 
 - Every service publishes a `Dockerfile` pinned to a specific base image version.
 - Environment-specific configuration is injected via environment variables; no configuration is baked into images.
@@ -154,6 +154,12 @@ All services are containerised. The deployment topology is defined as code and v
 - Container images are scanned for known vulnerabilities as part of the CI pipeline.
 - Services expose `/health` (liveness) and `/ready` (readiness) endpoints consumed by the orchestrator.
 - The deployment topology supports both single-institution (Docker Compose) and multi-institution (Kubernetes) configurations.
+- The platform supports multiple isolated non-production environments, including test, UAT, staging, and pre-production, as well as production.
+- Environment promotion is controlled and auditable: an artefact that has passed automated tests is promoted by configuration, approval, and deployment metadata rather than rebuilt for each environment.
+- Non-production environments must be production-like enough to validate integrations, workflows, migrations, feature flags, accessibility, security, performance, and operational runbooks.
+- Production data must not be copied into non-production environments unless it is anonymised, minimised, access-controlled, and approved under the privacy and security principles.
+- Each environment has isolated secrets, identity configuration, integration endpoints, feature flag state, tenant configuration, observability, audit, and data stores.
+- UAT and pre-production environments may connect to external test endpoints or simulators, but must never accidentally send live statutory, financial, admissions, identity, or student communications traffic.
 
 ---
 
@@ -218,7 +224,27 @@ Rules are stored as versioned, audited configuration within the system. The hist
 
 ---
 
-## 14. Record Lifecycle and Ratification Locking
+## 14. Feature Flags and Process Variation
+
+Optional capabilities, process variants, staged rollout controls, and tenant-specific working-practice differences are controlled through a first-class feature flag mechanism rather than code forks or hard-coded conditionals.
+
+Feature flags apply to, but are not limited to:
+
+- Enabling or disabling first-party modules and integration adapters.
+- Selecting workflow variants for admissions, enrolment, assessment, exam boards, appeals, wellbeing, and regulatory operations.
+- Controlling whether specific decision points, approval steps, human task assignments, communications, or downstream triggers are active for a tenant.
+- Rolling out new features progressively by tenant, role, cohort, programme, academic year, or controlled pilot group.
+- Switching between legacy and refactored process paths during migration.
+
+Flags are tenant-scoped by default and administered through authorised admin screens. Platform-level flags may exist for release management and operational safety, but tenant administrators must be able to manage institution-specific process variation where it does not compromise security, data integrity, regulatory compliance, or published integration contracts.
+
+Feature flag changes are audited, versioned, and time-aware. The system must be able to reconstruct which flags were active when a workflow decision, data change, communication, or integration trigger occurred. Long-running workflow instances record the flag configuration they were started under, or explicitly record when a flag change is adopted mid-process.
+
+Flags must not bypass mandatory legal, privacy, audit, security, or bitemporal integrity controls. A disabled feature may suppress optional workflow steps or integrations; it must not create inconsistent core data or hide statutory obligations.
+
+---
+
+## 15. Record Lifecycle and Ratification Locking
 
 Student academic records pass through a defined lifecycle from initial creation through to final ratification and long-term archiving. The lifecycle governs what changes are permissible at each stage and who may authorise them.
 
@@ -231,7 +257,7 @@ The record lock state is a first-class field on the academic record, not a deriv
 
 ---
 
-## 15. Accessible User Interface
+## 16. Accessible User Interface
 
 All user-facing interfaces must conform to **WCAG 2.1 Level AA** as a minimum standard. This is both a legal obligation (Public Sector Bodies Accessibility Regulations 2018) and a direct functional requirement given that the system manages disability declarations, reasonable adjustments, and support for students with accessibility needs.
 
@@ -241,7 +267,7 @@ All user-facing interfaces must conform to **WCAG 2.1 Level AA** as a minimum st
 
 ---
 
-## 16. Privacy by Design
+## 17. Privacy by Design
 
 Personal data handling is considered at the design stage of every feature, not as a retrofit.
 
@@ -254,7 +280,7 @@ Personal data handling is considered at the design stage of every feature, not a
 
 ---
 
-## 17. Performance and Scalability
+## 18. Performance and Scalability
 
 The system is designed to operate responsively under the load profile of a large UK HEI (up to 50,000 enrolled students, concurrent use by hundreds of staff, peak loads at enrolment, results publication, and clearing).
 
@@ -265,7 +291,7 @@ The system is designed to operate responsively under the load profile of a large
 
 ---
 
-## 18. Observability and Operational Readiness
+## 19. Observability and Operational Readiness
 
 The system is designed to be operated and diagnosed without requiring direct database access or code changes.
 
@@ -277,7 +303,7 @@ The system is designed to be operated and diagnosed without requiring direct dat
 
 ---
 
-## 19. UK Higher Education Domain Model Alignment
+## 20. UK Higher Education Domain Model Alignment
 
 The data model and service boundaries align with the Revelation Student Records Enterprise Reference Model (v2.1) and the UK HE sector's established data standards.
 
@@ -288,14 +314,14 @@ The data model and service boundaries align with the Revelation Student Records 
 
 ---
 
-## 20. Testability and Quality
+## 21. Testability and Quality
 
 Quality is a design-time concern. The codebase is structured to support automated testing at all levels.
 
 - **Unit tests** cover business logic, domain rules, and configuration-driven rule evaluation.
 - **Integration tests** cover persistence, workflow transitions, bitemporal query correctness, and inter-module contracts.
 - **Contract tests** cover integration points with external systems, verified against published OpenAPI specifications and event schemas.
-- **Performance tests** verify response time and throughput benchmarks (§17) under representative load.
+- **Performance tests** verify response time and throughput benchmarks (§18) under representative load.
 - **Security tests**: static analysis (SAST), dependency vulnerability scanning, and dynamic analysis (DAST) run in CI.
 - **Accessibility tests**: automated WCAG scanning runs against all UI components as part of CI; manual testing is performed prior to release.
 - All tests run in CI on every pull request. No code is merged with a failing test suite or a regression in security or accessibility scanning.
@@ -314,15 +340,16 @@ Quality is a design-time concern. The codebase is structured to support automate
 | 6 | Authentication & Authorisation | Security |
 | 7 | UK Regulatory Compliance | Legal obligation |
 | 8 | Relational Database | Data integrity |
-| 9 | Containerised Deployment | Operability |
+| 9 | Containerised Deployment and Environment Promotion | Operability |
 | 10 | Multi-Tenancy & Institutional Isolation | Architecture |
 | 11 | Open Source — GNU AGPL v3 | Governance |
 | 12 | Integration Architecture | Integration |
 | 13 | Configuration-Driven Business Rules | Adaptability |
-| 14 | Record Lifecycle & Ratification Locking | Academic governance |
-| 15 | Accessible User Interface | Inclusion & legal |
-| 16 | Privacy by Design | Data protection |
-| 17 | Performance & Scalability | Reliability |
-| 18 | Observability & Operational Readiness | Operations |
-| 19 | UK HE Domain Model Alignment | Semantic correctness |
-| 20 | Testability & Quality | Reliability |
+| 14 | Feature Flags and Process Variation | Adaptability |
+| 15 | Record Lifecycle & Ratification Locking | Academic governance |
+| 16 | Accessible User Interface | Inclusion & legal |
+| 17 | Privacy by Design | Data protection |
+| 18 | Performance & Scalability | Reliability |
+| 19 | Observability & Operational Readiness | Operations |
+| 20 | UK HE Domain Model Alignment | Semantic correctness |
+| 21 | Testability & Quality | Reliability |

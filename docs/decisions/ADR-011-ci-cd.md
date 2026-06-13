@@ -5,7 +5,7 @@
 
 ## Context
 
-Principle §20 requires all tests to run in CI on every pull request and no code to be merged with a failing test suite. The CI/CD tooling must be open source or free for open source projects, and must support container image building, vulnerability scanning, OpenAPI contract testing, and accessibility testing.
+Principle §21 requires all tests to run in CI on every pull request and no code to be merged with a failing test suite. The CI/CD tooling must be open source or free for open source projects, and must support container image building, vulnerability scanning, OpenAPI contract testing, and accessibility testing.
 
 ## Decision
 
