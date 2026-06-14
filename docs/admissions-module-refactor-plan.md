@@ -28,6 +28,13 @@ The Admissions module becomes the anti-corruption layer between messy pre-studen
 
 This plan depends on the platform alignment work in `docs/platform-workflow-feature-flag-alignment-plan.md`. Admissions should be the first full consumer of the lightweight workflow, decision-gateway audit, feature flag, trigger-rule, and environment-promotion foundations rather than implementing those concerns privately inside Admissions services.
 
+The platform alignment Stage 7 seed establishes the first Admissions workflow-control baseline:
+
+- Workflow definitions: `admissions-ucas-domestic`, `admissions-direct-domestic`, `admissions-international-direct`, `admissions-international-agent`, and `admissions-clearing`.
+- Shared handoff step: `handoff-to-srs-enrolment`; confirmed UCAS applications now enter this workflow handoff instead of directly creating enrolments in the UCAS adapter.
+- Decision evidence: use generic `workflow_decision_audit` with Admissions workflow instance, gateway, subject application, and policy metadata rather than a separate Admissions-only decision table unless later reporting proves that a specialised projection is required.
+- Feature flags: `admissions.enabled`, route-specific source flags, `admissions.cas-precheck.required`, and the retired legacy UCAS auto-enrolment flag retained for migration audit.
+
 ---
 
 ## Current State

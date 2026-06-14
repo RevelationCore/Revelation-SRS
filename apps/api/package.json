@@ -25,6 +25,7 @@
     "@revelation-srs/auth": "workspace:*",
     "@revelation-srs/db": "workspace:*",
     "@revelation-srs/domain": "workspace:*",
+    "@revelation-srs/workflow": "workspace:*",
     "@sinclair/typebox": "^0.34.0",
     "drizzle-orm": "^0.36.0",
     "fastify": "^5.0.0",

@@ -193,7 +193,7 @@ export class SlcService {
       programmeId: enrolment.programmeId,
       modeOfStudyCode: enrolment.modeOfStudyCode,
       confirmationType: mapSlcConfirmationType(enrolment.statusCode),
-      feeAmount: formatFeeAmount(feeRows[0]?.amountPence ?? null),
+      feeAmount: formatFeeAmount(feeRows[0]?.amountMinorUnits ?? null),
       startDate: enrolment.startDate,
       expectedEndDate: enrolment.expectedEndDate,
     };
@@ -374,7 +374,7 @@ function buildConfirmationRecord(
     programmeId: enrolment.programmeId,
     modeOfStudyCode: enrolment.modeOfStudyCode,
     confirmationType: mapSlcConfirmationType(enrolment.statusCode),
-    feeAmount: formatFeeAmount(fee?.amountPence ?? null),
+    feeAmount: formatFeeAmount(fee?.amountMinorUnits ?? null),
     startDate: enrolment.startDate,
     expectedEndDate: enrolment.expectedEndDate,
   };
@@ -386,9 +386,9 @@ function mapSlcConfirmationType(statusCode: string): 'enrolment' | 'withdrawal' 
   return 'enrolment';
 }
 
-function formatFeeAmount(amountPence: number | null): string | null {
-  if (amountPence === null) return null;
-  return (amountPence / 100).toFixed(2);
+function formatFeeAmount(amountMinorUnits: bigint | null): string | null {
+  if (amountMinorUnits === null) return null;
+  return (Number(amountMinorUnits) / 100).toFixed(2);
 }
 
 function hashPayload(payload: unknown): string {

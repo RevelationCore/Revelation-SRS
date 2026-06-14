@@ -44,9 +44,11 @@ export const personIdentities = pgTable('person_identity', {
   nationalityCode:    text('nationality_code'),
   domicileCode:       text('domicile_code'),
   ethnicityCode:      text('ethnicity_code'),  // special-category
-  emailInstitutional: text('email_institutional'),
-  emailPersonal:      text('email_personal'),
-  phoneMobile:        text('phone_mobile'),
+  emailInstitutional:      text('email_institutional'),
+  emailPersonal:           text('email_personal'),
+  phoneMobile:             text('phone_mobile'),
+  communicationLocaleCode: text('communication_locale_code'),  // BCP-47, e.g. 'en-GB'
+  preferredTimeZone:       text('preferred_time_zone'),        // IANA, e.g. 'Europe/London'
 });
 
 export type PersonIdentity    = typeof personIdentities.$inferSelect;

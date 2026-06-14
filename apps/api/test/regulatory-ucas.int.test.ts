@@ -46,7 +46,7 @@ afterAll(async () => {
 });
 
 describe('UCAS application ingest', () => {
-  it('creates a student and enrolment for confirmed applications and links the application', async () => {
+  it('starts an Admissions workflow handoff for confirmed applications', async () => {
     const res = await ctx.app.inject({
       method: 'POST',
       url: '/api/v1/regulatory/ucas/applications',
@@ -57,15 +57,31 @@ describe('UCAS application ingest', () => {
     expect(res.statusCode).toBe(201);
     const body = res.json<{ applicationId: string; linkedEnrolmentId: string | null }>();
     expect(body.applicationId).toMatch(/^[0-9a-f-]{36}$/);
-    expect(body.linkedEnrolmentId).toMatch(/^[0-9a-f-]{36}$/);
+    expect(body.linkedEnrolmentId).toBeNull();
 
-    const enrolment = await ctx.app.inject({
-      method: 'GET',
-      url: `/api/v1/enrolments/${body.linkedEnrolmentId}`,
-      headers: { authorization: `Bearer ${jwt}` },
-    });
-    expect(enrolment.statusCode).toBe(200);
-    expect(enrolment.json<{ ucasPersonalId: string }>().ucasPersonalId).toBe('9000000001');
+    const handoffRows = await ctx.db.execute(sql`
+      SELECT wi.workflow_code, wi.subject_entity_type, wi.subject_entity_id, wt.step_key, wt.assignee_role_code
+      FROM workflow_instance wi
+      JOIN workflow_task wt ON wt.workflow_instance_id = wi.id
+      WHERE wi.tenant_id = ${ctx.tenantId}
+        AND wi.subject_entity_type = 'ucas_application'
+        AND wi.subject_entity_id = ${body.applicationId}
+    `) as Array<{
+      workflow_code: string;
+      subject_entity_type: string;
+      subject_entity_id: string;
+      step_key: string;
+      assignee_role_code: string | null;
+    }>;
+    expect(handoffRows).toEqual([
+      expect.objectContaining({
+        workflow_code: 'admissions-ucas-domestic',
+        subject_entity_type: 'ucas_application',
+        subject_entity_id: body.applicationId,
+        step_key: 'handoff-to-srs-enrolment',
+        assignee_role_code: 'registry-administrator',
+      }),
+    ]);
 
     const appEvent = events.find((e) => e.type === 'srs.regulatory.ucas-application-received');
     expect(appEvent).toBeDefined();

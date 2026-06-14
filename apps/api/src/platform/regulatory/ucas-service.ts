@@ -4,7 +4,6 @@ import { and, eq, isNull } from 'drizzle-orm';
 import {
   enrolmentDownstreamTriggers,
   enrolments,
-  persons,
   ucasApplications,
   type Db,
   withTenantContext,
@@ -19,10 +18,14 @@ import {
 
 import type { EnrolmentService } from '../enrolment/service.js';
 import type { IntegrationBusPublisher } from '../integration-bus/publisher.js';
-import type { StudentService } from '../students/service.js';
+import type { AdmissionsService } from '../admissions/admissions-service.js';
+import type { FeatureFlagService } from '../platform-controls/feature-flag-service.js';
 import type { ValueSetService } from '../value-sets/service.js';
 
 import { RegulatoryExchangeService } from './exchange-service.js';
+
+export const ADMISSIONS_ENABLED_FLAG_KEY = 'admissions.enabled';
+export const ADMISSIONS_UCAS_ADAPTER_ENABLED_FLAG_KEY = 'admissions.ucas-adapter.enabled';
 
 export interface UcasApplicationPayload {
   ucasPersonalId: string;
@@ -92,9 +95,10 @@ export class UcasService {
     private readonly db: Db,
     private readonly valueSets: ValueSetService,
     private readonly eventBus: IntegrationBusPublisher,
-    private readonly students: StudentService,
     private readonly enrolmentsService: EnrolmentService,
     exchanges?: RegulatoryExchangeService,
+    private readonly admissionsService?: AdmissionsService,
+    private readonly featureFlags?: FeatureFlagService,
   ) {
     this.exchanges = exchanges ?? new RegulatoryExchangeService(db);
   }
@@ -170,9 +174,19 @@ export class UcasService {
       tenantId,
     });
 
-    if (payload.statusCode === 'confirmed' && !linkedEnrolmentId) {
-      linkedEnrolmentId = await this.#createLinkedEnrolment(tenantId, payload, actorId);
-      await this.#setLinkedEnrolment(applicationId, tenantId, linkedEnrolmentId);
+    if (
+      payload.statusCode === 'confirmed'
+      && !linkedEnrolmentId
+      && await this.#admissionsUcasWorkflowEnabled(tenantId)
+    ) {
+      await this.admissionsService?.startHandoff(tenantId, {
+        applicationId,
+        sourceApplicationReference: payload.ucasPersonalId,
+        source:     'ucas',
+        cycle:      payload.cycle,
+        statusCode: payload.statusCode,
+        rawPayload: payload,
+      }, actorId);
     }
 
     return { applicationId, linkedEnrolmentId };
@@ -321,99 +335,23 @@ export class UcasService {
     if (missing.length) throw new ValidationError('Invalid UCAS application payload', missing);
   }
 
-  async #createLinkedEnrolment(
-    tenantId: string,
-    payload: UcasApplicationPayload,
-    actorId: string,
-  ): Promise<string> {
-    const applicant = payload.applicant ?? {};
-    const enrolmentPayload = payload.enrolment ?? {};
-    const legalFirstName = payload.legalFirstName ?? applicant.givenNames;
-    const legalFamilyName = payload.legalFamilyName ?? applicant.familyName;
-    const modeOfStudyCode = payload.modeOfStudyCode ?? enrolmentPayload.modeOfStudyCode;
-    const academicYearOfEntry = payload.academicYearOfEntry ?? enrolmentPayload.academicYearOfEntry;
-    const startDate = payload.startDate ?? enrolmentPayload.startDate;
-
-    const missing: Array<{ field: string; message: string }> = [];
-    if (!legalFirstName) missing.push({ field: 'legalFirstName', message: 'Required to create a student from confirmed UCAS data' });
-    if (!legalFamilyName) missing.push({ field: 'legalFamilyName', message: 'Required to create a student from confirmed UCAS data' });
-    if (!modeOfStudyCode) missing.push({ field: 'modeOfStudyCode', message: 'Required to create an enrolment from confirmed UCAS data' });
-    if (!academicYearOfEntry) missing.push({ field: 'academicYearOfEntry', message: 'Required to create an enrolment from confirmed UCAS data' });
-    if (!startDate) missing.push({ field: 'startDate', message: 'Required to create an enrolment from confirmed UCAS data' });
-    if (missing.length) throw new ValidationError('Confirmed UCAS applications require student and enrolment data', missing);
-
-    // Deduplicate: reuse an existing person if one was already created for this UCAS applicant
-    // (covers retries, re-applications, and students from prior cycles who still have a record).
-    const existingPerson = await this.#findPersonByUcasId(tenantId, payload.ucasPersonalId);
-    let personId: string;
-    if (existingPerson) {
-      personId = existingPerson.id;
-    } else {
-      const personInput = {
-        legalFirstName: legalFirstName!,
-        legalFamilyName: legalFamilyName!,
-        sourceSystem: 'ucas',
-        sourceReference: payload.ucasPersonalId,
-        ...(payload.dateOfBirth ?? applicant.dateOfBirth
-          ? { dateOfBirth: (payload.dateOfBirth ?? applicant.dateOfBirth)! }
-          : {}),
-        ...(payload.emailPersonal ?? applicant.email
-          ? { emailPersonal: (payload.emailPersonal ?? applicant.email)! }
-          : {}),
-      };
-      const student = await this.students.createPerson(tenantId, personInput);
-      personId = student.personId;
-    }
-
-    return this.enrolmentsService.createEnrolment(
-      tenantId,
-      {
-        personId,
-        modeOfStudyCode: modeOfStudyCode!,
-        academicYearOfEntry: academicYearOfEntry!,
-        startDate: startDate!,
-        ucasPersonalId: payload.ucasPersonalId,
-        ...(payload.programmeId ?? enrolmentPayload.programmeId
-          ? { programmeId: (payload.programmeId ?? enrolmentPayload.programmeId)! }
-          : {}),
-        ...(payload.attendanceTypeCode ?? enrolmentPayload.attendanceTypeCode
-          ? { attendanceTypeCode: (payload.attendanceTypeCode ?? enrolmentPayload.attendanceTypeCode)! }
-          : {}),
-        ...(payload.expectedEndDate ?? enrolmentPayload.expectedEndDate
-          ? { expectedEndDate: (payload.expectedEndDate ?? enrolmentPayload.expectedEndDate)! }
-          : {}),
-        ...(payload.feeBandCode ?? enrolmentPayload.feeBandCode
-          ? { feeBandCode: (payload.feeBandCode ?? enrolmentPayload.feeBandCode)! }
-          : {}),
-        ...(payload.fundingSourceCode ?? enrolmentPayload.fundingSourceCode
-          ? { fundingSourceCode: (payload.fundingSourceCode ?? enrolmentPayload.fundingSourceCode)! }
-          : {}),
-        ...(payload.slcReference ?? enrolmentPayload.slcReference
-          ? { slcReference: (payload.slcReference ?? enrolmentPayload.slcReference)! }
-          : {}),
-        ...(payload.ukviCasRequired ?? enrolmentPayload.ukviCasRequired
-          ? { ukviCasRequired: (payload.ukviCasRequired ?? enrolmentPayload.ukviCasRequired)! }
-          : {}),
-      },
-      actorId,
-    );
+  async #admissionsUcasWorkflowEnabled(tenantId: string): Promise<boolean> {
+    if (!this.admissionsService) return false;
+    if (!this.featureFlags) return true;
+    const admissionsEnabled = await this.#evaluateBooleanFlag(tenantId, ADMISSIONS_ENABLED_FLAG_KEY, true);
+    const ucasAdapterEnabled = await this.#evaluateBooleanFlag(tenantId, ADMISSIONS_UCAS_ADAPTER_ENABLED_FLAG_KEY, true);
+    return shouldStartUcasAdmissionsWorkflow({ admissionsEnabled, ucasAdapterEnabled });
   }
 
-  async #findPersonByUcasId(tenantId: string, ucasPersonalId: string): Promise<{ id: string } | null> {
-    const rows = await withTenantContext(this.db, tenantId, async (tx) =>
-      tx
-        .select({ id: persons.id })
-        .from(persons)
-        .where(
-          and(
-            eq(persons.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
-            eq(persons.sourceSystem, 'ucas'),
-            eq(persons.sourceReference, ucasPersonalId),
-          ),
-        )
-        .limit(1),
-    );
-    return rows[0] ?? null;
+  async #evaluateBooleanFlag(tenantId: string, flagKey: string, fallback: boolean): Promise<boolean> {
+    if (!this.featureFlags) return fallback;
+    try {
+      const flag = await this.featureFlags.getFlagByKey(flagKey);
+      const result = await this.featureFlags.evaluatePreview(flag.featureFlagId, { tenantId });
+      return result.value === true || result.variantKey === 'on';
+    } catch {
+      return fallback;
+    }
   }
 
   async #findCurrentByApplicantCycle(tenantId: string, ucasPersonalId: string, cycle: string) {
@@ -545,4 +483,11 @@ function mapConfirmationType(statusCode: string): 'enrolled' | 'withdrawn' | 'de
 
 function hashPayload(payload: unknown): string {
   return createHash('sha256').update(JSON.stringify(payload)).digest('hex');
+}
+
+export function shouldStartUcasAdmissionsWorkflow(input: {
+  admissionsEnabled: boolean;
+  ucasAdapterEnabled: boolean;
+}): boolean {
+  return input.admissionsEnabled && input.ucasAdapterEnabled;
 }

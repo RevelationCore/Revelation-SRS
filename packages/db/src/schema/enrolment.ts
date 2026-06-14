@@ -1,4 +1,4 @@
-import { date, integer, jsonb, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { bigint, date, jsonb, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { pgTable } from 'drizzle-orm/pg-core';
 
 import { bitemporalColumns } from '../temporal.js';
@@ -73,9 +73,11 @@ export const feeLiabilities = pgTable('fee_liability', {
   academicYear:      text('academic_year').notNull(),
   feeBandCode:       text('fee_band_code'),
   fundingSourceCode: text('funding_source_code'),
-  amountPence:       integer('amount_pence'),
-  statusCode:        text('status_code').notNull().default('generated'),
-  generatedAt:       timestamp('generated_at', { withTimezone: true }).notNull().defaultNow(),
+  // Currency-aware monetary fields (Stage 1, Clean SRS Convergence).
+  currencyCode:       text('currency_code').notNull().default('GBP'),
+  amountMinorUnits:   bigint('amount_minor_units', { mode: 'bigint' }),
+  statusCode:         text('status_code').notNull().default('generated'),
+  generatedAt:        timestamp('generated_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
 export type FeeLiability = typeof feeLiabilities.$inferSelect;

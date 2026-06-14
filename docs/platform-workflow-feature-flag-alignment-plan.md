@@ -167,6 +167,8 @@ The existing `PERMISSION_ROLES` can remain as bootstrap RBAC, but tenant-specifi
 
 ### Stage 0 — Baseline and Safety Net
 
+Status: Complete. See `docs/platform-workflow-feature-flag-stage-0-baseline.md` and `docs/decisions/ADR-015-workflow-feature-flags-and-environment-promotion.md`.
+
 Goal: freeze current behaviour before changing orchestration.
 
 Tasks:
@@ -190,6 +192,8 @@ Exit criteria:
 
 ### Stage 1 — Platform Schema
 
+Status: Complete. Implemented in `packages/db/migrations/0009_platform_workflow_feature_flags.sql` and `packages/db/src/schema/platform-workflow.ts`.
+
 Goal: add workflow, flag, and environment substrate without changing domain behaviour.
 
 Tasks:
@@ -207,6 +211,8 @@ Exit criteria:
 - No domain service uses the new tables yet.
 
 ### Stage 2 — Platform Services and Admin APIs
+
+Status: Complete. Implemented platform control services and admin APIs for workflow reads, feature flag configuration/evaluation, and environment metadata/promotion records.
 
 Goal: expose the substrate through stable services and APIs.
 
@@ -234,6 +240,8 @@ Exit criteria:
 
 ### Stage 3 — Temporal Bridge
 
+Status: Complete. Implemented generic Temporal workflow contracts, injectable workflow/audit activities, API-side bridge activities, minimal workflow start/completion APIs, and `srs.workflow.*` event publication.
+
 Goal: connect the relational workflow model to durable execution.
 
 Tasks:
@@ -251,6 +259,8 @@ Exit criteria:
 
 ### Stage 4 — Extract Common Transition Logic
 
+Status: Complete. Added shared transition validation/audit helpers and refactored enrolment and correction-case transitions to use them while preserving the default transition matrices.
+
 Goal: stop each service inventing its own state-machine pattern.
 
 Tasks:
@@ -267,6 +277,8 @@ Exit criteria:
 - Transition rules can be changed in configuration for a test tenant without code changes.
 
 ### Stage 5 — Configurable Trigger Rules
+
+Status: Complete. Added the enrolment trigger-rule evaluator, seeded default UCAS/SLC/UKVI/future communication trigger rules plus the default-off trigger-mode flag, and refactored enrolment creation/status trigger creation to record trigger-rule evidence while preserving legacy default behaviour.
 
 Goal: move downstream side effects out of hard-coded service branches.
 
@@ -288,6 +300,8 @@ Exit criteria:
 
 ### Stage 6 — Role Responsibility Configuration
 
+Status: Complete. Added tenant-scoped workflow assignment rules, assignment-rule APIs, rule-based workflow task ownership resolution, and dynamic task-completion guards that preserve baseline RBAC while allowing registry-led and school-led tenant variants.
+
 Goal: support different institutional working practices.
 
 Tasks:
@@ -300,12 +314,20 @@ Tasks:
   - Registry-led decision route
   - School/admissions-led decision route
 
+Admin API/UI requirements:
+
+- Administrators can list and create workflow assignment rules scoped by workflow version, step, initiating role, organisational unit, programme, and source system.
+- Task assignment screens should display the resolved assignment reason, rule key, and assignee role/expression from the task payload.
+- Completion actions should remain hidden or disabled unless the actor has the assigned role or actor-specific assignment; server-side RBAC remains authoritative.
+
 Exit criteria:
 
 - Workflow task assignment is tenant-configurable.
 - RBAC still prevents unauthorised completion even when task assignment changes.
 
 ### Stage 7 — Admissions as First Full Consumer
+
+Status: Complete. Seeded source-neutral Admissions workflow definitions for UCAS domestic, direct domestic, international direct, international agent, and clearing routes; mapped BPMN gateway IDs into generic workflow decision gateways; seeded Admissions feature flags; and placed legacy UCAS auto-enrolment behind an explicit migration flag while preserving the default behaviour.
 
 Goal: implement Admissions on the new platform controls.
 
@@ -339,6 +361,8 @@ Exit criteria:
 
 ### Stage 8 — Remove Legacy Hard-Coding
 
+Status: Complete. Removed direct UCAS-to-enrolment creation from `UcasService`, routed confirmed UCAS applications to the Admissions workflow handoff, made configured enrolment trigger rules the default, added a migration to relax tenant-extensible business-code `CHECK` constraints, and documented retained hard invariants in `docs/platform-workflow-feature-flag-stage-8-invariants.md`.
+
 Goal: retire old process branches once workflow-backed paths are proven.
 
 Tasks:
@@ -356,6 +380,8 @@ Exit criteria:
 - No duplicate process truth exists for Admissions and enrolment handoff.
 
 ### Stage 9 — Environment Promotion Hardening
+
+Status: Complete. Added startup deployment metadata, `/api/v1/environment-runtime` reporting for environment/release/migration/workflow/flag state, integration endpoint safety classes, promotion metadata enrichment, and outbound live-endpoint guardrails for non-production environments.
 
 Goal: make test/UAT/pre-production/production behaviour explicit and safe.
 

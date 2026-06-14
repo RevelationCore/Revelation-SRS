@@ -57,6 +57,34 @@
       "when": 1748995207000,
       "tag": "0007_seed_phase6_field_mappings",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1748995208000,
+      "tag": "0008_phase6_remediation",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1748995209000,
+      "tag": "0009_platform_workflow_feature_flags",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1748995210000,
+      "tag": "0010_relax_extensible_code_checks",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1748995211000,
+      "tag": "0011_environment_promotion_hardening",
+      "breakpoints": true
     }
   ]
 }

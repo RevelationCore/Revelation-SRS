@@ -112,6 +112,28 @@ describe('Module registrations', () => {
       ]);
   });
 
+  it('rejects transitions once a module registration is no longer registered', async () => {
+    const moduleId = await createModule('REG102B', 'Closed Registration Module');
+    const moduleOfferingId = await createOffering(moduleId, 20);
+    const moduleRegistrationId = await createRegistration(enrolmentId, moduleOfferingId);
+
+    const withdraw = await ctx.app.inject({
+      method: 'POST',
+      url: `/api/v1/module-registrations/${moduleRegistrationId}/withdrawal`,
+      headers: { authorization: `Bearer ${jwt}` },
+      payload: { validFrom: '2026-11-01T00:00:00.000Z' },
+    });
+    expect(withdraw.statusCode).toBe(204);
+
+    const complete = await ctx.app.inject({
+      method: 'POST',
+      url: `/api/v1/module-registrations/${moduleRegistrationId}/completion`,
+      headers: { authorization: `Bearer ${jwt}` },
+      payload: { validFrom: '2026-11-02T00:00:00.000Z' },
+    });
+    expect(complete.statusCode).toBe(422);
+  });
+
   it('does not expose a module registration to a different tenant', async () => {
     const moduleId = await createModule('REG103', 'Tenant Isolation Module');
     const moduleOfferingId = await createOffering(moduleId, 20);

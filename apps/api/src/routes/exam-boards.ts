@@ -8,7 +8,9 @@ import type {
   CandidateProfileDto,
   CreateExamBoardInput,
   DataPackDto,
+  DeferBoardInput,
   ExamBoardDto,
+  RecordQuorumInput,
 } from '../platform/governance/board-service.js';
 
 const ErrorSchema = Type.Object({
@@ -19,14 +21,26 @@ const ErrorSchema = Type.Object({
 });
 
 const ExamBoardSchema = Type.Object({
-  examBoardId: Type.String(),
-  boardTypeCode: Type.String(),
-  academicYear: Type.String(),
+  examBoardId:      Type.String(),
+  boardTypeCode:    Type.String(),
+  academicYear:     Type.String(),
   academicPeriodId: Type.Union([Type.String(), Type.Null()]),
-  meetingDate: Type.Union([Type.String(), Type.Null()]),
-  ratifiedAt: Type.Union([Type.String(), Type.Null()]),
-  actorId: Type.String(),
-  createdAt: Type.String(),
+  meetingDate:      Type.Union([Type.String(), Type.Null()]),
+  ratifiedAt:       Type.Union([Type.String(), Type.Null()]),
+  deferredAt:       Type.Union([Type.String(), Type.Null()]),
+  deferralReason:   Type.Union([Type.String(), Type.Null()]),
+  quorumCount:      Type.Union([Type.Number(), Type.Null()]),
+  quorumRecordedAt: Type.Union([Type.String(), Type.Null()]),
+  actorId:          Type.String(),
+  createdAt:        Type.String(),
+});
+
+const DeferBoardBody = Type.Object({
+  reason: Type.Optional(Type.String()),
+});
+
+const QuorumBody = Type.Object({
+  memberCount: Type.Integer({ minimum: 1 }),
 });
 
 const DataPackSchema = Type.Object({
@@ -426,13 +440,104 @@ export function examBoardRoutes(fastify: FastifyInstance): void {
       await reply.code(204).send();
     },
   );
+
+  // ── Deferral ──────────────────────────────────────────────────────────────
+
+  fastify.post(
+    '/exam-boards/:boardId/deferral',
+    {
+      schema: {
+        params: Type.Object({ boardId: Type.String() }),
+        body: DeferBoardBody,
+        response: { 204: Type.Null(), 404: ErrorSchema, 422: ErrorSchema },
+      },
+      preHandler: [requirePermission('exam-board:write')],
+    },
+    async (request, reply) => {
+      const { boardId } = request.params as { boardId: string };
+      const body = request.body as DeferBoardInput;
+      await fastify.boardService.deferBoard(boardId, request.tenantId, request.user.sub, body);
+      await fastify.audit.record({
+        tenantId:         request.tenantId,
+        entityType:       'exam_board',
+        entityId:         boardId,
+        actionType:       'update',
+        actorType:        'user',
+        actorId:          request.user.sub,
+        actorDisplayName: request.user.displayName,
+        correlationId:    request.id,
+        reasonText:       'Exam board deferred',
+      });
+      await reply.code(204).send();
+    },
+  );
+
+  fastify.delete(
+    '/exam-boards/:boardId/deferral',
+    {
+      schema: {
+        params: Type.Object({ boardId: Type.String() }),
+        response: { 204: Type.Null(), 404: ErrorSchema, 422: ErrorSchema },
+      },
+      preHandler: [requirePermission('exam-board:write')],
+    },
+    async (request, reply) => {
+      const { boardId } = request.params as { boardId: string };
+      await fastify.boardService.reopenBoard(boardId, request.tenantId, request.user.sub);
+      await fastify.audit.record({
+        tenantId:         request.tenantId,
+        entityType:       'exam_board',
+        entityId:         boardId,
+        actionType:       'update',
+        actorType:        'user',
+        actorId:          request.user.sub,
+        actorDisplayName: request.user.displayName,
+        correlationId:    request.id,
+        reasonText:       'Exam board deferral removed (board re-opened)',
+      });
+      await reply.code(204).send();
+    },
+  );
+
+  // ── Quorum ────────────────────────────────────────────────────────────────
+
+  fastify.post(
+    '/exam-boards/:boardId/quorum',
+    {
+      schema: {
+        params: Type.Object({ boardId: Type.String() }),
+        body: QuorumBody,
+        response: { 204: Type.Null(), 404: ErrorSchema, 422: ErrorSchema },
+      },
+      preHandler: [requirePermission('exam-board:ratify')],
+    },
+    async (request, reply) => {
+      const { boardId } = request.params as { boardId: string };
+      const body = request.body as RecordQuorumInput;
+      await fastify.boardService.recordQuorum(boardId, request.tenantId, body.memberCount, request.user.sub);
+      await fastify.audit.record({
+        tenantId:         request.tenantId,
+        entityType:       'exam_board',
+        entityId:         boardId,
+        actionType:       'update',
+        actorType:        'user',
+        actorId:          request.user.sub,
+        actorDisplayName: request.user.displayName,
+        correlationId:    request.id,
+        reasonText:       `Quorum recorded: ${body.memberCount} member(s)`,
+      });
+      await reply.code(204).send();
+    },
+  );
 }
 
 function boardToWire(board: ExamBoardDto) {
   return {
     ...board,
-    ratifiedAt: board.ratifiedAt?.toISOString() ?? null,
-    createdAt: board.createdAt.toISOString(),
+    ratifiedAt:       board.ratifiedAt?.toISOString() ?? null,
+    deferredAt:       board.deferredAt?.toISOString() ?? null,
+    quorumRecordedAt: board.quorumRecordedAt?.toISOString() ?? null,
+    createdAt:        board.createdAt.toISOString(),
   };
 }
 

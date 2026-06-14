@@ -8,6 +8,7 @@ import type {
   OpenCaseInput,
   CaseStatusCode,
 } from '../platform/governance/correction-service.js';
+import { transitionAuditValue } from '../platform/workflow/transition-service.js';
 
 const ErrorSchema = Type.Object({
   type:    Type.String(),
@@ -103,14 +104,19 @@ export function correctionCasesRoutes(fastify: FastifyInstance): void {
     async (request, reply) => {
       const { caseId } = request.params as { caseId: string };
       const { statusCode } = request.body as { statusCode: CaseStatusCode };
-      await fastify.correctionService.advanceCaseStatus(caseId, request.tenantId, statusCode, request.user.sub);
+      const transitionDecision = await fastify.correctionService.advanceCaseStatus(
+        caseId,
+        request.tenantId,
+        statusCode,
+        request.user.sub,
+      );
 
       await fastify.audit.record({
         tenantId:         request.tenantId,
         entityType:       'post_ratification_case',
         entityId:         caseId,
         fieldName:        'status_code',
-        afterValue:       { statusCode },
+        afterValue:       transitionAuditValue(transitionDecision),
         actionType:       'update',
         actorType:        'user',
         actorId:          request.user.sub,

@@ -36,7 +36,16 @@ import type {
 
 import type { AwardService } from '../progression/award-service.js';
 import type { IntegrationBusPublisher } from '../integration-bus/publisher.js';
+import type { FeatureFlagService } from '../platform-controls/feature-flag-service.js';
 import type { ValueSetService } from '../value-sets/service.js';
+
+export interface DeferBoardInput {
+  reason?: string;
+}
+
+export interface RecordQuorumInput {
+  memberCount: number;
+}
 
 export interface CreateExamBoardInput {
   boardTypeCode: string;
@@ -46,14 +55,18 @@ export interface CreateExamBoardInput {
 }
 
 export interface ExamBoardDto {
-  examBoardId: string;
-  boardTypeCode: string;
-  academicYear: string;
+  examBoardId:      string;
+  boardTypeCode:    string;
+  academicYear:     string;
   academicPeriodId: string | null;
-  meetingDate: string | null;
-  ratifiedAt: Date | null;
-  actorId: string;
-  createdAt: Date;
+  meetingDate:      string | null;
+  ratifiedAt:       Date | null;
+  deferredAt:       Date | null;
+  deferralReason:   string | null;
+  quorumCount:      number | null;
+  quorumRecordedAt: Date | null;
+  actorId:          string;
+  createdAt:        Date;
 }
 
 export interface DataPackDto {
@@ -93,15 +106,19 @@ export interface SignoffDto {
 }
 
 interface BoardRow {
-  id: string;
-  tenantId: string;
-  boardTypeCode: string;
-  academicYear: string;
+  id:               string;
+  tenantId:         string;
+  boardTypeCode:    string;
+  academicYear:     string;
   academicPeriodId: string | null;
-  meetingDate: string | null;
-  ratifiedAt: Date | null;
-  actorId: string;
-  createdAt: Date;
+  meetingDate:      string | null;
+  ratifiedAt:       Date | null;
+  deferredAt:       Date | null;
+  deferralReason:   string | null;
+  quorumCount:      number | null;
+  quorumRecordedAt: Date | null;
+  actorId:          string;
+  createdAt:        Date;
 }
 
 interface CandidateRegistration {
@@ -125,10 +142,11 @@ interface CoveredModuleResult {
 
 export class BoardService {
   constructor(
-    private readonly db:          Db,
-    private readonly eventBus:    IntegrationBusPublisher,
-    private readonly valueSets:   ValueSetService,
-    private readonly awardService?: AwardService,
+    private readonly db:             Db,
+    private readonly eventBus:       IntegrationBusPublisher,
+    private readonly valueSets:      ValueSetService,
+    private readonly awardService?:  AwardService,
+    private readonly featureFlags?:  FeatureFlagService,
   ) {}
 
   async createExamBoard(tenantId: string, input: CreateExamBoardInput, actorId: string): Promise<string> {
@@ -307,6 +325,83 @@ export class BoardService {
     return rows[0]!.id;
   }
 
+  async deferBoard(examBoardId: string, tenantId: string, actorId: string, input: DeferBoardInput): Promise<void> {
+    const deferralEnabled = await this.#evaluateBooleanFlag(tenantId, 'exam-board.deferral.enabled', false);
+    if (!deferralEnabled) {
+      throw new ValidationError(
+        'Board deferral is not enabled for this tenant',
+        [{ field: 'examBoardId', message: 'Set exam-board.deferral.enabled flag to on to allow deferrals' }],
+      );
+    }
+
+    const board = await this.#getBoard(examBoardId, tenantId);
+    if (board.ratifiedAt) {
+      throw new ValidationError('A ratified board cannot be deferred', [
+        { field: 'examBoardId', message: 'Board is already ratified' },
+      ]);
+    }
+    if (board.deferredAt) {
+      throw new ValidationError('Board is already deferred', [
+        { field: 'examBoardId', message: 'Board has already been deferred; reopen it first' },
+      ]);
+    }
+
+    await withTenantContext(this.db, tenantId, async (tx) => {
+      await tx.update(examBoards)
+        .set({ deferredAt: new Date(), deferralReason: input.reason ?? null })
+        .where(and(
+          eq(examBoards.id, examBoardId as `${string}-${string}-${string}-${string}-${string}`),
+          eq(examBoards.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
+        ));
+    });
+  }
+
+  async reopenBoard(examBoardId: string, tenantId: string, actorId: string): Promise<void> {
+    const board = await this.#getBoard(examBoardId, tenantId);
+    if (board.ratifiedAt) {
+      throw new ValidationError('A ratified board cannot be re-opened', [
+        { field: 'examBoardId', message: 'Board is already ratified' },
+      ]);
+    }
+    if (!board.deferredAt) {
+      throw new ValidationError('Board is not deferred', [
+        { field: 'examBoardId', message: 'Only a deferred board can be re-opened' },
+      ]);
+    }
+
+    await withTenantContext(this.db, tenantId, async (tx) => {
+      await tx.update(examBoards)
+        .set({ deferredAt: null, deferralReason: null })
+        .where(and(
+          eq(examBoards.id, examBoardId as `${string}-${string}-${string}-${string}-${string}`),
+          eq(examBoards.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
+        ));
+    });
+  }
+
+  async recordQuorum(examBoardId: string, tenantId: string, memberCount: number, actorId: string): Promise<void> {
+    const board = await this.#getBoard(examBoardId, tenantId);
+    if (board.ratifiedAt) {
+      throw new ValidationError('Quorum cannot be recorded on a ratified board', [
+        { field: 'examBoardId', message: 'Board is already ratified' },
+      ]);
+    }
+    if (memberCount < 1) {
+      throw new ValidationError('Member count must be at least 1', [
+        { field: 'memberCount', message: 'Quorum count must be a positive integer' },
+      ]);
+    }
+
+    await withTenantContext(this.db, tenantId, async (tx) => {
+      await tx.update(examBoards)
+        .set({ quorumCount: memberCount, quorumRecordedAt: new Date() })
+        .where(and(
+          eq(examBoards.id, examBoardId as `${string}-${string}-${string}-${string}-${string}`),
+          eq(examBoards.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
+        ));
+    });
+  }
+
   async ratifyBoard(examBoardId: string, tenantId: string, actorId: string): Promise<void> {
     const board = await this.#getBoard(examBoardId, tenantId);
     if (board.ratifiedAt) {
@@ -315,10 +410,30 @@ export class BoardService {
       ]);
     }
 
+    if (board.deferredAt) {
+      throw new ValidationError('A deferred board cannot be ratified; reopen it first', [
+        { field: 'examBoardId', message: 'Board is deferred' },
+      ]);
+    }
+
+    // Always fetch — needed for the event payload regardless of flag state
     const externalExaminerConfirmedAt = await this.#getLatestExternalExaminerSignoffAt(examBoardId, tenantId);
-    if (!externalExaminerConfirmedAt) {
+
+    // Stage 4: external-examiner.required is now flag-controlled (default on for UK statutory compliance)
+    const externalExaminerRequired = await this.#evaluateBooleanFlag(
+      tenantId, 'exam-board.external-examiner.required', true,
+    );
+    if (externalExaminerRequired && !externalExaminerConfirmedAt) {
       throw new ValidationError('External examiner sign-off is required before ratification', [
         { field: 'externalExaminerSignoff', message: 'External examiner sign-off is required before ratification' },
+      ]);
+    }
+
+    // Stage 4: quorum guard — only enforced when flag is on
+    const quorumRequired = await this.#evaluateBooleanFlag(tenantId, 'exam-board.quorum.required', false);
+    if (quorumRequired && board.quorumCount === null) {
+      throw new ValidationError('Quorum must be recorded before ratification', [
+        { field: 'quorumCount', message: 'Record a quorum count first (POST /exam-boards/:id/quorum)' },
       ]);
     }
 
@@ -384,7 +499,7 @@ export class BoardService {
       boardTypeCode: board.boardTypeCode,
       academicYear: board.academicYear,
       ratifiedAt: ratifiedAt.toISOString(),
-      externalExaminerConfirmedAt: externalExaminerConfirmedAt.toISOString(),
+      externalExaminerConfirmedAt: externalExaminerConfirmedAt?.toISOString() ?? '',
     };
     await this.eventBus.publish(
       EVENT_TYPES.GOVERNANCE_EXAM_BOARD_RATIFIED,
@@ -824,6 +939,18 @@ export class BoardService {
     return rows[0]!.academicYear;
   }
 
+  async #evaluateBooleanFlag(tenantId: string, flagKey: string, fallback: boolean): Promise<boolean> {
+    if (!this.featureFlags) return fallback;
+    try {
+      const flag = await this.featureFlags.getFlagByKey(flagKey);
+      if (!flag) return fallback;
+      const result = await this.featureFlags.evaluatePreview(flag.featureFlagId, { tenantId });
+      return result.value === true || result.variantKey === 'on';
+    } catch {
+      return fallback;
+    }
+  }
+
   async #validateBoardType(tenantId: string, boardTypeCode: string): Promise<void> {
     const isValid = await this.valueSets.validateFieldValue('exam_board', 'board_type_code', boardTypeCode, tenantId);
     if (isValid === false) {
@@ -837,14 +964,18 @@ export class BoardService {
 
 function boardToDto(row: BoardRow): ExamBoardDto {
   return {
-    examBoardId: row.id,
-    boardTypeCode: row.boardTypeCode,
-    academicYear: row.academicYear,
+    examBoardId:      row.id,
+    boardTypeCode:    row.boardTypeCode,
+    academicYear:     row.academicYear,
     academicPeriodId: row.academicPeriodId,
-    meetingDate: row.meetingDate,
-    ratifiedAt: row.ratifiedAt,
-    actorId: row.actorId,
-    createdAt: row.createdAt,
+    meetingDate:      row.meetingDate,
+    ratifiedAt:       row.ratifiedAt,
+    deferredAt:       row.deferredAt,
+    deferralReason:   row.deferralReason,
+    quorumCount:      row.quorumCount,
+    quorumRecordedAt: row.quorumRecordedAt,
+    actorId:          row.actorId,
+    createdAt:        row.createdAt,
   };
 }
 

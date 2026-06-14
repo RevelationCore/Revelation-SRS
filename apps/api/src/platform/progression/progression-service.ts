@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, eq, isNull, sql } from 'drizzle-orm';
 import {
   academicPeriods,
   enrolments,
@@ -59,6 +59,13 @@ interface ProgressionRules {
   condonementThreshold: number | null;
 }
 
+interface DecisionEvidence {
+  earnedCredits: number;
+  compensationCredits: number;
+  unresolvedCredits: number;
+  decisionCode: string;
+}
+
 export class ProgressionService {
   constructor(
     private readonly db: Db,
@@ -75,7 +82,8 @@ export class ProgressionService {
     const enrolment = await this.#getEnrolment(enrolmentId, tenantId);
     const outcomes = await this.#getModuleOutcomes(enrolmentId, tenantId, academicYear);
     const rules = await this.#getProgressionRules(tenantId, enrolment.programmeId, academicYear, outcomes);
-    const decisionCode = this.#decide(outcomes, rules);
+    const evidence = this.#decide(outcomes, rules);
+    const { decisionCode } = evidence;
     const current = await this.#getCurrentDecision(enrolmentId, tenantId, academicYear);
     if (current) assertNotLocked(current, 'ProgressionDecision', current.progressionDecisionId);
 
@@ -111,6 +119,8 @@ export class ProgressionService {
         recordedUntil: null,
       });
     });
+
+    await this.#writeProgressionEvidence(tenantId, progressionDecisionId, academicYear, rules, evidence);
 
     if (this.eventBus.isConnected()) {
       const payload: ProgressionDecidedV1Payload = {
@@ -317,7 +327,7 @@ export class ProgressionService {
     }
   }
 
-  #decide(outcomes: ModuleOutcome[], rules: ProgressionRules): string {
+  #decide(outcomes: ModuleOutcome[], rules: ProgressionRules): DecisionEvidence {
     let earnedCredits = 0;
     let compensationCredits = 0;
     let unresolvedCredits = 0;
@@ -346,9 +356,38 @@ export class ProgressionService {
       unresolvedCredits += outcome.creditValue;
     }
 
-    if (earnedCredits >= rules.requiredCredits) return 'progress';
-    if (unresolvedCredits > 0 || outcomes.length > 0) return 'resit';
-    return 'repeat-year';
+    let decisionCode: string;
+    if (earnedCredits >= rules.requiredCredits) decisionCode = 'progress';
+    else if (unresolvedCredits > 0 || outcomes.length > 0) decisionCode = 'resit';
+    else decisionCode = 'repeat-year';
+
+    return { earnedCredits, compensationCredits, unresolvedCredits, decisionCode };
+  }
+
+  async #writeProgressionEvidence(
+    tenantId: string,
+    progressionDecisionId: string,
+    academicYear: string,
+    rules: ProgressionRules,
+    evidence: DecisionEvidence,
+  ): Promise<void> {
+    try {
+      await this.db.execute(sql`
+        INSERT INTO progression_calculation_evidence (
+          tenant_id, progression_decision_id, academic_year,
+          required_credits, compensation_threshold, compensation_credit_limit, condonement_threshold,
+          earned_credits, compensation_credits, unresolved_credits,
+          decision_code, rule_snapshot
+        ) VALUES (
+          ${tenantId}::uuid, ${progressionDecisionId}::uuid, ${academicYear},
+          ${rules.requiredCredits}, ${rules.compensationThreshold}, ${rules.compensationCreditLimit}, ${rules.condonementThreshold},
+          ${evidence.earnedCredits}, ${evidence.compensationCredits}, ${evidence.unresolvedCredits},
+          ${evidence.decisionCode}, '{}'::jsonb
+        )
+      `);
+    } catch {
+      // Evidence write failure must not block the progression decision itself
+    }
   }
 }
 

@@ -105,6 +105,9 @@ importers:
       '@revelation-srs/domain':
         specifier: workspace:*
         version: link:../../packages/domain
+      '@revelation-srs/workflow':
+        specifier: workspace:*
+        version: link:../../packages/workflow
       '@sinclair/typebox':
         specifier: ^0.34.0
         version: 0.34.49

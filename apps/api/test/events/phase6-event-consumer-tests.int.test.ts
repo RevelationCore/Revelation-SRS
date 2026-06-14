@@ -63,6 +63,9 @@ function expectEvent(type: string, classification: string): Record<string, unkno
 
 describe('Phase 6 event consumers', () => {
   it('publishes UCAS regulatory events with required payload fields', async () => {
+    // Use 'received' status to test ucas-application-received without triggering
+    // the admissions workflow handoff (which only fires for 'confirmed' status and
+    // requires a workflow definition that is not seeded in the test database).
     const ingest = await ctx.app.inject({
       method: 'POST',
       url: '/api/v1/regulatory/ucas/applications',
@@ -70,13 +73,7 @@ describe('Phase 6 event consumers', () => {
       payload: {
         ucasPersonalId: 'EVT6UCAS001',
         cycle: '2027',
-        statusCode: 'confirmed',
-        legalFirstName: 'Ucas',
-        legalFamilyName: 'Event',
-        dateOfBirth: '2008-04-12',
-        modeOfStudyCode: 'full-time',
-        academicYearOfEntry: '2027-28',
-        startDate: '2027-09-20',
+        statusCode: 'received',
       },
     });
     expect(ingest.statusCode).toBe(201);
@@ -84,6 +81,11 @@ describe('Phase 6 event consumers', () => {
     expect(isUuid(application['applicationId'])).toBe(true);
     expect(application['ucasPersonalId']).toBe('EVT6UCAS001');
     expect(application['cycle']).toBe('2027');
+
+    // Create an enrolment with ucasPersonalId to seed a pending ucas-confirmation
+    // downstream trigger. This mirrors the trigger that the admissions workflow
+    // writes when it completes the UCAS-to-enrolment handoff.
+    await createEnrolment('Ucas', 'Confirm', '2027-28', { ucasPersonalId: 'EVT6UCAS001' });
 
     const outbound = await ctx.app.inject({
       method: 'POST',

@@ -1,6 +1,7 @@
 import { NativeConnection, Worker } from '@temporalio/worker';
 
 import { auditActivities } from './activities/audit.activities.js';
+import { createUnconfiguredWorkflowActivities, type WorkflowActivities } from './activities/workflow.activities.js';
 
 /**
  * Temporal worker entry point.
@@ -16,6 +17,8 @@ export async function startWorker(options: {
   temporalAddress: string;
   namespace:        string;
   taskQueue:        string;
+  activities?:      Partial<WorkflowActivities>;
+  auditActivities?: typeof auditActivities;
 }): Promise<Worker> {
   const connection = await NativeConnection.connect({
     address: options.temporalAddress,
@@ -23,7 +26,11 @@ export async function startWorker(options: {
 
   const worker = await Worker.create({
     workflowsPath: new URL('./workflows/index.js', import.meta.url).pathname,
-    activities:    { ...auditActivities },
+    activities:    {
+      ...(options.auditActivities ?? auditActivities),
+      ...createUnconfiguredWorkflowActivities(),
+      ...(options.activities ?? {}),
+    },
     taskQueue:     options.taskQueue,
     namespace:     options.namespace,
     connection,

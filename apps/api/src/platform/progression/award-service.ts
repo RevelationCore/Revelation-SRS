@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, eq, isNull, sql } from 'drizzle-orm';
 import {
   academicPeriods,
   awards,
@@ -147,6 +147,8 @@ export class AwardService {
         recordedUntil:       null,
       });
     });
+
+    await this.#writeAwardEvidence(tenantId, awardId, recommendation);
 
     // Graduate the enrolment via the standard transition path to preserve
     // the transition ledger and person status cascade (→ alumnus).
@@ -353,6 +355,31 @@ export class AwardService {
       if (aggregateMark >= boundary.minimumMark) return boundary.code;
     }
     return 'fail';
+  }
+
+  async #writeAwardEvidence(
+    tenantId: string,
+    awardId: string,
+    recommendation: ClassificationRecommendation,
+  ): Promise<void> {
+    try {
+      const boundariesJson = JSON.stringify(recommendation.boundariesApplied);
+      await this.db.execute(sql`
+        INSERT INTO award_calculation_evidence (
+          tenant_id, award_id, algorithm,
+          aggregate_mark, classification_code,
+          boundaries_applied, outcome_count, total_credit_value,
+          rule_snapshot
+        ) VALUES (
+          ${tenantId}::uuid, ${awardId}::uuid, ${recommendation.algorithm},
+          ${recommendation.aggregateMark}, ${recommendation.classificationCode},
+          ${boundariesJson}::jsonb, 0, 0,
+          '{}'::jsonb
+        )
+      `);
+    } catch {
+      // Evidence write failure must not block the award itself
+    }
   }
 }
 

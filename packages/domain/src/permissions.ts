@@ -62,6 +62,18 @@ export const PERMISSION_ROLES = {
   'progression:write':                  ['registry-administrator'] as Role[],
   'regulatory:read':                    ['registry-administrator', 'regulatory-officer'] as Role[],
   'regulatory:write':                   ['registry-administrator', 'regulatory-officer'] as Role[],
+  'workflow:read':                      ['registry-administrator', 'tenant-administrator'] as Role[],
+  'workflow:write':                     ['tenant-administrator'] as Role[],
+  'workflow-task:complete':             ['registry-administrator', 'module-tutor', 'personal-tutor', 'wellbeing-advisor', 'exam-board-member', 'exam-board-chair', 'regulatory-officer', 'finance-administrator', 'tenant-administrator'] as Role[],
+  'feature-flag:read':                  ['registry-administrator', 'tenant-administrator', 'system-administrator'] as Role[],
+  'feature-flag:write':                 ['tenant-administrator', 'system-administrator'] as Role[],
+  'feature-flag:govern':                ['system-administrator'] as Role[],
+  'environment:read':                   ['registry-administrator', 'tenant-administrator'] as Role[],
+  'environment:write':                  ['tenant-administrator'] as Role[],
+  'globalisation:read':                 ['registry-administrator', 'tenant-administrator'] as Role[],
+  'globalisation:write':                ['tenant-administrator'] as Role[],
+  'communications:read':                ['registry-administrator', 'tenant-administrator'] as Role[],
+  'communications:write':               ['registry-administrator', 'tenant-administrator'] as Role[],
 } as const;
 
 export type Permission = keyof typeof PERMISSION_ROLES;

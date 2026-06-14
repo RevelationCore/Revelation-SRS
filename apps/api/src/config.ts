@@ -6,6 +6,10 @@ export interface Config {
   databaseUrl:  string;
   natsUrl:      string;
   temporalAddress: string;
+  deploymentEnvironmentCode: string;
+  releaseVersion: string;
+  imageDigest: string | undefined;
+  migrationVersion: string;
   jwtSecret:    string;
   keycloakJwksUrl: string | undefined;
   corsOrigins:  string[];
@@ -36,6 +40,10 @@ export function loadConfig(): Config {
     databaseUrl:     required('DATABASE_URL'),
     natsUrl:         process.env['NATS_URL'] ?? 'nats://localhost:4222',
     temporalAddress: process.env['TEMPORAL_ADDRESS'] ?? 'localhost:7233',
+    deploymentEnvironmentCode: process.env['SRS_ENVIRONMENT_CODE'] ?? process.env['NODE_ENV'] ?? 'local',
+    releaseVersion: process.env['SRS_RELEASE_VERSION'] ?? process.env['npm_package_version'] ?? '0.0.0',
+    imageDigest: optional('SRS_IMAGE_DIGEST'),
+    migrationVersion: process.env['SRS_MIGRATION_VERSION'] ?? '0011_environment_promotion_hardening',
     jwtSecret:       process.env['JWT_SECRET'] ?? 'dev-secret-replace-in-production',
     keycloakJwksUrl: optional('KEYCLOAK_JWKS_URL'),
     corsOrigins:     (process.env['CORS_ORIGINS'] ?? 'http://localhost:5173').split(','),

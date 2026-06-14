@@ -1,7 +1,7 @@
 # Revelation SRS — Core Principles
 
 > Status: Draft for review
-> Last updated: 2026-06-04
+> Last updated: 2026-06-14
 
 This document defines the foundational principles that govern the design, development, and operation of Revelation SRS. These principles apply across all modules, integrations, and deployment contexts and must be respected by any party contributing to or extending the system.
 
@@ -77,6 +77,8 @@ Examples of workflow-managed processes include:
 - Academic misconduct investigation, panel, and penalty
 - Exam board preparation, ratification, and record lock
 - Appeals and approved corrections post-ratification
+
+Workflow is the standard process model throughout the SRS. Domain services may expose commands and enforce invariants, but they must not privately encode institution-specific process order, responsibilities, approval routes, communication triggers, or decision gateways. Where a process can vary between institutions, faculties, cohorts, programmes, academic years, source systems, or regulatory contexts, that variation belongs in workflow definitions, rules, flags, and tenant configuration.
 
 ---
 
@@ -235,6 +237,7 @@ Feature flags apply to, but are not limited to:
 - Controlling whether specific decision points, approval steps, human task assignments, communications, or downstream triggers are active for a tenant.
 - Rolling out new features progressively by tenant, role, cohort, programme, academic year, or controlled pilot group.
 - Switching between legacy and refactored process paths during migration.
+- Selecting between valid architectural routes where institution size, operating model, geography, regulatory exposure, or system landscape makes more than one route appropriate.
 
 Flags are tenant-scoped by default and administered through authorised admin screens. Platform-level flags may exist for release management and operational safety, but tenant administrators must be able to manage institution-specific process variation where it does not compromise security, data integrity, regulatory compliance, or published integration contracts.
 
@@ -242,9 +245,23 @@ Feature flag changes are audited, versioned, and time-aware. The system must be 
 
 Flags must not bypass mandatory legal, privacy, audit, security, or bitemporal integrity controls. A disabled feature may suppress optional workflow steps or integrations; it must not create inconsistent core data or hide statutory obligations.
 
+Migration flags are temporary by design. They must have an owner, expiry or review date, retirement condition, and removal plan. Compatibility paths may exist to protect live transitions, but the clean target architecture must not retain duplicate legacy and workflow-native implementations indefinitely.
+
 ---
 
-## 15. Record Lifecycle and Ratification Locking
+## 15. Clean Core and Legacy Retirement
+
+The long-term codebase should contain one authoritative implementation path for each domain capability. Legacy compatibility code is acceptable only as a managed migration aid, never as an unbounded parallel architecture.
+
+- Legacy adapters, status paths, trigger paths, and transition matrices must be inventoried, flagged, monitored, and retired once tenants have migrated.
+- New work should target the workflow-native, flag-aware, configuration-driven path unless an explicit migration exception is approved.
+- Regression coverage must prove that legacy behaviour remains available while a migration flag is active, and that the clean path remains correct after the legacy path is removed.
+- Public integration contracts may follow a documented deprecation policy; internal legacy code has a separate retirement policy and should be removed aggressively once no longer required.
+- Data migrations must preserve auditability, bitemporal history, and external references when moving from legacy tables or fields to clean core structures.
+
+---
+
+## 16. Record Lifecycle and Ratification Locking
 
 Student academic records pass through a defined lifecycle from initial creation through to final ratification and long-term archiving. The lifecycle governs what changes are permissible at each stage and who may authorise them.
 
@@ -257,7 +274,7 @@ The record lock state is a first-class field on the academic record, not a deriv
 
 ---
 
-## 16. Accessible User Interface
+## 17. Accessible User Interface
 
 All user-facing interfaces must conform to **WCAG 2.1 Level AA** as a minimum standard. This is both a legal obligation (Public Sector Bodies Accessibility Regulations 2018) and a direct functional requirement given that the system manages disability declarations, reasonable adjustments, and support for students with accessibility needs.
 
@@ -267,7 +284,7 @@ All user-facing interfaces must conform to **WCAG 2.1 Level AA** as a minimum st
 
 ---
 
-## 17. Privacy by Design
+## 18. Privacy by Design
 
 Personal data handling is considered at the design stage of every feature, not as a retrofit.
 
@@ -280,7 +297,21 @@ Personal data handling is considered at the design stage of every feature, not a
 
 ---
 
-## 18. Performance and Scalability
+## 19. Internationalisation, Localisation, and Multicurrency
+
+The SRS must support institutions, students, staff, applicants, partners, and integrations operating across languages, regions, currencies, and time zones.
+
+- User-facing text is externalised from code and delivered through a localisation framework. English is the baseline language, but no UI or notification flow may assume English-only operation.
+- Tenant administrators can configure supported locales, default locale, date/time/number formatting, communication templates, and language fallback behaviour.
+- Student-facing and applicant-facing journeys can record and respect preferred language and communication locale.
+- Core records use stable codes and canonical values; translated labels are presentation/configuration data, not business identifiers.
+- Monetary values store amount, currency code, precision, effective date, and calculation context. Currency conversion rates, when used, are versioned, auditable, source-attributed, and effective-dated.
+- Finance, fees, deposits, scholarships, refunds, agent commissions, international admissions, and statutory reporting must not assume GBP-only operation unless a specific UK statutory output requires GBP.
+- Time zones are explicit at tenant, campus, event, deadline, and integration boundaries. Stored timestamps remain UTC unless a domain record explicitly needs local civil time.
+
+---
+
+## 20. Performance and Scalability
 
 The system is designed to operate responsively under the load profile of a large UK HEI (up to 50,000 enrolled students, concurrent use by hundreds of staff, peak loads at enrolment, results publication, and clearing).
 
@@ -291,7 +322,7 @@ The system is designed to operate responsively under the load profile of a large
 
 ---
 
-## 19. Observability and Operational Readiness
+## 21. Observability and Operational Readiness
 
 The system is designed to be operated and diagnosed without requiring direct database access or code changes.
 
@@ -303,7 +334,7 @@ The system is designed to be operated and diagnosed without requiring direct dat
 
 ---
 
-## 20. UK Higher Education Domain Model Alignment
+## 22. UK Higher Education Domain Model Alignment
 
 The data model and service boundaries align with the Revelation Student Records Enterprise Reference Model (v2.1) and the UK HE sector's established data standards.
 
@@ -314,14 +345,14 @@ The data model and service boundaries align with the Revelation Student Records 
 
 ---
 
-## 21. Testability and Quality
+## 23. Testability and Quality
 
 Quality is a design-time concern. The codebase is structured to support automated testing at all levels.
 
 - **Unit tests** cover business logic, domain rules, and configuration-driven rule evaluation.
 - **Integration tests** cover persistence, workflow transitions, bitemporal query correctness, and inter-module contracts.
 - **Contract tests** cover integration points with external systems, verified against published OpenAPI specifications and event schemas.
-- **Performance tests** verify response time and throughput benchmarks (§18) under representative load.
+- **Performance tests** verify response time and throughput benchmarks (§20) under representative load.
 - **Security tests**: static analysis (SAST), dependency vulnerability scanning, and dynamic analysis (DAST) run in CI.
 - **Accessibility tests**: automated WCAG scanning runs against all UI components as part of CI; manual testing is performed prior to release.
 - All tests run in CI on every pull request. No code is merged with a failing test suite or a regression in security or accessibility scanning.
@@ -346,10 +377,12 @@ Quality is a design-time concern. The codebase is structured to support automate
 | 12 | Integration Architecture | Integration |
 | 13 | Configuration-Driven Business Rules | Adaptability |
 | 14 | Feature Flags and Process Variation | Adaptability |
-| 15 | Record Lifecycle & Ratification Locking | Academic governance |
-| 16 | Accessible User Interface | Inclusion & legal |
-| 17 | Privacy by Design | Data protection |
-| 18 | Performance & Scalability | Reliability |
-| 19 | Observability & Operational Readiness | Operations |
-| 20 | UK HE Domain Model Alignment | Semantic correctness |
-| 21 | Testability & Quality | Reliability |
+| 15 | Clean Core and Legacy Retirement | Maintainability |
+| 16 | Record Lifecycle & Ratification Locking | Academic governance |
+| 17 | Accessible User Interface | Inclusion & legal |
+| 18 | Privacy by Design | Data protection |
+| 19 | Internationalisation, Localisation, and Multicurrency | Global readiness |
+| 20 | Performance & Scalability | Reliability |
+| 21 | Observability & Operational Readiness | Operations |
+| 22 | UK HE Domain Model Alignment | Semantic correctness |
+| 23 | Testability & Quality | Reliability |

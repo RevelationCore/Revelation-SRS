@@ -15,10 +15,14 @@ export const examBoards = pgTable('exam_board', {
   boardTypeCode:    text('board_type_code').notNull(), // module | award
   academicYear:     text('academic_year').notNull(),   // e.g. '2025-26'
   academicPeriodId: uuid('academic_period_id'),        // FK to academic_period.id (logical); null for award boards
-  meetingDate:      text('meeting_date'),              // ISO date string
-  ratifiedAt:       timestamp('ratified_at', { withTimezone: true }),
-  actorId:          text('actor_id').notNull(),
-  createdAt:        timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  meetingDate:       text('meeting_date'),              // ISO date string
+  ratifiedAt:        timestamp('ratified_at',        { withTimezone: true }),
+  deferredAt:        timestamp('deferred_at',         { withTimezone: true }),
+  deferralReason:    text('deferral_reason'),
+  quorumCount:       integer('quorum_count'),
+  quorumRecordedAt:  timestamp('quorum_recorded_at', { withTimezone: true }),
+  actorId:           text('actor_id').notNull(),
+  createdAt:         timestamp('created_at',          { withTimezone: true }).notNull().defaultNow(),
 });
 
 export type ExamBoard    = typeof examBoards.$inferSelect;

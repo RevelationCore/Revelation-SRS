@@ -29,6 +29,10 @@ beforeAll(async () => {
   await applyMigration('0005_seed_phase5_field_mappings.sql');
   await applyMigration('0006_phase6_regulatory_schema.sql');
   await applyMigration('0007_seed_phase6_field_mappings.sql');
+  await applyMigration('0008_phase6_remediation.sql');
+  await applyMigration('0009_platform_workflow_feature_flags.sql');
+  await applyMigration('0010_relax_extensible_code_checks.sql');
+  await applyMigration('0011_environment_promotion_hardening.sql');
 });
 
 afterAll(async () => {
@@ -613,6 +617,407 @@ describe('Phase 6 migrations', () => {
       entity_name: 'ofs_extract',
       field_name: 'status_code',
       value_set_code: 'regulatory-report-status-code',
+    });
+  });
+});
+
+describe('Platform workflow, feature flag, and environment migration', () => {
+  it('seeds enrolment trigger controls', async () => {
+    const flags = await db.execute(sql`
+      SELECT flag_key, default_variant_key
+      FROM feature_flag
+      WHERE flag_key = 'enrolment.downstream-triggers.configured-mode'
+    `) as Array<{ flag_key: string; default_variant_key: string }>;
+
+    const variants = await db.execute(sql`
+      SELECT ffv.variant_key, ffv.value
+      FROM feature_flag_variant ffv
+      JOIN feature_flag ff ON ff.id = ffv.flag_id
+      WHERE ff.flag_key = 'enrolment.downstream-triggers.configured-mode'
+      ORDER BY ffv.sort_order
+    `) as Array<{ variant_key: string; value: boolean }>;
+
+    const triggerRules = await db.execute(sql`
+      SELECT trigger_key, event_type, target_workflow_code, active
+      FROM workflow_trigger_rule
+      WHERE trigger_key IN (
+        'enrolment-created-ucas-confirmation',
+        'enrolment-created-slc-confirmation',
+        'enrolment-created-ukvi-cas',
+        'enrolment-status-slc-confirmation',
+        'enrolment-created-future-communication'
+      )
+      ORDER BY trigger_key
+    `) as Array<{
+      trigger_key: string;
+      event_type: string;
+      target_workflow_code: string;
+      active: boolean;
+    }>;
+
+    expect(flags).toEqual([
+      {
+        flag_key: 'enrolment.downstream-triggers.configured-mode',
+        default_variant_key: 'on',
+      },
+    ]);
+    expect(variants).toEqual([
+      { variant_key: 'off', value: false },
+      { variant_key: 'on', value: true },
+    ]);
+    expect(triggerRules).toHaveLength(5);
+    expect(triggerRules).toContainEqual({
+      trigger_key: 'enrolment-created-future-communication',
+      event_type: 'enrolment.created',
+      target_workflow_code: 'future-communication-endpoint',
+      active: false,
+    });
+  });
+
+  it('seeds Admissions workflow definitions, gateways, and feature flags', async () => {
+    const definitions = await db.execute(sql`
+      SELECT definition_code, owner_module_code, status_code, current_version_number
+      FROM workflow_definition
+      WHERE definition_code IN (
+        'admissions-ucas-domestic',
+        'admissions-direct-domestic',
+        'admissions-international-direct',
+        'admissions-international-agent',
+        'admissions-clearing'
+      )
+      ORDER BY definition_code
+    `) as Array<{
+      definition_code: string;
+      owner_module_code: string;
+      status_code: string;
+      current_version_number: number;
+    }>;
+
+    const gatewayRows = await db.execute(sql`
+      SELECT DISTINCT wdg.gateway_key
+      FROM workflow_decision_gateway wdg
+      JOIN workflow_definition_version wdv ON wdv.id = wdg.workflow_definition_version_id
+      JOIN workflow_definition wd ON wd.id = wdv.workflow_definition_id
+      WHERE wd.owner_module_code = 'admissions'
+        AND wdg.gateway_key IN ('G01', 'G02', 'G03', 'G04', 'G05', 'G09', 'G10', 'G11')
+      ORDER BY wdg.gateway_key
+    `) as Array<{ gateway_key: string }>;
+
+    const handoffSteps = await db.execute(sql`
+      SELECT COUNT(*)::int AS count
+      FROM workflow_step ws
+      JOIN workflow_definition_version wdv ON wdv.id = ws.workflow_definition_version_id
+      JOIN workflow_definition wd ON wd.id = wdv.workflow_definition_id
+      WHERE wd.owner_module_code = 'admissions'
+        AND ws.step_key = 'handoff-to-srs-enrolment'
+    `) as Array<{ count: number }>;
+
+    const flags = await db.execute(sql`
+      SELECT flag_key, default_variant_key
+      FROM feature_flag
+      WHERE flag_key IN (
+        'admissions.enabled',
+        'admissions.ucas-adapter.enabled',
+        'admissions.direct-applications.enabled',
+        'admissions.agent-applications.enabled',
+        'admissions.international-route.enabled',
+        'admissions.cas-precheck.required',
+        'admissions.legacy-ucas-auto-enrolment.enabled'
+      )
+      ORDER BY flag_key
+    `) as Array<{ flag_key: string; default_variant_key: string }>;
+
+    expect(definitions).toHaveLength(5);
+    expect(definitions.every((definition) =>
+      definition.owner_module_code === 'admissions'
+      && definition.status_code === 'active'
+      && definition.current_version_number === 1,
+    )).toBe(true);
+    expect(gatewayRows.map((row) => row.gateway_key)).toEqual(['G01', 'G02', 'G03', 'G04', 'G05', 'G09', 'G10', 'G11']);
+    expect(handoffSteps).toEqual([{ count: 5 }]);
+    expect(flags).toHaveLength(7);
+    expect(flags).toContainEqual({
+      flag_key: 'admissions.legacy-ucas-auto-enrolment.enabled',
+      default_variant_key: 'off',
+    });
+    expect(flags).toContainEqual({
+      flag_key: 'admissions.enabled',
+      default_variant_key: 'on',
+    });
+    expect(flags).toContainEqual({
+      flag_key: 'admissions.ucas-adapter.enabled',
+      default_variant_key: 'on',
+    });
+    expect(flags).toContainEqual({
+      flag_key: 'admissions.cas-precheck.required',
+      default_variant_key: 'on',
+    });
+  });
+});
+
+describe('Platform alignment Stage 8 migration', () => {
+  it('relaxes extensible business-code checks while retaining structural checks', async () => {
+    const removed = await db.execute(sql`
+      SELECT conname
+      FROM pg_constraint
+      WHERE conname IN (
+        'enrolment_status_code_check',
+        'enrolment_mode_of_study_code_check',
+        'enrolment_funding_source_code_check',
+        'enrolment_downstream_trigger_trigger_type_code_check',
+        'module_registration_status_code_check',
+        'module_result_result_code_check',
+        'progression_decision_decision_code_check',
+        'post_ratification_case_status_code_check'
+      )
+    `) as Array<{ conname: string }>;
+
+    const retained = await db.execute(sql`
+      SELECT conname
+      FROM pg_constraint
+      WHERE conname IN (
+        'enrolment_temporal_check_valid',
+        'learning_outcome_exactly_one_parent',
+        'academic_period_end_after_start',
+        'environment_promotion_distinct_envs'
+      )
+      ORDER BY conname
+    `) as Array<{ conname: string }>;
+
+    expect(removed).toEqual([]);
+    expect(retained.map((row) => row.conname)).toEqual([
+      'academic_period_end_after_start',
+      'enrolment_temporal_check_valid',
+      'environment_promotion_distinct_envs',
+      'learning_outcome_exactly_one_parent',
+    ]);
+  });
+});
+
+describe('Platform alignment Stage 9 migration', () => {
+  it('seeds integration endpoint safety classes and environment defaults', async () => {
+    const members = await db.execute(sql`
+      SELECT vsm.code
+      FROM value_set_member vsm
+      JOIN value_set vs ON vs.id = vsm.value_set_id
+      WHERE vs.set_code = 'integration-endpoint-safety-class'
+      ORDER BY vsm.sort_order
+    `) as Array<{ code: string }>;
+
+    const environments = await db.execute(sql`
+      SELECT environment_code, configuration
+      FROM deployment_environment
+      WHERE environment_code IN ('local', 'test', 'uat', 'preprod', 'prod')
+      ORDER BY environment_code
+    `) as Array<{ environment_code: string; configuration: Record<string, unknown> }>;
+
+    const mappings = await db.execute(sql`
+      SELECT entity_name, field_name, value_set_code
+      FROM field_value_set
+      WHERE entity_name = 'integration_registration.configuration'
+        AND field_name = 'endpointSafetyClass'
+    `) as Array<{ entity_name: string; field_name: string; value_set_code: string }>;
+
+    expect(members.map((member) => member.code)).toEqual(['simulator', 'external-test', 'external-production']);
+    expect(environments).toContainEqual(expect.objectContaining({
+      environment_code: 'prod',
+      configuration: expect.objectContaining({
+        defaultEndpointSafetyClass: 'external-production',
+        requiresLiveTrafficApproval: false,
+      }),
+    }));
+    expect(environments).toContainEqual(expect.objectContaining({
+      environment_code: 'preprod',
+      configuration: expect.objectContaining({
+        defaultEndpointSafetyClass: 'external-test',
+        requiresLiveTrafficApproval: true,
+      }),
+    }));
+    expect(mappings).toEqual([
+      {
+        entity_name: 'integration_registration.configuration',
+        field_name: 'endpointSafetyClass',
+        value_set_code: 'integration-endpoint-safety-class',
+      },
+    ]);
+  });
+});
+
+describe('Platform workflow, feature flag, and environment migrations', () => {
+  it('creates all Stage 1 foundation tables', async () => {
+    const rows = await db.execute(sql`
+      SELECT table_name
+      FROM information_schema.tables
+      WHERE table_schema = 'public'
+        AND table_name IN (
+          'deployment_environment',
+          'environment_configuration',
+          'environment_promotion_record',
+          'workflow_definition',
+          'workflow_definition_version',
+          'workflow_step',
+          'workflow_transition',
+          'workflow_decision_gateway',
+          'workflow_assignment_rule',
+          'workflow_trigger_rule',
+          'workflow_instance',
+          'workflow_task',
+          'workflow_decision_audit',
+          'feature_flag',
+          'feature_flag_variant',
+          'feature_flag_assignment',
+          'feature_flag_evaluation_log'
+        )
+    `) as Array<{ table_name: string }>;
+
+    expect(rows.map((r) => r.table_name).sort()).toEqual([
+      'deployment_environment',
+      'environment_configuration',
+      'environment_promotion_record',
+      'feature_flag',
+      'feature_flag_assignment',
+      'feature_flag_evaluation_log',
+      'feature_flag_variant',
+      'workflow_assignment_rule',
+      'workflow_decision_audit',
+      'workflow_decision_gateway',
+      'workflow_definition',
+      'workflow_definition_version',
+      'workflow_instance',
+      'workflow_step',
+      'workflow_task',
+      'workflow_transition',
+      'workflow_trigger_rule',
+    ]);
+  });
+
+  it('enables and forces RLS on tenant-scoped Stage 1 tables', async () => {
+    const rows = await db.execute(sql`
+      SELECT relname, relrowsecurity, relforcerowsecurity
+      FROM pg_class
+      WHERE relname IN (
+        'environment_configuration',
+        'environment_promotion_record',
+        'workflow_definition',
+        'workflow_definition_version',
+        'workflow_step',
+        'workflow_transition',
+        'workflow_decision_gateway',
+        'workflow_assignment_rule',
+        'workflow_trigger_rule',
+        'workflow_instance',
+        'workflow_task',
+        'workflow_decision_audit',
+        'feature_flag_assignment',
+        'feature_flag_evaluation_log'
+      )
+    `) as Array<{ relname: string; relrowsecurity: boolean; relforcerowsecurity: boolean }>;
+
+    expect(rows).toHaveLength(14);
+    for (const row of rows) {
+      expect(row.relrowsecurity).toBe(true);
+      expect(row.relforcerowsecurity).toBe(true);
+    }
+  });
+
+  it('creates Stage 1 uniqueness and versioning indexes', async () => {
+    const rows = await db.execute(sql`
+      SELECT indexname
+      FROM pg_indexes
+      WHERE schemaname = 'public'
+        AND indexname IN (
+          'deployment_environment_code_unique',
+          'environment_configuration_current_unique',
+          'workflow_definition_scope_code_unique',
+          'workflow_definition_version_unique',
+          'workflow_step_version_key_unique',
+          'workflow_transition_version_key_unique',
+          'workflow_decision_gateway_version_key_unique',
+          'workflow_assignment_rule_scope_key_unique',
+          'workflow_trigger_rule_scope_key_unique',
+          'feature_flag_key_unique',
+          'feature_flag_variant_key_unique',
+          'feature_flag_assignment_eval_idx'
+        )
+    `) as Array<{ indexname: string }>;
+
+    expect(rows.map((r) => r.indexname).sort()).toEqual([
+      'deployment_environment_code_unique',
+      'environment_configuration_current_unique',
+      'feature_flag_assignment_eval_idx',
+      'feature_flag_key_unique',
+      'feature_flag_variant_key_unique',
+      'workflow_assignment_rule_scope_key_unique',
+      'workflow_decision_gateway_version_key_unique',
+      'workflow_definition_scope_code_unique',
+      'workflow_definition_version_unique',
+      'workflow_step_version_key_unique',
+      'workflow_transition_version_key_unique',
+      'workflow_trigger_rule_scope_key_unique',
+    ]);
+  });
+
+  it('seeds Stage 1 value sets, field mappings, and environments', async () => {
+    const sets = await db.execute(sql`
+      SELECT set_code
+      FROM value_set
+      WHERE set_code IN (
+        'workflow-definition-status-code',
+        'workflow-step-type-code',
+        'workflow-instance-status-code',
+        'workflow-task-status-code',
+        'workflow-decision-code',
+        'feature-flag-status-code',
+        'feature-flag-assignment-status-code',
+        'feature-flag-value-type-code',
+        'deployment-environment-type-code',
+        'environment-promotion-status-code',
+        'environment-promotion-artefact-type-code'
+      )
+    `) as Array<{ set_code: string }>;
+
+    const mappings = await db.execute(sql`
+      SELECT entity_name, field_name, value_set_code
+      FROM field_value_set
+      WHERE entity_name IN (
+        'workflow_definition',
+        'workflow_definition_version',
+        'workflow_step',
+        'workflow_instance',
+        'workflow_task',
+        'workflow_decision_audit',
+        'feature_flag',
+        'feature_flag_assignment',
+        'deployment_environment',
+        'environment_promotion_record'
+      )
+      ORDER BY entity_name, field_name
+    `) as Array<{ entity_name: string; field_name: string; value_set_code: string }>;
+
+    const environments = await db.execute(sql`
+      SELECT environment_code, live_integrations_allowed
+      FROM deployment_environment
+      WHERE environment_code IN ('local', 'test', 'uat', 'preprod', 'prod')
+    `) as Array<{ environment_code: string; live_integrations_allowed: boolean }>;
+
+    expect(sets).toHaveLength(11);
+    expect(environments).toHaveLength(5);
+    expect(environments).toContainEqual({ environment_code: 'prod', live_integrations_allowed: true });
+    expect(environments).toContainEqual({ environment_code: 'test', live_integrations_allowed: false });
+    expect(mappings).toContainEqual({
+      entity_name: 'workflow_instance',
+      field_name: 'status_code',
+      value_set_code: 'workflow-instance-status-code',
+    });
+    expect(mappings).toContainEqual({
+      entity_name: 'feature_flag',
+      field_name: 'value_type_code',
+      value_set_code: 'feature-flag-value-type-code',
+    });
+    expect(mappings).toContainEqual({
+      entity_name: 'environment_promotion_record',
+      field_name: 'status_code',
+      value_set_code: 'environment-promotion-status-code',
     });
   });
 });

@@ -8,7 +8,13 @@ import {
   type IntegrationRegistration,
   withTenantContext,
 } from '@revelation-srs/db';
-import { ConflictError, NotFoundError } from '@revelation-srs/domain';
+import { ConflictError, ForbiddenError, NotFoundError } from '@revelation-srs/domain';
+
+export type IntegrationEndpointSafetyClass = 'simulator' | 'external-test' | 'external-production';
+
+export interface RegulatoryExchangeRuntimeContext {
+  environmentCode: string;
+}
 
 export interface RegulatoryExchangeInput {
   directionCode: 'inbound' | 'outbound';
@@ -28,7 +34,10 @@ export interface RegulatoryExchangeInput {
 }
 
 export class RegulatoryExchangeService {
-  constructor(private readonly db: Db) {}
+  constructor(
+    private readonly db: Db,
+    private readonly runtime: RegulatoryExchangeRuntimeContext = { environmentCode: 'local' },
+  ) {}
 
   async ensureRegistration(
     tenantId: string,
@@ -75,6 +84,9 @@ export class RegulatoryExchangeService {
             systemManaged: true,
             createdBy: actorId,
             purpose: 'phase-6-regulatory-exchange',
+            ownerModuleCode: contract.ownerModuleCode,
+            endpointSafetyClass: defaultEndpointSafetyClass(this.runtime.environmentCode),
+            liveTrafficApproved: false,
           },
         })
         .onConflictDoNothing()
@@ -118,6 +130,13 @@ export class RegulatoryExchangeService {
 
     const statusCode = input.statusCode ?? (input.directionCode === 'inbound' ? 'received' : 'sent');
     const now = new Date();
+    assertIntegrationEndpointAllowed({
+      environmentCode: this.runtime.environmentCode,
+      directionCode: input.directionCode,
+      ownerModuleCode: registrationOwnerModule(registration),
+      endpointSafetyClass: endpointSafetyClass(registration.configuration),
+      liveTrafficApproved: liveTrafficApproved(registration.configuration),
+    });
 
     const inserted = await withTenantContext(this.db, tenantId, async (tx) =>
       tx
@@ -166,4 +185,46 @@ export class RegulatoryExchangeService {
 
     return existing[0];
   }
+}
+
+export function assertIntegrationEndpointAllowed(input: {
+  environmentCode: string;
+  directionCode: 'inbound' | 'outbound';
+  ownerModuleCode: string;
+  endpointSafetyClass: IntegrationEndpointSafetyClass;
+  liveTrafficApproved: boolean;
+}): void {
+  if (input.directionCode !== 'outbound') return;
+  if (input.endpointSafetyClass !== 'external-production') return;
+  if (productionEnvironmentAllowsLiveTraffic(input.environmentCode)) return;
+  if (input.liveTrafficApproved) return;
+
+  throw new ForbiddenError(
+    `Live production integration endpoint is not allowed from environment '${input.environmentCode}' for '${input.ownerModuleCode}'`,
+  );
+}
+
+function productionEnvironmentAllowsLiveTraffic(environmentCode: string): boolean {
+  return environmentCode === 'prod' || environmentCode === 'production';
+}
+
+function defaultEndpointSafetyClass(environmentCode: string): IntegrationEndpointSafetyClass {
+  return productionEnvironmentAllowsLiveTraffic(environmentCode) ? 'external-production' : 'simulator';
+}
+
+function endpointSafetyClass(configuration: Record<string, unknown>): IntegrationEndpointSafetyClass {
+  const configured = configuration['endpointSafetyClass'];
+  if (configured === 'external-production' || configured === 'external-test' || configured === 'simulator') {
+    return configured;
+  }
+  return 'simulator';
+}
+
+function liveTrafficApproved(configuration: Record<string, unknown>): boolean {
+  return configuration['liveTrafficApproved'] === true;
+}
+
+function registrationOwnerModule(registration: IntegrationRegistration): string {
+  const configured = registration.configuration['ownerModuleCode'];
+  return typeof configured === 'string' ? configured : 'regulatory';
 }

@@ -39,6 +39,31 @@ The local Temporal Server uses **PostgreSQL as its persistence backend** through
 
 ---
 
+## Domain Service Boundary
+
+Workflow controls process ordering; domain services remain the authority for core data integrity.
+
+Domain services are responsible for:
+
+- validating command input and tenant access;
+- enforcing bitemporal writes, locking, and audit/event publication;
+- applying value-set and rule validation;
+- rejecting commands that violate statutory, regulatory, or data-integrity invariants.
+
+Workflow definitions are responsible for:
+
+- deciding when a domain command should be requested;
+- assigning human tasks and responsibility;
+- evaluating configurable decision gateways;
+- managing deadlines, escalations, retries, and compensating paths;
+- recording workflow decision audit and linking it to domain audit records.
+
+This means a workflow may decide that an enrolment should be withdrawn, an exam board should be ratified, or an admissions application should proceed to enrolment. The relevant domain service still validates that the requested transition is legal and persists the authoritative data. A workflow rejection or retry is operational state; a successful domain service command is the system of record.
+
+The default workflow and feature-flag configuration must reproduce the current service behaviour captured in `docs/platform-workflow-feature-flag-stage-0-baseline.md` unless a later implementation stage explicitly changes product behaviour.
+
+---
+
 ## Namespacing
 
 Each tenant has a dedicated **Temporal namespace**: `srs-{tenantId}`. This provides:

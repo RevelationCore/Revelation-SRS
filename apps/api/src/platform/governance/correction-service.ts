@@ -23,6 +23,8 @@ import type { MarkService } from '../assessment/mark-service.js';
 import type { ModuleResultService } from '../assessment/module-result-service.js';
 import type { IntegrationBusPublisher } from '../integration-bus/publisher.js';
 import type { ProgressionService } from '../progression/progression-service.js';
+import type { ValueSetService } from '../value-sets/service.js';
+import { TransitionValidator, type TransitionValidationResult } from '../workflow/transition-service.js';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -84,13 +86,18 @@ const ALLOWED_STATUS_TRANSITIONS: Record<CaseStatusCode, CaseStatusCode[]> = {
 // ── Service ───────────────────────────────────────────────────────────────────
 
 export class CorrectionService {
+  private readonly transitionValidator: TransitionValidator;
+
   constructor(
     private readonly db:          Db,
     private readonly eventBus:    IntegrationBusPublisher,
     private readonly markService: MarkService,
     private readonly moduleResultService: ModuleResultService,
     private readonly progressionService:  ProgressionService,
-  ) {}
+    valueSets: ValueSetService,
+  ) {
+    this.transitionValidator = new TransitionValidator(valueSets);
+  }
 
   async openCase(tenantId: string, input: OpenCaseInput, actorId: string): Promise<string> {
     await this.#ensureEnrolmentExists(input.enrolmentId, tenantId);
@@ -123,18 +130,21 @@ export class CorrectionService {
     tenantId:   string,
     newStatus:  CaseStatusCode,
     actorId:    string,
-  ): Promise<void> {
+  ): Promise<TransitionValidationResult<CaseStatusCode>> {
     const current = await this.#getCurrentCase(caseId, tenantId);
     if (!current) throw new NotFoundError('CorrectionCase', caseId);
 
-    const allowed = ALLOWED_STATUS_TRANSITIONS[current.statusCode as CaseStatusCode] ?? [];
-    if (!allowed.includes(newStatus)) {
-      throw new ValidationError(
-        `Cannot transition correction case from '${current.statusCode}' to '${newStatus}'`,
-      );
-    }
-
     const now = new Date();
+    const transitionDecision = await this.transitionValidator.assertAllowed({
+      tenantId,
+      entityName: 'post_ratification_case',
+      fieldName: 'status_code',
+      entityLabel: 'correction case',
+      fromStatus: current.statusCode as CaseStatusCode,
+      toStatus: newStatus,
+      defaultTransitions: ALLOWED_STATUS_TRANSITIONS,
+      asAt: now,
+    });
 
     await withTenantContext(this.db, tenantId, async (tx) => {
       await tx.update(postRatificationCases)
@@ -160,6 +170,8 @@ export class CorrectionService {
         recordedUntil: null,
       });
     });
+
+    return transitionDecision;
   }
 
   async applyAmendment(

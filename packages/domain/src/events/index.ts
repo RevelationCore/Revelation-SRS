@@ -98,4 +98,10 @@ export const EVENT_TYPES = {
   REGULATORY_OFS_EXTRACT_GENERATED:          'srs.regulatory.ofs-extract-generated',
   GOVERNANCE_EXAM_ENTRY_SUBMITTED:           'srs.governance.exam-entry-submitted',
   GOVERNANCE_EXAM_SCHEDULE_RECEIVED:         'srs.governance.exam-schedule-received',
+  // ── Platform workflow controls ───────────────────────────────────────────
+  WORKFLOW_TASK_ASSIGNED:                    'srs.workflow.task-assigned',
+  WORKFLOW_TASK_COMPLETED:                   'srs.workflow.task-completed',
+  WORKFLOW_TASK_ESCALATED:                   'srs.workflow.task-escalated',
+  WORKFLOW_DECISION_RECORDED:                'srs.workflow.decision-recorded',
+  WORKFLOW_COMPLETED:                        'srs.workflow.completed',
 } as const;

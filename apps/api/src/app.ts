@@ -22,6 +22,10 @@ import { MisconductService } from './platform/circumstances/misconduct-service.j
 import { EnrolmentService } from './platform/enrolment/service.js';
 import { ExamEntryService } from './platform/assessment/exam-entry-service.js';
 import { BoardService } from './platform/governance/board-service.js';
+import { AdmissionsService } from './platform/admissions/admissions-service.js';
+import { CommunicationService } from './platform/communications/communication-service.js';
+import { LocaleService } from './platform/globalisation/locale-service.js';
+import { CurrencyService } from './platform/globalisation/currency-service.js';
 import { IntegrationBusPublisher } from './platform/integration-bus/publisher.js';
 import { AwardService } from './platform/progression/award-service.js';
 import { HearService } from './platform/progression/hear-service.js';
@@ -29,6 +33,12 @@ import { ProgressionService } from './platform/progression/progression-service.j
 import { CorrectionService } from './platform/governance/correction-service.js';
 import { ModuleRegistrationService } from './platform/registration/service.js';
 import { RegulatoryExchangeService } from './platform/regulatory/exchange-service.js';
+import { EnvironmentService } from './platform/platform-controls/environment-service.js';
+import { FeatureFlagService } from './platform/platform-controls/feature-flag-service.js';
+import { WorkflowBridgeService } from './platform/platform-controls/workflow-bridge-service.js';
+import { WorkflowDefinitionService } from './platform/platform-controls/workflow-definition-service.js';
+import { WorkflowResponsibilityService } from './platform/platform-controls/workflow-responsibility-service.js';
+import { WorkflowInstanceService, WorkflowTaskService } from './platform/platform-controls/workflow-runtime-service.js';
 import { FoiService } from './platform/regulatory/foi-service.js';
 import { HesaService } from './platform/regulatory/hesa-service.js';
 import { OfsService } from './platform/regulatory/ofs-service.js';
@@ -39,6 +49,7 @@ import { RulesEngine } from './platform/rules-engine/engine.js';
 import { StudentService } from './platform/students/service.js';
 import { TenantAdminService } from './platform/tenant-admin/service.js';
 import { ValueSetService } from './platform/value-sets/service.js';
+import { TriggerRuleEvaluator } from './platform/workflow/trigger-rule-service.js';
 import { assessmentComponentRoutes } from './routes/assessment-components.js';
 import { academicPeriodsRoutes } from './routes/academic-periods.js';
 import { circumstancesRoutes } from './routes/circumstances.js';
@@ -59,8 +70,11 @@ import { regulatoryUkviRoutes } from './routes/regulatory-ukvi.js';
 import { studentRoutes } from './routes/students.js';
 import { tenantAdminRoutes } from './routes/tenant-admin.js';
 import { valueSetsRoutes } from './routes/value-sets.js';
+import { globalisationRoutes } from './routes/globalisation.js';
 import { adjustmentRoutes } from './routes/adjustments.js';
+import { communicationRoutes } from './routes/communications.js';
 import { correctionCasesRoutes } from './routes/correction-cases.js';
+import { platformControlRoutes } from './routes/platform-controls.js';
 
 /**
  * Builds and configures the Fastify application.
@@ -104,25 +118,45 @@ export async function buildApp(
   const rules      = new RulesEngine(db);
   const valueSets  = new ValueSetService(db);
   const eventBus   = overrides.eventBus ?? new IntegrationBusPublisher(config.natsUrl);
+  const featureFlags = new FeatureFlagService(db);
+  const triggerRules = new TriggerRuleEvaluator(db, featureFlags);
   const students   = new StudentService(db, valueSets);
-  const enrolments = new EnrolmentService(db, eventBus, valueSets);
+  const enrolments = new EnrolmentService(db, eventBus, valueSets, triggerRules);
   const catalogue  = new CatalogueService(db, eventBus, valueSets);
   const calendar   = new CalendarService(db);
   const registrations = new ModuleRegistrationService(db, eventBus, rules);
   const tenantAdmin = new TenantAdminService(db);
   const assessmentComponents = new AssessmentComponentService(db, valueSets);
   const moduleResults = new ModuleResultService(db, eventBus, rules);
-  const marks = new MarkService(db, eventBus, rules, moduleResults);
+  const marks = new MarkService(db, eventBus, rules, moduleResults, featureFlags);
   const adjustments = new AdjustmentService(db, eventBus, valueSets);
   const exceptionalCircumstances = new ExceptionalCircumstancesService(db, eventBus);
   const misconduct = new MisconductService(db, valueSets, eventBus);
   const progression = new ProgressionService(db, eventBus, rules);
   const awards      = new AwardService(db, eventBus, rules, enrolments);
-  const boards = new BoardService(db, eventBus, valueSets, awards);
+  const boards = new BoardService(db, eventBus, valueSets, awards, featureFlags);
   const hear        = new HearService(db);
-  const corrections = new CorrectionService(db, eventBus, marks, moduleResults, progression);
-  const regulatoryExchanges = new RegulatoryExchangeService(db);
-  const ucas = new UcasService(db, valueSets, eventBus, students, enrolments, regulatoryExchanges);
+  const corrections = new CorrectionService(db, eventBus, marks, moduleResults, progression, valueSets);
+  const runtimeDeployment = {
+    environmentCode: config.deploymentEnvironmentCode,
+    releaseVersion: config.releaseVersion,
+    ...(config.imageDigest ? { imageDigest: config.imageDigest } : {}),
+    migrationVersion: config.migrationVersion,
+  };
+  const regulatoryExchanges = new RegulatoryExchangeService(db, {
+    environmentCode: config.deploymentEnvironmentCode,
+  });
+  const workflowDefinitions = new WorkflowDefinitionService(db);
+  const workflowInstances = new WorkflowInstanceService(db);
+  const workflowTasks = new WorkflowTaskService(db);
+  const workflowBridge = new WorkflowBridgeService(db, audit, eventBus);
+  const workflowResponsibilities = new WorkflowResponsibilityService(db);
+  const environments = new EnvironmentService(db, runtimeDeployment);
+  const admissions    = new AdmissionsService(db, workflowBridge);
+  const localeService   = new LocaleService(db, audit);
+  const currencyService = new CurrencyService(db, audit);
+  const communications  = new CommunicationService(db, localeService, featureFlags);
+  const ucas = new UcasService(db, valueSets, eventBus, enrolments, regulatoryExchanges, admissions, featureFlags);
   const hesa = new HesaService(db, eventBus, students, regulatoryExchanges);
   const slc = new SlcService(db, eventBus, valueSets, enrolments, regulatoryExchanges);
   const ukvi = new UkviService(db, eventBus, valueSets, rules, regulatoryExchanges);
@@ -155,6 +189,13 @@ export async function buildApp(
   fastify.decorate('hearService',        hear);
   fastify.decorate('correctionService',  corrections);
   fastify.decorate('regulatoryExchangeService', regulatoryExchanges);
+  fastify.decorate('workflowDefinitionService', workflowDefinitions);
+  fastify.decorate('workflowInstanceService', workflowInstances);
+  fastify.decorate('workflowTaskService', workflowTasks);
+  fastify.decorate('workflowBridgeService', workflowBridge);
+  fastify.decorate('workflowResponsibilityService', workflowResponsibilities);
+  fastify.decorate('featureFlagService', featureFlags);
+  fastify.decorate('environmentService', environments);
   fastify.decorate('ucasService',        ucas);
   fastify.decorate('hesaService',        hesa);
   fastify.decorate('slcService',         slc);
@@ -162,6 +203,9 @@ export async function buildApp(
   fastify.decorate('ofsService',         ofs);
   fastify.decorate('foiService',         foi);
   fastify.decorate('examEntryService',   examEntries);
+  fastify.decorate('localeService',       localeService);
+  fastify.decorate('currencyService',     currencyService);
+  fastify.decorate('communicationService', communications);
 
   // - Security plugins -
 
@@ -243,6 +287,9 @@ export async function buildApp(
         { name: 'regulatory',           description: 'Regulatory compliance and statutory exchanges' },
         { name: 'tenant-admin',         description: 'Tenant administration and configuration' },
         { name: 'value-sets',           description: 'Value set management' },
+        { name: 'platform-controls',    description: 'Workflow, feature flags, and environment controls' },
+        { name: 'Globalisation',        description: 'Locale, time zone, currency, and multilingual label administration' },
+        { name: 'communications',       description: 'Communication templates, channel dispatch, and audit log' },
       ],
     },
   });
@@ -286,9 +333,15 @@ export async function buildApp(
       ['/module-offerings',          'calendar'],
       ['/value-sets',                'value-sets'],
       ['/fields/',                   'value-sets'],
+      ['/workflow-',                 'platform-controls'],
+      ['/feature-flags',             'platform-controls'],
+      ['/environments',              'platform-controls'],
+      ['/environment-promotions',    'platform-controls'],
       ['/tenants',                   'tenant-admin'],
       ['/academic-rules',            'tenant-admin'],
       ['/tenant/',                   'tenant-admin'],
+      ['/globalisation',             'Globalisation'],
+      ['/communication',             'communications'],
     ];
 
     for (const [prefix, tag] of tagMap) {
@@ -323,6 +376,9 @@ export async function buildApp(
   await fastify.register(moduleResultRoutes,        { prefix: '/api/v1' });
   await fastify.register(moduleRegistrationsRoutes, { prefix: '/api/v1' });
   await fastify.register(tenantAdminRoutes,         { prefix: '/api/v1' });
+  await fastify.register(platformControlRoutes,     { prefix: '/api/v1' });
+  await fastify.register(globalisationRoutes,       { prefix: '/api/v1' });
+  await fastify.register(communicationRoutes,       { prefix: '/api/v1' });
 
   // Canonical OpenAPI spec endpoint — served alongside the Swagger UI at /api/v1/docs
   fastify.get(
@@ -361,6 +417,13 @@ declare module 'fastify' {
     hearService:        HearService;
     correctionService:  CorrectionService;
     regulatoryExchangeService: RegulatoryExchangeService;
+    workflowDefinitionService: WorkflowDefinitionService;
+    workflowInstanceService: WorkflowInstanceService;
+    workflowTaskService: WorkflowTaskService;
+    workflowBridgeService: WorkflowBridgeService;
+    workflowResponsibilityService: WorkflowResponsibilityService;
+    featureFlagService: FeatureFlagService;
+    environmentService: EnvironmentService;
     ucasService:        UcasService;
     hesaService:        HesaService;
     slcService:         SlcService;
@@ -368,6 +431,9 @@ declare module 'fastify' {
     ofsService:         OfsService;
     foiService:         FoiService;
     examEntryService:   ExamEntryService;
+    localeService:        LocaleService;
+    currencyService:      CurrencyService;
+    communicationService: CommunicationService;
   }
   interface FastifyContextConfig {
     skipAuth?: boolean;

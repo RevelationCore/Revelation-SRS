@@ -21,6 +21,8 @@ import type {
 
 import type { IntegrationBusPublisher } from '../integration-bus/publisher.js';
 import type { ValueSetService } from '../value-sets/service.js';
+import { TransitionValidator, type TransitionValidationResult } from '../workflow/transition-service.js';
+import { TriggerRuleEvaluator, type EnrolmentTriggerDecision } from '../workflow/trigger-rule-service.js';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -89,7 +91,6 @@ export interface FeeLiabilityDto {
   academicYear:     string;
   feeBandCode:      string | null;
   fundingSourceCode: string | null;
-  amountPence:      number | null;
   statusCode:       string;
   generatedAt:      Date;
 }
@@ -122,11 +123,18 @@ const ALLOWED_TRANSITIONS: Record<EnrolmentStatusCode, EnrolmentStatusCode[]> = 
 // ── Service ──────────────────────────────────────────────────────────────────
 
 export class EnrolmentService {
+  private readonly transitionValidator: TransitionValidator;
+  private readonly triggerRules: TriggerRuleEvaluator;
+
   constructor(
     private readonly db:       Db,
     private readonly eventBus: IntegrationBusPublisher,
     private readonly valueSets: ValueSetService,
-  ) {}
+    triggerRules?: TriggerRuleEvaluator,
+  ) {
+    this.transitionValidator = new TransitionValidator(valueSets);
+    this.triggerRules = triggerRules ?? new TriggerRuleEvaluator();
+  }
 
   async #validateFieldValue(
     tenantId: string,
@@ -180,7 +188,8 @@ export class EnrolmentService {
     const enrolmentId = randomUUID();
     const now         = new Date();
     const createdFeeLiabilityIds: string[] = [];
-    const createdTriggers: Array<{ id: string; triggerTypeCode: 'ucas-confirmation' | 'slc-confirmation' | 'ukvi-cas'; sourceReference?: string }> = [];
+    const createdTriggers: Array<{ id: string; trigger: EnrolmentTriggerDecision }> = [];
+    const triggerDecisions = await this.triggerRules.evaluateEnrolmentCreation(tenantId, input);
 
     await withTenantContext(this.db, tenantId, async (tx) => {
       await tx.insert(enrolments).values({
@@ -215,27 +224,12 @@ export class EnrolmentService {
         academicYear:      input.academicYearOfEntry,
         feeBandCode:       input.feeBandCode ?? null,
         fundingSourceCode: input.fundingSourceCode ?? null,
-        amountPence:       null,
         statusCode:        'generated',
         generatedAt:       now,
       });
       createdFeeLiabilityIds.push(feeLiabilityId);
 
-      const triggerInputs: Array<{ triggerTypeCode: 'ucas-confirmation' | 'slc-confirmation' | 'ukvi-cas'; sourceReference?: string }> = [];
-      if (input.ucasPersonalId) {
-        triggerInputs.push({ triggerTypeCode: 'ucas-confirmation', sourceReference: input.ucasPersonalId });
-      }
-      if (input.fundingSourceCode === 'slc' || input.slcReference) {
-        triggerInputs.push({
-          triggerTypeCode: 'slc-confirmation',
-          ...(input.slcReference ? { sourceReference: input.slcReference } : {}),
-        });
-      }
-      if (input.ukviCasRequired) {
-        triggerInputs.push({ triggerTypeCode: 'ukvi-cas' });
-      }
-
-      for (const trigger of triggerInputs) {
+      for (const trigger of triggerDecisions) {
         const triggerId = randomUUID();
         await tx.insert(enrolmentDownstreamTriggers).values({
           id:              triggerId,
@@ -243,16 +237,12 @@ export class EnrolmentService {
           enrolmentId,
           triggerTypeCode: trigger.triggerTypeCode,
           statusCode:      'pending',
-          payloadSummary: {
-            personId: input.personId,
-            academicYear: input.academicYearOfEntry,
-            sourceReference: trigger.sourceReference,
-          },
+          payloadSummary:  trigger.payloadSummary,
           correlationId: null,
           createdAt:     now,
           sentAt:        null,
         });
-        createdTriggers.push({ id: triggerId, ...trigger });
+        createdTriggers.push({ id: triggerId, trigger });
       }
 
       await this.#updatePersonStatusFromEnrolments(input.personId, tenantId, tx);
@@ -295,20 +285,20 @@ export class EnrolmentService {
         );
       }
 
-      for (const trigger of createdTriggers) {
+      for (const created of createdTriggers) {
         const payload: EnrolmentDownstreamTriggerCreatedV1Payload = {
           personId: input.personId,
           enrolmentId,
-          triggerId: trigger.id,
-          triggerTypeCode: trigger.triggerTypeCode,
-          sourceReference: trigger.sourceReference,
+          triggerId: created.id,
+          triggerTypeCode: created.trigger.triggerTypeCode,
+          ...(created.trigger.sourceReference ? { sourceReference: created.trigger.sourceReference } : {}),
         };
         await this.eventBus.publish(
           EVENT_TYPES.ENROLMENT_DOWNSTREAM_TRIGGER_CREATED,
           '1.0.0',
           tenantId,
           actorId,
-          trigger.triggerTypeCode === 'ukvi-cas' ? 'regulatory' : 'personal',
+          created.trigger.triggerTypeCode === 'ukvi-cas' ? 'regulatory' : 'personal',
           payload,
         );
       }
@@ -399,19 +389,27 @@ export class EnrolmentService {
     validFrom:   Date,
     actorId:     string,
     options:     TransitionOptions = {},
-  ): Promise<void> {
+  ): Promise<TransitionValidationResult<EnrolmentStatusCode>> {
     const current = await this.getEnrolment(enrolmentId, tenantId);
     if (!current) {
       throw new NotFoundError('Enrolment', enrolmentId);
     }
 
     const from = current.statusCode as EnrolmentStatusCode;
-    const allowed = ALLOWED_TRANSITIONS[from] ?? [];
-    if (!allowed.includes(newStatus)) {
-      throw new ValidationError(
-        `Cannot transition enrolment from '${from}' to '${newStatus}'`,
-      );
-    }
+    const transitionDecision = await this.transitionValidator.assertAllowed({
+      tenantId,
+      entityName: 'enrolment',
+      fieldName: 'status_code',
+      entityLabel: 'enrolment',
+      fromStatus: from,
+      toStatus: newStatus,
+      defaultTransitions: ALLOWED_TRANSITIONS,
+      asAt: validFrom,
+    });
+    const triggerDecisions = await this.triggerRules.evaluateEnrolmentStatusTransition(tenantId, {
+      current,
+      newStatus,
+    });
 
     const now = new Date();
 
@@ -466,18 +464,13 @@ export class EnrolmentService {
         createdAt:      now,
       });
 
-      // Queue an SLC status-change notification when the enrolment has an SLC reference and
-      // transitions to a status that SLC must be notified of (withdrawal or intermission).
-      if (
-        current.slcReference &&
-        (newStatus === 'withdrawn' || newStatus === 'intermitting')
-      ) {
+      for (const trigger of triggerDecisions) {
         await tx.insert(enrolmentDownstreamTriggers).values({
           tenantId:        tenantId as `${string}-${string}-${string}-${string}-${string}`,
           enrolmentId:     enrolmentId as `${string}-${string}-${string}-${string}-${string}`,
-          triggerTypeCode: 'slc-confirmation',
+          triggerTypeCode: trigger.triggerTypeCode,
           statusCode:      'pending',
-          payloadSummary:  { slcReference: current.slcReference, notificationType: newStatus },
+          payloadSummary:  trigger.payloadSummary,
         });
       }
 
@@ -502,6 +495,8 @@ export class EnrolmentService {
         payload,
       );
     }
+
+    return transitionDecision;
   }
 
   async getEnrolmentHistory(enrolmentId: string, tenantId: string): Promise<EnrolmentHistoryDto[]> {
@@ -573,7 +568,6 @@ export class EnrolmentService {
       academicYear:     row.academicYear,
       feeBandCode:      row.feeBandCode,
       fundingSourceCode: row.fundingSourceCode,
-      amountPence:      row.amountPence,
       statusCode:       row.statusCode,
       generatedAt:      row.generatedAt,
     }));

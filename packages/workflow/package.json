@@ -10,7 +10,8 @@
     "build":     "tsc -p tsconfig.json",
     "typecheck": "tsc -b tsconfig.json",
     "dev":       "tsc -p tsconfig.json --watch",
-    "worker":    "node --import tsx/esm src/worker.ts"
+    "worker":    "node --import tsx/esm src/worker.ts",
+    "test":      "vitest run --reporter=verbose"
   },
   "dependencies": {
     "@temporalio/client":  "^1.11.0",

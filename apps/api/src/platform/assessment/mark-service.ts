@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import { and, eq, gt, isNull, lte, or } from 'drizzle-orm';
+import { and, eq, gt, isNull, lte, or, sql } from 'drizzle-orm';
 import {
   assessmentComponents,
   assessmentSubmissions,
@@ -23,6 +23,7 @@ import type {
 } from '@revelation-srs/domain';
 
 import type { IntegrationBusPublisher } from '../integration-bus/publisher.js';
+import type { FeatureFlagService } from '../platform-controls/feature-flag-service.js';
 import type { RulesEngine } from '../rules-engine/engine.js';
 
 import { assertNotLocked } from './lock.js';
@@ -77,6 +78,11 @@ interface PenaltyResult {
   adjustedMark: number;
   penaltyApplied: boolean;
   penaltyPercent: number | null;
+  latePenaltyCapApplied: boolean;
+  latePenaltyCapPercent: number | null;
+  resitCapApplied: boolean;
+  resitCapMark: number | null;
+  latePenaltyEnabled: boolean;
 }
 
 export class MarkService {
@@ -85,6 +91,7 @@ export class MarkService {
     private readonly eventBus: IntegrationBusPublisher,
     private readonly rules: RulesEngine,
     private readonly moduleResults?: ModuleResultService,
+    private readonly featureFlags?: FeatureFlagService,
   ) {}
 
   async ingestMark(
@@ -97,7 +104,7 @@ export class MarkService {
     const registration = await this.#getRegistrationContext(moduleRegistrationId, tenantId);
     await this.#ensureComponentBelongsToOffering(input.assessmentComponentId, registration.moduleOfferingId, tenantId);
 
-    const penalty = await this.#applyLatePenalty(tenantId, registration, input.rawMark, input);
+    const penalty = await this.#applyLatePenalty(tenantId, registration, input.rawMark, input.attemptNumber ?? 1, input);
     const markId = randomUUID();
     const now = new Date();
     let assessmentSubmissionId: string | null = null;
@@ -140,6 +147,7 @@ export class MarkService {
       });
     });
 
+    await this.#writeMarkEvidence(tenantId, markId, input.attemptNumber ?? 1, input.rawMark, penalty);
     await this.moduleResults?.recalculate(moduleRegistrationId, tenantId);
 
     if (this.eventBus.isConnected()) {
@@ -419,21 +427,42 @@ export class MarkService {
     tenantId: string,
     registration: RegistrationContext,
     rawMark: number,
+    attemptNumber: number,
     input: { submittedAt?: string; dueAt?: string },
   ): Promise<PenaltyResult> {
+    const noPenalty: PenaltyResult = {
+      adjustedMark: rawMark,
+      penaltyApplied: false,
+      penaltyPercent: null,
+      latePenaltyCapApplied: false,
+      latePenaltyCapPercent: null,
+      resitCapApplied: false,
+      resitCapMark: null,
+      latePenaltyEnabled: true,
+    };
+
+    // Stage 3: honour assessment.late-penalty.enabled flag
+    const latePenaltyEnabled = await this.#evaluateBooleanFlag(tenantId, 'assessment.late-penalty.enabled', true);
+    if (!latePenaltyEnabled) {
+      // Apply resit cap even when late penalty is disabled, if configured
+      return this.#applyResitCap(tenantId, registration, rawMark, attemptNumber, {
+        ...noPenalty, latePenaltyEnabled: false,
+      });
+    }
+
     if (!input.submittedAt || !input.dueAt) {
-      return { adjustedMark: rawMark, penaltyApplied: false, penaltyPercent: null };
+      return this.#applyResitCap(tenantId, registration, rawMark, attemptNumber, noPenalty);
     }
 
     const submittedAt = new Date(input.submittedAt);
     const dueAt = new Date(input.dueAt);
     if (submittedAt <= dueAt) {
-      return { adjustedMark: rawMark, penaltyApplied: false, penaltyPercent: null };
+      return this.#applyResitCap(tenantId, registration, rawMark, attemptNumber, noPenalty);
     }
 
     const suppressed = await this.#hasActiveDeadlineExtension(tenantId, registration, submittedAt);
     if (suppressed) {
-      return { adjustedMark: rawMark, penaltyApplied: false, penaltyPercent: null };
+      return this.#applyResitCap(tenantId, registration, rawMark, attemptNumber, noPenalty);
     }
 
     let percentPerDay: number;
@@ -446,19 +475,91 @@ export class MarkService {
       percentPerDay = Number(rule['percentPerDay'] ?? rule['rate'] ?? rule['percent'] ?? 0);
     } catch (err) {
       if (err instanceof RuleNotConfiguredError) {
-        return { adjustedMark: rawMark, penaltyApplied: false, penaltyPercent: null };
+        return this.#applyResitCap(tenantId, registration, rawMark, attemptNumber, noPenalty);
       }
       throw err;
     }
 
     if (!Number.isFinite(percentPerDay) || percentPerDay <= 0) {
-      return { adjustedMark: rawMark, penaltyApplied: false, penaltyPercent: null };
+      return this.#applyResitCap(tenantId, registration, rawMark, attemptNumber, noPenalty);
     }
 
     const daysLate = Math.max(1, Math.ceil((submittedAt.getTime() - dueAt.getTime()) / 86_400_000));
-    const penaltyPercent = daysLate * percentPerDay;
-    const adjustedMark = Math.max(0, roundMark(rawMark - penaltyPercent));
-    return { adjustedMark, penaltyApplied: true, penaltyPercent };
+    let penaltyPercent = daysLate * percentPerDay;
+
+    // Stage 3: honour late-penalty-cap rule
+    let latePenaltyCapApplied = false;
+    let latePenaltyCapPercent: number | null = null;
+    try {
+      const capRule = await this.rules.getRule<Record<string, unknown>>(
+        { tenantId, programmeId: registration.programmeId ?? '' },
+        'late-penalty-cap',
+        'default',
+      );
+      const cap = Number(capRule['maxPenaltyPercent'] ?? capRule['cap'] ?? 100);
+      if (Number.isFinite(cap) && penaltyPercent > cap) {
+        latePenaltyCapApplied = true;
+        latePenaltyCapPercent = cap;
+        penaltyPercent = cap;
+      }
+    } catch (err) {
+      if (!(err instanceof RuleNotConfiguredError)) throw err;
+      // no cap configured — no cap applied
+    }
+
+    const adjustedAfterPenalty = Math.max(0, roundMark(rawMark - penaltyPercent));
+    const afterPenalty: PenaltyResult = {
+      adjustedMark: adjustedAfterPenalty,
+      penaltyApplied: true,
+      penaltyPercent,
+      latePenaltyCapApplied,
+      latePenaltyCapPercent,
+      resitCapApplied: false,
+      resitCapMark: null,
+      latePenaltyEnabled: true,
+    };
+
+    return this.#applyResitCap(tenantId, registration, adjustedAfterPenalty, attemptNumber, afterPenalty);
+  }
+
+  async #applyResitCap(
+    tenantId: string,
+    registration: RegistrationContext,
+    currentMark: number,
+    attemptNumber: number,
+    partial: PenaltyResult,
+  ): Promise<PenaltyResult> {
+    // Stage 3: resit-cap only applies to attempts >= 2 when flag is on
+    if (attemptNumber < 2) return partial;
+
+    const resitCapEnabled = await this.#evaluateBooleanFlag(tenantId, 'assessment.resit-cap.enabled', false);
+    if (!resitCapEnabled) return partial;
+
+    try {
+      const cap = await this.rules.getResitMarkCap({ tenantId, programmeId: registration.programmeId ?? '' });
+      if (Number.isFinite(cap) && currentMark > cap) {
+        return {
+          ...partial,
+          adjustedMark: cap,
+          resitCapApplied: true,
+          resitCapMark: cap,
+        };
+      }
+    } catch (err) {
+      if (!(err instanceof RuleNotConfiguredError)) throw err;
+      // no resit cap configured — use default cap of 40 per UK HE convention
+      const defaultCap = 40;
+      if (currentMark > defaultCap) {
+        return {
+          ...partial,
+          adjustedMark: defaultCap,
+          resitCapApplied: true,
+          resitCapMark: defaultCap,
+        };
+      }
+    }
+
+    return partial;
   }
 
   async #applyLatePenaltyForUpdate(
@@ -469,18 +570,76 @@ export class MarkService {
     input: UpdateMarkInput,
   ): Promise<PenaltyResult> {
     if (input.submittedAt || input.dueAt) {
-      return this.#applyLatePenalty(tenantId, registration, rawMark, input);
+      return this.#applyLatePenalty(tenantId, registration, rawMark, current.attemptNumber, input);
     }
 
     if (current.penaltyApplied && current.penaltyPercent !== null) {
-      return {
-        adjustedMark: Math.max(0, roundMark(rawMark - current.penaltyPercent)),
+      const afterPenalty = Math.max(0, roundMark(rawMark - current.penaltyPercent));
+      const partial: PenaltyResult = {
+        adjustedMark: afterPenalty,
         penaltyApplied: true,
         penaltyPercent: current.penaltyPercent,
+        latePenaltyCapApplied: false,
+        latePenaltyCapPercent: null,
+        resitCapApplied: false,
+        resitCapMark: null,
+        latePenaltyEnabled: true,
       };
+      return this.#applyResitCap(tenantId, registration, afterPenalty, current.attemptNumber, partial);
     }
 
-    return { adjustedMark: rawMark, penaltyApplied: false, penaltyPercent: null };
+    const noPenalty: PenaltyResult = {
+      adjustedMark: rawMark,
+      penaltyApplied: false,
+      penaltyPercent: null,
+      latePenaltyCapApplied: false,
+      latePenaltyCapPercent: null,
+      resitCapApplied: false,
+      resitCapMark: null,
+      latePenaltyEnabled: true,
+    };
+    return this.#applyResitCap(tenantId, registration, rawMark, current.attemptNumber, noPenalty);
+  }
+
+  async #evaluateBooleanFlag(tenantId: string, flagKey: string, fallback: boolean): Promise<boolean> {
+    if (!this.featureFlags) return fallback;
+    try {
+      const flag = await this.featureFlags.getFlagByKey(flagKey);
+      const result = await this.featureFlags.evaluatePreview(flag.featureFlagId, { tenantId });
+      return result.value === true || result.variantKey === 'on';
+    } catch {
+      return fallback;
+    }
+  }
+
+  async #writeMarkEvidence(
+    tenantId: string,
+    markId: string,
+    attemptNumber: number,
+    rawMark: number,
+    penalty: PenaltyResult,
+  ): Promise<void> {
+    try {
+      await this.db.execute(sql`
+        INSERT INTO mark_calculation_evidence (
+          tenant_id, mark_id, attempt_number, raw_mark,
+          late_penalty_enabled,
+          late_penalty_percent, late_penalty_cap_applied, late_penalty_cap_percent,
+          resit_cap_applied, resit_cap_mark,
+          adjusted_mark,
+          rule_snapshot
+        ) VALUES (
+          ${tenantId}::uuid, ${markId}::uuid, ${attemptNumber}, ${rawMark},
+          ${penalty.latePenaltyEnabled},
+          ${penalty.penaltyPercent}, ${penalty.latePenaltyCapApplied}, ${penalty.latePenaltyCapPercent},
+          ${penalty.resitCapApplied}, ${penalty.resitCapMark},
+          ${penalty.adjustedMark},
+          '{}'::jsonb
+        )
+      `);
+    } catch {
+      // Evidence write failure must not block the mark itself
+    }
   }
 
   async #hasActiveDeadlineExtension(

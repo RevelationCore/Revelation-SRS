@@ -11,6 +11,7 @@ import type {
   EnrolmentTransitionDto,
   FeeLiabilityDto,
 } from '../platform/enrolment/service.js';
+import { transitionAuditValue } from '../platform/workflow/transition-service.js';
 
 const EnrolmentSchema = Type.Object({
   enrolmentId:         Type.String(),
@@ -58,7 +59,6 @@ const FeeLiabilitySchema = Type.Object({
   academicYear:     Type.String(),
   feeBandCode:      Type.Union([Type.String(), Type.Null()]),
   fundingSourceCode: Type.Union([Type.String(), Type.Null()]),
-  amountPence:      Type.Union([Type.Number(), Type.Null()]),
   statusCode:       Type.String(),
   generatedAt:      Type.String(),
 });
@@ -312,7 +312,7 @@ export function enrolmentRoutes(fastify: FastifyInstance): void {
         if (body.reasonCode !== undefined) transitionOptions.reasonCode = body.reasonCode;
         if (body.reasonText !== undefined) transitionOptions.reasonText = body.reasonText;
 
-        await fastify.enrolmentService.transitionStatus(
+        const transitionDecision = await fastify.enrolmentService.transitionStatus(
           enrolmentId,
           request.tenantId,
           newStatus,
@@ -326,7 +326,10 @@ export function enrolmentRoutes(fastify: FastifyInstance): void {
           entityType:       'enrolment',
           entityId:         enrolmentId,
           fieldName:        'status_code',
-          afterValue:       { statusCode: newStatus, reasonCode: body.reasonCode, reasonText: body.reasonText },
+          afterValue:       transitionAuditValue(transitionDecision, {
+            reasonCode: body.reasonCode,
+            reasonText: body.reasonText,
+          }),
           actionType:       'update',
           actorType:        'user',
           actorId:          request.user.sub,

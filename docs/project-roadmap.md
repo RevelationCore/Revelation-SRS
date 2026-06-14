@@ -1,7 +1,7 @@
 # Revelation SRS — Project Roadmap
 
 > Status: Draft for review
-> Last updated: 2026-06-04
+> Last updated: 2026-06-14
 
 ---
 
@@ -41,13 +41,13 @@ Two worked examples are carried through the later phases to validate the archite
 
 1. **Core SRS functional requirements** — derived from the published reference model flows across the F001–F070 identifier range and the 33 systems and actors. Reference model version 2.1 contains 69 interactions and no F054. Each requirement is stated as a testable capability, assigned a unique identifier (REQ-xxx), and traced to the reference model flow(s) it satisfies.
 
-2. **Non-functional requirements** — derived directly from the core principles. Covers: performance targets (§18), accessibility standard (§16), security controls (§6), regulatory obligations (§7), data retention classes (§17), availability and recovery objectives.
+2. **Non-functional requirements** — derived directly from the core principles. Covers: performance targets (§20), accessibility standard (§17), security controls (§6), regulatory obligations (§7), data retention classes (§18), availability and recovery objectives.
 
 3. **Domain glossary** — the authoritative definition of every domain term used in the system (programme, module, enrolment, cohort, credit, award, ratification, reasonable adjustment, exceptional circumstances, CAS, etc.). UK HE conventions throughout; no US-centric alternatives.
 
 4. **Actor catalogue** — every human and system actor that interacts with the SRS: their role, what they can read, what they can initiate, and what they are assigned in workflows. Input to the RBAC model (§6).
 
-5. **Data subject register** — every category of personal data the system holds, its sensitivity classification, lawful basis for processing, retention period, and the regulatory obligation it serves. Directly supports §17 and §7.
+5. **Data subject register** — every category of personal data the system holds, its sensitivity classification, lawful basis for processing, retention period, and the regulatory obligation it serves. Directly supports §18 and §7.
 
 6. **Workflow catalogue** — an enumeration of every long-running process to be managed by the workflow engine (§4), with the actors, states, transitions, and decision points for each.
 
@@ -125,7 +125,7 @@ Two worked examples are carried through the later phases to validate the archite
 
 **Work items**
 
-1. **Repository structure and CI/CD pipeline** — monorepo layout, linting and static analysis, test runner, container image build and vulnerability scanning, OpenAPI validation, migration validation. All tests run on every pull request; no merge on failure (§21).
+1. **Repository structure and CI/CD pipeline** — monorepo layout, linting and static analysis, test runner, container image build and vulnerability scanning, OpenAPI validation, migration validation. All tests run on every pull request; no merge on failure (§23).
 
 2. **Database foundation**
    - PostgreSQL schema with migration toolchain
@@ -302,11 +302,30 @@ Two worked examples are carried through the later phases to validate the archite
 
 ---
 
+## Phase 6.6 — Clean SRS Convergence
+
+**Goal**: Move the implemented SRS from a compatibility-preserving refactor state to a clean workflow-native, flag-aware, multilingual, and multicurrency architecture before published integration contracts and broad UI work lock in legacy assumptions.
+
+**Plan**: See `docs/clean-srs-convergence-plan.md`.
+
+**Stage baseline**: Stage 0 legacy and variant inventory recorded in `docs/clean-srs-stage-0-legacy-variant-register.md`.
+
+**Scope**
+- Inventory and retire legacy process paths retained during Phases 4-6.5.
+- Apply the workflow model uniformly to process-bearing domains, including enrolment, module registration, assessment moderation, grade calculation review, progression, awards, exam boards, corrections, appeals, regulatory returns, finance handoffs, communications, and Admissions.
+- Apply feature flags uniformly for optional modules, rollout, tenant variants, environment safety, integration routes, and valid architectural choices driven by institution size or operating model.
+- Add globalisation foundations for multilingual UI/API labels, locale-aware communications, explicit time zones, multicurrency monetary records, and auditable currency conversion.
+- Simplify schema, services, tests, and documentation so internal legacy paths do not remain indefinitely.
+
+**Exit criterion**: The SRS has one clean internal implementation path per capability; process variation is represented through workflow/rules/flags/configuration; multilingual and multicurrency data concerns are represented in platform and domain models; any remaining compatibility behaviour is limited to documented public contract deprecation.
+
+---
+
 ## Phase 7 — Integration Layer: Published Interfaces
 
 **Goal**: Complete and formally publish the integration layer so that external systems and third parties can integrate against stable, documented contracts.
 
-**Prerequisites**: Phases 4, 5, and 6 complete (all domain events and API resources exist).
+**Prerequisites**: Phases 4, 5, 6, 6.4, 6.5, and 6.6 complete (all domain events and API resources exist on the clean architecture).
 
 **Work items**
 
@@ -420,7 +439,7 @@ The VLE Connector integrates exclusively via the published integration layer —
    - Module selection and registration
    - Results and progression view, notifications
    - Exam timetable and candidate number display (F012)
-   - WCAG 2.1 AA compliance throughout (§16)
+   - WCAG 2.1 AA compliance throughout (§17)
 
 2. **Staff administrative interface**
    - Student record search, view, and administration
@@ -459,7 +478,7 @@ The VLE Connector integrates exclusively via the published integration layer —
 
 **Work items**
 
-1. **Performance testing** — load testing against the benchmarks defined in §18 (500ms p95 for interactive APIs, 50,000-student design point). Identify and resolve bottlenecks.
+1. **Performance testing** — load testing against the benchmarks defined in §20 (500ms p95 for interactive APIs, 50,000-student design point). Identify and resolve bottlenecks.
 
 2. **Security review** — SAST clean, dependency vulnerability scan clean, DAST against the running application, penetration test of authentication and authorisation controls, data isolation test across tenant boundaries.
 
@@ -504,13 +523,15 @@ The VLE Connector integrates exclusively via the published integration layer —
 | 12 — Integration Architecture | 3 (core), 7 (published interfaces), 9 (VLE connector) |
 | 13 — Configuration-Driven Rules | 3 (engine), 5 (progression, classification) |
 | 14 — Feature Flags and Process Variation | 6.4 (flag substrate), 6.5 (Admissions variants), 10 (admin UI) |
-| 15 — Record Lifecycle & Locking | 5 (ratification workflow and lock) |
-| 16 — Accessible UI | 10 (portal), 11 (audit) |
-| 17 — Privacy by Design | 1 (data register), 3 (RLS), 5 (read auditing), 11 (retention) |
-| 18 — Performance & Scalability | 11 (load testing and benchmarking) |
-| 19 — Observability | 3 (stack), applied in every subsequent phase |
-| 20 — UK HE Domain Model | 1 (glossary, requirements), applied throughout |
-| 21 — Testability & Quality | 3 (CI pipeline), applied throughout |
+| 15 — Clean Core and Legacy Retirement | 6.6 (clean convergence), 7 (published contracts) |
+| 16 — Record Lifecycle & Locking | 5 (ratification workflow and lock), 6.6 (workflow-native board governance) |
+| 17 — Accessible UI | 10 (portal), 11 (audit) |
+| 18 — Privacy by Design | 1 (data register), 3 (RLS), 5 (read auditing), 11 (retention) |
+| 19 — Internationalisation, Localisation, and Multicurrency | 6.6 (globalisation foundation), 10 (UI), 11 (operational hardening) |
+| 20 — Performance & Scalability | 11 (load testing and benchmarking) |
+| 21 — Observability | 3 (stack), applied in every subsequent phase |
+| 22 — UK HE Domain Model | 1 (glossary, requirements), applied throughout |
+| 23 — Testability & Quality | 3 (CI pipeline), applied throughout |
 
 ---
 
@@ -527,6 +548,7 @@ The VLE Connector integrates exclusively via the published integration layer —
 | 6 | Core SRS: Regulatory Compliance | HESA, SLC, UKVI, UCAS, OfS |
 | 6.4 | Platform Workflow and Feature Flag Alignment | Workflow, flags, trigger rules, environment promotion |
 | 6.5 | Admissions Module Refactor | Source-neutral Admissions with UCAS/direct/agent/international routes |
+| 6.6 | Clean SRS Convergence | Legacy retirement, workflow/flag uniformity, multilingual and multicurrency foundations |
 | 7 | Integration Layer: Published Interfaces | OpenAPI specs, event schemas, developer guide |
 | 8 | Example First-Party Module: Wellbeing | Adjustments and EC workflows end-to-end |
 | 9 | Example External Integration: VLE | Enrolment sync, grade ingestion, adjustment distribution |

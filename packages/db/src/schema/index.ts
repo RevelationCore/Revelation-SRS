@@ -15,3 +15,6 @@ export * from './governance.js';
 export * from './progression.js';
 export * from './regulatory.js';
 export * from './examEntry.js';
+export * from './platform-workflow.js';
+export * from './globalisation.js';
+export * from './communications.js';
