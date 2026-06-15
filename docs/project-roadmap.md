@@ -1,7 +1,7 @@
 # Revelation SRS — Project Roadmap
 
 > Status: Draft for review
-> Last updated: 2026-06-14
+> Last updated: 2026-06-15
 
 ---
 
@@ -321,40 +321,35 @@ Two worked examples are carried through the later phases to validate the archite
 
 ---
 
-## Phase 7 — Integration Layer: Published Interfaces
+## Phase 7 — Integration Layer: Published Interfaces *(complete)*
 
 **Goal**: Complete and formally publish the integration layer so that external systems and third parties can integrate against stable, documented contracts.
 
 **Prerequisites**: Phases 4, 5, 6, 6.4, 6.5, and 6.6 complete (all domain events and API resources exist on the clean architecture).
 
-**Work items**
-
-1. **Full REST API surface** — all resources documented in versioned OpenAPI specifications, published to a developer portal. Authentication examples, pagination documentation, error catalogue, changelog.
-
-2. **Domain event catalogue** — all events documented with versioned JSON Schema or Avro schemas, published to a schema registry. Event descriptions, guaranteed ordering characteristics, consumer group guidance.
-
-3. **File exchange specification** — all supported inbound and outbound file formats documented with field-level descriptions, validation rules, and exchange protocol specifications.
-
-4. **Plugin registry — runtime** — live registry showing all registered integrations, their contract versions, health status, and event subscription configuration. Administration interface for enabling, disabling, and configuring integrations.
-
-5. **Integration developer guide** — documentation covering how to build an external integration (REST consumer), how to build an event subscriber, how to build a file-based integration, and how to build and register a first-party SRS module.
+**Plan**: See `docs/phase-7-implementation-plan.md`. Acceptance review: `docs/phase-7-acceptance-review.md`.
 
 **Deliverables**
-- Published OpenAPI specifications for all REST API versions
-- Published event schema registry
-- File exchange specification documents
-- Plugin registry operational
-- Integration developer guide
+- [x] `apps/api/openapi/v1.json` — 202 operations, 158 paths, all with operationId, tag, and publication class
+- [x] `schemas/events/` — 46 published event schemas + envelope + registry
+- [x] `schemas/file-contracts/` — 10 file schemas across 5 families (UCAS, HESA, SLC, UKVI, exam)
+- [x] `docs/integrations/file-contracts/` — 5 formal file exchange specifications
+- [x] Integration registry runtime APIs — 12 admin-class routes with audit, RLS, deprecation enforcement
+- [x] `docs/integrations/developer-guide.md`, `contract-index.md`, 4 example walkthroughs
+- [x] `docs/integrations/rest-api-guide.md`, `event-consumer-guide.md`
+- [x] CI contract-test job — 53 static consumer contract tests, compat report upload
 
 **Exit criterion**: Integration layer documented to the standard required for a third party to build a conformant integration without access to internal code.
 
 ---
 
-## Phase 8 — Example First-Party Module: Student Wellbeing & Disability
+## Phase 8 — Example First-Party Module: Student Wellbeing & Disability *(complete)*
 
 **Goal**: Build the Student Wellbeing & Disability module as the reference implementation of the first-party module pattern, and validate that the platform foundation supports complex first-party modules correctly.
 
 **Prerequisites**: Phase 7 complete.
+
+**Plan**: See `docs/phase-8-implementation-plan.md`.
 
 **Scope and integration pattern**
 
@@ -388,11 +383,13 @@ This module integrates with the SRS using the first-party pattern defined in §2
 
 ---
 
-## Phase 9 — Example External System Integration: VLE Connector
+## Phase 9 — Example External System Integration: VLE Connector *(current)*
 
 **Goal**: Build the VLE Connector as the reference implementation of the external system integration pattern, and validate the integration layer under realistic bidirectional load.
 
 **Prerequisites**: Phase 7 complete. Phase 8 complete (adjustment distribution must be proven before F059 is tested here).
+
+**Plan**: See `docs/phase-9-implementation-plan.md`.
 
 **Scope and integration pattern**
 

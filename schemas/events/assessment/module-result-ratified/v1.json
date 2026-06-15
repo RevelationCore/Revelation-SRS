@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/AssessmentModuleResultRatifiedV1Payload",
+  "definitions": {
+    "AssessmentModuleResultRatifiedV1Payload": {
+      "type": "object",
+      "properties": {
+        "moduleResultId": {
+          "type": "string"
+        },
+        "moduleRegistrationId": {
+          "type": "string"
+        },
+        "aggregateMark": {
+          "type": "number"
+        },
+        "resultCode": {
+          "type": "string"
+        },
+        "examBoardId": {
+          "type": "string"
+        },
+        "ratifiedAt": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "moduleResultId",
+        "moduleRegistrationId",
+        "aggregateMark",
+        "resultCode",
+        "examBoardId",
+        "ratifiedAt"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$id": "https://schemas.revelation-srs.io/events/assessment/module-result-ratified/v1.json",
+  "title": "AssessmentModuleResultRatifiedV1Payload",
+  "description": "Payload schema for srs.assessment.module-result-ratified v1.0.0"
+}

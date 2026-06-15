@@ -1,0 +1,34 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/RegulatorySlcConfirmationSentV1Payload",
+  "definitions": {
+    "RegulatorySlcConfirmationSentV1Payload": {
+      "type": "object",
+      "properties": {
+        "enrolmentId": {
+          "type": "string"
+        },
+        "confirmationType": {
+          "type": "string",
+          "enum": [
+            "enrolment",
+            "withdrawal",
+            "intermission"
+          ]
+        },
+        "exchangeId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "enrolmentId",
+        "confirmationType",
+        "exchangeId"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$id": "https://schemas.revelation-srs.io/events/regulatory/slc-confirmation-sent/v1.json",
+  "title": "RegulatorySlcConfirmationSentV1Payload",
+  "description": "Payload schema for srs.regulatory.slc-confirmation-sent v1.0.0"
+}

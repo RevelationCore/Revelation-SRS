@@ -1,0 +1,46 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://schemas.revelation-srs.io/file-contracts/exam/schedule-inbound/v1.json",
+  "title": "ExamScheduleInboundV1",
+  "description": "Inbound exam schedule received from the exam scheduling system and submitted via POST /api/v1/exam-boards/{boardId}/exam-schedule. Contains the finalised timetable: candidate numbers, room assignments, and scheduled times for each exam entry.",
+  "type": "object",
+  "required": ["candidates"],
+  "additionalProperties": false,
+  "properties": {
+    "candidates": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Finalised schedule for each candidate. Each entry must match a previously submitted exam entry by moduleRegistrationId.",
+      "items": { "$ref": "#/definitions/ExamScheduleCandidate" }
+    }
+  },
+  "definitions": {
+    "ExamScheduleCandidate": {
+      "type": "object",
+      "required": ["moduleRegistrationId", "candidateNumber", "scheduledDate", "room"],
+      "additionalProperties": false,
+      "properties": {
+        "moduleRegistrationId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "SRS module registration UUID. Must match an existing exam entry for this board."
+        },
+        "candidateNumber": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Candidate number assigned by the exam scheduling system. Used anonymously on scripts."
+        },
+        "scheduledDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 date-time of the scheduled exam sitting."
+        },
+        "room": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Exam room reference (building code + room number as defined by the exam scheduling system)."
+        }
+      }
+    }
+  }
+}

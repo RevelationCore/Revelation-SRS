@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/RegulatoryUkviAttendanceSubmittedV1Payload",
+  "definitions": {
+    "RegulatoryUkviAttendanceSubmittedV1Payload": {
+      "type": "object",
+      "properties": {
+        "academicPeriodId": {
+          "type": "string"
+        },
+        "reportId": {
+          "type": "string"
+        },
+        "submittedAt": {
+          "type": "string"
+        },
+        "studentCount": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "academicPeriodId",
+        "reportId",
+        "submittedAt",
+        "studentCount"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$id": "https://schemas.revelation-srs.io/events/regulatory/ukvi-attendance-submitted/v1.json",
+  "title": "RegulatoryUkviAttendanceSubmittedV1Payload",
+  "description": "Payload schema for srs.regulatory.ukvi-attendance-submitted v1.0.0"
+}

@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/RegulatoryHesaIdAssignedV1Payload",
+  "definitions": {
+    "RegulatoryHesaIdAssignedV1Payload": {
+      "type": "object",
+      "properties": {
+        "returnId": {
+          "type": "string"
+        },
+        "enrolmentId": {
+          "type": "string"
+        },
+        "hesaId": {
+          "type": "string"
+        },
+        "assignedAt": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "returnId",
+        "enrolmentId",
+        "hesaId",
+        "assignedAt"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$id": "https://schemas.revelation-srs.io/events/regulatory/hesa-id-assigned/v1.json",
+  "title": "RegulatoryHesaIdAssignedV1Payload",
+  "description": "Payload schema for srs.regulatory.hesa-id-assigned v1.0.0"
+}

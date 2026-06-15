@@ -1,0 +1,43 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/CatalogueLearningOutcomeUpdatedV1Payload",
+  "definitions": {
+    "CatalogueLearningOutcomeUpdatedV1Payload": {
+      "type": "object",
+      "properties": {
+        "learningOutcomeId": {
+          "type": "string"
+        },
+        "programmeId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "moduleId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "outcomeCode": {
+          "type": "string"
+        },
+        "effectiveDate": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "learningOutcomeId",
+        "programmeId",
+        "moduleId",
+        "outcomeCode",
+        "effectiveDate"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$id": "https://schemas.revelation-srs.io/events/catalogue/learning-outcome-updated/v1.json",
+  "title": "CatalogueLearningOutcomeUpdatedV1Payload",
+  "description": "Payload schema for srs.catalogue.learning-outcome-updated v1.0.0"
+}

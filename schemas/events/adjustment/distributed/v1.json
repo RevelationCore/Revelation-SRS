@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/AdjustmentDistributedV1Payload",
+  "definitions": {
+    "AdjustmentDistributedV1Payload": {
+      "type": "object",
+      "properties": {
+        "adjustmentId": {
+          "type": "string"
+        },
+        "distributionId": {
+          "type": "string"
+        },
+        "targetSystem": {
+          "type": "string"
+        },
+        "distributedAt": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "adjustmentId",
+        "distributionId",
+        "targetSystem",
+        "distributedAt"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$id": "https://schemas.revelation-srs.io/events/adjustment/distributed/v1.json",
+  "title": "AdjustmentDistributedV1Payload",
+  "description": "Payload schema for srs.adjustment.distributed v1.0.0"
+}

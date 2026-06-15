@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/EnrolmentModuleRegistrationCompletedV1Payload",
+  "definitions": {
+    "EnrolmentModuleRegistrationCompletedV1Payload": {
+      "type": "object",
+      "properties": {
+        "enrolmentId": {
+          "type": "string"
+        },
+        "moduleRegistrationId": {
+          "type": "string"
+        },
+        "moduleOfferingId": {
+          "type": "string"
+        },
+        "completedAt": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "enrolmentId",
+        "moduleRegistrationId",
+        "moduleOfferingId",
+        "completedAt"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$id": "https://schemas.revelation-srs.io/events/enrolment/module-registration-completed/v1.json",
+  "title": "EnrolmentModuleRegistrationCompletedV1Payload",
+  "description": "Payload schema for srs.enrolment.module-registration-completed v1.0.0"
+}

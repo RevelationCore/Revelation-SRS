@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/GovernanceExamScheduleReceivedV1Payload",
+  "definitions": {
+    "GovernanceExamScheduleReceivedV1Payload": {
+      "type": "object",
+      "properties": {
+        "examBoardId": {
+          "type": "string"
+        },
+        "receiptId": {
+          "type": "string"
+        },
+        "candidateCount": {
+          "type": "number"
+        },
+        "receivedAt": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "examBoardId",
+        "receiptId",
+        "candidateCount",
+        "receivedAt"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$id": "https://schemas.revelation-srs.io/events/governance/exam-schedule-received/v1.json",
+  "title": "GovernanceExamScheduleReceivedV1Payload",
+  "description": "Payload schema for srs.governance.exam-schedule-received v1.0.0"
+}

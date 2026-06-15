@@ -136,6 +136,76 @@ importers:
       '@types/node':
         specifier: ^22.0.0
         version: 22.19.19
+      ajv:
+        specifier: ^8.17.1
+        version: 8.20.0
+      ajv-formats:
+        specifier: ^3.0.1
+        version: 3.0.1(ajv@8.20.0)
+      pino-pretty:
+        specifier: ^13.1.3
+        version: 13.1.3
+      testcontainers:
+        specifier: ^10.0.0
+        version: 10.28.0
+      tsx:
+        specifier: ^4.0.0
+        version: 4.22.4
+      typescript:
+        specifier: ^5.5.0
+        version: 5.9.3
+      vitest:
+        specifier: ^2.0.0
+        version: 2.1.9(@types/node@22.19.19)(terser@5.48.0)
+
+  modules/wellbeing:
+    dependencies:
+      '@fastify/cors':
+        specifier: ^10.0.0
+        version: 10.1.0
+      '@fastify/helmet':
+        specifier: ^12.0.0
+        version: 12.0.1
+      '@fastify/jwt':
+        specifier: ^9.0.0
+        version: 9.1.0
+      '@revelation-srs/auth':
+        specifier: workspace:*
+        version: link:../../packages/auth
+      '@revelation-srs/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      '@revelation-srs/domain':
+        specifier: workspace:*
+        version: link:../../packages/domain
+      drizzle-orm:
+        specifier: ^0.36.0
+        version: 0.36.4(@opentelemetry/api@1.9.1)(@types/pg@8.6.1)(@types/react@18.3.30)(postgres@3.4.9)(react@18.3.1)
+      fastify:
+        specifier: ^5.0.0
+        version: 5.8.5
+      fastify-plugin:
+        specifier: ^5.0.0
+        version: 5.1.0
+      nats:
+        specifier: ^2.26.0
+        version: 2.29.3
+      pino:
+        specifier: ^9.0.0
+        version: 9.14.0
+      postgres:
+        specifier: ^3.0.0
+        version: 3.4.9
+    devDependencies:
+      '@revelation-srs/testing':
+        specifier: workspace:*
+        version: link:../../packages/testing
+      '@testcontainers/postgresql':
+        specifier: ^12.0.1
+        version: 12.0.1
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.19.19
       pino-pretty:
         specifier: ^13.1.3
         version: 13.1.3
@@ -214,7 +284,14 @@ importers:
         specifier: ^2.0.0
         version: 2.1.9(@types/node@22.19.19)(terser@5.48.0)
 
-  packages/domain: {}
+  packages/domain:
+    devDependencies:
+      ts-json-schema-generator:
+        specifier: ^2.3.0
+        version: 2.9.0
+      tsx:
+        specifier: ^4.0.0
+        version: 4.22.4
 
   packages/testing:
     dependencies:
@@ -2777,6 +2854,10 @@ packages:
   colorette@2.0.20:
     resolution: {integrity: sha512-IfEDxwoWIjkeXL1eXcDiow4UbKjhLdq6/EuSVR9GMN7KVH3r9gQ83e73hsz1Nd1T3ijd5xv1wcWRYO+D6kCI2w==}
 
+  commander@14.0.3:
+    resolution: {integrity: sha512-H+y0Jo/T1RZ9qPP4Eh1pkcQcLRglraJaSLoyOtHxu6AapkjWVCy2Sit1QQ4x3Dng8qDlSsZEet7g5Pq06MvTgw==}
+    engines: {node: '>=20'}
+
   commander@2.20.3:
     resolution: {integrity: sha512-GpVkmM8vF2vQUkj2LvZmD35JxeJOLCwJ9cUkugyk2nuhbv3+mJvpLYYt+0+USMxE+oj+ey/lJEnhZw75x/OMcQ==}
 
@@ -4329,6 +4410,11 @@ packages:
 
   ts-interface-checker@0.1.13:
     resolution: {integrity: sha512-Y/arvbn+rrz3JCKl9C4kVNfTfSm2/mEp5FSz5EsZSANGPSlQrpRI5M4PKF+mJnE52jOO90PnPSc3Ur3bTQw0gA==}
+
+  ts-json-schema-generator@2.9.0:
+    resolution: {integrity: sha512-NR5ZE108uiPtBHBJNGnhwoUaUx5vWTDJzDFG9YlRoqxPU76n+5FClRh92dcGgysbe1smRmYalM9Saj97GW1J4Q==}
+    engines: {node: '>=22.0.0'}
+    hasBin: true
 
   tslib@2.8.1:
     resolution: {integrity: sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==}
@@ -7127,6 +7213,8 @@ snapshots:
 
   colorette@2.0.20: {}
 
+  commander@14.0.3: {}
+
   commander@2.20.3: {}
 
   commander@4.1.1: {}
@@ -8748,6 +8836,17 @@ snapshots:
       typescript: 5.9.3
 
   ts-interface-checker@0.1.13: {}
+
+  ts-json-schema-generator@2.9.0:
+    dependencies:
+      '@types/json-schema': 7.0.15
+      commander: 14.0.3
+      glob: 13.0.6
+      json5: 2.2.3
+      normalize-path: 3.0.0
+      safe-stable-stringify: 2.5.0
+      tslib: 2.8.1
+      typescript: 5.9.3
 
   tslib@2.8.1: {}
 

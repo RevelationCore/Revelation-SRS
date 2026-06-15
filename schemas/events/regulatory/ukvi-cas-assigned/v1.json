@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/RegulatoryUkviCasAssignedV1Payload",
+  "definitions": {
+    "RegulatoryUkviCasAssignedV1Payload": {
+      "type": "object",
+      "properties": {
+        "enrolmentId": {
+          "type": "string"
+        },
+        "casRequestId": {
+          "type": "string"
+        },
+        "casReference": {
+          "type": "string"
+        },
+        "assignedAt": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "enrolmentId",
+        "casRequestId",
+        "casReference",
+        "assignedAt"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$id": "https://schemas.revelation-srs.io/events/regulatory/ukvi-cas-assigned/v1.json",
+  "title": "RegulatoryUkviCasAssignedV1Payload",
+  "description": "Payload schema for srs.regulatory.ukvi-cas-assigned v1.0.0"
+}

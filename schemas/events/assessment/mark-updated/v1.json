@@ -1,0 +1,40 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/AssessmentMarkUpdatedV1Payload",
+  "definitions": {
+    "AssessmentMarkUpdatedV1Payload": {
+      "type": "object",
+      "properties": {
+        "markId": {
+          "type": "string"
+        },
+        "moduleRegistrationId": {
+          "type": "string"
+        },
+        "previousMark": {
+          "type": "number"
+        },
+        "newMark": {
+          "type": "number"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "actorId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "markId",
+        "moduleRegistrationId",
+        "previousMark",
+        "newMark",
+        "actorId"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$id": "https://schemas.revelation-srs.io/events/assessment/mark-updated/v1.json",
+  "title": "AssessmentMarkUpdatedV1Payload",
+  "description": "Payload schema for srs.assessment.mark-updated v1.0.0"
+}

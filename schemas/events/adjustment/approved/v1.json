@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/AdjustmentApprovedV1Payload",
+  "definitions": {
+    "AdjustmentApprovedV1Payload": {
+      "type": "object",
+      "properties": {
+        "adjustmentId": {
+          "type": "string"
+        },
+        "enrolmentId": {
+          "type": "string"
+        },
+        "personId": {
+          "type": "string"
+        },
+        "adjustmentTypeCode": {
+          "type": "string"
+        },
+        "scopeCode": {
+          "type": "string"
+        },
+        "validFrom": {
+          "type": "string"
+        },
+        "validTo": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "adjustmentId",
+        "enrolmentId",
+        "personId",
+        "adjustmentTypeCode",
+        "scopeCode",
+        "validFrom"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$id": "https://schemas.revelation-srs.io/events/adjustment/approved/v1.json",
+  "title": "AdjustmentApprovedV1Payload",
+  "description": "Payload schema for srs.adjustment.approved v1.0.0"
+}

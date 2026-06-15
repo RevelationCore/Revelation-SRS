@@ -1,0 +1,49 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/CircumstancesMisconductOutcomeRecordedV1Payload",
+  "definitions": {
+    "CircumstancesMisconductOutcomeRecordedV1Payload": {
+      "type": "object",
+      "properties": {
+        "misconductCaseId": {
+          "type": "string"
+        },
+        "misconductOutcomeId": {
+          "type": "string"
+        },
+        "enrolmentId": {
+          "type": "string"
+        },
+        "personId": {
+          "type": "string"
+        },
+        "caseReference": {
+          "type": "string"
+        },
+        "caseStatusCode": {
+          "type": "string"
+        },
+        "penaltyCode": {
+          "type": "string"
+        },
+        "effectiveDate": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "misconductCaseId",
+        "misconductOutcomeId",
+        "enrolmentId",
+        "personId",
+        "caseReference",
+        "caseStatusCode",
+        "penaltyCode",
+        "effectiveDate"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$id": "https://schemas.revelation-srs.io/events/circumstances/misconduct-outcome-recorded/v1.json",
+  "title": "CircumstancesMisconductOutcomeRecordedV1Payload",
+  "description": "Payload schema for srs.circumstances.misconduct-outcome-recorded v1.0.0"
+}

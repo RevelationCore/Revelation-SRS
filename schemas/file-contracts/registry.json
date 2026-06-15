@@ -1,0 +1,200 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "generated": "2026-06-15T00:00:00.000Z",
+  "description": "Machine-readable registry of all Revelation SRS file exchange contracts.",
+  "schemaUriBase": "https://schemas.revelation-srs.io/file-contracts",
+  "contracts": [
+    {
+      "contractId": "ucas-admissions-exchange.v1",
+      "name": "UCAS Admissions Exchange",
+      "description": "UCAS application ingestion (inbound) and enrolment/withdrawal/deferral confirmation (outbound).",
+      "statutoryBody": "UCAS",
+      "flows": ["F045", "F046"],
+      "exchanges": [
+        {
+          "direction": "inbound",
+          "name": "Application ingestion",
+          "endpoint": "POST /api/v1/regulatory/ucas/applications",
+          "format": "json",
+          "transport": "https-api",
+          "dataClassification": "personal",
+          "schemaRef": "https://schemas.revelation-srs.io/file-contracts/ucas/application-inbound/v1.json",
+          "schemaPath": "schemas/file-contracts/ucas/application-inbound.v1.json",
+          "idempotencyKey": "ucasPersonalId + cycle",
+          "permission": "regulatory:write"
+        },
+        {
+          "direction": "outbound",
+          "name": "Confirmation batch",
+          "endpoint": "POST /api/v1/regulatory/ucas/confirmations/generate",
+          "format": "json",
+          "transport": "https-api",
+          "dataClassification": "personal",
+          "schemaRef": "https://schemas.revelation-srs.io/file-contracts/ucas/confirmation-outbound/v1.json",
+          "schemaPath": "schemas/file-contracts/ucas/confirmation-outbound.v1.json",
+          "idempotencyKey": "triggerId",
+          "permission": "regulatory:write"
+        }
+      ]
+    },
+    {
+      "contractId": "hesa-student-return.v1",
+      "name": "HESA Student Return",
+      "description": "HESA student return generation, XML file download, validation report ingestion, and amendment generation.",
+      "statutoryBody": "HESA",
+      "flows": ["F047", "F048"],
+      "exchanges": [
+        {
+          "direction": "outbound",
+          "name": "Student return XML",
+          "endpoint": "GET /api/v1/regulatory/hesa/returns/{returnId}/file",
+          "format": "xml",
+          "transport": "https-api",
+          "contentType": "application/xml",
+          "dataClassification": "regulatory",
+          "schemaPath": null,
+          "schemaRef": null,
+          "notes": "XML structure conforms to the HESA Data Futures C16032 Student Record schema for the relevant coding-manual year. Field mapping is version-specific and defined by the HESA coding frame.",
+          "idempotencyKey": "returnId",
+          "permission": "regulatory:read"
+        },
+        {
+          "direction": "inbound",
+          "name": "Validation report",
+          "endpoint": "POST /api/v1/regulatory/hesa/returns/{returnId}/validation-reports",
+          "format": "json",
+          "transport": "https-api",
+          "dataClassification": "regulatory",
+          "schemaRef": "https://schemas.revelation-srs.io/file-contracts/hesa/validation-report-inbound/v1.json",
+          "schemaPath": "schemas/file-contracts/hesa/validation-report-inbound.v1.json",
+          "idempotencyKey": "returnId + submissionReference",
+          "permission": "regulatory:write"
+        }
+      ]
+    },
+    {
+      "contractId": "slc-enrolment-exchange.v1",
+      "name": "SLC Enrolment Exchange",
+      "description": "SLC enrolment confirmation batch (outbound) and inbound payment/entitlement notifications.",
+      "statutoryBody": "SLC",
+      "flows": ["F049", "F050"],
+      "exchanges": [
+        {
+          "direction": "outbound",
+          "name": "Confirmation batch",
+          "endpoint": "POST /api/v1/regulatory/slc/confirmations/generate",
+          "format": "json",
+          "transport": "https-api",
+          "dataClassification": "regulatory",
+          "schemaRef": "https://schemas.revelation-srs.io/file-contracts/slc/confirmation-outbound/v1.json",
+          "schemaPath": "schemas/file-contracts/slc/confirmation-outbound.v1.json",
+          "idempotencyKey": "triggerId",
+          "permission": "regulatory:write"
+        },
+        {
+          "direction": "inbound",
+          "name": "SLC notification",
+          "endpoint": "POST /api/v1/regulatory/slc/notifications",
+          "format": "json",
+          "transport": "https-api",
+          "dataClassification": "regulatory",
+          "schemaRef": "https://schemas.revelation-srs.io/file-contracts/slc/notification-inbound/v1.json",
+          "schemaPath": "schemas/file-contracts/slc/notification-inbound.v1.json",
+          "idempotencyKey": "idempotencyKey",
+          "permission": "regulatory:write"
+        }
+      ]
+    },
+    {
+      "contractId": "ukvi-sponsor-compliance.v1",
+      "name": "UKVI Sponsor Compliance",
+      "description": "CAS request generation (outbound), CAS assignment ingestion (inbound), attendance report (outbound), and visa status update (inbound).",
+      "statutoryBody": "UKVI",
+      "flows": ["F051", "F052"],
+      "exchanges": [
+        {
+          "direction": "outbound",
+          "name": "CAS request batch",
+          "endpoint": "POST /api/v1/regulatory/ukvi/cas-requests/generate",
+          "format": "json",
+          "transport": "https-api",
+          "dataClassification": "regulatory",
+          "schemaRef": "https://schemas.revelation-srs.io/file-contracts/ukvi/cas-request-outbound/v1.json",
+          "schemaPath": "schemas/file-contracts/ukvi/cas-request-outbound.v1.json",
+          "idempotencyKey": "casRequestId",
+          "permission": "regulatory:write"
+        },
+        {
+          "direction": "inbound",
+          "name": "CAS assignment",
+          "endpoint": "POST /api/v1/regulatory/ukvi/cas-requests/{casRequestId}/assignment",
+          "format": "json",
+          "transport": "https-api",
+          "dataClassification": "regulatory",
+          "schemaPath": null,
+          "schemaRef": null,
+          "notes": "Body: { casReference: string }. The CAS reference is assigned by UKVI in the SMS and recorded against the pending CAS request.",
+          "idempotencyKey": "casRequestId",
+          "permission": "regulatory:write"
+        },
+        {
+          "direction": "outbound",
+          "name": "Attendance report",
+          "endpoint": "POST /api/v1/regulatory/ukvi/attendance-reports/generate",
+          "format": "json",
+          "transport": "https-api",
+          "dataClassification": "regulatory",
+          "schemaRef": "https://schemas.revelation-srs.io/file-contracts/ukvi/attendance-report-outbound/v1.json",
+          "schemaPath": "schemas/file-contracts/ukvi/attendance-report-outbound.v1.json",
+          "idempotencyKey": "academicPeriodId + generatedAt",
+          "permission": "regulatory:write"
+        },
+        {
+          "direction": "inbound",
+          "name": "Visa status update",
+          "endpoint": "POST /api/v1/regulatory/ukvi/visa-updates",
+          "format": "json",
+          "transport": "https-api",
+          "dataClassification": "regulatory",
+          "schemaRef": "https://schemas.revelation-srs.io/file-contracts/ukvi/visa-update-inbound/v1.json",
+          "schemaPath": "schemas/file-contracts/ukvi/visa-update-inbound.v1.json",
+          "idempotencyKey": "idempotencyKey",
+          "permission": "regulatory:write"
+        }
+      ]
+    },
+    {
+      "contractId": "exam-scheduling.v1",
+      "name": "Exam Scheduling Exchange",
+      "description": "Exam entry batch (outbound to exam scheduling system) and finalised exam schedule reception (inbound).",
+      "statutoryBody": null,
+      "flows": ["F061", "F062"],
+      "exchanges": [
+        {
+          "direction": "outbound",
+          "name": "Exam entry batch",
+          "endpoint": "POST /api/v1/exam-boards/{boardId}/exam-entries/generate",
+          "format": "json",
+          "transport": "https-api",
+          "dataClassification": "sensitive",
+          "schemaRef": "https://schemas.revelation-srs.io/file-contracts/exam/entry-outbound/v1.json",
+          "schemaPath": "schemas/file-contracts/exam/entry-outbound.v1.json",
+          "idempotencyKey": "examEntryId",
+          "permission": "regulatory:write"
+        },
+        {
+          "direction": "inbound",
+          "name": "Exam schedule",
+          "endpoint": "POST /api/v1/exam-boards/{boardId}/exam-schedule",
+          "format": "json",
+          "transport": "https-api",
+          "dataClassification": "sensitive",
+          "schemaRef": "https://schemas.revelation-srs.io/file-contracts/exam/schedule-inbound/v1.json",
+          "schemaPath": "schemas/file-contracts/exam/schedule-inbound.v1.json",
+          "idempotencyKey": "moduleRegistrationId",
+          "permission": "regulatory:write"
+        }
+      ]
+    }
+  ]
+}

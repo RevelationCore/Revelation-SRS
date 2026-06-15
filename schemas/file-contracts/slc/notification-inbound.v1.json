@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://schemas.revelation-srs.io/file-contracts/slc/notification-inbound/v1.json",
+  "title": "SlcNotificationInboundV1",
+  "description": "Inbound SLC notification received from the SLC Data Exchange service and submitted via POST /api/v1/regulatory/slc/notifications. Covers loan entitlements, payment confirmations, status changes, and overpayment notices received from SLC.",
+  "type": "object",
+  "required": ["enrolmentId", "notificationTypeCode", "effectiveDate"],
+  "additionalProperties": false,
+  "properties": {
+    "enrolmentId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "SRS enrolment UUID. Must match an existing enrolment for the tenant."
+    },
+    "notificationTypeCode": {
+      "type": "string",
+      "minLength": 1,
+      "description": "SLC notification type. Values: 'entitlement' (loan entitlement issued), 'payment' (payment confirmed), 'status-change' (enrolment status change notification), 'overpayment' (overpayment notice)."
+    },
+    "effectiveDate": {
+      "type": "string",
+      "format": "date",
+      "description": "Effective date of the notification event (YYYY-MM-DD)."
+    },
+    "amount": {
+      "type": ["string", "number", "null"],
+      "description": "Monetary amount associated with the notification, as a decimal string or number. Currency is always GBP. Null if not applicable (e.g. status-change notifications)."
+    },
+    "rawPayload": {
+      "type": "object",
+      "description": "Raw SLC message payload for audit purposes. Stored as-is; not validated.",
+      "additionalProperties": true
+    },
+    "idempotencyKey": {
+      "type": "string",
+      "description": "SLC-provided transaction reference for idempotency. If present, duplicate submissions with the same key are rejected."
+    },
+    "notificationId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Client-supplied notification UUID. If provided, used as the stored record ID for idempotency."
+    }
+  }
+}

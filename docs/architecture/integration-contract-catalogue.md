@@ -1,7 +1,7 @@
 # Integration Contract Catalogue
 
-> Status: Draft — Phase 2 remediation
-> Last updated: 2026-06-04
+> Status: Updated — Phase 7 Stage 3 (event subjects reconciled with implementation; OFS contract added)
+> Last updated: 2026-06-15
 > This catalogue enumerates every integration contract between Revelation SRS and external systems or first-party modules. Each contract maps to one or more reference model flows, defines direction, pattern, owner, payload, failure handling, and replay strategy.
 
 ---
@@ -76,6 +76,39 @@ Every contract below must be implemented with the full field set above. Where de
 | `hesa-student-return.{year}` | F047, F048 | Bidirectional | File | Regulatory Compliance | HESA return lifecycle | Validation issue workflow; amendments | Regenerate return from source transaction time | HESA submission reference | `integration-service:hesa` | Regulatory |
 | `slc-enrolment-exchange.v1` | F049, F050 | Bidirectional | File/API | Regulatory / Finance | Enrolment/payment exchange | Retry; reconciliation workflow | SLC exchange replay/snapshot | SLC transaction reference | `integration-service:slc` | Sensitive / regulatory |
 | `ukvi-sponsor-compliance.v1` | F051, F052 | Bidirectional | API/file | Regulatory Compliance | CAS/attendance/visa event | Retry; compliance escalation | UKVI case/exchange replay | UKVI/CAS reference | `integration-service:ukvi` | Sensitive / regulatory |
+| `ofs-regulatory-extracts.v1` | F071 | Outbound | REST/file | Regulatory Compliance | Scheduled or on-demand extract generation | Retry; alert | Regenerate from source transaction time | Extract ID | `integration-service:ofs` | Regulatory |
+| `ofs-regulatory-extracts.v1` | F071 | Outbound | REST/file | Regulatory Compliance | Scheduled or on-demand extract | Retry; alert | Regenerate from source transaction time | Extract ID | `integration-service:ofs` | Regulatory |
+
+| Contract ID | Flows | Direction | Pattern | Notes |
+|---|---|---|---|---|
+| `ofs-regulatory-extracts.v1` | F071 | Outbound | REST/file | OfS B3 student data extract and widening participation / access and participation extract; versioned per academic year |
+
+---
+
+## OfS Regulatory Extracts
+
+| Field | Value |
+|---|---|
+| **Contract ID** | `ofs-regulatory-extracts.v1` |
+| **Flows** | F071 |
+| **Direction** | Outbound |
+| **Pattern** | REST API (JSON payload, downloadable as file) |
+| **Owner module** | Regulatory Compliance |
+| **Trigger** | Scheduled annual extract, or on-demand from registry |
+| **Payload** | Structured OfS B3 student record data; access and participation metrics per programme and cohort |
+| **Failure handling** | Retry; alert; regenerate from source bitemporal data |
+| **Replay** | Regenerate extract from source transaction time: `POST /api/v1/regulatory/ofs/b3-extracts` with the relevant `academicYear` |
+| **Idempotency key** | Extract ID (returned by generate endpoint) |
+
+**Endpoints:**
+- `POST /api/v1/regulatory/ofs/b3-extracts` — generate B3 student record extract for an academic year
+- `GET /api/v1/regulatory/ofs/b3-extracts/{extractId}` — retrieve a previously generated extract
+- `POST /api/v1/regulatory/ofs/participation-reports` — generate access and participation (widening participation) extract
+
+**Domain event:** `srs.regulatory.ofs-extract-generated`
+
+---
+
 | `wellbeing-student-context.v1` | F053 | Outbound/read | REST | Wellbeing module / Core | Casework context read | RFC 7807; read audit | Bitemporal API query | Request ID | `wellbeing-advisor` / service account | Special-category |
 | `vle-learning-analytics.v1` | F055 | Context | External | Not SRS-owned | VLE to BI | Not implemented by SRS | Not implemented by SRS | External | External | Context |
 | `attendance-bi-feed.v1` | F056 | Context | External | Not SRS-owned | AM to BI | Not implemented by SRS | Not implemented by SRS | External | External | Context |
@@ -131,7 +164,7 @@ Every contract below must be implemented with the full field set above. Where de
 | **Contract ID** | `timetable-demand-feed.v1` |
 | **Flows** | F003 |
 | **Direction** | Outbound |
-| **Pattern** | Event (`srs.module-registration.created`) + scheduled file |
+| **Pattern** | Event (`srs.enrolment.module-registered`) + scheduled file |
 | **Owner module** | Enrolment & Registration |
 | **Trigger** | Module registration confirmed; or scheduled extract at registration close |
 | **Payload** | Student enrolments, confirmed module registrations, credit load, academic period |
@@ -170,9 +203,9 @@ Every contract below must be implemented with the full field set above. Where de
 | **Contract ID** | `crm-student-lifecycle-updates.v1` |
 | **Flows** | F006 |
 | **Direction** | Outbound |
-| **Pattern** | Event (`srs.student.enrolled`, `srs.student.status-changed`, `srs.student.graduated`) |
+| **Pattern** | Event (`srs.student.enrolled`, `srs.student.status-changed`, `srs.award.conferred`) |
 | **Owner module** | Student Identity |
-| **Trigger** | Significant enrolment status changes |
+| **Trigger** | Significant enrolment status changes; award conferred |
 | **Payload** | `personId`, `enrolmentId`, `statusCode`, `effectiveDate`, `programmeCode` |
 | **Replay** | Snapshot: `GET /api/v1/students?enrolmentStatus=&academicYear=` |
 
@@ -185,9 +218,9 @@ Every contract below must be implemented with the full field set above. Where de
 | **Contract ID** | `finance-fee-liability.v1` |
 | **Flows** | F009 |
 | **Direction** | Outbound |
-| **Pattern** | Event (`srs.enrolment.fee-liability-created`, `srs.enrolment.fee-liability-updated`) |
+| **Pattern** | Event (`srs.enrolment.fee-liability-generated`) |
 | **Owner module** | Enrolment & Registration |
-| **Trigger** | Enrolment confirmed or intensity changed |
+| **Trigger** | Enrolment confirmed; fee liability calculated |
 | **Payload** | `enrolmentId`, `feeLiabilityId`, `academicYear`, `feeAmount`, `fundingSource` |
 | **Replay** | Snapshot: `GET /api/v1/enrolments/:id/fee-liabilities?academicYear=` |
 
@@ -268,7 +301,7 @@ Every contract below must be implemented with the full field set above. Where de
 
 | Contract ID | Flows | Direction | Pattern | Owner | Notes |
 |---|---|---|---|---|---|
-| `vle-course-provisioning.v1` | F015 | Outbound | Event | Enrolment | `srs.student.enrolled`, `srs.module-registration.created`, `srs.student.status-changed` |
+| `vle-course-provisioning.v1` | F015 | Outbound | Event | Enrolment | `srs.student.enrolled`, `srs.enrolment.module-registered`, `srs.student.status-changed` |
 | `vle-assessment-results.v1` | F016 | Inbound | REST POST | Assessment | Marks, completion status, academic alerts; idempotency key = VLE submission reference |
 | `vle-adjustments.v1` | F059 | Outbound | Event (`srs.adjustment.distributed`) | Assessment | Approved adjustments from SIS only; VLE must not receive directly from Wellbeing |
 

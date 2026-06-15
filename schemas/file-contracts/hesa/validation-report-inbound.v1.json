@@ -1,0 +1,87 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://schemas.revelation-srs.io/file-contracts/hesa/validation-report-inbound/v1.json",
+  "title": "HesaValidationReportInboundV1",
+  "description": "Inbound HESA validation report received from the HESA data collection portal and submitted via POST /api/v1/regulatory/hesa/returns/{returnId}/validation-reports. Contains blocking errors and warnings from HESA's validation engine against the submitted student return XML. Field names follow HESA Data Futures coding frame conventions.",
+  "type": "object",
+  "required": ["reportPayload"],
+  "additionalProperties": false,
+  "properties": {
+    "reportPayload": {
+      "$ref": "#/definitions/HesaValidationReportPayload"
+    }
+  },
+  "definitions": {
+    "HesaValidationReportPayload": {
+      "type": "object",
+      "description": "Raw HESA validation report payload. The outer wrapper is a freeform record to accommodate HESA coding-frame-year variation; the known structure is documented in the properties below.",
+      "additionalProperties": true,
+      "properties": {
+        "submissionReference": {
+          "type": "string",
+          "description": "HESA submission reference assigned to the submitted return."
+        },
+        "validatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 UTC timestamp when HESA completed validation."
+        },
+        "errors": {
+          "type": "array",
+          "description": "Blocking errors that prevent HESA acceptance. Must be resolved before the return can be accepted.",
+          "items": { "$ref": "#/definitions/HesaIssue" }
+        },
+        "warnings": {
+          "type": "array",
+          "description": "Non-blocking warnings. Should be reviewed; do not prevent acceptance.",
+          "items": { "$ref": "#/definitions/HesaIssue" }
+        },
+        "studentIdentifiers": {
+          "type": "array",
+          "description": "HESA student identifiers assigned or updated as part of this return. Only present in the acceptance report.",
+          "items": { "$ref": "#/definitions/HesaStudentIdentifier" }
+        }
+      }
+    },
+    "HesaIssue": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "field": {
+          "type": "string",
+          "description": "HESA field code (from the HESA coding frame) that failed validation, e.g. 'BIRTHDTE', 'FEEELIG'."
+        },
+        "enrolmentId": {
+          "type": ["string", "null"],
+          "description": "SRS enrolment UUID of the affected student record, if identifiable."
+        },
+        "hesaStudentId": {
+          "type": ["string", "null"],
+          "description": "HESA Student Identifier (HUSID) of the affected record, if assigned."
+        },
+        "message": {
+          "type": "string",
+          "description": "Human-readable description of the validation issue."
+        },
+        "ruleCode": {
+          "type": "string",
+          "description": "HESA rule code from the Data Futures business rules specification."
+        },
+        "severity": {
+          "type": "string",
+          "enum": ["error", "warning"],
+          "description": "Issue severity."
+        }
+      }
+    },
+    "HesaStudentIdentifier": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "enrolmentId": { "type": "string", "format": "uuid" },
+        "husid": { "type": "string", "description": "HESA Unique Student Identifier assigned by HESA." },
+        "ownRef": { "type": "string", "description": "Institution's own student reference as submitted." }
+      }
+    }
+  }
+}

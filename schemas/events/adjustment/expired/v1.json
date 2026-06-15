@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/AdjustmentExpiredV1Payload",
+  "definitions": {
+    "AdjustmentExpiredV1Payload": {
+      "type": "object",
+      "properties": {
+        "adjustmentId": {
+          "type": "string"
+        },
+        "enrolmentId": {
+          "type": "string"
+        },
+        "personId": {
+          "type": "string"
+        },
+        "expiredAt": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "adjustmentId",
+        "enrolmentId",
+        "personId",
+        "expiredAt"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$id": "https://schemas.revelation-srs.io/events/adjustment/expired/v1.json",
+  "title": "AdjustmentExpiredV1Payload",
+  "description": "Payload schema for srs.adjustment.expired v1.0.0"
+}

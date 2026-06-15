@@ -1,0 +1,37 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/CatalogueModuleRelationshipUpdatedV1Payload",
+  "definitions": {
+    "CatalogueModuleRelationshipUpdatedV1Payload": {
+      "type": "object",
+      "properties": {
+        "relationshipId": {
+          "type": "string"
+        },
+        "moduleId": {
+          "type": "string"
+        },
+        "relatedModuleId": {
+          "type": "string"
+        },
+        "relationshipTypeCode": {
+          "type": "string"
+        },
+        "effectiveDate": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "relationshipId",
+        "moduleId",
+        "relatedModuleId",
+        "relationshipTypeCode",
+        "effectiveDate"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$id": "https://schemas.revelation-srs.io/events/catalogue/module-relationship-updated/v1.json",
+  "title": "CatalogueModuleRelationshipUpdatedV1Payload",
+  "description": "Payload schema for srs.catalogue.module-relationship-updated v1.0.0"
+}

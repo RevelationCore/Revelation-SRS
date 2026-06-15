@@ -1,0 +1,51 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/AssessmentMarkReceivedV1Payload",
+  "definitions": {
+    "AssessmentMarkReceivedV1Payload": {
+      "type": "object",
+      "properties": {
+        "markId": {
+          "type": "string"
+        },
+        "moduleRegistrationId": {
+          "type": "string"
+        },
+        "assessmentComponentId": {
+          "type": "string"
+        },
+        "assessmentSubmissionId": {
+          "type": "string"
+        },
+        "rawMark": {
+          "type": "number"
+        },
+        "adjustedMark": {
+          "type": "number"
+        },
+        "attemptNumber": {
+          "type": "number"
+        },
+        "penaltyApplied": {
+          "type": "boolean"
+        },
+        "sourceSystem": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "markId",
+        "moduleRegistrationId",
+        "assessmentComponentId",
+        "rawMark",
+        "adjustedMark",
+        "attemptNumber",
+        "penaltyApplied"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$id": "https://schemas.revelation-srs.io/events/assessment/mark-received/v1.json",
+  "title": "AssessmentMarkReceivedV1Payload",
+  "description": "Payload schema for srs.assessment.mark-received v1.0.0"
+}

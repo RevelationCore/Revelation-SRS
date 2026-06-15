@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/RegulatoryUkviVisaStatusUpdatedV1Payload",
+  "definitions": {
+    "RegulatoryUkviVisaStatusUpdatedV1Payload": {
+      "type": "object",
+      "properties": {
+        "enrolmentId": {
+          "type": "string"
+        },
+        "casReference": {
+          "type": "string"
+        },
+        "statusCode": {
+          "type": "string"
+        },
+        "effectiveDate": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "enrolmentId",
+        "casReference",
+        "statusCode",
+        "effectiveDate"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$id": "https://schemas.revelation-srs.io/events/regulatory/ukvi-visa-status-updated/v1.json",
+  "title": "RegulatoryUkviVisaStatusUpdatedV1Payload",
+  "description": "Payload schema for srs.regulatory.ukvi-visa-status-updated v1.0.0"
+}

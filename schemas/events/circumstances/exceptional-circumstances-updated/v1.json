@@ -1,0 +1,29 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/CircumstancesEcUpdatedV1Payload",
+  "definitions": {
+    "CircumstancesEcUpdatedV1Payload": {
+      "type": "object",
+      "properties": {
+        "exceptionalCircumstancesId": {
+          "type": "string"
+        },
+        "previousOutcomeCode": {
+          "type": "string"
+        },
+        "newOutcomeCode": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "exceptionalCircumstancesId",
+        "previousOutcomeCode",
+        "newOutcomeCode"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$id": "https://schemas.revelation-srs.io/events/circumstances/exceptional-circumstances-updated/v1.json",
+  "title": "CircumstancesEcUpdatedV1Payload",
+  "description": "Payload schema for srs.circumstances.exceptional-circumstances-updated v1.0.0"
+}

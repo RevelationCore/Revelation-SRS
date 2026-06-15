@@ -1,0 +1,37 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/RegulatoryUcasApplicationReceivedV1Payload",
+  "definitions": {
+    "RegulatoryUcasApplicationReceivedV1Payload": {
+      "type": "object",
+      "properties": {
+        "applicationId": {
+          "type": "string"
+        },
+        "ucasPersonalId": {
+          "type": "string"
+        },
+        "cycle": {
+          "type": "string"
+        },
+        "statusCode": {
+          "type": "string"
+        },
+        "tenantId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "applicationId",
+        "ucasPersonalId",
+        "cycle",
+        "statusCode",
+        "tenantId"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$id": "https://schemas.revelation-srs.io/events/regulatory/ucas-application-received/v1.json",
+  "title": "RegulatoryUcasApplicationReceivedV1Payload",
+  "description": "Payload schema for srs.regulatory.ucas-application-received v1.0.0"
+}

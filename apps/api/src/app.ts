@@ -32,6 +32,7 @@ import { HearService } from './platform/progression/hear-service.js';
 import { ProgressionService } from './platform/progression/progression-service.js';
 import { CorrectionService } from './platform/governance/correction-service.js';
 import { ModuleRegistrationService } from './platform/registration/service.js';
+import { IntegrationRegistryService } from './platform/integration/registry-service.js';
 import { RegulatoryExchangeService } from './platform/regulatory/exchange-service.js';
 import { EnvironmentService } from './platform/platform-controls/environment-service.js';
 import { FeatureFlagService } from './platform/platform-controls/feature-flag-service.js';
@@ -74,7 +75,94 @@ import { globalisationRoutes } from './routes/globalisation.js';
 import { adjustmentRoutes } from './routes/adjustments.js';
 import { communicationRoutes } from './routes/communications.js';
 import { correctionCasesRoutes } from './routes/correction-cases.js';
+import { integrationRegistryRoutes } from './routes/integration-registry.js';
 import { platformControlRoutes } from './routes/platform-controls.js';
+
+// ---------------------------------------------------------------------------
+// OpenAPI helpers — injected via onRoute hook so route files stay declaration-free
+// ---------------------------------------------------------------------------
+
+const METHOD_VERB: Record<string, string> = {
+  GET: 'get', POST: 'create', PUT: 'replace', PATCH: 'update', DELETE: 'delete',
+};
+
+function generateOperationId(method: string, url: string): string {
+  const path = url.replace(/^\/api\/v1/, '').replace(/^\//, '');
+  const verb = METHOD_VERB[method.toUpperCase()] ?? method.toLowerCase();
+  const parts = path.split('/').filter(Boolean).map(seg => {
+    if (seg.startsWith(':')) {
+      const n = seg.slice(1);
+      return 'By' + n.charAt(0).toUpperCase() + n.slice(1);
+    }
+    return seg.replace(/-([a-z])/g, (_: string, c: string) => c.toUpperCase())
+              .replace(/^([a-z])/, (_: string, c: string) => c.toUpperCase());
+  });
+  return verb + parts.join('');
+}
+
+/**
+ * Publication classes (x-publication-class):
+ *   public      — core student record surface, accessible to authenticated principals
+ *   integration — adjacent-system connectivity (adjustments, communications)
+ *   workflow    — state-machine command endpoints that trigger process transitions
+ *   admin       — tenant-scoped configuration and workflow runtime management
+ *   system      — platform-level controls (super-admin, cross-tenant)
+ *   reporting   — regulatory submission data and read-only compliance extracts
+ *   operational — infrastructure endpoints not included in the published API
+ *   private     — internal routing surfaces not intended for external consumers
+ */
+function classifyOperation(method: string, url: string): string {
+  if (!url.startsWith('/api/v1')) return 'operational';
+  const path = url.replace(/^\/api\/v1/, '');
+  const m = method.toUpperCase();
+
+  // Private — internal surfaces not for external consumers
+  if (path.includes('/downstream-triggers')) return 'private';
+  if (path === '/communications/dispatch') return 'private';
+
+  // System — platform-level, cross-tenant configuration
+  if (path.startsWith('/admin/globalisation')) return 'system';
+  if (path.startsWith('/workflow-definitions') || path.startsWith('/workflow-definition-versions')) return 'system';
+  if (path.startsWith('/workflow-assignment-rules')) return 'system';
+  if (path.startsWith('/tenants') && !path.startsWith('/tenant/')) return 'system';
+  if (path.startsWith('/environments') || path === '/environment-runtime') return 'system';
+  if (path.startsWith('/environment-promotions')) return 'system';
+  if (path.startsWith('/feature-flags') && !path.includes('/assignments') && !path.includes('/evaluation-preview')) return 'system';
+
+  // Admin — tenant-scoped configuration and workflow runtime management
+  if (path.startsWith('/tenant/')) return 'admin';
+  if (path.startsWith('/value-sets') || path.startsWith('/fields/')) return 'admin';
+  if (path.startsWith('/academic-rules')) return 'admin';
+  if (path.startsWith('/workflow-instances') || path.startsWith('/workflow-tasks')) return 'admin';
+  if (path.includes('/feature-flags') && (path.includes('/assignments') || path.includes('/evaluation-preview'))) return 'admin';
+  if (path.startsWith('/integration-contracts') || path.startsWith('/integration-registrations') || path.startsWith('/integration-exchanges')) return 'admin';
+
+  // Workflow — commands that trigger state machine transitions
+  const WORKFLOW_ACTIONS = [
+    '/transitions', '/intermit', '/withdraw', '/suspend', '/graduation',
+    '/completion', '/ratification', '/deferral', '/quorum',
+    '/external-examiner-signoff', '/generate', '/validate', '/submit',
+    '/amendments', '/slc-status-notification', '/expire', '/acknowledge',
+    '/retirement', '/link', '/attendance',
+  ];
+  if (m === 'POST' && WORKFLOW_ACTIONS.some(a => path.includes(a))) return 'workflow';
+  if (m === 'POST' && (path.includes('/progression') || path.includes('/award') || path.includes('/classification') || path.includes('/hear'))) return 'workflow';
+  if ((m === 'POST' || m === 'PATCH') && path.includes('/correction-cases')) return 'workflow';
+  if (m === 'PATCH' && path.includes('/status') && path.includes('/regulatory')) return 'workflow';
+  if (m === 'PATCH' && path.includes('/assignment') && path.includes('/cas-requests')) return 'workflow';
+  if (m === 'POST' && path.includes('/exam-entries')) return 'workflow';
+  if (m === 'POST' && path.includes('/data-pack')) return 'workflow';
+
+  // Reporting — regulatory submission data and read-only compliance extracts
+  if (path.includes('/regulatory/')) return 'reporting';
+
+  // Integration — surfaces for adjacent system connectivity
+  if (path.includes('/adjustments')) return 'integration';
+  if (path.includes('/communication-templates') || path.includes('/communication-dispatch-log')) return 'integration';
+
+  // Public — core student record data
+  return 'public';
+}
 
 /**
  * Builds and configures the Fastify application.
@@ -146,6 +234,9 @@ export async function buildApp(
   const regulatoryExchanges = new RegulatoryExchangeService(db, {
     environmentCode: config.deploymentEnvironmentCode,
   });
+  const integrationRegistry = new IntegrationRegistryService(db, {
+    environmentCode: config.deploymentEnvironmentCode,
+  }, audit);
   const workflowDefinitions = new WorkflowDefinitionService(db);
   const workflowInstances = new WorkflowInstanceService(db);
   const workflowTasks = new WorkflowTaskService(db);
@@ -189,6 +280,7 @@ export async function buildApp(
   fastify.decorate('hearService',        hear);
   fastify.decorate('correctionService',  corrections);
   fastify.decorate('regulatoryExchangeService', regulatoryExchanges);
+  fastify.decorate('integrationRegistryService', integrationRegistry);
   fastify.decorate('workflowDefinitionService', workflowDefinitions);
   fastify.decorate('workflowInstanceService', workflowInstances);
   fastify.decorate('workflowTaskService', workflowTasks);
@@ -288,8 +380,9 @@ export async function buildApp(
         { name: 'tenant-admin',         description: 'Tenant administration and configuration' },
         { name: 'value-sets',           description: 'Value set management' },
         { name: 'platform-controls',    description: 'Workflow, feature flags, and environment controls' },
-        { name: 'Globalisation',        description: 'Locale, time zone, currency, and multilingual label administration' },
+        { name: 'globalisation',        description: 'Locale, time zone, currency, and multilingual label administration' },
         { name: 'communications',       description: 'Communication templates, channel dispatch, and audit log' },
+        { name: 'integration-registry', description: 'Integration contracts, registrations, and exchange audit' },
       ],
     },
   });
@@ -300,7 +393,7 @@ export async function buildApp(
     staticCSP:   true,
   });
 
-  // Inject OpenAPI tags from URL pattern so individual route files stay clean
+  // Inject OpenAPI metadata from URL pattern so individual route files stay declaration-free
   fastify.addHook('onRoute', (routeOptions) => {
     if (!routeOptions.url.startsWith('/api/v1')) return;
     if ((routeOptions.schema as { hide?: boolean } | undefined)?.hide) return;
@@ -327,6 +420,7 @@ export async function buildApp(
       ['/module-registrations',      'module-registrations'],
       ['/programmes',                'catalogue'],
       ['/modules',                   'catalogue'],
+      ['/module-relationships',      'catalogue'],
       ['/learning-outcomes',         'catalogue'],
       ['/academic-periods',          'calendar'],
       ['/components',                'assessment'],
@@ -336,20 +430,35 @@ export async function buildApp(
       ['/workflow-',                 'platform-controls'],
       ['/feature-flags',             'platform-controls'],
       ['/environments',              'platform-controls'],
+      ['/environment-runtime',       'platform-controls'],
       ['/environment-promotions',    'platform-controls'],
       ['/tenants',                   'tenant-admin'],
       ['/academic-rules',            'tenant-admin'],
       ['/tenant/',                   'tenant-admin'],
-      ['/globalisation',             'Globalisation'],
+      ['/globalisation',             'globalisation'],
       ['/communication',             'communications'],
+      ['/integration-contracts',     'integration-registry'],
+      ['/integration-registrations', 'integration-registry'],
+      ['/integration-exchanges',     'integration-registry'],
     ];
+
+    const method = Array.isArray(routeOptions.method)
+      ? (routeOptions.method[0] ?? 'GET')
+      : routeOptions.method;
+
+    const extensions: Record<string, unknown> = {
+      operationId:           generateOperationId(method, routeOptions.url),
+      'x-publication-class': classifyOperation(method, routeOptions.url),
+    };
 
     for (const [prefix, tag] of tagMap) {
       if (routeOptions.url.includes(prefix)) {
-        routeOptions.schema = { ...(routeOptions.schema ?? {}), tags: [tag] };
+        extensions['tags'] = [tag];
         break;
       }
     }
+
+    Object.assign(routeOptions, { schema: { ...(routeOptions.schema ?? {}), ...extensions } });
   });
 
   // - Routes -
@@ -376,7 +485,8 @@ export async function buildApp(
   await fastify.register(moduleResultRoutes,        { prefix: '/api/v1' });
   await fastify.register(moduleRegistrationsRoutes, { prefix: '/api/v1' });
   await fastify.register(tenantAdminRoutes,         { prefix: '/api/v1' });
-  await fastify.register(platformControlRoutes,     { prefix: '/api/v1' });
+  await fastify.register(platformControlRoutes,         { prefix: '/api/v1' });
+  await fastify.register(integrationRegistryRoutes,     { prefix: '/api/v1' });
   await fastify.register(globalisationRoutes,       { prefix: '/api/v1' });
   await fastify.register(communicationRoutes,       { prefix: '/api/v1' });
 
@@ -417,6 +527,7 @@ declare module 'fastify' {
     hearService:        HearService;
     correctionService:  CorrectionService;
     regulatoryExchangeService: RegulatoryExchangeService;
+    integrationRegistryService: IntegrationRegistryService;
     workflowDefinitionService: WorkflowDefinitionService;
     workflowInstanceService: WorkflowInstanceService;
     workflowTaskService: WorkflowTaskService;

@@ -16,6 +16,8 @@ export const integrationContracts = pgTable('integration_contract', {
   patternType:            text('pattern_type').notNull(),
   currentContractVersion: text('current_contract_version').notNull(),
   dataClassificationCode: text('data_classification_code').notNull(),
+  deprecatedAt:           timestamp('deprecated_at',            { withTimezone: true }),
+  minimumSupportedVersion: text('minimum_supported_version'),
   createdAt:              timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -51,7 +53,8 @@ export const integrationRegistrations = pgTable('integration_registration', {
   registeredAt:             timestamp('registered_at',  { withTimezone: true }).notNull().defaultNow(),
   lastUpdatedAt:            timestamp('last_updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
-// UNIQUE (tenant_id, integration_code) enforced in migration DDL
+// Note: the previous UNIQUE (tenant_id, integration_code) was dropped in 0020_phase7_contract_deprecation.sql
+// Tenants may hold multiple registrations for the same contract type (multiple VLE instances, etc.)
 
 /**
  * Append-only inbound/outbound exchange ledger for idempotency, retry,

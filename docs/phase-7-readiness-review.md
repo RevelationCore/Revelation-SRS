@@ -249,4 +249,4 @@ Then add future Phase 7/9 file contracts for VLE, attendance, finance, BI/DW, ED
 
 The clean API/event/resource surface is **stable enough to start Phase 7**, but the publishable contract layer is **not yet complete**.
 
-The first Phase 7 implementation step should be contract inventory and classification, followed by OpenAPI publication, event schema generation, file-spec formalisation, plugin registry runtime APIs, and developer documentation.
+The first Phase 7 implementation step should be contract inventory and classification, followed by OpenAPI publication, event schema generation, file-spec formalisation, plugin registry runtime APIs, and developer documentation. The staged implementation plan is recorded in `docs/phase-7-implementation-plan.md`.

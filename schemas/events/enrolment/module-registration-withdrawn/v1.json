@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/EnrolmentModuleRegistrationWithdrawnV1Payload",
+  "definitions": {
+    "EnrolmentModuleRegistrationWithdrawnV1Payload": {
+      "type": "object",
+      "properties": {
+        "enrolmentId": {
+          "type": "string"
+        },
+        "moduleRegistrationId": {
+          "type": "string"
+        },
+        "moduleOfferingId": {
+          "type": "string"
+        },
+        "withdrawnAt": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "enrolmentId",
+        "moduleRegistrationId",
+        "moduleOfferingId",
+        "withdrawnAt"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$id": "https://schemas.revelation-srs.io/events/enrolment/module-registration-withdrawn/v1.json",
+  "title": "EnrolmentModuleRegistrationWithdrawnV1Payload",
+  "description": "Payload schema for srs.enrolment.module-registration-withdrawn v1.0.0"
+}

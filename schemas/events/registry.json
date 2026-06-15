@@ -1,0 +1,640 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "generated": "2026-06-15T13:58:11.924Z",
+  "description": "Machine-readable registry of all Revelation SRS domain events.",
+  "schemaUriBase": "https://schemas.revelation-srs.io/events",
+  "events": [
+    {
+      "subject": "srs.student.created",
+      "version": "1.0.0",
+      "schemaRef": "https://schemas.revelation-srs.io/events/student/created/v1.json",
+      "schemaPath": "schemas/events/student/created/v1.json",
+      "dataClass": "personal",
+      "partitionKey": "personId",
+      "consumers": [
+        "identity-service",
+        "admissions-adapter",
+        "vle-adapter",
+        "finance-adapter"
+      ],
+      "status": "published"
+    },
+    {
+      "subject": "srs.student.identity-updated",
+      "version": "1.0.0",
+      "schemaRef": "https://schemas.revelation-srs.io/events/student/identity-updated/v1.json",
+      "schemaPath": "schemas/events/student/identity-updated/v1.json",
+      "dataClass": "personal",
+      "partitionKey": "personId",
+      "consumers": [
+        "identity-service",
+        "vle-adapter",
+        "finance-adapter"
+      ],
+      "status": "published"
+    },
+    {
+      "subject": "srs.student.enrolled",
+      "version": "1.0.0",
+      "schemaRef": "https://schemas.revelation-srs.io/events/student/enrolled/v1.json",
+      "schemaPath": "schemas/events/student/enrolled/v1.json",
+      "dataClass": "personal",
+      "partitionKey": "personId",
+      "consumers": [
+        "finance-adapter",
+        "vle-adapter",
+        "wellbeing-module"
+      ],
+      "status": "published"
+    },
+    {
+      "subject": "srs.student.status-changed",
+      "version": "1.0.0",
+      "schemaRef": "https://schemas.revelation-srs.io/events/student/status-changed/v1.json",
+      "schemaPath": "schemas/events/student/status-changed/v1.json",
+      "dataClass": "personal",
+      "partitionKey": "personId",
+      "consumers": [
+        "finance-adapter",
+        "vle-adapter",
+        "wellbeing-module"
+      ],
+      "status": "published"
+    },
+    {
+      "subject": "srs.student.disability-declaration-updated",
+      "version": "1.0.0",
+      "schemaRef": "https://schemas.revelation-srs.io/events/student/disability-declaration-updated/v1.json",
+      "schemaPath": "schemas/events/student/disability-declaration-updated/v1.json",
+      "dataClass": "special-category",
+      "partitionKey": "personId",
+      "consumers": [
+        "wellbeing-module",
+        "disability-service"
+      ],
+      "status": "published"
+    },
+    {
+      "subject": "srs.identity.verification-requested",
+      "version": "1.0.0",
+      "schemaRef": "https://schemas.revelation-srs.io/events/identity/verification-requested/v1.json",
+      "schemaPath": "schemas/events/identity/verification-requested/v1.json",
+      "dataClass": "personal",
+      "partitionKey": "personId",
+      "consumers": [
+        "identity-service"
+      ],
+      "status": "published"
+    },
+    {
+      "subject": "srs.identity.verification-completed",
+      "version": "1.0.0",
+      "schemaRef": "https://schemas.revelation-srs.io/events/identity/verification-completed/v1.json",
+      "schemaPath": "schemas/events/identity/verification-completed/v1.json",
+      "dataClass": "personal",
+      "partitionKey": "personId",
+      "consumers": [
+        "identity-service",
+        "admissions-adapter"
+      ],
+      "status": "published"
+    },
+    {
+      "subject": "srs.enrolment.fee-liability-generated",
+      "version": "1.0.0",
+      "schemaRef": "https://schemas.revelation-srs.io/events/enrolment/fee-liability-generated/v1.json",
+      "schemaPath": "schemas/events/enrolment/fee-liability-generated/v1.json",
+      "dataClass": "regulatory",
+      "partitionKey": "enrolmentId",
+      "consumers": [
+        "finance-adapter"
+      ],
+      "status": "published"
+    },
+    {
+      "subject": "srs.enrolment.module-registered",
+      "version": "1.0.0",
+      "schemaRef": "https://schemas.revelation-srs.io/events/enrolment/module-registered/v1.json",
+      "schemaPath": "schemas/events/enrolment/module-registered/v1.json",
+      "dataClass": "standard",
+      "partitionKey": "enrolmentId",
+      "consumers": [
+        "finance-adapter",
+        "timetabling-adapter",
+        "vle-adapter",
+        "wellbeing-module"
+      ],
+      "status": "published"
+    },
+    {
+      "subject": "srs.enrolment.module-registration-withdrawn",
+      "version": "1.0.0",
+      "schemaRef": "https://schemas.revelation-srs.io/events/enrolment/module-registration-withdrawn/v1.json",
+      "schemaPath": "schemas/events/enrolment/module-registration-withdrawn/v1.json",
+      "dataClass": "standard",
+      "partitionKey": "enrolmentId",
+      "consumers": [
+        "timetabling-adapter",
+        "vle-adapter",
+        "wellbeing-module"
+      ],
+      "status": "published"
+    },
+    {
+      "subject": "srs.enrolment.module-registration-completed",
+      "version": "1.0.0",
+      "schemaRef": "https://schemas.revelation-srs.io/events/enrolment/module-registration-completed/v1.json",
+      "schemaPath": "schemas/events/enrolment/module-registration-completed/v1.json",
+      "dataClass": "standard",
+      "partitionKey": "enrolmentId",
+      "consumers": [
+        "vle-adapter",
+        "transcript-service"
+      ],
+      "status": "published"
+    },
+    {
+      "subject": "srs.catalogue.programme-updated",
+      "version": "1.0.0",
+      "schemaRef": "https://schemas.revelation-srs.io/events/catalogue/programme-updated/v1.json",
+      "schemaPath": "schemas/events/catalogue/programme-updated/v1.json",
+      "dataClass": "standard",
+      "partitionKey": "programmeId",
+      "consumers": [
+        "vle-adapter",
+        "prospectus-adapter",
+        "bi-adapter"
+      ],
+      "status": "published"
+    },
+    {
+      "subject": "srs.catalogue.module-updated",
+      "version": "1.0.0",
+      "schemaRef": "https://schemas.revelation-srs.io/events/catalogue/module-updated/v1.json",
+      "schemaPath": "schemas/events/catalogue/module-updated/v1.json",
+      "dataClass": "standard",
+      "partitionKey": "moduleId",
+      "consumers": [
+        "vle-adapter",
+        "timetabling-adapter",
+        "bi-adapter"
+      ],
+      "status": "published"
+    },
+    {
+      "subject": "srs.catalogue.module-relationship-updated",
+      "version": "1.0.0",
+      "schemaRef": "https://schemas.revelation-srs.io/events/catalogue/module-relationship-updated/v1.json",
+      "schemaPath": "schemas/events/catalogue/module-relationship-updated/v1.json",
+      "dataClass": "standard",
+      "partitionKey": "moduleId",
+      "consumers": [
+        "curriculum-adapter"
+      ],
+      "status": "published"
+    },
+    {
+      "subject": "srs.catalogue.learning-outcome-updated",
+      "version": "1.0.0",
+      "schemaRef": "https://schemas.revelation-srs.io/events/catalogue/learning-outcome-updated/v1.json",
+      "schemaPath": "schemas/events/catalogue/learning-outcome-updated/v1.json",
+      "dataClass": "standard",
+      "partitionKey": "learningOutcomeId",
+      "consumers": [
+        "curriculum-adapter",
+        "hear-service"
+      ],
+      "status": "published"
+    },
+    {
+      "subject": "srs.assessment.mark-received",
+      "version": "1.0.0",
+      "schemaRef": "https://schemas.revelation-srs.io/events/assessment/mark-received/v1.json",
+      "schemaPath": "schemas/events/assessment/mark-received/v1.json",
+      "dataClass": "standard",
+      "partitionKey": "moduleRegistrationId",
+      "consumers": [
+        "bi-adapter",
+        "wellbeing-module"
+      ],
+      "status": "published"
+    },
+    {
+      "subject": "srs.assessment.mark-updated",
+      "version": "1.0.0",
+      "schemaRef": "https://schemas.revelation-srs.io/events/assessment/mark-updated/v1.json",
+      "schemaPath": "schemas/events/assessment/mark-updated/v1.json",
+      "dataClass": "standard",
+      "partitionKey": "moduleRegistrationId",
+      "consumers": [
+        "bi-adapter"
+      ],
+      "status": "published"
+    },
+    {
+      "subject": "srs.assessment.module-result-calculated",
+      "version": "1.0.0",
+      "schemaRef": "https://schemas.revelation-srs.io/events/assessment/module-result-calculated/v1.json",
+      "schemaPath": "schemas/events/assessment/module-result-calculated/v1.json",
+      "dataClass": "standard",
+      "partitionKey": "moduleRegistrationId",
+      "consumers": [
+        "bi-adapter",
+        "transcript-service"
+      ],
+      "status": "published"
+    },
+    {
+      "subject": "srs.assessment.module-result-ratified",
+      "version": "1.0.0",
+      "schemaRef": "https://schemas.revelation-srs.io/events/assessment/module-result-ratified/v1.json",
+      "schemaPath": "schemas/events/assessment/module-result-ratified/v1.json",
+      "dataClass": "standard",
+      "partitionKey": "moduleRegistrationId",
+      "consumers": [
+        "bi-adapter",
+        "hear-service",
+        "transcript-service",
+        "wellbeing-module"
+      ],
+      "status": "published"
+    },
+    {
+      "subject": "srs.adjustment.approved",
+      "version": "1.0.0",
+      "schemaRef": "https://schemas.revelation-srs.io/events/adjustment/approved/v1.json",
+      "schemaPath": "schemas/events/adjustment/approved/v1.json",
+      "dataClass": "sensitive",
+      "partitionKey": "enrolmentId",
+      "consumers": [
+        "assessment-venue-adapter",
+        "wellbeing-module"
+      ],
+      "status": "published"
+    },
+    {
+      "subject": "srs.adjustment.distributed",
+      "version": "1.0.0",
+      "schemaRef": "https://schemas.revelation-srs.io/events/adjustment/distributed/v1.json",
+      "schemaPath": "schemas/events/adjustment/distributed/v1.json",
+      "dataClass": "sensitive",
+      "partitionKey": "adjustmentId",
+      "consumers": [
+        "assessment-venue-adapter"
+      ],
+      "status": "published"
+    },
+    {
+      "subject": "srs.adjustment.expired",
+      "version": "1.0.0",
+      "schemaRef": "https://schemas.revelation-srs.io/events/adjustment/expired/v1.json",
+      "schemaPath": "schemas/events/adjustment/expired/v1.json",
+      "dataClass": "sensitive",
+      "partitionKey": "enrolmentId",
+      "consumers": [
+        "assessment-venue-adapter",
+        "wellbeing-module"
+      ],
+      "status": "published"
+    },
+    {
+      "subject": "srs.circumstances.exceptional-circumstances-flagged",
+      "version": "1.0.0",
+      "schemaRef": "https://schemas.revelation-srs.io/events/circumstances/exceptional-circumstances-flagged/v1.json",
+      "schemaPath": "schemas/events/circumstances/exceptional-circumstances-flagged/v1.json",
+      "dataClass": "sensitive",
+      "partitionKey": "enrolmentId",
+      "consumers": [
+        "wellbeing-module",
+        "bi-adapter"
+      ],
+      "status": "published"
+    },
+    {
+      "subject": "srs.circumstances.exceptional-circumstances-updated",
+      "version": "1.0.0",
+      "schemaRef": "https://schemas.revelation-srs.io/events/circumstances/exceptional-circumstances-updated/v1.json",
+      "schemaPath": "schemas/events/circumstances/exceptional-circumstances-updated/v1.json",
+      "dataClass": "sensitive",
+      "partitionKey": "exceptionalCircumstancesId",
+      "consumers": [
+        "wellbeing-module",
+        "bi-adapter"
+      ],
+      "status": "published"
+    },
+    {
+      "subject": "srs.circumstances.misconduct-outcome-recorded",
+      "version": "1.0.0",
+      "schemaRef": "https://schemas.revelation-srs.io/events/circumstances/misconduct-outcome-recorded/v1.json",
+      "schemaPath": "schemas/events/circumstances/misconduct-outcome-recorded/v1.json",
+      "dataClass": "sensitive",
+      "partitionKey": "enrolmentId",
+      "consumers": [
+        "bi-adapter"
+      ],
+      "status": "published"
+    },
+    {
+      "subject": "srs.governance.exam-board-data-pack-ready",
+      "version": "1.0.0",
+      "schemaRef": "https://schemas.revelation-srs.io/events/governance/exam-board-data-pack-ready/v1.json",
+      "schemaPath": "schemas/events/governance/exam-board-data-pack-ready/v1.json",
+      "dataClass": "standard",
+      "partitionKey": "examBoardId",
+      "consumers": [
+        "exam-board-portal"
+      ],
+      "status": "published"
+    },
+    {
+      "subject": "srs.governance.exam-board-ratified",
+      "version": "1.0.0",
+      "schemaRef": "https://schemas.revelation-srs.io/events/governance/exam-board-ratified/v1.json",
+      "schemaPath": "schemas/events/governance/exam-board-ratified/v1.json",
+      "dataClass": "standard",
+      "partitionKey": "examBoardId",
+      "consumers": [
+        "transcript-service",
+        "hear-service",
+        "bi-adapter"
+      ],
+      "status": "published"
+    },
+    {
+      "subject": "srs.governance.record-locked",
+      "version": "1.0.0",
+      "schemaRef": "https://schemas.revelation-srs.io/events/governance/record-locked/v1.json",
+      "schemaPath": "schemas/events/governance/record-locked/v1.json",
+      "dataClass": "standard",
+      "partitionKey": "examBoardId",
+      "consumers": [
+        "bi-adapter"
+      ],
+      "status": "published"
+    },
+    {
+      "subject": "srs.governance.record-amended-post-ratification",
+      "version": "1.0.0",
+      "schemaRef": "https://schemas.revelation-srs.io/events/governance/record-amended-post-ratification/v1.json",
+      "schemaPath": "schemas/events/governance/record-amended-post-ratification/v1.json",
+      "dataClass": "standard",
+      "partitionKey": "examBoardId",
+      "consumers": [
+        "transcript-service",
+        "hear-service",
+        "bi-adapter"
+      ],
+      "status": "published"
+    },
+    {
+      "subject": "srs.governance.exam-entry-submitted",
+      "version": "1.0.0",
+      "schemaRef": "https://schemas.revelation-srs.io/events/governance/exam-entry-submitted/v1.json",
+      "schemaPath": "schemas/events/governance/exam-entry-submitted/v1.json",
+      "dataClass": "standard",
+      "partitionKey": "examBoardId",
+      "consumers": [
+        "timetabling-adapter"
+      ],
+      "status": "published"
+    },
+    {
+      "subject": "srs.governance.exam-schedule-received",
+      "version": "1.0.0",
+      "schemaRef": "https://schemas.revelation-srs.io/events/governance/exam-schedule-received/v1.json",
+      "schemaPath": "schemas/events/governance/exam-schedule-received/v1.json",
+      "dataClass": "standard",
+      "partitionKey": "examBoardId",
+      "consumers": [
+        "timetabling-adapter",
+        "assessment-venue-adapter"
+      ],
+      "status": "published"
+    },
+    {
+      "subject": "srs.progression.decided",
+      "version": "1.0.0",
+      "schemaRef": "https://schemas.revelation-srs.io/events/progression/decided/v1.json",
+      "schemaPath": "schemas/events/progression/decided/v1.json",
+      "dataClass": "standard",
+      "partitionKey": "enrolmentId",
+      "consumers": [
+        "bi-adapter",
+        "transcript-service"
+      ],
+      "status": "published"
+    },
+    {
+      "subject": "srs.award.conferred",
+      "version": "1.0.0",
+      "schemaRef": "https://schemas.revelation-srs.io/events/award/conferred/v1.json",
+      "schemaPath": "schemas/events/award/conferred/v1.json",
+      "dataClass": "standard",
+      "partitionKey": "enrolmentId",
+      "consumers": [
+        "transcript-service",
+        "hear-service",
+        "bi-adapter",
+        "alumni-service"
+      ],
+      "status": "published"
+    },
+    {
+      "subject": "srs.regulatory.ucas-application-received",
+      "version": "1.0.0",
+      "schemaRef": "https://schemas.revelation-srs.io/events/regulatory/ucas-application-received/v1.json",
+      "schemaPath": "schemas/events/regulatory/ucas-application-received/v1.json",
+      "dataClass": "personal",
+      "partitionKey": "applicationId",
+      "consumers": [
+        "admissions-adapter"
+      ],
+      "status": "published"
+    },
+    {
+      "subject": "srs.regulatory.ucas-confirmation-sent",
+      "version": "1.0.0",
+      "schemaRef": "https://schemas.revelation-srs.io/events/regulatory/ucas-confirmation-sent/v1.json",
+      "schemaPath": "schemas/events/regulatory/ucas-confirmation-sent/v1.json",
+      "dataClass": "regulatory",
+      "partitionKey": "enrolmentId",
+      "consumers": [
+        "admissions-adapter"
+      ],
+      "status": "published"
+    },
+    {
+      "subject": "srs.regulatory.hesa-return-generated",
+      "version": "1.0.0",
+      "schemaRef": "https://schemas.revelation-srs.io/events/regulatory/hesa-return-generated/v1.json",
+      "schemaPath": "schemas/events/regulatory/hesa-return-generated/v1.json",
+      "dataClass": "regulatory",
+      "partitionKey": "returnId",
+      "consumers": [
+        "regulatory-reporting-adapter"
+      ],
+      "status": "published"
+    },
+    {
+      "subject": "srs.regulatory.hesa-return-submitted",
+      "version": "1.0.0",
+      "schemaRef": "https://schemas.revelation-srs.io/events/regulatory/hesa-return-submitted/v1.json",
+      "schemaPath": "schemas/events/regulatory/hesa-return-submitted/v1.json",
+      "dataClass": "regulatory",
+      "partitionKey": "returnId",
+      "consumers": [
+        "regulatory-reporting-adapter",
+        "bi-adapter"
+      ],
+      "status": "published"
+    },
+    {
+      "subject": "srs.regulatory.hesa-id-assigned",
+      "version": "1.0.0",
+      "schemaRef": "https://schemas.revelation-srs.io/events/regulatory/hesa-id-assigned/v1.json",
+      "schemaPath": "schemas/events/regulatory/hesa-id-assigned/v1.json",
+      "dataClass": "personal",
+      "partitionKey": "enrolmentId",
+      "consumers": [
+        "regulatory-reporting-adapter"
+      ],
+      "status": "published"
+    },
+    {
+      "subject": "srs.regulatory.slc-confirmation-sent",
+      "version": "1.0.0",
+      "schemaRef": "https://schemas.revelation-srs.io/events/regulatory/slc-confirmation-sent/v1.json",
+      "schemaPath": "schemas/events/regulatory/slc-confirmation-sent/v1.json",
+      "dataClass": "regulatory",
+      "partitionKey": "enrolmentId",
+      "consumers": [
+        "finance-adapter"
+      ],
+      "status": "published"
+    },
+    {
+      "subject": "srs.regulatory.slc-notification-received",
+      "version": "1.0.0",
+      "schemaRef": "https://schemas.revelation-srs.io/events/regulatory/slc-notification-received/v1.json",
+      "schemaPath": "schemas/events/regulatory/slc-notification-received/v1.json",
+      "dataClass": "regulatory",
+      "partitionKey": "enrolmentId",
+      "consumers": [
+        "finance-adapter"
+      ],
+      "status": "published"
+    },
+    {
+      "subject": "srs.regulatory.ukvi-cas-requested",
+      "version": "1.0.0",
+      "schemaRef": "https://schemas.revelation-srs.io/events/regulatory/ukvi-cas-requested/v1.json",
+      "schemaPath": "schemas/events/regulatory/ukvi-cas-requested/v1.json",
+      "dataClass": "regulatory",
+      "partitionKey": "enrolmentId",
+      "consumers": [
+        "ukvi-adapter"
+      ],
+      "status": "published"
+    },
+    {
+      "subject": "srs.regulatory.ukvi-cas-assigned",
+      "version": "1.0.0",
+      "schemaRef": "https://schemas.revelation-srs.io/events/regulatory/ukvi-cas-assigned/v1.json",
+      "schemaPath": "schemas/events/regulatory/ukvi-cas-assigned/v1.json",
+      "dataClass": "regulatory",
+      "partitionKey": "enrolmentId",
+      "consumers": [
+        "ukvi-adapter"
+      ],
+      "status": "published"
+    },
+    {
+      "subject": "srs.regulatory.ukvi-attendance-submitted",
+      "version": "1.0.0",
+      "schemaRef": "https://schemas.revelation-srs.io/events/regulatory/ukvi-attendance-submitted/v1.json",
+      "schemaPath": "schemas/events/regulatory/ukvi-attendance-submitted/v1.json",
+      "dataClass": "regulatory",
+      "partitionKey": "academicPeriodId",
+      "consumers": [
+        "ukvi-adapter"
+      ],
+      "status": "published"
+    },
+    {
+      "subject": "srs.regulatory.ukvi-visa-status-updated",
+      "version": "1.0.0",
+      "schemaRef": "https://schemas.revelation-srs.io/events/regulatory/ukvi-visa-status-updated/v1.json",
+      "schemaPath": "schemas/events/regulatory/ukvi-visa-status-updated/v1.json",
+      "dataClass": "regulatory",
+      "partitionKey": "enrolmentId",
+      "consumers": [
+        "ukvi-adapter",
+        "wellbeing-module"
+      ],
+      "status": "published"
+    },
+    {
+      "subject": "srs.regulatory.ukvi-compliance-alert-raised",
+      "version": "1.0.0",
+      "schemaRef": "https://schemas.revelation-srs.io/events/regulatory/ukvi-compliance-alert-raised/v1.json",
+      "schemaPath": "schemas/events/regulatory/ukvi-compliance-alert-raised/v1.json",
+      "dataClass": "regulatory",
+      "partitionKey": "enrolmentId",
+      "consumers": [
+        "ukvi-adapter",
+        "wellbeing-module"
+      ],
+      "status": "published"
+    },
+    {
+      "subject": "srs.regulatory.ofs-extract-generated",
+      "version": "1.0.0",
+      "schemaRef": "https://schemas.revelation-srs.io/events/regulatory/ofs-extract-generated/v1.json",
+      "schemaPath": "schemas/events/regulatory/ofs-extract-generated/v1.json",
+      "dataClass": "regulatory",
+      "partitionKey": "extractId",
+      "consumers": [
+        "regulatory-reporting-adapter",
+        "bi-adapter"
+      ],
+      "status": "published"
+    },
+    {
+      "subject": "srs.enrolment.downstream-trigger-created",
+      "version": "1.0.0",
+      "status": "internal",
+      "reason": "Internal routing event; drives UCAS/SLC/UKVI trigger processing \u2014 not for external consumers."
+    },
+    {
+      "subject": "srs.workflow.task-assigned",
+      "version": "1.0.0",
+      "status": "internal",
+      "reason": "Internal workflow coordination event."
+    },
+    {
+      "subject": "srs.workflow.task-completed",
+      "version": "1.0.0",
+      "status": "internal",
+      "reason": "Internal workflow coordination event."
+    },
+    {
+      "subject": "srs.workflow.task-escalated",
+      "version": "1.0.0",
+      "status": "internal",
+      "reason": "Internal workflow coordination event."
+    },
+    {
+      "subject": "srs.workflow.decision-recorded",
+      "version": "1.0.0",
+      "status": "internal",
+      "reason": "Internal workflow coordination event."
+    },
+    {
+      "subject": "srs.workflow.completed",
+      "version": "1.0.0",
+      "status": "internal",
+      "reason": "Internal workflow coordination event."
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/StudentEnrolledV1Payload",
+  "definitions": {
+    "StudentEnrolledV1Payload": {
+      "type": "object",
+      "properties": {
+        "personId": {
+          "type": "string"
+        },
+        "enrolmentId": {
+          "type": "string"
+        },
+        "programmeId": {
+          "type": "string"
+        },
+        "academicYear": {
+          "type": "string"
+        },
+        "modeOfStudy": {
+          "type": "string"
+        },
+        "fundingSource": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "personId",
+        "enrolmentId",
+        "academicYear",
+        "modeOfStudy"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$id": "https://schemas.revelation-srs.io/events/student/enrolled/v1.json",
+  "title": "StudentEnrolledV1Payload",
+  "description": "Payload schema for srs.student.enrolled v1.0.0"
+}

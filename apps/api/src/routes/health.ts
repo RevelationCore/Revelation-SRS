@@ -58,7 +58,7 @@ async function jwksCheck(jwksUrl: string): Promise<CheckResult> {
 export function healthRoutes(fastify: FastifyInstance): void {
   fastify.get(
     '/health',
-    { config: { skipAuth: true } },
+    { schema: { hide: true }, config: { skipAuth: true } },
     async (_req, reply) => {
       await reply.code(200).send({
         status:  'ok',
@@ -70,7 +70,7 @@ export function healthRoutes(fastify: FastifyInstance): void {
 
   fastify.get(
     '/ready',
-    { config: { skipAuth: true } },
+    { schema: { hide: true }, config: { skipAuth: true } },
     async (_req, reply) => {
       const checks: Record<string, CheckResult> = {};
 
@@ -106,7 +106,7 @@ export function healthRoutes(fastify: FastifyInstance): void {
 
   fastify.get(
     '/metrics',
-    { config: { skipAuth: true } },
+    { schema: { hide: true }, config: { skipAuth: true } },
     async (_req, reply) => {
       const uptime = process.uptime();
       const memory = process.memoryUsage();

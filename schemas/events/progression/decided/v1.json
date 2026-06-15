@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/ProgressionDecidedV1Payload",
+  "definitions": {
+    "ProgressionDecidedV1Payload": {
+      "type": "object",
+      "properties": {
+        "progressionDecisionId": {
+          "type": "string"
+        },
+        "enrolmentId": {
+          "type": "string"
+        },
+        "personId": {
+          "type": "string"
+        },
+        "academicYear": {
+          "type": "string"
+        },
+        "yearOfStudy": {
+          "type": "string"
+        },
+        "decisionCode": {
+          "type": "string"
+        },
+        "examBoardId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "progressionDecisionId",
+        "enrolmentId",
+        "personId",
+        "academicYear",
+        "yearOfStudy",
+        "decisionCode"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$id": "https://schemas.revelation-srs.io/events/progression/decided/v1.json",
+  "title": "ProgressionDecidedV1Payload",
+  "description": "Payload schema for srs.progression.decided v1.0.0"
+}

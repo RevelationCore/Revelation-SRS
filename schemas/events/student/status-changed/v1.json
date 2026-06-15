@@ -1,0 +1,40 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/StudentStatusChangedV1Payload",
+  "definitions": {
+    "StudentStatusChangedV1Payload": {
+      "type": "object",
+      "properties": {
+        "personId": {
+          "type": "string"
+        },
+        "enrolmentId": {
+          "type": "string"
+        },
+        "previousStatus": {
+          "type": "string"
+        },
+        "newStatus": {
+          "type": "string"
+        },
+        "effectiveDate": {
+          "type": "string"
+        },
+        "reasonCode": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "personId",
+        "enrolmentId",
+        "previousStatus",
+        "newStatus",
+        "effectiveDate"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$id": "https://schemas.revelation-srs.io/events/student/status-changed/v1.json",
+  "title": "StudentStatusChangedV1Payload",
+  "description": "Payload schema for srs.student.status-changed v1.0.0"
+}

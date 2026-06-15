@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/DisabilityDeclarationUpdatedV1Payload",
+  "definitions": {
+    "DisabilityDeclarationUpdatedV1Payload": {
+      "type": "object",
+      "properties": {
+        "personId": {
+          "type": "string"
+        },
+        "declarationId": {
+          "type": "string"
+        },
+        "disabilityCategoryCode": {
+          "type": "string"
+        },
+        "declarationStatusCode": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "personId",
+        "declarationId",
+        "disabilityCategoryCode",
+        "declarationStatusCode"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$id": "https://schemas.revelation-srs.io/events/student/disability-declaration-updated/v1.json",
+  "title": "DisabilityDeclarationUpdatedV1Payload",
+  "description": "Payload schema for srs.student.disability-declaration-updated v1.0.0"
+}

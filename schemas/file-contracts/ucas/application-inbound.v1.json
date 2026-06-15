@@ -1,0 +1,113 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://schemas.revelation-srs.io/file-contracts/ucas/application-inbound/v1.json",
+  "title": "UcasApplicationInboundV1",
+  "description": "Inbound UCAS application record ingested via POST /api/v1/regulatory/ucas/applications. Sent by a UCAS integration adapter on behalf of an applicant. The applicant object and top-level flat fields are alternative encodings; the top-level flat fields take precedence.",
+  "type": "object",
+  "required": ["ucasPersonalId", "cycle", "statusCode"],
+  "additionalProperties": true,
+  "properties": {
+    "ucasPersonalId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "UCAS Personal ID (10 digits). Uniquely identifies the applicant across the UCAS cycle."
+    },
+    "cycle": {
+      "type": "string",
+      "minLength": 1,
+      "description": "UCAS cycle year, e.g. '2025'. Corresponds to the UCAS application year."
+    },
+    "statusCode": {
+      "type": "string",
+      "minLength": 1,
+      "description": "UCAS application status at time of submission. Common values: 'U' (unconditional offer), 'C' (conditional offer), 'A' (accepted), 'R' (rejected), 'W' (withdrawn)."
+    },
+    "legalFirstName": {
+      "type": "string",
+      "description": "Applicant's legal given name(s). Used when applicant object is not provided."
+    },
+    "legalFamilyName": {
+      "type": "string",
+      "description": "Applicant's legal family name. Used when applicant object is not provided."
+    },
+    "dateOfBirth": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of birth in ISO 8601 date format (YYYY-MM-DD)."
+    },
+    "emailPersonal": {
+      "type": "string",
+      "format": "email",
+      "description": "Applicant's personal email address."
+    },
+    "programmeId": {
+      "type": "string",
+      "description": "SRS programme UUID. If provided, the application is linked to this programme on ingestion."
+    },
+    "modeOfStudyCode": {
+      "type": "string",
+      "description": "Mode of study. Values: 'FT' (full-time), 'PT' (part-time), 'DL' (distance learning)."
+    },
+    "attendanceTypeCode": {
+      "type": "string",
+      "description": "Attendance type. Values: 'campus', 'blended', 'online'."
+    },
+    "academicYearOfEntry": {
+      "type": "string",
+      "pattern": "^\\d{4}/\\d{2}$",
+      "description": "Expected academic year of entry in SRS format, e.g. '2025/26'."
+    },
+    "startDate": {
+      "type": "string",
+      "format": "date",
+      "description": "Expected programme start date (YYYY-MM-DD)."
+    },
+    "expectedEndDate": {
+      "type": "string",
+      "format": "date",
+      "description": "Expected programme end date (YYYY-MM-DD). May be null for open-ended PGR programmes."
+    },
+    "feeBandCode": {
+      "type": "string",
+      "description": "Fee band. Values: 'home', 'international', 'eu'."
+    },
+    "fundingSourceCode": {
+      "type": "string",
+      "description": "Primary funding source. Values: 'slc', 'self', 'sponsor', 'scholarship', 'other'."
+    },
+    "slcReference": {
+      "type": "string",
+      "description": "Student Loans Company reference number, if known at application stage."
+    },
+    "ukviCasRequired": {
+      "type": "boolean",
+      "description": "Whether a CAS reference will be required for this applicant's Tier 4 / Student visa."
+    },
+    "applicant": {
+      "type": "object",
+      "description": "Nested applicant personal data. Alternative encoding to top-level flat fields.",
+      "properties": {
+        "givenNames": { "type": "string" },
+        "familyName": { "type": "string" },
+        "dateOfBirth": { "type": "string", "format": "date" },
+        "email": { "type": "string", "format": "email" }
+      }
+    },
+    "enrolment": {
+      "type": "object",
+      "description": "Nested enrolment context. Alternative encoding to top-level flat fields.",
+      "properties": {
+        "programmeId": { "type": "string" },
+        "modeOfStudyCode": { "type": "string" },
+        "attendanceTypeCode": { "type": "string" },
+        "academicYearOfEntry": { "type": "string" },
+        "startDate": { "type": "string", "format": "date" },
+        "expectedEndDate": { "type": "string", "format": "date" },
+        "feeBandCode": { "type": "string" },
+        "fundingSourceCode": { "type": "string" },
+        "slcReference": { "type": "string" },
+        "ukviCasRequired": { "type": "boolean" }
+      }
+    }
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/RegulatoryUcasConfirmationSentV1Payload",
+  "definitions": {
+    "RegulatoryUcasConfirmationSentV1Payload": {
+      "type": "object",
+      "properties": {
+        "enrolmentId": {
+          "type": "string"
+        },
+        "ucasPersonalId": {
+          "type": "string"
+        },
+        "cycle": {
+          "type": "string"
+        },
+        "confirmationType": {
+          "type": "string",
+          "enum": [
+            "enrolled",
+            "withdrawn",
+            "deferred"
+          ]
+        },
+        "exchangeId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "enrolmentId",
+        "ucasPersonalId",
+        "cycle",
+        "confirmationType",
+        "exchangeId"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$id": "https://schemas.revelation-srs.io/events/regulatory/ucas-confirmation-sent/v1.json",
+  "title": "RegulatoryUcasConfirmationSentV1Payload",
+  "description": "Payload schema for srs.regulatory.ucas-confirmation-sent v1.0.0"
+}

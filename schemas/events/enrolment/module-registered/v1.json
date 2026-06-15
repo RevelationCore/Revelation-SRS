@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/EnrolmentModuleRegisteredV1Payload",
+  "definitions": {
+    "EnrolmentModuleRegisteredV1Payload": {
+      "type": "object",
+      "properties": {
+        "enrolmentId": {
+          "type": "string"
+        },
+        "moduleRegistrationId": {
+          "type": "string"
+        },
+        "moduleOfferingId": {
+          "type": "string"
+        },
+        "moduleId": {
+          "type": "string"
+        },
+        "academicPeriodId": {
+          "type": "string"
+        },
+        "registrationDate": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "enrolmentId",
+        "moduleRegistrationId",
+        "moduleOfferingId",
+        "moduleId",
+        "academicPeriodId",
+        "registrationDate"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$id": "https://schemas.revelation-srs.io/events/enrolment/module-registered/v1.json",
+  "title": "EnrolmentModuleRegisteredV1Payload",
+  "description": "Payload schema for srs.enrolment.module-registered v1.0.0"
+}

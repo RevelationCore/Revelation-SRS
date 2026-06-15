@@ -1,268 +1,326 @@
 # Domain Event Taxonomy
 
-> Status: Updated — Phase 2 remediation
-> Last updated: 2026-06-04
-> All events are published to NATS JetStream using the envelope defined in `integration-layer.md`. Subject names follow the pattern `srs.{domain}.{event-name}`. Payload schemas are versioned; breaking changes create a new version suffix.
+> Status: Reconciled with implementation — Phase 7 Stage 2
+> Last updated: 2026-06-15
+> Authoritative source of truth: `packages/domain/src/events/index.ts` (`EVENT_TYPES`) and `schemas/events/registry.json`.
+>
+> The Phase 2 draft of this document described planned events. Phases 4–6 implementation introduced domain namespace restructuring and additions. This document reflects the **as-built** state. Planned events that are not yet implemented are listed in the [Backlog](#backlog--not-yet-implemented) section.
 
----
-
-## Student Lifecycle Events (`srs.student.*`)
-
-| Subject | Version | Trigger | Key Payload Fields | Primary Consumers |
-|---|---|---|---|---|
-| `srs.student.created` | 1.0 | Student record created (from UCAS or direct) | `personId`, `studentNumber`, `sourceSystem`, `sourceReference` | IAM, CRM |
-| `srs.student.identity-updated` | 1.0 | Personal data change (name, address, contact) | `personId`, `changedFields[]`, `effectiveDate` | IAM, EWP, LIB |
-| `srs.student.enrolled` | 1.0 | Enrolment created and confirmed | `personId`, `enrolmentId`, `programmeId`, `academicYear`, `modeOfStudy`, `fundingSource` | VLE, IAM, LIB, FIN, CRM, AM, EWP |
-| `srs.student.status-changed` | 1.0 | Enrolment status transition (intermission, withdrawal, suspension, graduation) | `personId`, `enrolmentId`, `previousStatus`, `newStatus`, `effectiveDate`, `reason` | VLE, IAM, LIB, FIN, SLC, UKVI, EWP, CRM |
-| `srs.student.re-enrolled` | 1.0 | Annual re-enrolment confirmed | `personId`, `enrolmentId`, `academicYear` | VLE, IAM, EWP |
-| `srs.student.graduated` | 1.0 | Award conferred and enrolment closed | `personId`, `enrolmentId`, `awardId`, `qualificationCode`, `classificationCode`, `awardDate` | IAM, EDRMS, EWP, CRM |
-| `srs.student.disability-declaration-updated` | 1.0 | Disability declaration status changed | `personId`, `declarationId`, `disabilityCategoryCode`, `declarationStatusCode` | WELL |
-| `srs.student.hold-applied` | 1.0 | Hold applied to student account | `personId`, `enrolmentId`, `holdId`, `holdTypeCode` | EWP, IAM |
-| `srs.student.hold-released` | 1.0 | Hold released | `personId`, `enrolmentId`, `holdId` | EWP, IAM |
-
----
-
-## Module Registration Events (`srs.module-registration.*`)
-
-| Subject | Version | Trigger | Key Payload Fields | Primary Consumers |
-|---|---|---|---|---|
-| `srs.module-registration.created` | 1.0 | Student registered on a module offering | `personId`, `enrolmentId`, `moduleRegistrationId`, `moduleOfferingId`, `moduleCode`, `academicPeriod` | VLE, AM, TTB, SETS |
-| `srs.module-registration.withdrawn` | 1.0 | Student withdrawn from a module | `personId`, `moduleRegistrationId`, `moduleOfferingId`, `effectiveDate` | VLE, AM |
-| `srs.module-registration.completed` | 1.0 | Module registration marked complete (post-ratification) | `personId`, `moduleRegistrationId`, `moduleResultId` | VLE, CRIS (PGR) |
-
----
-
-## Assessment and Results Events (`srs.assessment.*`)
-
-| Subject | Version | Trigger | Key Payload Fields | Primary Consumers |
-|---|---|---|---|---|
-| `srs.assessment.mark-received` | 1.0 | Mark ingested from VLE or manual entry | `moduleRegistrationId`, `assessmentComponentId`, `rawMark`, `sourceSystem` | — (internal) |
-| `srs.assessment.mark-updated` | 1.0 | Existing mark corrected (pre-ratification) | `markId`, `previousMark`, `newMark`, `reason` | — (internal) |
-| `srs.assessment.module-result-calculated` | 1.0 | Aggregate module result derived from marks | `moduleRegistrationId`, `moduleResultId`, `aggregateMark`, `resultCode` | EWP (provisional grades if configured) |
-| `srs.assessment.module-result-ratified` | 1.0 | Module result ratified by Exam Board | `moduleRegistrationId`, `moduleResultId`, `aggregateMark`, `resultCode`, `examBoardId` | VLE, EWP, DW, BI |
-
----
-
-## Exam Board and Record Lifecycle Events (`srs.exam-board.*`)
-
-| Subject | Version | Trigger | Key Payload Fields | Primary Consumers |
-|---|---|---|---|---|
-| `srs.exam-board.data-pack-ready` | 1.0 | Board data pack generated, ready for review | `examBoardId`, `boardType`, `academicPeriod`, `candidateCount` | — (internal notification) |
-| `srs.exam-board.ratified` | 1.0 | Board has formally ratified outcomes | `examBoardId`, `boardType`, `academicPeriod`, `ratifiedAt`, `externalExaminerConfirmedAt` | EWP, VLE, SLC, DW, BI |
-| `srs.record.locked` | 1.0 | Academic records locked post-ratification | `examBoardId`, `lockedEntityTypes[]`, `lockedCount` | — (internal) |
-| `srs.record.amended-post-ratification` | 1.0 | A locked record amended via appeal/correction workflow | `entityType`, `entityId`, `appealReference`, `amendedBy`, `amendedAt` | EWP, DW |
-
----
-
-## Progression and Awards Events (`srs.progression.*`)
-
-| Subject | Version | Trigger | Key Payload Fields | Primary Consumers |
-|---|---|---|---|---|
-| `srs.progression.decided` | 1.0 | Progression decision recorded and ratified | `enrolmentId`, `personId`, `academicYear`, `yearOfStudy`, `decisionCode`, `examBoardId` | EWP, VLE, CRM |
-| `srs.award.conferred` | 1.0 | Award formally conferred | `enrolmentId`, `personId`, `awardId`, `qualificationCode`, `classificationCode`, `awardDate` | EWP, EDRMS, CRIS |
-
----
-
-## Reasonable Adjustment Events (`srs.adjustment.*`)
-
-| Subject | Version | Trigger | Key Payload Fields | Primary Consumers |
-|---|---|---|---|---|
-| `srs.adjustment.approved` | 1.0 | Approved adjustment outcome received from Wellbeing and recorded in SIS | `enrolmentId`, `personId`, `adjustmentId`, `adjustmentTypeCode`, `scopeCode`, `validFrom`, `validTo` | — (internal; triggers distribution) |
-| `srs.adjustment.distributed` | 1.0 | Approved adjustment distributed to a downstream system | `adjustmentId`, `targetSystem`, `distributedAt` | VLE, AM, EXAMS |
-| `srs.adjustment.expired` | 1.0 | Adjustment valid period ended | `adjustmentId`, `enrolmentId`, `expiredAt` | VLE, AM, EXAMS |
-
----
-
-## Exceptional Circumstances Events (`srs.exceptional-circumstances.*`)
-
-| Subject | Version | Trigger | Key Payload Fields | Primary Consumers |
-|---|---|---|---|---|
-| `srs.exceptional-circumstances.flagged` | 1.0 | Approved EC outcome received and recorded | `enrolmentId`, `personId`, `moduleOfferingId`, `outcomeCode`, `determinationDate` | — (internal; surfaced in board pack) |
-| `srs.exceptional-circumstances.updated` | 1.0 | EC flag corrected or superseded | `exceptionalCircumstancesId`, `enrolmentId`, `previousOutcomeCode`, `newOutcomeCode` | Exam Board tooling |
-
----
-
-## Academic Integrity Events (`srs.misconduct.*`)
-
-| Subject | Version | Trigger | Key Payload Fields | Primary Consumers |
-|---|---|---|---|---|
-| `srs.misconduct.outcome-recorded` | 1.0 | Misconduct outcome received from AI system | `enrolmentId`, `personId`, `outcomeCode`, `penaltyCode`, `effectiveDate` | EWP, DW |
-| `srs.misconduct.outcome-updated` | 1.0 | Misconduct outcome corrected pre-board or by appeal | `misconductOutcomeId`, `enrolmentId`, `previousOutcomeCode`, `newOutcomeCode` | EWP, Exam Board tooling, DW |
-
----
-
-## Admissions Events (`srs.admissions.*`)
-
-| Subject | Version | Trigger | Key Payload Fields | Primary Consumers |
-|---|---|---|---|---|
-| `srs.admissions.application-received` | 1.0 | Application ingested from UCAS / CRM / direct | `applicationId`, `personId`, `programmeId`, `sourceSystem`, `entryAcademicYear` | CRM, Registry workflow |
-| `srs.admissions.offer-accepted` | 1.0 | Offer accepted; enrolment workflow can proceed | `applicationId`, `offerId`, `personId` | Registry, FIN, IAM |
-| `srs.identity.verification-requested` | 1.0 | OIV request initiated | `personId`, `verificationCheckId` | OIV adapter |
-| `srs.identity.verification-completed` | 1.0 | OIV outcome received and stored | `personId`, `verificationCheckId`, `statusCode`, `fraudFlag` | Registry, IAM |
-
----
-
-## Catalogue Events (`srs.catalogue.*`)
-
-| Subject | Version | Trigger | Key Payload Fields | Primary Consumers |
-|---|---|---|---|---|
-| `srs.catalogue.programme-updated` | 1.0 | Programme created or version changed | `programmeId`, `programmeCode`, `effectiveFrom` | EWP, VLE, TTB, BI, DW |
-| `srs.catalogue.module-updated` | 1.0 | Module created or version changed | `moduleId`, `moduleCode`, `effectiveFrom` | EWP, VLE, TTB, SETS, BI, DW |
-| `srs.catalogue.module-relationship-updated` | 1.0 | Prerequisite / co-requisite / exclusion changed | `moduleId`, `relatedModuleId`, `relationshipTypeCode` | EWP, enrolment module |
-
----
-
-## Enrolment and Finance Events (`srs.enrolment.*`, `srs.finance.*`)
-
-| Subject | Version | Trigger | Key Payload Fields | Primary Consumers |
-|---|---|---|---|---|
-| `srs.enrolment.fee-liability-created` | 1.0 | Fee liability first calculated | `enrolmentId`, `personId`, `academicYear`, `feeAmount`, `fundingSource` | FIN, SLC |
-| `srs.enrolment.fee-liability-updated` | 1.0 | Liability changes (status / intensity change) | `feeLiabilityId`, `enrolmentId`, `previousAmount`, `newAmount` | FIN, SLC |
-| `srs.finance.payment-confirmed` | 1.0 | Payment confirmation received from Finance | `enrolmentId`, `paymentConfirmationId`, `amount`, `paymentSource` | EWP, Registry |
-
----
-
-## Timetable, Attendance, and Exam Entry Events
-
-| Subject | Version | Trigger | Key Payload Fields | Primary Consumers |
-|---|---|---|---|---|
-| `srs.timetable.published` | 1.0 | Finalised timetable received from TTB | `academicPeriodId`, `activityCount`, `publishedAt` | EWP, AM, VLE |
-| `srs.attendance.record-received` | 1.0 | Attendance event received from AM | `enrolmentId`, `timetabledActivityId`, `statusCode`, `ukviRelevant` | Registry, UKVI compliance, BI |
-| `srs.attendance.absence-alert-raised` | 1.0 | Absence alert received or generated | `enrolmentId`, `absenceAlertId`, `alertTypeCode`, `currentValue` | Personal tutor, Registry, UKVI compliance |
-| `srs.exam.entry-created` | 1.0 | Exam entry sent to EXAMS | `examEntryId`, `enrolmentId`, `assessmentComponentId` | EXAMS |
-| `srs.exam.timetable-published` | 1.0 | Final exam timetable / candidate number received from EXAMS | `examEntryId`, `enrolmentId`, `candidateNumber`, `scheduledStart` | EWP, Registry |
-| `srs.exam.accommodation-distributed` | 1.0 | Exam accommodation distributed to EXAMS | `adjustmentId`, `examEntryId`, `targetSystem` | EXAMS |
-
----
-
-## Exam Board Additions
-
-| Subject | Version | Trigger | Key Payload Fields | Primary Consumers |
-|---|---|---|---|---|
-| `srs.exam-board.data-pack-superseded` | 1.0 | Board data pack regenerated after source data correction | `examBoardId`, `previousPackId`, `newPackId` | Registry, board members |
-| `srs.exam-board.external-examiner-signed-off` | 1.0 | External examiner confirmation received | `examBoardId`, `examinerId`, `confirmedAt` | Exam board workflow |
-| `srs.appeal.submitted` | 1.0 | Post-ratification appeal or correction workflow started | `postRatificationCaseId`, `enrolmentId`, `caseTypeCode` | Registry |
-| `srs.appeal.resolved` | 1.0 | Appeal dismissed / upheld and closed | `postRatificationCaseId`, `enrolmentId`, `outcomeCode` | EWP, Registry, DW |
-
----
-
-## Adjustment Additions
-
-| Subject | Version | Trigger | Key Payload Fields | Primary Consumers |
-|---|---|---|---|---|
-| `srs.adjustment.distribution-failed` | 1.0 | Downstream adjustment distribution failed after all retries | `adjustmentId`, `targetSystem`, `attemptCount`, `lastError` | Integration dashboard, Registry |
-
----
-
-## Regulatory Events (`srs.regulatory.*`)
-
-| Subject | Version | Trigger | Key Payload Fields | Primary Consumers |
-|---|---|---|---|---|
-| `srs.regulatory.ucas-application-received` | 1.0 | UCAS application imported | `applicationId`, `personId`, `programmeId`, `ucasCycle` | Admissions workflow |
-| `srs.regulatory.ucas-enrolment-confirmed` | 1.0 | Enrolment confirmation sent to UCAS | `personId`, `ucasPersonalId`, `programmeCode` | — |
-| `srs.regulatory.ucas-withdrawal-notified` | 1.0 | Withdrawal / deferral / no-show sent to UCAS | `personId`, `notificationTypeCode`, `notifiedAt` | Audit / compliance |
-| `srs.regulatory.hesa-return-generated` | 1.0 | HESA return generated for internal review | `hesaReturnId`, `academicYear`, `studentCount` | Registry |
-| `srs.regulatory.hesa-return-submitted` | 1.0 | HESA return submitted | `hesaReturnId`, `submissionId`, `academicYear`, `submittedAt` | — |
-| `srs.regulatory.hesa-return-accepted` | 1.0 | HESA acceptance received | `hesaReturnId`, `submissionId`, `acceptedAt` | — |
-| `srs.regulatory.hesa-return-amended` | 1.0 | Submitted return amended | `hesaReturnId`, `amendmentNumber`, `amendedAt` | Registry, audit |
-| `srs.regulatory.hesa-validation-report-received` | 1.0 | Validation report received from HESA | `hesaReturnId`, `errorCount`, `warningCount` | Registry |
-| `srs.regulatory.hesa-ids-received` | 1.0 | HESA student identifiers received and stored | `processedCount`, `academicYear` | IAM, EWP |
-| `srs.regulatory.slc-enrolment-confirmed` | 1.0 | SLC enrolment confirmation sent | `enrolmentId`, `personId`, `academicYear` | — |
-| `srs.regulatory.slc-status-notified` | 1.0 | SLC notified of enrolment status change | `enrolmentId`, `personId`, `newStatus`, `notifiedAt` | — |
-| `srs.regulatory.slc-entitlement-received` | 1.0 | Loan entitlement received from SLC | `enrolmentId`, `slcEntitlementId`, `tuitionFeeLoanAmount` | FIN, Registry |
-| `srs.regulatory.slc-payment-status-received` | 1.0 | Payment status received from SLC | `enrolmentId`, `paymentTypeCode`, `statusCode`, `amount` | FIN, EWP |
-| `srs.regulatory.slc-overpayment-notified` | 1.0 | Overpayment notice received from SLC | `enrolmentId`, `amount` | FIN, Registry |
-| `srs.regulatory.ukvi-cas-created` | 1.0 | CAS reference assigned and issued | `enrolmentId`, `personId`, `casReference`, `createdAt` | EWP |
-| `srs.regulatory.ukvi-visa-status-updated` | 1.0 | Visa grant / refusal / curtailment received from UKVI | `personId`, `visaStatusId`, `statusCode`, `expiryDate` | Registry, UKVI compliance |
-| `srs.regulatory.ukvi-compliance-alert` | 1.0 | Attendance threshold breach detected | `enrolmentId`, `personId`, `thresholdType`, `currentValue`, `thresholdValue` | WELL (early warning), Registry |
-| `srs.regulatory.ukvi-sponsor-action-reported` | 1.0 | Sponsor compliance report sent to UKVI | `ukviComplianceCaseId`, `enrolmentId`, `reportedAt` | Registry, audit |
-
----
-
-## Enterprise Integration Events
-
-| Subject | Version | Trigger | Key Payload Fields | Primary Consumers |
-|---|---|---|---|---|
-| `srs.iam.account-state-received` | 1.0 | IAM account lock / credential update received | `personId`, `accountStateCode` | Registry, EWP |
-| `srs.edrms.document-archived` | 1.0 | EDRMS archive confirmation received | `studentDocumentId`, `edrmsReference`, `archivedAt` | Registry, DPO |
-| `srs.bi.risk-flag-received` | 1.0 | BI at-risk flag received | `enrolmentId`, `riskFlagId`, `flagTypeCode`, `severityCode` | Personal tutor, Registry |
-| `srs.data-quality.issue-received` | 1.0 | DW reconciliation / data quality issue received | `dataQualityIssueId`, `entityType`, `issueDescription` | Data administrators |
-| `srs.staff-assignment.updated` | 1.0 | Tutor / supervisor assignment received from HR | `staffAssignmentId`, `enrolmentId`, `assignmentTypeCode`, `staffDisplayName` | EWP, Registry |
-| `srs.research.milestone-recorded` | 1.0 | CRIS milestone received | `researchMilestoneId`, `enrolmentId`, `milestoneTypeCode`, `milestoneDate` | PGR student, Supervisor, Registry |
-
----
-
-## Workflow Events (`srs.workflow.*`)
-
-| Subject | Version | Trigger | Key Payload Fields | Primary Consumers |
-|---|---|---|---|---|
-| `srs.workflow.task-assigned` | 1.0 | A human task assigned to an actor | `workflowId`, `workflowType`, `taskType`, `assignedActorId`, `assignedActorRole`, `dueAt` | Notification service → EWP |
-| `srs.workflow.task-completed` | 1.0 | Human task completed | `workflowId`, `taskType`, `completedByActorId`, `completedAt`, `outcome` | — |
-| `srs.workflow.deadline-breached` | 1.0 | Workflow deadline passed without task completion | `workflowId`, `workflowType`, `taskType`, `escalatedToActorId` | Notification service |
-| `srs.workflow.completed` | 1.0 | Workflow instance reached terminal state | `workflowId`, `workflowType`, `terminalState`, `completedAt` | DW (audit analytics) |
+All events are published to NATS JetStream stream `SRS_EVENTS` using subject namespace `srs.*`. Subject names follow the pattern `srs.{domain}.{event-name}`. Payload schemas are in `schemas/events/` and versioned; breaking changes create a new version suffix.
 
 ---
 
 ## Event Envelope
 
-Every event uses this standard JSON envelope. Fields added during Phase 2 remediation are marked †.
+Every event uses this standard JSON envelope (schema: `schemas/events/envelope.v1.json`):
 
 ```typescript
 interface DomainEventEnvelope<T> {
   id:                 string;   // UUID v4 — unique event ID; idempotency key for consumers
   type:               string;   // e.g. "srs.student.enrolled"
   version:            string;   // Semver: "1.0.0"
-  schemaRef:          string;   // † URI to the JSON Schema for this version
+  schemaRef:          string;   // URI to the JSON Schema for this version of the payload
   tenantId:           string;   // UUID of the publishing tenant
   occurredAt:         string;   // ISO 8601 UTC — when the fact occurred in the real world
-  publishedAt:        string;   // † ISO 8601 UTC — when the event was published
-  validAt:            string;   // † ISO 8601 UTC — valid-time of the fact (may differ from occurredAt)
+  publishedAt:        string;   // ISO 8601 UTC — when the event was published
+  validAt:            string;   // ISO 8601 UTC — valid-time of the fact (may differ from occurredAt)
   correlationId:      string;   // UUID — traces the originating request/command
-  causationId:        string;   // † UUID — the ID of the event or command that caused this event
+  causationId:        string;   // UUID — the ID of the event or command that caused this event
   source:             string;   // "srs-core" / "wellbeing-module" / etc.
-  dataClassification: string;   // † "standard" / "sensitive" / "special-category"
-  payload:            T;        // Event-specific typed payload
+  dataClassification: string;   // "standard" | "personal" | "sensitive" | "special-category" | "regulatory"
+  payload:            T;        // Event-specific typed payload (validate against schemaRef)
 }
 ```
 
-`id` doubles as the **idempotency key**: consumers use it to detect and suppress duplicate deliveries (e.g. after a retry). Consumers should store processed event IDs and discard re-delivered events with a known ID.
+`id` doubles as the **idempotency key**: consumers store processed event IDs and discard duplicates on retry.
 
-`causationId` chains events: if event B was caused by event A, `causationId` on B = `id` of A. This is distinct from `correlationId` (which traces the original user request across all events it caused).
+`causationId` chains events: if event B was caused by event A, `causationId` on B equals `id` of A. `correlationId` traces the original user request across all events it produced.
 
-`dataClassification` allows consumers to enforce special-category and sensitive-data handling policies without inspecting payload content.
+`dataClassification` allows consumers to enforce data-handling policies without inspecting payload content. Values:
+
+| Classification | Meaning |
+|---|---|
+| `standard` | Non-personal operational data |
+| `personal` | Contains personal data (UK GDPR Art. 4) |
+| `sensitive` | Sensitive personal data — access controls required |
+| `special-category` | Special category data (UK GDPR Art. 9) — strict access controls |
+| `regulatory` | Regulatory submission data — audit retention requirements |
 
 ---
 
-## Event Schema Versioning
+## Published Events
 
-Event schemas are defined as TypeScript types in `packages/domain/src/events/` and compiled to JSON Schema for NATS message validation and `schemaRef` resolution.
+### Student (`srs.student.*`)
+
+| Subject | Data Class | Partition Key | Consumers |
+|---|---|---|---|
+| `srs.student.created` | personal | `personId` | identity-service, admissions-adapter, vle-adapter, finance-adapter |
+| `srs.student.identity-updated` | personal | `personId` | identity-service, vle-adapter, finance-adapter |
+| `srs.student.enrolled` | personal | `personId` | finance-adapter, vle-adapter, wellbeing-module |
+| `srs.student.status-changed` | personal | `personId` | finance-adapter, vle-adapter, wellbeing-module |
+| `srs.student.disability-declaration-updated` | special-category | `personId` | wellbeing-module, disability-service |
+
+### Identity (`srs.identity.*`)
+
+| Subject | Data Class | Partition Key | Consumers |
+|---|---|---|---|
+| `srs.identity.verification-requested` | personal | `personId` | identity-service |
+| `srs.identity.verification-completed` | personal | `personId` | identity-service, admissions-adapter |
+
+### Enrolment (`srs.enrolment.*`)
+
+| Subject | Data Class | Partition Key | Consumers |
+|---|---|---|---|
+| `srs.enrolment.fee-liability-generated` | regulatory | `enrolmentId` | finance-adapter |
+| `srs.enrolment.module-registered` | standard | `enrolmentId` | vle-adapter, timetabling-adapter, finance-adapter |
+| `srs.enrolment.module-registration-withdrawn` | standard | `enrolmentId` | vle-adapter, timetabling-adapter |
+| `srs.enrolment.module-registration-completed` | standard | `enrolmentId` | vle-adapter, transcript-service |
+
+> `srs.enrolment.downstream-trigger-created` exists but is **internal-only** — see [Internal Events](#internal-events).
+
+### Catalogue (`srs.catalogue.*`)
+
+| Subject | Data Class | Partition Key | Consumers |
+|---|---|---|---|
+| `srs.catalogue.programme-updated` | standard | `programmeId` | vle-adapter, prospectus-adapter, bi-adapter |
+| `srs.catalogue.module-updated` | standard | `moduleId` | vle-adapter, timetabling-adapter, bi-adapter |
+| `srs.catalogue.module-relationship-updated` | standard | `moduleId` | curriculum-adapter |
+| `srs.catalogue.learning-outcome-updated` | standard | `learningOutcomeId` | curriculum-adapter, hear-service |
+
+### Assessment (`srs.assessment.*`)
+
+| Subject | Data Class | Partition Key | Consumers |
+|---|---|---|---|
+| `srs.assessment.mark-received` | standard | `moduleRegistrationId` | bi-adapter, wellbeing-module |
+| `srs.assessment.mark-updated` | standard | `moduleRegistrationId` | bi-adapter |
+| `srs.assessment.module-result-calculated` | standard | `moduleRegistrationId` | bi-adapter, transcript-service |
+| `srs.assessment.module-result-ratified` | standard | `moduleRegistrationId` | bi-adapter, transcript-service, hear-service |
+
+### Adjustments (`srs.adjustment.*`)
+
+| Subject | Data Class | Partition Key | Consumers |
+|---|---|---|---|
+| `srs.adjustment.approved` | sensitive | `enrolmentId` | assessment-venue-adapter, wellbeing-module |
+| `srs.adjustment.distributed` | sensitive | `adjustmentId` | assessment-venue-adapter |
+| `srs.adjustment.expired` | sensitive | `enrolmentId` | assessment-venue-adapter, wellbeing-module |
+
+### Circumstances (`srs.circumstances.*`)
+
+EC and misconduct events share the `circumstances` namespace. Both carry `sensitive` data classifications.
+
+| Subject | Data Class | Partition Key | Consumers |
+|---|---|---|---|
+| `srs.circumstances.exceptional-circumstances-flagged` | sensitive | `enrolmentId` | wellbeing-module, bi-adapter |
+| `srs.circumstances.exceptional-circumstances-updated` | sensitive | `exceptionalCircumstancesId` | wellbeing-module, bi-adapter |
+| `srs.circumstances.misconduct-outcome-recorded` | sensitive | `enrolmentId` | bi-adapter |
+
+### Governance (`srs.governance.*`)
+
+Exam board lifecycle, record locking, and exam entry events are unified under `governance`. This namespace was introduced during Phase 5 to consolidate previously separate `exam-board`, `record`, and `exam` namespaces.
+
+| Subject | Data Class | Partition Key | Consumers |
+|---|---|---|---|
+| `srs.governance.exam-board-data-pack-ready` | standard | `examBoardId` | exam-board-portal |
+| `srs.governance.exam-board-ratified` | standard | `examBoardId` | transcript-service, hear-service, bi-adapter |
+| `srs.governance.record-locked` | standard | `examBoardId` | bi-adapter |
+| `srs.governance.record-amended-post-ratification` | standard | `examBoardId` | transcript-service, hear-service, bi-adapter |
+| `srs.governance.exam-entry-submitted` | standard | `examBoardId` | timetabling-adapter |
+| `srs.governance.exam-schedule-received` | standard | `examBoardId` | timetabling-adapter, assessment-venue-adapter |
+
+### Progression and Awards
+
+| Subject | Data Class | Partition Key | Consumers |
+|---|---|---|---|
+| `srs.progression.decided` | standard | `enrolmentId` | bi-adapter, transcript-service |
+| `srs.award.conferred` | standard | `enrolmentId` | transcript-service, hear-service, bi-adapter, alumni-service |
+
+### Regulatory (`srs.regulatory.*`)
+
+All regulatory events carry `regulatory` data class (audit retention required) unless they contain personal data, in which case `personal` applies.
+
+| Subject | Data Class | Partition Key | Consumers |
+|---|---|---|---|
+| `srs.regulatory.ucas-application-received` | personal | `applicationId` | admissions-adapter |
+| `srs.regulatory.ucas-confirmation-sent` | regulatory | `enrolmentId` | admissions-adapter |
+| `srs.regulatory.hesa-return-generated` | regulatory | `returnId` | regulatory-reporting-adapter |
+| `srs.regulatory.hesa-return-submitted` | regulatory | `returnId` | regulatory-reporting-adapter, bi-adapter |
+| `srs.regulatory.hesa-id-assigned` | personal | `enrolmentId` | regulatory-reporting-adapter |
+| `srs.regulatory.slc-confirmation-sent` | regulatory | `enrolmentId` | finance-adapter |
+| `srs.regulatory.slc-notification-received` | regulatory | `enrolmentId` | finance-adapter |
+| `srs.regulatory.ukvi-cas-requested` | regulatory | `enrolmentId` | ukvi-adapter |
+| `srs.regulatory.ukvi-cas-assigned` | regulatory | `enrolmentId` | ukvi-adapter |
+| `srs.regulatory.ukvi-attendance-submitted` | regulatory | `academicPeriodId` | ukvi-adapter |
+| `srs.regulatory.ukvi-visa-status-updated` | regulatory | `enrolmentId` | ukvi-adapter, wellbeing-module |
+| `srs.regulatory.ukvi-compliance-alert-raised` | regulatory | `enrolmentId` | ukvi-adapter, wellbeing-module |
+| `srs.regulatory.ofs-extract-generated` | regulatory | `extractId` | regulatory-reporting-adapter, bi-adapter |
+
+---
+
+## Internal Events
+
+These events are published to the `SRS_EVENTS` stream but are **not part of the published integration contract**. They have no schemas in `schemas/events/` and do not appear in `registry.json` as `published`. External services must not subscribe to them.
+
+| Subject | Reason |
+|---|---|
+| `srs.enrolment.downstream-trigger-created` | Internal routing event; drives UCAS/SLC/UKVI trigger processing |
+| `srs.workflow.task-assigned` | Internal workflow coordination — drives notification service only |
+| `srs.workflow.task-completed` | Internal workflow coordination |
+| `srs.workflow.task-escalated` | Internal workflow coordination — deadline breach escalation |
+| `srs.workflow.decision-recorded` | Internal workflow coordination |
+| `srs.workflow.completed` | Internal workflow coordination |
+
+---
+
+## Backlog — Not Yet Implemented
+
+These events were planned in Phase 2 but not implemented in Phases 4–6. They remain on the product roadmap but have no `EVENT_TYPES` entries and no schemas.
+
+### Student lifecycle
+- `srs.student.re-enrolled` — Annual re-enrolment confirmation
+- `srs.student.hold-applied` / `srs.student.hold-released` — Account holds
+
+### Fee and finance
+- `srs.enrolment.fee-liability-updated` — Liability change on status/intensity change
+- `srs.finance.payment-confirmed` — Payment confirmation from Finance
+
+### Timetable and attendance
+- `srs.timetable.published` — Finalised timetable from TTB
+- `srs.attendance.record-received` — Attendance event from AM
+- `srs.attendance.absence-alert-raised` — Absence alert (UKVI-relevant)
+
+### Governance extensions
+- `srs.governance.exam-board-data-pack-superseded` — Board pack regenerated after correction
+- `srs.governance.external-examiner-signed-off` — External examiner confirmation
+- `srs.governance.appeal-submitted` — Post-ratification appeal/correction started
+- `srs.governance.appeal-resolved` — Appeal dismissed or upheld
+
+### Adjustment extensions
+- `srs.adjustment.distribution-failed` — Downstream distribution failed after all retries
+
+### Regulatory extensions (HESA)
+- `srs.regulatory.hesa-return-accepted` — HESA acceptance received
+- `srs.regulatory.hesa-return-amended` — Submitted return amended
+- `srs.regulatory.hesa-validation-report-received` — Validation report from HESA
+
+### Regulatory extensions (SLC)
+- `srs.regulatory.slc-entitlement-received` — Loan entitlement from SLC
+- `srs.regulatory.slc-payment-status-received` — Payment status from SLC
+- `srs.regulatory.slc-overpayment-notified` — Overpayment notice from SLC
+
+### Regulatory extensions (UKVI)
+- `srs.regulatory.ucas-withdrawal-notified` — Withdrawal/deferral/no-show sent to UCAS
+- `srs.regulatory.ukvi-sponsor-action-reported` — Compliance report sent to UKVI
+
+### Enterprise integration inbound events
+- `srs.iam.account-state-received` — IAM account lock / credential update
+- `srs.edrms.document-archived` — EDRMS archive confirmation
+- `srs.bi.risk-flag-received` — BI at-risk flag
+- `srs.data-quality.issue-received` — DW reconciliation / data quality issue
+- `srs.staff-assignment.updated` — Tutor/supervisor assignment from HR
+- `srs.research.milestone-recorded` — CRIS milestone for PGR students
+
+---
+
+## Domain Namespace Changes (Phase 2 → Phase 5)
+
+For teams migrating from Phase 2 plans to the live system, the following subject renames occurred during implementation:
+
+| Phase 2 subject | Implemented subject | Change type |
+|---|---|---|
+| `srs.module-registration.created` | `srs.enrolment.module-registered` | Namespace merge into `enrolment` |
+| `srs.module-registration.withdrawn` | `srs.enrolment.module-registration-withdrawn` | Namespace merge |
+| `srs.module-registration.completed` | `srs.enrolment.module-registration-completed` | Namespace merge |
+| `srs.exceptional-circumstances.flagged` | `srs.circumstances.exceptional-circumstances-flagged` | Namespace rename |
+| `srs.exceptional-circumstances.updated` | `srs.circumstances.exceptional-circumstances-updated` | Namespace rename |
+| `srs.misconduct.outcome-recorded` | `srs.circumstances.misconduct-outcome-recorded` | Namespace consolidation |
+| `srs.exam-board.data-pack-ready` | `srs.governance.exam-board-data-pack-ready` | Namespace consolidation |
+| `srs.exam-board.ratified` | `srs.governance.exam-board-ratified` | Namespace consolidation |
+| `srs.record.locked` | `srs.governance.record-locked` | Namespace consolidation |
+| `srs.record.amended-post-ratification` | `srs.governance.record-amended-post-ratification` | Namespace consolidation |
+| `srs.exam.entry-created` | `srs.governance.exam-entry-submitted` | Namespace consolidation + rename |
+| `srs.exam.timetable-published` | `srs.governance.exam-schedule-received` | Namespace consolidation + rename |
+| `srs.enrolment.fee-liability-created` | `srs.enrolment.fee-liability-generated` | Event rename |
+| `srs.regulatory.ucas-enrolment-confirmed` | `srs.regulatory.ucas-confirmation-sent` | Event rename |
+| `srs.regulatory.hesa-ids-received` | `srs.regulatory.hesa-id-assigned` | Event rename |
+| `srs.regulatory.slc-enrolment-confirmed` | `srs.regulatory.slc-confirmation-sent` | Event rename |
+| `srs.regulatory.slc-status-notified` | `srs.regulatory.slc-notification-received` | Event rename |
+| `srs.regulatory.ukvi-cas-created` | `srs.regulatory.ukvi-cas-requested` + `srs.regulatory.ukvi-cas-assigned` | Split into two events |
+| `srs.regulatory.ukvi-compliance-alert` | `srs.regulatory.ukvi-compliance-alert-raised` | Event rename |
+| `srs.workflow.deadline-breached` | `srs.workflow.task-escalated` (internal) | Rename + reclassified as internal |
+
+---
+
+## Schema Versioning
+
+Event payload schemas are derived from TypeScript interfaces in `packages/domain/src/events/` using `ts-json-schema-generator` and committed to `schemas/events/`. The generation script is `packages/domain/scripts/generate-event-schemas.ts`.
 
 ```
-packages/domain/src/events/
-├── admissions/
-│   ├── application-received.v1.ts
-│   └── offer-accepted.v1.ts
+schemas/events/
+├── envelope.v1.json                          — shared envelope wrapper
+├── registry.json                             — machine-readable event registry (46 published + 6 internal)
 ├── student/
-│   ├── enrolled.v1.ts
-│   ├── status-changed.v1.ts
-│   └── hold-applied.v1.ts
-├── catalogue/
-│   └── programme-updated.v1.ts
+│   ├── created/v1.json
+│   ├── identity-updated/v1.json
+│   ├── enrolled/v1.json
+│   ├── status-changed/v1.json
+│   └── disability-declaration-updated/v1.json
+├── identity/
+│   ├── verification-requested/v1.json
+│   └── verification-completed/v1.json
 ├── enrolment/
-│   └── fee-liability-created.v1.ts
+│   ├── fee-liability-generated/v1.json
+│   ├── module-registered/v1.json
+│   ├── module-registration-withdrawn/v1.json
+│   └── module-registration-completed/v1.json
+├── catalogue/
+│   ├── programme-updated/v1.json
+│   ├── module-updated/v1.json
+│   ├── module-relationship-updated/v1.json
+│   └── learning-outcome-updated/v1.json
 ├── assessment/
-│   ├── mark-received.v1.ts
-│   └── module-result-ratified.v1.ts
-├── exam-board/
-│   ├── ratified.v1.ts
-│   └── external-examiner-signed-off.v1.ts
+│   ├── mark-received/v1.json
+│   ├── mark-updated/v1.json
+│   ├── module-result-calculated/v1.json
+│   └── module-result-ratified/v1.json
 ├── adjustment/
-│   ├── approved.v1.ts
-│   └── distributed.v1.ts
-├── regulatory/
-│   ├── hesa-return-submitted.v1.ts
-│   └── ukvi-visa-status-updated.v1.ts
-└── index.ts              # Barrel export of all event types and envelope type
+│   ├── approved/v1.json
+│   ├── distributed/v1.json
+│   └── expired/v1.json
+├── circumstances/
+│   ├── exceptional-circumstances-flagged/v1.json
+│   ├── exceptional-circumstances-updated/v1.json
+│   └── misconduct-outcome-recorded/v1.json
+├── governance/
+│   ├── exam-board-data-pack-ready/v1.json
+│   ├── exam-board-ratified/v1.json
+│   ├── record-locked/v1.json
+│   ├── record-amended-post-ratification/v1.json
+│   ├── exam-entry-submitted/v1.json
+│   └── exam-schedule-received/v1.json
+├── progression/
+│   └── decided/v1.json
+├── award/
+│   └── conferred/v1.json
+└── regulatory/
+    ├── ucas-application-received/v1.json
+    ├── ucas-confirmation-sent/v1.json
+    ├── hesa-return-generated/v1.json
+    ├── hesa-return-submitted/v1.json
+    ├── hesa-id-assigned/v1.json
+    ├── slc-confirmation-sent/v1.json
+    ├── slc-notification-received/v1.json
+    ├── ukvi-cas-requested/v1.json
+    ├── ukvi-cas-assigned/v1.json
+    ├── ukvi-attendance-submitted/v1.json
+    ├── ukvi-visa-status-updated/v1.json
+    ├── ukvi-compliance-alert-raised/v1.json
+    └── ofs-extract-generated/v1.json
 ```
 
-Breaking changes produce a new file (`enrolled.v2.ts`) and dual-publish both versions during the deprecation window. Consumers declare their supported version in the plugin registry; the Core publishes to both versions until the old version is retired.
+Schema IDs follow the pattern `https://schemas.revelation-srs.io/events/{domain}/{event-name}/v1.json`. Breaking changes produce a new version file (`v2.json`) and dual-publish both versions during a deprecation window. The `schemaRef` field in the envelope identifies which version to validate against.
+
+To regenerate all schemas after payload type changes:
+
+```bash
+pnpm --filter @revelation-srs/domain generate:schemas
+```

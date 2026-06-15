@@ -1,0 +1,40 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/CatalogueModuleUpdatedV1Payload",
+  "definitions": {
+    "CatalogueModuleUpdatedV1Payload": {
+      "type": "object",
+      "properties": {
+        "moduleId": {
+          "type": "string"
+        },
+        "code": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "creditValue": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "effectiveDate": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "moduleId",
+        "code",
+        "title",
+        "creditValue",
+        "effectiveDate"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$id": "https://schemas.revelation-srs.io/events/catalogue/module-updated/v1.json",
+  "title": "CatalogueModuleUpdatedV1Payload",
+  "description": "Payload schema for srs.catalogue.module-updated v1.0.0"
+}

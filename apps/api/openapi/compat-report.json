@@ -1,0 +1,97 @@
+{
+  "generatedAt": "2026-06-15T13:05:13.102Z",
+  "openApi": {
+    "version": "1.0.0",
+    "totalOperations": 202,
+    "byPublicationClass": {
+      "admin": 31,
+      "integration": 7,
+      "workflow": 31,
+      "public": 78,
+      "reporting": 21,
+      "private": 2,
+      "system": 32
+    },
+    "tags": [
+      "adjustments",
+      "assessment",
+      "calendar",
+      "catalogue",
+      "circumstances",
+      "communications",
+      "enrolments",
+      "globalisation",
+      "governance",
+      "integration-registry",
+      "module-registrations",
+      "platform-controls",
+      "progression",
+      "regulatory",
+      "students",
+      "tenant-admin",
+      "value-sets"
+    ]
+  },
+  "events": {
+    "total": 52,
+    "published": 46,
+    "internal": 6,
+    "byDataClass": {
+      "personal": 8,
+      "special-category": 1,
+      "regulatory": 12,
+      "standard": 19,
+      "sensitive": 6
+    },
+    "consumers": [
+      "admissions-adapter",
+      "alumni-service",
+      "assessment-venue-adapter",
+      "bi-adapter",
+      "curriculum-adapter",
+      "disability-service",
+      "exam-board-portal",
+      "finance-adapter",
+      "hear-service",
+      "identity-service",
+      "prospectus-adapter",
+      "regulatory-reporting-adapter",
+      "timetabling-adapter",
+      "transcript-service",
+      "ukvi-adapter",
+      "vle-adapter",
+      "wellbeing-module"
+    ]
+  },
+  "fileSchemas": {
+    "total": 10,
+    "families": [
+      "exam",
+      "hesa",
+      "slc",
+      "ucas",
+      "ukvi"
+    ],
+    "files": [
+      "schemas/file-contracts/exam/entry-outbound.v1.json",
+      "schemas/file-contracts/exam/schedule-inbound.v1.json",
+      "schemas/file-contracts/hesa/validation-report-inbound.v1.json",
+      "schemas/file-contracts/slc/confirmation-outbound.v1.json",
+      "schemas/file-contracts/slc/notification-inbound.v1.json",
+      "schemas/file-contracts/ucas/application-inbound.v1.json",
+      "schemas/file-contracts/ucas/confirmation-outbound.v1.json",
+      "schemas/file-contracts/ukvi/attendance-report-outbound.v1.json",
+      "schemas/file-contracts/ukvi/cas-request-outbound.v1.json",
+      "schemas/file-contracts/ukvi/visa-update-inbound.v1.json"
+    ]
+  },
+  "integrationContracts": {
+    "note": "Integration contract counts are stored in the database; run GET /api/v1/integration-contracts at runtime for the live list."
+  },
+  "summary": [
+    "REST API: 202 operations across 158 paths",
+    "Events: 46 published, 6 internal",
+    "File schemas: 10 schemas across 5 families (exam, hesa, slc, ucas, ukvi)",
+    "Event consumers: 17 declared (admissions-adapter, alumni-service, assessment-venue-adapter, bi-adapter, curriculum-adapter, disability-service, exam-board-portal, finance-adapter, hear-service, identity-service, prospectus-adapter, regulatory-reporting-adapter, timetabling-adapter, transcript-service, ukvi-adapter, vle-adapter, wellbeing-module)"
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://schemas.revelation-srs.io/file-contracts/ukvi/visa-update-inbound/v1.json",
+  "title": "UkviVisaUpdateInboundV1",
+  "description": "Inbound UKVI visa status update received from UKVI's SMS or electronic notification channel and submitted via POST /api/v1/regulatory/ukvi/visa-updates. Covers visa grants, refusals, curtailments, and expirations.",
+  "type": "object",
+  "required": ["casReference", "statusCode", "effectiveDate"],
+  "additionalProperties": false,
+  "properties": {
+    "casReference": {
+      "type": "string",
+      "minLength": 1,
+      "description": "UKVI-assigned CAS reference number identifying the sponsored student."
+    },
+    "statusCode": {
+      "type": "string",
+      "minLength": 1,
+      "description": "UKVI visa status code. Common values: 'granted' (visa granted), 'refused' (visa refused), 'curtailed' (leave curtailed), 'expired' (visa expired), 'cancelled' (visa cancelled)."
+    },
+    "effectiveDate": {
+      "type": "string",
+      "format": "date",
+      "description": "Date from which the new status is effective (YYYY-MM-DD)."
+    },
+    "rawPayload": {
+      "type": "object",
+      "description": "Raw UKVI notification payload for audit purposes. Stored as-is; not validated.",
+      "additionalProperties": true
+    },
+    "idempotencyKey": {
+      "type": "string",
+      "description": "UKVI-provided transaction reference. Duplicate submissions with the same key are rejected. Use the UKVI notification reference number."
+    }
+  }
+}

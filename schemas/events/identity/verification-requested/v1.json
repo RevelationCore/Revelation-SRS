@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/IdentityVerificationRequestedV1Payload",
+  "definitions": {
+    "IdentityVerificationRequestedV1Payload": {
+      "type": "object",
+      "properties": {
+        "personId": {
+          "type": "string"
+        },
+        "verificationCheckId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "personId",
+        "verificationCheckId"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$id": "https://schemas.revelation-srs.io/events/identity/verification-requested/v1.json",
+  "title": "IdentityVerificationRequestedV1Payload",
+  "description": "Payload schema for srs.identity.verification-requested v1.0.0"
+}

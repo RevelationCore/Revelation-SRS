@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/CatalogueProgrammeUpdatedV1Payload",
+  "definitions": {
+    "CatalogueProgrammeUpdatedV1Payload": {
+      "type": "object",
+      "properties": {
+        "programmeId": {
+          "type": "string"
+        },
+        "code": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "effectiveDate": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "programmeId",
+        "code",
+        "title",
+        "effectiveDate"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$id": "https://schemas.revelation-srs.io/events/catalogue/programme-updated/v1.json",
+  "title": "CatalogueProgrammeUpdatedV1Payload",
+  "description": "Payload schema for srs.catalogue.programme-updated v1.0.0"
+}

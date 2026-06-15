@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/RegulatoryHesaReturnGeneratedV1Payload",
+  "definitions": {
+    "RegulatoryHesaReturnGeneratedV1Payload": {
+      "type": "object",
+      "properties": {
+        "returnId": {
+          "type": "string"
+        },
+        "academicYear": {
+          "type": "string"
+        },
+        "recordCount": {
+          "type": "number"
+        },
+        "generatedAt": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "returnId",
+        "academicYear",
+        "recordCount",
+        "generatedAt"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$id": "https://schemas.revelation-srs.io/events/regulatory/hesa-return-generated/v1.json",
+  "title": "RegulatoryHesaReturnGeneratedV1Payload",
+  "description": "Payload schema for srs.regulatory.hesa-return-generated v1.0.0"
+}

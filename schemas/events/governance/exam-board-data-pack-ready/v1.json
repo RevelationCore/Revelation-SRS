@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/GovernanceExamBoardDataPackReadyV1Payload",
+  "definitions": {
+    "GovernanceExamBoardDataPackReadyV1Payload": {
+      "type": "object",
+      "properties": {
+        "examBoardId": {
+          "type": "string"
+        },
+        "dataPackId": {
+          "type": "string"
+        },
+        "boardTypeCode": {
+          "type": "string"
+        },
+        "academicYear": {
+          "type": "string"
+        },
+        "candidateCount": {
+          "type": "number"
+        },
+        "packVersion": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "examBoardId",
+        "dataPackId",
+        "boardTypeCode",
+        "academicYear",
+        "candidateCount",
+        "packVersion"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$id": "https://schemas.revelation-srs.io/events/governance/exam-board-data-pack-ready/v1.json",
+  "title": "GovernanceExamBoardDataPackReadyV1Payload",
+  "description": "Payload schema for srs.governance.exam-board-data-pack-ready v1.0.0"
+}

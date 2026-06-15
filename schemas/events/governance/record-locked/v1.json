@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/GovernanceRecordLockedV1Payload",
+  "definitions": {
+    "GovernanceRecordLockedV1Payload": {
+      "type": "object",
+      "properties": {
+        "examBoardId": {
+          "type": "string"
+        },
+        "lockedEntityTypes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "lockedCount": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "examBoardId",
+        "lockedEntityTypes",
+        "lockedCount"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$id": "https://schemas.revelation-srs.io/events/governance/record-locked/v1.json",
+  "title": "GovernanceRecordLockedV1Payload",
+  "description": "Payload schema for srs.governance.record-locked v1.0.0"
+}

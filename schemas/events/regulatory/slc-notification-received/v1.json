@@ -1,0 +1,40 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/RegulatorySlcNotificationReceivedV1Payload",
+  "definitions": {
+    "RegulatorySlcNotificationReceivedV1Payload": {
+      "type": "object",
+      "properties": {
+        "enrolmentId": {
+          "type": "string"
+        },
+        "notificationTypeCode": {
+          "type": "string"
+        },
+        "amount": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "effectiveDate": {
+          "type": "string"
+        },
+        "notificationId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "enrolmentId",
+        "notificationTypeCode",
+        "amount",
+        "effectiveDate",
+        "notificationId"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$id": "https://schemas.revelation-srs.io/events/regulatory/slc-notification-received/v1.json",
+  "title": "RegulatorySlcNotificationReceivedV1Payload",
+  "description": "Payload schema for srs.regulatory.slc-notification-received v1.0.0"
+}

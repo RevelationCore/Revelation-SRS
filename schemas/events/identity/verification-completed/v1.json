@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/IdentityVerificationCompletedV1Payload",
+  "definitions": {
+    "IdentityVerificationCompletedV1Payload": {
+      "type": "object",
+      "properties": {
+        "personId": {
+          "type": "string"
+        },
+        "verificationCheckId": {
+          "type": "string"
+        },
+        "statusCode": {
+          "type": "string"
+        },
+        "fraudFlag": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "personId",
+        "verificationCheckId",
+        "statusCode",
+        "fraudFlag"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$id": "https://schemas.revelation-srs.io/events/identity/verification-completed/v1.json",
+  "title": "IdentityVerificationCompletedV1Payload",
+  "description": "Payload schema for srs.identity.verification-completed v1.0.0"
+}

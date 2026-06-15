@@ -1,0 +1,40 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/CircumstancesEcFlaggedV1Payload",
+  "definitions": {
+    "CircumstancesEcFlaggedV1Payload": {
+      "type": "object",
+      "properties": {
+        "exceptionalCircumstancesId": {
+          "type": "string"
+        },
+        "enrolmentId": {
+          "type": "string"
+        },
+        "personId": {
+          "type": "string"
+        },
+        "moduleOfferingId": {
+          "type": "string"
+        },
+        "outcomeCode": {
+          "type": "string"
+        },
+        "determinationDate": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "exceptionalCircumstancesId",
+        "enrolmentId",
+        "personId",
+        "outcomeCode",
+        "determinationDate"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$id": "https://schemas.revelation-srs.io/events/circumstances/exceptional-circumstances-flagged/v1.json",
+  "title": "CircumstancesEcFlaggedV1Payload",
+  "description": "Payload schema for srs.circumstances.exceptional-circumstances-flagged v1.0.0"
+}

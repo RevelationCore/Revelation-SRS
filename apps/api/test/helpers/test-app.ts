@@ -61,6 +61,8 @@ export async function startTestApp(opts: StartTestAppOptions = {}): Promise<Test
   await applyMigration(db, '0016_stage5_admissions_communications.sql');
   await applyMigration(db, '0017_stage6_flag_governance.sql');
   await applyMigration(db, '0018_stage7_legacy_removal.sql');
+  await applyMigration(db, '0019_phase7_integration_registry.sql');
+  await applyMigration(db, '0020_phase7_contract_deprecation.sql');
 
   // Seed a tenant for tests
   const tenantId = '00000000-0000-0000-0000-000000000001';
@@ -81,6 +83,10 @@ export async function startTestApp(opts: StartTestAppOptions = {}): Promise<Test
     databaseUrl:      connectionString,
     natsUrl:          'nats://localhost:4222',  // NATS not needed for these tests
     temporalAddress:  'localhost:7233',
+    deploymentEnvironmentCode: 'test',
+    releaseVersion:   '0.0.0-test',
+    imageDigest:      undefined,
+    migrationVersion: '0020_phase7_contract_deprecation',
     jwtSecret:        JWT_SECRET,
     keycloakJwksUrl:  undefined,
     corsOrigins:      ['http://localhost:5173'],

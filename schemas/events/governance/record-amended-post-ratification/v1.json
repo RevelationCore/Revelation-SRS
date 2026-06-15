@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/GovernanceRecordAmendedPostRatificationV1Payload",
+  "definitions": {
+    "GovernanceRecordAmendedPostRatificationV1Payload": {
+      "type": "object",
+      "properties": {
+        "amendmentId": {
+          "type": "string"
+        },
+        "caseId": {
+          "type": "string"
+        },
+        "entityType": {
+          "type": "string"
+        },
+        "entityId": {
+          "type": "string"
+        },
+        "appealReference": {
+          "type": "string"
+        },
+        "amendedBy": {
+          "type": "string"
+        },
+        "amendedAt": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "amendmentId",
+        "caseId",
+        "entityType",
+        "entityId",
+        "amendedBy",
+        "amendedAt"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$id": "https://schemas.revelation-srs.io/events/governance/record-amended-post-ratification/v1.json",
+  "title": "GovernanceRecordAmendedPostRatificationV1Payload",
+  "description": "Payload schema for srs.governance.record-amended-post-ratification v1.0.0"
+}

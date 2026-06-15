@@ -1,0 +1,84 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://schemas.revelation-srs.io/events/envelope.v1.json",
+  "title": "DomainEventEnvelope",
+  "description": "Standard envelope wrapping every Revelation SRS domain event.",
+  "type": "object",
+  "required": [
+    "id",
+    "type",
+    "version",
+    "schemaRef",
+    "tenantId",
+    "occurredAt",
+    "publishedAt",
+    "validAt",
+    "correlationId",
+    "causationId",
+    "source",
+    "dataClassification",
+    "payload"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique event ID — also the idempotency key for consumers."
+    },
+    "type": {
+      "type": "string",
+      "description": "Fully qualified NATS subject, e.g. srs.student.created."
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Semver string. Breaking changes create a new version."
+    },
+    "schemaRef": {
+      "type": "string",
+      "format": "uri",
+      "description": "URI to the JSON Schema for the payload field."
+    },
+    "tenantId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "occurredAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "publishedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "validAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "correlationId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "causationId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "source": {
+      "type": "string"
+    },
+    "dataClassification": {
+      "type": "string",
+      "enum": [
+        "standard",
+        "personal",
+        "sensitive",
+        "special-category",
+        "regulatory"
+      ]
+    },
+    "payload": {
+      "description": "Event-specific payload. Validate against the schema identified by schemaRef."
+    }
+  }
+}

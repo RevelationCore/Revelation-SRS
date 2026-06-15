@@ -1,0 +1,45 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/AwardConferredV1Payload",
+  "definitions": {
+    "AwardConferredV1Payload": {
+      "type": "object",
+      "properties": {
+        "awardId": {
+          "type": "string"
+        },
+        "enrolmentId": {
+          "type": "string"
+        },
+        "personId": {
+          "type": "string"
+        },
+        "examBoardId": {
+          "type": "string"
+        },
+        "qualificationCode": {
+          "type": "string"
+        },
+        "classificationCode": {
+          "type": "string"
+        },
+        "awardDate": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "awardId",
+        "enrolmentId",
+        "personId",
+        "examBoardId",
+        "qualificationCode",
+        "classificationCode",
+        "awardDate"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$id": "https://schemas.revelation-srs.io/events/award/conferred/v1.json",
+  "title": "AwardConferredV1Payload",
+  "description": "Payload schema for srs.award.conferred v1.0.0"
+}
