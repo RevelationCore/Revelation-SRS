@@ -10,10 +10,11 @@
 
 A VLE integration with Revelation SRS has two main jobs:
 
-1. **Course provisioning**: create and update VLE course shells when programmes and modules change in the SRS; enrol students when they register on modules.
-2. **Mark submission**: push assessment results from the VLE back into the SRS after online assessments and portfolio submissions.
+1. **Course provisioning** (F015): create and update VLE course shells when programmes and modules change in the SRS; enrol students when they register on modules; apply access suspensions and withdrawals from status-change events.
+2. **Adjustment distribution** (F059): receive approved adjustment outcomes (extra time, extended deadlines, alternative formats) via distribution events and apply them in the VLE; acknowledge receipt to SRS.
+3. **Mark submission** (F016): push assessment results from the VLE back into the SRS after online assessments and portfolio submissions.
 
-The VLE is an external integration — it uses only published event subjects and public REST endpoints. It does not have access to special-category or internal-only data.
+The VLE is an external integration — it uses only published event subjects and public REST endpoints. It does not have access to special-category or internal-only data beyond what is explicitly included in published events.
 
 ---
 
@@ -22,7 +23,7 @@ The VLE is an external integration — it uses only published event subjects and
 Subscribe to these NATS JetStream subjects using a durable consumer group named after your VLE instance:
 
 ```
-Consumer group: vle.{institution-code}.main
+Consumer group: vle.{tenant-id}.main
 Subjects:
   srs.catalogue.programme-updated
   srs.catalogue.module-updated
@@ -38,7 +39,7 @@ Subjects:
 
 See [`event-consumer-guide.md`](../event-consumer-guide.md) for connection details, envelope structure, and consumer group configuration.
 
-### Event payloads for course provisioning
+### Event payloads for course provisioning (F015)
 
 **`srs.catalogue.module-updated`** — create or update a VLE course shell:
 
@@ -51,44 +52,68 @@ See [`event-consumer-guide.md`](../event-consumer-guide.md) for connection detai
   "occurredAt": "2026-09-01T09:00:00.000Z",
   "payload": {
     "moduleId": "mod-abc123",
-    "moduleCode": "CS3010",
+    "code": "CS3010",
     "title": "Algorithms and Data Structures",
-    "level": 6,
-    "credits": 15,
-    "academicYear": "2026/27",
-    "deliveryMode": "campus",
-    "changeType": "updated"
+    "creditValue": 15,
+    "effectiveDate": "2026-09-01"
   }
 }
 ```
 
-Map `moduleCode` to your VLE course identifier. Use `changeType: created` to create a new course shell and `updated` to synchronise metadata.
+Map `code` to your VLE course identifier. Store `moduleId` as the stable internal key — `code` may change across academic years.
+
+**`srs.student.enrolled`** — a student has started an enrolment:
+
+```json
+{
+  "payload": {
+    "personId": "stu-001",
+    "enrolmentId": "enr-def456",
+    "academicYear": "2026/27",
+    "modeOfStudy": "full-time"
+  }
+}
+```
 
 **`srs.enrolment.module-registered`** — enrol a student in a VLE course:
 
 ```json
 {
   "payload": {
-    "moduleRegistrationId": "mreg-xyz789",
     "enrolmentId": "enr-def456",
-    "studentId": "stu-001",
+    "moduleRegistrationId": "mreg-xyz789",
+    "moduleOfferingId": "mo-001",
     "moduleId": "mod-abc123",
-    "moduleCode": "CS3010",
-    "academicYear": "2026/27",
-    "attemptNumber": 1
+    "academicPeriodId": "ap-2026-s1",
+    "registrationDate": "2026-09-15"
   }
 }
 ```
+
+Store `moduleRegistrationId` — it is the key for mark submission and reconciliation.
 
 **`srs.enrolment.module-registration-withdrawn`** — remove the student from the VLE course:
 
 ```json
 {
   "payload": {
+    "enrolmentId": "enr-def456",
     "moduleRegistrationId": "mreg-xyz789",
-    "studentId": "stu-001",
-    "moduleCode": "CS3010",
-    "withdrawalReason": "student-requested"
+    "moduleOfferingId": "mo-001",
+    "withdrawnAt": "2026-10-20T12:00:00.000Z"
+  }
+}
+```
+
+**`srs.enrolment.module-registration-completed`** — the registration period is over; mark the course as read-only in the VLE:
+
+```json
+{
+  "payload": {
+    "enrolmentId": "enr-def456",
+    "moduleRegistrationId": "mreg-xyz789",
+    "moduleOfferingId": "mo-001",
+    "completedAt": "2027-01-20T00:00:00.000Z"
   }
 }
 ```
@@ -98,7 +123,8 @@ Map `moduleCode` to your VLE course identifier. Use `changeType: created` to cre
 ```json
 {
   "payload": {
-    "studentId": "stu-001",
+    "personId": "stu-001",
+    "enrolmentId": "enr-def456",
     "previousStatus": "student",
     "newStatus": "interrupted",
     "effectiveDate": "2026-11-01"
@@ -108,106 +134,107 @@ Map `moduleCode` to your VLE course identifier. Use `changeType: created` to cre
 
 Map `newStatus` values: `student` → active, `interrupted` / `suspended` → suspended, `alumnus` / `withdrawn` → deactivate.
 
-**`srs.adjustment.distributed`** — record an adjustment in your assessment configuration:
+### Event payloads for adjustment distribution (F059)
+
+**`srs.adjustment.distributed`** — apply an approved adjustment in the VLE:
 
 ```json
 {
   "payload": {
     "adjustmentId": "adj-001",
-    "studentId": "stu-001",
+    "distributionId": "dist-001",
+    "targetSystem": "vle",
+    "distributedAt": "2026-10-01T09:00:00.000Z",
+    "personId": "stu-001",
+    "enrolmentId": "enr-def456",
     "adjustmentTypeCode": "extra-time",
-    "adjustmentValue": "25%",
-    "effectiveFrom": "2026-09-01",
-    "effectiveTo": "2027-07-31"
+    "scopeCode": "all",
+    "validFrom": "2026-09-01T00:00:00.000Z",
+    "validTo": "2027-07-31T00:00:00.000Z"
   }
 }
 ```
 
-After processing an adjustment distribution, acknowledge it:
-
-```http
-POST /api/v1/adjustments/{adjustmentId}/distributions/{distributionId}/acknowledge
-Authorization: Bearer <token>
-Content-Type: application/json
-
-{ "acknowledgedBy": "vle-adapter", "acknowledgedAt": "2026-09-15T10:00:00Z" }
-```
+Only process events where `targetSystem === "vle"`. After applying the adjustment in the VLE, acknowledge it to SRS (see Adjustment Acknowledgement below). Ignore `srs.adjustment.approved` — the connector acts only on `srs.adjustment.distributed`.
 
 ---
 
-## Mark Submission
+## Adjustment Acknowledgement
+
+After processing an adjustment distribution event, acknowledge it to SRS:
+
+```http
+POST /api/v1/adjustments/{adjustmentId}/distributions/{distributionId}/acknowledge
+Authorization: Bearer <integration-service-token>
+Content-Type: application/json
+
+{ "targetSystem": "vle" }
+```
+
+Response: `204 No Content`. If the VLE call fails before you can acknowledge, retry until the VLE call succeeds, then acknowledge. Do not acknowledge before the VLE has accepted the adjustment — SRS tracks pending distributions and will not report the adjustment as distributed until acknowledgement is received.
+
+---
+
+## Mark Submission (F016)
 
 After online assessments (quizzes, portfolio submissions, written assignments marked in the VLE), submit results to the SRS.
 
-### Step 1 — Identify the module registration
-
-You will have stored `moduleRegistrationId` from the `srs.enrolment.module-registered` event. Use this as the target for mark submission.
-
-### Step 2 — Discover assessment components
+### Step 1 — Retrieve assessment components
 
 ```http
-GET /api/v1/module-registrations/{moduleRegistrationId}
-Authorization: Bearer <token>
+GET /api/v1/module-offerings/{moduleOfferingId}/components
+Authorization: Bearer <integration-service-token>
 ```
 
-The response includes `assessmentComponents` with their `componentId`, `componentCode`, `weighting`, and `maxMark`. Your VLE assignment must map to one of these component codes.
+The response lists `assessmentComponentId`, `componentCode`, `weighting`, and `maxMark`. Map your VLE assignment identifiers to `assessmentComponentId` values using `componentCode` as the human-readable key. Cache this mapping per module offering.
 
-### Step 3 — Submit the mark
+### Step 2 — Submit the mark
 
 ```http
 POST /api/v1/module-registrations/{moduleRegistrationId}/marks
-Authorization: Bearer <token>
-Idempotency-Key: vle-{vleAssignmentId}-{studentId}-attempt{n}
+Authorization: Bearer <integration-service-token>
 Content-Type: application/json
 
 {
   "assessmentComponentId": "comp-001",
   "rawMark": 72,
   "attemptNumber": 1,
-  "submittedAt": "2026-11-20T14:30:00.000Z",
-  "submittedBy": "student",
-  "sourceSystemRef": "vle-assignment-9876"
-}
-```
-
-**Idempotency key**: use a stable key combining VLE assignment ID, student ID, and attempt number. Re-submitting with the same key returns the original mark without duplication.
-
-### Step 4 — Handle the response
-
-```json
-{
-  "markId": "mark-abc123",
-  "moduleRegistrationId": "mreg-xyz789",
-  "assessmentComponentId": "comp-001",
-  "rawMark": 72,
-  "adjustedMark": 90,
-  "status": "received",
-  "latepenaltyApplied": false,
+  "sourceSystem": "vle",
+  "sourceReference": "vle-assignment-9876-stu-001-attempt1",
   "submittedAt": "2026-11-20T14:30:00.000Z"
 }
 ```
 
-Store `markId` for audit and reconciliation. The `adjustedMark` reflects any approved adjustments (extra time, deferrals) applied by the SRS automatically.
+**`sourceReference`** is the idempotency key. Use a stable value combining VLE assignment ID, student ID, and attempt number. Re-submitting with the same `sourceReference` for the same registration and component returns the original mark without creating a duplicate.
 
-### Step 5 — Listen for ratification
+### Step 3 — Handle the response
+
+A successful submission returns `201 Created`:
+
+```json
+{ "markId": "mark-abc123" }
+```
+
+Store `markId` for audit and reconciliation.
+
+### Step 4 — Listen for ratification
 
 When the exam board ratifies results, the SRS publishes `srs.assessment.module-result-ratified`:
 
 ```json
 {
   "payload": {
+    "moduleResultId": "mr-001",
     "moduleRegistrationId": "mreg-xyz789",
-    "moduleCode": "CS3010",
-    "studentId": "stu-001",
-    "finalGrade": "first",
-    "finalMark": 72,
-    "ratifiedAt": "2027-02-01T15:00:00.000Z",
-    "boardId": "board-2027-s1"
+    "aggregateMark": 72,
+    "resultCode": "pass",
+    "examBoardId": "board-2027-s1",
+    "ratifiedAt": "2027-02-01T15:00:00.000Z"
   }
 }
 ```
 
-Use this event to display ratified results in the VLE student portal.
+Use `moduleRegistrationId` to update the result display in the VLE student portal.
 
 ---
 
@@ -217,20 +244,35 @@ Register your VLE integration before going live:
 
 ```http
 POST /api/v1/integration-registrations
-Authorization: Bearer <admin-token>
+Authorization: Bearer <tenant-admin-token>
 Content-Type: application/json
 
 {
-  "contractId": "exam-scheduling.v1",
+  "contractId": "vle-course-provisioning.v1",
   "displayName": "Moodle — Acme University",
-  "transportCode": "nats-push",
+  "transportCode": "nats-jetstream",
   "endpointSafetyClass": "external-test",
   "liveTrafficApproved": false,
-  "replaySupported": true
+  "replaySupported": true,
+  "consumerGroup": "vle.{tenant-id}.main"
 }
 ```
 
-VLE integrations primarily use event subscription (NATS JetStream) rather than a pushed endpoint, so `transportCode: nats-push` and no `endpointUrl` is appropriate for the event consumer side. The mark-submission side is a REST write — no separate registration is needed for inbound REST calls.
+Register a separate entry for each contract (`vle-course-provisioning.v1`, `vle-assessment-results.v1`, `vle-adjustments.v1`). The mark-submission side (F016) is an inbound REST write — no separate registration is required for that direction.
+
+---
+
+## Service Account Permissions
+
+The VLE connector service account requires the `integration-service` role. This role grants:
+
+| Permission | Used for |
+|---|---|
+| `catalogue:read` | Read module and programme data |
+| `module-registration:read:all` | Read registration details for reconciliation |
+| `mark:write` | Submit assessment marks |
+| `adjustment:read:all` | Verify adjustment details before applying |
+| `integration:manage` | Acknowledge adjustment distributions |
 
 ---
 
@@ -240,9 +282,9 @@ VLE integrations primarily use event subscription (NATS JetStream) rather than a
 |----------|--------|
 | 401 on mark submission | Refresh OAuth token and retry |
 | 404 on `moduleRegistrationId` | Student not enrolled in SRS; check provisioning event was processed |
-| 422 on mark submission | Validate `assessmentComponentId` exists for this registration; check `attemptNumber` |
+| 422 on mark submission | Validate `assessmentComponentId` exists for this module offering; check `attemptNumber` |
 | 429 rate limit during bulk provisioning | Process events with exponential back-off; batch mark submissions |
-| Event delivery failure | Check dead-letter subject `srs.dlq.vle.{institution-code}.main` |
+| Event delivery failure | Check dead-letter subject `srs.dlq.vle.{tenant-id}.main` |
 
 ---
 
@@ -250,11 +292,13 @@ VLE integrations primarily use event subscription (NATS JetStream) rather than a
 
 Run a nightly reconciliation pass:
 
-1. Query enrolled students via `GET /api/v1/enrolments?moduleCode=CS3010&academicYear=2026/27`.
-2. Compare against VLE enrolment roster.
-3. For any student in the SRS but not in the VLE, replay the `srs.enrolment.module-registered` event via:
+1. Query `GET /api/v1/module-registrations?moduleOfferingId={id}` for each active module offering to get the authoritative SRS enrolment list.
+2. Compare against VLE course roster.
+3. For any registration in the SRS but absent from the VLE, re-process the `srs.enrolment.module-registered` event or trigger a replay:
    ```http
    POST /api/v1/integration-registrations/{registrationId}/replay
+   Content-Type: application/json
    { "fromDate": "2026-09-01T00:00:00Z" }
    ```
-4. For any mark submitted but not confirmed in the SRS, re-submit with the same idempotency key.
+4. For any mark submitted but not confirmed, re-submit with the same `sourceReference` — the SRS will deduplicate.
+5. For any `srs.adjustment.distributed` event that is unacknowledged in SRS distributions (`GET /api/v1/adjustments/{adjustmentId}/distributions`), re-apply and acknowledge.
