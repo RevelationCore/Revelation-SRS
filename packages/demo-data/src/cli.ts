@@ -4,6 +4,7 @@ import { eq, and } from 'drizzle-orm';
 import { createDb, tenants, demoStatus } from '@revelation-srs/db';
 
 import { listManifests, SCENARIO_REGISTRY } from './manifest.js';
+import { provisionPersonas } from './generators/keycloak.js';
 import { resetScenario } from './reset.js';
 import { runRotation } from './rotation.js';
 import { validateScenario } from './validate.js';
@@ -171,6 +172,19 @@ async function cmdStatus(): Promise<void> {
   }
 }
 
+async function cmdSetupKeycloak(): Promise<void> {
+  // Apply local-dev defaults; all can be overridden via environment variables.
+  process.env['KEYCLOAK_ADMIN_URL']      ??= 'http://localhost:8081';
+  process.env['KEYCLOAK_REALM']          ??= 'srs';
+  process.env['KEYCLOAK_ADMIN_USERNAME'] ??= 'admin';
+  process.env['KEYCLOAK_ADMIN_PASSWORD'] ??= 'admin';
+
+  console.log('Provisioning Keycloak demo personas...');
+  console.log(`  Keycloak: ${process.env['KEYCLOAK_ADMIN_URL']}  realm: ${process.env['KEYCLOAK_REALM']}`);
+  await provisionPersonas({ hardFail: true });
+  console.log('Setup complete.');
+}
+
 async function cmdCheckVersions(): Promise<void> {
   const databaseUrl = requireDatabaseUrl();
   const db = createDb(databaseUrl);
@@ -264,6 +278,7 @@ const handlers: Record<string, () => Promise<void>> = {
   status:           () => cmdStatus(),
   'check-versions': () => cmdCheckVersions(),
   rotate:           () => cmdRotate(values, positionals[1] ?? ''),
+  'setup-keycloak': () => cmdSetupKeycloak(),
 };
 
 if (!command || !(command in handlers)) {

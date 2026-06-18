@@ -150,21 +150,119 @@
       "lastName":    "Administrator",
       "enabled":     true,
       "emailVerified": true,
-      "credentials": [
-        {
-          "type":      "password",
-          "value":     "admin",
-          "temporary": false
-        }
-      ],
-      "attributes": {
-        "tenant_id": ["00000000-0000-0000-0000-000000000001"]
-      },
-      "realmRoles": [
-        "registry-administrator",
-        "tenant-administrator",
-        "system-administrator"
-      ]
+      "credentials": [{ "type": "password", "value": "admin", "temporary": false }],
+      "attributes":  { "tenant_id": ["00000000-0000-0000-0000-000000000001"] },
+      "realmRoles":  ["registry-administrator", "tenant-administrator", "system-administrator"]
+    },
+    {
+      "username":    "alice.demo",
+      "email":       "alice.demo@demo.srs",
+      "firstName":   "DEMO Alice",
+      "lastName":    "Demo",
+      "enabled":     true,
+      "emailVerified": true,
+      "credentials": [{ "type": "password", "value": "Demo-2026!", "temporary": false }],
+      "attributes":  { "tenant_id": ["00000000-0000-0000-0000-000000000001"], "personaId": ["persona-01-0000-4000-8000-000000000001"] },
+      "realmRoles":  ["student"]
+    },
+    {
+      "username":    "bob.demo",
+      "email":       "bob.demo@demo.srs",
+      "firstName":   "DEMO Bob",
+      "lastName":    "Demo",
+      "enabled":     true,
+      "emailVerified": true,
+      "credentials": [{ "type": "password", "value": "Demo-2026!", "temporary": false }],
+      "attributes":  { "tenant_id": ["00000000-0000-0000-0000-000000000001"], "personaId": ["persona-01-0000-4000-8000-000000000002"] },
+      "realmRoles":  ["student"]
+    },
+    {
+      "username":    "carol.demo",
+      "email":       "carol.demo@demo.srs",
+      "firstName":   "DEMO Carol",
+      "lastName":    "Demo",
+      "enabled":     true,
+      "emailVerified": true,
+      "credentials": [{ "type": "password", "value": "Demo-2026!", "temporary": false }],
+      "attributes":  { "tenant_id": ["00000000-0000-0000-0000-000000000001"], "personaId": ["persona-01-0000-4000-8000-000000000003"] },
+      "realmRoles":  ["student"]
+    },
+    {
+      "username":    "registry",
+      "email":       "registry@demo.srs",
+      "firstName":   "DEMO Registry",
+      "lastName":    "Administrator",
+      "enabled":     true,
+      "emailVerified": true,
+      "credentials": [{ "type": "password", "value": "Demo-2026!", "temporary": false }],
+      "attributes":  { "tenant_id": ["00000000-0000-0000-0000-000000000001"], "personaId": ["persona-02-0000-4000-8000-000000000001"] },
+      "realmRoles":  ["registry-administrator"]
+    },
+    {
+      "username":    "sysadmin",
+      "email":       "sysadmin@demo.srs",
+      "firstName":   "DEMO System",
+      "lastName":    "Administrator",
+      "enabled":     true,
+      "emailVerified": true,
+      "credentials": [{ "type": "password", "value": "Demo-2026!", "temporary": false }],
+      "attributes":  { "tenant_id": ["00000000-0000-0000-0000-000000000001"], "personaId": ["persona-03-0000-4000-8000-000000000001"] },
+      "realmRoles":  ["system-administrator", "tenant-administrator"]
+    },
+    {
+      "username":    "chair",
+      "email":       "chair@demo.srs",
+      "firstName":   "DEMO Board",
+      "lastName":    "Chair",
+      "enabled":     true,
+      "emailVerified": true,
+      "credentials": [{ "type": "password", "value": "Demo-2026!", "temporary": false }],
+      "attributes":  { "tenant_id": ["00000000-0000-0000-0000-000000000001"], "personaId": ["persona-02-0000-4000-8000-000000000002"] },
+      "realmRoles":  ["exam-board-chair", "registry-administrator"]
+    },
+    {
+      "username":    "wellbeing",
+      "email":       "wellbeing@demo.srs",
+      "firstName":   "DEMO Wellbeing",
+      "lastName":    "Advisor",
+      "enabled":     true,
+      "emailVerified": true,
+      "credentials": [{ "type": "password", "value": "Demo-2026!", "temporary": false }],
+      "attributes":  { "tenant_id": ["00000000-0000-0000-0000-000000000001"], "personaId": ["persona-02-0000-4000-8000-000000000003"] },
+      "realmRoles":  ["wellbeing-advisor"]
+    },
+    {
+      "username":    "dpo",
+      "email":       "dpo@demo.srs",
+      "firstName":   "DEMO DPO",
+      "lastName":    "Auditor",
+      "enabled":     true,
+      "emailVerified": true,
+      "credentials": [{ "type": "password", "value": "Demo-2026!", "temporary": false }],
+      "attributes":  { "tenant_id": ["00000000-0000-0000-0000-000000000001"], "personaId": ["persona-02-0000-4000-8000-000000000004"] },
+      "realmRoles":  ["dpo"]
+    },
+    {
+      "username":    "examiner",
+      "email":       "examiner@demo.srs",
+      "firstName":   "DEMO External",
+      "lastName":    "Examiner",
+      "enabled":     true,
+      "emailVerified": true,
+      "credentials": [{ "type": "password", "value": "Demo-2026!", "temporary": false }],
+      "attributes":  { "tenant_id": ["00000000-0000-0000-0000-000000000001"], "personaId": ["persona-02-0000-4000-8000-000000000005"] },
+      "realmRoles":  ["external-examiner"]
+    },
+    {
+      "username":    "ops",
+      "email":       "ops@demo.srs",
+      "firstName":   "DEMO Ops",
+      "lastName":    "Operator",
+      "enabled":     true,
+      "emailVerified": true,
+      "credentials": [{ "type": "password", "value": "Demo-2026!", "temporary": false }],
+      "attributes":  { "tenant_id": ["00000000-0000-0000-0000-000000000001"], "personaId": ["persona-02-0000-4000-8000-000000000006"] },
+      "realmRoles":  ["registry-administrator", "tenant-administrator"]
     }
   ]
 }

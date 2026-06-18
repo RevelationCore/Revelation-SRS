@@ -14,7 +14,8 @@
     "demo:validate":       "node --import tsx/esm src/cli.ts validate",
     "demo:status":         "node --import tsx/esm src/cli.ts status",
     "demo:check-versions": "node --import tsx/esm src/cli.ts check-versions",
-    "demo:rotate":         "node --import tsx/esm src/cli.ts rotate"
+    "demo:rotate":         "node --import tsx/esm src/cli.ts rotate",
+    "setup:keycloak":      "node --import tsx/esm src/cli.ts setup-keycloak"
   },
   "dependencies": {
     "@revelation-srs/db": "workspace:*",

@@ -31,7 +31,8 @@
     "demo:check-versions":        "pnpm --filter @revelation-srs/demo-data demo:check-versions",
     "demo:rotate":                "pnpm --filter @revelation-srs/demo-data demo:rotate",
     "test:e2e:golden":            "pnpm --filter @revelation-srs/demo-data test:golden",
-    "test:e2e:playwright:golden": "playwright test --config playwright.golden.config.ts"
+    "test:e2e:playwright:golden": "playwright test --config playwright.golden.config.ts",
+    "setup:keycloak":             "pnpm --filter @revelation-srs/demo-data setup:keycloak"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.11.3",
