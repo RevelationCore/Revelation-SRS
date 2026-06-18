@@ -10,22 +10,39 @@ import {
   updatePersonStatus,
 } from '../api/students.js';
 import {
+  type CorrectionCase,
+  CASE_TYPE_CODES,
+  CASE_STATUS_CODES,
+  listCorrectionCases,
+  createCorrectionCase,
+  updateCaseStatus,
+} from '../api/corrections.js';
+import { getAuditLog, type AuditEntry } from '../api/auditLog.js';
+import {
   type CreateEnrolmentInput,
   type Enrolment,
   type TransitionAction,
   type TransitionOptions,
   AVAILABLE_TRANSITIONS,
   createEnrolment,
+  getEnrolmentHistory,
   listStudentEnrolments,
   transitionEnrolment,
 } from '../api/enrolments.js';
-import { type TimetableEntry, getTimetable, listModuleRegistrations } from '../api/registrations.js';
-import { type ModuleRegistration } from '../api/registrations.js';
+import {
+  type ModuleRegistration,
+  type TimetableEntry,
+  completeRegistration,
+  getTimetable,
+  listAllModuleRegistrations,
+  listModuleRegistrations,
+  withdrawRegistration,
+} from '../api/registrations.js';
 import { ApiError } from '../api/client.js';
 import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
 
-type Tab = 'identity' | 'enrolments';
+type Tab = 'identity' | 'enrolments' | 'registrations' | 'history' | 'corrections';
 
 export function StudentDetailPage() {
   const { personId } = useParams<{ personId: string }>();
@@ -77,7 +94,7 @@ export function StudentDetailPage() {
 
       {/* Tabs */}
       <div className="border-b border-gray-200 mb-6">
-        {(['identity', 'enrolments'] as Tab[]).map((t) => (
+        {(['identity', 'enrolments', 'registrations', 'history', 'corrections'] as Tab[]).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -97,6 +114,15 @@ export function StudentDetailPage() {
       )}
       {tab === 'enrolments' && personId && (
         <EnrolmentsTab personId={personId} student={student} onUpdated={reload} />
+      )}
+      {tab === 'registrations' && personId && (
+        <RegistrationsTab personId={personId} />
+      )}
+      {tab === 'history' && personId && (
+        <HistoryTab personId={personId} />
+      )}
+      {tab === 'corrections' && personId && (
+        <CorrectionsTab personId={personId} />
       )}
     </div>
   );
@@ -657,6 +683,438 @@ function InfoRow({ label, value }: { label: string; value?: string | null }) {
     <div className="flex gap-2">
       <dt className="w-28 flex-shrink-0 text-gray-500 text-xs pt-0.5">{label}</dt>
       <dd className="text-gray-900">{value ?? <span className="text-gray-400">—</span>}</dd>
+    </div>
+  );
+}
+
+// ── Registrations tab ─────────────────────────────────────────────────────────
+
+function RegistrationsTab({ personId }: { personId: string }) {
+  const [enrolments,    setEnrolments]    = useState<Enrolment[]>([]);
+  const [registrations, setRegistrations] = useState<ModuleRegistration[]>([]);
+  const [loading,       setLoading]       = useState(true);
+  const [error,         setError]         = useState('');
+  const [confirmId,     setConfirmId]     = useState<string | null>(null);
+  const [confirmAction, setConfirmAction] = useState<'complete' | 'withdraw' | null>(null);
+  const [acting,        setActing]        = useState(false);
+  const [selectedEnrolmentId, setSelectedEnrolmentId] = useState('');
+
+  const load = useCallback(async (enrolmentId: string) => {
+    if (!enrolmentId) return;
+    setLoading(true); setError('');
+    try {
+      setRegistrations(await listAllModuleRegistrations(enrolmentId));
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : 'Failed to load registrations');
+    } finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const enrols = await listStudentEnrolments(personId);
+        setEnrolments(enrols);
+        const first = enrols[0];
+        if (first) {
+          setSelectedEnrolmentId(first.enrolmentId);
+          await load(first.enrolmentId);
+        } else { setLoading(false); }
+      } catch { setLoading(false); }
+    })();
+  }, [personId, load]);
+
+  async function handleAction(regId: string, action: 'complete' | 'withdraw') {
+    setActing(true); setError('');
+    try {
+      if (action === 'complete') await completeRegistration(regId);
+      else                       await withdrawRegistration(regId);
+      setConfirmId(null); setConfirmAction(null);
+      await load(selectedEnrolmentId);
+    } catch (e) {
+      setError(e instanceof ApiError ? (e.detail ?? e.message) : 'Action failed');
+    } finally { setActing(false); }
+  }
+
+  return (
+    <div>
+      {enrolments.length > 1 && (
+        <div className="mb-4 flex items-center gap-3">
+          <label className="text-sm text-gray-500">Enrolment:</label>
+          <select
+            value={selectedEnrolmentId}
+            onChange={(e) => { setSelectedEnrolmentId(e.target.value); void load(e.target.value); }}
+            className="rounded border border-gray-300 px-2 py-1 text-sm"
+          >
+            {enrolments.map(e => (
+              <option key={e.enrolmentId} value={e.enrolmentId}>
+                {e.academicYearOfEntry} ({e.statusCode})
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+      {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
+      {loading ? (
+        <div className="flex justify-center py-8"><Spinner /></div>
+      ) : registrations.length === 0 ? (
+        <p className="text-sm text-gray-400">No module registrations found.</p>
+      ) : (
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          <table className="min-w-full divide-y divide-gray-200 text-sm">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Module</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Period</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Registered</th>
+                <th className="px-4 py-3" />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {registrations.map(r => (
+                <tr key={r.moduleRegistrationId} className="hover:bg-gray-50">
+                  <td className="px-4 py-3 font-mono text-xs text-gray-700">{r.moduleId}</td>
+                  <td className="px-4 py-3 text-gray-600">{r.academicPeriodId}</td>
+                  <td className="px-4 py-3"><Badge value={r.statusCode} /></td>
+                  <td className="px-4 py-3 text-gray-500 text-xs">{r.registrationDate}</td>
+                  <td className="px-4 py-3 text-right">
+                    {r.statusCode === 'registered' && (
+                      confirmId === r.moduleRegistrationId ? (
+                        <span className="inline-flex items-center gap-2">
+                          <span className="text-xs text-gray-600">
+                            {confirmAction === 'complete' ? 'Mark complete?' : 'Withdraw?'}
+                          </span>
+                          <button
+                            disabled={acting}
+                            onClick={() => void handleAction(r.moduleRegistrationId, confirmAction!)}
+                            className={`rounded px-2.5 py-1 text-xs font-medium text-white disabled:opacity-50 ${
+                              confirmAction === 'complete' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'
+                            }`}
+                          >
+                            {acting ? 'Saving…' : 'Confirm'}
+                          </button>
+                          <button
+                            onClick={() => { setConfirmId(null); setConfirmAction(null); }}
+                            className="text-xs text-gray-500 hover:text-gray-800"
+                          >
+                            Cancel
+                          </button>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-2">
+                          <button
+                            onClick={() => { setConfirmId(r.moduleRegistrationId); setConfirmAction('complete'); }}
+                            className="rounded border border-green-300 px-2 py-0.5 text-xs text-green-700 hover:bg-green-50"
+                          >
+                            Complete
+                          </button>
+                          <button
+                            onClick={() => { setConfirmId(r.moduleRegistrationId); setConfirmAction('withdraw'); }}
+                            className="rounded border border-red-300 px-2 py-0.5 text-xs text-red-600 hover:bg-red-50"
+                          >
+                            Withdraw
+                          </button>
+                        </span>
+                      )
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── History tab ───────────────────────────────────────────────────────────────
+
+function HistoryTab({ personId }: { personId: string }) {
+  const [enrolments,      setEnrolments]      = useState<Enrolment[]>([]);
+  const [history,         setHistory]         = useState<Enrolment[]>([]);
+  const [selectedEnrolId, setSelectedEnrolId] = useState('');
+  const [loading,         setLoading]         = useState(true);
+  const [error,           setError]           = useState('');
+
+  const loadHistory = useCallback(async (enrolmentId: string) => {
+    if (!enrolmentId) return;
+    setLoading(true); setError('');
+    try {
+      setHistory(await getEnrolmentHistory(enrolmentId));
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : 'Failed to load history');
+    } finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const enrols = await listStudentEnrolments(personId);
+        setEnrolments(enrols);
+        const first = enrols[0];
+        if (first) {
+          setSelectedEnrolId(first.enrolmentId);
+          await loadHistory(first.enrolmentId);
+        } else { setLoading(false); }
+      } catch { setLoading(false); }
+    })();
+  }, [personId, loadHistory]);
+
+  return (
+    <div>
+      <p className="mb-4 text-xs text-gray-500">
+        Bitemporal history — all recorded versions of this enrolment.
+      </p>
+      {enrolments.length > 1 && (
+        <div className="mb-4 flex items-center gap-3">
+          <label className="text-sm text-gray-500">Enrolment:</label>
+          <select
+            value={selectedEnrolId}
+            onChange={(e) => { setSelectedEnrolId(e.target.value); void loadHistory(e.target.value); }}
+            className="rounded border border-gray-300 px-2 py-1 text-sm"
+          >
+            {enrolments.map(e => (
+              <option key={e.enrolmentId} value={e.enrolmentId}>
+                {e.academicYearOfEntry} ({e.statusCode})
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+      {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
+      {loading ? (
+        <div className="flex justify-center py-8"><Spinner /></div>
+      ) : history.length === 0 ? (
+        <p className="text-sm text-gray-400">No history records found.</p>
+      ) : (
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          <table className="min-w-full divide-y divide-gray-200 text-sm">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Valid from</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Recorded at</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Mode</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {history.map((h, i) => (
+                <tr key={i} className="hover:bg-gray-50">
+                  <td className="px-4 py-3"><Badge value={h.statusCode} /></td>
+                  <td className="px-4 py-3 text-gray-600 text-xs font-mono">{h.validFrom}</td>
+                  <td className="px-4 py-3 text-gray-600 text-xs font-mono">{h.recordedAt}</td>
+                  <td className="px-4 py-3 text-gray-600">{h.modeOfStudyCode}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Corrections tab ───────────────────────────────────────────────────────────
+
+function CorrectionsTab({ personId }: { personId: string }) {
+  const [enrolments,   setEnrolments]   = useState<Enrolment[]>([]);
+  const [cases,        setCases]        = useState<CorrectionCase[]>([]);
+  const [selectedEnrolId, setSelectedEnrolId] = useState('');
+  const [loading,      setLoading]      = useState(true);
+  const [error,        setError]        = useState('');
+  const [showCreate,   setShowCreate]   = useState(false);
+  const [creating,     setCreating]     = useState(false);
+  const [newCaseType,  setNewCaseType]  = useState<string>(CASE_TYPE_CODES[0]);
+  const [updatingId,   setUpdatingId]   = useState<string | null>(null);
+
+  const loadCases = useCallback(async (enrolmentId: string) => {
+    if (!enrolmentId) return;
+    setLoading(true); setError('');
+    try {
+      setCases(await listCorrectionCases(enrolmentId));
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : 'Failed to load cases');
+    } finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const enrols = await listStudentEnrolments(personId);
+        setEnrolments(enrols);
+        const first = enrols[0];
+        if (first) {
+          setSelectedEnrolId(first.enrolmentId);
+          await loadCases(first.enrolmentId);
+        } else { setLoading(false); }
+      } catch { setLoading(false); }
+    })();
+  }, [personId, loadCases]);
+
+  async function handleCreateCase(e: FormEvent) {
+    e.preventDefault();
+    if (!selectedEnrolId) return;
+    setCreating(true); setError('');
+    try {
+      await createCorrectionCase(selectedEnrolId, newCaseType as typeof CASE_TYPE_CODES[number]);
+      setShowCreate(false);
+      await loadCases(selectedEnrolId);
+    } catch (err) {
+      setError(err instanceof ApiError ? (err.detail ?? err.message) : 'Failed to create case');
+    } finally { setCreating(false); }
+  }
+
+  async function handleStatusChange(caseId: string, statusCode: string) {
+    setUpdatingId(caseId); setError('');
+    try {
+      await updateCaseStatus(caseId, statusCode as typeof CASE_STATUS_CODES[number]);
+      await loadCases(selectedEnrolId);
+    } catch (err) {
+      setError(err instanceof ApiError ? (err.detail ?? err.message) : 'Update failed');
+    } finally { setUpdatingId(null); }
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-sm font-semibold text-gray-700">Correction &amp; appeal cases</h2>
+        <button
+          onClick={() => setShowCreate(s => !s)}
+          className="rounded bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700"
+        >
+          New case
+        </button>
+      </div>
+
+      {showCreate && (
+        <form onSubmit={(e) => void handleCreateCase(e)} className="mb-4 flex items-center gap-3 bg-indigo-50 rounded-lg p-4">
+          <label className="text-sm text-gray-700">Type:</label>
+          <select
+            value={newCaseType}
+            onChange={(e) => setNewCaseType(e.target.value)}
+            className="rounded border border-gray-300 px-2 py-1 text-sm"
+          >
+            {CASE_TYPE_CODES.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+          <button
+            type="submit"
+            disabled={creating}
+            className="rounded bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+          >
+            {creating ? 'Creating…' : 'Create'}
+          </button>
+          <button type="button" onClick={() => setShowCreate(false)} className="text-sm text-gray-500">
+            Cancel
+          </button>
+        </form>
+      )}
+
+      {enrolments.length > 1 && (
+        <div className="mb-4 flex items-center gap-3">
+          <label className="text-sm text-gray-500">Enrolment:</label>
+          <select
+            value={selectedEnrolId}
+            onChange={(e) => { setSelectedEnrolId(e.target.value); void loadCases(e.target.value); }}
+            className="rounded border border-gray-300 px-2 py-1 text-sm"
+          >
+            {enrolments.map(e => (
+              <option key={e.enrolmentId} value={e.enrolmentId}>
+                {e.academicYearOfEntry} ({e.statusCode})
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
+
+      {loading ? (
+        <div className="flex justify-center py-8"><Spinner /></div>
+      ) : cases.length === 0 ? (
+        <p className="text-sm text-gray-400">No correction or appeal cases on record.</p>
+      ) : (
+        <div className="space-y-3">
+          {cases.map(c => (
+            <div key={c.caseId} className="bg-white rounded-lg border border-gray-200 p-4">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-sm font-medium text-gray-900 capitalize">{c.caseTypeCode}</p>
+                  <p className="text-xs text-gray-500 font-mono mt-0.5">{c.reference}</p>
+                </div>
+                <Badge value={c.statusCode} />
+              </div>
+              <div className="mt-3 flex items-center gap-2 flex-wrap">
+                <span className="text-xs text-gray-500">Move to:</span>
+                {CASE_STATUS_CODES.filter(s => s !== c.statusCode).map(s => (
+                  <button
+                    key={s}
+                    disabled={updatingId === c.caseId}
+                    onClick={() => void handleStatusChange(c.caseId, s)}
+                    className="rounded border border-gray-300 px-2 py-0.5 text-xs text-gray-600 hover:bg-gray-50 disabled:opacity-40"
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {selectedEnrolId && (
+        <VleOverrideAuditSection enrolmentId={selectedEnrolId} />
+      )}
+    </div>
+  );
+}
+
+// ── VLE enrolment override audit trail (R-VLE-002) ───────────────────────────
+
+function VleOverrideAuditSection({ enrolmentId }: { enrolmentId: string }) {
+  const [entries, setEntries] = useState<AuditEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    getAuditLog('enrolment', enrolmentId)
+      .then(all => setEntries(all.filter(e =>
+        e.actorId.includes('vle') || e.actorType === 'integration-service' ||
+        (e.changes as { sourceSystem?: string } | null)?.sourceSystem === 'vle',
+      )))
+      .catch(() => { /* non-critical — audit trail may not be available */ })
+      .finally(() => setLoading(false));
+  }, [enrolmentId]);
+
+  if (loading || entries.length === 0) return null;
+
+  return (
+    <div className="mt-6">
+      <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
+        VLE enrolment override history (R-VLE-002)
+      </h3>
+      <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
+        <table className="min-w-full divide-y divide-gray-100 text-xs">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-3 py-2 text-left font-medium text-gray-500 uppercase">When</th>
+              <th className="px-3 py-2 text-left font-medium text-gray-500 uppercase">Event</th>
+              <th className="px-3 py-2 text-left font-medium text-gray-500 uppercase">Actor</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-50">
+            {entries.map(e => (
+              <tr key={e.id}>
+                <td className="px-3 py-2 text-gray-500 whitespace-nowrap font-mono">
+                  {new Date(e.recordedAt).toLocaleString('en-GB')}
+                </td>
+                <td className="px-3 py-2 text-gray-700">{e.eventType}</td>
+                <td className="px-3 py-2 text-gray-500 font-mono">{e.actorId}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

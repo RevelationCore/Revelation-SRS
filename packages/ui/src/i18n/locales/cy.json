@@ -1,0 +1,151 @@
+{
+  "nav": {
+    "home": "Hafan",
+    "signIn": "Mewngofnodi",
+    "signOut": "Allgofnodi"
+  },
+  "actions": {
+    "save": "Cadw",
+    "cancel": "Canslo",
+    "create": "Creu",
+    "edit": "Golygu",
+    "delete": "Dileu",
+    "confirm": "Cadarnhau",
+    "close": "Cau",
+    "back": "Yn ôl",
+    "next": "Nesaf",
+    "submit": "Cyflwyno",
+    "download": "Lawrlwytho",
+    "refresh": "Adnewyddu",
+    "retry": "Ailgeisio",
+    "view": "Gweld"
+  },
+  "status": {
+    "loading": "Yn llwytho…",
+    "saving": "Yn cadw…",
+    "submitting": "Yn cyflwyno…",
+    "noResults": "Dim canlyniadau.",
+    "error": "Digwyddodd gwall.",
+    "success": "Wedi'i gadw'n llwyddiannus."
+  },
+  "validation": {
+    "required": "Mae'r maes hwn yn ofynnol.",
+    "email": "Rhowch gyfeiriad e-bost dilys.",
+    "minLength": "Rhaid bod o leiaf {{min}} nod.",
+    "maxLength": "Rhaid bod o fwyaf {{max}} nod.",
+    "date": "Rhowch ddyddiad dilys."
+  },
+  "auth": {
+    "signInHeading": "Mewngofnodi i Revelation SRS",
+    "signingIn": "Yn mewngofnodi…",
+    "sessionExpired": "Mae eich sesiwn wedi dod i ben.",
+    "sessionExpiredDetail": "Mewngofnodwch eto i barhau.",
+    "unauthorized": "Nid oes gennych ganiatâd i gyrchu'r dudalen hon.",
+    "signInWithKeycloak": "Mewngofnodwch gyda chyfrif sefydliadol",
+    "devTokenLabel": "Token cynhyrchydd (datblygu yn unig)",
+    "devTokenPlaceholder": "Gludwch eich JWT yma…"
+  },
+  "portal": {
+    "nav": {
+      "dashboard":     "Dangosfwrdd",
+      "profile":       "Proffil",
+      "enrolments":    "Cofrestriadau",
+      "modules":       "Fy modiwlau",
+      "results":       "Canlyniadau",
+      "timetable":     "Amserlen",
+      "exams":         "Arholiadau",
+      "adjustments":   "Addasiadau",
+      "disability":    "Anabledd",
+      "circumstances": "Amgylchiadau",
+      "notifications": "Hysbysiadau"
+    },
+    "enrolment": {
+      "status": {
+        "enrolled":     "Wedi cofrestru",
+        "intermitting": "Yn seibio",
+        "suspended":    "Wedi'i ohirio",
+        "withdrawn":    "Wedi tynnu'n ôl",
+        "graduated":    "Wedi graddio"
+      }
+    },
+    "exam": {
+      "noExams":             "Dim cofnodion arholiad ar gyfer y cofrestriad hwn.",
+      "candidateNumber":     "Rhif ymgeisydd",
+      "scheduledDate":       "Dyddiad wedi'i drefnu",
+      "room":                "Ystafell",
+      "accommodations":      "Llety",
+      "noAccommodations":    "Dim wedi'i gofnodi"
+    },
+    "profile": {
+      "editHeading":         "Golygu eich proffil",
+      "editSubheading":      "Diweddarwch eich manylion personol a chysylltu.",
+      "readOnlyFields":      "Meysydd a reolir gan y brifysgol",
+      "readOnlyNote":        "Dim ond Cofrestrfa all newid eich enw cyfreithiol a'ch cyfeiriad e-bost sefydliadol.",
+      "editPersonalSection": "Manylion personol",
+      "editContactSection":  "Manylion cyswllt",
+      "preferredName":       "Enw a ffefrir",
+      "genderCode":          "Rhyw",
+      "nationalityCode":     "Cenedligrwydd",
+      "emailPersonal":       "Cyfeiriad e-bost personol",
+      "phoneMobile":         "Rhif ffôn symudol"
+    },
+    "address": {
+      "addHeading":    "Ychwanegu cyfeiriad",
+      "addSubheading": "Ychwanegu cyfeiriad newydd at eich cofnod.",
+      "typeLabel":     "Math o gyfeiriad",
+      "line1":         "Llinell cyfeiriad 1",
+      "line2":         "Llinell cyfeiriad 2",
+      "city":          "Dinas",
+      "postcode":      "Cod post",
+      "countryCode":   "Cod gwlad",
+      "addButton":     "Ychwanegu cyfeiriad"
+    },
+    "disability": {
+      "subheading":       "Mae eich datganiadau anabledd yn cael eu rhannu gyda gwasanaethau cymorth yn unig.",
+      "addDeclaration":   "Ychwanegu datganiad",
+      "categoryLabel":    "Cod categori anabledd",
+      "categoryHint":     "Rhowch god categori anabledd HESA.",
+      "noDeclarations":   "Dim datganiadau anabledd ar gofnod.",
+      "declaredOn":       "Datganwyd"
+    },
+    "modules": {
+      "addHeading":       "Ychwanegu modiwl",
+      "period":           "Cyfnod",
+      "allPeriods":       "Pob cyfnod",
+      "noOfferings":      "Dim cynigion modiwl ar gael.",
+      "registerButton":   "Ychwanegu modiwl",
+      "confirmRegister":  "Cofrestru ar gyfer y modiwl hwn?",
+      "withdrawButton":   "Tynnu'n ôl",
+      "confirmWithdraw":  "Tynnu'n ôl o'r modiwl hwn?"
+    },
+    "results": {
+      "subheading":    "Canlyniadau cyhoeddedig yn unig. Dangosir canlyniadau unwaith y cânt eu cadarnhau gan eich bwrdd arholi.",
+      "noResults":     "Nid oes canlyniadau cyhoeddedig ar gael eto.",
+      "aggregateMark": "Marc",
+      "resultCode":    "Canlyniad"
+    },
+    "notifications": {
+      "empty": "Nid oes gennych unrhyw hysbysiadau ar hyn o bryd.",
+      "markRead": "Marcio fel wedi darllen",
+      "unread": "{{count}} heb eu darllen",
+      "viewDetails": "Gweld manylion →"
+    },
+    "circumstances": {
+      "submitHeading": "Cyflwyno amgylchiadau eithriadol",
+      "submitSubheading": "Disgrifiwch yr amgylchiadau sydd wedi effeithio ar eich astudiaethau.",
+      "descriptionLabel": "Disgrifiad",
+      "descriptionHint": "Eglurwch beth ddigwyddodd a sut y effeithiodd ar eich gallu i astudio.",
+      "moduleLabel": "Modiwl (dewisol)",
+      "moduleHint": "Os effeithiodd yr amgylchiadau hyn ar fodiwl penodol, dewiswch ef yma.",
+      "submitButton": "Cyflwyno hawliad",
+      "submitSuccess": "Mae eich hawliad amgylchiadau eithriadol wedi'i gyflwyno.",
+      "noEnrolment": "Rhaid bod gennych gofrestriad gweithredol i gyflwyno amgylchiadau eithriadol."
+    }
+  },
+  "errors": {
+    "pageNotFound": "Tudalen heb ei chanfod",
+    "pageNotFoundDetail": "Nid yw'r dudalen a geisiwyd gennych yn bodoli.",
+    "somethingWentWrong": "Aeth rhywbeth o'i le",
+    "tryAgain": "Rhowch gynnig arall arni neu cysylltwch â chymorth os yw'r broblem yn parhau."
+  }
+}

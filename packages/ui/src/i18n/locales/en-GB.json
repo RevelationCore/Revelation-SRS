@@ -1,0 +1,151 @@
+{
+  "nav": {
+    "home": "Home",
+    "signIn": "Sign in",
+    "signOut": "Sign out"
+  },
+  "actions": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "create": "Create",
+    "edit": "Edit",
+    "delete": "Delete",
+    "confirm": "Confirm",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "submit": "Submit",
+    "download": "Download",
+    "refresh": "Refresh",
+    "retry": "Retry",
+    "view": "View"
+  },
+  "status": {
+    "loading": "Loading…",
+    "saving": "Saving…",
+    "submitting": "Submitting…",
+    "noResults": "No results found.",
+    "error": "An error occurred.",
+    "success": "Saved successfully."
+  },
+  "validation": {
+    "required": "This field is required.",
+    "email": "Enter a valid email address.",
+    "minLength": "Must be at least {{min}} characters.",
+    "maxLength": "Must be at most {{max}} characters.",
+    "date": "Enter a valid date."
+  },
+  "auth": {
+    "signInHeading": "Sign in to Revelation SRS",
+    "signingIn": "Signing in…",
+    "sessionExpired": "Your session has expired.",
+    "sessionExpiredDetail": "Please sign in again to continue.",
+    "unauthorized": "You do not have permission to access this page.",
+    "signInWithKeycloak": "Sign in with institutional account",
+    "devTokenLabel": "Bearer token (development only)",
+    "devTokenPlaceholder": "Paste your JWT here…"
+  },
+  "portal": {
+    "nav": {
+      "dashboard":     "Dashboard",
+      "profile":       "Profile",
+      "enrolments":    "Enrolments",
+      "modules":       "My modules",
+      "results":       "Results",
+      "timetable":     "Timetable",
+      "exams":         "Exams",
+      "adjustments":   "Adjustments",
+      "disability":    "Disability",
+      "circumstances": "Circumstances",
+      "notifications": "Notifications"
+    },
+    "enrolment": {
+      "status": {
+        "enrolled":     "Enrolled",
+        "intermitting": "Intermitting",
+        "suspended":    "Suspended",
+        "withdrawn":    "Withdrawn",
+        "graduated":    "Graduated"
+      }
+    },
+    "exam": {
+      "noExams":             "No exam entries found for this registration.",
+      "candidateNumber":     "Candidate number",
+      "scheduledDate":       "Scheduled date",
+      "room":                "Room",
+      "accommodations":      "Accommodations",
+      "noAccommodations":    "None recorded"
+    },
+    "profile": {
+      "editHeading":         "Edit your profile",
+      "editSubheading":      "Update your personal details and contact information.",
+      "readOnlyFields":      "Fields managed by the university",
+      "readOnlyNote":        "Your legal name and institutional email address can only be changed by Registry. Contact your student support team if these need updating.",
+      "editPersonalSection": "Personal details",
+      "editContactSection":  "Contact details",
+      "preferredName":       "Preferred name",
+      "genderCode":          "Gender",
+      "nationalityCode":     "Nationality",
+      "emailPersonal":       "Personal email address",
+      "phoneMobile":         "Mobile phone number"
+    },
+    "address": {
+      "addHeading":    "Add address",
+      "addSubheading": "Add a new address to your record.",
+      "typeLabel":     "Address type",
+      "line1":         "Address line 1",
+      "line2":         "Address line 2",
+      "city":          "City",
+      "postcode":      "Postcode",
+      "countryCode":   "Country code",
+      "addButton":     "Add address"
+    },
+    "disability": {
+      "subheading":       "Your disability declarations are shared with support services only.",
+      "addDeclaration":   "Add declaration",
+      "categoryLabel":    "Disability category code",
+      "categoryHint":     "Enter the HESA disability category code, e.g. specific-learning-difficulty, blind, deaf.",
+      "noDeclarations":   "No disability declarations on record.",
+      "declaredOn":       "Declared"
+    },
+    "modules": {
+      "addHeading":       "Add module",
+      "period":           "Period",
+      "allPeriods":       "All periods",
+      "noOfferings":      "No available module offerings found.",
+      "registerButton":   "Add module",
+      "confirmRegister":  "Register for this module?",
+      "withdrawButton":   "Withdraw",
+      "confirmWithdraw":  "Withdraw from this module?"
+    },
+    "results": {
+      "subheading":    "Published results only. Results are shown once ratified by your exam board.",
+      "noResults":     "No published results are available yet.",
+      "aggregateMark": "Mark",
+      "resultCode":    "Result"
+    },
+    "notifications": {
+      "empty": "You have no notifications at this time.",
+      "markRead": "Mark read",
+      "unread": "{{count}} unread",
+      "viewDetails": "View details →"
+    },
+    "circumstances": {
+      "submitHeading": "Submit exceptional circumstances",
+      "submitSubheading": "Describe the circumstances that have affected your studies.",
+      "descriptionLabel": "Description",
+      "descriptionHint": "Explain what happened and how it affected your ability to study or sit assessments.",
+      "moduleLabel": "Module (optional)",
+      "moduleHint": "If these circumstances affected a specific module, select it here.",
+      "submitButton": "Submit claim",
+      "submitSuccess": "Your exceptional circumstances claim has been submitted.",
+      "noEnrolment": "You must have an active enrolment to submit exceptional circumstances."
+    }
+  },
+  "errors": {
+    "pageNotFound": "Page not found",
+    "pageNotFoundDetail": "The page you requested does not exist.",
+    "somethingWentWrong": "Something went wrong",
+    "tryAgain": "Please try again or contact support if the problem persists."
+  }
+}

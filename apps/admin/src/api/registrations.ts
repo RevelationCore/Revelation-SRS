@@ -34,6 +34,22 @@ export function listModuleRegistrations(enrolmentId: string): Promise<ModuleRegi
   return api.get<ModuleRegistration[]>(`/api/v1/module-registrations?enrolmentId=${enrolmentId}&statusCode=registered`);
 }
 
+export function listAllModuleRegistrations(enrolmentId: string): Promise<ModuleRegistration[]> {
+  return api.get<ModuleRegistration[]>(`/api/v1/module-registrations?enrolmentId=${enrolmentId}`);
+}
+
 export function getTimetable(enrolmentId: string): Promise<TimetableEntry[]> {
   return api.get<TimetableEntry[]>(`/api/v1/module-registrations/timetable?enrolmentId=${enrolmentId}`);
+}
+
+export function getRegistrationHistory(moduleRegistrationId: string): Promise<ModuleRegistration[]> {
+  return api.get<ModuleRegistration[]>(`/api/v1/module-registrations/${moduleRegistrationId}/history`);
+}
+
+export function completeRegistration(moduleRegistrationId: string): Promise<void> {
+  return api.post(`/api/v1/module-registrations/${moduleRegistrationId}/completion`, {});
+}
+
+export function withdrawRegistration(moduleRegistrationId: string): Promise<void> {
+  return api.post(`/api/v1/module-registrations/${moduleRegistrationId}/withdrawal`, {});
 }

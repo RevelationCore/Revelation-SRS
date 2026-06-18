@@ -75,3 +75,11 @@ export function transitionEnrolment(
 export function listEnrolmentTransitions(enrolmentId: string): Promise<EnrolmentTransition[]> {
   return api.get<EnrolmentTransition[]>(`/api/v1/enrolments/${enrolmentId}/transitions`);
 }
+
+export function getEnrolmentHistory(enrolmentId: string): Promise<Enrolment[]> {
+  return api.get<Enrolment[]>(`/api/v1/enrolments/${enrolmentId}/history`);
+}
+
+export function getEnrolment(enrolmentId: string): Promise<Enrolment> {
+  return api.get<Enrolment>(`/api/v1/enrolments/${enrolmentId}`);
+}

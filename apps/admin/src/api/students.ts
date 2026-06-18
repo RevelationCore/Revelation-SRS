@@ -55,8 +55,16 @@ export type IdentityPatch = Partial<{
   phoneMobile:        string;
 }>;
 
-export function listStudents(limit = 20, offset = 0): Promise<StudentSummary[]> {
-  return api.get<StudentSummary[]>(`/api/v1/students?limit=${limit}&offset=${offset}`);
+export function listStudents(
+  limit = 20,
+  offset = 0,
+  search?: string,
+  statusCode?: string,
+): Promise<StudentSummary[]> {
+  const qs = new URLSearchParams({ limit: String(limit), offset: String(offset) });
+  if (search)     qs.set('search',     search);
+  if (statusCode) qs.set('statusCode', statusCode);
+  return api.get<StudentSummary[]>(`/api/v1/students?${qs.toString()}`);
 }
 
 export function getStudent(personId: string): Promise<Student> {

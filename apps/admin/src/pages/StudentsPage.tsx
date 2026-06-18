@@ -1,8 +1,9 @@
-import { type FormEvent, useEffect, useRef, useState } from 'react';
+import { type FormEvent, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { type CreateStudentInput, type StudentSummary, createStudent, listStudents } from '../api/students.js';
 import { Spinner } from '../components/Spinner.js';
 import { ApiError } from '../api/client.js';
+import { Dialog, DialogClose } from '@revelation-srs/ui';
 
 const PAGE_SIZE = 20;
 
@@ -12,12 +13,14 @@ export function StudentsPage() {
   const [offset, setOffset]       = useState(0);
   const [error, setError]         = useState('');
   const [showCreate, setShowCreate] = useState(false);
+  const [search, setSearch]       = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
 
-  async function load(off: number) {
+  async function load(off: number, q?: string, status?: string) {
     setLoading(true);
     setError('');
     try {
-      const data = await listStudents(PAGE_SIZE, off);
+      const data = await listStudents(PAGE_SIZE, off, q, status);
       setStudents(data);
       setOffset(off);
     } catch (e) {
@@ -34,9 +37,14 @@ export function StudentsPage() {
     void load(offset);
   }
 
+  function handleSearch(e: FormEvent) {
+    e.preventDefault();
+    void load(0, search || undefined, statusFilter || undefined);
+  }
+
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-semibold text-gray-900">Students</h1>
         <button
           onClick={() => setShowCreate(true)}
@@ -45,6 +53,41 @@ export function StudentsPage() {
           New student
         </button>
       </div>
+
+      {/* Search / filter bar */}
+      <form onSubmit={handleSearch} className="mb-4 flex items-center gap-3 flex-wrap">
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Name or student number…"
+          className="flex-1 min-w-48 rounded border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        />
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="rounded border border-gray-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        >
+          <option value="">All statuses</option>
+          {['prospective', 'student', 'alumnus', 'deceased', 'merged'].map(s => (
+            <option key={s} value={s}>{s}</option>
+          ))}
+        </select>
+        <button
+          type="submit"
+          className="rounded bg-indigo-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-indigo-700"
+        >
+          Search
+        </button>
+        {(search || statusFilter) && (
+          <button
+            type="button"
+            onClick={() => { setSearch(''); setStatusFilter(''); void load(0); }}
+            className="rounded border border-gray-300 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50"
+          >
+            Clear
+          </button>
+        )}
+      </form>
 
       {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
 
@@ -89,7 +132,7 @@ export function StudentsPage() {
 
           <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 flex items-center gap-3 text-sm text-gray-600">
             <button
-              onClick={() => void load(Math.max(0, offset - PAGE_SIZE))}
+              onClick={() => void load(Math.max(0, offset - PAGE_SIZE), search || undefined, statusFilter || undefined)}
               disabled={offset === 0}
               className="px-3 py-1 rounded border border-gray-300 disabled:opacity-40 hover:bg-white"
             >
@@ -99,7 +142,7 @@ export function StudentsPage() {
               <span>Showing {offset + 1}–{offset + students.length}</span>
             )}
             <button
-              onClick={() => void load(offset + PAGE_SIZE)}
+              onClick={() => void load(offset + PAGE_SIZE, search || undefined, statusFilter || undefined)}
               disabled={students.length < PAGE_SIZE}
               className="px-3 py-1 rounded border border-gray-300 disabled:opacity-40 hover:bg-white"
             >
@@ -109,17 +152,21 @@ export function StudentsPage() {
         </div>
       )}
 
-      {showCreate && (
-        <CreateStudentModal
+      <Dialog
+        open={showCreate}
+        onOpenChange={(open) => { if (!open) setShowCreate(false); }}
+        title="New student"
+      >
+        <CreateStudentForm
           onClose={() => setShowCreate(false)}
           onCreated={handleCreated}
         />
-      )}
+      </Dialog>
     </div>
   );
 }
 
-function CreateStudentModal({
+function CreateStudentForm({
   onClose,
   onCreated,
 }: {
@@ -128,15 +175,6 @@ function CreateStudentModal({
 }) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError]           = useState('');
-  const dialogRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose();
-    }
-    document.addEventListener('keydown', handleKey);
-    return () => document.removeEventListener('keydown', handleKey);
-  }, [onClose]);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -167,32 +205,29 @@ function CreateStudentModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={onClose}>
-      <div ref={dialogRef} className="bg-white rounded-lg border border-gray-200 p-6 w-full max-w-md shadow-xl" onClick={(e) => e.stopPropagation()}>
-        <h2 className="text-base font-semibold text-gray-900 mb-4">New student</h2>
-        <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
-          <Field name="legalFirstName"  label="Legal first name *" />
-          <Field name="legalFamilyName" label="Legal family name *" />
-          <Field name="preferredName"   label="Preferred name" />
-          <Field name="emailPersonal"   label="Personal email" type="email" />
+    <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
+      <Field name="legalFirstName"  label="Legal first name *" />
+      <Field name="legalFamilyName" label="Legal family name *" />
+      <Field name="preferredName"   label="Preferred name" />
+      <Field name="emailPersonal"   label="Personal email" type="email" />
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-red-600" role="alert">{error}</p>}
 
-          <div className="flex justify-end gap-3 pt-2">
-            <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={submitting}
-              className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded hover:bg-indigo-700 disabled:opacity-50"
-            >
-              {submitting ? 'Creating…' : 'Create'}
-            </button>
-          </div>
-        </form>
+      <div className="flex justify-end gap-3 pt-2">
+        <DialogClose asChild>
+          <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">
+            Cancel
+          </button>
+        </DialogClose>
+        <button
+          type="submit"
+          disabled={submitting}
+          className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded hover:bg-indigo-700 disabled:opacity-50"
+        >
+          {submitting ? 'Creating…' : 'Create'}
+        </button>
       </div>
-    </div>
+    </form>
   );
 }
 

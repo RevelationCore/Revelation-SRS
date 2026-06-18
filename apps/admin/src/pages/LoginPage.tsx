@@ -1,106 +1,100 @@
 import { type FormEvent, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../auth/AuthContext.js';
-import { oidcConfig, startLogin } from '../auth/oidc.js';
+import { useTranslation } from 'react-i18next';
+import { useAuth, startLogin } from '../auth/AuthContext.js';
+import type { TokenSet } from '@revelation-srs/ui';
+
+const DEV_AUTH = import.meta.env.VITE_DEV_AUTH === 'true';
 
 export function LoginPage() {
-  const { login }  = useAuth();
-  const navigate   = useNavigate();
+  const { login, config } = useAuth();
+  const navigate          = useNavigate();
+  const { t }             = useTranslation();
   const [starting, setStarting] = useState(false);
   const [error, setError]       = useState('');
 
-  // ── Keycloak OIDC path ────────────────────────────────────────────────────
+  // ── Keycloak OIDC path ───────────────────────────────────────────────────
 
   async function handleKeycloakLogin() {
-    if (!oidcConfig) return;
+    if (!config) return;
     setStarting(true);
     setError('');
     try {
-      await startLogin(oidcConfig);
-      // Browser redirects; execution does not continue here.
+      await startLogin(config);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to start login');
       setStarting(false);
     }
   }
 
-  // ── JWT-paste fallback (no Keycloak configured) ───────────────────────────
+  // ── Dev JWT-paste fallback (VITE_DEV_AUTH=true only) ─────────────────────
 
-  const [token, setToken] = useState('');
+  const [rawToken, setRawToken] = useState('');
 
   function handlePasteSubmit(e: FormEvent) {
     e.preventDefault();
-    const trimmed = token.trim();
+    const trimmed = rawToken.trim();
     if (!trimmed) { setError('Paste a valid Bearer token.'); return; }
     if (trimmed.split('.').length !== 3) {
       setError('Token does not look like a valid JWT.');
       return;
     }
-    login(trimmed);
-    navigate('/students');
+    // Build a synthetic TokenSet — no refresh token available in dev mode
+    const ts: TokenSet = { accessToken: trimmed, refreshToken: '', expiresIn: 3600 };
+    login(ts);
+    navigate('/dashboard');
   }
 
-  // ── Render ─────────────────────────────────────────────────────────────────
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="flex min-h-screen items-center justify-center bg-gray-50">
       <div className="w-full max-w-sm">
-
-        <div className="text-center mb-8">
+        <div className="mb-8 text-center">
           <h1 className="text-2xl font-bold text-gray-900">Revelation SRS</h1>
           <p className="mt-1 text-sm text-gray-500">Administration Console</p>
         </div>
 
-        <div className="bg-white rounded-lg border border-gray-200 p-8">
-          {oidcConfig ? (
-            // ── Keycloak sign-in ────────────────────────────────────────────
+        <div className="rounded-lg border border-gray-200 bg-white p-8">
+          {config ? (
             <div className="space-y-4">
               <button
                 onClick={() => void handleKeycloakLogin()}
                 disabled={starting}
-                className="w-full flex items-center justify-center gap-3 py-2.5 px-4 bg-indigo-600 text-white text-sm font-medium rounded hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
+                className="w-full flex items-center justify-center gap-3 rounded py-2.5 px-4 bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
               >
-                {starting ? (
-                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                ) : (
-                  <KeycloakIcon />
-                )}
-                {starting ? 'Redirecting…' : 'Sign in with Keycloak'}
+                {starting
+                  ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  : <KeycloakIcon />
+                }
+                {starting ? t('auth.signingIn') : t('auth.signInWithKeycloak')}
               </button>
-
-              <p className="text-xs text-center text-gray-400">
-                Default dev credentials: <strong>admin / admin</strong>
-              </p>
-
               {error && <p className="text-sm text-red-600 text-center">{error}</p>}
             </div>
-          ) : (
-            // ── JWT-paste fallback ──────────────────────────────────────────
+          ) : DEV_AUTH ? (
             <form onSubmit={handlePasteSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Bearer Token
+                  {t('auth.devTokenLabel')}
                 </label>
                 <textarea
                   rows={5}
                   className="w-full rounded border border-gray-300 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
-                  placeholder="Paste your JWT here…"
-                  value={token}
-                  onChange={(e) => { setToken(e.target.value); setError(''); }}
+                  placeholder={t('auth.devTokenPlaceholder')}
+                  value={rawToken}
+                  onChange={(e) => { setRawToken(e.target.value); setError(''); }}
                 />
-                <p className="mt-1 text-xs text-gray-400">
-                  Set <code>VITE_KEYCLOAK_URL</code> in <code>.env</code> to enable
-                  Keycloak sign-in.
-                </p>
               </div>
               {error && <p className="text-sm text-red-600">{error}</p>}
               <button
                 type="submit"
-                className="w-full py-2 px-4 bg-indigo-600 text-white text-sm font-medium rounded hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full rounded py-2 px-4 bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
-                Sign in
+                {t('actions.submit')}
               </button>
             </form>
+          ) : (
+            <p className="text-sm text-center text-gray-500">
+              Keycloak is not configured. Set <code className="font-mono">VITE_KEYCLOAK_URL</code> to enable sign-in.
+            </p>
           )}
         </div>
       </div>

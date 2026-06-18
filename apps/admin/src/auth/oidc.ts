@@ -67,7 +67,7 @@ export async function startLogin(cfg: OidcConfig): Promise<void> {
   });
 
   window.location.href =
-    `${cfg.keycloakUrl}/realms/${cfg.realm}/protocol/openid-connect/auth?${params}`;
+    `${cfg.keycloakUrl}/realms/${cfg.realm}/protocol/openid-connect/auth?${params.toString()}`;
 }
 
 /**
@@ -128,5 +128,5 @@ export function logout(cfg: OidcConfig): void {
     post_logout_redirect_uri: `${window.location.origin}/login`,
   });
   window.location.href =
-    `${cfg.keycloakUrl}/realms/${cfg.realm}/protocol/openid-connect/logout?${params}`;
+    `${cfg.keycloakUrl}/realms/${cfg.realm}/protocol/openid-connect/logout?${params.toString()}`;
 }
