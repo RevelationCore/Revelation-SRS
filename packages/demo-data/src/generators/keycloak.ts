@@ -165,28 +165,36 @@ async function patchUserAttributes(
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) return;
-  const user = await res.json() as { attributes?: Record<string, string[]> };
-  const existing = user.attributes ?? {};
+  const user = await res.json() as Record<string, unknown> & { attributes?: Record<string, string[]> };
+  const existingAttrs = (user.attributes as Record<string, string[]> | undefined) ?? {};
 
-  const desired: Record<string, string[]> = {
+  const desiredAttrs: Record<string, string[]> = {
     tenant_id: [cfg.tenantId],
     personaId: [spec.personaId],
     ...(spec.srsPersonId ? { srs_person_id: [spec.srsPersonId] } : {}),
   };
 
   let changed = false;
-  for (const [key, val] of Object.entries(desired)) {
-    if (!existing[key] || existing[key]?.[0] !== val[0]) {
-      existing[key] = val;
+  for (const [key, val] of Object.entries(desiredAttrs)) {
+    if (!existingAttrs[key] || existingAttrs[key]?.[0] !== val[0]) {
+      existingAttrs[key] = val;
       changed = true;
     }
   }
+
+  // Also reconcile top-level identity fields which may be absent or stale.
+  const patch: Record<string, unknown> = { ...user, attributes: existingAttrs };
+  if (user['email']      !== spec.email)      { patch['email']      = spec.email;      changed = true; }
+  if (user['firstName']  !== spec.firstName)  { patch['firstName']  = spec.firstName;  changed = true; }
+  if (user['lastName']   !== spec.lastName)   { patch['lastName']   = spec.lastName;   changed = true; }
+  if (user['emailVerified'] !== true)         { patch['emailVerified'] = true;          changed = true; }
+
   if (!changed) return;
 
   await fetch(`${cfg.adminUrl}/admin/realms/${cfg.realm}/users/${userId}`, {
     method:  'PUT',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body:    JSON.stringify({ ...user, attributes: existing }),
+    body:    JSON.stringify(patch),
   });
 }
 
