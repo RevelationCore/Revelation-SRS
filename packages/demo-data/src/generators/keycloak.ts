@@ -19,6 +19,7 @@ export interface KeycloakConfig {
   adminUsername:   string;
   adminPassword:   string;
   personaPassword: string;  // shared demo password
+  tenantId:        string;  // SRS tenant UUID applied to all personas
 }
 
 // ─── Persona catalogue ────────────────────────────────────────────────────────
@@ -85,6 +86,7 @@ async function createUser(cfg: KeycloakConfig, token: string, spec: PersonaSpec)
         enabled:       true,
         emailVerified: true,
         attributes: {
+          tenant_id:    [cfg.tenantId],
           personaId:    [spec.personaId],
           ...(spec.srsPersonId ? { srs_person_id: [spec.srsPersonId] } : {}),
         },
@@ -153,6 +155,41 @@ async function assignRoles(
   }
 }
 
+async function patchUserAttributes(
+  cfg:    KeycloakConfig,
+  token:  string,
+  userId: string,
+  spec:   PersonaSpec,
+): Promise<void> {
+  const res = await fetch(`${cfg.adminUrl}/admin/realms/${cfg.realm}/users/${userId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) return;
+  const user = await res.json() as { attributes?: Record<string, string[]> };
+  const existing = user.attributes ?? {};
+
+  const desired: Record<string, string[]> = {
+    tenant_id: [cfg.tenantId],
+    personaId: [spec.personaId],
+    ...(spec.srsPersonId ? { srs_person_id: [spec.srsPersonId] } : {}),
+  };
+
+  let changed = false;
+  for (const [key, val] of Object.entries(desired)) {
+    if (!existing[key] || existing[key]?.[0] !== val[0]) {
+      existing[key] = val;
+      changed = true;
+    }
+  }
+  if (!changed) return;
+
+  await fetch(`${cfg.adminUrl}/admin/realms/${cfg.realm}/users/${userId}`, {
+    method:  'PUT',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ ...user, attributes: existing }),
+  });
+}
+
 async function ensureUserProfileAttributes(cfg: KeycloakConfig, token: string): Promise<void> {
   const res = await fetch(`${cfg.adminUrl}/admin/realms/${cfg.realm}/users/profile`, {
     headers: { Authorization: `Bearer ${token}` },
@@ -214,6 +251,7 @@ export async function provisionPersonas(opts: ProvisionPersonasOpts): Promise<vo
   const adminUsername   = process.env['KEYCLOAK_ADMIN_USERNAME']   ?? 'admin';
   const adminPassword   = process.env['KEYCLOAK_ADMIN_PASSWORD']   ?? '';
   const personaPassword = process.env['DEMO_PERSONA_PASSWORD']     ?? 'Demo-2026!';
+  const tenantId        = process.env['KEYCLOAK_TENANT_ID']        ?? '00000000-0000-0000-0000-000000000001';
 
   if (!adminPassword) {
     const msg = '[personas] KEYCLOAK_ADMIN_PASSWORD not set — skipping persona provisioning.';
@@ -222,7 +260,7 @@ export async function provisionPersonas(opts: ProvisionPersonasOpts): Promise<vo
     return;
   }
 
-  const cfg: KeycloakConfig = { adminUrl, realm, adminUsername, adminPassword, personaPassword };
+  const cfg: KeycloakConfig = { adminUrl, realm, adminUsername, adminPassword, personaPassword, tenantId };
 
   try {
     console.log(`  [personas] Connecting to Keycloak at ${adminUrl} (realm: ${realm})`);
@@ -238,7 +276,8 @@ export async function provisionPersonas(opts: ProvisionPersonasOpts): Promise<vo
         await assignRoles(cfg, token, userId, spec.roles);
         console.log(`  [personas] Created persona: ${spec.username}`);
       } else {
-        console.log(`  [personas] Persona already exists: ${spec.username}`);
+        await patchUserAttributes(cfg, token, userId, spec);
+        console.log(`  [personas] Patched persona: ${spec.username}`);
       }
     }
 
