@@ -13,6 +13,30 @@
   "ssoSessionIdleTimeout":  28800,
   "ssoSessionMaxLifespan":  86400,
 
+  "userProfileConfig": {
+    "unmanagedAttributePolicy": "ENABLED",
+    "attributes": [
+      {
+        "name": "tenant_id",
+        "displayName": "Tenant ID",
+        "permissions": { "view": ["admin"], "edit": ["admin"] },
+        "multivalued": false
+      },
+      {
+        "name": "personaId",
+        "displayName": "Persona ID",
+        "permissions": { "view": ["admin"], "edit": ["admin"] },
+        "multivalued": false
+      },
+      {
+        "name": "srs_person_id",
+        "displayName": "SRS Person ID",
+        "permissions": { "view": ["admin"], "edit": ["admin"] },
+        "multivalued": false
+      }
+    ]
+  },
+
   "roles": {
     "realm": [
       { "name": "student",                 "composite": false },
@@ -84,6 +108,20 @@
             "id.token.claim":       "true",
             "access.token.claim":   "true"
           }
+        },
+        {
+          "name":             "srs-person-id",
+          "protocol":         "openid-connect",
+          "protocolMapper":   "oidc-usermodel-attribute-mapper",
+          "consentRequired":  false,
+          "config": {
+            "user.attribute":       "srs_person_id",
+            "claim.name":           "srs_person_id",
+            "jsonType.label":       "String",
+            "userinfo.token.claim": "false",
+            "id.token.claim":       "false",
+            "access.token.claim":   "true"
+          }
         }
       ]
     },
@@ -137,6 +175,20 @@
             "id.token.claim":       "true",
             "access.token.claim":   "true"
           }
+        },
+        {
+          "name":             "srs-person-id",
+          "protocol":         "openid-connect",
+          "protocolMapper":   "oidc-usermodel-attribute-mapper",
+          "consentRequired":  false,
+          "config": {
+            "user.attribute":       "srs_person_id",
+            "claim.name":           "srs_person_id",
+            "jsonType.label":       "String",
+            "userinfo.token.claim": "false",
+            "id.token.claim":       "false",
+            "access.token.claim":   "true"
+          }
         }
       ]
     }
@@ -162,7 +214,7 @@
       "enabled":     true,
       "emailVerified": true,
       "credentials": [{ "type": "password", "value": "Demo-2026!", "temporary": false }],
-      "attributes":  { "tenant_id": ["00000000-0000-0000-0000-000000000001"], "personaId": ["persona-01-0000-4000-8000-000000000001"] },
+      "attributes":  { "tenant_id": ["00000000-0000-0000-0000-000000000001"], "personaId": ["persona-01-0000-4000-8000-000000000001"], "srs_person_id": ["d4450eea-cee5-5bd3-a0ec-7024d0eb06da"] },
       "realmRoles":  ["student"]
     },
     {
@@ -173,7 +225,7 @@
       "enabled":     true,
       "emailVerified": true,
       "credentials": [{ "type": "password", "value": "Demo-2026!", "temporary": false }],
-      "attributes":  { "tenant_id": ["00000000-0000-0000-0000-000000000001"], "personaId": ["persona-01-0000-4000-8000-000000000002"] },
+      "attributes":  { "tenant_id": ["00000000-0000-0000-0000-000000000001"], "personaId": ["persona-01-0000-4000-8000-000000000002"], "srs_person_id": ["882c8f11-bfe2-5c58-9430-025dd9115221"] },
       "realmRoles":  ["student"]
     },
     {
@@ -184,7 +236,7 @@
       "enabled":     true,
       "emailVerified": true,
       "credentials": [{ "type": "password", "value": "Demo-2026!", "temporary": false }],
-      "attributes":  { "tenant_id": ["00000000-0000-0000-0000-000000000001"], "personaId": ["persona-01-0000-4000-8000-000000000003"] },
+      "attributes":  { "tenant_id": ["00000000-0000-0000-0000-000000000001"], "personaId": ["persona-01-0000-4000-8000-000000000003"], "srs_person_id": ["acd20b94-4c57-5f6a-8397-17479d9bc5cb"] },
       "realmRoles":  ["student"]
     },
     {

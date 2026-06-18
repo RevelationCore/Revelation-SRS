@@ -7,8 +7,7 @@ import { Spinner, Problem, EmptyState, formatDate } from '@revelation-srs/ui';
 
 export function AdjustmentsPage() {
   const { t }    = useTranslation();
-  const { user } = useAuth();
-  const personId = user?.sub ?? null;
+  const { personId } = useAuth();
 
   const fetchEnrolments = useCallback(
     () => personId ? getEnrolments(personId) : Promise.reject(new Error('')),

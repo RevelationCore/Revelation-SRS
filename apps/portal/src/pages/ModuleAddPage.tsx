@@ -16,8 +16,7 @@ import { Spinner, Problem, EmptyState } from '@revelation-srs/ui';
 export function ModuleAddPage() {
   const { t }    = useTranslation();
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const personId = user?.sub ?? null;
+  const { personId } = useAuth();
 
   // Track which offering is pending confirmation
   const [confirming, setConfirming] = useState<string | null>(null);

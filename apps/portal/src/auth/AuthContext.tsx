@@ -27,6 +27,8 @@ interface AuthContextValue {
   token:          string | null;
   user:           JwtPayload | null;
   roles:          string[];
+  /** SRS database person UUID, populated from the srs_person_id JWT claim. */
+  personId:       string | null;
   isReady:        boolean;
   sessionExpired: boolean;
   login:          (tokens: TokenSet) => void;
@@ -48,11 +50,12 @@ const oidcConfig: OidcConfig | null = import.meta.env.VITE_KEYCLOAK_URL
     }
   : null;
 
-function parseClaims(token: string): { user: JwtPayload | null; roles: string[] } {
+function parseClaims(token: string): { user: JwtPayload | null; roles: string[]; personId: string | null } {
   try {
-    return { user: parseJwt(token), roles: getTokenRoles(token) };
+    const user = parseJwt(token);
+    return { user, roles: getTokenRoles(token), personId: user.srs_person_id ?? null };
   } catch {
-    return { user: null, roles: [] };
+    return { user: null, roles: [], personId: null };
   }
 }
 
@@ -60,6 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token,          setToken]          = useState<string | null>(null);
   const [user,           setUser]           = useState<JwtPayload | null>(null);
   const [roles,          setRoles]          = useState<string[]>([]);
+  const [personId,       setPersonId]       = useState<string | null>(null);
   const [isReady,        setIsReady]        = useState(false);
   const [sessionExpired, setSessionExpired] = useState(false);
 
@@ -75,10 +79,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const applyTokens = useCallback((access: string, refresh: string) => {
     localStorage.setItem(ACCESS_KEY,  access);
     localStorage.setItem(REFRESH_KEY, refresh);
-    const { user: u, roles: r } = parseClaims(access);
+    const { user: u, roles: r, personId: pid } = parseClaims(access);
     setToken(access);
     setUser(u);
     setRoles(r);
+    setPersonId(pid);
     setSessionExpired(false);
   }, []);
 
@@ -103,6 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(null);
     setUser(null);
     setRoles([]);
+    setPersonId(null);
     setSessionExpired(true);
   }
 
@@ -125,10 +131,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    const { user: u, roles: r } = parseClaims(access);
+    const { user: u, roles: r, personId: pid } = parseClaims(access);
     setToken(access);
     setUser(u);
     setRoles(r);
+    setPersonId(pid);
     setIsReady(true);
     scheduleRefresh(access);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -148,13 +155,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(null);
     setUser(null);
     setRoles([]);
+    setPersonId(null);
     setSessionExpired(false);
     if (oidcConfig) logout(oidcConfig);
     else window.location.href = '/login';
   }, []);
 
   return (
-    <AuthContext.Provider value={{ token, user, roles, isReady, sessionExpired, login, logout: handleLogout, config: oidcConfig }}>
+    <AuthContext.Provider value={{ token, user, roles, personId, isReady, sessionExpired, login, logout: handleLogout, config: oidcConfig }}>
       {children}
     </AuthContext.Provider>
   );

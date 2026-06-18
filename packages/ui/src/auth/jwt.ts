@@ -9,6 +9,8 @@ export interface JwtPayload {
   exp:                 number;
   iat:                 number;
   tenant_id?:          string;
+  /** SRS database person UUID — present only for student personas. */
+  srs_person_id?:      string;
 }
 
 export function parseJwt(token: string): JwtPayload {

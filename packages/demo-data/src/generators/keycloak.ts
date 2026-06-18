@@ -3,12 +3,14 @@ import { PERSONA_IDS } from '../persona-ids.js';
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface PersonaSpec {
-  email:     string;
-  username:  string;
-  firstName: string;
-  lastName:  string;
-  roles:     string[];
-  personaId: string;
+  email:        string;
+  username:     string;
+  firstName:    string;
+  lastName:     string;
+  roles:        string[];
+  personaId:    string;
+  /** SRS database person UUID to expose as the srs_person_id JWT claim. Only set for student personas. */
+  srsPersonId?: string;
 }
 
 export interface KeycloakConfig {
@@ -27,9 +29,9 @@ export const DEMO_PERSONAS: readonly PersonaSpec[] = [
   { email: 'chair@demo.srs',      username: 'chair',      firstName: 'DEMO Board',     lastName: 'Chair',         roles: ['exam-board-chair', 'registry-administrator'],     personaId: PERSONA_IDS.STAFF_EXAMBOARD      },
   { email: 'wellbeing@demo.srs',  username: 'wellbeing',  firstName: 'DEMO Wellbeing', lastName: 'Advisor',       roles: ['wellbeing-advisor'],                              personaId: PERSONA_IDS.STAFF_WELLBEING      },
   { email: 'dpo@demo.srs',        username: 'dpo',        firstName: 'DEMO DPO',       lastName: 'Auditor',       roles: ['dpo', 'wellbeing-auditor'],                       personaId: PERSONA_IDS.STAFF_DPO            },
-  { email: 'alice.demo@demo.srs', username: 'alice.demo', firstName: 'DEMO Alice',     lastName: 'Demo',          roles: ['student'],                                        personaId: PERSONA_IDS.STUDENT_STANDARD     },
-  { email: 'bob.demo@demo.srs',   username: 'bob.demo',   firstName: 'DEMO Bob',       lastName: 'Demo',          roles: ['student'],                                        personaId: PERSONA_IDS.STUDENT_INTERMITTING },
-  { email: 'carol.demo@demo.srs', username: 'carol.demo', firstName: 'DEMO Carol',     lastName: 'Demo',          roles: ['student'],                                        personaId: PERSONA_IDS.STUDENT_GRADUATED    },
+  { email: 'alice.demo@demo.srs', username: 'alice.demo', firstName: 'DEMO Alice',     lastName: 'Demo',          roles: ['student'],                                        personaId: PERSONA_IDS.STUDENT_STANDARD,     srsPersonId: 'd4450eea-cee5-5bd3-a0ec-7024d0eb06da' },
+  { email: 'bob.demo@demo.srs',   username: 'bob.demo',   firstName: 'DEMO Bob',       lastName: 'Demo',          roles: ['student'],                                        personaId: PERSONA_IDS.STUDENT_INTERMITTING, srsPersonId: '882c8f11-bfe2-5c58-9430-025dd9115221' },
+  { email: 'carol.demo@demo.srs', username: 'carol.demo', firstName: 'DEMO Carol',     lastName: 'Demo',          roles: ['student'],                                        personaId: PERSONA_IDS.STUDENT_GRADUATED,    srsPersonId: 'acd20b94-4c57-5f6a-8397-17479d9bc5cb' },
   { email: 'examiner@demo.srs',   username: 'examiner',   firstName: 'DEMO External',  lastName: 'Examiner',      roles: ['external-examiner'],                              personaId: PERSONA_IDS.STAFF_EXAMINER       },
   { email: 'ops@demo.srs',        username: 'ops',        firstName: 'DEMO Ops',       lastName: 'Operator',      roles: ['registry-administrator', 'tenant-administrator'], personaId: PERSONA_IDS.STAFF_OPS            },
 ];
@@ -82,7 +84,10 @@ async function createUser(cfg: KeycloakConfig, token: string, spec: PersonaSpec)
         lastName:      spec.lastName,
         enabled:       true,
         emailVerified: true,
-        attributes:    { personaId: [spec.personaId] },
+        attributes: {
+          personaId:    [spec.personaId],
+          ...(spec.srsPersonId ? { srs_person_id: [spec.srsPersonId] } : {}),
+        },
       }),
     },
   );
@@ -148,6 +153,36 @@ async function assignRoles(
   }
 }
 
+async function ensureUserProfileAttributes(cfg: KeycloakConfig, token: string): Promise<void> {
+  const res = await fetch(`${cfg.adminUrl}/admin/realms/${cfg.realm}/users/profile`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) return; // older Keycloak without declarative user profile — skip
+
+  const profile = await res.json() as { unmanagedAttributePolicy?: string; attributes?: Array<{ name: string }> };
+  const existing = new Set((profile.attributes ?? []).map((a) => a.name));
+
+  const toAdd = [
+    { name: 'tenant_id',     displayName: 'Tenant ID',    permissions: { view: ['admin'], edit: ['admin'] }, multivalued: false },
+    { name: 'personaId',     displayName: 'Persona ID',   permissions: { view: ['admin'], edit: ['admin'] }, multivalued: false },
+    { name: 'srs_person_id', displayName: 'SRS Person ID', permissions: { view: ['admin'], edit: ['admin'] }, multivalued: false },
+  ].filter((a) => !existing.has(a.name));
+
+  if (toAdd.length === 0 && profile.unmanagedAttributePolicy === 'ENABLED') return;
+
+  const updated = {
+    ...profile,
+    unmanagedAttributePolicy: 'ENABLED',
+    attributes: [...(profile.attributes ?? []), ...toAdd],
+  };
+
+  await fetch(`${cfg.adminUrl}/admin/realms/${cfg.realm}/users/profile`, {
+    method:  'PUT',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body:    JSON.stringify(updated),
+  });
+}
+
 // ─── Public API ───────────────────────────────────────────────────────────────
 
 export interface ProvisionPersonasOpts {
@@ -192,6 +227,8 @@ export async function provisionPersonas(opts: ProvisionPersonasOpts): Promise<vo
   try {
     console.log(`  [personas] Connecting to Keycloak at ${adminUrl} (realm: ${realm})`);
     const token = await getAdminToken(cfg);
+
+    await ensureUserProfileAttributes(cfg, token);
 
     for (const spec of DEMO_PERSONAS) {
       let userId = await findUser(cfg, token, spec.username);

@@ -8,8 +8,7 @@ import { Spinner, Problem, formatDate, getDisplayName } from '@revelation-srs/ui
 
 export function DashboardPage() {
   const { t }  = useTranslation();
-  const { user } = useAuth();
-  const personId = user?.sub ?? null;
+  const { user, personId } = useAuth();
 
   const fetchProfile    = useCallback(() => personId ? getProfile(personId)    : Promise.reject(new Error('Not authenticated')), [personId]);
   const fetchEnrolments = useCallback(() => personId ? getEnrolments(personId) : Promise.reject(new Error('Not authenticated')), [personId]);

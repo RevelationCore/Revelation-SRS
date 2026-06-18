@@ -24,8 +24,7 @@ const ADDRESS_TYPES = ['home', 'term-time', 'correspondence', 'next-of-kin'];
 export function AddAddressPage() {
   const { t }    = useTranslation();
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const personId = user?.sub ?? null;
+  const { personId } = useAuth();
 
   const { register, handleSubmit, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema),

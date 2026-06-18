@@ -8,8 +8,7 @@ import { Spinner, Problem, formatDate } from '@revelation-srs/ui';
 
 export function ProfilePage() {
   const { t }    = useTranslation();
-  const { user } = useAuth();
-  const personId = user?.sub ?? null;
+  const { personId } = useAuth();
 
   const fetchProfile   = useCallback(() => personId ? getProfile(personId)   : Promise.reject(new Error('')), [personId]);
   const fetchAddresses = useCallback(() => personId ? getAddresses(personId) : Promise.reject(new Error('')), [personId]);

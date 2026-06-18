@@ -18,8 +18,7 @@ type FormValues = z.infer<typeof schema>;
 
 export function DisabilityPage() {
   const { t }    = useTranslation();
-  const { user } = useAuth();
-  const personId = user?.sub ?? null;
+  const { personId } = useAuth();
 
   const [showForm, setShowForm]   = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);

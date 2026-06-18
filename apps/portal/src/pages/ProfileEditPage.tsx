@@ -23,8 +23,7 @@ type FormValues = z.infer<typeof schema>;
 export function ProfileEditPage() {
   const { t }    = useTranslation();
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const personId = user?.sub ?? null;
+  const { personId } = useAuth();
 
   const fetchProfile = useCallback(
     () => personId ? getProfile(personId) : Promise.reject(new Error('')),
