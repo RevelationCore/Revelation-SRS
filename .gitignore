@@ -38,8 +38,7 @@ coverage/
 .nyc_output/
 
 # Docker volumes (local dev data)
-infra/compose/keycloak/*.json
-!infra/compose/keycloak/.gitkeep
+# Note: srs-realm.json is tracked (demo credentials only — no production secrets)
 
 # Migrations output (generated — commit migrations folder but not intermediate state)
 packages/db/migrations/meta/_snapshot.json

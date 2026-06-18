@@ -1,0 +1,170 @@
+{
+  "realm":                  "srs",
+  "displayName":            "Revelation SRS",
+  "enabled":                true,
+  "sslRequired":            "none",
+  "registrationAllowed":    false,
+  "loginWithEmailAllowed":  true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed":   false,
+  "editUsernameAllowed":    false,
+  "bruteForceProtected":    false,
+  "accessTokenLifespan":    28800,
+  "ssoSessionIdleTimeout":  28800,
+  "ssoSessionMaxLifespan":  86400,
+
+  "roles": {
+    "realm": [
+      { "name": "student",                 "composite": false },
+      { "name": "module-tutor",            "composite": false },
+      { "name": "personal-tutor",          "composite": false },
+      { "name": "research-supervisor",     "composite": false },
+      { "name": "wellbeing-advisor",       "composite": false },
+      { "name": "exam-board-member",       "composite": false },
+      { "name": "exam-board-chair",        "composite": false },
+      { "name": "external-examiner",       "composite": false },
+      { "name": "integrity-officer",       "composite": false },
+      { "name": "registry-administrator",  "composite": false },
+      { "name": "finance-administrator",   "composite": false },
+      { "name": "dpo",                     "composite": false },
+      { "name": "tenant-administrator",    "composite": false },
+      { "name": "system-administrator",    "composite": false },
+      { "name": "integration-service",     "composite": false }
+    ]
+  },
+
+  "clients": [
+    {
+      "clientId":              "srs-admin",
+      "name":                  "SRS Administration Portal",
+      "description":           "Revelation SRS staff-facing admin portal (PKCE public client)",
+      "enabled":               true,
+      "publicClient":          true,
+      "standardFlowEnabled":   true,
+      "implicitFlowEnabled":   false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled":    false,
+      "frontchannelLogout":        true,
+      "redirectUris": [
+        "http://localhost:5173/callback",
+        "http://localhost:5173/*"
+      ],
+      "webOrigins": [
+        "http://localhost:5173",
+        "+"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      },
+      "protocolMappers": [
+        {
+          "name":             "realm-roles",
+          "protocol":         "openid-connect",
+          "protocolMapper":   "oidc-usermodel-realm-role-mapper",
+          "consentRequired":  false,
+          "config": {
+            "multivalued":          "true",
+            "userinfo.token.claim": "false",
+            "id.token.claim":       "false",
+            "access.token.claim":   "true",
+            "claim.name":           "realm_roles",
+            "jsonType.label":       "String"
+          }
+        },
+        {
+          "name":             "tenant-id",
+          "protocol":         "openid-connect",
+          "protocolMapper":   "oidc-usermodel-attribute-mapper",
+          "consentRequired":  false,
+          "config": {
+            "user.attribute":       "tenant_id",
+            "claim.name":           "tenant_id",
+            "jsonType.label":       "String",
+            "userinfo.token.claim": "true",
+            "id.token.claim":       "true",
+            "access.token.claim":   "true"
+          }
+        }
+      ]
+    },
+    {
+      "clientId":              "srs-portal",
+      "name":                  "SRS Student Portal",
+      "description":           "Revelation SRS student-facing portal (PKCE public client)",
+      "enabled":               true,
+      "publicClient":          true,
+      "standardFlowEnabled":   true,
+      "implicitFlowEnabled":   false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled":    false,
+      "frontchannelLogout":        true,
+      "redirectUris": [
+        "http://localhost:5174/callback",
+        "http://localhost:5174/*"
+      ],
+      "webOrigins": [
+        "http://localhost:5174",
+        "+"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      },
+      "protocolMappers": [
+        {
+          "name":             "realm-roles",
+          "protocol":         "openid-connect",
+          "protocolMapper":   "oidc-usermodel-realm-role-mapper",
+          "consentRequired":  false,
+          "config": {
+            "multivalued":          "true",
+            "userinfo.token.claim": "false",
+            "id.token.claim":       "false",
+            "access.token.claim":   "true",
+            "claim.name":           "realm_roles",
+            "jsonType.label":       "String"
+          }
+        },
+        {
+          "name":             "tenant-id",
+          "protocol":         "openid-connect",
+          "protocolMapper":   "oidc-usermodel-attribute-mapper",
+          "consentRequired":  false,
+          "config": {
+            "user.attribute":       "tenant_id",
+            "claim.name":           "tenant_id",
+            "jsonType.label":       "String",
+            "userinfo.token.claim": "true",
+            "id.token.claim":       "true",
+            "access.token.claim":   "true"
+          }
+        }
+      ]
+    }
+  ],
+
+  "users": [
+    {
+      "username":    "admin",
+      "email":       "admin@srs.example.com",
+      "firstName":   "SRS",
+      "lastName":    "Administrator",
+      "enabled":     true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type":      "password",
+          "value":     "admin",
+          "temporary": false
+        }
+      ],
+      "attributes": {
+        "tenant_id": ["00000000-0000-0000-0000-000000000001"]
+      },
+      "realmRoles": [
+        "registry-administrator",
+        "tenant-administrator",
+        "system-administrator"
+      ]
+    }
+  ]
+}
