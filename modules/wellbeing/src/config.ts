@@ -23,7 +23,7 @@ function optionalInt(name: string, defaultValue: number): number {
 
 export function loadConfig(): Config {
   return {
-    port:            optionalInt('PORT', 3001),
+    port:            optionalInt('WELLBEING_PORT', 3002),
     logLevel:        process.env['LOG_LEVEL'] ?? 'info',
     nodeEnv:         process.env['NODE_ENV'] ?? 'development',
     databaseUrl:     required('DATABASE_URL'),
