@@ -1,0 +1,114 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Staging overlay — production-equivalent configuration with reduced replicas.
+# OpenBao agent injection is active (same as production).
+# Uses staging-specific hostnames and a pinned release candidate image tag.
+
+bases:
+  - ../../base
+
+namespace: revelation-srs-staging
+
+images:
+  - name: ghcr.io/revelation-srs/api
+    newTag: v1.0.0-rc.1
+  - name: ghcr.io/revelation-srs/portal
+    newTag: v1.0.0-rc.1
+  - name: ghcr.io/revelation-srs/admin
+    newTag: v1.0.0-rc.1
+  - name: ghcr.io/revelation-srs/worker
+    newTag: v1.0.0-rc.1
+  - name: ghcr.io/revelation-srs/vle-adapter
+    newTag: v1.0.0-rc.1
+  - name: ghcr.io/revelation-srs/wellbeing
+    newTag: v1.0.0-rc.1
+
+patches:
+  # Staging hostnames
+  - patch: |
+      apiVersion: networking.k8s.io/v1
+      kind: Ingress
+      metadata:
+        name: srs-ingress
+      spec:
+        tls:
+          - hosts:
+              - portal.staging.example.com
+              - admin.staging.example.com
+              - api.staging.example.com
+            secretName: srs-tls-staging
+        rules:
+          - host: portal.staging.example.com
+            http:
+              paths:
+                - path: /
+                  pathType: Prefix
+                  backend:
+                    service:
+                      name: srs-portal
+                      port:
+                        name: http
+          - host: admin.staging.example.com
+            http:
+              paths:
+                - path: /
+                  pathType: Prefix
+                  backend:
+                    service:
+                      name: srs-admin
+                      port:
+                        name: http
+          - host: api.staging.example.com
+            http:
+              paths:
+                - path: /
+                  pathType: Prefix
+                  backend:
+                    service:
+                      name: srs-api
+                      port:
+                        name: http
+
+  # Staging ALLOWED_ORIGINS
+  - patch: |
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: srs-api-config
+      data:
+        ALLOWED_ORIGINS: "https://portal.staging.example.com,https://admin.staging.example.com"
+
+  # Staging: 2 API replicas (same as production floor)
+  - patch: |
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: srs-api
+      spec:
+        replicas: 2
+
+  # Staging: 1 replica for frontends (cost saving)
+  - patch: |
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: srs-portal
+      spec:
+        replicas: 1
+  - patch: |
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: srs-admin
+      spec:
+        replicas: 1
+
+  # NATS single-node for staging
+  - patch: |
+      apiVersion: apps/v1
+      kind: StatefulSet
+      metadata:
+        name: srs-nats
+      spec:
+        replicas: 1

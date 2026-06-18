@@ -19,6 +19,7 @@
  * 12. Mandatory controls (record lock, ratification) are service-enforced
  *     independently of flag state.
  */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call */
 
 import { sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -112,7 +113,7 @@ describe('Stage 6 — Flag governance', () => {
       headers: { authorization: `Bearer ${token}` },
     });
     expect(listRes.statusCode).toBe(200);
-    const flags = listRes.json() as Array<Record<string, unknown>>;
+    const flags = listRes.json();
     const flag = flags.find((f) => f['flagKey'] === 'exam-board.quorum.required');
     expect(flag).toBeDefined();
 
@@ -122,7 +123,7 @@ describe('Stage 6 — Flag governance', () => {
       headers: { authorization: `Bearer ${token}` },
     });
     expect(getRes.statusCode).toBe(200);
-    const body = getRes.json() as Record<string, unknown>;
+    const body = getRes.json();
 
     expect(body['flagClassCode']).toBe('environment-safety');
     expect(body['riskClassCode']).toBe('high');
@@ -143,7 +144,7 @@ describe('Stage 6 — Flag governance', () => {
       headers: { authorization: `Bearer ${token}` },
     });
     expect(res.statusCode).toBe(200);
-    const flags = res.json() as Array<Record<string, unknown>>;
+    const flags = res.json();
     expect(flags.length).toBeGreaterThan(0);
 
     for (const flag of flags) {
@@ -165,7 +166,7 @@ describe('Stage 6 — Flag governance', () => {
       url: '/api/v1/feature-flags',
       headers: { authorization: `Bearer ${token}` },
     });
-    const flags = listRes.json() as Array<{ featureFlagId: string; flagKey: string }>;
+    const flags = listRes.json();
     const quorumFlag = flags.find((f) => f.flagKey === 'exam-board.quorum.required');
     expect(quorumFlag).toBeDefined();
 
@@ -194,7 +195,7 @@ describe('Stage 6 — Flag governance', () => {
       url: '/api/v1/feature-flags',
       headers: { authorization: `Bearer ${token}` },
     });
-    const flags = listRes.json() as Array<{ featureFlagId: string; flagKey: string }>;
+    const flags = listRes.json();
     const eeFlag = flags.find((f) => f.flagKey === 'exam-board.external-examiner.required');
     expect(eeFlag).toBeDefined();
 
@@ -222,7 +223,7 @@ describe('Stage 6 — Flag governance', () => {
       url: '/api/v1/feature-flags',
       headers: { authorization: `Bearer ${token}` },
     });
-    const flags = listRes.json() as Array<{ featureFlagId: string; flagKey: string }>;
+    const flags = listRes.json();
     const quorumFlag = flags.find((f) => f.flagKey === 'exam-board.quorum.required');
     expect(quorumFlag).toBeDefined();
 
@@ -250,7 +251,7 @@ describe('Stage 6 — Flag governance', () => {
       url: '/api/v1/feature-flags',
       headers: { authorization: `Bearer ${token}` },
     });
-    const flags = listRes.json() as Array<{ featureFlagId: string; flagKey: string }>;
+    const flags = listRes.json();
     const casFlag = flags.find((f) => f.flagKey === 'admissions.cas-precheck.required');
     expect(casFlag).toBeDefined();
 
@@ -278,7 +279,7 @@ describe('Stage 6 — Flag governance', () => {
       url: '/api/v1/feature-flags',
       headers: { authorization: `Bearer ${token}` },
     });
-    const flags = listRes.json() as Array<{ featureFlagId: string; flagKey: string }>;
+    const flags = listRes.json();
     const emailFlag = flags.find((f) => f.flagKey === 'communications.channel.email.enabled');
     expect(emailFlag).toBeDefined();
 
@@ -303,7 +304,7 @@ describe('Stage 6 — Flag governance', () => {
       url: `/api/v1/feature-flags/${emailFlag!.featureFlagId}`,
       headers: { authorization: `Bearer ${token}` },
     });
-    const body = getRes.json() as Record<string, unknown>;
+    const body = getRes.json();
     expect(body['ownerContact']).toBe('communications-team@university.ac.uk');
     expect(body['reviewDate']).toBe('2027-01-31');
     expect(body['retirementCondition']).toMatch(/CRM handoff/);
@@ -320,7 +321,7 @@ describe('Stage 6 — Flag governance', () => {
       url: '/api/v1/feature-flags',
       headers: { authorization: `Bearer ${adminToken}` },
     });
-    const flags = listRes.json() as Array<{ featureFlagId: string; flagKey: string }>;
+    const flags = listRes.json();
     const flag = flags[0]!;
 
     const res = await ctx.app.inject({
@@ -344,7 +345,7 @@ describe('Stage 6 — Flag governance', () => {
       url: '/api/v1/feature-flags',
       headers: { authorization: `Bearer ${adminToken}` },
     });
-    const flags = listRes.json() as Array<{ featureFlagId: string; flagKey: string }>;
+    const flags = listRes.json();
     const flag = flags[0]!;
 
     const res = await ctx.app.inject({
@@ -369,7 +370,7 @@ describe('Stage 6 — Flag governance', () => {
       url: '/api/v1/feature-flags',
       headers: { authorization: `Bearer ${token}` },
     });
-    const flags = listRes.json() as Array<{ featureFlagId: string; flagKey: string }>;
+    const flags = listRes.json();
     const emailFlag = flags.find((f) => f.flagKey === 'communications.channel.email.enabled');
     expect(emailFlag).toBeDefined();
 
@@ -379,7 +380,7 @@ describe('Stage 6 — Flag governance', () => {
       headers: { authorization: `Bearer ${token}` },
     });
     expect(res.statusCode).toBe(200);
-    const body = res.json() as Record<string, unknown>;
+    const body = res.json();
     expect(body['activeAssignmentCount']).toBe(0);
     expect(body['activeTenantIds']).toHaveLength(0);
     expect(body['currentDefaultVariantKey']).toBe('off');
@@ -397,7 +398,7 @@ describe('Stage 6 — Flag governance', () => {
       url: '/api/v1/feature-flags',
       headers: { authorization: `Bearer ${adminToken}` },
     });
-    const flags = listRes.json() as Array<{ featureFlagId: string; flagKey: string }>;
+    const flags = listRes.json();
     const admFlag = flags.find((f) => f.flagKey === 'admissions.enabled');
     expect(admFlag).toBeDefined();
 
@@ -421,7 +422,7 @@ describe('Stage 6 — Flag governance', () => {
       headers: { authorization: `Bearer ${readToken}` },
     });
     expect(impactRes.statusCode).toBe(200);
-    const impact = impactRes.json() as Record<string, unknown>;
+    const impact = impactRes.json();
     expect(impact['activeAssignmentCount']).toBeGreaterThanOrEqual(1);
     expect(impact['activeTenantsCount']).toBeGreaterThanOrEqual(1);
     expect(impact['activeTenantIds']).toContain(ctx.tenantId);

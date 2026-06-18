@@ -14,14 +14,15 @@
  * If these tests fail after adding or changing event payload types, re-run:
  *   pnpm --filter @revelation-srs/domain generate:schemas
  */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call */
 import { readFile, readdir } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import Ajv from 'ajv';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-
+import { beforeAll, describe, expect, it } from 'vitest';
 import { EVENT_TYPES } from '@revelation-srs/domain';
+
 import {
   PUBLISHED_EVENTS,
   INTERNAL_EVENTS,
@@ -228,7 +229,7 @@ describe('Stage 2 — schema file structure', () => {
 
   it('all 46 domain-specific schema files exist on disk', async () => {
     const found = await readdir(SCHEMA_ROOT, { recursive: true });
-    const jsonFiles = found.filter(f => (f as string).endsWith('v1.json') && f !== 'envelope.v1.json');
+    const jsonFiles = found.filter(f => (f).endsWith('v1.json') && f !== 'envelope.v1.json');
     expect(jsonFiles.length).toBe(46);
   });
 });

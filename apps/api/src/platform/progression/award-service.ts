@@ -19,6 +19,7 @@ import type { AwardConferredV1Payload } from '@revelation-srs/domain';
 import type { IntegrationBusPublisher } from '../integration-bus/publisher.js';
 import type { EnrolmentService } from '../enrolment/service.js';
 import type { RulesEngine } from '../rules-engine/engine.js';
+import { clockNow } from '../clock.js';
 
 // ── DTOs ─────────────────────────────────────────────────────────────────────
 
@@ -123,7 +124,7 @@ export class AwardService {
       throw new ValidationError(`Enrolment '${enrolmentId}' already has a conferred award`);
     }
 
-    const now   = new Date();
+    const now   = clockNow();
     const awardId = randomUUID();
 
     await withTenantContext(this.db, tenantId, async (tx) => {

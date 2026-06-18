@@ -2,13 +2,14 @@
   "name": "@revelation-srs/domain",
   "version": "0.0.1",
   "private": true,
+  "license": "AGPL-3.0-or-later",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": { ".": { "import": "./dist/index.js", "types": "./dist/index.d.ts" } },
   "scripts": {
     "build":            "tsc -p tsconfig.json",
-    "typecheck":        "tsc -b tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
     "dev":              "tsc -p tsconfig.json --watch",
     "generate:schemas": "tsx scripts/generate-event-schemas.ts"
   },

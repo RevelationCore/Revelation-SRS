@@ -8,5 +8,17 @@ export default defineConfig({
     include:     ['test/**/*.test.ts'],
     exclude:     ['test/**/*.int.test.ts', 'node_modules/**'],
     reporters:   ['verbose'],
+    coverage: {
+      provider:          'istanbul',
+      reporter:          ['text', 'lcov', 'html'],
+      reportsDirectory:  'coverage',
+      include:           ['src/platform/**/*.ts'],
+      exclude:           ['src/platform/clock.ts', 'src/**/*.d.ts'],
+      thresholds: {
+        lines:     70,
+        functions: 70,
+        branches:  65,
+      },
+    },
   },
 });

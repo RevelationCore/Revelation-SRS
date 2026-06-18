@@ -7,6 +7,7 @@ import { wellbeingCases } from '../db/schema/wellbeing-case.js';
 
 // ── Route plugin ──────────────────────────────────────────────────────────────
 
+// eslint-disable-next-line @typescript-eslint/require-await
 export async function adminRetentionRoutes(fastify: FastifyInstance): Promise<void> {
 
   // ── PATCH /api/v1/admin/retention/wellbeing-cases/:caseId ────────────────

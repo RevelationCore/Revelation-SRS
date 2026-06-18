@@ -4,6 +4,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { SrsAdjustmentStubClient } from '../src/srs/srs-adjustment-client.js';
 import { withWellbeingTenantContext } from '../src/db/client.js';
 import { upsertProjection } from '../src/repositories/projection-repository.js';
+
 import { startTestApp, type TestWellbeingApp } from './helpers/test-db.js';
 
 // ── Test fixtures ─────────────────────────────────────────────────────────────

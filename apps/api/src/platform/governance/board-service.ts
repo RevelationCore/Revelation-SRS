@@ -38,6 +38,7 @@ import type { AwardService } from '../progression/award-service.js';
 import type { IntegrationBusPublisher } from '../integration-bus/publisher.js';
 import type { FeatureFlagService } from '../platform-controls/feature-flag-service.js';
 import type { ValueSetService } from '../value-sets/service.js';
+import { clockNow } from '../clock.js';
 
 export interface DeferBoardInput {
   reason?: string;
@@ -171,7 +172,7 @@ export class BoardService {
         meetingDate: input.meetingDate ?? null,
         ratifiedAt: null,
         actorId,
-        createdAt: new Date(),
+        createdAt: clockNow(),
       }).returning({ id: examBoards.id }),
     );
 
@@ -193,7 +194,7 @@ export class BoardService {
       );
     }
 
-    const sourceTransactionTime = new Date();
+    const sourceTransactionTime = clockNow();
     const dataPackId = randomUUID();
     const candidates = await this.#buildCandidateProfiles(board, tenantId, sourceTransactionTime);
     let packVersion = 1;
@@ -304,7 +305,7 @@ export class BoardService {
         examBoardId: examBoardId as `${string}-${string}-${string}-${string}-${string}`,
         actorId,
         roleCode,
-        attendedAt: new Date(),
+        attendedAt: clockNow(),
       }).returning({ id: examBoardMemberAttendance.id }),
     );
     return rows[0]!.id;
@@ -319,7 +320,7 @@ export class BoardService {
         examBoardId: examBoardId as `${string}-${string}-${string}-${string}-${string}`,
         actorId,
         commentary: commentary ?? null,
-        signedOffAt: new Date(),
+        signedOffAt: clockNow(),
       }).returning({ id: externalExaminerSignoffs.id }),
     );
     return rows[0]!.id;
@@ -348,7 +349,7 @@ export class BoardService {
 
     await withTenantContext(this.db, tenantId, async (tx) => {
       await tx.update(examBoards)
-        .set({ deferredAt: new Date(), deferralReason: input.reason ?? null })
+        .set({ deferredAt: clockNow(), deferralReason: input.reason ?? null })
         .where(and(
           eq(examBoards.id, examBoardId as `${string}-${string}-${string}-${string}-${string}`),
           eq(examBoards.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
@@ -356,7 +357,7 @@ export class BoardService {
     });
   }
 
-  async reopenBoard(examBoardId: string, tenantId: string, actorId: string): Promise<void> {
+  async reopenBoard(examBoardId: string, tenantId: string, _actorId: string): Promise<void> {
     const board = await this.#getBoard(examBoardId, tenantId);
     if (board.ratifiedAt) {
       throw new ValidationError('A ratified board cannot be re-opened', [
@@ -379,7 +380,7 @@ export class BoardService {
     });
   }
 
-  async recordQuorum(examBoardId: string, tenantId: string, memberCount: number, actorId: string): Promise<void> {
+  async recordQuorum(examBoardId: string, tenantId: string, memberCount: number, _actorId: string): Promise<void> {
     const board = await this.#getBoard(examBoardId, tenantId);
     if (board.ratifiedAt) {
       throw new ValidationError('Quorum cannot be recorded on a ratified board', [
@@ -394,7 +395,7 @@ export class BoardService {
 
     await withTenantContext(this.db, tenantId, async (tx) => {
       await tx.update(examBoards)
-        .set({ quorumCount: memberCount, quorumRecordedAt: new Date() })
+        .set({ quorumCount: memberCount, quorumRecordedAt: clockNow() })
         .where(and(
           eq(examBoards.id, examBoardId as `${string}-${string}-${string}-${string}-${string}`),
           eq(examBoards.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
@@ -442,7 +443,7 @@ export class BoardService {
     const moduleRegistrationIds = coveredResults.map((result) => result.moduleRegistrationId);
     const coveredProgressionDecisions = await this.#getCoveredProgressionDecisions(board, tenantId);
     const progressionDecisionIds = coveredProgressionDecisions.map((decision) => decision.progressionDecisionId);
-    const ratifiedAt = new Date();
+    const ratifiedAt = clockNow();
     let lockedMarkCount = 0;
     let lockedProgressionCount = 0;
 

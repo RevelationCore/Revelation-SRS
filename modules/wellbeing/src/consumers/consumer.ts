@@ -16,7 +16,7 @@ import type { ConsumerMessages, JetStreamClient, JetStreamManager, NatsConnectio
 import { AckPolicy, connect, DeliverPolicy, JSONCodec, ReplayPolicy } from 'nats';
 import type { Logger } from 'pino';
 
-import type { WellbeingDb } from '../db/client.js';
+import type { WellbeingDb, WellbeingTx } from '../db/client.js';
 import { withWellbeingTenantContext } from '../db/client.js';
 import { CONSUMER_GROUP, isAlreadyProcessed, markProcessed } from '../repositories/event-log-repository.js';
 import {
@@ -182,10 +182,10 @@ export class WellbeingEventConsumer {
 // ── Handler router ────────────────────────────────────────────────────────────
 
 export async function routeToHandler(
-  tx:       import('../db/client.js').WellbeingTx,
+  tx:       WellbeingTx,
   envelope: DomainEventEnvelope<unknown>,
 ): Promise<void> {
-  /* eslint-disable @typescript-eslint/no-explicit-any */
+  /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument */
   switch (envelope.type) {
     case EVENT_TYPES.STUDENT_ENROLLED:
       return handleStudentEnrolled(tx, envelope as DomainEventEnvelope<any>);

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { randomUUID } from 'node:crypto';
 
 import { sql } from 'drizzle-orm';

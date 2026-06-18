@@ -11,6 +11,7 @@ import {
 import { NotFoundError, ValidationError } from '@revelation-srs/domain';
 
 import type { ValueSetService } from '../value-sets/service.js';
+import { clockNow } from '../clock.js';
 
 export interface FoiRequestInput {
   requestReference: string;
@@ -65,14 +66,14 @@ export class FoiService {
   async recordRequest(
     tenantId: string,
     input: FoiRequestInput,
-    actorId: string,
+    _actorId: string,
   ): Promise<{ requestId: string; statutoryDeadlineDate: string }> {
     if (!input.requestReference.trim()) throw new ValidationError('FOI request reference is required');
     if (!input.description.trim()) throw new ValidationError('FOI request description is required');
     const receivedDate = parseIsoDate(input.receivedDate, 'receivedDate');
     const statutoryDeadlineDate = addWorkingDays(receivedDate, 20);
     const requestId = randomUUID();
-    const now = new Date();
+    const now = clockNow();
 
     await withTenantContext(this.db, tenantId, async (tx) => {
       await tx.insert(foiRequests).values({
@@ -115,7 +116,7 @@ export class FoiService {
       requestId,
       requestReference: request.requestReference,
       querySummary,
-      generatedAt: new Date().toISOString(),
+      generatedAt: clockNow().toISOString(),
       piiIncluded: includePii,
       aggregates: aggregateRows.map((row) => ({
         academicYear: row.academic_year,
@@ -141,7 +142,7 @@ export class FoiService {
       ? piiRows.length
       : aggregateRows.reduce((sum, row) => sum + toNumber(row.enrolment_count), 0);
     const extractId = randomUUID();
-    const generatedAt = new Date();
+    const generatedAt = clockNow();
 
     await withTenantContext(this.db, tenantId, async (tx) => {
       await tx.insert(foiExtracts).values({
@@ -171,11 +172,11 @@ export class FoiService {
     requestId: string,
     tenantId: string,
     statusCode: string,
-    actorId: string,
+    _actorId: string,
   ): Promise<FoiRequestDto> {
     await this.#validateStatus(tenantId, statusCode);
     const current = await this.#requireRequest(requestId, tenantId);
-    const now = new Date();
+    const now = clockNow();
     const closedAt = statusCode === 'responded' || statusCode === 'refused'
       ? now
       : current.closedAt;
@@ -232,7 +233,7 @@ export class FoiService {
     );
 
     const dueDate = typeof filters.dueWithinDays === 'number'
-      ? addDays(new Date(), filters.dueWithinDays)
+      ? addDays(clockNow(), filters.dueWithinDays)
       : null;
     return rows
       .filter((row) => !dueDate || parseIsoDate(row.statutoryDeadlineDate, 'statutoryDeadlineDate') <= dueDate)

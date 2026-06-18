@@ -400,7 +400,7 @@ describe('Stage 8 — Clean Architecture Acceptance Review', () => {
   describe('tenant isolation', () => {
     it('feature flag assignments created in tenant A are not visible to tenant B', async () => {
       const tokenA = await ctx.makeJwt({ roles: ['tenant-administrator'], tenantId: ctx.tenantId });
-      const tokenB = await ctx.makeJwt({ roles: ['tenant-administrator'], tenantId: ctx.secondTenantId });
+      const _tokenB = await ctx.makeJwt({ roles: ['tenant-administrator'], tenantId: ctx.secondTenantId });
 
       // Get a flag that is not environment-safety (so tenant-admin can assign)
       const listRes = await ctx.app.inject({

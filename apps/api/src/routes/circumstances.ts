@@ -95,7 +95,69 @@ const MisconductBody = Type.Object({
   }))),
 });
 
+// ── Student-facing EC submission (R-API-003) ──────────────────────────────────
+
+const EcSubmissionBody = Type.Object({
+  enrolmentId:     Type.String({ minLength: 1 }),
+  description:     Type.String({ minLength: 1, maxLength: 4000 }),
+  moduleOfferingId: Type.Optional(Type.String()),
+});
+
 export function circumstancesRoutes(fastify: FastifyInstance): void {
+  fastify.post(
+    '/exceptional-circumstances/submissions',
+    {
+      schema: {
+        security: [{ bearerAuth: [] }],
+        body: EcSubmissionBody,
+        response: {
+          201: Type.Object({ exceptionalCircumstancesId: Type.String() }),
+          403: ErrorSchema,
+          422: ErrorSchema,
+        },
+        description: 'Student self-service EC submission (sets outcome to pending, determination date to today)',
+      },
+      preHandler: [requirePermission('circumstances:submit')],
+    },
+    async (request, reply) => {
+      const personId = request.user.sub;
+      const body = request.body as {
+        enrolmentId: string;
+        description: string;
+        moduleOfferingId?: string;
+      };
+
+      const input: RecordExceptionalCircumstancesInput = {
+        enrolmentId:       body.enrolmentId,
+        outcomeCode:       'pending',
+        determinationDate: new Date().toISOString().slice(0, 10),
+        notes:             body.description,
+        ...(body.moduleOfferingId !== undefined ? { moduleOfferingId: body.moduleOfferingId } : {}),
+      };
+
+      const exceptionalCircumstancesId =
+        await fastify.exceptionalCircumstancesService.recordExceptionalCircumstances(
+          request.tenantId,
+          personId,
+          input,
+          personId,
+        );
+
+      await fastify.audit.record({
+        tenantId:         request.tenantId,
+        entityType:       'exceptional_circumstances',
+        entityId:         exceptionalCircumstancesId,
+        actionType:       'create',
+        actorType:        'user',
+        actorId:          personId,
+        actorDisplayName: request.user.displayName,
+        correlationId:    request.id,
+      });
+
+      await reply.code(201).send({ exceptionalCircumstancesId });
+    },
+  );
+
   fastify.post(
     '/students/:personId/exceptional-circumstances',
     {

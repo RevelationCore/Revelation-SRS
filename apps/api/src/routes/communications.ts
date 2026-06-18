@@ -4,8 +4,10 @@ import type { FastifyInstance } from 'fastify';
 
 import type {
   ChannelCode,
+  CommunicationTemplateDto,
   CreateCommunicationTemplateInput,
   DispatchCommunicationInput,
+  DispatchLogEntryDto,
 } from '../platform/communications/communication-service.js';
 
 const ErrorSchema = Type.Object({
@@ -186,10 +188,10 @@ export function communicationRoutes(fastify: FastifyInstance): void {
   );
 }
 
-function templateToWire(t: Parameters<typeof templateToWire>[0]) {
+function templateToWire(t: CommunicationTemplateDto) {
   return { ...t, createdAt: t.createdAt.toISOString() };
 }
 
-function logEntryToWire(e: Parameters<typeof logEntryToWire>[0]) {
+function logEntryToWire(e: DispatchLogEntryDto) {
   return { ...e, dispatchedAt: e.dispatchedAt.toISOString() };
 }

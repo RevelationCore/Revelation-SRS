@@ -1,0 +1,180 @@
+name: DAST — OWASP ZAP
+
+on:
+  # Run on demand or via the weekly security schedule
+  workflow_dispatch:
+  schedule:
+    # Weekly on Wednesday at 03:00 UTC (offset from CodeQL to avoid queue contention)
+    - cron: '0 3 * * 3'
+  # Final production-shaped DAST pass on release tags (NFR-SEC-009 Stage 10 requirement)
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+-rc.[0-9]+'
+
+jobs:
+  zap-scan:
+    name: OWASP ZAP baseline scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents:      read
+      security-events: write
+      issues:        write
+
+    env:
+      API_URL: http://localhost:3000
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: pnpm --filter '@revelation-srs/*' build
+
+      - name: Start application stack
+        run: |
+          docker compose \
+            -f infra/compose/docker-compose.yml \
+            up -d --wait \
+            postgres nats keycloak
+        timeout-minutes: 5
+
+      - name: Run database migrations
+        run: pnpm --filter '@revelation-srs/api' db:migrate
+        env:
+          DATABASE_URL: postgresql://srs:srs@localhost:5432/srs
+
+      - name: Start API server
+        run: |
+          pnpm --filter '@revelation-srs/api' start &
+          # Wait for the health endpoint to respond before running ZAP
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:3000/health && break
+            sleep 2
+          done
+        env:
+          DATABASE_URL:     postgresql://srs:srs@localhost:5432/srs
+          NATS_URL:         nats://localhost:4222
+          JWT_SECRET:       zap-dast-secret
+          NODE_ENV:         production
+          LOG_LEVEL:        warn
+          CORS_ORIGINS:     http://localhost:5173
+
+      - name: Fetch OpenAPI spec
+        run: |
+          curl -sf http://localhost:3000/api/v1/openapi.json -o /tmp/openapi.json
+          echo "OpenAPI spec fetched ($(wc -c < /tmp/openapi.json) bytes)"
+
+      - name: Run OWASP ZAP baseline scan
+        uses: zaproxy/action-baseline@v0.12.0
+        with:
+          target:           ${{ env.API_URL }}
+          rules_file_name:  infra/zap/rules.tsv
+          cmd_options:      '-I -j --openapi /tmp/openapi.json'
+          artifact_name:    zap-report
+
+      - name: Upload ZAP SARIF to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: results.sarif
+          category:   zap-dast
+
+  # -------------------------------------------------------------------------
+  # Stage 10 — Production-shaped K8s DAST final pass (NFR-SEC-009)
+  # Runs only on release and RC tags. Uses kind to deploy the Kustomize
+  # development overlay and runs OWASP ZAP against the deployed API.
+  # Any HIGH or CRITICAL finding blocks publication.
+  # -------------------------------------------------------------------------
+  zap-k8s-final:
+    name: OWASP ZAP — K8s production-shaped final pass
+    runs-on: ubuntu-latest
+    # Only run on release tags; skip on scheduled and manual runs
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents:        read
+      security-events: write
+      issues:          write
+
+    env:
+      API_URL: http://localhost:3000
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up kind (Kubernetes in Docker)
+        uses: helm/kind-action@v1
+        with:
+          cluster_name: srs-dast
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build API image and load into kind
+        run: |
+          docker build -f infra/docker/api/Dockerfile -t srs-api:dast .
+          kind load docker-image srs-api:dast --name srs-dast
+
+      - name: Apply Kustomize development overlay
+        run: |
+          # Patch image reference to use the locally loaded image
+          cd infra/k8s/overlays/development
+          kustomize edit set image srs-api=srs-api:dast
+          kubectl apply -k .
+          kubectl rollout status deployment/srs-api --timeout=120s
+
+      - name: Port-forward API service
+        run: |
+          kubectl port-forward svc/srs-api 3000:3000 &
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:3000/health && break
+            sleep 3
+          done
+
+      - name: Fetch OpenAPI spec
+        run: |
+          curl -sf http://localhost:3000/api/v1/openapi.json -o /tmp/openapi.json
+          echo "OpenAPI spec fetched ($(wc -c < /tmp/openapi.json) bytes)"
+
+      - name: Run OWASP ZAP full scan (K8s final pass)
+        uses: zaproxy/action-full-scan@v0.10.0
+        with:
+          target:          ${{ env.API_URL }}
+          rules_file_name: infra/zap/rules.tsv
+          cmd_options:     '-I -j --openapi /tmp/openapi.json'
+          artifact_name:   zap-k8s-report
+          fail_action:     true
+
+      - name: Upload K8s DAST SARIF to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: results.sarif
+          category:   zap-dast-k8s

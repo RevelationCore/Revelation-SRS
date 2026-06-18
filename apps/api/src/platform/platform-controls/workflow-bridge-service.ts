@@ -22,6 +22,7 @@ import { and, eq } from 'drizzle-orm';
 
 import type { AuditService } from '../audit/service.js';
 import type { IntegrationBusPublisher } from '../integration-bus/publisher.js';
+import { clockNow } from '../clock.js';
 
 export class WorkflowBridgeService implements WorkflowActivities {
   constructor(
@@ -97,7 +98,7 @@ export class WorkflowBridgeService implements WorkflowActivities {
       workflowInstanceId: input.workflowInstanceId,
       workflowType: 'generic',
       event: 'task-assigned',
-      occurredAt: new Date().toISOString(),
+      occurredAt: clockNow().toISOString(),
       metadata: { workflowTaskId, stepKey: input.stepKey },
     });
 
@@ -106,7 +107,7 @@ export class WorkflowBridgeService implements WorkflowActivities {
 
   async completeWorkflowTask(input: CompleteWorkflowTaskActivityInput): Promise<void> {
     const task = await this.#getTask(input.tenantId, input.workflowTaskId);
-    const now = new Date();
+    const now = clockNow();
     await withTenantContext(this.db, input.tenantId, async (tx) => {
       await tx.update(workflowTasks).set({
         statusCode: 'completed',
@@ -138,7 +139,7 @@ export class WorkflowBridgeService implements WorkflowActivities {
 
   async escalateWorkflowTask(input: EscalateWorkflowTaskActivityInput): Promise<void> {
     const task = await this.#getTask(input.tenantId, input.workflowTaskId);
-    const now = new Date();
+    const now = clockNow();
     await withTenantContext(this.db, input.tenantId, async (tx) => {
       await tx.update(workflowTasks).set({
         statusCode: 'escalated',
@@ -193,13 +194,13 @@ export class WorkflowBridgeService implements WorkflowActivities {
       workflowType: 'generic',
       event: 'decision-recorded',
       ...(input.actorId ? { actorId: input.actorId } : {}),
-      occurredAt: new Date().toISOString(),
+      occurredAt: clockNow().toISOString(),
       metadata: { gatewayKey: input.gatewayKey, decisionCode: input.decisionCode },
     });
   }
 
   async completeWorkflowInstance(input: CompleteWorkflowInstanceActivityInput): Promise<void> {
-    const now = new Date();
+    const now = clockNow();
     await withTenantContext(this.db, input.tenantId, async (tx) => {
       await tx.update(workflowInstances).set({
         statusCode: input.statusCode ?? 'completed',

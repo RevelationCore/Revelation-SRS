@@ -1,0 +1,21 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: revelation-srs
+
+resources:
+  - namespace.yaml
+  - api.yaml
+  - portal.yaml
+  - admin.yaml
+  - workers.yaml
+  - nats.yaml
+  - temporal.yaml
+  - openbao.yaml
+  - network-policies.yaml
+  - ingress.yaml
+  - observability.yaml
+
+commonLabels:
+  app.kubernetes.io/part-of: revelation-srs
+  app.kubernetes.io/managed-by: kustomize

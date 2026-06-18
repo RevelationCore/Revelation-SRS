@@ -2,6 +2,7 @@ import { Type } from '@sinclair/typebox';
 import { requirePermission } from '@revelation-srs/auth';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 
+import { clockNow } from '../platform/clock.js';
 import type {
   CreateModuleRegistrationInput,
   ModuleRegistrationDto,
@@ -212,7 +213,7 @@ export function moduleRegistrationsRoutes(fastify: FastifyInstance): void {
         moduleRegistrationId,
         request.tenantId,
         request.user.sub,
-        body.validFrom ? new Date(body.validFrom) : new Date(),
+        body.validFrom ? new Date(body.validFrom) : clockNow(),
       );
 
       await recordRegistrationStatusAudit(fastify, request, moduleRegistrationId, 'withdrawn');
@@ -237,7 +238,7 @@ export function moduleRegistrationsRoutes(fastify: FastifyInstance): void {
         moduleRegistrationId,
         request.tenantId,
         request.user.sub,
-        body.validFrom ? new Date(body.validFrom) : new Date(),
+        body.validFrom ? new Date(body.validFrom) : clockNow(),
       );
 
       await recordRegistrationStatusAudit(fastify, request, moduleRegistrationId, 'completed');

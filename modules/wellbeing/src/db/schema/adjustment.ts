@@ -1,4 +1,4 @@
-import { boolean, jsonb, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { boolean, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 
 import { w } from './wellbeing-case.js';
 

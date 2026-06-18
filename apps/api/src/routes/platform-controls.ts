@@ -2,6 +2,7 @@ import { requirePermission } from '@revelation-srs/auth';
 import { Type } from '@sinclair/typebox';
 import type { FastifyInstance } from 'fastify';
 
+import { clockNow } from '../platform/clock.js';
 import type {
   CreateFeatureFlagAssignmentInput,
   CreateFeatureFlagInput,
@@ -492,7 +493,7 @@ export function platformControlRoutes(fastify: FastifyInstance): void {
       workflowType: body.workflowCode,
       event: 'workflow-started',
       actorId: request.user.sub,
-      occurredAt: new Date().toISOString(),
+      occurredAt: clockNow().toISOString(),
       metadata: body.context ?? {},
     });
 

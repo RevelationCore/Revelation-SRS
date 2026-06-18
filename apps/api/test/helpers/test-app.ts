@@ -63,6 +63,12 @@ export async function startTestApp(opts: StartTestAppOptions = {}): Promise<Test
   await applyMigration(db, '0018_stage7_legacy_removal.sql');
   await applyMigration(db, '0019_phase7_integration_registry.sql');
   await applyMigration(db, '0020_phase7_contract_deprecation.sql');
+  await applyMigration(db, '0021_phase9_vle_contracts.sql');
+  await applyMigration(db, '0022_demo_tenant_mode.sql');
+  await applyMigration(db, '0023_demo_status_checkpoint.sql');
+  await applyMigration(db, '0024_phase11_performance_indexes.sql');
+  await applyMigration(db, '0025_phase11_retention_anonymisation.sql');
+  await applyMigration(db, '0026_phase11_notifications.sql');
 
   // Seed a tenant for tests
   const tenantId = '00000000-0000-0000-0000-000000000001';
@@ -86,7 +92,7 @@ export async function startTestApp(opts: StartTestAppOptions = {}): Promise<Test
     deploymentEnvironmentCode: 'test',
     releaseVersion:   '0.0.0-test',
     imageDigest:      undefined,
-    migrationVersion: '0020_phase7_contract_deprecation',
+    migrationVersion: '0026_phase11_notifications',
     jwtSecret:        JWT_SECRET,
     keycloakJwksUrl:  undefined,
     corsOrigins:      ['http://localhost:5173'],

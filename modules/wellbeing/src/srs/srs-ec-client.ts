@@ -72,6 +72,7 @@ export class SrsEcHttpClient implements SrsEcClient {
 export class SrsEcStubClient implements SrsEcClient {
   readonly submissions: SubmitEcInput[] = [];
 
+  // eslint-disable-next-line @typescript-eslint/require-await
   async submitEc(input: SubmitEcInput): Promise<SubmitEcResult> {
     this.submissions.push(input);
     return { exceptionalCircumstancesId: `stub-ec-${input.idempotencyKey}` };

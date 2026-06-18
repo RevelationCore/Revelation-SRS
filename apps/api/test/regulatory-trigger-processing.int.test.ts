@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import type { IntegrationBusPublisher } from '../src/platform/integration-bus/publisher.js';
+
 import { startTestApp, type TestApp } from './helpers/test-app.js';
 
 interface CapturedEvent {

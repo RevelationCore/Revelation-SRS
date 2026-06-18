@@ -41,10 +41,11 @@ export interface EdrmsAdapter {
  * Inject this via EdrmsAdapter in app.ts when EDRMS_URL is not configured.
  */
 export class EdrmsSimulator implements EdrmsAdapter {
+  // eslint-disable-next-line @typescript-eslint/require-await
   async registerDocument(
     tenantId: string,
     caseId:   string,
-    meta:     DocumentMetadata,
+    _meta:    DocumentMetadata,
   ): Promise<DocumentRegistration> {
     const suffix = Math.random().toString(36).slice(2, 10);
     const ref    = `sim-doc-${suffix}`;

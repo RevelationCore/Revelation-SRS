@@ -9,6 +9,7 @@ import {
 import { NotFoundError, ValidationError } from '@revelation-srs/domain';
 
 import type { ValueSetService } from '../value-sets/service.js';
+import { clockNow } from '../clock.js';
 
 export interface CreateAssessmentComponentInput {
   componentTypeCode: string;
@@ -56,7 +57,7 @@ export class AssessmentComponentService {
     await this.#validateComponentInput(tenantId, input);
     await this.#ensureWeightingCapacity(tenantId, moduleOfferingId, input.weighting);
 
-    const now = new Date();
+    const now = clockNow();
     const rows = await withTenantContext(this.db, tenantId, async (tx) =>
       tx
         .insert(assessmentComponents)
@@ -130,7 +131,7 @@ export class AssessmentComponentService {
           passMarkOverride: input.passMarkOverride === undefined
             ? (current.passMarkOverride?.toFixed(2) ?? null)
             : (input.passMarkOverride?.toFixed(2) ?? null),
-          updatedAt: new Date(),
+          updatedAt: clockNow(),
         })
         .where(
           and(

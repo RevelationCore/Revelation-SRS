@@ -25,6 +25,7 @@ import {
 import type { IntegrationBusPublisher } from '../integration-bus/publisher.js';
 import type { RulesEngine } from '../rules-engine/engine.js';
 import type { ValueSetService } from '../value-sets/service.js';
+import { clockNow } from '../clock.js';
 
 import { RegulatoryExchangeService } from './exchange-service.js';
 
@@ -152,7 +153,7 @@ export class UkviService {
   }
 
   async generateCasRequests(tenantId: string, actorId: string): Promise<UkviCasRequestGenerationResult> {
-    const now = new Date();
+    const now = clockNow();
     const rows = await this.#loadPendingCasSources(tenantId);
     const casRequests: UkviCasRequestGenerationResult['casRequests'] = [];
     const seenTriggers = new Set<string>();
@@ -235,7 +236,7 @@ export class UkviService {
 
     const current = await this.#getCasRequest(casRequestId, tenantId);
     if (!current) throw new NotFoundError('UKVI CAS request', casRequestId);
-    const now = new Date();
+    const now = clockNow();
 
     await withTenantContext(this.db, tenantId, async (tx) => {
       await tx
@@ -285,7 +286,7 @@ export class UkviService {
     academicPeriodId: string,
     actorId: string,
   ): Promise<{ reportId: string; payload: UkviAttendanceReportPayload }> {
-    const now = new Date();
+    const now = clockNow();
     const threshold = await this.#getAttendanceThreshold(tenantId);
     const sponsoredStudents = await this.#loadSponsoredStudents(tenantId);
     const students = sponsoredStudents.map((student) => {
@@ -364,7 +365,7 @@ export class UkviService {
     const casRequest = await this.#getCasRequestByReference(casReference, tenantId);
     if (!casRequest) throw new NotFoundError('UKVI CAS reference', casReference);
 
-    const now = new Date();
+    const now = clockNow();
     const visaStatusId = randomUUID();
     const rawPayload = update.rawPayload ?? { casReference, ...update };
 
@@ -429,7 +430,7 @@ export class UkviService {
     const threshold = await this.#getAttendanceThreshold(tenantId);
     const latestReport = await this.#loadLatestAttendanceReport(tenantId);
     const students = extractAttendanceStudents(latestReport?.report_payload);
-    const now = new Date();
+    const now = clockNow();
     let alertsRaised = 0;
 
     for (const student of students) {
@@ -450,7 +451,7 @@ export class UkviService {
   }
 
   async resolveComplianceAlert(alertId: string, tenantId: string, actorId: string): Promise<void> {
-    const now = new Date();
+    const now = clockNow();
     const updated = await withTenantContext(this.db, tenantId, async (tx) =>
       tx
         .update(ukviComplianceAlerts)

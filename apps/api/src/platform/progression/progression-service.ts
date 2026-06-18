@@ -18,6 +18,7 @@ import type { ProgressionDecidedV1Payload } from '@revelation-srs/domain';
 import { assertNotLocked } from '../assessment/lock.js';
 import type { IntegrationBusPublisher } from '../integration-bus/publisher.js';
 import type { RulesEngine } from '../rules-engine/engine.js';
+import { clockNow } from '../clock.js';
 
 export interface EvaluateProgressionInput {
   academicYear: string;
@@ -87,7 +88,7 @@ export class ProgressionService {
     const current = await this.#getCurrentDecision(enrolmentId, tenantId, academicYear);
     if (current) assertNotLocked(current, 'ProgressionDecision', current.progressionDecisionId);
 
-    const now = new Date();
+    const now = clockNow();
     const progressionDecisionId = current?.progressionDecisionId ?? randomUUID();
     const yearOfStudy = inferYearOfStudy(enrolment.academicYearOfEntry, academicYear);
 
@@ -166,7 +167,7 @@ export class ProgressionService {
     const current = rows[0] ? decisionToDto(rows[0]) : null;
     if (!current) throw new NotFoundError('ProgressionDecision', progressionDecisionId);
 
-    const now         = new Date();
+    const now         = clockNow();
     const decisionCode = patch.decisionCode ?? current.decisionCode;
 
     await withTenantContext(this.db, tenantId, async (tx) => {

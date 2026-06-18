@@ -1,0 +1,117 @@
+---
+# ── TLS certificate (cert-manager) ───────────────────────────────────────────
+# This Certificate resource requires cert-manager to be installed in the cluster.
+# Replace letsencrypt-prod with your ClusterIssuer name.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: srs-tls
+  namespace: revelation-srs
+spec:
+  secretName: srs-tls-secret
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+    - portal.example.com
+    - admin.example.com
+    - api.example.com
+    - temporal.example.com   # ops-only, locked down by ingress auth
+
+---
+# ── Main Ingress ──────────────────────────────────────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: srs-ingress
+  namespace: revelation-srs
+  annotations:
+    # TLS 1.2+ enforcement (NFR-SEC-001)
+    nginx.ingress.kubernetes.io/ssl-protocols: "TLSv1.2 TLSv1.3"
+    nginx.ingress.kubernetes.io/ssl-ciphers: "ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384"
+    # HTTP → HTTPS redirect
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    # CORS — the API handles CORS itself via ALLOWED_ORIGINS; do not set at ingress
+    # Proxy buffer tuning for SSE (notification stream)
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"   # keep SSE connections alive
+    # Security headers
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      more_set_headers "Strict-Transport-Security: max-age=31536000; includeSubDomains; preload";
+      more_set_headers "X-Frame-Options: DENY";
+      more_set_headers "X-Content-Type-Options: nosniff";
+      more_set_headers "Referrer-Policy: strict-origin-when-cross-origin";
+      more_set_headers "Permissions-Policy: camera=(), microphone=(), geolocation=()";
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - portal.example.com
+        - admin.example.com
+        - api.example.com
+      secretName: srs-tls-secret
+  rules:
+    - host: portal.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: srs-portal
+                port:
+                  name: http
+    - host: admin.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: srs-admin
+                port:
+                  name: http
+    - host: api.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: srs-api
+                port:
+                  name: http
+
+---
+# ── Temporal UI Ingress (ops access only — add IP allowlist in production) ────
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: srs-temporal-ui-ingress
+  namespace: revelation-srs
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-protocols: "TLSv1.2 TLSv1.3"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    # Restrict to operator IP range — override in overlays/production
+    nginx.ingress.kubernetes.io/whitelist-source-range: "10.0.0.0/8,172.16.0.0/12"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      more_set_headers "Strict-Transport-Security: max-age=31536000; includeSubDomains";
+      more_set_headers "X-Frame-Options: SAMEORIGIN";
+      more_set_headers "X-Content-Type-Options: nosniff";
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - temporal.example.com
+      secretName: srs-tls-secret
+  rules:
+    - host: temporal.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: srs-temporal-ui
+                port:
+                  name: http

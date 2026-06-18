@@ -1,3 +1,6 @@
+// OTel must be bootstrapped before any other import so instrumentation patches load first.
+import './telemetry.js';
+
 import { loadConfig } from './config.js';
 import { buildApp } from './app.js';
 

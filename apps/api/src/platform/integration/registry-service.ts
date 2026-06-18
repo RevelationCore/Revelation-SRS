@@ -8,6 +8,7 @@ import {
 } from '@revelation-srs/db';
 import { ConflictError, NotFoundError, ValidationError } from '@revelation-srs/domain';
 
+import { clockNow } from '../clock.js';
 import type { AuditService } from '../audit/service.js';
 import {
   assertIntegrationEndpointAllowed,
@@ -262,7 +263,7 @@ export class IntegrationRegistryService {
           ...(input.replaySupported !== undefined ? { replaySupported: input.replaySupported } : {}),
           ...(input.retryPolicy !== undefined ? { retryPolicy: input.retryPolicy } : {}),
           configuration: updatedConfiguration,
-          lastUpdatedAt: new Date(),
+          lastUpdatedAt: clockNow(),
         })
         .where(
           and(
@@ -302,13 +303,13 @@ export class IntegrationRegistryService {
     const updatedConfiguration = {
       ...current.configuration,
       lastEnabledBy: actorId,
-      lastEnabledAt: new Date().toISOString(),
+      lastEnabledAt: clockNow().toISOString(),
     };
 
     const rows = await withTenantContext(this.db, tenantId, async (tx) =>
       tx
         .update(integrationRegistrations)
-        .set({ enabled: true, configuration: updatedConfiguration, lastUpdatedAt: new Date() })
+        .set({ enabled: true, configuration: updatedConfiguration, lastUpdatedAt: clockNow() })
         .where(
           and(
             eq(integrationRegistrations.id, id),
@@ -339,13 +340,13 @@ export class IntegrationRegistryService {
     const updatedConfiguration = {
       ...current.configuration,
       lastDisabledBy: actorId,
-      lastDisabledAt: new Date().toISOString(),
+      lastDisabledAt: clockNow().toISOString(),
     };
 
     const rows = await withTenantContext(this.db, tenantId, async (tx) =>
       tx
         .update(integrationRegistrations)
-        .set({ enabled: false, configuration: updatedConfiguration, lastUpdatedAt: new Date() })
+        .set({ enabled: false, configuration: updatedConfiguration, lastUpdatedAt: clockNow() })
         .where(
           and(
             eq(integrationRegistrations.id, id),
@@ -371,7 +372,7 @@ export class IntegrationRegistryService {
   }
 
   async recordHealthCheck(id: string, tenantId: string, statusCode: string, actorId: string): Promise<RegistrationDto> {
-    const now = new Date();
+    const now = clockNow();
     const rows = await withTenantContext(this.db, tenantId, async (tx) =>
       tx
         .update(integrationRegistrations)
@@ -426,7 +427,7 @@ export class IntegrationRegistryService {
           idempotencyKey,
           statusCode: 'requested',
           attemptCount: 0,
-          lastAttemptAt: new Date(),
+          lastAttemptAt: clockNow(),
           sourceReference: fromDate.toISOString(),
           payloadSummary: { requestedBy: actorId, fromDate: fromDate.toISOString() },
         })

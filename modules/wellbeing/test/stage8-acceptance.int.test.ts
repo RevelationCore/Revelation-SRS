@@ -26,6 +26,7 @@ import type { SubmitEcInput, SubmitEcResult } from '../src/srs/srs-ec-client.js'
 import type { SrsEcClient } from '../src/srs/srs-ec-client.js';
 import { withWellbeingTenantContext } from '../src/db/client.js';
 import { upsertProjection } from '../src/repositories/projection-repository.js';
+
 import { startTestApp, type TestWellbeingApp } from './helpers/test-db.js';
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -44,6 +45,7 @@ class ControllableSrsAdjustmentClient implements SrsAdjustmentClient {
   shouldFail  = false;
   submissions: SubmitAdjustmentInput[] = [];
 
+  // eslint-disable-next-line @typescript-eslint/require-await
   async submitAdjustment(input: SubmitAdjustmentInput): Promise<SubmitAdjustmentResult> {
     if (this.shouldFail) throw new Error('SRS temporarily unavailable (simulated)');
     this.submissions.push(input);
@@ -55,6 +57,7 @@ class ControllableSrsEcClient implements SrsEcClient {
   shouldFail  = false;
   submissions: SubmitEcInput[] = [];
 
+  // eslint-disable-next-line @typescript-eslint/require-await
   async submitEc(input: SubmitEcInput): Promise<SubmitEcResult> {
     if (this.shouldFail) throw new Error('SRS EC temporarily unavailable (simulated)');
     this.submissions.push(input);

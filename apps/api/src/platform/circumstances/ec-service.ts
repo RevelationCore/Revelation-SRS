@@ -16,6 +16,7 @@ import type {
 } from '@revelation-srs/domain';
 
 import type { IntegrationBusPublisher } from '../integration-bus/publisher.js';
+import { clockNow } from '../clock.js';
 
 export interface RecordExceptionalCircumstancesInput {
   enrolmentId: string;
@@ -63,7 +64,7 @@ export class ExceptionalCircumstancesService {
     if (input.moduleOfferingId) await this.#ensureModuleOfferingExists(input.moduleOfferingId, tenantId);
 
     const ecId = randomUUID();
-    const now = new Date();
+    const now = clockNow();
     await withTenantContext(this.db, tenantId, async (tx) => {
       await tx.insert(exceptionalCircumstances).values({
         versionId: randomUUID(),
@@ -108,7 +109,7 @@ export class ExceptionalCircumstancesService {
     const nextModuleOfferingId = input.moduleOfferingId === undefined ? current.moduleOfferingId : input.moduleOfferingId;
     if (nextModuleOfferingId) await this.#ensureModuleOfferingExists(nextModuleOfferingId, tenantId);
 
-    const now = new Date();
+    const now = clockNow();
     const nextOutcomeCode = input.outcomeCode ?? current.outcomeCode;
     await withTenantContext(this.db, tenantId, async (tx) => {
       await tx

@@ -223,6 +223,12 @@ describe('Adjustment events', () => {
     expect(isUuid(p['distributionId'])).toBe(true);
     expect(typeof p['targetSystem']).toBe('string');
     expect(typeof p['distributedAt']).toBe('string');
+    // Enriched fields — connectors must not need a REST round-trip to apply
+    expect(isUuid(p['personId'])).toBe(true);
+    expect(isUuid(p['enrolmentId'])).toBe(true);
+    expect(typeof p['adjustmentTypeCode']).toBe('string');
+    expect(typeof p['scopeCode']).toBe('string');
+    expect(typeof p['validFrom']).toBe('string');
   });
 
   it('expiring an adjustment publishes srs.adjustment.expired (sensitive)', async () => {

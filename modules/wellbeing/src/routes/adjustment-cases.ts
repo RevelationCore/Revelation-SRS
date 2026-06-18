@@ -24,6 +24,7 @@ import { appendAudit } from '../repositories/audit-log-repository.js';
 
 // ── Route plugin ──────────────────────────────────────────────────────────────
 
+// eslint-disable-next-line @typescript-eslint/require-await
 export async function adjustmentCaseRoutes(
   fastify: FastifyInstance,
   opts: { srsClient: SrsAdjustmentClient },

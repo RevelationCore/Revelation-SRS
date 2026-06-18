@@ -2,6 +2,7 @@
   "name": "@revelation-srs/testing",
   "version": "0.0.1",
   "private": true,
+  "license": "AGPL-3.0-or-later",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -13,7 +14,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "typecheck": "tsc -b tsconfig.json"
+    "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
     "@testcontainers/postgresql": "^12.0.1",
@@ -22,6 +23,6 @@
   "devDependencies": {
     "@revelation-srs/db": "workspace:*",
     "@types/node": "^22.0.0",
-    "typescript": "^5.5.0"
+    "typescript": "^6.0.0"
   }
 }

@@ -19,6 +19,7 @@ import type { AssessmentModuleResultCalculatedV1Payload } from '@revelation-srs/
 
 import type { IntegrationBusPublisher } from '../integration-bus/publisher.js';
 import type { RulesEngine } from '../rules-engine/engine.js';
+import { clockNow } from '../clock.js';
 
 import { assertNotLocked } from './lock.js';
 
@@ -74,7 +75,7 @@ export class ModuleResultService {
     );
     const resultCode = await this.#deriveResultCode(tenantId, registration, components, aggregateMark);
     const moduleResultId = current?.moduleResultId ?? randomUUID();
-    const now = new Date();
+    const now = clockNow();
 
     await withTenantContext(this.db, tenantId, async (tx) => {
       if (current) {
@@ -135,7 +136,7 @@ export class ModuleResultService {
     moduleResultId: string,
     tenantId: string,
     patch: { aggregateMark?: number; resultCode?: string },
-    actorId: string,
+    _actorId: string,
   ): Promise<ModuleResultDto> {
     const rows = await withTenantContext(this.db, tenantId, async (tx) =>
       tx.select().from(moduleResults).where(and(
@@ -147,7 +148,7 @@ export class ModuleResultService {
     const current = rows[0] ? moduleResultToDto(rows[0]) : null;
     if (!current) throw new NotFoundError('ModuleResult', moduleResultId);
 
-    const now = new Date();
+    const now = clockNow();
     const aggregateMark = patch.aggregateMark ?? current.aggregateMark;
     const resultCode    = patch.resultCode    ?? current.resultCode;
 

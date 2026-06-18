@@ -11,6 +11,7 @@ import { NotFoundError, ValidationError } from '@revelation-srs/domain';
 
 import type { FeatureFlagService } from '../platform-controls/feature-flag-service.js';
 import type { LocaleService } from '../globalisation/locale-service.js';
+import { clockNow } from '../clock.js';
 
 // ── DTOs ─────────────────────────────────────────────────────────────────────
 
@@ -119,7 +120,7 @@ export class CommunicationService {
         version:         1,
         active:          true,
         createdBy:       actorId,
-        createdAt:       new Date(),
+        createdAt:       clockNow(),
       }).returning(),
     );
 
@@ -318,7 +319,7 @@ export class CommunicationService {
           : null,
         statusCode:          entry.statusCode,
         suppressionReason:   entry.suppressionReason ?? null,
-        dispatchedAt:        new Date(),
+        dispatchedAt:        clockNow(),
         dispatchedBy:        entry.dispatchedBy,
       });
     });

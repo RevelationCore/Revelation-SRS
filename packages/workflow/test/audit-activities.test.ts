@@ -30,6 +30,7 @@ describe('workflow audit activities', () => {
     ]);
   });
 
+  // eslint-disable-next-line @typescript-eslint/require-await
   it('fails loudly when no audit writer is configured', async () => {
     expect(() => auditActivities.recordWorkflowEvent({
       workflowInstanceId: '00000000-0000-0000-0000-000000000001',

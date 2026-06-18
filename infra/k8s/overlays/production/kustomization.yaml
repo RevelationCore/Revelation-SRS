@@ -1,0 +1,126 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Production overlay — full replicas, production hostnames, pinned release tag.
+# Apply with:
+#   kubectl apply -k infra/k8s/overlays/production/
+#
+# Prerequisites:
+#   1. OpenBao initialised and policies applied (infra/scripts/apply-openbao-policies.sh)
+#   2. srs-nats-nkey Secret created (kubectl create secret generic srs-nats-nkey ...)
+#   3. srs-grafana-secret created
+#   4. cert-manager installed with letsencrypt-prod ClusterIssuer configured
+#   5. ingress-nginx installed
+#   6. Default StorageClass available for PVCs
+#   7. Temporal schema pre-created (or init container handles it on first deploy)
+
+bases:
+  - ../../base
+
+namespace: revelation-srs
+
+images:
+  - name: ghcr.io/revelation-srs/api
+    newTag: v1.0.0
+  - name: ghcr.io/revelation-srs/portal
+    newTag: v1.0.0
+  - name: ghcr.io/revelation-srs/admin
+    newTag: v1.0.0
+  - name: ghcr.io/revelation-srs/worker
+    newTag: v1.0.0
+  - name: ghcr.io/revelation-srs/vle-adapter
+    newTag: v1.0.0
+  - name: ghcr.io/revelation-srs/wellbeing
+    newTag: v1.0.0
+
+patches:
+  # Production API: 3 replicas floor; HPA scales to 10
+  - patch: |
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: srs-api
+      spec:
+        replicas: 3
+
+  # Production frontends: 2 replicas each
+  - patch: |
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: srs-portal
+      spec:
+        replicas: 2
+  - patch: |
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: srs-admin
+      spec:
+        replicas: 2
+
+  # Production workers: 3 replicas
+  - patch: |
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: srs-worker
+      spec:
+        replicas: 3
+
+  # NATS: 3-node cluster for production HA
+  - patch: |
+      apiVersion: apps/v1
+      kind: StatefulSet
+      metadata:
+        name: srs-nats
+      spec:
+        replicas: 3
+
+  # Production API resources: larger limits for peak load
+  - patch: |
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: srs-api
+      spec:
+        template:
+          spec:
+            containers:
+              - name: api
+                resources:
+                  requests:
+                    cpu: 500m
+                    memory: 512Mi
+                  limits:
+                    cpu: 2000m
+                    memory: 2Gi
+
+  # Production ALLOWED_ORIGINS — override with real hostnames
+  - patch: |
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: srs-api-config
+      data:
+        ALLOWED_ORIGINS: "https://portal.example.com,https://admin.example.com"
+
+  # Production Temporal UI: restrict IP allowlist to ops CIDR
+  - patch: |
+      apiVersion: networking.k8s.io/v1
+      kind: Ingress
+      metadata:
+        name: srs-temporal-ui-ingress
+        annotations:
+          nginx.ingress.kubernetes.io/whitelist-source-range: "10.0.0.0/8"
+
+  # Pod Disruption Budgets are added in production to protect HA
+  # (separate PDB manifests below via additional resources)
+
+additionalResources:
+  - pod-disruption-budgets.yaml
+
+---
+# pod-disruption-budgets.yaml (inlined as additional resource)
+# Note: must be in a separate file referenced by additionalResources above.
+# Content is shown here for documentation; create the file before applying.

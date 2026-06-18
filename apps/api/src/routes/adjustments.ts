@@ -120,6 +120,22 @@ export function adjustmentRoutes(fastify: FastifyInstance): void {
   );
 
   fastify.get(
+    '/adjustments/:adjustmentId',
+    {
+      schema: {
+        params: Type.Object({ adjustmentId: Type.String() }),
+        response: { 200: AdjustmentSchema, 404: ErrorSchema },
+      },
+      preHandler: [requirePermission('adjustment:read:all')],
+    },
+    async (request, reply) => {
+      const { adjustmentId } = request.params as { adjustmentId: string };
+      const adjustment = await fastify.adjustmentService.getAdjustment(adjustmentId, request.tenantId);
+      await reply.send(adjustmentToWire(adjustment));
+    },
+  );
+
+  fastify.get(
     '/adjustments/:adjustmentId/distributions',
     {
       schema: {

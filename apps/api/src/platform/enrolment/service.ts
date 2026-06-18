@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, eq, isNull, sql } from 'drizzle-orm';
 import {
   enrolmentDownstreamTriggers,
   enrolments,
@@ -23,6 +23,7 @@ import type { IntegrationBusPublisher } from '../integration-bus/publisher.js';
 import type { ValueSetService } from '../value-sets/service.js';
 import { TransitionValidator, type TransitionValidationResult } from '../workflow/transition-service.js';
 import { TriggerRuleEvaluator, type EnrolmentTriggerDecision } from '../workflow/trigger-rule-service.js';
+import { clockNow } from '../clock.js';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -111,6 +112,15 @@ export interface TransitionOptions {
   reasonText?: string;
 }
 
+export interface EnrolmentVolumesDto {
+  total:          number;
+  byStatus:       Record<string, number>;
+  byMode:         Record<string, number>;
+  byYearOfEntry:  Record<string, Record<string, number>>;
+  byProgramme:    { programmeId: string; count: number }[];
+  generatedAt:    Date;
+}
+
 // Valid status transitions
 const ALLOWED_TRANSITIONS: Record<EnrolmentStatusCode, EnrolmentStatusCode[]> = {
   enrolled:    ['intermitting', 'withdrawn', 'suspended', 'graduated'],
@@ -186,7 +196,7 @@ export class EnrolmentService {
     await this.#validateFieldValue(tenantId, 'enrolment', 'funding_source_code', input.fundingSourceCode);
 
     const enrolmentId = randomUUID();
-    const now         = new Date();
+    const now         = clockNow();
     const createdFeeLiabilityIds: string[] = [];
     const createdTriggers: Array<{ id: string; trigger: EnrolmentTriggerDecision }> = [];
     const triggerDecisions = await this.triggerRules.evaluateEnrolmentCreation(tenantId, input);
@@ -378,6 +388,79 @@ export class EnrolmentService {
   }
 
   /**
+   * Aggregate enrolment counts for a tenant — server-side GROUP BY queries;
+   * replaces the client-side N+1 pattern in the admin reporting page.
+   */
+  async enrolmentVolumes(tenantId: string): Promise<EnrolmentVolumesDto> {
+    const [statusRows, modeRows, yearRows, programmeRows] = await Promise.all([
+      withTenantContext(this.db, tenantId, (tx) =>
+        tx.execute(sql`
+          SELECT status_code, count(*)::int AS cnt
+          FROM   enrolment
+          WHERE  tenant_id = ${tenantId}::uuid
+            AND  recorded_until IS NULL
+          GROUP  BY status_code
+        `),
+      ),
+      withTenantContext(this.db, tenantId, (tx) =>
+        tx.execute(sql`
+          SELECT mode_of_study_code AS mode, count(*)::int AS cnt
+          FROM   enrolment
+          WHERE  tenant_id = ${tenantId}::uuid
+            AND  recorded_until IS NULL
+          GROUP  BY mode_of_study_code
+        `),
+      ),
+      withTenantContext(this.db, tenantId, (tx) =>
+        tx.execute(sql`
+          SELECT academic_year_of_entry AS year, status_code, count(*)::int AS cnt
+          FROM   enrolment
+          WHERE  tenant_id = ${tenantId}::uuid
+            AND  recorded_until IS NULL
+          GROUP  BY academic_year_of_entry, status_code
+          ORDER  BY academic_year_of_entry DESC
+        `),
+      ),
+      withTenantContext(this.db, tenantId, (tx) =>
+        tx.execute(sql`
+          SELECT programme_id::text AS programme_id, count(*)::int AS cnt
+          FROM   enrolment
+          WHERE  tenant_id = ${tenantId}::uuid
+            AND  recorded_until IS NULL
+            AND  programme_id IS NOT NULL
+          GROUP  BY programme_id
+          ORDER  BY cnt DESC
+          LIMIT  20
+        `),
+      ),
+    ]) as unknown as [
+      Array<{ status_code: string; cnt: number }>,
+      Array<{ mode: string; cnt: number }>,
+      Array<{ year: string; status_code: string; cnt: number }>,
+      Array<{ programme_id: string | null; cnt: number }>,
+    ];
+
+    const byStatus: Record<string, number> = {};
+    let total = 0;
+    for (const r of statusRows) { byStatus[r.status_code] = r.cnt; total += r.cnt; }
+
+    const byMode: Record<string, number> = {};
+    for (const r of modeRows) { byMode[r.mode] = r.cnt; }
+
+    const byYearOfEntry: Record<string, Record<string, number>> = {};
+    for (const r of yearRows) {
+      if (!byYearOfEntry[r.year]) byYearOfEntry[r.year] = {};
+      byYearOfEntry[r.year]![r.status_code] = r.cnt;
+    }
+
+    const byProgramme = programmeRows
+      .filter((r): r is { programme_id: string; cnt: number } => r.programme_id !== null)
+      .map((r) => ({ programmeId: r.programme_id, count: r.cnt }));
+
+    return { total, byStatus, byMode, byYearOfEntry, byProgramme, generatedAt: clockNow() };
+  }
+
+  /**
    * Transition enrolment status.
    * Validates the transition is legal, closes the current row, inserts a new
    * bitemporal version, and publishes the status-changed event.
@@ -411,7 +494,7 @@ export class EnrolmentService {
       newStatus,
     });
 
-    const now = new Date();
+    const now = clockNow();
 
     await withTenantContext(this.db, tenantId, async (tx) => {
       // Close current row (both record-time and valid-time axes)

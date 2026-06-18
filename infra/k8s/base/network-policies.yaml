@@ -1,0 +1,314 @@
+---
+# ── Default deny all ingress within namespace ─────────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: revelation-srs
+spec:
+  podSelector: {}
+  policyTypes: [Ingress]
+
+---
+# ── API: accept ingress from ingress controller and portal/admin ──────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-to-api
+  namespace: revelation-srs
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: srs-api
+  policyTypes: [Ingress, Egress]
+  ingress:
+    # From ingress controller (nginx-ingress or similar)
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: ingress-nginx
+      ports:
+        - port: 3000
+    # From Prometheus scraping
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+      ports:
+        - port: 9464
+  egress:
+    # To PostgreSQL (operator-managed, may be external)
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - port: 5432
+    # To NATS
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: srs-nats
+      ports:
+        - port: 4222
+    # To Temporal
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: srs-temporal
+      ports:
+        - port: 7233
+    # To Keycloak (operator-managed)
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - port: 8080
+    # To Wellbeing module
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: srs-wellbeing
+      ports:
+        - port: 3002
+    # To OpenBao (for sidecar agent)
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: openbao
+      ports:
+        - port: 8200
+    # DNS
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+
+---
+# ── Portal: accept ingress from ingress controller only ───────────────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-to-portal
+  namespace: revelation-srs
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: srs-portal
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: ingress-nginx
+      ports:
+        - port: 8080
+
+---
+# ── Admin: accept ingress from ingress controller only ────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-to-admin
+  namespace: revelation-srs
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: srs-admin
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: ingress-nginx
+      ports:
+        - port: 8080
+
+---
+# ── Worker: egress to Temporal, NATS, PostgreSQL ──────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-worker-egress
+  namespace: revelation-srs
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: srs-worker
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+      ports:
+        - port: 9465
+  egress:
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - port: 5432
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: srs-nats
+      ports:
+        - port: 4222
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: srs-temporal
+      ports:
+        - port: 7233
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: openbao
+      ports:
+        - port: 8200
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+
+---
+# ── NATS: accept ingress from all SRS pods ────────────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-to-nats
+  namespace: revelation-srs
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: srs-nats
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - srs-api
+                  - srs-worker
+                  - srs-vle-adapter
+                  - srs-wellbeing
+      ports:
+        - port: 4222
+    # NATS cluster peering (production multi-node)
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: srs-nats
+      ports:
+        - port: 6222
+    # Prometheus monitoring
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+      ports:
+        - port: 8222
+
+---
+# ── Temporal: accept ingress from API and Worker ──────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-to-temporal
+  namespace: revelation-srs
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: srs-temporal
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - podSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - srs-api
+                  - srs-worker
+      ports:
+        - port: 7233
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: srs-temporal-ui
+      ports:
+        - port: 7233
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+      ports:
+        - port: 9090
+  egress:
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - port: 5432
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: openbao
+      ports:
+        - port: 8200
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+
+---
+# ── Temporal UI: egress to Temporal only ──────────────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-temporal-ui-egress
+  namespace: revelation-srs
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: srs-temporal-ui
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+      ports:
+        - port: 8080
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: srs-temporal
+      ports:
+        - port: 7233
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - port: 53
+          protocol: UDP

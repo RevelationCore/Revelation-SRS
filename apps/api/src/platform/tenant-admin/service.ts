@@ -10,6 +10,8 @@ import {
 } from '@revelation-srs/db';
 import { ConflictError, NotFoundError } from '@revelation-srs/domain';
 
+import { clockNow } from '../clock.js';
+
 export interface CreateTenantInput {
   code: string;
   name: string;
@@ -132,7 +134,7 @@ export class TenantAdminService {
     if (input.programmeId) await this.#ensureProgrammeExists(input.programmeId, tenantId);
 
     const academicRuleId = randomUUID();
-    const now = new Date();
+    const now = clockNow();
     await withTenantContext(this.db, tenantId, async (tx) => {
       await tx.insert(academicRules).values({
         versionId: randomUUID(),
@@ -205,7 +207,7 @@ export class TenantAdminService {
       const current = currentRows[0];
       if (!current) throw new NotFoundError('AcademicRule', academicRuleId);
 
-      const now = new Date();
+      const now = clockNow();
       const validFrom = input.validFrom ?? now;
       await tx
         .update(academicRules)

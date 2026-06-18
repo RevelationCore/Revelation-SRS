@@ -11,6 +11,7 @@ import {
 import { NotFoundError, ValidationError, type MonetaryAmount } from '@revelation-srs/domain';
 
 import type { AuditService } from '../audit/service.js';
+import { clockNow } from '../clock.js';
 
 // ── DTOs ─────────────────────────────────────────────────────────────────────
 
@@ -114,7 +115,7 @@ export class CurrencyService {
       }
     }
 
-    const now = new Date();
+    const now = clockNow();
     const existing = await withTenantContext(this.db, tenantId, async (tx) =>
       tx.select({ id: tenantCurrencyConfigs.id }).from(tenantCurrencyConfigs)
         .where(eq(tenantCurrencyConfigs.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`)),
@@ -196,7 +197,7 @@ export class CurrencyService {
           rate:            input.rate,
           source:          input.source,
           sourceReference: input.sourceReference ?? null,
-          recordedAt:      new Date(),
+          recordedAt:      clockNow(),
           recordedBy:      actorId,
         },
       })
@@ -259,7 +260,7 @@ export class CurrencyService {
           effectiveDate,
           source:           'identity',
           sourceReference:  null,
-          recordedAt:       new Date(),
+          recordedAt:       clockNow(),
           recordedBy:       'system',
         },
       };

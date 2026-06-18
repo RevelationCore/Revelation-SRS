@@ -1,0 +1,96 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Development overlay — local cluster (e.g., kind, minikube, k3d)
+# OpenBao secrets injection is disabled; env vars are sourced from ConfigMaps/Secrets directly.
+# Single replicas; no HPA active; minimal resource limits.
+
+bases:
+  - ../../base
+
+namespace: revelation-srs-dev
+
+namePrefix: dev-
+
+patches:
+  # Reduce API replicas to 1 for development
+  - patch: |
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: srs-api
+      spec:
+        replicas: 1
+  # Reduce portal/admin to 1 replica
+  - patch: |
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: srs-portal
+      spec:
+        replicas: 1
+  - patch: |
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: srs-admin
+      spec:
+        replicas: 1
+  # Disable OpenBao agent injection in development — use direct env Secret instead
+  - patch: |
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: srs-api
+      spec:
+        template:
+          metadata:
+            annotations:
+              vault.hashicorp.com/agent-inject: "false"
+          spec:
+            containers:
+              - name: api
+                command: [node, dist/index.js]
+                envFrom:
+                  - secretRef:
+                      name: srs-dev-secrets
+  # Looser resource limits for dev
+  - patch: |
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: srs-api
+      spec:
+        template:
+          spec:
+            containers:
+              - name: api
+                resources:
+                  requests:
+                    cpu: 100m
+                    memory: 128Mi
+                  limits:
+                    cpu: 500m
+                    memory: 512Mi
+
+# Override images to use locally-built tags
+images:
+  - name: ghcr.io/revelation-srs/api
+    newTag: dev
+  - name: ghcr.io/revelation-srs/portal
+    newTag: dev
+  - name: ghcr.io/revelation-srs/admin
+    newTag: dev
+  - name: ghcr.io/revelation-srs/worker
+    newTag: dev
+  - name: ghcr.io/revelation-srs/vle-adapter
+    newTag: dev
+  - name: ghcr.io/revelation-srs/wellbeing
+    newTag: dev
+
+# Development secrets placeholder (operator must create before apply)
+# kubectl create secret generic srs-dev-secrets -n revelation-srs-dev \
+#   --from-literal=DATABASE_URL=postgresql://srs:srs@postgres:5432/srs \
+#   --from-literal=JWT_SECRET=dev-secret \
+#   --from-literal=KEYCLOAK_CLIENT_SECRET=dev-keycloak-secret \
+#   --from-literal=NATS_URL=nats://srs-nats:4222

@@ -23,6 +23,7 @@ import {
 
 import type { IntegrationBusPublisher } from '../integration-bus/publisher.js';
 import { RegulatoryExchangeService } from '../regulatory/exchange-service.js';
+import { clockNow } from '../clock.js';
 
 interface CandidateProfileRow {
   enrolmentId: string;
@@ -82,7 +83,7 @@ export class ExamEntryService {
     await this.#requireExamBoard(examBoardId, tenantId);
     const dataPack = await this.#requireCurrentDataPack(examBoardId, tenantId);
     const candidates = await this.#loadCandidateProfiles(dataPack.id, tenantId);
-    const now = new Date();
+    const now = clockNow();
     const created: ExamEntryDto[] = [];
 
     for (const candidate of candidates) {
@@ -157,7 +158,7 @@ export class ExamEntryService {
     actorId: string,
   ): Promise<{ receiptId: string; updatedCount: number }> {
     await this.#requireExamBoard(examBoardId, tenantId);
-    const now = new Date();
+    const now = clockNow();
     let receiptId = '';
 
     await withTenantContext(this.db, tenantId, async (tx) => {
@@ -259,7 +260,7 @@ export class ExamEntryService {
     const closed = closedRows[0];
     if (!closed) return false;
 
-    const recordedAt = closed.recordedUntil ?? new Date();
+    const recordedAt = closed.recordedUntil ?? clockNow();
     await withTenantContext(this.db, tenantId, async (tx) => {
       await tx.insert(examEntries).values({
         versionId: randomUUID(),

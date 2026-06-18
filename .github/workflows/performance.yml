@@ -1,0 +1,182 @@
+name: Performance
+
+on:
+  schedule:
+    # Weekly: every Monday at 02:00 UTC (off-peak, avoids CI contention)
+    - cron: '0 2 * * 1'
+  workflow_dispatch:
+    inputs:
+      scenario:
+        description: 'k6 scenario to run (leave empty for full suite)'
+        required: false
+        default: ''
+      base_url:
+        description: 'API base URL'
+        required: false
+        default: 'http://localhost:3000'
+
+concurrency:
+  group: performance
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "22"
+  PNPM_VERSION: "9"
+  K6_VERSION:   "0.52.0"
+
+jobs:
+
+  # ── Full k6 suite against S6 (normal load) ──────────────────────────────────
+  k6-normal-load:
+    name: k6 Normal Load (S6)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install k6
+        run: |
+          curl -sL https://github.com/grafana/k6/releases/download/v${{ env.K6_VERSION }}/k6-v${{ env.K6_VERSION }}-linux-amd64.tar.gz \
+            | tar xz --strip-components=1 -C /usr/local/bin k6-v${{ env.K6_VERSION }}-linux-amd64/k6
+
+      - uses: pnpm/action-setup@v4
+        with: { version: "${{ env.PNPM_VERSION }}" }
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "${{ env.NODE_VERSION }}"
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: pnpm build
+
+      - name: Start API with S6 dataset (Docker Compose)
+        run: |
+          docker compose -f docker-compose.yml up -d postgres nats keycloak
+          # Wait for services
+          timeout 60 bash -c 'until docker compose exec -T postgres pg_isready -U srs; do sleep 2; done'
+        env:
+          DEMO_DATA_ENABLED: "true"
+
+      - name: Load S6 dataset
+        run: pnpm demo:reset --scenario institution-year
+        env:
+          DATABASE_URL:      postgres://srs:srs@localhost:5432/srs
+          DEMO_DATA_ENABLED: "true"
+
+      - name: Start API
+        run: pnpm --filter @revelation-srs/api start &
+        env:
+          DATABASE_URL: postgres://srs:srs@localhost:5432/srs
+          JWT_SECRET:   ${{ secrets.PERF_JWT_SECRET || 'perf-test-secret' }}
+
+      - name: Wait for API ready
+        run: timeout 30 bash -c 'until curl -sf http://localhost:3000/health; do sleep 2; done'
+
+      - name: Run k6 suite (or specific scenario)
+        run: |
+          SCENARIO="${{ github.event.inputs.scenario }}"
+          if [ -n "$SCENARIO" ]; then
+            k6 run --out json=k6-results.json "infra/k6/scenarios/${SCENARIO}"
+          else
+            k6 run --out json=k6-results.json infra/k6/suite.js
+          fi
+        env:
+          BASE_URL:     ${{ github.event.inputs.base_url || 'http://localhost:3000' }}
+          STAFF_USER:   admin@demo.test
+          STAFF_PASS:   demo-password
+          STUDENT_USER: student@demo.test
+          STUDENT_PASS: demo-password
+
+      - name: Upload k6 results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-results-${{ github.run_id }}-${{ github.sha }}
+          path: k6-results.json
+          retention-days: 90
+
+      - name: Stop Docker Compose
+        if: always()
+        run: docker compose down -v
+
+  # ── Peak-load scenarios (NFR-PERF-006) ──────────────────────────────────────
+  k6-peak-load:
+    name: k6 Peak Load (NFR-PERF-006)
+    runs-on: ubuntu-latest
+    needs: [k6-normal-load]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install k6
+        run: |
+          curl -sL https://github.com/grafana/k6/releases/download/v${{ env.K6_VERSION }}/k6-v${{ env.K6_VERSION }}-linux-amd64.tar.gz \
+            | tar xz --strip-components=1 -C /usr/local/bin k6-v${{ env.K6_VERSION }}-linux-amd64/k6
+
+      - uses: pnpm/action-setup@v4
+        with: { version: "${{ env.PNPM_VERSION }}" }
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "${{ env.NODE_VERSION }}"
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: pnpm build
+
+      - name: Start services and load S6 dataset
+        run: |
+          docker compose -f docker-compose.yml up -d postgres nats keycloak
+          timeout 60 bash -c 'until docker compose exec -T postgres pg_isready -U srs; do sleep 2; done'
+          pnpm demo:reset --scenario institution-year
+        env:
+          DATABASE_URL:      postgres://srs:srs@localhost:5432/srs
+          DEMO_DATA_ENABLED: "true"
+
+      - name: Start API
+        run: pnpm --filter @revelation-srs/api start &
+        env:
+          DATABASE_URL: postgres://srs:srs@localhost:5432/srs
+          JWT_SECRET:   ${{ secrets.PERF_JWT_SECRET || 'perf-test-secret' }}
+
+      - name: Wait for API ready
+        run: timeout 30 bash -c 'until curl -sf http://localhost:3000/health; do sleep 2; done'
+
+      - name: Run start-of-year enrolment burst (NFR-PERF-006)
+        run: k6 run --out json=k6-peak-enrolment.json infra/k6/scenarios/peak-start-of-year-enrolment.js
+        env:
+          BASE_URL:     http://localhost:3000
+          STAFF_USER:   admin@demo.test
+          STAFF_PASS:   demo-password
+          STUDENT_USER: student@demo.test
+          STUDENT_PASS: demo-password
+          NORMAL_VUS:   "20"
+          PEAK_FACTOR:  "5"
+
+      - name: Run UCAS Clearing spike (NFR-PERF-006)
+        run: k6 run --out json=k6-peak-clearing.json infra/k6/scenarios/peak-ucas-clearing-spike.js
+        env:
+          BASE_URL:     http://localhost:3000
+          STAFF_USER:   admin@demo.test
+          STAFF_PASS:   demo-password
+          STUDENT_USER: student@demo.test
+          STUDENT_PASS: demo-password
+          NORMAL_VUS:   "10"
+          PEAK_FACTOR:  "10"
+
+      - name: Upload peak load results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: peak-load-results-${{ github.run_id }}-${{ github.sha }}
+          path: |
+            k6-peak-enrolment.json
+            k6-peak-clearing.json
+          retention-days: 90
+
+      - name: Stop Docker Compose
+        if: always()
+        run: docker compose down -v

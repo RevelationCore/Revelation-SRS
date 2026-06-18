@@ -13,6 +13,7 @@ import {
 import { NotFoundError, ValidationError } from '@revelation-srs/domain';
 
 import type { AuditService } from '../audit/service.js';
+import { clockNow } from '../clock.js';
 
 // ── DTOs ─────────────────────────────────────────────────────────────────────
 
@@ -129,7 +130,7 @@ export class LocaleService {
       throw new ValidationError('firstDayOfWeek must be between 1 (Monday) and 7 (Sunday)');
     }
 
-    const now = new Date();
+    const now = clockNow();
     const existing = await withTenantContext(this.db, tenantId, async (tx) =>
       tx.select({ id: tenantLocaleConfigs.id }).from(tenantLocaleConfigs)
         .where(eq(tenantLocaleConfigs.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`)),

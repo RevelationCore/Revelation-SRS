@@ -48,7 +48,7 @@ type OperationObject = {
 };
 
 type SpecObject = {
-  paths?: Record<string, Record<string, OperationObject | unknown>>;
+  paths?: Record<string, Record<string, unknown>>;
 };
 
 // ---------------------------------------------------------------------------

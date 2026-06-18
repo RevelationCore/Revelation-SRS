@@ -16,13 +16,36 @@
         },
         "distributedAt": {
           "type": "string"
+        },
+        "personId": {
+          "type": "string"
+        },
+        "enrolmentId": {
+          "type": "string"
+        },
+        "adjustmentTypeCode": {
+          "type": "string"
+        },
+        "scopeCode": {
+          "type": "string"
+        },
+        "validFrom": {
+          "type": "string"
+        },
+        "validTo": {
+          "type": "string"
         }
       },
       "required": [
         "adjustmentId",
         "distributionId",
         "targetSystem",
-        "distributedAt"
+        "distributedAt",
+        "personId",
+        "enrolmentId",
+        "adjustmentTypeCode",
+        "scopeCode",
+        "validFrom"
       ],
       "additionalProperties": false
     }

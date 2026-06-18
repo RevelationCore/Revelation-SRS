@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-
 import { ForbiddenError } from '@revelation-srs/domain';
 
 import { assertIntegrationEndpointAllowed } from '../src/platform/regulatory/exchange-service.js';

@@ -1,0 +1,177 @@
+---
+# ── NATS — ConfigMap ──────────────────────────────────────────────────────────
+# Production NATS JetStream configuration.
+# For a clustered deployment, set cluster.routes to list peer pod addresses.
+# This single-node config is suitable for staging; production should use
+# a 3-node cluster (see overlays/production/nats-cluster-patch.yaml).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: srs-nats-config
+  namespace: revelation-srs
+data:
+  nats.conf: |
+    port: 4222
+    http_port: 8222
+
+    jetstream {
+      store_dir: /data/jetstream
+      max_memory_store: 1GB
+      max_file_store: 10GB
+    }
+
+    accounts {
+      SRS {
+        jetstream: enabled
+        users: [
+          { nkey: $SRS_NKEY_PUBLIC }
+        ]
+      }
+    }
+
+    system_account: SRS
+
+    no_auth_user: ""
+
+    log_time: true
+    debug: false
+    trace: false
+
+---
+# ── NATS — Headless Service (for StatefulSet DNS) ─────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: srs-nats-headless
+  namespace: revelation-srs
+  labels:
+    app.kubernetes.io/name: srs-nats
+    app.kubernetes.io/component: messaging
+spec:
+  selector:
+    app.kubernetes.io/name: srs-nats
+  clusterIP: None
+  ports:
+    - name: client
+      port: 4222
+      targetPort: client
+    - name: cluster
+      port: 6222
+      targetPort: cluster
+    - name: monitor
+      port: 8222
+      targetPort: monitor
+
+---
+# ── NATS — Service ────────────────────────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: srs-nats
+  namespace: revelation-srs
+  labels:
+    app.kubernetes.io/name: srs-nats
+    app.kubernetes.io/component: messaging
+spec:
+  selector:
+    app.kubernetes.io/name: srs-nats
+  ports:
+    - name: client
+      port: 4222
+      targetPort: client
+    - name: monitor
+      port: 8222
+      targetPort: monitor
+  type: ClusterIP
+
+---
+# ── NATS — StatefulSet ────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: srs-nats
+  namespace: revelation-srs
+  labels:
+    app.kubernetes.io/name: srs-nats
+    app.kubernetes.io/component: messaging
+spec:
+  serviceName: srs-nats-headless
+  replicas: 1   # override to 3 in production overlay
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: srs-nats
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: srs-nats
+        app.kubernetes.io/component: messaging
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: nats
+          image: nats:2.10-alpine
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: client
+              containerPort: 4222
+            - name: cluster
+              containerPort: 6222
+            - name: monitor
+              containerPort: 8222
+          args:
+            - -c
+            - /etc/nats/nats.conf
+          env:
+            - name: SRS_NKEY_PUBLIC
+              valueFrom:
+                secretKeyRef:
+                  name: srs-nats-nkey
+                  key: public
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - name: config
+              mountPath: /etc/nats
+              readOnly: true
+            - name: data
+              mountPath: /data
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: monitor
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: monitor
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: config
+          configMap:
+            name: srs-nats-config
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: [ReadWriteOnce]
+        resources:
+          requests:
+            storage: 20Gi

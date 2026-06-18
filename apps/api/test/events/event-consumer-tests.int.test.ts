@@ -7,10 +7,11 @@
  * Uses a spy event bus injected via buildApp overrides — no live NATS required.
  * The spy bus reports isConnected()=true so all conditional publish blocks fire.
  */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
-import { IntegrationBusPublisher } from '../../src/platform/integration-bus/publisher.js';
+import type { IntegrationBusPublisher } from '../../src/platform/integration-bus/publisher.js';
 import { startTestApp, type TestApp } from '../helpers/test-app.js';
 
 // ─── Spy bus ─────────────────────────────────────────────────────────────────
@@ -27,6 +28,7 @@ interface CapturedEvent {
 function createSpyBus(capture: CapturedEvent[]): IntegrationBusPublisher {
   return {
     isConnected: () => true,
+    // eslint-disable-next-line @typescript-eslint/require-await
     publish: async (type, version, tenantId, correlationId, classification, payload) => {
       capture.push({ type, version, tenantId, correlationId, classification, payload });
     },

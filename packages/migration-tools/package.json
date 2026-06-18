@@ -1,0 +1,33 @@
+{
+  "name": "@revelation-srs/migration-tools",
+  "version": "0.0.1",
+  "private": true,
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types":  "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build":    "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test:int": "vitest run --reporter=verbose --config vitest.int.config.ts",
+    "migrate:import": "node --import tsx/esm src/cli.ts"
+  },
+  "dependencies": {
+    "@revelation-srs/db": "workspace:*",
+    "drizzle-orm": "^0.36.0"
+  },
+  "devDependencies": {
+    "@testcontainers/postgresql": "^12.0.1",
+    "@types/node": "^22.0.0",
+    "testcontainers": "^10.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^6.0.0",
+    "vitest": "^2.0.0"
+  }
+}

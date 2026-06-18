@@ -276,7 +276,7 @@ export async function handleUkviComplianceAlertRaised(
     sourceEventSubject: envelope.type,
     sourceEventId:      envelope.id,
     triageStatusCode:   'pending',
-    alertPayload:       { enrolmentId, alertTypeCode, casReference, triggeredAt } as unknown as Record<string, unknown>,
+    alertPayload:       { enrolmentId, alertTypeCode, casReference, triggeredAt },
     receivedAt:         new Date(triggeredAt),
   });
 

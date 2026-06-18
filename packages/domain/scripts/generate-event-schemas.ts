@@ -11,10 +11,11 @@
  * Internal events (downstream-trigger-created, workflow.*, ofs-extract-generated)
  * are excluded from the published registry and flagged in the internal list below.
  */
-import { createGenerator } from 'ts-json-schema-generator';
 import { writeFile, mkdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+
+import { createGenerator } from 'ts-json-schema-generator';
 
 const __dirname  = dirname(fileURLToPath(import.meta.url));
 const DOMAIN_ROOT = join(__dirname, '..');
@@ -479,6 +480,7 @@ export const INTERNAL_EVENTS = [
 
 const SCHEMA_URI_BASE = 'https://schemas.revelation-srs.io/events';
 
+// eslint-disable-next-line @typescript-eslint/require-await
 async function generateSchema(event: EventDef): Promise<object> {
   const config = {
     path:          join(DOMAIN_ROOT, 'src', 'events', event.file),
@@ -490,7 +492,7 @@ async function generateSchema(event: EventDef): Promise<object> {
     additionalProperties: false,
   };
   const generator = createGenerator(config);
-  return generator.createSchema(event.typeName) as object;
+  return generator.createSchema(event.typeName);
 }
 
 async function writeJson(path: string, data: object): Promise<void> {

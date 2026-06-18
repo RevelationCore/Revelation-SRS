@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "generated": "2026-06-15T13:58:11.924Z",
+  "generated": "2026-06-18T14:24:52.376Z",
   "description": "Machine-readable registry of all Revelation SRS domain events.",
   "schemaUriBase": "https://schemas.revelation-srs.io/events",
   "events": [
@@ -119,10 +119,9 @@
       "dataClass": "standard",
       "partitionKey": "enrolmentId",
       "consumers": [
-        "finance-adapter",
-        "timetabling-adapter",
         "vle-adapter",
-        "wellbeing-module"
+        "timetabling-adapter",
+        "finance-adapter"
       ],
       "status": "published"
     },
@@ -134,9 +133,8 @@
       "dataClass": "standard",
       "partitionKey": "enrolmentId",
       "consumers": [
-        "timetabling-adapter",
         "vle-adapter",
-        "wellbeing-module"
+        "timetabling-adapter"
       ],
       "status": "published"
     },
@@ -253,9 +251,8 @@
       "partitionKey": "moduleRegistrationId",
       "consumers": [
         "bi-adapter",
-        "hear-service",
         "transcript-service",
-        "wellbeing-module"
+        "hear-service"
       ],
       "status": "published"
     },
@@ -604,7 +601,7 @@
       "subject": "srs.enrolment.downstream-trigger-created",
       "version": "1.0.0",
       "status": "internal",
-      "reason": "Internal routing event; drives UCAS/SLC/UKVI trigger processing \u2014 not for external consumers."
+      "reason": "Internal routing event; drives UCAS/SLC/UKVI trigger processing — not for external consumers."
     },
     {
       "subject": "srs.workflow.task-assigned",

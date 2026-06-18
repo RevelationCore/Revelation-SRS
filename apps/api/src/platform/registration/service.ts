@@ -25,6 +25,7 @@ import type {
 
 import type { IntegrationBusPublisher } from '../integration-bus/publisher.js';
 import type { RulesEngine } from '../rules-engine/engine.js';
+import { clockNow } from '../clock.js';
 
 export interface CreateModuleRegistrationInput {
   enrolmentId: string;
@@ -93,7 +94,7 @@ export class ModuleRegistrationService {
     input: CreateModuleRegistrationInput,
     actorId: string,
   ): Promise<string> {
-    const registrationDate = input.registrationDate ?? new Date().toISOString().slice(0, 10);
+    const registrationDate = input.registrationDate ?? clockNow().toISOString().slice(0, 10);
     const enrolment = await this.#getCurrentEnrolment(input.enrolmentId, tenantId);
     const offering = await this.#getOfferingContext(input.moduleOfferingId, tenantId);
 
@@ -111,7 +112,7 @@ export class ModuleRegistrationService {
     await this.#ensureCreditLimitNotExceeded(enrolment, offering, tenantId);
 
     const moduleRegistrationId = randomUUID();
-    const now = new Date();
+    const now = clockNow();
     await withTenantContext(this.db, tenantId, async (tx) => {
       await tx.insert(moduleRegistrations).values({
         versionId:        randomUUID(),
@@ -194,7 +195,7 @@ export class ModuleRegistrationService {
     moduleRegistrationId: string,
     tenantId: string,
     actorId: string,
-    validFrom: Date = new Date(),
+    validFrom: Date = clockNow(),
   ): Promise<void> {
     await this.#transitionRegistration(moduleRegistrationId, tenantId, 'withdrawn', actorId, validFrom);
   }
@@ -203,7 +204,7 @@ export class ModuleRegistrationService {
     moduleRegistrationId: string,
     tenantId: string,
     actorId: string,
-    validFrom: Date = new Date(),
+    validFrom: Date = clockNow(),
   ): Promise<void> {
     await this.#transitionRegistration(moduleRegistrationId, tenantId, 'completed', actorId, validFrom);
   }
@@ -269,7 +270,7 @@ export class ModuleRegistrationService {
       throw new ValidationError(`Cannot transition module registration from '${current.statusCode}' to '${newStatus}'`);
     }
 
-    const now = new Date();
+    const now = clockNow();
     await withTenantContext(this.db, tenantId, async (tx) => {
       await tx
         .update(moduleRegistrations)

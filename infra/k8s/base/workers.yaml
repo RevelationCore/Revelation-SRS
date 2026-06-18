@@ -1,0 +1,347 @@
+---
+# ── Temporal Worker — ServiceAccount ─────────────────────────────────────────
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: srs-worker
+  namespace: revelation-srs
+  annotations:
+    openbao.org/role: "srs-worker"
+
+---
+# ── Temporal Worker — Deployment ──────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: srs-worker
+  namespace: revelation-srs
+  labels:
+    app.kubernetes.io/name: srs-worker
+    app.kubernetes.io/component: worker
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: srs-worker
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: srs-worker
+        app.kubernetes.io/component: worker
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: "srs-worker"
+        vault.hashicorp.com/agent-inject-secret-db: "database/creds/srs-worker"
+        vault.hashicorp.com/agent-inject-template-db: |
+          {{- with secret "database/creds/srs-worker" -}}
+          postgresql://{{ .Data.username }}:{{ .Data.password }}@postgres:5432/srs
+          {{- end }}
+        vault.hashicorp.com/agent-inject-secret-nats: "kv/data/srs/nats"
+        vault.hashicorp.com/agent-inject-template-nats: |
+          {{- with secret "kv/data/srs/nats" -}}
+          {{ .Data.data.nkey_seed }}
+          {{- end }}
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9465"
+    spec:
+      serviceAccountName: srs-worker
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: worker
+          image: ghcr.io/revelation-srs/worker:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: TEMPORAL_ADDRESS
+              value: srs-temporal:7233
+            - name: TEMPORAL_NAMESPACE
+              value: default
+            - name: NATS_URL
+              value: nats://srs-nats:4222
+          command:
+            - /bin/sh
+            - -c
+            - |
+              export DATABASE_URL="$(cat /vault/secrets/db)"
+              export NATS_NKEY_SEED="$(cat /vault/secrets/nats)"
+              exec node dist/worker.js
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: 800m
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+      terminationGracePeriodSeconds: 120
+
+---
+# ── VLE Adapter — ServiceAccount ──────────────────────────────────────────────
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: srs-vle-adapter
+  namespace: revelation-srs
+  annotations:
+    openbao.org/role: "srs-vle-adapter"
+
+---
+# ── VLE Adapter — Deployment ──────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: srs-vle-adapter
+  namespace: revelation-srs
+  labels:
+    app.kubernetes.io/name: srs-vle-adapter
+    app.kubernetes.io/component: adapter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: srs-vle-adapter
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: srs-vle-adapter
+        app.kubernetes.io/component: adapter
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: "srs-vle-adapter"
+        vault.hashicorp.com/agent-inject-secret-db: "database/creds/srs-adapter"
+        vault.hashicorp.com/agent-inject-template-db: |
+          {{- with secret "database/creds/srs-adapter" -}}
+          postgresql://{{ .Data.username }}:{{ .Data.password }}@postgres:5432/srs
+          {{- end }}
+        vault.hashicorp.com/agent-inject-secret-nats: "kv/data/srs/nats"
+        vault.hashicorp.com/agent-inject-template-nats: |
+          {{- with secret "kv/data/srs/nats" -}}
+          {{ .Data.data.nkey_seed }}
+          {{- end }}
+        vault.hashicorp.com/agent-inject-secret-vle: "kv/data/srs/vle-adapter"
+        vault.hashicorp.com/agent-inject-template-vle: |
+          {{- with secret "kv/data/srs/vle-adapter" -}}
+          {{ .Data.data.api_key }}
+          {{- end }}
+    spec:
+      serviceAccountName: srs-vle-adapter
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: vle-adapter
+          image: ghcr.io/revelation-srs/vle-adapter:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 3003
+              protocol: TCP
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: PORT
+              value: "3003"
+            - name: NATS_URL
+              value: nats://srs-nats:4222
+          command:
+            - /bin/sh
+            - -c
+            - |
+              export DATABASE_URL="$(cat /vault/secrets/db)"
+              export NATS_NKEY_SEED="$(cat /vault/secrets/nats)"
+              export VLE_API_KEY="$(cat /vault/secrets/vle)"
+              exec node dist/index.js
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 400m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 10
+      volumes:
+        - name: tmp
+          emptyDir: {}
+
+---
+# ── VLE Adapter — Service ─────────────────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: srs-vle-adapter
+  namespace: revelation-srs
+  labels:
+    app.kubernetes.io/name: srs-vle-adapter
+    app.kubernetes.io/component: adapter
+spec:
+  selector:
+    app.kubernetes.io/name: srs-vle-adapter
+  ports:
+    - name: http
+      port: 3003
+      targetPort: http
+  type: ClusterIP
+
+---
+# ── Wellbeing Module — ServiceAccount ────────────────────────────────────────
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: srs-wellbeing
+  namespace: revelation-srs
+  annotations:
+    openbao.org/role: "srs-wellbeing"
+
+---
+# ── Wellbeing Module — Deployment ────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: srs-wellbeing
+  namespace: revelation-srs
+  labels:
+    app.kubernetes.io/name: srs-wellbeing
+    app.kubernetes.io/component: module
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: srs-wellbeing
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: srs-wellbeing
+        app.kubernetes.io/component: module
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: "srs-wellbeing"
+        vault.hashicorp.com/agent-inject-secret-db: "database/creds/srs-wellbeing"
+        vault.hashicorp.com/agent-inject-template-db: |
+          {{- with secret "database/creds/srs-wellbeing" -}}
+          postgresql://{{ .Data.username }}:{{ .Data.password }}@postgres:5432/srs
+          {{- end }}
+        vault.hashicorp.com/agent-inject-secret-nats: "kv/data/srs/nats"
+        vault.hashicorp.com/agent-inject-template-nats: |
+          {{- with secret "kv/data/srs/nats" -}}
+          {{ .Data.data.nkey_seed }}
+          {{- end }}
+    spec:
+      serviceAccountName: srs-wellbeing
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: wellbeing
+          image: ghcr.io/revelation-srs/wellbeing:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 3002
+              protocol: TCP
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: PORT
+              value: "3002"
+            - name: NATS_URL
+              value: nats://srs-nats:4222
+          command:
+            - /bin/sh
+            - -c
+            - |
+              export DATABASE_URL="$(cat /vault/secrets/db)"
+              export NATS_NKEY_SEED="$(cat /vault/secrets/nats)"
+              exec node dist/index.js
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 400m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 10
+      volumes:
+        - name: tmp
+          emptyDir: {}
+
+---
+# ── Wellbeing Module — Service ────────────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: srs-wellbeing
+  namespace: revelation-srs
+  labels:
+    app.kubernetes.io/name: srs-wellbeing
+    app.kubernetes.io/component: module
+spec:
+  selector:
+    app.kubernetes.io/name: srs-wellbeing
+  ports:
+    - name: http
+      port: 3002
+      targetPort: http
+  type: ClusterIP

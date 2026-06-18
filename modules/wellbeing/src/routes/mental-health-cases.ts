@@ -19,6 +19,7 @@ import {
 
 // ── Route plugin ──────────────────────────────────────────────────────────────
 
+// eslint-disable-next-line @typescript-eslint/require-await
 export async function mentalHealthCaseRoutes(fastify: FastifyInstance): Promise<void> {
 
   // ── POST /api/v1/mental-health-cases ─────────────────────────────────────

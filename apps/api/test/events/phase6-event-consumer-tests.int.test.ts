@@ -1,7 +1,5 @@
-import { randomUUID } from 'node:crypto';
-
-import { sql } from 'drizzle-orm';
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import type { IntegrationBusPublisher } from '../../src/platform/integration-bus/publisher.js';
 import { startTestApp, type TestApp } from '../helpers/test-app.js';

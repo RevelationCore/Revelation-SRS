@@ -1,0 +1,141 @@
+---
+# ── OpenBao Kubernetes Auth — ClusterRoleBinding ──────────────────────────────
+#
+# OpenBao is assumed to be operator-provisioned (e.g., in a dedicated `openbao`
+# namespace via the OpenBao Helm chart). These resources configure the Kubernetes
+# auth method and attach policies to the SRS service accounts.
+#
+# Pre-requisite operator steps (not managed by Kustomize):
+#   1. Deploy OpenBao via Helm:
+#        helm repo add openbao https://openbaoproject.github.io/openbao-helm
+#        helm install openbao openbao/openbao -n openbao --create-namespace \
+#          --set server.ha.enabled=false  # single-node for staging
+#   2. Initialise and unseal OpenBao.
+#   3. Enable Kubernetes auth:
+#        bao auth enable kubernetes
+#        bao write auth/kubernetes/config \
+#          kubernetes_host="https://<K8S_API>" \
+#          kubernetes_ca_cert=@/var/run/secrets/kubernetes.io/serviceaccount/ca.crt \
+#          token_reviewer_jwt=@/var/run/secrets/kubernetes.io/serviceaccount/token
+#   4. Enable the database secret engine:
+#        bao secrets enable database
+#        bao write database/config/srs-postgres \
+#          plugin_name=postgresql-database-plugin \
+#          allowed_roles="srs-api,srs-worker,srs-wellbeing,srs-adapter" \
+#          connection_url="postgresql://{{username}}:{{password}}@postgres:5432/srs" \
+#          username="bao_root" \
+#          password="<root-password>"
+#   5. Enable KV v2:
+#        bao secrets enable -path=kv kv-v2
+#   6. Write secrets:
+#        bao kv put kv/srs/keycloak client_secret=<value>
+#        bao kv put kv/srs/nats nkey_seed=<value>
+#        bao kv put kv/srs/temporal-db username=temporal password=<value>
+#        bao kv put kv/srs/vle-adapter api_key=<value>
+#   7. Apply policies and roles (see ConfigMap below).
+
+---
+# ── OpenBao Policies — ConfigMap ──────────────────────────────────────────────
+# Policies are applied via `bao policy write <name> -` from these definitions.
+# Include in operator setup script: apply-openbao-policies.sh (see infra/scripts/)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: srs-openbao-policies
+  namespace: revelation-srs
+data:
+  policy-api.hcl: |
+    # API service: dynamic DB creds + static KV secrets
+    path "database/creds/srs-api" {
+      capabilities = ["read"]
+    }
+    path "kv/data/srs/keycloak" {
+      capabilities = ["read"]
+    }
+    path "kv/data/srs/nats" {
+      capabilities = ["read"]
+    }
+
+  policy-worker.hcl: |
+    path "database/creds/srs-worker" {
+      capabilities = ["read"]
+    }
+    path "kv/data/srs/nats" {
+      capabilities = ["read"]
+    }
+
+  policy-wellbeing.hcl: |
+    path "database/creds/srs-wellbeing" {
+      capabilities = ["read"]
+    }
+    path "kv/data/srs/nats" {
+      capabilities = ["read"]
+    }
+
+  policy-adapter.hcl: |
+    path "database/creds/srs-adapter" {
+      capabilities = ["read"]
+    }
+    path "kv/data/srs/nats" {
+      capabilities = ["read"]
+    }
+    path "kv/data/srs/vle-adapter" {
+      capabilities = ["read"]
+    }
+
+  policy-temporal.hcl: |
+    path "kv/data/srs/temporal-db" {
+      capabilities = ["read"]
+    }
+
+  apply-policies.sh: |
+    #!/usr/bin/env bash
+    # Apply OpenBao policies and Kubernetes auth roles for Revelation SRS.
+    # Run once after OpenBao initialisation against the target cluster.
+    set -euo pipefail
+
+    NAMESPACE=revelation-srs
+
+    for svc in api worker wellbeing temporal; do
+      echo "Applying policy: srs-${svc}"
+      bao policy write "srs-${svc}" - < /dev/stdin <<POLICY
+    $(cat "/etc/openbao-policies/policy-${svc}.hcl")
+    POLICY
+    done
+
+    echo "Applying policy: srs-adapter (for vle-adapter)"
+    bao policy write srs-adapter - < /dev/stdin <<POLICY
+    $(cat /etc/openbao-policies/policy-adapter.hcl)
+    POLICY
+
+    # Create Kubernetes auth roles (TTL 1h; max 24h)
+    for svc in api worker wellbeing temporal; do
+      echo "Creating Kubernetes auth role: srs-${svc}"
+      bao write "auth/kubernetes/role/srs-${svc}" \
+        bound_service_account_names="srs-${svc}" \
+        bound_service_account_namespaces="${NAMESPACE}" \
+        policies="srs-${svc}" \
+        ttl=1h \
+        max_ttl=24h
+    done
+
+    echo "Creating Kubernetes auth role: srs-vle-adapter"
+    bao write auth/kubernetes/role/srs-vle-adapter \
+      bound_service_account_names=srs-vle-adapter \
+      bound_service_account_namespaces="${NAMESPACE}" \
+      policies=srs-adapter \
+      ttl=1h \
+      max_ttl=24h
+
+    # Dynamic DB roles
+    for role in srs-api srs-worker srs-wellbeing srs-adapter; do
+      echo "Creating DB role: ${role}"
+      bao write "database/roles/${role}" \
+        db_name=srs-postgres \
+        creation_statements="CREATE ROLE \"{{name}}\" WITH LOGIN PASSWORD '{{password}}' VALID UNTIL '{{expiration}}'; GRANT srs_app TO \"{{name}}\";" \
+        revocation_statements="REVOKE srs_app FROM \"{{name}}\"; DROP ROLE IF EXISTS \"{{name}}\";" \
+        default_ttl=1h \
+        max_ttl=24h
+    done
+
+    echo "OpenBao policy and role setup complete."

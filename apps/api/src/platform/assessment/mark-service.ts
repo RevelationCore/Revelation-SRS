@@ -25,6 +25,7 @@ import type {
 import type { IntegrationBusPublisher } from '../integration-bus/publisher.js';
 import type { FeatureFlagService } from '../platform-controls/feature-flag-service.js';
 import type { RulesEngine } from '../rules-engine/engine.js';
+import { clockNow } from '../clock.js';
 
 import { assertNotLocked } from './lock.js';
 import type { ModuleResultService } from './module-result-service.js';
@@ -106,7 +107,7 @@ export class MarkService {
 
     const penalty = await this.#applyLatePenalty(tenantId, registration, input.rawMark, input.attemptNumber ?? 1, input);
     const markId = randomUUID();
-    const now = new Date();
+    const now = clockNow();
     let assessmentSubmissionId: string | null = null;
 
     await withTenantContext(this.db, tenantId, async (tx) => {
@@ -209,7 +210,7 @@ export class MarkService {
     this.#validateMarkInput(rawMark, current.attemptNumber);
     const registration = await this.#getRegistrationContext(current.moduleRegistrationId, tenantId);
     const penalty = await this.#applyLatePenaltyForUpdate(tenantId, registration, current, rawMark, input);
-    const now = new Date();
+    const now = clockNow();
 
     await withTenantContext(this.db, tenantId, async (tx) => {
       await tx
@@ -281,7 +282,7 @@ export class MarkService {
     const current = await this.#getCurrentMark(markId, tenantId);
     if (!current) throw new NotFoundError('Mark', markId);
 
-    const now = new Date();
+    const now = clockNow();
     const rawMark      = patch.rawMark      ?? current.rawMark;
     const adjustedMark = patch.adjustedMark ?? current.adjustedMark;
 

@@ -2,6 +2,8 @@ import { sql } from 'drizzle-orm';
 import { withTenantContext, type Db } from '@revelation-srs/db';
 import { RuleNotConfiguredError } from '@revelation-srs/domain';
 
+import { clockNow } from '../clock.js';
+
 export type RuleTypeCode =
   | 'pass-mark'
   | 'late-penalty'
@@ -50,15 +52,15 @@ export class RulesEngine {
     ruleKey:  string,
   ): Promise<T> {
     // Include date in cache key so historical and current lookups are separate entries
-    const asOfDay  = (ctx.asOfDate ?? new Date()).toISOString().slice(0, 10);
+    const asOfDay  = (ctx.asOfDate ?? clockNow()).toISOString().slice(0, 10);
     const cacheKey = `${ctx.tenantId}:${ctx.programmeId}:${ruleType}:${ruleKey}:${asOfDay}`;
     const cached   = this.cache.get(cacheKey);
 
-    if (cached && cached.expiresAt > Date.now()) {
+    if (cached && cached.expiresAt > Date.now()) {  // clock:allow
       return cached.value as T;
     }
 
-    const asOf = ctx.asOfDate ?? new Date();
+    const asOf = ctx.asOfDate ?? clockNow();
 
     // Build programme filter: if a programmeId is provided, match it first
     // (programme-specific rule takes precedence) then fall back to tenant-wide
@@ -91,7 +93,7 @@ export class RulesEngine {
     }
 
     const value = rows[0]?.rule_value as T;
-    this.cache.set(cacheKey, { value, expiresAt: Date.now() + 5 * 60 * 1000 });
+    this.cache.set(cacheKey, { value, expiresAt: Date.now() + 5 * 60 * 1000 });  // clock:allow
     return value;
   }
 

@@ -1,6 +1,7 @@
-import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+
+import { migrate } from 'drizzle-orm/postgres-js/migrator';
 
 import { createWellbeingDb } from './client.js';
 

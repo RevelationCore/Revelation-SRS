@@ -1,13 +1,13 @@
 # Revelation SRS — Project Roadmap
 
-> Status: Draft for review
-> Last updated: 2026-06-15
+> Status: Complete — v1.0.0 released 2026-06-18
+> Last updated: 2026-06-18
 
 ---
 
 ## Approach
 
-The roadmap is organised into eleven sequential phases. Each phase has explicit prerequisites and named deliverables. No phase begins until the previous phase's deliverables are agreed.
+The roadmap is organised into eleven numbered phases, with targeted intermediate alignment phases where the implementation needs a controlled convergence point before the next major release gate. Each phase has explicit prerequisites and named deliverables. No phase begins until the previous phase's deliverables are agreed.
 
 The plan is structured so that every core principle is operationalised before the features that depend on it are built. Infrastructure and cross-cutting concerns (audit, bitemporality, workflow, multi-tenancy, integration layer) are established as a platform foundation before any domain functionality is layered on top. This avoids retrofitting and ensures every domain feature is built on a consistent, proven base.
 
@@ -383,13 +383,13 @@ This module integrates with the SRS using the first-party pattern defined in §2
 
 ---
 
-## Phase 9 — Example External System Integration: VLE Connector *(current)*
+## Phase 9 — Example External System Integration: VLE Connector *(complete)*
 
 **Goal**: Build the VLE Connector as the reference implementation of the external system integration pattern, and validate the integration layer under realistic bidirectional load.
 
 **Prerequisites**: Phase 7 complete. Phase 8 complete (adjustment distribution must be proven before F059 is tested here).
 
-**Plan**: See `docs/phase-9-implementation-plan.md`.
+**Plan**: See `docs/phase-9-implementation-plan.md`. Acceptance review: `docs/phase-9-acceptance-review.md`.
 
 **Scope and integration pattern**
 
@@ -422,11 +422,13 @@ The VLE Connector integrates exclusively via the published integration layer —
 
 ---
 
-## Phase 10 — User Interfaces
+## Phase 10 — User Interfaces *(current)*
 
 **Goal**: Build the student-facing portal and staff administrative interface, consuming the REST APIs and event streams established in earlier phases.
 
-**Prerequisites**: Phases 4–7 complete (all APIs and domain events exist).
+**Prerequisites**: Phases 4–9 complete (all APIs, domain events, first-party module, and reference external connector exist).
+
+**Plan**: See `docs/phase-10-implementation-plan.md`.
 
 **Work items**
 
@@ -467,11 +469,62 @@ The VLE Connector integrates exclusively via the published integration layer —
 
 ---
 
-## Phase 11 — Hardening and Open Source Release
+## Phase 10.5 — Demo Data Scenarios and Hosted Demo Rotation
+
+**Goal**: Provide realistic, resettable lifecycle demo datasets that support local demonstration, hosted demo rotation, UI acceptance, operational runbooks, and Phase 11 hardening.
+
+**Prerequisites**: Phase 10 complete. Technical groundwork may begin earlier, but acceptance depends on the Phase 10 UI journeys being available.
+
+**Plan**: See `docs/phase-10.5-implementation-plan.md`. Source requirement: `docs/demo-data-scenario-plan.md`.
+
+**Timing decision**: Implement before Phase 11. Phase 11 performance, security, accessibility, deployment, and operational documentation work should run against representative institutional data rather than small test fixtures. Deferring demo data until after Phase 11 would leave the release hardening process under-evidenced.
+
+**Work items**
+
+1. **Scenario catalogue and safety baseline**
+   - Define lifecycle scenarios for applicant pipeline, enrolment/induction, module selection, mark submission, exam board/ratification, and full institutional year.
+   - Set target record volumes and mapped UI/workflow journeys for each scenario.
+   - Add demo-only environment gates so reset/load commands refuse production-like environments and non-demo tenants.
+
+2. **Demo data package and CLI**
+   - Create deterministic scenario generators and reset/load/validate commands.
+   - Support dry-run reporting, advisory locks, reset audit records, and stable identifiers for Playwright/demo identities.
+   - Keep demo datasets separate from migration-owned reference data and small integration-test fixtures.
+
+3. **Curriculum, student, and lifecycle data generation**
+   - Generate realistic faculties, schools, programmes, modules, academic calendars, rules, applicants, enrolments, module registrations, assessment records, adjustments, EC outcomes, regulatory records, VLE exchanges, board packs, progression decisions, awards, and locked records.
+   - Include bitemporal history, workflow states, integration ledgers, audit records, and reporting distributions.
+
+4. **Hosted demo rotation**
+   - Provide scheduled teardown/load jobs for the hosted demo site.
+   - Allow operators to pause rotation, force a scenario, inspect last load status, and recover from failed loads.
+   - Display current scenario and reset schedule in the demo environment.
+
+5. **Validation and documentation**
+   - Validate record counts, referential integrity, RLS isolation, bitemporal invariants, workflow states, integration safety, and UI golden-path readiness.
+   - Document local reset/load, hosted rotation, recovery, and how to add new scenarios.
+
+**Deliverables**
+- `packages/demo-data` or equivalent scenario-generation package
+- CLI commands for listing, resetting, loading, and validating named demo scenarios
+- Standard scenarios for applicant pipeline, enrolment/induction, module selection, assessment/marks, and exam board/ratification
+- Full 50,000-student institutional scenario for Phase 11 performance and release validation
+- Hosted demo rotation runbook and scheduler configuration
+- Scenario validation tests and Playwright smoke identities
+
+**Exit criterion**: All named scenarios reset, load, and validate from a current migrated database. Hosted demo rotation is operational in a non-production environment. Phase 10 golden paths run against stable demo identities. The full-institution scenario is available for Phase 11 performance, security, accessibility, and operational hardening.
+
+---
+
+## Phase 11 — Hardening and Open Source Release *(complete — v1.0.0 released 2026-06-18)*
 
 **Goal**: Bring the system to a state suitable for adoption by an institution and release to the open source community.
 
-**Prerequisites**: Phases 1–10 complete.
+**Prerequisites**: Phases 1–10.5 complete.
+
+**Plan**: See `docs/phase-11-implementation-plan.md`.
+
+**Acceptance review**: `docs/phase-11-acceptance-review.md` — all 47 gate-blocking NFRs PASS; v1.0.0 published under AGPL v3.
 
 **Work items**
 
@@ -525,7 +578,7 @@ The VLE Connector integrates exclusively via the published integration layer —
 | 17 — Accessible UI | 10 (portal), 11 (audit) |
 | 18 — Privacy by Design | 1 (data register), 3 (RLS), 5 (read auditing), 11 (retention) |
 | 19 — Internationalisation, Localisation, and Multicurrency | 6.6 (globalisation foundation), 10 (UI), 11 (operational hardening) |
-| 20 — Performance & Scalability | 11 (load testing and benchmarking) |
+| 20 — Performance & Scalability | 10.5 (performance-scale demo data), 11 (load testing and benchmarking) |
 | 21 — Observability | 3 (stack), applied in every subsequent phase |
 | 22 — UK HE Domain Model | 1 (glossary, requirements), applied throughout |
 | 23 — Testability & Quality | 3 (CI pipeline), applied throughout |
@@ -550,4 +603,5 @@ The VLE Connector integrates exclusively via the published integration layer —
 | 8 | Example First-Party Module: Wellbeing | Adjustments and EC workflows end-to-end |
 | 9 | Example External Integration: VLE | Enrolment sync, grade ingestion, adjustment distribution |
 | 10 | User Interfaces | Student portal, staff admin, tenant admin |
-| 11 | Hardening and Open Source Release | Performance, security, accessibility, release |
+| 10.5 | Demo Data Scenarios and Hosted Demo Rotation | Resettable lifecycle datasets, hosted demo rotation |
+| **11** | **Hardening and Open Source Release** | **Performance, security, accessibility, v1.0.0 released** |

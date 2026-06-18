@@ -22,6 +22,7 @@ import type {
 
 import type { IntegrationBusPublisher } from '../integration-bus/publisher.js';
 import type { ValueSetService } from '../value-sets/service.js';
+import { clockNow } from '../clock.js';
 
 export interface RecordAdjustmentInput {
   enrolmentId: string;
@@ -81,7 +82,7 @@ export class AdjustmentService {
     await this.#validateInput(tenantId, input);
 
     const adjustmentId = randomUUID();
-    const now = new Date();
+    const now = clockNow();
     const validFrom = new Date(input.validFrom);
     const validTo = input.validTo ? new Date(input.validTo) : null;
     const targetSystems = this.#targetSystemsForScope(input.scopeCode);
@@ -186,19 +187,23 @@ export class AdjustmentService {
     return rows.map(distributionToDto);
   }
 
+  async getAdjustment(adjustmentId: string, tenantId: string): Promise<AdjustmentDto> {
+    return this.#getCurrentAdjustment(adjustmentId, tenantId);
+  }
+
   async acknowledgeDistribution(
     adjustmentId: string,
     distributionId: string,
     tenantId: string,
     targetSystem: string,
   ): Promise<void> {
-    await this.#getCurrentAdjustment(adjustmentId, tenantId);
+    const adjustment = await this.#getCurrentAdjustment(adjustmentId, tenantId);
     const distribution = await this.#getDistribution(adjustmentId, distributionId, tenantId);
     if (distribution.targetSystem !== targetSystem) {
       throw new NotFoundError('AdjustmentDistribution', distributionId);
     }
 
-    const now = new Date();
+    const now = clockNow();
     await withTenantContext(this.db, tenantId, async (tx) => {
       await tx
         .update(adjustmentDistributions)
@@ -221,7 +226,13 @@ export class AdjustmentService {
         adjustmentId,
         distributionId,
         targetSystem,
-        distributedAt: now.toISOString(),
+        distributedAt:      now.toISOString(),
+        personId:           adjustment.personId,
+        enrolmentId:        adjustment.enrolmentId,
+        adjustmentTypeCode: adjustment.adjustmentTypeCode,
+        scopeCode:          adjustment.scopeCode,
+        validFrom:          adjustment.validFrom.toISOString(),
+        ...(adjustment.validTo ? { validTo: adjustment.validTo.toISOString() } : {}),
       };
       await this.eventBus.publish(
         EVENT_TYPES.ADJUSTMENT_DISTRIBUTED,
@@ -236,7 +247,7 @@ export class AdjustmentService {
 
   async expireAdjustment(adjustmentId: string, tenantId: string, actorId: string): Promise<void> {
     const current = await this.#getCurrentAdjustment(adjustmentId, tenantId);
-    const now = new Date();
+    const now = clockNow();
     const validTo = now > current.validFrom
       ? now
       : new Date(current.validFrom.getTime() + 1);

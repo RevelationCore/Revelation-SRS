@@ -639,6 +639,135 @@
         }
       }
     },
+    "/api/v1/adjustments/{adjustmentId}": {
+      "get": {
+        "operationId": "getAdjustmentsByAdjustmentId",
+        "tags": [
+          "adjustments"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "adjustmentId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "integration",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "adjustmentId",
+                    "enrolmentId",
+                    "personId",
+                    "adjustmentTypeCode",
+                    "scopeCode",
+                    "notes",
+                    "actorId",
+                    "validFrom",
+                    "validTo",
+                    "recordedAt",
+                    "recordedUntil"
+                  ],
+                  "properties": {
+                    "adjustmentId": {
+                      "type": "string"
+                    },
+                    "enrolmentId": {
+                      "type": "string"
+                    },
+                    "personId": {
+                      "type": "string"
+                    },
+                    "adjustmentTypeCode": {
+                      "type": "string"
+                    },
+                    "scopeCode": {
+                      "type": "string"
+                    },
+                    "notes": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "actorId": {
+                      "type": "string"
+                    },
+                    "validFrom": {
+                      "type": "string"
+                    },
+                    "validTo": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "recordedAt": {
+                      "type": "string"
+                    },
+                    "recordedUntil": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/adjustments/{adjustmentId}/distributions": {
       "get": {
         "operationId": "getAdjustmentsByAdjustmentIdDistributions",
@@ -854,6 +983,127 @@
             "description": "Default Response"
           },
           "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/exceptional-circumstances/submissions": {
+      "post": {
+        "operationId": "createExceptionalCircumstancesSubmissions",
+        "tags": [
+          "circumstances"
+        ],
+        "description": "Student self-service EC submission (sets outcome to pending, determination date to today)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "enrolmentId",
+                  "description"
+                ],
+                "properties": {
+                  "enrolmentId": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "description": {
+                    "minLength": 1,
+                    "maxLength": 4000,
+                    "type": "string"
+                  },
+                  "moduleOfferingId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "exceptionalCircumstancesId"
+                  ],
+                  "properties": {
+                    "exceptionalCircumstancesId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
             "description": "Default Response",
             "content": {
               "application/json": {
@@ -25604,6 +25854,531 @@
                       "dispatchedBy": {
                         "type": "string"
                       }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/reporting/enrolment-volumes": {
+      "get": {
+        "operationId": "getReportingEnrolmentVolumes",
+        "summary": "Enrolment volume aggregate",
+        "tags": [
+          "Reporting"
+        ],
+        "description": "Returns server-side aggregate counts of current enrolments grouped by status, mode of study, academic year of entry, and programme.",
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "total",
+                    "byStatus",
+                    "byMode",
+                    "byYearOfEntry",
+                    "byProgramme",
+                    "generatedAt"
+                  ],
+                  "properties": {
+                    "total": {
+                      "type": "number"
+                    },
+                    "byStatus": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "number"
+                      }
+                    },
+                    "byMode": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "number"
+                      }
+                    },
+                    "byYearOfEntry": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "object",
+                        "additionalProperties": {
+                          "type": "number"
+                        }
+                      }
+                    },
+                    "byProgramme": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "programmeId",
+                          "count"
+                        ],
+                        "properties": {
+                          "programmeId": {
+                            "type": "string"
+                          },
+                          "count": {
+                            "type": "number"
+                          }
+                        }
+                      }
+                    },
+                    "generatedAt": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/audit-log": {
+      "get": {
+        "operationId": "getAuditLog",
+        "summary": "Entity audit log",
+        "tags": [
+          "Audit"
+        ],
+        "description": "Returns a paginated list of audit log entries for a specific entity (entityType + entityId).",
+        "parameters": [
+          {
+            "schema": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "in": "query",
+            "name": "entityType",
+            "required": true
+          },
+          {
+            "schema": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "in": "query",
+            "name": "entityId",
+            "required": true
+          },
+          {
+            "schema": {
+              "minimum": 1,
+              "maximum": 200,
+              "type": "number"
+            },
+            "in": "query",
+            "name": "limit",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "before",
+            "required": false
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "id",
+                      "tenantId",
+                      "entityType",
+                      "entityId",
+                      "fieldName",
+                      "beforeValue",
+                      "afterValue",
+                      "actionType",
+                      "actorType",
+                      "actorId",
+                      "actorDisplayName",
+                      "occurredAt",
+                      "correlationId",
+                      "workflowInstanceId",
+                      "reasonCode",
+                      "reasonText"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "tenantId": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "entityType": {
+                        "type": "string"
+                      },
+                      "entityId": {
+                        "type": "string"
+                      },
+                      "fieldName": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "beforeValue": {},
+                      "afterValue": {},
+                      "actionType": {
+                        "type": "string"
+                      },
+                      "actorType": {
+                        "type": "string"
+                      },
+                      "actorId": {
+                        "type": "string"
+                      },
+                      "actorDisplayName": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "occurredAt": {
+                        "type": "string"
+                      },
+                      "correlationId": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "workflowInstanceId": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "reasonCode": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "reasonText": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/retention/enforce": {
+      "post": {
+        "operationId": "createAdminRetentionEnforce",
+        "summary": "Retention enforcement sweep",
+        "tags": [
+          "Admin",
+          "Privacy"
+        ],
+        "description": "Run a data retention sweep for the tenant. In dry-run mode (default), identifies eligible persons and returns counts without making changes. Set dryRun=false to apply irreversible anonymisation.",
+        "parameters": [
+          {
+            "schema": {
+              "default": true,
+              "type": "boolean"
+            },
+            "in": "query",
+            "name": "dryRun",
+            "required": false
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "tenantId",
+                    "dryRun",
+                    "checkedAt",
+                    "eligible",
+                    "anonymised",
+                    "flagged",
+                    "skipped",
+                    "details"
+                  ],
+                  "properties": {
+                    "tenantId": {
+                      "type": "string"
+                    },
+                    "dryRun": {
+                      "type": "boolean"
+                    },
+                    "checkedAt": {
+                      "type": "string"
+                    },
+                    "eligible": {
+                      "type": "number"
+                    },
+                    "anonymised": {
+                      "type": "number"
+                    },
+                    "flagged": {
+                      "type": "number"
+                    },
+                    "skipped": {
+                      "type": "number"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "personId",
+                          "action"
+                        ],
+                        "properties": {
+                          "personId": {
+                            "type": "string"
+                          },
+                          "action": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "anonymised"
+                                ]
+                              },
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "flagged-for-dpo"
+                                ]
+                              },
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "skipped-award-hold"
+                                ]
+                              }
+                            ]
+                          },
+                          "reason": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/notifications/stream": {
+      "get": {
+        "operationId": "getNotificationsStream",
+        "description": "Open an SSE stream for real-time notifications",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/v1/notifications": {
+      "get": {
+        "operationId": "getNotifications",
+        "parameters": [
+          {
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50,
+              "type": "integer"
+            },
+            "in": "query",
+            "name": "limit",
+            "required": false
+          },
+          {
+            "schema": {
+              "default": false,
+              "type": "boolean"
+            },
+            "in": "query",
+            "name": "unreadOnly",
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "id",
+                      "personId",
+                      "category",
+                      "title",
+                      "body",
+                      "linkUrl",
+                      "readAt",
+                      "createdAt"
+                    ],
+                    "properties": {
+                      "id": {
+                        "format": "uuid",
+                        "type": "string"
+                      },
+                      "personId": {
+                        "format": "uuid",
+                        "type": "string"
+                      },
+                      "category": {
+                        "type": "string"
+                      },
+                      "title": {
+                        "type": "string"
+                      },
+                      "body": {
+                        "type": "string"
+                      },
+                      "linkUrl": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "readAt": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "createdAt": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/notifications/{id}/read": {
+      "patch": {
+        "operationId": "updateNotificationsByIdRead",
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "204": {
+            "description": "Default Response"
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string"
                     }
                   }
                 }

@@ -66,6 +66,7 @@ describe('transition validator', () => {
 
   it('checks target status against value-set configuration when available', async () => {
     const valueSets = {
+      // eslint-disable-next-line @typescript-eslint/require-await
       validateFieldValue: async () => false,
     } as Pick<ValueSetService, 'validateFieldValue'> as ValueSetService;
     const validator = new TransitionValidator(valueSets);

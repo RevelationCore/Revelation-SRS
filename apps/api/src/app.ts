@@ -3,6 +3,7 @@ import helmet from '@fastify/helmet';
 import rateLimiter from '@fastify/rate-limit';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
+import { trace } from '@opentelemetry/api';
 import { jwtPlugin, tenantContextPlugin } from '@revelation-srs/auth';
 import { createDb } from '@revelation-srs/db';
 import type { DomainError } from '@revelation-srs/domain';
@@ -40,6 +41,9 @@ import { WorkflowBridgeService } from './platform/platform-controls/workflow-bri
 import { WorkflowDefinitionService } from './platform/platform-controls/workflow-definition-service.js';
 import { WorkflowResponsibilityService } from './platform/platform-controls/workflow-responsibility-service.js';
 import { WorkflowInstanceService, WorkflowTaskService } from './platform/platform-controls/workflow-runtime-service.js';
+import { DemoService } from './platform/demo/service.js';
+import { RetentionEnforcementService } from './platform/privacy/retention-service.js';
+import { NotificationService } from './platform/notifications/notification-service.js';
 import { FoiService } from './platform/regulatory/foi-service.js';
 import { HesaService } from './platform/regulatory/hesa-service.js';
 import { OfsService } from './platform/regulatory/ofs-service.js';
@@ -75,8 +79,13 @@ import { globalisationRoutes } from './routes/globalisation.js';
 import { adjustmentRoutes } from './routes/adjustments.js';
 import { communicationRoutes } from './routes/communications.js';
 import { correctionCasesRoutes } from './routes/correction-cases.js';
+import { demoRoutes } from './routes/demo.js';
 import { integrationRegistryRoutes } from './routes/integration-registry.js';
 import { platformControlRoutes } from './routes/platform-controls.js';
+import { reportingRoutes } from './routes/reporting.js';
+import { auditLogRoutes } from './routes/audit-log.js';
+import { adminRetentionRoutes } from './routes/admin-retention.js';
+import { notificationRoutes } from './routes/notifications.js';
 
 // ---------------------------------------------------------------------------
 // OpenAPI helpers — injected via onRoute hook so route files stay declaration-free
@@ -199,6 +208,16 @@ export async function buildApp(
     disableRequestLogging: false,
   });
 
+  // Inject OTel traceId into every Fastify log line for log-trace correlation.
+  fastify.addHook('onRequest', (req, _reply, done) => {
+    const span = trace.getActiveSpan();
+    if (span) {
+      const { traceId, spanId } = span.spanContext();
+      req.log = req.log.child({ traceId, spanId });
+    }
+    done();
+  });
+
   // - Platform infrastructure -
 
   const db         = createDb(config.databaseUrl);
@@ -298,6 +317,15 @@ export async function buildApp(
   fastify.decorate('localeService',       localeService);
   fastify.decorate('currencyService',     currencyService);
   fastify.decorate('communicationService', communications);
+
+  const demo = new DemoService(db);
+  fastify.decorate('demoService', demo);
+
+  const retentionService = new RetentionEnforcementService(db, audit);
+  fastify.decorate('retentionService', retentionService);
+
+  const notificationService = new NotificationService(db);
+  fastify.decorate('notificationService', notificationService);
 
   // - Security plugins -
 
@@ -489,6 +517,11 @@ export async function buildApp(
   await fastify.register(integrationRegistryRoutes,     { prefix: '/api/v1' });
   await fastify.register(globalisationRoutes,       { prefix: '/api/v1' });
   await fastify.register(communicationRoutes,       { prefix: '/api/v1' });
+  await fastify.register(reportingRoutes,            { prefix: '/api/v1' });
+  await fastify.register(auditLogRoutes,             { prefix: '/api/v1' });
+  await fastify.register(adminRetentionRoutes,       { prefix: '/api/v1' });
+  await fastify.register(notificationRoutes,         { prefix: '/api/v1' });
+  await fastify.register(demoRoutes);
 
   // Canonical OpenAPI spec endpoint — served alongside the Swagger UI at /api/v1/docs
   fastify.get(
@@ -545,6 +578,9 @@ declare module 'fastify' {
     localeService:        LocaleService;
     currencyService:      CurrencyService;
     communicationService: CommunicationService;
+    demoService:          DemoService;
+    retentionService:     RetentionEnforcementService;
+    notificationService:  NotificationService;
   }
   interface FastifyContextConfig {
     skipAuth?: boolean;

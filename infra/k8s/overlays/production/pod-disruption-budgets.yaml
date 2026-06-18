@@ -1,0 +1,59 @@
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: srs-api-pdb
+  namespace: revelation-srs
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: srs-api
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: srs-portal-pdb
+  namespace: revelation-srs
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: srs-portal
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: srs-admin-pdb
+  namespace: revelation-srs
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: srs-admin
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: srs-worker-pdb
+  namespace: revelation-srs
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: srs-worker
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: srs-wellbeing-pdb
+  namespace: revelation-srs
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: srs-wellbeing

@@ -13,6 +13,7 @@
  */
 
 import { createHash } from 'node:crypto';
+
 import type { Logger } from 'pino';
 
 import type { WellbeingDb } from '../db/client.js';

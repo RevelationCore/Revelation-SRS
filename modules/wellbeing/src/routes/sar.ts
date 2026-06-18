@@ -7,6 +7,7 @@ import { exportPersonData, logSarExport } from '../repositories/sar-repository.j
 
 // ── Route plugin ──────────────────────────────────────────────────────────────
 
+// eslint-disable-next-line @typescript-eslint/require-await
 export async function sarRoutes(fastify: FastifyInstance): Promise<void> {
 
   // ── GET /api/v1/sar/export/:personId ─────────────────────────────────────

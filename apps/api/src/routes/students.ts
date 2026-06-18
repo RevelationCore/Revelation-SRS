@@ -2,6 +2,7 @@ import { Type } from '@sinclair/typebox';
 import { requirePermission } from '@revelation-srs/auth';
 import type { FastifyInstance } from 'fastify';
 
+import { clockNow } from '../platform/clock.js';
 import type {
   AddressInput,
   CreatePersonInput,
@@ -185,7 +186,7 @@ export function studentRoutes(fastify: FastifyInstance): void {
           {
             personId,
             changedFields: ['hesaId'],
-            effectiveDate: new Date().toISOString(),
+            effectiveDate: clockNow().toISOString(),
           },
         );
       }
@@ -520,7 +521,7 @@ export function studentRoutes(fastify: FastifyInstance): void {
           {
             personId,
             changedFields,
-            effectiveDate: (vfStr ?? new Date().toISOString()),
+            effectiveDate: (vfStr ?? clockNow().toISOString()),
           },
         );
       }

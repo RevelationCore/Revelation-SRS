@@ -21,6 +21,7 @@ import type { IntegrationBusPublisher } from '../integration-bus/publisher.js';
 import type { AdmissionsService } from '../admissions/admissions-service.js';
 import type { FeatureFlagService } from '../platform-controls/feature-flag-service.js';
 import type { ValueSetService } from '../value-sets/service.js';
+import { clockNow } from '../clock.js';
 
 import { RegulatoryExchangeService } from './exchange-service.js';
 
@@ -111,7 +112,7 @@ export class UcasService {
     this.#validatePayloadShape(payload);
     await this.#validateStatusCode(tenantId, payload.statusCode);
 
-    const now = new Date();
+    const now = clockNow();
     const payloadHash = hashPayload(payload);
     const existing = await this.#findCurrentByApplicantCycle(tenantId, payload.ucasPersonalId, payload.cycle);
     const applicationId = existing?.id ?? randomUUID();
@@ -211,7 +212,7 @@ export class UcasService {
     cycle: string,
     actorId: string,
   ): Promise<{ processedCount: number; payload: UcasConfirmationPayload }> {
-    const now = new Date();
+    const now = clockNow();
     const confirmations: UcasConfirmationPayload['confirmations'] = [];
 
     const rows = await withTenantContext(this.db, tenantId, async (tx) =>
@@ -395,7 +396,7 @@ export class UcasService {
     const current = await this.#getCurrentApplication(applicationId, tenantId);
     if (!current) throw new NotFoundError('UCAS application', applicationId);
 
-    const now = new Date();
+    const now = clockNow();
     await withTenantContext(this.db, tenantId, async (tx) => {
       await tx
         .update(ucasApplications)
@@ -416,7 +417,7 @@ export class UcasService {
         cycle: current.cycle,
         statusCode: current.statusCode,
         linkedEnrolmentId,
-        rawPayload: current.rawPayload as Record<string, unknown>,
+        rawPayload: current.rawPayload,
         receivedAt: current.receivedAt,
         validFrom: current.validFrom,
         validTo: current.validTo,

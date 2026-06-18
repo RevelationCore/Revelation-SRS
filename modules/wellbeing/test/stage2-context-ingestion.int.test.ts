@@ -8,10 +8,12 @@
  */
 
 import { randomUUID } from 'node:crypto';
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import type { DomainEventEnvelope } from '@revelation-srs/domain';
 import { EVENT_TYPES } from '@revelation-srs/domain';
+import { eq, and } from 'drizzle-orm';
+import pino from 'pino';
 
 import { withWellbeingTenantContext } from '../src/db/client.js';
 import { routeToHandler, WellbeingEventConsumer } from '../src/consumers/consumer.js';
@@ -19,9 +21,8 @@ import { CONSUMER_GROUP, isAlreadyProcessed, markProcessed } from '../src/reposi
 import { getProjection } from '../src/repositories/projection-repository.js';
 import { earlyWarningAlerts } from '../src/db/schema/wellbeing-case.js';
 import { enrolmentPersonMap, moduleRegPersonMap } from '../src/db/schema/event-tracking.js';
+
 import { startTestApp, type TestWellbeingApp } from './helpers/test-db.js';
-import { eq, and } from 'drizzle-orm';
-import pino from 'pino';
 
 let ctx: TestWellbeingApp;
 

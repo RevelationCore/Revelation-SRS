@@ -11,6 +11,7 @@ export const tenants = pgTable('tenant', {
   configuration: jsonb('configuration').notNull().$type<Record<string, unknown>>().default({}),
   createdAt:     timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   active:        boolean('active').notNull().default(true),
+  demoMode:      boolean('demo_mode').notNull().default(false),
 });
 
 export type Tenant       = typeof tenants.$inferSelect;

@@ -1,6 +1,7 @@
 import { Type } from '@sinclair/typebox';
 import { requirePermission } from '@revelation-srs/auth';
 import type { FastifyInstance } from 'fastify';
+import { hasPermission } from '@revelation-srs/domain';
 
 import type {
   EvaluateProgressionInput,
@@ -11,7 +12,6 @@ import type {
   ConferAwardInput,
 } from '../platform/progression/award-service.js';
 import type { HearDto } from '../platform/progression/hear-service.js';
-import { hasPermission } from '@revelation-srs/domain';
 
 const ErrorSchema = Type.Object({
   type: Type.String(),

@@ -2,7 +2,10 @@
 
 An open source Student Records System for UK Higher Education.
 
-> **Status**: Architecture and design complete — platform foundation (Phase 3) in progress.
+> **Status**: v1.0.0 released — all 11 phases complete.
+
+[![AGPL v3](https://img.shields.io/badge/licence-AGPL--v3-blue.svg)](LICENSE)
+[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
 
 ---
 
@@ -88,16 +91,15 @@ Full rationale: [docs/decisions/technology-stack.md](docs/decisions/technology-s
 | 0 | Principles and Planning | Complete |
 | 1 | Requirements and Domain Definition | Complete |
 | 2 | Architecture and Design | Complete |
-| **3** | **Platform Foundation** | **Complete** |
-| **4** | **Core SRS: Student Identity and Enrolment** | **In progress** |
-| 4 | Core SRS: Student Identity and Enrolment | Pending |
-| 5 | Core SRS: Assessment, Progression, Awards | Pending |
-| 6 | Core SRS: Regulatory Compliance | Pending |
-| 7 | Integration Layer: Published Interfaces | Pending |
-| 8 | Example First-Party Module: Wellbeing | Pending |
-| 9 | Example External Integration: VLE | Pending |
-| 10 | User Interfaces | Pending |
-| 11 | Hardening and Open Source Release | Pending |
+| 3 | Platform Foundation | Complete |
+| 4 | Core SRS: Student Identity and Enrolment | Complete |
+| 5 | Core SRS: Assessment, Progression, Awards | Complete |
+| 6 | Core SRS: Regulatory Compliance | Complete |
+| 7 | Integration Layer: Published Interfaces | Complete |
+| 8 | Example First-Party Module: Wellbeing | Complete |
+| 9 | Example External Integration: VLE | Complete |
+| 10 | User Interfaces | Complete |
+| **11** | **Hardening and Open Source Release** | **Complete — v1.0.0** |
 
 Full plan: [docs/project-roadmap.md](docs/project-roadmap.md)
 
@@ -202,7 +204,22 @@ The reference model is © RevelationCore 2026, licensed [CC BY-NC 4.0](https://c
 
 ## Contributing
 
-Contribution guidelines will be published as part of Phase 11 (open source release). Until the first release, the project is in active early development. If you have questions or would like to get involved, please open an issue.
+Revelation SRS welcomes contributions. See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide, including setup instructions, branching strategy, test requirements, and the DCO sign-off process.
+
+Before contributing, please read the [Code of Conduct](CODE_OF_CONDUCT.md). For security vulnerabilities, follow the responsible disclosure process in [SECURITY.md](SECURITY.md) rather than opening a public issue.
+
+## Verifying release artefacts
+
+All production container images released under `v1.0.0` and later are signed with [Sigstore/cosign](https://docs.sigstore.dev/). To verify an image:
+
+```bash
+cosign verify \
+  --certificate-identity-regexp="https://github.com/RevelationCore/Revelation-SRS/.github/workflows/release.yml" \
+  --certificate-oidc-issuer="https://token.actions.githubusercontent.com" \
+  ghcr.io/revelationcore/revelation-srs/api:v1.0.0
+```
+
+Each release also includes an SPDX 2.3 software bill of materials (`sbom.spdx.json`) attached as a release asset.
 
 ---
 

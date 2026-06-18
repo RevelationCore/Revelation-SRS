@@ -12,6 +12,8 @@ import {
 } from '@revelation-srs/db';
 import { NotFoundError, ValidationError } from '@revelation-srs/domain';
 
+import { clockNow } from '../clock.js';
+
 export interface FeatureFlagVariantInput {
   variantKey: string;
   displayName: string;
@@ -167,7 +169,7 @@ export class FeatureFlagService {
     const flagId = randomUUID();
     await withTenantContext(this.db, tenantId, async (tx) => {
       await tx.insert(featureFlags).values({
-        id: flagId as `${string}-${string}-${string}-${string}-${string}`,
+        id: flagId,
         flagKey: input.flagKey,
         displayName: input.displayName,
         description: input.description ?? null,
@@ -180,7 +182,7 @@ export class FeatureFlagService {
 
       for (const variant of variants) {
         await tx.insert(featureFlagVariants).values({
-          flagId: flagId as `${string}-${string}-${string}-${string}-${string}`,
+          flagId: flagId,
           variantKey: variant.variantKey,
           displayName: variant.displayName,
           value: variant.value,
@@ -227,7 +229,7 @@ export class FeatureFlagService {
       ownerModuleCode: input.ownerModuleCode ?? current.ownerModuleCode,
       statusCode: input.statusCode ?? current.statusCode,
       defaultVariantKey: input.defaultVariantKey ?? current.defaultVariantKey,
-      updatedAt: new Date(),
+      updatedAt: clockNow(),
     }).where(eq(featureFlags.id, featureFlagId as `${string}-${string}-${string}-${string}-${string}`));
   }
 
@@ -245,13 +247,13 @@ export class FeatureFlagService {
       ...(input.retirementCondition !== undefined ? { retirementCondition: input.retirementCondition } : {}),
       ...(input.allowedScopeCodes !== undefined ? { allowedScopeCodes:   input.allowedScopeCodes } : {}),
       ...(input.nonBypassable     !== undefined ? { nonBypassable:       input.nonBypassable }     : {}),
-      updatedAt: new Date(),
+      updatedAt: clockNow(),
     }).where(eq(featureFlags.id, featureFlagId as `${string}-${string}-${string}-${string}-${string}`));
   }
 
   async getImpact(featureFlagId: string): Promise<FlagImpactDto> {
     const flag = await this.getFlag(featureFlagId);
-    const now  = new Date();
+    const now  = clockNow();
 
     const [countRow] = await this.db
       .select({ count: sql<number>`count(*)::int` })
@@ -308,7 +310,7 @@ export class FeatureFlagService {
     const assignmentId = randomUUID();
     await withTenantContext(this.db, tenantId, async (tx) => {
       await tx.insert(featureFlagAssignments).values({
-        id: assignmentId as `${string}-${string}-${string}-${string}-${string}`,
+        id: assignmentId,
         tenantId: tenantId as `${string}-${string}-${string}-${string}-${string}`,
         environmentId: environmentId as `${string}-${string}-${string}-${string}-${string}` | null,
         flagId: featureFlagId as `${string}-${string}-${string}-${string}-${string}`,
@@ -323,7 +325,7 @@ export class FeatureFlagService {
         statusCode: 'active',
         ruleExpression: input.ruleExpression ?? null,
         configuration: input.configuration ?? {},
-        activeFrom: input.activeFrom ?? new Date(),
+        activeFrom: input.activeFrom ?? clockNow(),
         activeTo: input.activeTo ?? null,
         createdBy: actorId,
       });
@@ -387,7 +389,7 @@ export function selectMatchingAssignment(
   assignments: FeatureFlagAssignmentDto[],
   context: FeatureFlagEvaluationContext & { environmentId?: string },
 ): FeatureFlagAssignmentDto | null {
-  const now = new Date();
+  const now = clockNow();
   const matches = assignments
     .filter((assignment) => assignment.statusCode === 'active')
     .filter((assignment) => assignment.activeFrom <= now && (assignment.activeTo === null || assignment.activeTo > now))

@@ -21,6 +21,7 @@ import {
 import type { EnrolmentService } from '../enrolment/service.js';
 import type { IntegrationBusPublisher } from '../integration-bus/publisher.js';
 import type { ValueSetService } from '../value-sets/service.js';
+import { clockNow } from '../clock.js';
 
 import { RegulatoryExchangeService } from './exchange-service.js';
 
@@ -87,7 +88,7 @@ export class SlcService {
     tenantId: string,
     actorId: string,
   ): Promise<{ processedCount: number; payload: SlcConfirmationPayload }> {
-    const now = new Date();
+    const now = clockNow();
     const confirmations: SlcConfirmationRecord[] = [];
 
     const rows = await withTenantContext(this.db, tenantId, async (tx) =>

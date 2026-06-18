@@ -1,0 +1,180 @@
+{
+  "exportedAt": "2025-06-01T09:00:00Z",
+  "programmes": [
+    {
+      "SPR_CODE": "BSCOMP",
+      "SPR_TITL": "BSc Computer Science",
+      "SPR_QTYP": "039",
+      "SPR_FLVL": 6,
+      "SPR_CRED": 360,
+      "SPR_DURY": 3,
+      "SPR_MODE": "FT",
+      "SPR_SCHO": "School of Computing"
+    },
+    {
+      "SPR_CODE": "BSMATH",
+      "SPR_TITL": "BSc Mathematics",
+      "SPR_QTYP": "039",
+      "SPR_FLVL": 6,
+      "SPR_CRED": 360,
+      "SPR_DURY": 3,
+      "SPR_MODE": "FT",
+      "SPR_SCHO": "School of Mathematics"
+    }
+  ],
+  "modules": [
+    {
+      "MAV_MCODE": "CS101",
+      "MAV_TITL": "Introduction to Programming",
+      "MAV_CRED": 15,
+      "MAV_FLVL": 4,
+      "MAV_YEAR": "2024/25",
+      "MAV_PERD": "sem1",
+      "MAV_MODE": "FT"
+    },
+    {
+      "MAV_MCODE": "CS201",
+      "MAV_TITL": "Data Structures and Algorithms",
+      "MAV_CRED": 15,
+      "MAV_FLVL": 5,
+      "MAV_YEAR": "2024/25",
+      "MAV_PERD": "sem2",
+      "MAV_MODE": "FT"
+    },
+    {
+      "MAV_MCODE": "MA101",
+      "MAV_TITL": "Calculus I",
+      "MAV_CRED": 15,
+      "MAV_FLVL": 4,
+      "MAV_YEAR": "2024/25",
+      "MAV_PERD": "sem1",
+      "MAV_MODE": "FT"
+    }
+  ],
+  "students": [
+    {
+      "STU_CODE": "S001",
+      "STU_SURN": "Ashwick",
+      "STU_FNAM": "Aldren",
+      "STU_PNAM": "Al",
+      "STU_DOB": "2003-04-15",
+      "STU_SEX": "M",
+      "STU_NATI": "GB",
+      "STU_DOMI": "GB",
+      "STU_EMLI": "s001@fictional.ac.uk",
+      "STU_EMAI": "aldren.ashwick@personal.example.com",
+      "STU_TEL1": "07700900001",
+      "addresses": [
+        {
+          "ADD_TYPE": "H",
+          "ADD_LIN1": "12 Fictional Street",
+          "ADD_CITY": "Demo City",
+          "ADD_PCOD": "DC1 1AA",
+          "ADD_COUN": "GB"
+        },
+        {
+          "ADD_TYPE": "T",
+          "ADD_LIN1": "45 Synthetic Hall",
+          "ADD_CITY": "University Town",
+          "ADD_PCOD": "UT1 2BB",
+          "ADD_COUN": "GB"
+        }
+      ],
+      "courses": [
+        {
+          "SCJ_CODE": "SCJ-S001-2024",
+          "SCJ_SRS": "BSCOMP",
+          "SCJ_STA1": "A",
+          "SCJ_AYOE": "2024/25",
+          "SCJ_BEGC": "2024-09-16",
+          "SCJ_ENDD": "2027-06-30",
+          "SCJ_MODE": "FT",
+          "results": [
+            {
+              "SMR_MCODE": "CS101",
+              "SMR_YEAR": "2024/25",
+              "SMR_PERD": "sem1",
+              "SMR_PERC": 72.0,
+              "SMR_CTYP": "exam",
+              "SMR_SDAT": "2025-01-15T10:00:00Z"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "STU_CODE": "S002",
+      "STU_SURN": "Bexford",
+      "STU_FNAM": "Bryven",
+      "STU_DOB": "2002-11-22",
+      "STU_SEX": "F",
+      "STU_NATI": "GB",
+      "STU_DOMI": "GB",
+      "STU_EMLI": "s002@fictional.ac.uk",
+      "STU_EMAI": "bryven.bexford@personal.example.com",
+      "addresses": [
+        {
+          "ADD_TYPE": "H",
+          "ADD_LIN1": "8 Specimen Grove",
+          "ADD_CITY": "Specimen Grove",
+          "ADD_PCOD": "SG2 3CC",
+          "ADD_COUN": "GB"
+        }
+      ],
+      "courses": [
+        {
+          "SCJ_CODE": "SCJ-S002-2023",
+          "SCJ_SRS": "BSMATH",
+          "SCJ_STA1": "A",
+          "SCJ_AYOE": "2023/24",
+          "SCJ_BEGC": "2023-09-18",
+          "SCJ_ENDD": "2026-06-30",
+          "SCJ_MODE": "FT",
+          "results": [
+            {
+              "SMR_MCODE": "MA101",
+              "SMR_YEAR": "2024/25",
+              "SMR_PERD": "sem1",
+              "SMR_PERC": 85.5,
+              "SMR_CTYP": "coursework",
+              "SMR_SDAT": "2025-01-10T09:30:00Z"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "STU_CODE": "S003",
+      "STU_SURN": "Cralton",
+      "STU_FNAM": "Caslow",
+      "STU_DOB": "2001-07-03",
+      "STU_SEX": "X",
+      "STU_NATI": "IE",
+      "STU_DOMI": "IE",
+      "STU_EMLI": "s003@fictional.ac.uk",
+      "addresses": [],
+      "courses": [
+        {
+          "SCJ_CODE": "SCJ-S003-2022",
+          "SCJ_SRS": "BSCOMP",
+          "SCJ_STA1": "G",
+          "SCJ_AYOE": "2022/23",
+          "SCJ_BEGC": "2022-09-19",
+          "SCJ_ENDD": "2025-06-30",
+          "SCJ_ACTE": "2025-06-20",
+          "SCJ_MODE": "FT",
+          "results": [
+            {
+              "SMR_MCODE": "CS201",
+              "SMR_YEAR": "2024/25",
+              "SMR_PERD": "sem2",
+              "SMR_PERC": 68.0,
+              "SMR_CTYP": "exam",
+              "SMR_SDAT": "2025-05-20T14:00:00Z"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

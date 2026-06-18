@@ -15,7 +15,6 @@
 
 import { sql } from 'drizzle-orm';
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-
 import type { FastifyInstance } from 'fastify';
 
 import { startTestApp, type TestWellbeingApp } from './helpers/test-db.js';

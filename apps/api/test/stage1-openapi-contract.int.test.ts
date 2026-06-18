@@ -14,11 +14,12 @@
  * If these tests fail after a route change, re-run:
  *   pnpm --filter @revelation-srs/api generate:openapi
  */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call */
 import { readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 
 import { buildApp } from '../src/app.js';
 import type { Config } from '../src/config.js';
@@ -33,7 +34,7 @@ type OperationObject = {
   'x-publication-class'?: string;
 };
 
-type PathItemObject = Record<string, OperationObject | unknown>;
+type PathItemObject = Record<string, unknown>;
 
 type SpecObject = {
   openapi?: string;
@@ -67,7 +68,7 @@ function fingerprint(spec: SpecObject): SpecFingerprint {
     for (const method of HTTP_METHODS) {
       const op = item[method];
       if (!isOperation(op)) continue;
-      result[path]![method] = {
+      result[path][method] = {
         operationId:     op.operationId,
         tags:            [...(op.tags ?? [])].sort(),
         publicationClass: op['x-publication-class'],
@@ -207,7 +208,7 @@ describe('Stage 1 — all published operations have required metadata', () => {
   it('publication classes are from the approved set', () => {
     const APPROVED = new Set(['public', 'integration', 'workflow', 'admin', 'system', 'reporting', 'operational', 'private']);
     const invalid = listOperations(liveSpec)
-      .filter(op => op['x-publication-class'] && !APPROVED.has(op['x-publication-class']!))
+      .filter(op => op['x-publication-class'] && !APPROVED.has(op['x-publication-class']))
       .map(op => `${op.method} ${op.path} → ${op['x-publication-class']}`);
     expect(invalid, 'operations with invalid publication class').toEqual([]);
   });

@@ -1,0 +1,59 @@
+name: Feature request
+description: Propose a new capability or improvement
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Feature requests are welcome. Please provide enough context for the maintainers to evaluate the proposal against the project principles and roadmap.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem statement
+      description: Describe the problem or gap this feature would address. What can you not do today?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe the capability you would like to see added
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What other approaches did you consider, and why do you prefer this one?
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Core SRS domain
+        - API / integration layer
+        - Admin UI
+        - Student Portal
+        - Wellbeing module
+        - VLE adapter
+        - Deployment / operations
+        - Developer experience
+        - Documentation
+        - Other
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: principles
+    attributes:
+      label: Principle alignment
+      description: Confirm the proposal aligns with the project principles
+      options:
+        - label: This feature preserves or extends the bitemporal data model
+        - label: This feature respects multi-tenancy boundaries
+        - label: This feature can be implemented without breaking the audit trail
+        - label: I have read [docs/core-principles.md](../../docs/core-principles.md)

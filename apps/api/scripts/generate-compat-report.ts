@@ -30,7 +30,7 @@ type OperationObject = {
 type SpecObject = {
   openapi?: string;
   info?:    { title?: string; version?: string };
-  paths?:   Record<string, Record<string, OperationObject | unknown>>;
+  paths?:   Record<string, Record<string, unknown>>;
 };
 
 type RegistryEntry = {
@@ -177,7 +177,7 @@ summary.push(`File schemas: ${schemaFiles.length} schemas across ${families.leng
 summary.push(`Event consumers: ${consumerSet.size} declared (${[...consumerSet].sort().join(', ')})`);
 
 // Drift warnings
-const missingSchemas = published.filter(e => e.schemaPath).filter(e => {
+const _missingSchemas = published.filter(_e => _e.schemaPath).filter(_e => {
   // We can't async here, so just note the count check is in test suite
   return false;
 });

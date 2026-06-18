@@ -74,6 +74,7 @@ export class SrsAdjustmentHttpClient implements SrsAdjustmentClient {
 export class SrsAdjustmentStubClient implements SrsAdjustmentClient {
   readonly submissions: SubmitAdjustmentInput[] = [];
 
+  // eslint-disable-next-line @typescript-eslint/require-await
   async submitAdjustment(input: SubmitAdjustmentInput): Promise<SubmitAdjustmentResult> {
     this.submissions.push(input);
     return { adjustmentId: `stub-adj-${input.idempotencyKey}` };

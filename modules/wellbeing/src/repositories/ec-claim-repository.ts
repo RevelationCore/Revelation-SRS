@@ -72,7 +72,7 @@ export async function createEcClaim(
     personId:              input.personId,
     enrolmentId:           input.enrolmentId,
     assessmentPeriodRef:   input.assessmentPeriodRef,
-    affectedModuleCodes:   input.affectedModuleCodes as unknown as Record<string, unknown>,
+    affectedModuleCodes:   input.affectedModuleCodes,
     statusCode:            'submitted',
     circumstancesNarrative: input.circumstancesNarrative ?? null,
     submittedAt:           new Date(),
@@ -162,7 +162,7 @@ export async function transitionEcStatus(
     personId:              current.personId,
     enrolmentId:           current.enrolmentId,
     assessmentPeriodRef:   current.assessmentPeriodRef,
-    affectedModuleCodes:   current.affectedModuleCodes as unknown as Record<string, unknown>,
+    affectedModuleCodes:   current.affectedModuleCodes,
     statusCode:            newStatus,
     circumstancesNarrative: updates?.circumstancesNarrative ?? current.circumstancesNarrative ?? null,
     submittedAt:           current.submittedAt,
@@ -225,7 +225,7 @@ export async function recordDetermination(
     authorisedById:          input.authorisedById,
     determinationCode:       input.determinationCode,
     determinationRationale:  input.determinationRationale ?? null,
-    moduleOutcomes:          input.moduleOutcomes as unknown as Record<string, unknown>,
+    moduleOutcomes:          input.moduleOutcomes,
     determinedAt:            input.determinedAt,
   }).returning({ id: ecDeterminations.id });
 

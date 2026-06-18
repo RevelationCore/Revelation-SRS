@@ -33,6 +33,7 @@ function generateCaseRef(): string {
 
 // ── Route plugin ──────────────────────────────────────────────────────────────
 
+// eslint-disable-next-line @typescript-eslint/require-await
 export async function ecClaimRoutes(
   fastify: FastifyInstance,
   opts:    { srsEcClient: SrsEcClient },

@@ -119,6 +119,7 @@ const RecordExchangeRateBody = Type.Object({
 
 // ── Route registration ────────────────────────────────────────────────────────
 
+// eslint-disable-next-line @typescript-eslint/require-await
 export async function globalisationRoutes(fastify: FastifyInstance): Promise<void> {
   const { localeService, currencyService } = fastify;
 

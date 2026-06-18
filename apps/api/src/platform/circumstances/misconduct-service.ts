@@ -17,6 +17,7 @@ import type { CircumstancesMisconductOutcomeRecordedV1Payload } from '@revelatio
 
 import type { IntegrationBusPublisher } from '../integration-bus/publisher.js';
 import type { ValueSetService } from '../value-sets/service.js';
+import { clockNow } from '../clock.js';
 
 export interface MisconductPenaltyEffectInput {
   targetEntityType: 'mark' | 'module_registration';
@@ -83,7 +84,7 @@ export class MisconductService {
 
     const misconductCaseId = randomUUID();
     const misconductOutcomeId = randomUUID();
-    const now = new Date();
+    const now = clockNow();
 
     await withTenantContext(this.db, tenantId, async (tx) => {
       await tx.insert(misconductCaseReferences).values({

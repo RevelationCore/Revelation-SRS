@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+
 import { and, desc, eq, sql } from 'drizzle-orm';
 
 import type { WellbeingTx } from '../db/client.js';

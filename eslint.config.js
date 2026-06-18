@@ -6,7 +6,7 @@ import importX from 'eslint-plugin-import-x';
 
 /** @type {import('eslint').Linter.FlatConfig[]} */
 export default [
-  { ignores: ['**/dist/**', '**/node_modules/**', '**/*.js', '**/*.cjs', '**/*.mjs'] },
+  { ignores: ['**/dist/**', '**/node_modules/**', '**/*.js', '**/*.cjs', '**/*.mjs', '**/*.d.ts'] },
   {
     files: ['**/*.ts'],
     languageOptions: {
@@ -25,7 +25,7 @@ export default [
     rules: {
       ...tseslint.configs['recommended-type-checked'].rules,
       '@typescript-eslint/no-explicit-any':        'error',
-      '@typescript-eslint/no-unused-vars':          ['error', { argsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-unused-vars':          ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
       '@typescript-eslint/consistent-type-imports': ['error', { prefer: 'type-imports' }],
       'import-x/order': ['error', {
         groups: ['builtin', 'external', 'internal', 'parent', 'sibling', 'index'],

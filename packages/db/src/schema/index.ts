@@ -18,3 +18,5 @@ export * from './examEntry.js';
 export * from './platform-workflow.js';
 export * from './globalisation.js';
 export * from './communications.js';
+export * from './demo.js';
+export * from './notifications.js';

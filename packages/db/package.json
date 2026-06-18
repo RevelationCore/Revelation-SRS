@@ -2,6 +2,7 @@
   "name": "@revelation-srs/db",
   "version": "0.0.1",
   "private": true,
+  "license": "AGPL-3.0-or-later",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -13,7 +14,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "typecheck": "tsc -b tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
     "dev": "tsc -p tsconfig.json --watch",
     "generate": "drizzle-kit generate",
     "migrate":   "node --import tsx/esm src/migrate.ts",
@@ -32,7 +33,7 @@
     "drizzle-kit": "^0.28.0",
     "testcontainers": "^10.0.0",
     "tsx": "^4.0.0",
-    "typescript": "^5.5.0",
+    "typescript": "^6.0.0",
     "vitest": "^2.0.0"
   }
 }

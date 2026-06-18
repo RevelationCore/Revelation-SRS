@@ -1,0 +1,165 @@
+groups:
+  - name: srs-api
+    rules:
+
+      # ── API error rate ──────────────────────────────────────────────────────
+      - alert: ApiHighErrorRate
+        expr: |
+          sum(rate(http_request_duration_seconds_count{job="srs-api",status=~"5.."}[5m]))
+          / sum(rate(http_request_duration_seconds_count{job="srs-api"}[5m])) > 0.01
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "API error rate > 1% for 5 minutes"
+          description: "{{ $value | humanizePercentage }} of requests are 5xx errors (threshold 1%)"
+          runbook: "docs/runbooks/02-incident-triage.md"
+
+      # ── API latency ─────────────────────────────────────────────────────────
+      - alert: ApiHighLatency
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_request_duration_seconds_bucket{job="srs-api"}[5m])) by (le)
+          ) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "API p95 latency > 500ms (NFR-PERF-001)"
+          description: "p95 request latency is {{ $value | humanizeDuration }}"
+          runbook: "docs/runbooks/02-incident-triage.md"
+
+      # ── Database connection pool ─────────────────────────────────────────────
+      - alert: DatabaseConnectionPoolSaturation
+        expr: |
+          srs_db_connection_pool_in_use / srs_db_connection_pool_max > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "Database connection pool > 80% utilised"
+          description: "Pool utilisation is {{ $value | humanizePercentage }}"
+
+  - name: srs-nats
+    rules:
+
+      # ── NATS consumer lag ───────────────────────────────────────────────────
+      - alert: NatsConsumerLag
+        expr: nats_consumer_num_pending > 1000
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "NATS consumer lag > 1000 messages"
+          description: "Consumer '{{ $labels.consumer }}' has {{ $value }} pending messages"
+          runbook: "docs/runbooks/03-integration-outage.md"
+
+      - alert: NatsDeadLetterQueueNonEmpty
+        expr: nats_consumer_num_pending{consumer=~".*dlq.*|.*dead.*"} > 0
+        for: 1m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "NATS dead-letter queue is non-empty"
+          description: "DLQ '{{ $labels.consumer }}' has {{ $value }} unprocessed messages"
+          runbook: "docs/runbooks/03-integration-outage.md"
+
+  - name: srs-temporal
+    rules:
+
+      # ── Temporal workflow failures ──────────────────────────────────────────
+      - alert: TemporalWorkflowFailures
+        expr: increase(temporal_workflow_failed_total[10m]) > 5
+        for: 0m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "Temporal workflow failures in the last 10 minutes"
+          description: "{{ $value }} workflows have failed in the last 10 minutes"
+          runbook: "docs/runbooks/04-workflow-recovery.md"
+
+      - alert: TemporalWorkerDown
+        expr: up{job="srs-worker"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: "Temporal worker is down"
+          description: "Worker pod is not responding to health checks"
+          runbook: "docs/runbooks/04-workflow-recovery.md"
+
+  - name: srs-backup
+    rules:
+
+      # ── Backup staleness ────────────────────────────────────────────────────
+      - alert: BackupStale
+        expr: time() - srs_last_backup_timestamp_seconds > 90000
+        for: 0m
+        labels:
+          severity: critical
+          team: ops
+        annotations:
+          summary: "SRS backup has not run for > 25 hours"
+          description: "Last backup was {{ $value | humanizeDuration }} ago. RPO breach risk."
+          runbook: "docs/runbooks/05-backup-restore.md"
+
+      - alert: BackupLarge
+        expr: srs_last_backup_size_bytes > 10e9
+        for: 0m
+        labels:
+          severity: info
+          team: ops
+        annotations:
+          summary: "Backup size exceeds 10 GB"
+          description: "Backup is {{ $value | humanize1024 }}B — review retention and storage capacity"
+
+  - name: srs-demo
+    rules:
+
+      # ── Demo rotation ───────────────────────────────────────────────────────
+      - alert: DemoRotationFailed
+        expr: time() - srs_demo_rotation_last_success_timestamp_seconds > 172800
+        for: 0m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "Demo rotation has not succeeded in > 48 hours"
+          description: "Last successful demo rotation was {{ $value | humanizeDuration }} ago"
+          runbook: "docs/runbooks/07-demo-rotation.md"
+
+  - name: srs-availability
+    rules:
+
+      # ── API pod availability ────────────────────────────────────────────────
+      - alert: ApiPodsUnavailable
+        expr: kube_deployment_status_replicas_available{deployment="srs-api"} < 2
+        for: 2m
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: "Fewer than 2 API pods available"
+          description: "Only {{ $value }} API pod(s) are available. Production requires minimum 2."
+          runbook: "docs/runbooks/02-incident-triage.md"
+
+      # ── Keycloak reachability (from API readiness probe failure rate) ────────
+      - alert: KeycloakUnreachable
+        expr: |
+          sum(kube_pod_container_status_ready{container="api"}) /
+          sum(kube_pod_container_status_ready{container="api"} + kube_pod_container_status_waiting{container="api"}) < 0.5
+        for: 3m
+        labels:
+          severity: critical
+          team: ops
+        annotations:
+          summary: "More than 50% of API pods are not ready"
+          description: "Possible Keycloak or database outage — check readiness probe responses"
+          runbook: "docs/runbooks/02-incident-triage.md"

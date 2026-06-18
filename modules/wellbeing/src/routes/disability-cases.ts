@@ -39,6 +39,7 @@ function serializeCase(c: Awaited<ReturnType<typeof findCurrentCase>>) {
 
 // ── Route plugin ──────────────────────────────────────────────────────────────
 
+// eslint-disable-next-line @typescript-eslint/require-await
 export async function disabilityCaseRoutes(
   fastify: FastifyInstance,
   opts: { edrms: EdrmsAdapter },

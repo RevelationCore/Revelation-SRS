@@ -6,6 +6,7 @@
  *   pnpm --filter @revelation-srs/db seed:dev
  */
 import { sql } from 'drizzle-orm';
+
 import { createDb } from './pool.js';
 
 const connectionString =

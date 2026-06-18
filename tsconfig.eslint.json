@@ -2,11 +2,18 @@
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "noEmit": true,
-    "rootDir": "."
+    "rootDir": ".",
+    "types": ["node"],
+    "lib": ["ES2022", "DOM", "DOM.Iterable"]
   },
   "include": [
     "apps/**/*.ts",
-    "packages/**/*.ts"
+    "packages/**/*.ts",
+    "adapters/**/*.ts",
+    "modules/**/*.ts",
+    "e2e/**/*.ts",
+    "playwright.config.ts",
+    "playwright.golden.config.ts"
   ],
   "exclude": [
     "**/dist/**",

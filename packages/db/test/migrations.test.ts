@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { readFile } from 'node:fs/promises';
 
 import { sql } from 'drizzle-orm';

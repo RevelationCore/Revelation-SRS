@@ -21,7 +21,7 @@ async function tcpCheck(address: string, defaultPort: number): Promise<CheckResu
     socket.once('connect', () => {
       clearTimeout(timeout);
       socket.end();
-      resolve({ status: 'ok', latencyMs: Date.now() - t0 });
+      resolve({ status: 'ok', latencyMs: Date.now() - t0 });  // clock:allow
     });
 
     socket.once('error', (err) => {
@@ -36,7 +36,7 @@ async function jwksCheck(jwksUrl: string): Promise<CheckResult> {
   try {
     const res = await fetch(jwksUrl, { signal: AbortSignal.timeout(1_500) });
     return res.ok
-      ? { status: 'ok', latencyMs: Date.now() - t0 }
+      ? { status: 'ok', latencyMs: Date.now() - t0 }  // clock:allow
       : { status: 'error', error: `HTTP ${res.status}` };
   } catch (err) {
     return { status: 'error', error: err instanceof Error ? err.message : String(err) };
@@ -78,7 +78,7 @@ export function healthRoutes(fastify: FastifyInstance): void {
       try {
         const t0 = Date.now();
         await fastify.db.execute(sql`SELECT 1`);
-        checks['database'] = { status: 'ok', latencyMs: Date.now() - t0 };
+        checks['database'] = { status: 'ok', latencyMs: Date.now() - t0 };  // clock:allow
       } catch (err) {
         checks['database'] = { status: 'error', error: String(err) };
       }

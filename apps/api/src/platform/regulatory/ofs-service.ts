@@ -14,6 +14,7 @@ import {
 } from '@revelation-srs/domain';
 
 import type { IntegrationBusPublisher } from '../integration-bus/publisher.js';
+import { clockNow } from '../clock.js';
 
 interface B3MetricRow {
   total_enrolments: number | string;
@@ -54,7 +55,7 @@ export class OfsService {
     academicYear: string,
     actorId: string,
   ): Promise<{ extractId: string; recordCount: number; payload: Record<string, unknown> }> {
-    const now = new Date();
+    const now = clockNow();
     const metrics = await this.#loadB3Metrics(tenantId, academicYear);
     const total = toNumber(metrics.total_enrolments);
     const payload = {
@@ -109,7 +110,7 @@ export class OfsService {
     academicYear: string,
     actorId: string,
   ): Promise<{ extractId: string; recordCount: number; payload: Record<string, unknown> }> {
-    const now = new Date();
+    const now = clockNow();
     const rows = await this.#loadParticipationRows(tenantId, academicYear);
     const segments = rows.map((row) => {
       const total = toNumber(row.student_count);

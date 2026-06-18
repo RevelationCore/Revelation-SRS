@@ -89,6 +89,7 @@ const ExchangeSchema = Type.Object({
 // Route function
 // ---------------------------------------------------------------------------
 
+// eslint-disable-next-line @typescript-eslint/require-await
 export async function integrationRegistryRoutes(fastify: FastifyInstance): Promise<void> {
   const svc = () => fastify.integrationRegistryService;
 

@@ -85,6 +85,20 @@
       "when": 1748995211000,
       "tag": "0011_environment_promotion_hardening",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1748995212000,
+      "tag": "0022_demo_tenant_mode",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1748995213000,
+      "tag": "0023_demo_status_checkpoint",
+      "breakpoints": true
     }
   ]
 }

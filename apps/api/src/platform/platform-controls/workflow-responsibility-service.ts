@@ -99,7 +99,7 @@ export class WorkflowResponsibilityService {
     const ruleId = randomUUID();
     await withTenantContext(this.db, tenantId, async (tx) => {
       await tx.insert(workflowAssignmentRules).values({
-        id: ruleId as `${string}-${string}-${string}-${string}-${string}`,
+        id: ruleId,
         tenantId: tenantId as `${string}-${string}-${string}-${string}-${string}`,
         workflowDefinitionVersionId: input.workflowDefinitionVersionId as `${string}-${string}-${string}-${string}-${string}`,
         stepKey: input.stepKey,

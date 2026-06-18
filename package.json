@@ -5,30 +5,49 @@
   "type": "module",
   "packageManager": "pnpm@9.15.9",
   "description": "Open source Student Records System for UK Higher Education",
-  "license": "AGPL-3.0-only",
-  "engines": { "node": ">=22.0.0", "pnpm": ">=9.0.0" },
+  "license": "AGPL-3.0-or-later",
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=9.0.0"
+  },
   "scripts": {
-    "build":       "pnpm -r build",
-    "typecheck":   "pnpm -r typecheck",
-    "lint":        "eslint .",
-    "lint:fix":    "eslint . --fix",
-    "test":        "pnpm -r test",
-    "test:int":    "pnpm -r test:int",
-    "dev":         "pnpm --parallel -r dev",
-    "migrate":     "pnpm --filter @revelation-srs/db migrate",
-    "migrate:gen": "pnpm --filter @revelation-srs/db generate"
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "test": "pnpm -r test",
+    "test:int": "pnpm -r test:int",
+    "dev": "pnpm --parallel -r dev",
+    "generate:types": "openapi-typescript apps/api/openapi/v1.json -o packages/ui/src/api/v1.gen.ts",
+    "check:types-drift": "openapi-typescript apps/api/openapi/v1.json -o packages/ui/src/api/v1.gen.ts && git diff --exit-code packages/ui/src/api/v1.gen.ts",
+    "test:e2e": "playwright test",
+    "check:bundle-size": "node scripts/check-bundle-size.mjs",
+    "migrate": "pnpm --filter @revelation-srs/db migrate",
+    "migrate:gen": "pnpm --filter @revelation-srs/db generate",
+    "demo:list":           "pnpm --filter @revelation-srs/demo-data demo:list",
+    "demo:reset":          "pnpm --filter @revelation-srs/demo-data demo:reset",
+    "demo:validate":       "pnpm --filter @revelation-srs/demo-data demo:validate",
+    "demo:status":         "pnpm --filter @revelation-srs/demo-data demo:status",
+    "demo:check-versions":        "pnpm --filter @revelation-srs/demo-data demo:check-versions",
+    "demo:rotate":                "pnpm --filter @revelation-srs/demo-data demo:rotate",
+    "test:e2e:golden":            "pnpm --filter @revelation-srs/demo-data test:golden",
+    "test:e2e:playwright:golden": "playwright test --config playwright.golden.config.ts"
   },
   "devDependencies": {
-    "@eslint/js":                      "^9.0.0",
+    "@axe-core/playwright": "^4.11.3",
+    "@eslint/js": "^9.0.0",
+    "@playwright/test": "^1.61.0",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
-    "@typescript-eslint/parser":        "^8.0.0",
-    "eslint":                           "^9.0.0",
-    "eslint-plugin-import-x":           "^4.0.0",
-    "typescript":                       "^5.5.0"
+    "@typescript-eslint/parser": "^8.0.0",
+    "bundlesize": "^0.18.2",
+    "eslint": "^9.0.0",
+    "eslint-plugin-import-x": "^4.0.0",
+    "openapi-typescript": "^7.13.0",
+    "typescript": "^6.0.3"
   },
   "pnpm": {
     "overrides": {
-      "typescript": "^5.5.0"
+      "typescript": "^6.0.0"
     }
   }
 }

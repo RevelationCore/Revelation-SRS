@@ -16,6 +16,8 @@ import {
 } from '@revelation-srs/db';
 import { NotFoundError, ValidationError } from '@revelation-srs/domain';
 
+import { clockNow } from '../clock.js';
+
 // ── HEAR document schema ──────────────────────────────────────────────────────
 
 export interface HearModuleResult {
@@ -76,7 +78,7 @@ export class HearService {
 
     const student        = await this.#getStudentIdentity(award.personId, tenantId);
     const ratifiedResults = await this.#getRatifiedModuleResults(enrolmentId, tenantId);
-    const now            = new Date();
+    const now            = clockNow();
 
     const document: HearDocument = {
       version:     '1.0',

@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 
-import { and, eq, isNull, sql } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import {
   hesaIdentifierAssignments,
   hesaStudentReturnRecords,
@@ -23,6 +23,7 @@ import {
 
 import type { IntegrationBusPublisher } from '../integration-bus/publisher.js';
 import type { StudentService } from '../students/service.js';
+import { clockNow } from '../clock.js';
 
 import { RegulatoryExchangeService } from './exchange-service.js';
 
@@ -120,7 +121,7 @@ export class HesaService {
     }
 
     const returnId = randomUUID();
-    const now = new Date();
+    const now = clockNow();
 
     await withTenantContext(this.db, tenantId, async (tx) => {
       await tx.insert(hesaStudentReturns).values({
@@ -146,7 +147,7 @@ export class HesaService {
       for (const source of sourceRows) {
         const payload = mapStudentToHesa(source);
         const amendmentDiff = amendmentOfId
-          ? diffHesaPayload(originalRecordsByPersonId.get(source.person_id)?.recordPayload as HesaRecordPayload | undefined, payload)
+          ? diffHesaPayload(originalRecordsByPersonId.get(source.person_id)?.recordPayload, payload)
           : null;
         // enrolmentId on the record stores the representative (first) enrolment for this person.
         // Multiple enrolments are captured inside recordPayload._enrolments.
@@ -174,7 +175,7 @@ export class HesaService {
     await this.#requireReturn(returnId, tenantId);
     const records = await this.#getRecords(returnId, tenantId);
     const result = validateHesaRecords(records);
-    const now = new Date();
+    const now = clockNow();
 
     await withTenantContext(this.db, tenantId, async (tx) => {
       const reportRows = await tx
@@ -350,7 +351,7 @@ export class HesaService {
         returnId,
         enrolmentId,
         hesaId: assignment.hesaId,
-        assignedAt: new Date().toISOString(),
+        assignedAt: clockNow().toISOString(),
       });
     }
 
@@ -371,7 +372,7 @@ export class HesaService {
     actorId: string,
   ): Promise<void> {
     const hesaReturn = await this.#requireReturn(returnId, tenantId);
-    const now = new Date();
+    const now = clockNow();
 
     const submissions = await withTenantContext(this.db, tenantId, async (tx) =>
       tx
@@ -557,7 +558,7 @@ export class HesaService {
     );
     const byPersonId = new Map<string, typeof hesaStudentReturnRecords.$inferSelect>();
     for (const record of records) {
-      const personId = getPayloadString(record.recordPayload as HesaRecordPayload, '_personId');
+      const personId = getPayloadString(record.recordPayload, '_personId');
       if (personId) byPersonId.set(personId, record);
     }
     return byPersonId;
@@ -683,7 +684,7 @@ function validateHesaRecords(records: HesaReturnRecord[]): HesaValidationResult 
 
     if (!birthDate || Number.isNaN(Date.parse(birthDate))) {
       errors.push({ field: 'BIRTHDTE', enrolmentId, message: 'Birth date is required and must be a valid date' });
-    } else if (ageAt(new Date(birthDate), new Date()) < 16) {
+    } else if (ageAt(new Date(birthDate), clockNow()) < 16) {
       errors.push({ field: 'BIRTHDTE', enrolmentId, message: 'Student must be at least 16 years old' });
     }
 

@@ -1,4 +1,8 @@
+// OTel must be bootstrapped before any other import.
+import './telemetry.js';
+
 import pino from 'pino';
+
 import { loadConfig } from './config.js';
 import { buildApp } from './app.js';
 import { WellbeingEventConsumer } from './consumers/consumer.js';

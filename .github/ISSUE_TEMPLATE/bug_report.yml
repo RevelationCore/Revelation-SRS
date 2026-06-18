@@ -1,0 +1,88 @@
+name: Bug report
+description: Report a defect in Revelation SRS
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting a bug. Please complete all sections so we can triage quickly.
+
+        **Security vulnerabilities** — do not use this template. See [SECURITY.md](../../SECURITY.md).
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: The release version or commit SHA where you observed the bug
+      placeholder: "v1.0.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - API (apps/api)
+        - Admin UI (apps/admin)
+        - Portal UI (apps/portal)
+        - Wellbeing module (modules/wellbeing)
+        - VLE adapter (adapters/vle)
+        - Migration tooling (packages/migration-tools)
+        - Infrastructure / deployment
+        - Documentation
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A clear and concise description of the bug
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Numbered steps that reliably reproduce the issue
+      placeholder: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log output
+      description: Paste any relevant structured log lines or error messages (redact personal data)
+      render: text
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Deployment mode, OS, Node.js version, Docker version
+      placeholder: |
+        Deployment: Docker Compose / Kubernetes
+        OS: Ubuntu 24.04
+        Node.js: 22.x
+        Docker: 27.x

@@ -21,6 +21,7 @@ export const persons = pgTable('person', {
   sourceSystem:    text('source_system'),     // 'ucas' | 'direct' | 'manual'
   sourceReference: text('source_reference'),
   createdAt:       timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  retentionAnonymisedAt: timestamp('retention_anonymised_at', { withTimezone: true }),
 });
 
 export type Person    = typeof persons.$inferSelect;

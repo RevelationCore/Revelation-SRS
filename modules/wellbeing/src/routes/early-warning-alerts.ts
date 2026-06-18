@@ -13,6 +13,7 @@ import {
 
 // ── Route plugin ──────────────────────────────────────────────────────────────
 
+// eslint-disable-next-line @typescript-eslint/require-await
 export async function earlyWarningAlertRoutes(fastify: FastifyInstance): Promise<void> {
 
   // ── GET /api/v1/early-warning-alerts ─────────────────────────────────────

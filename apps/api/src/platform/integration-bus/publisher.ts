@@ -1,8 +1,11 @@
 import { randomUUID } from 'node:crypto';
 
+import { context, propagation } from '@opentelemetry/api';
 import type { DomainEventEnvelope, DataClassification } from '@revelation-srs/domain';
-import type { JetStreamClient, NatsConnection } from 'nats';
-import { connect, JSONCodec } from 'nats';
+import type { JetStreamClient, NatsConnection, MsgHdrs } from 'nats';
+import { connect, JSONCodec, headers as natsHeaders } from 'nats';
+
+import { clockNow } from '../clock.js';
 
 export interface PublishOptions {
   /** Overrides valid time when the event represents a backdated fact. */
@@ -60,7 +63,7 @@ export class IntegrationBusPublisher {
   ): Promise<void> {
     if (!this.js) throw new Error('IntegrationBusPublisher is not connected');
 
-    const now = new Date().toISOString();
+    const now = clockNow().toISOString();
     const envelope: DomainEventEnvelope<TPayload> = {
       id:                 randomUUID(),
       type,
@@ -69,7 +72,7 @@ export class IntegrationBusPublisher {
       tenantId,
       occurredAt:         now,
       publishedAt:        now,
-      validAt:            (options.validAt ?? new Date()).toISOString(),
+      validAt:            (options.validAt ?? clockNow()).toISOString(),
       correlationId,
       causationId:        options.causationId ?? correlationId,
       source:             'srs-core',
@@ -77,6 +80,12 @@ export class IntegrationBusPublisher {
       payload,
     };
 
-    await this.js.publish(type, this.jc.encode(envelope));
+    // Inject W3C TraceContext headers so downstream consumers can continue the trace.
+    const hdrs: MsgHdrs = natsHeaders();
+    propagation.inject(context.active(), hdrs, {
+      set: (carrier: MsgHdrs, key: string, value: string) => carrier.set(key, value),
+    });
+
+    await this.js.publish(type, this.jc.encode(envelope), { headers: hdrs });
   }
 }

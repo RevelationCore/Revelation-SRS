@@ -38,7 +38,7 @@ const config: Config = {
 const app = await buildApp(config);
 await app.ready();
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
 const spec = (app as any).swagger() as unknown;
 
 await app.close();

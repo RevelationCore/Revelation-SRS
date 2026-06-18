@@ -12,6 +12,7 @@ import type {
   FeeLiabilityDto,
 } from '../platform/enrolment/service.js';
 import { transitionAuditValue } from '../platform/workflow/transition-service.js';
+import { clockNow } from '../platform/clock.js';
 
 const EnrolmentSchema = Type.Object({
   enrolmentId:         Type.String(),
@@ -316,7 +317,7 @@ export function enrolmentRoutes(fastify: FastifyInstance): void {
           enrolmentId,
           request.tenantId,
           newStatus,
-          body.validFrom ? new Date(body.validFrom) : new Date(),
+          body.validFrom ? new Date(body.validFrom) : clockNow(),
           request.user.sub,
           transitionOptions,
         );

@@ -25,6 +25,7 @@ import type { IntegrationBusPublisher } from '../integration-bus/publisher.js';
 import type { ProgressionService } from '../progression/progression-service.js';
 import type { ValueSetService } from '../value-sets/service.js';
 import { TransitionValidator, type TransitionValidationResult } from '../workflow/transition-service.js';
+import { clockNow } from '../clock.js';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -103,7 +104,7 @@ export class CorrectionService {
     await this.#ensureEnrolmentExists(input.enrolmentId, tenantId);
 
     const caseId = randomUUID();
-    const now    = new Date();
+    const now    = clockNow();
 
     await withTenantContext(this.db, tenantId, async (tx) => {
       await tx.insert(postRatificationCases).values({
@@ -134,7 +135,7 @@ export class CorrectionService {
     const current = await this.#getCurrentCase(caseId, tenantId);
     if (!current) throw new NotFoundError('CorrectionCase', caseId);
 
-    const now = new Date();
+    const now = clockNow();
     const transitionDecision = await this.transitionValidator.assertAllowed({
       tenantId,
       entityName: 'post_ratification_case',
@@ -190,7 +191,7 @@ export class CorrectionService {
     }
 
     const amendmentId = randomUUID();
-    const now         = new Date();
+    const now         = clockNow();
 
     await withTenantContext(this.db, tenantId, async (tx) => {
       const beforeValue = await this.#dispatchAmendment(tx, tenantId, currentCase.enrolmentId, input, actorId, now);

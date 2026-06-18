@@ -10,6 +10,8 @@ import {
 } from '@revelation-srs/db';
 import { ConflictError, ForbiddenError, NotFoundError } from '@revelation-srs/domain';
 
+import { clockNow } from '../clock.js';
+
 export type IntegrationEndpointSafetyClass = 'simulator' | 'external-test' | 'external-production';
 
 export interface RegulatoryExchangeRuntimeContext {
@@ -129,7 +131,7 @@ export class RegulatoryExchangeService {
     );
 
     const statusCode = input.statusCode ?? (input.directionCode === 'inbound' ? 'received' : 'sent');
-    const now = new Date();
+    const now = clockNow();
     assertIntegrationEndpointAllowed({
       environmentCode: this.runtime.environmentCode,
       directionCode: input.directionCode,

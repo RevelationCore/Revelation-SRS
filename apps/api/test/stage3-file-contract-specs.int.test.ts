@@ -5,10 +5,12 @@
  * and that representative sample payloads pass/fail validation as expected.
  * Tests run without Docker — no database or NATS connection required.
  */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return */
 import { readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+
 import { describe, it, expect, beforeAll } from 'vitest';
 import Ajv from 'ajv';
 import addFormats from 'ajv-formats';

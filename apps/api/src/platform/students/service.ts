@@ -13,6 +13,7 @@ import {
 import { NotFoundError, ValidationError } from '@revelation-srs/domain';
 
 import type { ValueSetService } from '../value-sets/service.js';
+import { clockNow } from '../clock.js';
 
 // ── Input / output types ─────────────────────────────────────────────────────
 
@@ -192,7 +193,7 @@ export class StudentService {
       const studentNumber = String(sequenceRow.nextval);
       const personId      = randomUUID();
       const identityId    = randomUUID();
-      const now           = new Date();
+      const now           = clockNow();
 
       await tx.insert(persons).values({
         id:              personId,
@@ -328,7 +329,7 @@ export class StudentService {
     personId: string,
     tenantId: string,
     patch: PersonIdentityPatch,
-    validFrom: Date = new Date(),
+    validFrom: Date = clockNow(),
   ): Promise<void> {
     await this.#validateFieldValue(tenantId, 'person_identity', 'gender_code', patch.genderCode);
     await this.#validateFieldValue(tenantId, 'person_identity', 'nationality_code', patch.nationalityCode);
@@ -353,7 +354,7 @@ export class StudentService {
       }
 
       const existing = current[0]!;
-      const now = new Date();
+      const now = clockNow();
 
       // Close current version (both record-time and valid-time axes)
       await tx
@@ -433,7 +434,7 @@ export class StudentService {
     await this.#ensurePersonExists(personId, tenantId);
 
     return withTenantContext(this.db, tenantId, async (tx) => {
-      const now      = new Date();
+      const now      = clockNow();
       const validFrom = input.validFrom ?? now;
 
       // Close any existing current address of this type
@@ -504,7 +505,7 @@ export class StudentService {
     await this.#ensurePersonExists(personId, tenantId);
 
     return withTenantContext(this.db, tenantId, async (tx) => {
-      const now           = new Date();
+      const now           = clockNow();
       const declarationId = randomUUID();
 
       await tx.insert(disabilityDeclarations).values({
@@ -578,7 +579,7 @@ export class StudentService {
     await this.#ensurePersonExists(personId, tenantId);
 
     return withTenantContext(this.db, tenantId, async (tx) => {
-      const now = new Date();
+      const now = clockNow();
       const verificationCheckId = randomUUID();
 
       await tx.insert(identityVerificationChecks).values({
@@ -631,7 +632,7 @@ export class StudentService {
       throw new ValidationError(`Identity verification check '${verificationCheckId}' has already been completed`);
     }
 
-    const now = new Date();
+    const now = clockNow();
     const completedAt = input.completedAt ?? now;
 
     await withTenantContext(this.db, tenantId, async (tx) => {

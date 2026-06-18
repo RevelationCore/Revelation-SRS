@@ -1,0 +1,144 @@
+{
+  "exportedAt": "2025-06-01T09:00:00Z",
+  "programmes": [
+    {
+      "smrprle_program": "BSCS",
+      "smrprle_program_desc": "BSc Computer Science",
+      "smrprle_levl_code": "UG",
+      "duration_years": 3,
+      "credit_hours": 360,
+      "owning_college": "School of Computing"
+    },
+    {
+      "smrprle_program": "BSPH",
+      "smrprle_program_desc": "BSc Physics",
+      "smrprle_levl_code": "UG",
+      "duration_years": 3,
+      "credit_hours": 360,
+      "owning_college": "School of Physical Sciences"
+    }
+  ],
+  "courses": [
+    {
+      "ssbsect_crn": "CRN10001",
+      "ssbsect_subj_code": "CS",
+      "ssbsect_crse_numb": "1010",
+      "scbcrse_title": "Introduction to Computer Science",
+      "scbcrse_credit_hr_high": 15,
+      "ssbsect_term_code": "202410",
+      "ssbsect_ssts_code": "A",
+      "ssbsect_max_enrl": 120
+    },
+    {
+      "ssbsect_crn": "CRN10002",
+      "ssbsect_subj_code": "CS",
+      "ssbsect_crse_numb": "2010",
+      "scbcrse_title": "Data Structures",
+      "scbcrse_credit_hr_high": 15,
+      "ssbsect_term_code": "202420",
+      "ssbsect_ssts_code": "A",
+      "ssbsect_max_enrl": 80
+    },
+    {
+      "ssbsect_crn": "CRN10003",
+      "ssbsect_subj_code": "PH",
+      "ssbsect_crse_numb": "1010",
+      "scbcrse_title": "Classical Mechanics",
+      "scbcrse_credit_hr_high": 15,
+      "ssbsect_term_code": "202410",
+      "ssbsect_ssts_code": "A",
+      "ssbsect_max_enrl": 60
+    }
+  ],
+  "persons": [
+    {
+      "spriden_pidm": 10001,
+      "spriden_id": "B10001",
+      "spriden_last_name": "Draveth",
+      "spriden_first_name": "Dorath",
+      "spbpers_birth_date": "2003-08-12",
+      "spbpers_sex": "F",
+      "spbpers_natn_code": "GB",
+      "goremal_email_address": "d.draveth@fictional.ac.uk",
+      "personal_email": "dorath.draveth@personal.example.com",
+      "personal_phone": "07700900010",
+      "addresses": [
+        {
+          "spraddr_atyp_code": "MA",
+          "spraddr_street_line1": "22 Placeholder Bay",
+          "spraddr_city": "Placeholder Bay",
+          "spraddr_zip": "PB3 4DD",
+          "spraddr_natn_code": "GB"
+        }
+      ],
+      "student_records": [
+        {
+          "sgbstdn_term_code_eff": "202410",
+          "sgbstdn_levl_code": "UG",
+          "sgbstdn_styp_code": "F",
+          "sgbstdn_prog_code": "BSCS",
+          "sgbstdn_blck_code": "F",
+          "enrolment_status": "enrolled",
+          "start_date": "2024-09-16",
+          "expected_grad_date": "2027-06-30",
+          "registrations": [
+            {
+              "sfrstcr_crn": "CRN10001",
+              "sfrstcr_term_code": "202410",
+              "sfrstcr_rsts_code": "RE",
+              "sfrstcr_reg_date": "2024-09-05",
+              "mark_percentage": 78.0,
+              "mark_submitted_at": "2025-01-20T11:00:00Z"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "spriden_pidm": 10002,
+      "spriden_id": "B10002",
+      "spriden_last_name": "Elwick",
+      "spriden_first_name": "Elvan",
+      "spbpers_birth_date": "2002-03-25",
+      "spbpers_sex": "M",
+      "spbpers_natn_code": "DE",
+      "goremal_email_address": "e.elwick@fictional.ac.uk",
+      "addresses": [
+        {
+          "spraddr_atyp_code": "PR",
+          "spraddr_street_line1": "5 Mock Haven Road",
+          "spraddr_city": "Mock Haven",
+          "spraddr_zip": "MH4 5EE",
+          "spraddr_natn_code": "GB"
+        }
+      ],
+      "student_records": [
+        {
+          "sgbstdn_term_code_eff": "202310",
+          "sgbstdn_levl_code": "UG",
+          "sgbstdn_prog_code": "BSPH",
+          "sgbstdn_blck_code": "F",
+          "enrolment_status": "enrolled",
+          "start_date": "2023-09-18",
+          "expected_grad_date": "2026-06-30",
+          "registrations": [
+            {
+              "sfrstcr_crn": "CRN10003",
+              "sfrstcr_term_code": "202410",
+              "sfrstcr_rsts_code": "RE",
+              "sfrstcr_reg_date": "2024-09-06",
+              "mark_percentage": 91.0,
+              "mark_submitted_at": "2025-01-18T10:30:00Z"
+            },
+            {
+              "sfrstcr_crn": "CRN10002",
+              "sfrstcr_term_code": "202420",
+              "sfrstcr_rsts_code": "RE",
+              "sfrstcr_reg_date": "2025-02-03"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

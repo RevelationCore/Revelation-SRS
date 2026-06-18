@@ -1,0 +1,23 @@
+# ZAP scan rule overrides — Revelation SRS
+# Format: alertId	action	url-regex
+# action: IGNORE | WARN | FAIL
+#
+# 10016  — Web Browser XSS Protection Not Enabled
+#           Helmet sets X-XSS-Protection: 0 per the modern recommendation
+#           (the header was deprecated and its "1; mode=block" value can
+#           introduce XSS in older IE versions).  Safe to ignore.
+10016	IGNORE
+#
+# 10017  — Cross-Domain JavaScript Source File Inclusion
+#           No external script includes in the API; ZAP false-positive
+#           triggered by the Swagger UI CDN link in the spec.
+10017	IGNORE
+#
+# 10096  — Timestamp Disclosure
+#           ISO-8601 timestamps are intentional in all API responses.
+10096	IGNORE
+#
+# 90033  — Loosely Scoped Cookie
+#           No session cookies are set; JWT is carried in Authorization header.
+#           ZAP fires this against the Keycloak redirect; safe to ignore here.
+90033	IGNORE

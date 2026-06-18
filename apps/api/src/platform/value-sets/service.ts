@@ -7,6 +7,8 @@ import {
   type Db,
 } from '@revelation-srs/db';
 
+import { clockNow } from '../clock.js';
+
 export interface ValueSetMemberDto {
   code:          string;
   displayLabel:  string;
@@ -82,7 +84,7 @@ export class ValueSetService {
 
     if (!options.force) {
       const cached = this.cache.get(cacheKey);
-      if (cached && cached.expiresAt > Date.now()) return cached.data;
+      if (cached && cached.expiresAt > Date.now()) return cached.data;  // clock:allow
     }
 
     const setRows = await this.db
@@ -93,7 +95,7 @@ export class ValueSetService {
 
     if (setRows.length === 0) return null;
     const set = setRows[0]!;
-    const activeAt = options.activeAt ?? new Date();
+    const activeAt = options.activeAt ?? clockNow();
 
     // Members visible to this tenant: platform (tenant_id IS NULL)
     // plus this tenant's own extensions
@@ -135,7 +137,7 @@ export class ValueSetService {
       })),
     };
 
-    this.cache.set(cacheKey, { data: dto, expiresAt: Date.now() + this.ttlMs });
+    this.cache.set(cacheKey, { data: dto, expiresAt: Date.now() + this.ttlMs });  // clock:allow
     return dto;
   }
 
@@ -211,7 +213,7 @@ export class ValueSetService {
     }
 
     const set = setRows[0]!;
-    const now  = new Date();
+    const now  = clockNow();
 
     await withTenantContext(this.db, tenantId, async (tx) => {
       await tx.insert(valueSetMembers).values({

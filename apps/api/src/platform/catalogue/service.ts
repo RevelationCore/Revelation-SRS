@@ -23,6 +23,7 @@ import type {
 
 import type { IntegrationBusPublisher } from '../integration-bus/publisher.js';
 import type { ValueSetService } from '../value-sets/service.js';
+import { clockNow } from '../clock.js';
 
 export interface CreateProgrammeInput {
   code: string;
@@ -151,7 +152,7 @@ export class CatalogueService {
     await this.#validateProgrammeInput(tenantId, input);
 
     const programmeId = randomUUID();
-    const now = new Date();
+    const now = clockNow();
     const validFrom = input.validFrom ?? now;
 
     await withTenantContext(this.db, tenantId, async (tx) => {
@@ -224,7 +225,7 @@ export class CatalogueService {
 
     let newCode  = '';
     let newTitle = '';
-    let validFrom = new Date();
+    let validFrom = clockNow();
 
     await withTenantContext(this.db, tenantId, async (tx) => {
       const currentRows = await tx
@@ -242,7 +243,7 @@ export class CatalogueService {
       const current = currentRows[0];
       if (!current) throw new NotFoundError('Programme', programmeId);
 
-      const now = new Date();
+      const now = clockNow();
       validFrom = input.validFrom ?? now;
       newCode   = input.code  ?? current.code;
       newTitle  = input.title ?? current.title;
@@ -313,7 +314,7 @@ export class CatalogueService {
     await this.#validateFieldValue(tenantId, 'module', 'fheq_level', input.fheqLevel);
 
     const moduleId = randomUUID();
-    const now = new Date();
+    const now = clockNow();
     const validFrom = input.validFrom ?? now;
 
     await withTenantContext(this.db, tenantId, async (tx) => {
@@ -382,7 +383,7 @@ export class CatalogueService {
     let newCode        = '';
     let newTitle       = '';
     let newCreditValue: number | null = null;
-    let validFrom      = new Date();
+    let validFrom      = clockNow();
 
     await withTenantContext(this.db, tenantId, async (tx) => {
       const currentRows = await tx
@@ -400,7 +401,7 @@ export class CatalogueService {
       const current = currentRows[0];
       if (!current) throw new NotFoundError('Module', moduleId);
 
-      const now = new Date();
+      const now = clockNow();
       validFrom      = input.validFrom   ?? now;
       newCode        = input.code        ?? current.code;
       newTitle       = input.title       ?? current.title;
@@ -471,7 +472,7 @@ export class CatalogueService {
     if (input.moduleId) await this.#ensureModuleExists(input.moduleId, tenantId);
 
     const learningOutcomeId = randomUUID();
-    const now = new Date();
+    const now = clockNow();
     const validFrom = input.validFrom ?? now;
 
     await withTenantContext(this.db, tenantId, async (tx) => {
@@ -546,7 +547,7 @@ export class CatalogueService {
     await this.#ensureModuleExists(input.relatedModuleId, tenantId);
 
     const relationshipId = randomUUID();
-    const now = new Date();
+    const now = clockNow();
     const validFrom = input.validFrom ?? now;
 
     await withTenantContext(this.db, tenantId, async (tx) => {
