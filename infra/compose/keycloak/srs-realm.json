@@ -13,26 +13,16 @@
   "ssoSessionIdleTimeout":  28800,
   "ssoSessionMaxLifespan":  86400,
 
-  "userProfileConfig": {
-    "unmanagedAttributePolicy": "ENABLED",
-    "attributes": [
+  "components": {
+    "org.keycloak.userprofile.UserProfileProvider": [
       {
-        "name": "tenant_id",
-        "displayName": "Tenant ID",
-        "permissions": { "view": ["admin"], "edit": ["admin"] },
-        "multivalued": false
-      },
-      {
-        "name": "personaId",
-        "displayName": "Persona ID",
-        "permissions": { "view": ["admin"], "edit": ["admin"] },
-        "multivalued": false
-      },
-      {
-        "name": "srs_person_id",
-        "displayName": "SRS Person ID",
-        "permissions": { "view": ["admin"], "edit": ["admin"] },
-        "multivalued": false
+        "providerId": "declarative-user-profile",
+        "subComponents": {},
+        "config": {
+          "kc.user.profile.config": [
+            "{\"attributes\":[{\"name\":\"username\"},{\"name\":\"email\"},{\"name\":\"firstName\",\"displayName\":\"${firstName}\"},{\"name\":\"lastName\",\"displayName\":\"${lastName}\"},{\"name\":\"tenant_id\",\"displayName\":\"Tenant ID\",\"permissions\":{\"view\":[\"admin\"],\"edit\":[\"admin\"]}},{\"name\":\"personaId\",\"displayName\":\"Persona ID\",\"permissions\":{\"view\":[\"admin\"],\"edit\":[\"admin\"]}},{\"name\":\"srs_person_id\",\"displayName\":\"SRS Person ID\",\"permissions\":{\"view\":[\"admin\"],\"edit\":[\"admin\"]}}],\"groups\":[],\"unmanagedAttributePolicy\":\"ENABLED\"}"
+          ]
+        }
       }
     ]
   },
