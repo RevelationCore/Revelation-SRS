@@ -99,6 +99,97 @@
       "when": 1748995213000,
       "tag": "0023_demo_status_checkpoint",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1748995214000,
+      "tag": "0012_globalisation_foundation",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1748995215000,
+      "tag": "0013_workflow_coverage_matrix",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1748995216000,
+      "tag": "0014_stage3_assessment_grade_progression",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1748995217000,
+      "tag": "0015_stage4_exam_board_governance",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1748995218000,
+      "tag": "0016_stage5_admissions_communications",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1748995219000,
+      "tag": "0017_stage6_flag_governance",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1748995220000,
+      "tag": "0018_stage7_legacy_removal",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1748995221000,
+      "tag": "0019_phase7_integration_registry",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1748995222000,
+      "tag": "0020_phase7_contract_deprecation",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1748995223000,
+      "tag": "0021_phase9_vle_contracts",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1748995224000,
+      "tag": "0024_phase11_performance_indexes",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1748995225000,
+      "tag": "0025_phase11_retention_anonymisation",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1748995226000,
+      "tag": "0026_phase11_notifications",
+      "breakpoints": true
     }
   ]
 }

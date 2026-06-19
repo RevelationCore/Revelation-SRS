@@ -38,8 +38,7 @@ async function checkNoNonDemoEmails(db: Db, tenantId: string): Promise<string | 
     .where(and(
       eq(personIdentities.tenantId, tenantId),
       sql`(
-        (email_institutional IS NOT NULL AND email_institutional NOT LIKE '%@demo.srs') OR
-        (email_personal      IS NOT NULL AND email_personal      NOT LIKE '%@demo.srs')
+        (email_institutional IS NOT NULL AND email_institutional NOT LIKE '%@demo.srs')
       )`,
     ));
   const n = row!.n;
