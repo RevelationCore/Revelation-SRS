@@ -13,26 +13,20 @@ export interface CorrectionCase {
   recordedUntil: string | null;
 }
 
-export const CASE_TYPE_CODES = ['appeal', 'administrative-correction', 'misconduct'] as const;
-export type CaseTypeCode = typeof CASE_TYPE_CODES[number];
-
-export const CASE_STATUS_CODES = ['open', 'under-review', 'upheld', 'not-upheld', 'withdrawn'] as const;
-export type CaseStatusCode = typeof CASE_STATUS_CODES[number];
-
 export function listCorrectionCases(enrolmentId: string): Promise<CorrectionCase[]> {
   return api.get<CorrectionCase[]>(`/api/v1/enrolments/${enrolmentId}/correction-cases`);
 }
 
 export function createCorrectionCase(
   enrolmentId:  string,
-  caseTypeCode: CaseTypeCode,
+  caseTypeCode: string,
 ): Promise<{ caseId: string }> {
   return api.post(`/api/v1/enrolments/${enrolmentId}/correction-cases`, { caseTypeCode });
 }
 
 export function updateCaseStatus(
   caseId:     string,
-  statusCode: CaseStatusCode,
+  statusCode: string,
 ): Promise<void> {
   return api.patch(`/api/v1/correction-cases/${caseId}/status`, { statusCode });
 }

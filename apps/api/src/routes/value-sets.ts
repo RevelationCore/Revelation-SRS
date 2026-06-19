@@ -137,6 +137,34 @@ export function valueSetsRoutes(fastify: FastifyInstance): void {
     },
   );
 
+  // - List all members (management view — includes inactive/scheduled) -
+  fastify.get(
+    '/value-sets/:setCode/members',
+    {
+      schema: {
+        params: Type.Object({ setCode: Type.String() }),
+        response: {
+          200: Type.Array(Type.Object({
+            code:          Type.String(),
+            displayLabel:  Type.String(),
+            description:   Type.Union([Type.String(), Type.Null()]),
+            sortOrder:     Type.Number(),
+            activeFrom:    Type.String(),
+            activeTo:      Type.Union([Type.String(), Type.Null()]),
+            isTenantOwned: Type.Boolean(),
+          })),
+          404: Type.Object({ type: Type.String(), title: Type.String(), status: Type.Number() }),
+        },
+      },
+      preHandler: [requirePermission('config:write')],
+    },
+    async (request, reply) => {
+      const { setCode } = request.params as { setCode: string };
+      const members = await fastify.valueSetService.listAllMembers(setCode, request.tenantId);
+      await reply.send(members);
+    },
+  );
+
   // - Add tenant extension value -
   fastify.post(
     '/value-sets/:setCode/members',
@@ -148,6 +176,8 @@ export function valueSetsRoutes(fastify: FastifyInstance): void {
           displayLabel: Type.String({ minLength: 1, maxLength: 200 }),
           description:  Type.Optional(Type.String({ maxLength: 500 })),
           sortOrder:    Type.Optional(Type.Integer({ minimum: 0 })),
+          activeFrom:   Type.Optional(Type.String({ format: 'date' })),
+          activeTo:     Type.Optional(Type.String({ format: 'date' })),
         }),
       },
       preHandler: [requirePermission('config:write')],
@@ -156,6 +186,7 @@ export function valueSetsRoutes(fastify: FastifyInstance): void {
       const { setCode } = request.params as { setCode: string };
       const body = request.body as {
         code: string; displayLabel: string; description?: string; sortOrder?: number;
+        activeFrom?: string; activeTo?: string;
       };
 
       const member = await fastify.valueSetService.addTenantValue(
@@ -165,6 +196,50 @@ export function valueSetsRoutes(fastify: FastifyInstance): void {
       );
 
       await reply.code(201).send(member);
+    },
+  );
+
+  // - Update a tenant-owned member -
+  fastify.patch(
+    '/value-sets/:setCode/members/:memberCode',
+    {
+      schema: {
+        params: Type.Object({ setCode: Type.String(), memberCode: Type.String() }),
+        body: Type.Object({
+          displayLabel: Type.Optional(Type.String({ minLength: 1, maxLength: 200 })),
+          description:  Type.Optional(Type.Union([Type.String({ maxLength: 500 }), Type.Null()])),
+          sortOrder:    Type.Optional(Type.Integer({ minimum: 0 })),
+          activeFrom:   Type.Optional(Type.String({ format: 'date' })),
+          activeTo:     Type.Optional(Type.Union([Type.String({ format: 'date' }), Type.Null()])),
+        }),
+        response: {
+          204: Type.Null(),
+          404: Type.Object({ type: Type.String(), title: Type.String(), status: Type.Number() }),
+        },
+      },
+      preHandler: [requirePermission('config:write')],
+    },
+    async (request, reply) => {
+      const { setCode, memberCode } = request.params as { setCode: string; memberCode: string };
+      const body = request.body as {
+        displayLabel?: string; description?: string | null;
+        sortOrder?: number; activeFrom?: string; activeTo?: string | null;
+      };
+
+      const outcome = await fastify.valueSetService.updateTenantValue(
+        setCode, request.tenantId, memberCode, body,
+      );
+
+      if (outcome === 'not-found') {
+        return reply.code(404).send({
+          type:   'https://srs.example.com/errors/not-found',
+          title:  'Not Found',
+          status: 404,
+          detail: `Member '${memberCode}' not found or not editable in value set '${setCode}'`,
+        });
+      }
+
+      await reply.code(204).send(null);
     },
   );
 }

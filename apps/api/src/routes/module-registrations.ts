@@ -107,12 +107,13 @@ export function moduleRegistrationsRoutes(fastify: FastifyInstance): void {
         }),
         response: {
           201: Type.Object({ moduleRegistrationId: Type.String() }),
+          403: ErrorSchema,
           404: ErrorSchema,
           409: ErrorSchema,
           422: ErrorSchema,
         },
       },
-      preHandler: [requirePermission('module-registration:write')],
+      preHandler: [requireAnyPermission('module-registration:write:own', 'module-registration:write')],
     },
     async (request, reply) => {
       const body = request.body as {
@@ -121,6 +122,21 @@ export function moduleRegistrationsRoutes(fastify: FastifyInstance): void {
         registrationDate?: string;
         validFrom?: string;
       };
+
+      // Students may only register within their own enrolment
+      if (request.user.srsPersonId && !request.user.roles.includes('registry-administrator')) {
+        const enrolment = await fastify.enrolmentService.getEnrolment(body.enrolmentId, request.tenantId);
+        if (!enrolment || enrolment.personId !== request.user.srsPersonId) {
+          return reply.code(403).send({
+            type:   'https://srs.example.com/errors/forbidden',
+            title:  'Forbidden',
+            status: 403,
+            detail: 'You may only register for modules within your own enrolment',
+            instance: request.url,
+          });
+        }
+      }
+
       const input: CreateModuleRegistrationInput = {
         enrolmentId: body.enrolmentId,
         moduleOfferingId: body.moduleOfferingId,
@@ -202,13 +218,32 @@ export function moduleRegistrationsRoutes(fastify: FastifyInstance): void {
       schema: {
         params: Type.Object({ moduleRegistrationId: Type.String() }),
         body: TransitionBody,
-        response: { 204: Type.Null(), 404: ErrorSchema, 422: ErrorSchema },
+        response: { 204: Type.Null(), 403: ErrorSchema, 404: ErrorSchema, 422: ErrorSchema },
       },
-      preHandler: [requirePermission('module-registration:write')],
+      preHandler: [requireAnyPermission('module-registration:write:own', 'module-registration:write')],
     },
     async (request, reply) => {
       const { moduleRegistrationId } = request.params as { moduleRegistrationId: string };
       const body = request.body as { validFrom?: string };
+
+      // Students may only withdraw their own registrations
+      if (request.user.srsPersonId && !request.user.roles.includes('registry-administrator')) {
+        const reg = await fastify.moduleRegistrationService.getRegistration(moduleRegistrationId, request.tenantId);
+        if (!reg) {
+          return reply.code(404).send({
+            type: 'https://srs.example.com/errors/not-found', title: 'Not Found', status: 404,
+            detail: `ModuleRegistration ${moduleRegistrationId} not found`, instance: request.url,
+          });
+        }
+        const enrolment = await fastify.enrolmentService.getEnrolment(reg.enrolmentId, request.tenantId);
+        if (!enrolment || enrolment.personId !== request.user.srsPersonId) {
+          return reply.code(403).send({
+            type: 'https://srs.example.com/errors/forbidden', title: 'Forbidden', status: 403,
+            detail: 'You may only withdraw your own module registrations', instance: request.url,
+          });
+        }
+      }
+
       await fastify.moduleRegistrationService.withdrawRegistration(
         moduleRegistrationId,
         request.tenantId,

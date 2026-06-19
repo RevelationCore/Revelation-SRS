@@ -108,7 +108,6 @@ export function HesaPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <p className="text-xs text-gray-400 mb-0.5">Regulatory</p>
           <h1 className="text-xl font-semibold text-gray-900">HESA returns</h1>
         </div>
         <button

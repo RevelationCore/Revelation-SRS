@@ -4,6 +4,45 @@ import { useTranslation } from 'react-i18next';
 import { useAuth, startLogin } from '../auth/AuthContext.js';
 import type { TokenSet } from '@revelation-srs/ui';
 
+const DEMO_USERS = [
+  {
+    username:    'registry',
+    name:        'Registry Administrator',
+    description: 'Full access to student records, enrolments, module registrations, corrections and appeals.',
+    stories:     ['Students', 'Enrolments', 'Corrections'],
+  },
+  {
+    username:    'chair',
+    name:        'Exam Board Chair',
+    description: 'Chairs exam board meetings, reviews candidate profiles, ratifies progression and award decisions.',
+    stories:     ['Exam boards', 'Ratification', 'Progression'],
+  },
+  {
+    username:    'wellbeing',
+    name:        'Wellbeing Advisor',
+    description: 'Manages wellbeing referrals, extenuating circumstances claims, and disability support cases.',
+    stories:     ['Wellbeing', 'EC claims', 'Disability'],
+  },
+  {
+    username:    'dpo',
+    name:        'Data Protection Officer',
+    description: 'Accesses the audit trail, processes FOI and Subject Access Requests, monitors regulatory compliance.',
+    stories:     ['Audit log', 'FOI / SAR', 'Regulatory'],
+  },
+  {
+    username:    'examiner',
+    name:        'External Examiner',
+    description: 'Reviews submitted assessment marks and exam board papers. Read-only access to assessment data.',
+    stories:     ['Assessment', 'Exam boards'],
+  },
+  {
+    username:    'ops',
+    name:        'Platform Operator',
+    description: 'Manages system configuration, integration connectors, feature flags, and value sets.',
+    stories:     ['Config', 'Integrations', 'Operations'],
+  },
+] as const;
+
 const DEV_AUTH = import.meta.env.VITE_DEV_AUTH === 'true';
 
 export function LoginPage() {
@@ -46,7 +85,9 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 px-4 py-12">
+
+      {/* Sign-in card */}
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
           <h1 className="text-2xl font-bold text-gray-900">Revelation SRS</h1>
@@ -98,6 +139,36 @@ export function LoginPage() {
           )}
         </div>
       </div>
+
+      {/* Demo accounts panel */}
+      <div className="mt-8 w-full max-w-4xl rounded-lg border border-amber-200 bg-amber-50 p-6">
+        <div className="flex flex-wrap items-baseline justify-between gap-2 mb-5">
+          <h2 className="text-sm font-semibold text-amber-900">Demo accounts</h2>
+          <span className="text-xs text-amber-700">
+            Password for all:{' '}
+            <code className="rounded bg-amber-100 px-1.5 py-0.5 font-mono font-semibold text-amber-900 select-all">
+              Demo-2026!
+            </code>
+          </span>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {DEMO_USERS.map(u => (
+            <div key={u.username} className="flex flex-col rounded-md border border-amber-100 bg-white p-4">
+              <p className="font-mono text-sm font-semibold text-gray-900 select-all">{u.username}</p>
+              <p className="mt-1 text-xs font-medium text-indigo-700">{u.name}</p>
+              <p className="mt-1.5 text-xs text-gray-500 flex-1">{u.description}</p>
+              <div className="mt-3 flex flex-wrap gap-1">
+                {u.stories.map(s => (
+                  <span key={s} className="rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-800">
+                    {s}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
     </div>
   );
 }

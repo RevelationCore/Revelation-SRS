@@ -53,6 +53,8 @@ export function ModuleAddPage() {
     registrations !== null ? fetchOfferings : null,
   );
 
+  const currentPeriodCode = offerings?.find(o => o.academicPeriodId === currentPeriodId)?.periodCode ?? currentPeriodId;
+
   const { submitting, submitError, submit } = useFormSubmit<{ moduleRegistrationId: string }>();
 
   const handleRegister = async (offering: ModuleOffering) => {
@@ -92,8 +94,8 @@ export function ModuleAddPage() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">{t('portal.modules.addHeading')}</h1>
           <p className="mt-1 text-sm text-gray-500">
-            {currentPeriodId
-              ? `${t('portal.modules.period')}: ${currentPeriodId}`
+            {currentPeriodCode
+              ? `${t('portal.modules.period')}: ${currentPeriodCode}`
               : t('portal.modules.allPeriods')}
           </p>
         </div>
@@ -136,8 +138,11 @@ export function ModuleAddPage() {
             <tbody className="divide-y divide-gray-100">
               {available.map(offering => (
                 <tr key={offering.moduleOfferingId} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-mono text-xs text-gray-800">{offering.moduleId}</td>
-                  <td className="px-4 py-3 text-gray-600">{offering.academicPeriodId}</td>
+                  <td className="px-4 py-3 text-gray-800">
+                    <span className="font-medium">{offering.moduleCode}</span>
+                    <span className="ml-2 text-xs text-gray-500">{offering.moduleTitle}</span>
+                  </td>
+                  <td className="px-4 py-3 text-gray-600">{offering.periodCode}</td>
                   <td className="px-4 py-3 text-gray-600">{offering.deliveryModeCode ?? '—'}</td>
                   <td className="px-4 py-3 text-gray-600">{offering.capacity ?? '—'}</td>
                   <td className="px-4 py-3 text-right">

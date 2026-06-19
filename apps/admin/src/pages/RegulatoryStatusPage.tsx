@@ -57,7 +57,6 @@ export function RegulatoryStatusPage() {
 
   return (
     <div>
-      <p className="text-xs text-gray-400 mb-0.5">Reporting</p>
       <h1 className="text-xl font-semibold text-gray-900 mb-6">Regulatory submission status</h1>
 
       {error && <p className="mb-4 text-sm text-red-600">{error}</p>}

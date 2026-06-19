@@ -14,17 +14,6 @@ export interface AcademicRule {
   updatedAt:       string;
 }
 
-export const RULE_TYPE_CODES = [
-  'progression',
-  'classification',
-  'assessment',
-  'credit-transfer',
-  'resit-eligibility',
-  'award-eligibility',
-] as const;
-
-export type RuleTypeCode = typeof RULE_TYPE_CODES[number];
-
 export function listAcademicRules(params?: {
   ruleTypeCode?: string;
 }): Promise<AcademicRule[]> {

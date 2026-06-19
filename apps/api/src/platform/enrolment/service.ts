@@ -7,6 +7,7 @@ import {
   enrolmentStatusTransitions,
   feeLiabilities,
   persons,
+  programmes,
   type Db,
   type TenantScopedDb,
   withTenantContext,
@@ -53,6 +54,8 @@ export interface EnrolmentDto {
   enrolmentId:         string;
   personId:            string;
   programmeId:         string | null;
+  programmeCode:       string | null;
+  programmeName:       string | null;
   statusCode:          string;
   modeOfStudyCode:     string;
   attendanceTypeCode:  string | null;
@@ -373,8 +376,20 @@ export class EnrolmentService {
   async listPersonEnrolments(personId: string, tenantId: string): Promise<EnrolmentDto[]> {
     const rows = await withTenantContext(this.db, tenantId, async (tx) => {
       return tx
-        .select()
+        .select({
+          enrolment: enrolments,
+          programmeCode: programmes.code,
+          programmeName: programmes.title,
+        })
         .from(enrolments)
+        .leftJoin(
+          programmes,
+          and(
+            eq(enrolments.programmeId, programmes.id),
+            isNull(programmes.recordedUntil),
+            isNull(programmes.validTo),
+          ),
+        )
         .where(
           and(
             eq(enrolments.personId, personId as `${string}-${string}-${string}-${string}-${string}`),
@@ -384,7 +399,11 @@ export class EnrolmentService {
         );
     });
 
-    return rows.map((r) => this.#toDto(r));
+    return rows.map((r) => ({
+      ...this.#toDto(r.enrolment),
+      programmeCode: r.programmeCode ?? null,
+      programmeName: r.programmeName ?? null,
+    }));
   }
 
   /**
@@ -739,6 +758,8 @@ export class EnrolmentService {
       enrolmentId:         row.id,
       personId:            row.personId,
       programmeId:         row.programmeId,
+      programmeCode:       null,
+      programmeName:       null,
       statusCode:          row.statusCode,
       modeOfStudyCode:     row.modeOfStudyCode,
       attendanceTypeCode:  row.attendanceTypeCode,

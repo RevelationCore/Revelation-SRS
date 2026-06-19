@@ -46,7 +46,6 @@ export function FeatureFlagsPage() {
 
   return (
     <div>
-      <p className="text-xs text-gray-400 mb-0.5">Tenant administration</p>
       <h1 className="text-xl font-semibold text-gray-900 mb-4">Feature flags</h1>
 
       <div className="flex justify-end mb-4">

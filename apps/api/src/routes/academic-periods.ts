@@ -28,7 +28,10 @@ const AcademicPeriodSchema = Type.Object({
 const ModuleOfferingSchema = Type.Object({
   moduleOfferingId: Type.String(),
   moduleId:         Type.String(),
+  moduleCode:       Type.String(),
+  moduleTitle:      Type.String(),
   academicPeriodId: Type.String(),
+  periodCode:       Type.String(),
   deliveryModeCode: Type.Union([Type.String(), Type.Null()]),
   capacity:         Type.Union([Type.Number(), Type.Null()]),
 });

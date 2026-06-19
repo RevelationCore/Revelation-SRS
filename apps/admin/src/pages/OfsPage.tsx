@@ -74,7 +74,6 @@ export function OfsPage() {
 
   return (
     <div>
-      <p className="text-xs text-gray-400 mb-0.5">Regulatory</p>
       <h1 className="text-xl font-semibold text-gray-900 mb-6">Office for Students (OfS)</h1>
 
       <div className="flex items-center gap-3 mb-6">

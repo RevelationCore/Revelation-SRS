@@ -18,7 +18,6 @@ export function TenantConfigPage() {
 
   return (
     <div>
-      <p className="text-xs text-gray-400 mb-0.5">Tenant administration</p>
       <h1 className="text-xl font-semibold text-gray-900 mb-6">Tenant configuration</h1>
       <div className="space-y-8">
         <TenantConfigForm />

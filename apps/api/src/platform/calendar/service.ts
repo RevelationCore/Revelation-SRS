@@ -34,10 +34,13 @@ export interface ModuleOfferingInput {
 
 export interface ModuleOfferingDto {
   moduleOfferingId: string;
-  moduleId: string;
+  moduleId:         string;
+  moduleCode:       string;
+  moduleTitle:      string;
   academicPeriodId: string;
+  periodCode:       string;
   deliveryModeCode: string | null;
-  capacity: number | null;
+  capacity:         number | null;
 }
 
 export class CalendarService {
@@ -124,8 +127,19 @@ export class CalendarService {
   ): Promise<ModuleOfferingDto[]> {
     const rows = await withTenantContext(this.db, tenantId, async (tx) =>
       tx
-        .select()
+        .select({
+          id:               moduleOfferings.id,
+          moduleId:         moduleOfferings.moduleId,
+          academicPeriodId: moduleOfferings.academicPeriodId,
+          deliveryModeCode: moduleOfferings.deliveryModeCode,
+          capacity:         moduleOfferings.capacity,
+          moduleCode:       modules.code,
+          moduleTitle:      modules.title,
+          periodCode:       academicPeriods.periodCode,
+        })
         .from(moduleOfferings)
+        .innerJoin(modules, eq(moduleOfferings.moduleId, modules.id))
+        .innerJoin(academicPeriods, eq(moduleOfferings.academicPeriodId, academicPeriods.id))
         .where(
           and(
             eq(moduleOfferings.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
@@ -133,17 +147,37 @@ export class CalendarService {
             ...(opts.moduleId ? [eq(moduleOfferings.moduleId, opts.moduleId as `${string}-${string}-${string}-${string}-${string}`)] : []),
           ),
         )
-        .orderBy(moduleOfferings.academicPeriodId, moduleOfferings.moduleId),
+        .orderBy(academicPeriods.periodCode, modules.code),
     );
 
-    return rows.map(moduleOfferingToDto);
+    return rows.map(r => ({
+      moduleOfferingId: r.id,
+      moduleId:         r.moduleId,
+      moduleCode:       r.moduleCode,
+      moduleTitle:      r.moduleTitle,
+      academicPeriodId: r.academicPeriodId,
+      periodCode:       r.periodCode,
+      deliveryModeCode: r.deliveryModeCode,
+      capacity:         r.capacity,
+    }));
   }
 
   async getModuleOffering(moduleOfferingId: string, tenantId: string): Promise<ModuleOfferingDto | null> {
     const rows = await withTenantContext(this.db, tenantId, async (tx) =>
       tx
-        .select()
+        .select({
+          id:               moduleOfferings.id,
+          moduleId:         moduleOfferings.moduleId,
+          academicPeriodId: moduleOfferings.academicPeriodId,
+          deliveryModeCode: moduleOfferings.deliveryModeCode,
+          capacity:         moduleOfferings.capacity,
+          moduleCode:       modules.code,
+          moduleTitle:      modules.title,
+          periodCode:       academicPeriods.periodCode,
+        })
         .from(moduleOfferings)
+        .innerJoin(modules, eq(moduleOfferings.moduleId, modules.id))
+        .innerJoin(academicPeriods, eq(moduleOfferings.academicPeriodId, academicPeriods.id))
         .where(
           and(
             eq(moduleOfferings.id, moduleOfferingId as `${string}-${string}-${string}-${string}-${string}`),
@@ -153,7 +187,18 @@ export class CalendarService {
         .limit(1),
     );
 
-    return rows[0] ? moduleOfferingToDto(rows[0]) : null;
+    if (!rows[0]) return null;
+    const r = rows[0];
+    return {
+      moduleOfferingId: r.id,
+      moduleId:         r.moduleId,
+      moduleCode:       r.moduleCode,
+      moduleTitle:      r.moduleTitle,
+      academicPeriodId: r.academicPeriodId,
+      periodCode:       r.periodCode,
+      deliveryModeCode: r.deliveryModeCode,
+      capacity:         r.capacity,
+    };
   }
 
   async #ensureAcademicPeriodExists(academicPeriodId: string, tenantId: string): Promise<void> {
@@ -189,12 +234,3 @@ function academicPeriodToDto(row: typeof academicPeriods.$inferSelect): Academic
   };
 }
 
-function moduleOfferingToDto(row: typeof moduleOfferings.$inferSelect): ModuleOfferingDto {
-  return {
-    moduleOfferingId: row.id,
-    moduleId:         row.moduleId,
-    academicPeriodId: row.academicPeriodId,
-    deliveryModeCode: row.deliveryModeCode,
-    capacity:         row.capacity,
-  };
-}

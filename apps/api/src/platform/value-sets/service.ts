@@ -189,6 +189,109 @@ export class ValueSetService {
   }
 
   /**
+   * List ALL members for a value set visible to a tenant — including inactive
+   * and future-scheduled ones. Used by the tenant-admin management UI.
+   *
+   * Platform members (tenantId IS NULL) are returned with isTenantOwned=false;
+   * these can be viewed but not edited via the management API.
+   */
+  async listAllMembers(
+    setCode:  string,
+    tenantId: string,
+  ): Promise<(ValueSetMemberDto & { isTenantOwned: boolean })[]> {
+    const setRows = await this.db
+      .select()
+      .from(valueSets)
+      .where(eq(valueSets.setCode, setCode))
+      .limit(1);
+
+    if (setRows.length === 0) return [];
+    const set = setRows[0]!;
+
+    const members = await withTenantContext(this.db, tenantId, async (tx) =>
+      tx
+        .select()
+        .from(valueSetMembers)
+        .where(
+          and(
+            eq(valueSetMembers.valueSetId, set.id),
+            or(
+              isNull(valueSetMembers.tenantId),
+              eq(valueSetMembers.tenantId, tenantId),
+            ),
+          ),
+        )
+        .orderBy(valueSetMembers.sortOrder, valueSetMembers.code),
+    );
+
+    return members.map((m) => ({
+      code:           m.code,
+      displayLabel:   m.displayLabel,
+      description:    m.description ?? null,
+      sortOrder:      m.sortOrder ?? 0,
+      activeFrom:     m.activeFrom.toISOString(),
+      activeTo:       m.activeTo?.toISOString() ?? null,
+      sourceMetadata: m.sourceMetadata as Record<string, unknown> | null ?? null,
+      isTenantOwned:  m.tenantId !== null,
+    }));
+  }
+
+  /**
+   * Update a tenant-owned value set member (label, description, sort order,
+   * or the active window). Returns 'not-found' if the member does not exist
+   * or belongs to the platform (and is therefore read-only for this tenant).
+   */
+  async updateTenantValue(
+    setCode:    string,
+    tenantId:   string,
+    memberCode: string,
+    patch: {
+      displayLabel?: string;
+      description?:  string | null;
+      sortOrder?:    number;
+      activeFrom?:   string;
+      activeTo?:     string | null;
+    },
+  ): Promise<'updated' | 'not-found'> {
+    const setRows = await this.db
+      .select()
+      .from(valueSets)
+      .where(eq(valueSets.setCode, setCode))
+      .limit(1);
+
+    if (setRows.length === 0) return 'not-found';
+    const set = setRows[0]!;
+
+    const updates: Record<string, unknown> = {};
+    if (patch.displayLabel !== undefined) updates['displayLabel'] = patch.displayLabel;
+    if (patch.description  !== undefined) updates['description']  = patch.description;
+    if (patch.sortOrder    !== undefined) updates['sortOrder']    = patch.sortOrder;
+    if (patch.activeFrom   !== undefined) updates['activeFrom']   = new Date(patch.activeFrom);
+    if ('activeTo' in patch)              updates['activeTo']     = patch.activeTo ? new Date(patch.activeTo) : null;
+
+    const result = await withTenantContext(this.db, tenantId, async (tx) =>
+      tx
+        .update(valueSetMembers)
+        .set(updates)
+        .where(
+          and(
+            eq(valueSetMembers.valueSetId, set.id),
+            eq(valueSetMembers.code,       memberCode),
+            eq(valueSetMembers.tenantId,   tenantId),
+          ),
+        )
+        .returning({ id: valueSetMembers.id }),
+    );
+
+    if (result.length === 0) return 'not-found';
+
+    for (const key of this.cache.keys()) {
+      if (key.startsWith(`${setCode}:${tenantId}:`)) this.cache.delete(key);
+    }
+    return 'updated';
+  }
+
+  /**
    * Add a tenant-specific extension value to an extensible value set.
    * Throws if the set is not extensible or the code already exists.
    */
@@ -200,6 +303,8 @@ export class ValueSetService {
       displayLabel: string;
       description?: string;
       sortOrder?:   number;
+      activeFrom?:  string;
+      activeTo?:    string;
     },
   ): Promise<ValueSetMemberDto> {
     const setRows = await this.db
@@ -223,7 +328,8 @@ export class ValueSetService {
         displayLabel: input.displayLabel,
         description:  input.description ?? null,
         sortOrder:    input.sortOrder ?? 0,
-        activeFrom:   now,
+        activeFrom:   input.activeFrom ? new Date(input.activeFrom) : now,
+        activeTo:     input.activeTo   ? new Date(input.activeTo)   : null,
       });
     });
 

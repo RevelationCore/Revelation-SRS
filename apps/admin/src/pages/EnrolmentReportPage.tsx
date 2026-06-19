@@ -2,13 +2,13 @@ import { useCallback, useEffect, useState } from 'react';
 import { type EnrolmentVolumes, getEnrolmentVolumes } from '../api/reporting.js';
 import { ApiError } from '../api/client.js';
 import { Spinner } from '../components/Spinner.js';
-
-const STATUS_CODES = ['enrolled', 'intermitting', 'suspended', 'withdrawn', 'graduated'];
+import { useValueSet } from '../hooks/useValueSet.js';
 
 export function EnrolmentReportPage() {
   const [data,    setData]    = useState<EnrolmentVolumes | null>(null);
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState('');
+  const { members: statusCodes } = useValueSet('enrolment', 'status_code');
 
   const load = useCallback(async () => {
     setLoading(true); setError('');
@@ -27,7 +27,6 @@ export function EnrolmentReportPage() {
 
   return (
     <div>
-      <p className="text-xs text-gray-400 mb-0.5">Reporting</p>
       <h1 className="text-xl font-semibold text-gray-900 mb-4">Enrolment volumes</h1>
 
       <div className="flex items-center gap-3 mb-6">
@@ -56,10 +55,10 @@ export function EnrolmentReportPage() {
           <section className="bg-white rounded-lg border border-gray-200 p-5">
             <h2 className="text-sm font-semibold text-gray-700 mb-4">By status</h2>
             <div className="grid grid-cols-3 gap-4 sm:grid-cols-6">
-              {STATUS_CODES.map(s => (
-                <div key={s} className="rounded-lg border border-gray-100 bg-gray-50 p-3 text-center">
-                  <p className="text-2xl font-bold text-gray-900">{data.byStatus[s] ?? 0}</p>
-                  <p className="text-xs text-gray-500 mt-0.5 capitalize">{s}</p>
+              {statusCodes.map(({ code, displayLabel }) => (
+                <div key={code} className="rounded-lg border border-gray-100 bg-gray-50 p-3 text-center">
+                  <p className="text-2xl font-bold text-gray-900">{data.byStatus[code] ?? 0}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">{displayLabel}</p>
                 </div>
               ))}
               <div className="rounded-lg border border-indigo-100 bg-indigo-50 p-3 text-center">
@@ -95,8 +94,8 @@ export function EnrolmentReportPage() {
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Year</th>
-                    {STATUS_CODES.map(s => (
-                      <th key={s} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase capitalize">{s}</th>
+                    {statusCodes.map(({ code, displayLabel }) => (
+                      <th key={code} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{displayLabel}</th>
                     ))}
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
                   </tr>
@@ -108,8 +107,8 @@ export function EnrolmentReportPage() {
                     return (
                       <tr key={year} className="hover:bg-gray-50">
                         <td className="px-4 py-2 font-medium text-gray-900">{year}</td>
-                        {STATUS_CODES.map(s => (
-                          <td key={s} className="px-4 py-2 text-gray-600">{row[s] ?? 0}</td>
+                        {statusCodes.map(({ code }) => (
+                          <td key={code} className="px-4 py-2 text-gray-600">{row[code] ?? 0}</td>
                         ))}
                         <td className="px-4 py-2 font-medium text-gray-700">{rowTotal}</td>
                       </tr>

@@ -1,11 +1,13 @@
+import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../auth/AuthContext.js';
+import { useApiData } from '../hooks/useApiData.js';
 import { useFormSubmit } from '../hooks/useFormSubmit.js';
-import { postAddress } from '../api/me.js';
+import { postAddress, getFieldValueSet } from '../api/me.js';
 import { Problem, Field, Spinner } from '@revelation-srs/ui';
 
 const schema = z.object({
@@ -19,16 +21,21 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
-const ADDRESS_TYPES = ['home', 'term-time', 'correspondence', 'next-of-kin'];
-
 export function AddAddressPage() {
   const { t }    = useTranslation();
   const navigate = useNavigate();
   const { personId } = useAuth();
 
+  const fetchAddressTypes = useCallback(
+    () => getFieldValueSet('student_address', 'address_type_code'),
+    [],
+  );
+  const { data: addressTypeSet, loading: vsLoading } = useApiData(fetchAddressTypes);
+  const addressTypes = addressTypeSet?.members ?? [];
+
   const { register, handleSubmit, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { addressTypeCode: 'home' },
+    defaultValues: { addressTypeCode: '' },
   });
 
   const { submitting, submitError, submit } = useFormSubmit<{ addressId: string }>();
@@ -64,17 +71,24 @@ export function AddAddressPage() {
             <label htmlFor="addressTypeCode" className="block text-sm font-medium text-gray-700">
               {t('portal.address.typeLabel')} <span className="text-red-500" aria-hidden="true">*</span>
             </label>
-            <select
-              id="addressTypeCode"
-              aria-required="true"
-              aria-invalid={errors.addressTypeCode ? 'true' : undefined}
-              className="block w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              {...register('addressTypeCode')}
-            >
-              {ADDRESS_TYPES.map(t => (
-                <option key={t} value={t}>{t}</option>
-              ))}
-            </select>
+            {vsLoading ? (
+              <div className="flex items-center gap-2 py-2 text-sm text-gray-500">
+                <Spinner size="sm" /> Loading address types…
+              </div>
+            ) : (
+              <select
+                id="addressTypeCode"
+                aria-required="true"
+                aria-invalid={errors.addressTypeCode ? 'true' : undefined}
+                className="block w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                {...register('addressTypeCode')}
+              >
+                <option value="">Select address type…</option>
+                {addressTypes.map(({ code, displayLabel }) => (
+                  <option key={code} value={code}>{displayLabel}</option>
+                ))}
+              </select>
+            )}
             {errors.addressTypeCode && (
               <p role="alert" className="text-xs text-red-600">{errors.addressTypeCode.message}</p>
             )}
@@ -113,7 +127,7 @@ export function AddAddressPage() {
         <div className="mt-5 flex items-center gap-3">
           <button
             type="submit"
-            disabled={submitting}
+            disabled={submitting || vsLoading}
             className="inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
           >
             {submitting

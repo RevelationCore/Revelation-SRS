@@ -50,6 +50,10 @@ export function DashboardPage() {
           value={profile?.studentNumber ?? '—'}
         />
         <SummaryCard
+          label="Programme"
+          value={currentEnrol?.programmeName ?? currentEnrol?.programmeCode ?? '—'}
+        />
+        <SummaryCard
           label="Enrolment status"
           value={currentEnrol
             ? t(`portal.enrolment.status.${currentEnrol.statusCode}`, { defaultValue: currentEnrol.statusCode })
@@ -86,6 +90,7 @@ export function DashboardPage() {
             <table className="min-w-full divide-y divide-gray-200 text-sm">
               <thead className="bg-gray-50">
                 <tr>
+                  <th className="px-4 py-2.5 text-left font-medium text-gray-500 uppercase text-xs tracking-wide">Programme</th>
                   <th className="px-4 py-2.5 text-left font-medium text-gray-500 uppercase text-xs tracking-wide">Academic year</th>
                   <th className="px-4 py-2.5 text-left font-medium text-gray-500 uppercase text-xs tracking-wide">Status</th>
                   <th className="px-4 py-2.5 text-left font-medium text-gray-500 uppercase text-xs tracking-wide">Mode</th>
@@ -95,6 +100,9 @@ export function DashboardPage() {
               <tbody className="divide-y divide-gray-100">
                 {enrolments.map(e => (
                   <tr key={e.enrolmentId} className="hover:bg-gray-50">
+                    <td className="px-4 py-2.5 text-gray-900">
+                      {e.programmeName ?? e.programmeCode ?? <span className="text-gray-400">—</span>}
+                    </td>
                     <td className="px-4 py-2.5 text-gray-900">{e.academicYearOfEntry}</td>
                     <td className="px-4 py-2.5">
                       <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColour(e.statusCode)}`}>

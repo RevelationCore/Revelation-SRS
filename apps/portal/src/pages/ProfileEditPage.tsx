@@ -46,19 +46,20 @@ export function ProfileEditPage() {
     });
   }, [profile, reset]);
 
-  const { submitting, submitError, submit } = useFormSubmit<void>();
+  const { submitting, submitError, submit } = useFormSubmit<true>();
 
   const onSubmit = async (data: FormValues) => {
     if (!personId) return;
-    const result = await submit(() =>
-      patchIdentity(personId, {
+    const result = await submit(async () => {
+      await patchIdentity(personId, {
         preferredName:   data.preferredName   || null,
         emailPersonal:   data.emailPersonal   || null,
         phoneMobile:     data.phoneMobile     || null,
         genderCode:      data.genderCode      || null,
         nationalityCode: data.nationalityCode || null,
-      }),
-    );
+      });
+      return true as const;
+    });
     if (result !== undefined) navigate('/profile');
   };
 

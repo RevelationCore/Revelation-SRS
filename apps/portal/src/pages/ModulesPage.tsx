@@ -45,10 +45,10 @@ export function ModulesPage() {
     return map;
   }, [timetable]);
 
-  const { submitting, submitError, submit } = useFormSubmit<void>();
+  const { submitting, submitError, submit } = useFormSubmit<true>();
 
   const handleWithdraw = async (moduleRegistrationId: string) => {
-    const result = await submit(() => postWithdrawal(moduleRegistrationId));
+    const result = await submit(async () => { await postWithdrawal(moduleRegistrationId); return true as const; });
     if (result !== undefined) {
       setWithdrawing(null);
       setRefreshKey(k => k + 1);

@@ -27,7 +27,6 @@ export function IntegrationsPage() {
 
   return (
     <div>
-      <p className="text-xs text-gray-400 mb-0.5">Tenant administration</p>
       <h1 className="text-xl font-semibold text-gray-900 mb-4">Integrations</h1>
 
       <div className="flex gap-1 mb-6 border-b border-gray-200">

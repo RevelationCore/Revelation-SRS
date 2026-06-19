@@ -16,7 +16,6 @@ export function AuditPage() {
 
   return (
     <div>
-      <p className="text-xs text-gray-400 mb-0.5">Tenant administration</p>
       <h1 className="text-xl font-semibold text-gray-900 mb-4">Audit log</h1>
 
       <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 p-4">

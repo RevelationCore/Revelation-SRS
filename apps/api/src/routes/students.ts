@@ -751,6 +751,8 @@ export function studentRoutes(fastify: FastifyInstance): void {
             enrolmentId:         Type.String(),
             personId:            Type.String(),
             programmeId:         Type.Union([Type.String(), Type.Null()]),
+            programmeCode:       Type.Union([Type.String(), Type.Null()]),
+            programmeName:       Type.Union([Type.String(), Type.Null()]),
             statusCode:          Type.String(),
             modeOfStudyCode:     Type.String(),
             attendanceTypeCode:  Type.Union([Type.String(), Type.Null()]),

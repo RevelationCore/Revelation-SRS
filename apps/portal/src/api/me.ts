@@ -38,6 +38,8 @@ export interface Enrolment {
   enrolmentId:         string;
   personId:            string;
   programmeId:         string | null;
+  programmeCode:       string | null;
+  programmeName:       string | null;
   statusCode:          string;
   modeOfStudyCode:     string;
   attendanceTypeCode:  string | null;
@@ -202,7 +204,10 @@ export function postDisabilityDeclaration(
 export interface ModuleOffering {
   moduleOfferingId: string;
   moduleId:         string;
+  moduleCode:       string;
+  moduleTitle:      string;
   academicPeriodId: string;
+  periodCode:       string;
   deliveryModeCode: string | null;
   capacity:         number | null;
 }
@@ -246,4 +251,21 @@ export function submitExceptionalCircumstances(body: {
   moduleOfferingId?: string;
 }): Promise<{ exceptionalCircumstancesId: string }> {
   return api.post('/api/v1/exceptional-circumstances/submissions', body);
+}
+
+export interface ValueSetMember {
+  code:         string;
+  displayLabel: string;
+  description:  string | null;
+  sortOrder:    number;
+}
+
+export interface ValueSetDto {
+  setCode:      string;
+  displayName:  string;
+  members:      ValueSetMember[];
+}
+
+export function getFieldValueSet(entity: string, field: string): Promise<ValueSetDto> {
+  return api.get(`/api/v1/fields/${entity}/${field}/value-set`);
 }

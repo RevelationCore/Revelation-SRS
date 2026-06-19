@@ -1,7 +1,6 @@
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import {
   type AcademicRule,
-  RULE_TYPE_CODES,
   createAcademicRule,
   deleteAcademicRule,
   getAcademicRuleHistory,
@@ -10,8 +9,10 @@ import {
 import { ApiError } from '../api/client.js';
 import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
+import { useValueSet } from '../hooks/useValueSet.js';
 
 export function AcademicRulesPage() {
+  const { members: ruleTypes } = useValueSet('academic_rule', 'rule_type_code');
   const [rules,       setRules]       = useState<AcademicRule[]>([]);
   const [loading,     setLoading]     = useState(true);
   const [error,       setError]       = useState('');
@@ -70,7 +71,6 @@ export function AcademicRulesPage() {
 
   return (
     <div>
-      <p className="text-xs text-gray-400 mb-0.5">Tenant administration</p>
       <h1 className="text-xl font-semibold text-gray-900 mb-4">Academic rules</h1>
 
       <div className="flex items-center justify-between mb-4">
@@ -81,7 +81,7 @@ export function AcademicRulesPage() {
             className="rounded border border-gray-300 px-2 py-1.5 text-sm"
           >
             <option value="">All types</option>
-            {RULE_TYPE_CODES.map(c => <option key={c} value={c}>{c}</option>)}
+            {ruleTypes.map(({ code, displayLabel }) => <option key={code} value={code}>{displayLabel}</option>)}
           </select>
           <button type="submit" className="rounded bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700">
             Filter
@@ -169,7 +169,7 @@ export function AcademicRulesPage() {
       )}
 
       {showCreate && (
-        <CreateRuleModal onClose={() => setShowCreate(false)} onCreated={handleCreated} />
+        <CreateRuleModal onClose={() => setShowCreate(false)} onCreated={handleCreated} ruleTypes={ruleTypes} />
       )}
 
       {historyFor && (
@@ -189,9 +189,11 @@ export function AcademicRulesPage() {
 function CreateRuleModal({
   onClose,
   onCreated,
+  ruleTypes,
 }: {
   onClose:   () => void;
   onCreated: () => void;
+  ruleTypes: { code: string; displayLabel: string }[];
 }) {
   const [submitting, setSubmitting] = useState(false);
   const [error,      setError]      = useState('');
@@ -245,7 +247,7 @@ function CreateRuleModal({
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1">Rule type *</label>
             <select name="ruleTypeCode" className="w-full rounded border border-gray-300 px-3 py-2 text-sm">
-              {RULE_TYPE_CODES.map(c => <option key={c} value={c}>{c}</option>)}
+              {ruleTypes.map(({ code, displayLabel }) => <option key={code} value={code}>{displayLabel}</option>)}
             </select>
           </div>
           <ModalField name="name"          label="Name *" />

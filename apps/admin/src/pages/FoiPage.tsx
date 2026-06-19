@@ -10,10 +10,12 @@ import {
 import { ApiError } from '../api/client.js';
 import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
+import { useValueSet } from '../hooks/useValueSet.js';
 
-const FOI_STATUS_CODES = ['open', 'in-progress', 'completed', 'rejected', 'withdrawn'];
+type StatusMember = { code: string; displayLabel: string };
 
 export function FoiPage() {
+  const { members: foiStatuses } = useValueSet('foi_request', 'status_code');
   const [requests,  setRequests]  = useState<FoiRequest[]>([]);
   const [selected,  setSelected]  = useState<FoiRequest | null>(null);
   const [loading,   setLoading]   = useState(true);
@@ -36,7 +38,6 @@ export function FoiPage() {
 
   return (
     <div>
-      <p className="text-xs text-gray-400 mb-0.5">Reporting</p>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-semibold text-gray-900">Freedom of Information / SAR</h1>
         <button
@@ -96,6 +97,7 @@ export function FoiPage() {
             {selected ? (
               <RequestDetail
                 request={selected}
+                statuses={foiStatuses}
                 onUpdated={async (updated) => {
                   setSelected(updated);
                   await load();
@@ -205,9 +207,11 @@ function CreateFoiForm({ onCreated, onCancel }: { onCreated: () => void; onCance
 
 function RequestDetail({
   request,
+  statuses,
   onUpdated,
 }: {
   request:   FoiRequest;
+  statuses:  StatusMember[];
   onUpdated: (r: FoiRequest) => Promise<void>;
 }) {
   const [extracts,      setExtracts]      = useState<FoiExtract[]>([]);
@@ -284,8 +288,8 @@ function RequestDetail({
             className="rounded border border-gray-300 px-2 py-1.5 text-sm flex-1"
           >
             <option value="">Select new status</option>
-            {FOI_STATUS_CODES.filter(s => s !== request.statusCode).map(s => (
-              <option key={s} value={s}>{s}</option>
+            {statuses.filter(({ code }) => code !== request.statusCode).map(({ code, displayLabel }) => (
+              <option key={code} value={code}>{displayLabel}</option>
             ))}
           </select>
           <button

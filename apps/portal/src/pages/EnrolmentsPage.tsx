@@ -38,9 +38,12 @@ export function EnrolmentsPage() {
               className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm"
             >
               <div className="flex items-start justify-between gap-4">
-                <h2 id={`enrolment-${e.enrolmentId}`} className="text-base font-semibold text-gray-900">
-                  Academic year {e.academicYearOfEntry}
-                </h2>
+                <div>
+                  <h2 id={`enrolment-${e.enrolmentId}`} className="text-base font-semibold text-gray-900">
+                    {e.programmeName ?? e.programmeCode ?? 'Unknown programme'}
+                  </h2>
+                  <p className="mt-0.5 text-sm text-gray-500">Academic year {e.academicYearOfEntry}</p>
+                </div>
                 <span className={`flex-none rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColour(e.statusCode)}`}>
                   {t(`portal.enrolment.status.${e.statusCode}`, { defaultValue: e.statusCode })}
                 </span>

@@ -4,6 +4,7 @@ import { type CreateStudentInput, type StudentSummary, createStudent, listStuden
 import { Spinner } from '../components/Spinner.js';
 import { ApiError } from '../api/client.js';
 import { Dialog, DialogClose } from '@revelation-srs/ui';
+import { useValueSet } from '../hooks/useValueSet.js';
 
 const PAGE_SIZE = 20;
 
@@ -15,6 +16,7 @@ export function StudentsPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [search, setSearch]       = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const { members: personStatuses } = useValueSet('person', 'person_status_code');
 
   async function load(off: number, q?: string, status?: string) {
     setLoading(true);
@@ -68,8 +70,8 @@ export function StudentsPage() {
           className="rounded border border-gray-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
         >
           <option value="">All statuses</option>
-          {['prospective', 'student', 'alumnus', 'deceased', 'merged'].map(s => (
-            <option key={s} value={s}>{s}</option>
+          {personStatuses.map(({ code, displayLabel }) => (
+            <option key={code} value={code}>{displayLabel}</option>
           ))}
         </select>
         <button

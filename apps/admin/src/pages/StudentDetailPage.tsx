@@ -11,8 +11,6 @@ import {
 } from '../api/students.js';
 import {
   type CorrectionCase,
-  CASE_TYPE_CODES,
-  CASE_STATUS_CODES,
   listCorrectionCases,
   createCorrectionCase,
   updateCaseStatus,
@@ -41,6 +39,7 @@ import {
 import { ApiError } from '../api/client.js';
 import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
+import { useValueSet } from '../hooks/useValueSet.js';
 
 type Tab = 'identity' | 'enrolments' | 'registrations' | 'history' | 'corrections';
 
@@ -918,6 +917,8 @@ function HistoryTab({ personId }: { personId: string }) {
 // ── Corrections tab ───────────────────────────────────────────────────────────
 
 function CorrectionsTab({ personId }: { personId: string }) {
+  const { members: caseTypes }   = useValueSet('correction_case', 'case_type_code');
+  const { members: caseStatuses } = useValueSet('correction_case', 'case_status_code');
   const [enrolments,   setEnrolments]   = useState<Enrolment[]>([]);
   const [cases,        setCases]        = useState<CorrectionCase[]>([]);
   const [selectedEnrolId, setSelectedEnrolId] = useState('');
@@ -925,7 +926,7 @@ function CorrectionsTab({ personId }: { personId: string }) {
   const [error,        setError]        = useState('');
   const [showCreate,   setShowCreate]   = useState(false);
   const [creating,     setCreating]     = useState(false);
-  const [newCaseType,  setNewCaseType]  = useState<string>(CASE_TYPE_CODES[0]);
+  const [newCaseType,  setNewCaseType]  = useState<string>('');
   const [updatingId,   setUpdatingId]   = useState<string | null>(null);
 
   const loadCases = useCallback(async (enrolmentId: string) => {
@@ -957,7 +958,7 @@ function CorrectionsTab({ personId }: { personId: string }) {
     if (!selectedEnrolId) return;
     setCreating(true); setError('');
     try {
-      await createCorrectionCase(selectedEnrolId, newCaseType as typeof CASE_TYPE_CODES[number]);
+      await createCorrectionCase(selectedEnrolId, newCaseType);
       setShowCreate(false);
       await loadCases(selectedEnrolId);
     } catch (err) {
@@ -968,7 +969,7 @@ function CorrectionsTab({ personId }: { personId: string }) {
   async function handleStatusChange(caseId: string, statusCode: string) {
     setUpdatingId(caseId); setError('');
     try {
-      await updateCaseStatus(caseId, statusCode as typeof CASE_STATUS_CODES[number]);
+      await updateCaseStatus(caseId, statusCode);
       await loadCases(selectedEnrolId);
     } catch (err) {
       setError(err instanceof ApiError ? (err.detail ?? err.message) : 'Update failed');
@@ -995,7 +996,7 @@ function CorrectionsTab({ personId }: { personId: string }) {
             onChange={(e) => setNewCaseType(e.target.value)}
             className="rounded border border-gray-300 px-2 py-1 text-sm"
           >
-            {CASE_TYPE_CODES.map(c => <option key={c} value={c}>{c}</option>)}
+            {caseTypes.map(({ code, displayLabel }) => <option key={code} value={code}>{displayLabel}</option>)}
           </select>
           <button
             type="submit"
@@ -1046,14 +1047,14 @@ function CorrectionsTab({ personId }: { personId: string }) {
               </div>
               <div className="mt-3 flex items-center gap-2 flex-wrap">
                 <span className="text-xs text-gray-500">Move to:</span>
-                {CASE_STATUS_CODES.filter(s => s !== c.statusCode).map(s => (
+                {caseStatuses.filter(({ code }) => code !== c.statusCode).map(({ code, displayLabel }) => (
                   <button
-                    key={s}
+                    key={code}
                     disabled={updatingId === c.caseId}
-                    onClick={() => void handleStatusChange(c.caseId, s)}
+                    onClick={() => void handleStatusChange(c.caseId, code)}
                     className="rounded border border-gray-300 px-2 py-0.5 text-xs text-gray-600 hover:bg-gray-50 disabled:opacity-40"
                   >
-                    {s}
+                    {displayLabel}
                   </button>
                 ))}
               </div>

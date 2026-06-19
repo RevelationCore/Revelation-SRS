@@ -8,10 +8,10 @@ import {
 import { ApiError } from '../api/client.js';
 import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
-
-const BOARD_TYPE_CODES = ['undergraduate', 'postgraduate-taught', 'postgraduate-research', 'progression', 'resit'];
+import { useValueSet } from '../hooks/useValueSet.js';
 
 export function ExamBoardsPage() {
+  const { members: boardTypes } = useValueSet('exam_board', 'board_type_code');
   const [boards,     setBoards]     = useState<ExamBoard[]>([]);
   const [loading,    setLoading]    = useState(true);
   const [error,      setError]      = useState('');
@@ -130,6 +130,7 @@ export function ExamBoardsPage() {
         <CreateBoardModal
           onClose={() => setShowCreate(false)}
           onCreated={handleCreated}
+          boardTypes={boardTypes}
         />
       )}
     </div>
@@ -139,9 +140,11 @@ export function ExamBoardsPage() {
 function CreateBoardModal({
   onClose,
   onCreated,
+  boardTypes,
 }: {
-  onClose: () => void;
-  onCreated: () => void;
+  onClose:    () => void;
+  onCreated:  () => void;
+  boardTypes: { code: string; displayLabel: string }[];
 }) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError]           = useState('');
@@ -187,7 +190,7 @@ function CreateBoardModal({
               name="boardTypeCode"
               className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
-              {BOARD_TYPE_CODES.map(c => <option key={c} value={c}>{c}</option>)}
+              {boardTypes.map(({ code, displayLabel }) => <option key={code} value={code}>{displayLabel}</option>)}
             </select>
           </div>
           <FormField name="academicYear"     label="Academic year * (e.g. 2025/26)" />
