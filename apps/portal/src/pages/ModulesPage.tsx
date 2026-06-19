@@ -1,10 +1,10 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../auth/AuthContext.js';
 import { useApiData } from '../hooks/useApiData.js';
 import { useFormSubmit } from '../hooks/useFormSubmit.js';
-import { getEnrolments, getModuleRegistrations, postWithdrawal } from '../api/me.js';
+import { getEnrolments, getModuleRegistrations, getTimetable, postWithdrawal } from '../api/me.js';
 import { Spinner, Problem, EmptyState, formatDate } from '@revelation-srs/ui';
 
 export function ModulesPage() {
@@ -31,6 +31,20 @@ export function ModulesPage() {
     currentEnrolment ? fetchRegs : null,
   );
 
+  const fetchTimetable = useCallback(
+    () => currentEnrolment ? getTimetable(currentEnrolment.enrolmentId) : Promise.reject(new Error('')),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [currentEnrolment?.enrolmentId, refreshKey],
+  );
+  const { data: timetable, loading: tLoading } = useApiData(currentEnrolment ? fetchTimetable : null);
+
+  // Build a lookup map from moduleRegistrationId → timetable entry for display names
+  const timetableByRegId = useMemo(() => {
+    const map = new Map<string, { moduleCode: string; moduleTitle: string; periodCode: string }>();
+    for (const entry of timetable ?? []) map.set(entry.moduleRegistrationId, entry);
+    return map;
+  }, [timetable]);
+
   const { submitting, submitError, submit } = useFormSubmit<void>();
 
   const handleWithdraw = async (moduleRegistrationId: string) => {
@@ -41,7 +55,7 @@ export function ModulesPage() {
     }
   };
 
-  const loading = eLoading || rLoading;
+  const loading = eLoading || rLoading || tLoading;
   const error   = eError ?? rError;
 
   if (loading) {
@@ -89,8 +103,13 @@ export function ModulesPage() {
             <tbody className="divide-y divide-gray-100">
               {registrations.map(r => (
                 <tr key={r.moduleRegistrationId} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-mono text-gray-800 text-xs">{r.moduleId}</td>
-                  <td className="px-4 py-3 text-gray-600">{r.academicPeriodId}</td>
+                  <td className="px-4 py-3 text-gray-800">
+                    <span className="font-medium">{timetableByRegId.get(r.moduleRegistrationId)?.moduleCode ?? r.moduleId}</span>
+                    {timetableByRegId.get(r.moduleRegistrationId)?.moduleTitle && (
+                      <span className="ml-2 text-xs text-gray-500">{timetableByRegId.get(r.moduleRegistrationId)?.moduleTitle}</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-gray-600">{timetableByRegId.get(r.moduleRegistrationId)?.periodCode ?? r.academicPeriodId}</td>
                   <td className="px-4 py-3">
                     <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${regStatusColour(r.statusCode)}`}>
                       {r.statusCode}
