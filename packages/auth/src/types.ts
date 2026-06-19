@@ -15,6 +15,8 @@ export interface AuthenticatedUser {
   email: string;
   /** Raw `preferred_username` claim. */
   preferredUsername: string;
+  /** SRS person UUID — present only for student personas (from srs_person_id JWT claim). */
+  srsPersonId?: string;
 }
 
 /** Fastify module augmentation so request.user is typed throughout the app. */

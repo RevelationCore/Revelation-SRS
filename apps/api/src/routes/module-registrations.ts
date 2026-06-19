@@ -1,5 +1,5 @@
 import { Type } from '@sinclair/typebox';
-import { requirePermission } from '@revelation-srs/auth';
+import { requirePermission, requireAnyPermission } from '@revelation-srs/auth';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 
 import { clockNow } from '../platform/clock.js';
@@ -62,7 +62,7 @@ export function moduleRegistrationsRoutes(fastify: FastifyInstance): void {
         }),
         response: { 200: Type.Array(ModuleRegistrationSchema) },
       },
-      preHandler: [requirePermission('module-registration:read:all')],
+      preHandler: [requireAnyPermission('module-registration:read:own', 'module-registration:read:all')],
     },
     async (request, reply) => {
       const query = request.query as { enrolmentId?: string; moduleOfferingId?: string; statusCode?: string };
@@ -83,7 +83,7 @@ export function moduleRegistrationsRoutes(fastify: FastifyInstance): void {
         querystring: Type.Object({ enrolmentId: Type.String() }),
         response: { 200: Type.Array(TimetableRegistrationSchema) },
       },
-      preHandler: [requirePermission('module-registration:read:all')],
+      preHandler: [requireAnyPermission('module-registration:read:own', 'module-registration:read:all')],
     },
     async (request, reply) => {
       const { enrolmentId } = request.query as { enrolmentId: string };

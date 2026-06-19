@@ -1,5 +1,5 @@
 import { Type } from '@sinclair/typebox';
-import { requirePermission } from '@revelation-srs/auth';
+import { requirePermission, requireSelfOrPermission } from '@revelation-srs/auth';
 import type { FastifyInstance } from 'fastify';
 
 import { clockNow } from '../platform/clock.js';
@@ -276,7 +276,7 @@ export function studentRoutes(fastify: FastifyInstance): void {
           404: ErrorSchema,
         },
       },
-      preHandler: [requirePermission('student:read:all')],
+      preHandler: [requireSelfOrPermission('student:read:own', 'student:read:all')],
     },
     async (request, reply) => {
       const { personId } = request.params as { personId: string };
@@ -483,7 +483,7 @@ export function studentRoutes(fastify: FastifyInstance): void {
           404: ErrorSchema,
         },
       },
-      preHandler: [requirePermission('student:write')],
+      preHandler: [requireSelfOrPermission('student:read:own', 'student:write')],
     },
     async (request, reply) => {
       const { personId } = request.params as { personId: string };
@@ -574,7 +574,7 @@ export function studentRoutes(fastify: FastifyInstance): void {
           })),
         },
       },
-      preHandler: [requirePermission('student:read:all')],
+      preHandler: [requireSelfOrPermission('student:read:own', 'student:read:all')],
     },
     async (request, reply) => {
       const { personId } = request.params as { personId: string };
@@ -610,7 +610,7 @@ export function studentRoutes(fastify: FastifyInstance): void {
         }),
         response: { 201: Type.Object({ addressId: Type.String() }) },
       },
-      preHandler: [requirePermission('student:write')],
+      preHandler: [requireSelfOrPermission('student:read:own', 'student:write')],
     },
     async (request, reply) => {
       const { personId } = request.params as { personId: string };
@@ -651,7 +651,7 @@ export function studentRoutes(fastify: FastifyInstance): void {
         }),
         response: { 201: Type.Object({ declarationId: Type.String() }) },
       },
-      preHandler: [requirePermission('disability:write')],
+      preHandler: [requireSelfOrPermission('disability:read:own', 'disability:write')],
     },
     async (request, reply) => {
       const { personId } = request.params as { personId: string };
@@ -709,7 +709,7 @@ export function studentRoutes(fastify: FastifyInstance): void {
           })),
         },
       },
-      preHandler: [requirePermission('disability:read')],
+      preHandler: [requireSelfOrPermission('disability:read:own', 'disability:read')],
     },
     async (request, reply) => {
       const { personId } = request.params as { personId: string };
@@ -767,7 +767,7 @@ export function studentRoutes(fastify: FastifyInstance): void {
           })),
         },
       },
-      preHandler: [requirePermission('enrolment:read:all')],
+      preHandler: [requireSelfOrPermission('enrolment:read:own', 'enrolment:read:all')],
     },
     async (request, reply) => {
       const { personId } = request.params as { personId: string };

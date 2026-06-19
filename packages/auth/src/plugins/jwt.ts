@@ -19,6 +19,7 @@ type RawClaims = JWTPayload & {
   name?:               string;
   email?:              string;
   preferred_username?: string;
+  srs_person_id?:      string;
   iss?:                string;
   aud?:                string | string[];
 };
@@ -96,6 +97,7 @@ async function jwtPlugin(
         displayName:       claims.name ?? '',
         email:             claims.email ?? '',
         preferredUsername: claims.preferred_username ?? '',
+        ...(claims.srs_person_id ? { srsPersonId: claims.srs_person_id } : {}),
       };
 
       request.user     = user;

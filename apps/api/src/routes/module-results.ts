@@ -1,5 +1,5 @@
 import { Type } from '@sinclair/typebox';
-import { requirePermission } from '@revelation-srs/auth';
+import { requirePermission, requireAnyPermission } from '@revelation-srs/auth';
 import type { FastifyInstance } from 'fastify';
 
 import type { ModuleResultDto } from '../platform/assessment/module-result-service.js';
@@ -32,7 +32,7 @@ export function moduleResultRoutes(fastify: FastifyInstance): void {
         params: Type.Object({ moduleRegistrationId: Type.String() }),
         response: { 200: ModuleResultSchema, 404: ErrorSchema },
       },
-      preHandler: [requirePermission('mark:read:all')],
+      preHandler: [requireAnyPermission('mark:read:own', 'mark:read:all')],
     },
     async (request, reply) => {
       const { moduleRegistrationId } = request.params as { moduleRegistrationId: string };

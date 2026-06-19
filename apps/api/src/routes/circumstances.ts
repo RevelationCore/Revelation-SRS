@@ -1,5 +1,5 @@
 import { Type } from '@sinclair/typebox';
-import { requirePermission } from '@revelation-srs/auth';
+import { requirePermission, requireSelfOrPermission } from '@revelation-srs/auth';
 import type { FastifyInstance } from 'fastify';
 
 import type {
@@ -199,7 +199,7 @@ export function circumstancesRoutes(fastify: FastifyInstance): void {
         querystring: ListQuery,
         response: { 200: Type.Array(EcSchema), 404: ErrorSchema },
       },
-      preHandler: [requirePermission('circumstances:read')],
+      preHandler: [requireSelfOrPermission('circumstances:read:own', 'circumstances:read')],
     },
     async (request, reply) => {
       const { personId } = request.params as { personId: string };

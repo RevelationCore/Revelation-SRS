@@ -1,5 +1,5 @@
 import { Type } from '@sinclair/typebox';
-import { requirePermission } from '@revelation-srs/auth';
+import { requirePermission, requireSelfOrPermission } from '@revelation-srs/auth';
 import type { FastifyInstance } from 'fastify';
 
 import type {
@@ -105,7 +105,7 @@ export function adjustmentRoutes(fastify: FastifyInstance): void {
         querystring: ListAdjustmentQuery,
         response: { 200: Type.Array(AdjustmentSchema), 404: ErrorSchema },
       },
-      preHandler: [requirePermission('adjustment:read:all')],
+      preHandler: [requireSelfOrPermission('adjustment:read:own', 'adjustment:read:all')],
     },
     async (request, reply) => {
       const { personId } = request.params as { personId: string };

@@ -342,7 +342,7 @@ export function examBoardRoutes(fastify: FastifyInstance): void {
       }
 
       const timetable = await fastify.examEntryService.getExamTimetable(moduleRegistrationId, request.tenantId);
-      if (!hasAll && hasOwn && timetable.personId !== request.user.sub) {
+      if (!hasAll && hasOwn && timetable.personId !== request.user.srsPersonId) {
         return reply.code(403).send({
           type: 'https://srs.example.com/errors/forbidden',
           title: 'Forbidden',
