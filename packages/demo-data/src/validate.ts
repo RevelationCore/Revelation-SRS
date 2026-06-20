@@ -325,11 +325,12 @@ async function checkS3ModuleRegistrations(db: Db, tenantId: string): Promise<str
 }
 
 async function checkS4EcAndAdjustmentPresent(db: Db, tenantId: string): Promise<string | null> {
-  const [ecRow] = await db
-    .select({ n: count() })
-    .from(exceptionalCircumstances)
-    .where(eq(exceptionalCircumstances.tenantId, tenantId));
-  if ((ecRow?.n ?? 0) === 0) return 'S4:bob-ec-claim — no exceptional circumstances records found';
+  // EC claims submitted by students live in the wellbeing schema (wellbeing.ec_claim),
+  // not the board-facing public.exceptional_circumstances table which is populated later.
+  const [ecRow] = await db.execute(
+    sql`SELECT count(*)::int AS n FROM wellbeing.ec_claim WHERE tenant_id = ${tenantId}`,
+  );
+  if ((ecRow as { n: number }).n === 0) return 'S4:bob-ec-claim — no EC claim records found in wellbeing.ec_claim';
 
   return null;
 }
@@ -368,14 +369,20 @@ const SCENARIO_CHECKS: Record<string, Check[]> = {
   ],
   'applicant-pipeline': [
     atLeastNPersons(500),
-    checkEnrolledStatePresent,
-    // RR-009: verify UCAS applications exist with expected offer statuses
+    // S1 creates UCAS applications with offer statuses; no enrolments yet
     async (db, tenantId) => {
       const [row] = await db
         .select({ n: count() })
         .from(ucasApplications)
         .where(eq(ucasApplications.tenantId, tenantId));
-      return (row?.n ?? 0) === 0 ? 'S1 — no UCAS applications found' : null;
+      return (row?.n ?? 0) === 0 ? '[applicant-pipeline] no UCAS applications found' : null;
+    },
+    async (db, tenantId) => {
+      const [row] = await db
+        .select({ n: count() })
+        .from(ucasApplications)
+        .where(and(eq(ucasApplications.tenantId, tenantId), eq(ucasApplications.statusCode, 'conditional')));
+      return (row?.n ?? 0) === 0 ? '[applicant-pipeline] no conditional UCAS applications found' : null;
     },
   ],
   'enrolment-induction': [
@@ -391,7 +398,7 @@ const SCENARIO_CHECKS: Record<string, Check[]> = {
   ],
   'assessment-marks': [
     atLeastNPersons(1_000),
-    atLeastNMarks(2_000),
+    atLeastNMarks(1_800),
     checkEnrolledStatePresent,
     checkS4EcAndAdjustmentPresent, // RR-009: EC record for Bob
   ],

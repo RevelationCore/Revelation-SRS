@@ -79,7 +79,7 @@ export async function loadScenario(
   tenantId: string,
   manifest: ScenarioManifest,
   scenarioLoader: ScenarioLoader,
-  opts: { dryRun?: boolean },
+  opts: { dryRun?: boolean; force?: boolean },
 ): Promise<void> {
   const clockOffsetMs = Date.parse(manifest.referenceDate) - Date.now();
 
@@ -97,7 +97,19 @@ export async function loadScenario(
   await db.execute(sql`SELECT pg_advisory_lock(hashtext('revelation-srs:demo-reset'))`);
 
   try {
-    // Check for an existing checkpoint to resume from
+    // When force is set, clear the checkpoint so all phases reload from scratch
+    if (opts.force) {
+      await db
+        .delete(demoLoadCheckpoints)
+        .where(
+          and(
+            eq(demoLoadCheckpoints.tenantId, tenantId),
+            eq(demoLoadCheckpoints.scenarioSlug, manifest.slug),
+          ),
+        );
+    }
+
+    // Check for an existing checkpoint to resume from (rotation / interrupted load)
     const lastPhase = await getCheckpoint(db, tenantId, manifest.slug);
     const lastPhaseIdx = lastPhase !== undefined
       ? phaseIndex(manifest.phases, lastPhase as LoadPhase)
