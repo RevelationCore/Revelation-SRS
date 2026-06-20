@@ -19,8 +19,10 @@ export async function reportingRoutes(fastify: FastifyInstance): Promise<void> {
             byMode:        Type.Record(Type.String(), Type.Number()),
             byYearOfEntry: Type.Record(Type.String(), Type.Record(Type.String(), Type.Number())),
             byProgramme:   Type.Array(Type.Object({
-              programmeId: Type.String(),
-              count:       Type.Number(),
+              programmeId:   Type.String(),
+              programmeCode: Type.Union([Type.String(), Type.Null()]),
+              programmeName: Type.Union([Type.String(), Type.Null()]),
+              count:         Type.Number(),
             })),
             generatedAt:   Type.String(),
           }),

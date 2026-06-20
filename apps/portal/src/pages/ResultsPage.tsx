@@ -8,7 +8,8 @@ import { Spinner, Problem, EmptyState, ApiError } from '@revelation-srs/ui';
 
 interface ResultWithModule {
   moduleRegistrationId: string;
-  moduleId:             string;
+  moduleCode:           string;
+  moduleTitle:          string;
   result:               ModuleResult;
 }
 
@@ -46,7 +47,7 @@ export function ResultsPage() {
           const result = await getModuleResult(r.moduleRegistrationId);
           // Only surface results that have been locked (ratified/published)
           if (!result.locked) return null;
-          return { moduleRegistrationId: r.moduleRegistrationId, moduleId: r.moduleId, result };
+          return { moduleRegistrationId: r.moduleRegistrationId, moduleCode: r.moduleCode, moduleTitle: r.moduleTitle, result };
         } catch (e) {
           // 404 = no result yet — treat as unpublished, not an error
           if (e instanceof ApiError && e.status === 404) return null;
@@ -96,9 +97,12 @@ export function ResultsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {results.map(({ moduleId, moduleRegistrationId, result }) => (
+              {results.map(({ moduleCode, moduleTitle, moduleRegistrationId, result }) => (
                 <tr key={moduleRegistrationId} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-mono text-xs text-gray-800">{moduleId}</td>
+                  <td className="px-4 py-3 text-gray-900">
+                    <span className="font-mono text-xs text-gray-500 mr-1">{moduleCode}</span>
+                    {moduleTitle}
+                  </td>
                   <td className="px-4 py-3 text-gray-900 tabular-nums">{result.aggregateMark}</td>
                   <td className="px-4 py-3">
                     <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${resultColour(result.resultCode)}`}>

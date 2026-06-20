@@ -56,7 +56,10 @@ export interface ModuleRegistration {
   enrolmentId:          string;
   moduleOfferingId:     string;
   moduleId:             string;
+  moduleCode:           string;
+  moduleTitle:          string;
   academicPeriodId:     string;
+  periodCode:           string;
   statusCode:           string;
   registrationDate:     string;
   validFrom:            string;
@@ -108,6 +111,8 @@ export interface ExceptionalCircumstances {
   enrolmentId:                string;
   personId:                   string;
   moduleOfferingId:           string | null;
+  moduleCode:                 string | null;
+  moduleTitle:                string | null;
   outcomeCode:                string;
   determinationDate:          string | null;
   notes:                      string | null;

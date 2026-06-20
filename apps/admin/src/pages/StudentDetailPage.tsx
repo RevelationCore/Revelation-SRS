@@ -458,7 +458,12 @@ function EnrolmentCard({
           <p className="text-sm font-medium text-gray-900">
             {enrolment.academicYearOfEntry} · {enrolment.modeOfStudyCode}
           </p>
-          <p className="text-xs text-gray-500 mt-0.5 font-mono truncate">{enrolment.enrolmentId}</p>
+          <p className="text-xs text-gray-500 mt-0.5 truncate">
+            {enrolment.programmeName
+              ? <>{enrolment.programmeCode && <span className="font-mono mr-1">{enrolment.programmeCode}</span>}{enrolment.programmeName}</>
+              : <span className="text-gray-400 italic">No programme assigned</span>
+            }
+          </p>
         </div>
         <Badge value={enrolment.statusCode} />
         <span className="text-gray-400 text-sm">{expanded ? '▲' : '▼'}</span>
@@ -772,8 +777,11 @@ function RegistrationsTab({ personId }: { personId: string }) {
             <tbody className="divide-y divide-gray-100">
               {registrations.map(r => (
                 <tr key={r.moduleRegistrationId} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-mono text-xs text-gray-700">{r.moduleId}</td>
-                  <td className="px-4 py-3 text-gray-600">{r.academicPeriodId}</td>
+                  <td className="px-4 py-3 text-gray-900">
+                    <span className="font-mono text-xs text-gray-500 mr-1">{r.moduleCode}</span>
+                    {r.moduleTitle}
+                  </td>
+                  <td className="px-4 py-3 text-gray-600">{r.periodCode}</td>
                   <td className="px-4 py-3"><Badge value={r.statusCode} /></td>
                   <td className="px-4 py-3 text-gray-500 text-xs">{r.registrationDate}</td>
                   <td className="px-4 py-3 text-right">

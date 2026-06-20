@@ -60,6 +60,7 @@ export interface ExamBoardDto {
   boardTypeCode:    string;
   academicYear:     string;
   academicPeriodId: string | null;
+  periodCode:       string | null;
   meetingDate:      string | null;
   ratifiedAt:       Date | null;
   deferredAt:       Date | null;
@@ -112,6 +113,7 @@ interface BoardRow {
   boardTypeCode:    string;
   academicYear:     string;
   academicPeriodId: string | null;
+  periodCode:       string | null;
   meetingDate:      string | null;
   ratifiedAt:       Date | null;
   deferredAt:       Date | null;
@@ -896,13 +898,36 @@ export class BoardService {
 
   async #getBoard(examBoardId: string, tenantId: string): Promise<BoardRow> {
     const rows = await withTenantContext(this.db, tenantId, async (tx) =>
-      tx.select().from(examBoards).where(and(
-        eq(examBoards.id, examBoardId as `${string}-${string}-${string}-${string}-${string}`),
-        eq(examBoards.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
-      )).limit(1),
+      tx
+        .select({
+          id:               examBoards.id,
+          tenantId:         examBoards.tenantId,
+          boardTypeCode:    examBoards.boardTypeCode,
+          academicYear:     examBoards.academicYear,
+          academicPeriodId: examBoards.academicPeriodId,
+          periodCode:       academicPeriods.periodCode,
+          meetingDate:      examBoards.meetingDate,
+          ratifiedAt:       examBoards.ratifiedAt,
+          deferredAt:       examBoards.deferredAt,
+          deferralReason:   examBoards.deferralReason,
+          quorumCount:      examBoards.quorumCount,
+          quorumRecordedAt: examBoards.quorumRecordedAt,
+          actorId:          examBoards.actorId,
+          createdAt:        examBoards.createdAt,
+        })
+        .from(examBoards)
+        .leftJoin(
+          academicPeriods,
+          eq(examBoards.academicPeriodId, academicPeriods.id),
+        )
+        .where(and(
+          eq(examBoards.id, examBoardId as `${string}-${string}-${string}-${string}-${string}`),
+          eq(examBoards.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
+        ))
+        .limit(1),
     );
     if (!rows[0]) throw new NotFoundError('ExamBoard', examBoardId);
-    return rows[0];
+    return rows[0] as BoardRow;
   }
 
   async #getLatestExternalExaminerSignoffAt(examBoardId: string, tenantId: string): Promise<Date | null> {
@@ -969,6 +994,7 @@ function boardToDto(row: BoardRow): ExamBoardDto {
     boardTypeCode:    row.boardTypeCode,
     academicYear:     row.academicYear,
     academicPeriodId: row.academicPeriodId,
+    periodCode:       row.periodCode ?? null,
     meetingDate:      row.meetingDate,
     ratifiedAt:       row.ratifiedAt,
     deferredAt:       row.deferredAt,

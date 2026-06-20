@@ -4,6 +4,8 @@ export interface Enrolment {
   enrolmentId:         string;
   personId:            string;
   programmeId:         string | null;
+  programmeCode:       string | null;
+  programmeName:       string | null;
   statusCode:          string;
   modeOfStudyCode:     string;
   attendanceTypeCode:  string | null;

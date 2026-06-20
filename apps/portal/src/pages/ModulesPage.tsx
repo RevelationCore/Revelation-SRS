@@ -104,12 +104,10 @@ export function ModulesPage() {
               {registrations.map(r => (
                 <tr key={r.moduleRegistrationId} className="hover:bg-gray-50">
                   <td className="px-4 py-3 text-gray-800">
-                    <span className="font-medium">{timetableByRegId.get(r.moduleRegistrationId)?.moduleCode ?? r.moduleId}</span>
-                    {timetableByRegId.get(r.moduleRegistrationId)?.moduleTitle && (
-                      <span className="ml-2 text-xs text-gray-500">{timetableByRegId.get(r.moduleRegistrationId)?.moduleTitle}</span>
-                    )}
+                    <span className="font-mono text-xs text-gray-500 mr-1">{r.moduleCode}</span>
+                    <span className="font-medium">{r.moduleTitle}</span>
                   </td>
-                  <td className="px-4 py-3 text-gray-600">{timetableByRegId.get(r.moduleRegistrationId)?.periodCode ?? r.academicPeriodId}</td>
+                  <td className="px-4 py-3 text-gray-600">{r.periodCode}</td>
                   <td className="px-4 py-3">
                     <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${regStatusColour(r.statusCode)}`}>
                       {r.statusCode}

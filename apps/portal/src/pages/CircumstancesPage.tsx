@@ -175,10 +175,15 @@ export function CircumstancesPage() {
                   <dt className="text-xs font-medium text-gray-500">Submitted</dt>
                   <dd className="mt-0.5 text-gray-900">{formatDate(ec.validFrom)}</dd>
                 </div>
-                {ec.moduleOfferingId && (
+                {(ec.moduleTitle ?? ec.moduleOfferingId) && (
                   <div>
-                    <dt className="text-xs font-medium text-gray-500">Module offering</dt>
-                    <dd className="mt-0.5 font-mono text-xs text-gray-800">{ec.moduleOfferingId}</dd>
+                    <dt className="text-xs font-medium text-gray-500">Module</dt>
+                    <dd className="mt-0.5 text-gray-800">
+                      {ec.moduleTitle
+                        ? <>{ec.moduleCode && <span className="font-mono text-xs text-gray-500 mr-1">{ec.moduleCode}</span>}{ec.moduleTitle}</>
+                        : <span className="font-mono text-xs">{ec.moduleOfferingId}</span>
+                      }
+                    </dd>
                   </div>
                 )}
                 {ec.notes && (

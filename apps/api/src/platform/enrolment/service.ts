@@ -120,7 +120,7 @@ export interface EnrolmentVolumesDto {
   byStatus:       Record<string, number>;
   byMode:         Record<string, number>;
   byYearOfEntry:  Record<string, Record<string, number>>;
-  byProgramme:    { programmeId: string; count: number }[];
+  byProgramme:    { programmeId: string; programmeCode: string | null; programmeName: string | null; count: number }[];
   generatedAt:    Date;
 }
 
@@ -442,12 +442,19 @@ export class EnrolmentService {
       ),
       withTenantContext(this.db, tenantId, (tx) =>
         tx.execute(sql`
-          SELECT programme_id::text AS programme_id, count(*)::int AS cnt
-          FROM   enrolment
-          WHERE  tenant_id = ${tenantId}::uuid
-            AND  recorded_until IS NULL
-            AND  programme_id IS NOT NULL
-          GROUP  BY programme_id
+          SELECT e.programme_id::text AS programme_id,
+                 p.code               AS programme_code,
+                 p.title              AS programme_name,
+                 count(*)::int        AS cnt
+          FROM   enrolment e
+          LEFT JOIN programme p
+            ON  p.id = e.programme_id
+            AND p.recorded_until IS NULL
+            AND p.valid_to IS NULL
+          WHERE  e.tenant_id = ${tenantId}::uuid
+            AND  e.recorded_until IS NULL
+            AND  e.programme_id IS NOT NULL
+          GROUP  BY e.programme_id, p.code, p.title
           ORDER  BY cnt DESC
           LIMIT  20
         `),
@@ -456,7 +463,7 @@ export class EnrolmentService {
       Array<{ status_code: string; cnt: number }>,
       Array<{ mode: string; cnt: number }>,
       Array<{ year: string; status_code: string; cnt: number }>,
-      Array<{ programme_id: string | null; cnt: number }>,
+      Array<{ programme_id: string | null; programme_code: string | null; programme_name: string | null; cnt: number }>,
     ];
 
     const byStatus: Record<string, number> = {};
@@ -473,8 +480,8 @@ export class EnrolmentService {
     }
 
     const byProgramme = programmeRows
-      .filter((r): r is { programme_id: string; cnt: number } => r.programme_id !== null)
-      .map((r) => ({ programmeId: r.programme_id, count: r.cnt }));
+      .filter((r): r is { programme_id: string; programme_code: string | null; programme_name: string | null; cnt: number } => r.programme_id !== null)
+      .map((r) => ({ programmeId: r.programme_id, programmeCode: r.programme_code ?? null, programmeName: r.programme_name ?? null, count: r.cnt }));
 
     return { total, byStatus, byMode, byYearOfEntry, byProgramme, generatedAt: clockNow() };
   }

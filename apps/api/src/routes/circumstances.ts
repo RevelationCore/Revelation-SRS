@@ -24,6 +24,8 @@ const EcSchema = Type.Object({
   enrolmentId: Type.String(),
   personId: Type.String(),
   moduleOfferingId: Type.Union([Type.String(), Type.Null()]),
+  moduleCode:       Type.Union([Type.String(), Type.Null()]),
+  moduleTitle:      Type.Union([Type.String(), Type.Null()]),
   outcomeCode: Type.String(),
   determinationDate: Type.String(),
   notes: Type.Union([Type.String(), Type.Null()]),

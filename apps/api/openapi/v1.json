@@ -205,7 +205,14 @@
                             "type": "number"
                           },
                           "activeFrom": {
-                            "type": "string"
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
                           },
                           "activeTo": {
                             "anyOf": [
@@ -307,6 +314,117 @@
       }
     },
     "/api/v1/value-sets/{setCode}/members": {
+      "get": {
+        "operationId": "getValueSetsBySetCodeMembers",
+        "tags": [
+          "value-sets"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "setCode",
+            "required": true
+          }
+        ],
+        "x-publication-class": "admin",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "code",
+                      "displayLabel",
+                      "description",
+                      "sortOrder",
+                      "activeFrom",
+                      "activeTo",
+                      "isTenantOwned"
+                    ],
+                    "properties": {
+                      "code": {
+                        "type": "string"
+                      },
+                      "displayLabel": {
+                        "type": "string"
+                      },
+                      "description": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "sortOrder": {
+                        "type": "number"
+                      },
+                      "activeFrom": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "activeTo": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "isTenantOwned": {
+                        "type": "boolean"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
         "operationId": "createValueSetsBySetCodeMembers",
         "tags": [
@@ -340,6 +458,14 @@
                   "sortOrder": {
                     "minimum": 0,
                     "type": "integer"
+                  },
+                  "activeFrom": {
+                    "format": "date",
+                    "type": "string"
+                  },
+                  "activeTo": {
+                    "format": "date",
+                    "type": "string"
                   }
                 }
               }
@@ -360,6 +486,118 @@
         "responses": {
           "200": {
             "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/v1/value-sets/{setCode}/members/{memberCode}": {
+      "patch": {
+        "operationId": "updateValueSetsBySetCodeMembersByMemberCode",
+        "tags": [
+          "value-sets"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "displayLabel": {
+                    "minLength": 1,
+                    "maxLength": 200,
+                    "type": "string"
+                  },
+                  "description": {
+                    "anyOf": [
+                      {
+                        "maxLength": 500,
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "sortOrder": {
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "activeFrom": {
+                    "anyOf": [
+                      {
+                        "format": "date",
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "activeTo": {
+                    "anyOf": [
+                      {
+                        "format": "date",
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "setCode",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "memberCode",
+            "required": true
+          }
+        ],
+        "x-publication-class": "admin",
+        "responses": {
+          "204": {
+            "description": "Default Response"
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -1274,6 +1512,8 @@
                       "enrolmentId",
                       "personId",
                       "moduleOfferingId",
+                      "moduleCode",
+                      "moduleTitle",
                       "outcomeCode",
                       "determinationDate",
                       "notes",
@@ -1294,6 +1534,26 @@
                         "type": "string"
                       },
                       "moduleOfferingId": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "moduleCode": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "moduleTitle": {
                         "anyOf": [
                           {
                             "type": "string"
@@ -2001,6 +2261,7 @@
                     "boardTypeCode",
                     "academicYear",
                     "academicPeriodId",
+                    "periodCode",
                     "meetingDate",
                     "ratifiedAt",
                     "deferredAt",
@@ -2021,6 +2282,16 @@
                       "type": "string"
                     },
                     "academicPeriodId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "periodCode": {
                       "anyOf": [
                         {
                           "type": "string"
@@ -10292,6 +10563,8 @@
                       "enrolmentId",
                       "personId",
                       "programmeId",
+                      "programmeCode",
+                      "programmeName",
                       "statusCode",
                       "modeOfStudyCode",
                       "attendanceTypeCode",
@@ -10314,6 +10587,26 @@
                         "type": "string"
                       },
                       "programmeId": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "programmeCode": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "programmeName": {
                         "anyOf": [
                           {
                             "type": "string"
@@ -10476,6 +10769,8 @@
                       "enrolmentId",
                       "personId",
                       "programmeId",
+                      "programmeCode",
+                      "programmeName",
                       "statusCode",
                       "modeOfStudyCode",
                       "attendanceTypeCode",
@@ -10498,6 +10793,26 @@
                         "type": "string"
                       },
                       "programmeId": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "programmeCode": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "programmeName": {
                         "anyOf": [
                           {
                             "type": "string"
@@ -10787,6 +11102,8 @@
                           "enrolmentId",
                           "personId",
                           "programmeId",
+                          "programmeCode",
+                          "programmeName",
                           "statusCode",
                           "modeOfStudyCode",
                           "attendanceTypeCode",
@@ -10809,6 +11126,26 @@
                             "type": "string"
                           },
                           "programmeId": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "programmeCode": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "programmeName": {
                             "anyOf": [
                               {
                                 "type": "string"
@@ -11361,6 +11698,8 @@
                     "enrolmentId",
                     "personId",
                     "programmeId",
+                    "programmeCode",
+                    "programmeName",
                     "statusCode",
                     "modeOfStudyCode",
                     "attendanceTypeCode",
@@ -11383,6 +11722,26 @@
                       "type": "string"
                     },
                     "programmeId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "programmeCode": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "programmeName": {
                       "anyOf": [
                         {
                           "type": "string"
@@ -14084,7 +14443,10 @@
                     "required": [
                       "moduleOfferingId",
                       "moduleId",
+                      "moduleCode",
+                      "moduleTitle",
                       "academicPeriodId",
+                      "periodCode",
                       "deliveryModeCode",
                       "capacity"
                     ],
@@ -14095,7 +14457,16 @@
                       "moduleId": {
                         "type": "string"
                       },
+                      "moduleCode": {
+                        "type": "string"
+                      },
+                      "moduleTitle": {
+                        "type": "string"
+                      },
                       "academicPeriodId": {
+                        "type": "string"
+                      },
+                      "periodCode": {
                         "type": "string"
                       },
                       "deliveryModeCode": {
@@ -14239,7 +14610,10 @@
                   "required": [
                     "moduleOfferingId",
                     "moduleId",
+                    "moduleCode",
+                    "moduleTitle",
                     "academicPeriodId",
+                    "periodCode",
                     "deliveryModeCode",
                     "capacity"
                   ],
@@ -14250,7 +14624,16 @@
                     "moduleId": {
                       "type": "string"
                     },
+                    "moduleCode": {
+                      "type": "string"
+                    },
+                    "moduleTitle": {
+                      "type": "string"
+                    },
                     "academicPeriodId": {
+                      "type": "string"
+                    },
+                    "periodCode": {
                       "type": "string"
                     },
                     "deliveryModeCode": {
@@ -15660,6 +16043,35 @@
               }
             }
           },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
           "404": {
             "description": "Default Response",
             "content": {
@@ -16101,6 +16513,35 @@
         "responses": {
           "204": {
             "description": "Default Response"
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
           },
           "404": {
             "description": "Default Response",
@@ -25918,11 +26359,33 @@
                         "type": "object",
                         "required": [
                           "programmeId",
+                          "programmeCode",
+                          "programmeName",
                           "count"
                         ],
                         "properties": {
                           "programmeId": {
                             "type": "string"
+                          },
+                          "programmeCode": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "programmeName": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
                           },
                           "count": {
                             "type": "number"

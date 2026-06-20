@@ -5,6 +5,7 @@ import {
   enrolments,
   exceptionalCircumstances,
   moduleOfferings,
+  modules,
   persons,
   type Db,
   withTenantContext,
@@ -38,6 +39,8 @@ export interface ExceptionalCircumstancesDto {
   enrolmentId: string;
   personId: string;
   moduleOfferingId: string | null;
+  moduleCode:       string | null;
+  moduleTitle:      string | null;
   outcomeCode: string;
   determinationDate: string;
   notes: string | null;
@@ -159,8 +162,20 @@ export class ExceptionalCircumstancesService {
 
     const rows = await withTenantContext(this.db, tenantId, async (tx) =>
       tx
-        .select()
+        .select({
+          ec:          exceptionalCircumstances,
+          moduleCode:  modules.code,
+          moduleTitle: modules.title,
+        })
         .from(exceptionalCircumstances)
+        .leftJoin(
+          moduleOfferings,
+          eq(exceptionalCircumstances.moduleOfferingId, moduleOfferings.id),
+        )
+        .leftJoin(
+          modules,
+          eq(moduleOfferings.moduleId, modules.id),
+        )
         .where(and(
           eq(exceptionalCircumstances.personId, personId as `${string}-${string}-${string}-${string}-${string}`),
           eq(exceptionalCircumstances.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
@@ -170,7 +185,11 @@ export class ExceptionalCircumstancesService {
         .orderBy(exceptionalCircumstances.determinationDate, exceptionalCircumstances.recordedAt),
     );
 
-    return rows.map(ecToDto);
+    return rows.map((r) => ({
+      ...ecToDto(r.ec),
+      moduleCode:  r.moduleCode  ?? null,
+      moduleTitle: r.moduleTitle ?? null,
+    }));
   }
 
   async #getCurrentExceptionalCircumstances(ecId: string, tenantId: string): Promise<ExceptionalCircumstancesDto> {
@@ -224,6 +243,8 @@ function ecToDto(row: typeof exceptionalCircumstances.$inferSelect): Exceptional
     enrolmentId: row.enrolmentId,
     personId: row.personId,
     moduleOfferingId: row.moduleOfferingId,
+    moduleCode:       null,
+    moduleTitle:      null,
     outcomeCode: row.outcomeCode,
     determinationDate: row.determinationDate,
     notes: row.notes,

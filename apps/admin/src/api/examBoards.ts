@@ -5,6 +5,7 @@ export interface ExamBoard {
   boardTypeCode:  string;
   academicYear:   string;
   academicPeriodId: string | null;
+  periodCode:       string | null;
   meetingDate:    string | null;
   ratifiedAt:     string | null;
   deferredAt:     string | null;

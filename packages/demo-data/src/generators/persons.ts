@@ -96,11 +96,27 @@ function postcode(seq: number): string {
 // ─── Generators ───────────────────────────────────────────────────────────────
 
 /**
+ * Map an enrolment status code to the coarse person lifecycle status.
+ * Mirrors the derivePersonStatus logic in the enrolment service.
+ */
+function toPersonStatusCode(enrolmentStatus: string): string {
+  switch (enrolmentStatus) {
+    case 'enrolled':
+    case 'intermitting':
+    case 'suspended':
+    case 'withdrawn':   return 'student';
+    case 'graduated':   return 'alumnus';
+    default:            return enrolmentStatus; // 'prospective','student','alumnus','deceased','merged' pass through
+  }
+}
+
+/**
  * Generate a single person root record.
  *
- * `statusCode` defaults to 'prospective' for applicants; callers pass
- * 'enrolled' / 'intermitting' / 'withdrawn' / 'graduated' for enrolment
- * induction scenarios.
+ * `statusCode` accepts either an enrolment status ('enrolled', 'intermitting',
+ * 'withdrawn', 'graduated') or a person lifecycle status ('prospective',
+ * 'student', 'alumnus'). Enrolment statuses are mapped to the correct
+ * person_status_code automatically.
  */
 export function generatePerson(
   tenantId:     string,
@@ -115,7 +131,7 @@ export function generatePerson(
     id:               personId(tenantId, seq),
     tenantId,
     studentNumber:    studentNumber(seq),
-    personStatusCode: opts.statusCode     ?? 'prospective',
+    personStatusCode: toPersonStatusCode(opts.statusCode ?? 'prospective'),
     sourceSystem:     opts.sourceSystem   ?? SOURCE_SYSTEMS[seq % SOURCE_SYSTEMS.length]!,
     sourceReference:  opts.sourceReference ?? null,
   };

@@ -25,6 +25,7 @@ const ExamBoardSchema = Type.Object({
   boardTypeCode:    Type.String(),
   academicYear:     Type.String(),
   academicPeriodId: Type.Union([Type.String(), Type.Null()]),
+  periodCode:       Type.Union([Type.String(), Type.Null()]),
   meetingDate:      Type.Union([Type.String(), Type.Null()]),
   ratifiedAt:       Type.Union([Type.String(), Type.Null()]),
   deferredAt:       Type.Union([Type.String(), Type.Null()]),

@@ -59,13 +59,29 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        get: operations["getValueSetsBySetCodeMembers"];
         put?: never;
         post: operations["createValueSetsBySetCodeMembers"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/v1/value-sets/{setCode}/members/{memberCode}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["updateValueSetsBySetCodeMembersByMemberCode"];
         trace?: never;
     };
     "/api/v1/students/{personId}/adjustments": {
@@ -142,6 +158,23 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["createAdjustmentsByAdjustmentIdExpire"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/exceptional-circumstances/submissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Student self-service EC submission (sets outcome to pending, determination date to today) */
+        post: operations["createExceptionalCircumstancesSubmissions"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2558,6 +2591,115 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/reporting/enrolment-volumes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Enrolment volume aggregate
+         * @description Returns server-side aggregate counts of current enrolments grouped by status, mode of study, academic year of entry, and programme.
+         */
+        get: operations["getReportingEnrolmentVolumes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/audit-log": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Entity audit log
+         * @description Returns a paginated list of audit log entries for a specific entity (entityType + entityId).
+         */
+        get: operations["getAuditLog"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/retention/enforce": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Retention enforcement sweep
+         * @description Run a data retention sweep for the tenant. In dry-run mode (default), identifies eligible persons and returns counts without making changes. Set dryRun=false to apply irreversible anonymisation.
+         */
+        post: operations["createAdminRetentionEnforce"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Open an SSE stream for real-time notifications */
+        get: operations["getNotificationsStream"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getNotifications"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications/{id}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["updateNotificationsByIdRead"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2630,7 +2772,7 @@ export interface operations {
                             displayLabel: string;
                             description: string | null;
                             sortOrder: number;
-                            activeFrom: string;
+                            activeFrom: string | null;
                             activeTo: string | null;
                             sourceMetadata: {
                                 [key: string]: unknown;
@@ -2677,6 +2819,49 @@ export interface operations {
             };
         };
     };
+    getValueSetsBySetCodeMembers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                setCode: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        code: string;
+                        displayLabel: string;
+                        description: string | null;
+                        sortOrder: number;
+                        activeFrom: string | null;
+                        activeTo: string | null;
+                        isTenantOwned: boolean;
+                    }[];
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                    };
+                };
+            };
+        };
+    };
     createValueSetsBySetCodeMembers: {
         parameters: {
             query?: never;
@@ -2693,6 +2878,10 @@ export interface operations {
                     displayLabel: string;
                     description?: string;
                     sortOrder?: number;
+                    /** Format: date */
+                    activeFrom?: string;
+                    /** Format: date */
+                    activeTo?: string;
                 };
             };
         };
@@ -2703,6 +2892,50 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    updateValueSetsBySetCodeMembersByMemberCode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                setCode: string;
+                memberCode: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    displayLabel?: string;
+                    description?: string | null;
+                    sortOrder?: number;
+                    activeFrom?: string | null;
+                    activeTo?: string | null;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                    };
+                };
             };
         };
     };
@@ -2989,6 +3222,64 @@ export interface operations {
             };
         };
     };
+    createExceptionalCircumstancesSubmissions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    enrolmentId: string;
+                    description: string;
+                    moduleOfferingId?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        exceptionalCircumstancesId: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
     getStudentsByPersonIdExceptionalCircumstances: {
         parameters: {
             query?: {
@@ -3013,6 +3304,8 @@ export interface operations {
                         enrolmentId: string;
                         personId: string;
                         moduleOfferingId: string | null;
+                        moduleCode: string | null;
+                        moduleTitle: string | null;
                         outcomeCode: string;
                         determinationDate: string;
                         notes: string | null;
@@ -3346,6 +3639,7 @@ export interface operations {
                         boardTypeCode: string;
                         academicYear: string;
                         academicPeriodId: string | null;
+                        periodCode: string | null;
                         meetingDate: string | null;
                         ratifiedAt: string | null;
                         deferredAt: string | null;
@@ -6855,6 +7149,8 @@ export interface operations {
                         enrolmentId: string;
                         personId: string;
                         programmeId: string | null;
+                        programmeCode: string | null;
+                        programmeName: string | null;
                         statusCode: string;
                         modeOfStudyCode: string;
                         attendanceTypeCode: string | null;
@@ -6896,6 +7192,8 @@ export interface operations {
                         enrolmentId: string;
                         personId: string;
                         programmeId: string | null;
+                        programmeCode: string | null;
+                        programmeName: string | null;
                         statusCode: string;
                         modeOfStudyCode: string;
                         attendanceTypeCode: string | null;
@@ -7002,6 +7300,8 @@ export interface operations {
                         enrolmentId: string;
                         personId: string;
                         programmeId: string | null;
+                        programmeCode: string | null;
+                        programmeName: string | null;
                         statusCode: string;
                         modeOfStudyCode: string;
                         attendanceTypeCode: string | null;
@@ -7196,6 +7496,8 @@ export interface operations {
                         enrolmentId: string;
                         personId: string;
                         programmeId: string | null;
+                        programmeCode: string | null;
+                        programmeName: string | null;
                         statusCode: string;
                         modeOfStudyCode: string;
                         attendanceTypeCode: string | null;
@@ -8287,7 +8589,10 @@ export interface operations {
                     "application/json": {
                         moduleOfferingId: string;
                         moduleId: string;
+                        moduleCode: string;
+                        moduleTitle: string;
                         academicPeriodId: string;
+                        periodCode: string;
                         deliveryModeCode: string | null;
                         capacity: number | null;
                     }[];
@@ -8360,7 +8665,10 @@ export interface operations {
                     "application/json": {
                         moduleOfferingId: string;
                         moduleId: string;
+                        moduleCode: string;
+                        moduleTitle: string;
                         academicPeriodId: string;
+                        periodCode: string;
                         deliveryModeCode: string | null;
                         capacity: number | null;
                     };
@@ -8941,6 +9249,20 @@ export interface operations {
                 };
             };
             /** @description Default Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -9126,6 +9448,20 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Default Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
             };
             /** @description Default Response */
             404: {
@@ -12817,6 +13153,206 @@ export interface operations {
                         dispatchedAt: string;
                         dispatchedBy: string;
                     }[];
+                };
+            };
+        };
+    };
+    getReportingEnrolmentVolumes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        total: number;
+                        byStatus: {
+                            [key: string]: number;
+                        };
+                        byMode: {
+                            [key: string]: number;
+                        };
+                        byYearOfEntry: {
+                            [key: string]: {
+                                [key: string]: number;
+                            };
+                        };
+                        byProgramme: {
+                            programmeId: string;
+                            programmeCode: string | null;
+                            programmeName: string | null;
+                            count: number;
+                        }[];
+                        generatedAt: string;
+                    };
+                };
+            };
+        };
+    };
+    getAuditLog: {
+        parameters: {
+            query: {
+                entityType: string;
+                entityId: string;
+                limit?: number;
+                before?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        tenantId: string | null;
+                        entityType: string;
+                        entityId: string;
+                        fieldName: string | null;
+                        beforeValue: unknown;
+                        afterValue: unknown;
+                        actionType: string;
+                        actorType: string;
+                        actorId: string;
+                        actorDisplayName: string | null;
+                        occurredAt: string;
+                        correlationId: string | null;
+                        workflowInstanceId: string | null;
+                        reasonCode: string | null;
+                        reasonText: string | null;
+                    }[];
+                };
+            };
+        };
+    };
+    createAdminRetentionEnforce: {
+        parameters: {
+            query?: {
+                dryRun?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        tenantId: string;
+                        dryRun: boolean;
+                        checkedAt: string;
+                        eligible: number;
+                        anonymised: number;
+                        flagged: number;
+                        skipped: number;
+                        details: {
+                            personId: string;
+                            action: "anonymised" | "flagged-for-dpo" | "skipped-award-hold";
+                            reason?: string;
+                        }[];
+                    };
+                };
+            };
+        };
+    };
+    getNotificationsStream: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getNotifications: {
+        parameters: {
+            query?: {
+                limit?: number;
+                unreadOnly?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        /** Format: uuid */
+                        personId: string;
+                        category: string;
+                        title: string;
+                        body: string;
+                        linkUrl: string | null;
+                        readAt: string | null;
+                        createdAt: string;
+                    }[];
+                };
+            };
+        };
+    };
+    updateNotificationsByIdRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
                 };
             };
         };

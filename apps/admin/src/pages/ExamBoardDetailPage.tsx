@@ -160,7 +160,7 @@ function OverviewTab({
         <dl className="grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
           <InfoRow label="Type"           value={board.boardTypeCode} />
           <InfoRow label="Academic year"  value={board.academicYear} />
-          <InfoRow label="Period"         value={board.academicPeriodId} />
+          <InfoRow label="Period"         value={board.periodCode ?? board.academicPeriodId} />
           <InfoRow label="Meeting date"   value={board.meetingDate
             ? new Date(board.meetingDate).toLocaleDateString('en-GB')
             : null} />

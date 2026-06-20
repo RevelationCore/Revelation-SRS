@@ -5,7 +5,7 @@ export interface EnrolmentVolumes {
   byStatus:      Record<string, number>;
   byMode:        Record<string, number>;
   byYearOfEntry: Record<string, Record<string, number>>;
-  byProgramme:   { programmeId: string; count: number }[];
+  byProgramme:   { programmeId: string; programmeCode: string | null; programmeName: string | null; count: number }[];
   generatedAt:   string;
 }
 
