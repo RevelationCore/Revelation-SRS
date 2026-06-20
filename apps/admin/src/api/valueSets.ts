@@ -14,7 +14,7 @@ export interface ValueSetMember {
   displayLabel:  string;
   description:   string | null;
   sortOrder:     number;
-  activeFrom:    string;
+  activeFrom:    string | null;
   activeTo:      string | null;
   isTenantOwned: boolean;
 }
@@ -40,8 +40,8 @@ export function addValueSetMember(setCode: string, body: {
   displayLabel: string;
   description?: string;
   sortOrder?:   number;
-  activeFrom?:  string;
-  activeTo?:    string;
+  activeFrom?:  string | null;
+  activeTo?:    string | null;
 }): Promise<void> {
   return api.post(`/api/v1/value-sets/${setCode}/members`, body);
 }
@@ -50,7 +50,7 @@ export function updateValueSetMember(setCode: string, memberCode: string, body: 
   displayLabel?: string;
   description?:  string | null;
   sortOrder?:    number;
-  activeFrom?:   string;
+  activeFrom?:   string | null;
   activeTo?:     string | null;
 }): Promise<void> {
   return api.patch(`/api/v1/value-sets/${setCode}/members/${encodeURIComponent(memberCode)}`, body);

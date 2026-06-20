@@ -1,0 +1,162 @@
+name: UAT Bug Report
+description: Report a bug or unexpected behaviour found during UAT testing
+labels: ["uat/bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form to report a problem found while working through a UAT story.
+        Complete all fields so the issue can be reproduced and prioritised quickly.
+
+  - type: dropdown
+    id: story
+    attributes:
+      label: Story
+      description: Which UAT story were you executing when this occurred?
+      options:
+        - "P-01 — First login and dashboard navigation"
+        - "P-02 — View and edit profile details"
+        - "P-03 — Add a term-time address"
+        - "P-04 — View current enrolment status"
+        - "P-05 — Browse module registrations"
+        - "P-06 — Withdraw from a module"
+        - "P-07 — Add an optional module"
+        - "P-08 — View the exam timetable"
+        - "P-09 — View marks and results"
+        - "P-10 — Declare a disability"
+        - "P-11 — Submit an extenuating circumstances claim"
+        - "P-12 — View learning adjustments"
+        - "P-13 — View notifications"
+        - "AR-01 — Search for a student"
+        - "AR-02 — Review student overview, enrolments, and contacts"
+        - "AR-03 — Review module registrations from the student record"
+        - "AR-04 — Review a student's assessment marks"
+        - "AR-05 — Review communications sent to a student"
+        - "CO-01 — Raise a new correction case"
+        - "CO-02 — Progress and resolve a correction case"
+        - "WB-01 — View and manage a student wellbeing referral"
+        - "WB-02 — Review a disability support case"
+        - "WB-03 — Process an extenuating circumstances submission"
+        - "EB-01 — Browse the exam boards list"
+        - "EB-02 — Review an exam board — agenda and data pack"
+        - "EB-03 — Review candidate profiles and progression decisions"
+        - "EB-04 — Review ratified award decisions"
+        - "TI-01 — Work through the task inbox"
+        - "RE-01 — Review the regulatory compliance overview"
+        - "RE-02 — Review HESA return status and submissions"
+        - "RE-03 — Review OfS regulatory obligations"
+        - "RE-04 — Review SLC loan data and triggers"
+        - "RE-05 — Review UCAS application pipeline data"
+        - "RE-06 — Review UKVI compliance and CAS records"
+        - "RE-07 — Process an FOI / Subject Access Request"
+        - "RP-01 — Generate and view the enrolment report"
+        - "RP-02 — Browse the reporting hub"
+        - "OP-01 — Manage value sets"
+        - "OP-02 — Manage feature flags"
+        - "OP-03 — Browse the integration registry"
+        - "OP-04 — Review integration operations and connector status"
+        - "OP-05 — Review academic rules configuration"
+        - "OP-06 — Review workflow definitions"
+        - "OP-07 — Globalisation and locale settings"
+        - "OP-08 — View environment runtime information"
+        - "OP-09 — Tenant administration and configuration"
+        - "AU-01 — Browse the system audit log"
+        - "X-01 — Demo environment reset and banner verification"
+        - "X-02 — Admin sidebar navigation"
+        - "X-03 — Accessibility statements and error pages"
+    validations:
+      required: true
+
+  - type: input
+    id: step
+    attributes:
+      label: Step number
+      description: Which numbered step in the story failed or produced unexpected behaviour?
+      placeholder: "e.g. 7"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: scenario
+    attributes:
+      label: Demo scenario active
+      description: Which demo scenario was loaded when the issue occurred?
+      options:
+        - "S0 — curriculum-baseline"
+        - "S1 — applicant-pipeline"
+        - "S2 — enrolment-induction"
+        - "S3 — module-selection"
+        - "S4 — assessment-marks"
+        - "S5 — exam-board"
+        - "S6 — institution-year"
+        - "Unknown / not applicable"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      description: >
+        Critical = crash / data loss / security.
+        High = core function broken, no workaround.
+        Medium = workaround exists, usability impaired.
+        Low = cosmetic or wording issue.
+      options:
+        - "Critical"
+        - "High"
+        - "Medium"
+        - "Low"
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Exact steps to reliably reproduce the issue from a freshly reset scenario.
+      placeholder: |
+        1. Reset to S4 using `pnpm ... demo:reset assessment-marks`
+        2. Open http://localhost:5174 and log in as alice.demo
+        3. Click "Disability" in the left sidebar
+        4. Click "Add declaration"
+        5. Select disability type "Dyslexia" and click Submit
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+      description: What should have happened?
+      placeholder: "The form should submit and return to the disability listing page showing the new declaration."
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour
+      description: What actually happened? Include any error messages shown in the UI or browser console.
+      placeholder: "The page stayed on the declaration form with no feedback. The browser console showed a 422 error."
+    validations:
+      required: true
+
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: Screenshot or recording
+      description: >
+        Drag and drop a screenshot or screen recording here.
+        For console errors, paste the relevant output as a code block.
+      placeholder: "Paste screenshot or console output here."
+    validations:
+      required: false
+
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and OS
+      placeholder: "e.g. Chrome 125 on macOS 15"
+    validations:
+      required: false

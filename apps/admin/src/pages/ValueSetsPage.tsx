@@ -14,7 +14,7 @@ import { Spinner } from '../components/Spinner.js';
 function memberStatus(m: ValueSetMember): 'active' | 'retired' | 'scheduled' {
   const now = new Date();
   if (m.activeTo && new Date(m.activeTo) <= now) return 'retired';
-  if (new Date(m.activeFrom) > now) return 'scheduled';
+  if (m.activeFrom && new Date(m.activeFrom) > now) return 'scheduled';
   return 'active';
 }
 
@@ -238,7 +238,7 @@ function MemberRow({
       <td className="py-2 pr-4 text-gray-900">{member.displayLabel}</td>
       <td className="py-2 pr-4 text-gray-500 max-w-xs truncate">{member.description ?? '—'}</td>
       <td className="py-2 pr-4 text-gray-500">{member.sortOrder}</td>
-      <td className="py-2 pr-4 text-gray-500">{member.activeFrom.slice(0, 10)}</td>
+      <td className="py-2 pr-4 text-gray-500">{member.activeFrom ? member.activeFrom.slice(0, 10) : '—'}</td>
       <td className="py-2 pr-4 text-gray-500">{member.activeTo ? member.activeTo.slice(0, 10) : '—'}</td>
       <td className="py-2 pr-4"><StatusBadge member={member} /></td>
       <td className="py-2 text-right whitespace-nowrap">
@@ -290,7 +290,7 @@ function EditMemberRow({
   const [displayLabel, setDisplayLabel] = useState(member.displayLabel);
   const [description,  setDescription]  = useState(member.description ?? '');
   const [sortOrder,    setSortOrder]     = useState(String(member.sortOrder));
-  const [activeFrom,   setActiveFrom]    = useState(member.activeFrom.slice(0, 10));
+  const [activeFrom,   setActiveFrom]    = useState(member.activeFrom ? member.activeFrom.slice(0, 10) : '');
   const [activeTo,     setActiveTo]      = useState(member.activeTo ? member.activeTo.slice(0, 10) : '');
   const [saving,       setSaving]        = useState(false);
 
@@ -303,7 +303,7 @@ function EditMemberRow({
         displayLabel: displayLabel.trim(),
         ...(description.trim() ? { description: description.trim() } : { description: null }),
         sortOrder: Number(sortOrder) || 0,
-        activeFrom,
+        activeFrom: activeFrom || null,
         activeTo: activeTo || null,
       });
       onSaved();
@@ -448,7 +448,7 @@ function AddMemberForm({
           <input name="sortOrder" type="number" min={0} defaultValue={0} className={inputCls} />
         </div>
         <div>
-          <label className={labelCls}>Active from <span className="font-normal text-gray-400">(blank = now)</span></label>
+          <label className={labelCls}>Active from <span className="font-normal text-gray-400">(blank = always)</span></label>
           <input name="activeFrom" type="date" className={inputCls} />
         </div>
         <div>

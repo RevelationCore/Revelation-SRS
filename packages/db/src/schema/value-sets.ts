@@ -44,8 +44,8 @@ export const valueSetMembers = pgTable('value_set_member', {
   displayLabel:   text('display_label').notNull(),
   description:    text('description'),
   sortOrder:      smallint('sort_order').notNull().default(0),
-  activeFrom:     timestamp('active_from', { withTimezone: true }).notNull().defaultNow(),
-  activeTo:       timestamp('active_to',   { withTimezone: true }), // null = still active
+  activeFrom:     timestamp('active_from', { withTimezone: true }), // null = valid from beginning of time
+  activeTo:       timestamp('active_to',   { withTimezone: true }), // null = valid forever
   sourceMetadata: jsonb('source_metadata'), // { specVersion, fieldCode, notes, etc. }
   createdAt:      timestamp('created_at',  { withTimezone: true }).notNull().defaultNow(),
 });

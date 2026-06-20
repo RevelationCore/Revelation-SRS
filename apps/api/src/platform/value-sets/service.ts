@@ -14,8 +14,8 @@ export interface ValueSetMemberDto {
   displayLabel:  string;
   description:   string | null;
   sortOrder:     number;
-  activeFrom:    string;
-  activeTo:      string | null;
+  activeFrom:    string | null; // null = valid from beginning of time
+  activeTo:      string | null; // null = valid forever
   sourceMetadata: Record<string, unknown> | null;
 }
 
@@ -106,9 +106,10 @@ export class ValueSetService {
         .where(
           and(
             eq(valueSetMembers.valueSetId, set.id),
-            // Active at the requested point in time
-            lte(valueSetMembers.activeFrom, activeAt),
-            or(isNull(valueSetMembers.activeTo), gt(valueSetMembers.activeTo, activeAt)),
+            // Active at the requested point in time.
+            // NULL activeFrom = valid from beginning of time; NULL activeTo = valid forever.
+            or(isNull(valueSetMembers.activeFrom), lte(valueSetMembers.activeFrom, activeAt)),
+            or(isNull(valueSetMembers.activeTo),   gt(valueSetMembers.activeTo, activeAt)),
             // Tenant visibility (mirrors RLS policy)
             or(
               isNull(valueSetMembers.tenantId),
@@ -131,7 +132,7 @@ export class ValueSetService {
         displayLabel:   m.displayLabel,
         description:    m.description ?? null,
         sortOrder:      m.sortOrder ?? 0,
-        activeFrom:     m.activeFrom.toISOString(),
+        activeFrom:     m.activeFrom?.toISOString() ?? null,
         activeTo:       m.activeTo?.toISOString() ?? null,
         sourceMetadata: m.sourceMetadata as Record<string, unknown> | null ?? null,
       })),
@@ -229,7 +230,7 @@ export class ValueSetService {
       displayLabel:   m.displayLabel,
       description:    m.description ?? null,
       sortOrder:      m.sortOrder ?? 0,
-      activeFrom:     m.activeFrom.toISOString(),
+      activeFrom:     m.activeFrom?.toISOString() ?? null,
       activeTo:       m.activeTo?.toISOString() ?? null,
       sourceMetadata: m.sourceMetadata as Record<string, unknown> | null ?? null,
       isTenantOwned:  m.tenantId !== null,
@@ -249,7 +250,7 @@ export class ValueSetService {
       displayLabel?: string;
       description?:  string | null;
       sortOrder?:    number;
-      activeFrom?:   string;
+      activeFrom?:   string | null;
       activeTo?:     string | null;
     },
   ): Promise<'updated' | 'not-found'> {
@@ -266,8 +267,8 @@ export class ValueSetService {
     if (patch.displayLabel !== undefined) updates['displayLabel'] = patch.displayLabel;
     if (patch.description  !== undefined) updates['description']  = patch.description;
     if (patch.sortOrder    !== undefined) updates['sortOrder']    = patch.sortOrder;
-    if (patch.activeFrom   !== undefined) updates['activeFrom']   = new Date(patch.activeFrom);
-    if ('activeTo' in patch)              updates['activeTo']     = patch.activeTo ? new Date(patch.activeTo) : null;
+    if ('activeFrom' in patch)            updates['activeFrom']   = patch.activeFrom ? new Date(patch.activeFrom) : null;
+    if ('activeTo'   in patch)            updates['activeTo']     = patch.activeTo   ? new Date(patch.activeTo)   : null;
 
     const result = await withTenantContext(this.db, tenantId, async (tx) =>
       tx
@@ -303,8 +304,8 @@ export class ValueSetService {
       displayLabel: string;
       description?: string;
       sortOrder?:   number;
-      activeFrom?:  string;
-      activeTo?:    string;
+      activeFrom?:  string | null;
+      activeTo?:    string | null;
     },
   ): Promise<ValueSetMemberDto> {
     const setRows = await this.db
@@ -318,7 +319,6 @@ export class ValueSetService {
     }
 
     const set = setRows[0]!;
-    const now  = clockNow();
 
     await withTenantContext(this.db, tenantId, async (tx) => {
       await tx.insert(valueSetMembers).values({
@@ -328,7 +328,7 @@ export class ValueSetService {
         displayLabel: input.displayLabel,
         description:  input.description ?? null,
         sortOrder:    input.sortOrder ?? 0,
-        activeFrom:   input.activeFrom ? new Date(input.activeFrom) : now,
+        activeFrom:   input.activeFrom ? new Date(input.activeFrom) : null,
         activeTo:     input.activeTo   ? new Date(input.activeTo)   : null,
       });
     });
@@ -343,8 +343,8 @@ export class ValueSetService {
       displayLabel:   input.displayLabel,
       description:    input.description ?? null,
       sortOrder:      input.sortOrder ?? 0,
-      activeFrom:     now.toISOString(),
-      activeTo:       null,
+      activeFrom:     input.activeFrom ?? null,
+      activeTo:       input.activeTo   ?? null,
       sourceMetadata: null,
     };
   }
