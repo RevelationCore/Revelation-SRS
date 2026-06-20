@@ -9,13 +9,13 @@
     "build":               "tsc -p tsconfig.json",
     "test":                "vitest run --reporter=verbose --config vitest.config.ts",
     "test:golden":         "vitest run --reporter=verbose --config vitest.int.config.ts",
-    "demo:list":           "node --import tsx/esm src/cli.ts list",
-    "demo:reset":          "node --import tsx/esm src/cli.ts reset",
-    "demo:validate":       "node --import tsx/esm src/cli.ts validate",
-    "demo:status":         "node --import tsx/esm src/cli.ts status",
-    "demo:check-versions": "node --import tsx/esm src/cli.ts check-versions",
-    "demo:rotate":         "node --import tsx/esm src/cli.ts rotate",
-    "setup:keycloak":      "node --import tsx/esm src/cli.ts setup-keycloak"
+    "demo:list":           "node --env-file-if-exists=.env --import tsx/esm src/cli.ts list",
+    "demo:reset":          "DEMO_DATA_ENABLED=true DEMO_RESET_ALLOWED=true node --env-file-if-exists=.env --import tsx/esm src/cli.ts reset",
+    "demo:validate":       "DEMO_DATA_ENABLED=true node --env-file-if-exists=.env --import tsx/esm src/cli.ts validate",
+    "demo:status":         "node --env-file-if-exists=.env --import tsx/esm src/cli.ts status",
+    "demo:check-versions": "node --env-file-if-exists=.env --import tsx/esm src/cli.ts check-versions",
+    "demo:rotate":         "DEMO_DATA_ENABLED=true DEMO_RESET_ALLOWED=true node --env-file-if-exists=.env --import tsx/esm src/cli.ts rotate",
+    "setup:keycloak":      "node --env-file-if-exists=.env --import tsx/esm src/cli.ts setup-keycloak"
   },
   "dependencies": {
     "@revelation-srs/db": "workspace:*",

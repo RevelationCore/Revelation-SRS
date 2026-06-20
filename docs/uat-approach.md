@@ -45,31 +45,26 @@ what each scenario contains and which stories depend on it.
 ### 2.2 Resetting a scenario
 
 Run the following command before starting any story that specifies a required scenario.
-Wait for the **"Migrations applied successfully"** or **"Reset complete"** message before continuing.
+Wait for the **"loaded successfully"** message before continuing.
 
 ```bash
-DATABASE_URL=postgres://srs:srs@localhost:5432/srs \
-  pnpm --filter @revelation-srs/demo-data demo:reset <slug>
+pnpm --filter @revelation-srs/demo-data demo:reset <slug>
 ```
 
 **Examples:**
 
 ```bash
 # Load S2 — enrolled students, no marks
-DATABASE_URL=postgres://srs:srs@localhost:5432/srs \
-  pnpm --filter @revelation-srs/demo-data demo:reset enrolment-induction
+pnpm --filter @revelation-srs/demo-data demo:reset enrolment-induction
 
 # Load S4 — marks, wellbeing, EC claims
-DATABASE_URL=postgres://srs:srs@localhost:5432/srs \
-  pnpm --filter @revelation-srs/demo-data demo:reset assessment-marks
+pnpm --filter @revelation-srs/demo-data demo:reset assessment-marks
 
 # Load S5 — post-ratification
-DATABASE_URL=postgres://srs:srs@localhost:5432/srs \
-  pnpm --filter @revelation-srs/demo-data demo:reset exam-board
+pnpm --filter @revelation-srs/demo-data demo:reset exam-board
 
 # Load S6 — full institution (takes 30–60 seconds)
-DATABASE_URL=postgres://srs:srs@localhost:5432/srs \
-  pnpm --filter @revelation-srs/demo-data demo:reset institution-year
+pnpm --filter @revelation-srs/demo-data demo:reset institution-year
 ```
 
 After a reset, **refresh the browser** (or log in again if your session has expired).

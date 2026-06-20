@@ -26,24 +26,23 @@ async function resolveTenantId(
 ): Promise<string> {
   if (tenantId) return tenantId;
 
-  if (!tenantCode) {
-    console.error('Error: --tenant-id or --tenant-code is required.');
-    process.exit(1);
-  }
-
   const db = createDb(databaseUrl);
   const rows = await db
-    .select({ id: tenants.id })
+    .select({ id: tenants.id, code: tenants.code })
     .from(tenants)
-    .where(and(eq(tenants.code, tenantCode), eq(tenants.demoMode, true)))
+    .where(
+      tenantCode
+        ? and(eq(tenants.code, tenantCode), eq(tenants.demoMode, true))
+        : eq(tenants.demoMode, true),
+    )
     .limit(1);
 
   const row = rows[0];
   if (!row) {
-    console.error(
-      `Error: No demo tenant found with code "${tenantCode}". ` +
-      'Ensure the tenant exists and has demo_mode = true.',
-    );
+    const msg = tenantCode
+      ? `No demo tenant found with code "${tenantCode}". Ensure the tenant exists and has demo_mode = true.`
+      : 'No demo tenant found. Ensure a tenant exists with demo_mode = true, or supply --tenant-code.';
+    console.error(`Error: ${msg}`);
     process.exit(1);
   }
 
@@ -80,13 +79,13 @@ async function cmdList(): Promise<void> {
   console.table(rows);
 }
 
-async function cmdReset(args: Record<string, string | boolean | string[] | undefined>): Promise<void> {
+async function cmdReset(args: Record<string, string | boolean | string[] | undefined>, positionalArgs: string[]): Promise<void> {
   const databaseUrl = requireDatabaseUrl();
-  const scenario    = args['scenario'];
+  const scenario    = typeof args['scenario'] === 'string' ? args['scenario'] : positionalArgs[0];
   const dryRun      = args['dry-run'] === true;
 
-  if (typeof scenario !== 'string' || !scenario) {
-    console.error('Error: --scenario <slug> is required.');
+  if (!scenario) {
+    console.error('Error: scenario slug is required. Usage: demo:reset <slug>');
     process.exit(1);
   }
 
@@ -99,12 +98,12 @@ async function cmdReset(args: Record<string, string | boolean | string[] | undef
   await resetScenario({ databaseUrl, tenantId, scenarioSlug: scenario, dryRun });
 }
 
-async function cmdValidate(args: Record<string, string | boolean | string[] | undefined>): Promise<void> {
+async function cmdValidate(args: Record<string, string | boolean | string[] | undefined>, positionalArgs: string[]): Promise<void> {
   const databaseUrl = requireDatabaseUrl();
-  const scenario    = args['scenario'];
+  const scenario    = typeof args['scenario'] === 'string' ? args['scenario'] : positionalArgs[0];
 
-  if (typeof scenario !== 'string' || !scenario) {
-    console.error('Error: --scenario <slug> is required.');
+  if (!scenario) {
+    console.error('Error: scenario slug is required. Usage: demo:validate <slug>');
     process.exit(1);
   }
 
@@ -273,8 +272,8 @@ const command = positionals[0];
 
 const handlers: Record<string, () => Promise<void>> = {
   list:             () => cmdList(),
-  reset:            () => cmdReset(values),
-  validate:         () => cmdValidate(values),
+  reset:            () => cmdReset(values, positionals.slice(1)),
+  validate:         () => cmdValidate(values, positionals.slice(1)),
   status:           () => cmdStatus(),
   'check-versions': () => cmdCheckVersions(),
   rotate:           () => cmdRotate(values, positionals[1] ?? ''),
