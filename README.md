@@ -107,63 +107,151 @@ Full plan: [docs/project-roadmap.md](docs/project-roadmap.md)
 
 ## Getting Started
 
+> **First-time setup takes around 15 minutes**, mostly waiting for Docker to pull images. Subsequent starts take under a minute.
+
 ### Prerequisites
 
-- [OrbStack](https://orbstack.dev) (macOS) or any Docker-compatible runtime
-- [Node.js 22 LTS](https://nodejs.org)
-- [pnpm 9+](https://pnpm.io): `npm install -g pnpm`
+| Tool | Version | Notes |
+|---|---|---|
+| Docker | 24+ | [Docker Desktop](https://docs.docker.com/get-docker/) or [OrbStack](https://orbstack.dev) (macOS) |
+| Node.js | 22 LTS | [nodejs.org](https://nodejs.org) |
+| pnpm | 9+ | `npm install -g pnpm` |
+| Git | 2.40+ | System package manager |
 
-### Local development
+### Step 1 — Clone and install (~3 min)
 
 ```bash
-# 1. Clone
 git clone https://github.com/RevelationCore/Revelation-SRS.git
 cd Revelation-SRS
-
-# 2. Copy environment template and set secrets
-cp .env.example .env
-
-# 3. Start all platform services (PostgreSQL, NATS, Temporal, Keycloak, observability)
-docker compose -f infra/compose/docker-compose.yml up -d
-
-# 4. Install dependencies
 pnpm install
+```
 
-# 5. Run database migrations
+### Step 2 — Configure environment (~1 min)
+
+```bash
+cp .env.example .env
+```
+
+The `.env.example` file contains working defaults for local development. No changes are required to get a running system. Edit the file if you need to change ports or connect to an external service.
+
+### Step 3 — Start platform services (~10 min first run, ~30 sec after)
+
+```bash
+docker compose -f infra/compose/docker-compose.yml up -d
+```
+
+This starts PostgreSQL, NATS JetStream, Temporal, Keycloak, and the observability stack (Grafana, Prometheus, Loki). Docker pulls images on first run — Keycloak in particular is large. Subsequent starts use cached images and are much faster.
+
+Wait for all services to report healthy before continuing:
+
+```bash
+docker compose -f infra/compose/docker-compose.yml ps
+```
+
+### Step 4 — Apply database migrations (~30 sec)
+
+```bash
 pnpm migrate
+```
 
-# 6. Start all application services in watch mode
+This applies all pending [Drizzle ORM](https://orm.drizzle.team) schema migrations to PostgreSQL, creating the full SRS table structure. Migrations are idempotent — safe to run again at any time and required after each `git pull` that includes schema changes.
+
+### Step 5 — Load data (~30 sec to ~10 min depending on scenario)
+
+Choose one of two approaches depending on your goal:
+
+**Option A — Demo scenario (recommended for exploration and development)**
+
+Pre-seeded datasets that represent realistic points in the academic year:
+
+| Scenario | Slug | Students | Load time | Use for |
+|---|---|---|---|---|
+| CI Golden | `ci-golden` | 4 | ~5 sec | Unit and integration tests |
+| Applicant Pipeline | `applicant-pipeline` | ~200 | ~20 sec | Admissions and applicant workflows |
+| Enrolment and Induction | `enrolment-induction` | 1,000 | ~30 sec | Enrolment, module selection |
+| Module Selection Peak | `module-selection` | 1,000 | ~30 sec | Module registration workflows |
+| Assessment Marks | `assessment-marks` | 1,000 | ~45 sec | Marking, progression, wellbeing |
+| Exam Board and Ratification | `exam-board` | 1,000 | ~45 sec | Board governance, awards |
+| Full-Institution Year | `institution-year` | 50,000 | ~10 min | Performance testing, full walkthroughs |
+
+```bash
+# Load a scenario (replace the slug with your choice above)
+pnpm demo:reset assessment-marks
+
+# Check what is currently loaded
+pnpm demo:status
+
+# Validate the loaded data is consistent
+pnpm demo:validate assessment-marks
+```
+
+**Option B — Historical data migration (for institutions moving from an existing SRS)**
+
+The `migration-tools` package imports student records from SITS or Banner exports into Revelation SRS:
+
+```bash
+# Validate an export file before importing
+pnpm --filter @revelation-srs/migration-tools migrate:import validate \
+  --source sits \
+  --file /path/to/export.xml \
+  --tenant-id <your-tenant-uuid>
+
+# Import (add --dry-run first to preview changes)
+pnpm --filter @revelation-srs/migration-tools migrate:import import \
+  --source sits \
+  --file /path/to/export.xml \
+  --tenant-id <your-tenant-uuid> \
+  --dry-run
+
+# Run without --dry-run to apply
+pnpm --filter @revelation-srs/migration-tools migrate:import import \
+  --source sits \
+  --file /path/to/export.xml \
+  --tenant-id <your-tenant-uuid>
+```
+
+Supported source systems: `sits`, `banner`. See [docs/migration-runbook.md](docs/migration-runbook.md) for field mapping details, pre-import validation checks, and rollback procedure.
+
+### Step 6 — Start the application (~30 sec)
+
+```bash
 pnpm dev
 ```
 
-### Service endpoints (local development)
+This starts the API, admin console, student portal, wellbeing module, and VLE adapter in watch mode. File changes restart the affected service automatically.
 
-| Service | URL |
-|---|---|
-| SRS API | http://localhost:3000 |
-| API health | http://localhost:3000/health |
-| Swagger UI | http://localhost:3000/documentation |
-| Temporal UI | http://localhost:8233 |
-| Keycloak admin | http://localhost:8081 (admin / admin) |
-| Grafana | http://localhost:3001 (admin / admin) |
-| Prometheus | http://localhost:9090 |
-| NATS monitoring | http://localhost:8222 |
+### Service endpoints
+
+| Service | URL | Credentials |
+|---|---|---|
+| Admin console | http://localhost:5173 | Keycloak demo accounts |
+| Student portal | http://localhost:5174 | Keycloak demo accounts |
+| SRS API | http://localhost:3000 | — |
+| API health | http://localhost:3000/health | — |
+| Swagger UI | http://localhost:3000/documentation | — |
+| Keycloak admin | http://localhost:8081 | admin / admin |
+| Temporal UI | http://localhost:8233 | — |
+| Grafana | http://localhost:3001 | admin / admin |
+| Prometheus | http://localhost:9090 | — |
+| NATS monitoring | http://localhost:8222 | — |
 
 ### Running tests
 
 ```bash
-# Unit tests (no Docker required)
+# Unit tests — no Docker required (~2 min)
 pnpm test
 
-# Integration tests (Testcontainers — Docker required)
+# Integration tests — Docker required, Testcontainers manages its own DB (~5 min)
 pnpm test:int
 
-# Type check only
+# Type check
 pnpm typecheck
 
 # Lint
 pnpm lint
 ```
+
+Full developer setup guide, including troubleshooting and monorepo commands: [docs/developer-setup.md](docs/developer-setup.md)
 
 ---
 
