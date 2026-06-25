@@ -295,7 +295,7 @@ export function progressionRoutes(fastify: FastifyInstance): void {
 
       // If accessing via student:read:own, verify the HEAR belongs to this user
       if (!hasAll && hasOwn) {
-        if (hear.document.student.personId !== request.user.sub) {
+        if (hear.document.student.personId !== request.user.srsPersonId) {
           return reply.code(403).send({
             type:   'https://srs.example.com/errors/forbidden',
             title:  'Forbidden',

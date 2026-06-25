@@ -8,11 +8,13 @@ import { useAuth } from '../auth/AuthContext.js';
 import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
 
-const AUDIT_ROLES = ['dpo', 'system-administrator', 'registry-administrator', 'wellbeing-auditor'];
+const AUDIT_ROLES       = ['dpo', 'system-administrator', 'registry-administrator', 'wellbeing-auditor'];
+const INTEGRATION_ROLES = ['registry-administrator', 'tenant-administrator', 'system-administrator'];
 
 export function AuditPage() {
   const { roles } = useAuth();
-  const canRead   = AUDIT_ROLES.some(r => roles.includes(r));
+  const canRead         = AUDIT_ROLES.some(r => roles.includes(r));
+  const canSeeExchanges = INTEGRATION_ROLES.some(r => roles.includes(r));
 
   return (
     <div>
@@ -28,13 +30,25 @@ export function AuditPage() {
         </p>
       </div>
 
-      {canRead ? (
-        <IntegrationExchangeAudit />
-      ) : (
+      {!canRead ? (
         <div className="rounded-lg border border-gray-200 bg-white p-8 text-center">
           <p className="text-sm text-gray-500">
             Audit log access requires the <strong>dpo</strong>, <strong>system-administrator</strong>,
             <strong>registry-administrator</strong>, or <strong>wellbeing-auditor</strong> role.
+          </p>
+        </div>
+      ) : canSeeExchanges ? (
+        <IntegrationExchangeAudit />
+      ) : (
+        <div className="rounded-lg border border-gray-200 bg-white p-8 text-center">
+          <p className="text-sm text-gray-600 font-medium mb-2">Entity-level audit access</p>
+          <p className="text-sm text-gray-500">
+            As a DPO or wellbeing auditor, your audit access is scoped to individual entity records.
+            Open a student record and navigate to the <strong>History</strong> tab to view that
+            student's full audit trail.
+          </p>
+          <p className="text-xs text-gray-400 mt-3">
+            A consolidated audit search view is planned for a future release.
           </p>
         </div>
       )}
@@ -95,15 +109,15 @@ function IntegrationExchangeAudit() {
               {exchanges.map(ex => (
                 <tr key={ex.exchangeId} className="hover:bg-gray-50">
                   <td className="px-4 py-3 font-mono text-xs text-gray-400">{ex.exchangeId.slice(0, 8)}…</td>
-                  <td className="px-4 py-3 font-mono text-xs text-gray-700">{ex.eventType ?? '—'}</td>
-                  <td className="px-4 py-3 text-gray-600 text-xs capitalize">{ex.direction}</td>
+                  <td className="px-4 py-3 font-mono text-xs text-gray-700">{ex.exchangeTypeCode}</td>
+                  <td className="px-4 py-3 text-gray-600 text-xs capitalize">{ex.directionCode}</td>
                   <td className="px-4 py-3"><Badge value={ex.statusCode} /></td>
                   <td className="px-4 py-3 text-gray-500 text-xs">
-                    {new Date(ex.occurredAt).toLocaleString('en-GB')}
+                    {new Date(ex.createdAt).toLocaleString('en-GB')}
                   </td>
                   <td className="px-4 py-3 text-gray-500 text-xs">
-                    {ex.processedAt
-                      ? new Date(ex.processedAt).toLocaleString('en-GB')
+                    {ex.lastAttemptAt
+                      ? new Date(ex.lastAttemptAt).toLocaleString('en-GB')
                       : <span className="text-gray-400">—</span>}
                   </td>
                 </tr>

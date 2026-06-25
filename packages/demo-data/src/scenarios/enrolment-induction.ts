@@ -1,5 +1,6 @@
 import {
   academicPeriods,
+  deploymentEnvironments,
   awardingBodies,
   enrolmentDownstreamTriggers,
   enrolments,
@@ -166,6 +167,17 @@ export async function load(
 
 // ─── Phase implementations ────────────────────────────────────────────────────
 
+const DEMO_ENVIRONMENT = {
+  id:                      '00000000-0000-0000-0000-000000000002',
+  environmentCode:         'development',
+  displayName:             'Local development',
+  environmentTypeCode:     'local',
+  productionLike:          false,
+  liveIntegrationsAllowed: false,
+  configuration:           {} as Record<string, unknown>,
+  active:                  true,
+};
+
 async function loadReferenceData(db: Db, tenantId: string): Promise<void> {
   const periods    = generateMultiYearCalendar(tenantId, manifest.academicYears);
   const curriculum = generateCurriculum(tenantId, manifest.academicYears);
@@ -175,6 +187,7 @@ async function loadReferenceData(db: Db, tenantId: string): Promise<void> {
   await batchInsert(db, programmes,      curriculum.programmes);
   await batchInsert(db, modules,         curriculum.modules);
   await batchInsert(db, moduleOfferings, curriculum.moduleOfferings);
+  await batchInsert(db, deploymentEnvironments, [DEMO_ENVIRONMENT]);
 }
 
 async function loadPersonas(): Promise<void> {

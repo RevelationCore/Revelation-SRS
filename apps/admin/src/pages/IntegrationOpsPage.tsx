@@ -48,7 +48,7 @@ export function IntegrationOpsPage() {
 
 interface RegistrationHealth {
   registration: IntegrationRegistration;
-  result:        HealthCheckResult | null;
+  updated:       IntegrationRegistration | null;
   checking:      boolean;
   error:         string;
 }
@@ -62,7 +62,7 @@ function ConnectorHealthTab() {
     void (async () => {
       try {
         const regs = await listIntegrationRegistrations();
-        setItems(regs.map(r => ({ registration: r, result: null, checking: false, error: '' })));
+        setItems(regs.map(r => ({ registration: r, updated: null, checking: false, error: '' })));
       } catch (e) {
         setError(e instanceof ApiError ? e.message : 'Failed to load');
       } finally {
@@ -71,17 +71,17 @@ function ConnectorHealthTab() {
     })();
   }, []);
 
-  async function runHealthCheck(registrationId: string) {
+  async function runHealthCheck(registrationId: string, statusCode: string) {
     setItems(prev => prev.map(i =>
       i.registration.registrationId === registrationId
-        ? { ...i, checking: true, error: '', result: null }
+        ? { ...i, checking: true, error: '', updated: null }
         : i,
     ));
     try {
-      const result = await healthCheckIntegration(registrationId);
+      const updated = await healthCheckIntegration(registrationId, statusCode);
       setItems(prev => prev.map(i =>
         i.registration.registrationId === registrationId
-          ? { ...i, checking: false, result }
+          ? { ...i, checking: false, updated }
           : i,
       ));
     } catch (e) {
@@ -96,14 +96,14 @@ function ConnectorHealthTab() {
 
   async function checkAll() {
     const ids = items.map(i => i.registration.registrationId);
-    await Promise.all(ids.map(id => runHealthCheck(id)));
+    await Promise.all(ids.map(id => runHealthCheck(id, 'ok')));
   }
 
   if (loading) return <div className="flex justify-center py-16"><Spinner /></div>;
   if (error)   return <p className="text-sm text-red-600">{error}</p>;
 
   const vleItems = items.filter(i =>
-    i.registration.name.toLowerCase().includes('vle') ||
+    i.registration.displayName.toLowerCase().includes('vle') ||
     i.registration.endpointUrl?.toLowerCase().includes('vle'),
   );
 
@@ -115,57 +115,60 @@ function ConnectorHealthTab() {
           onClick={() => void checkAll()}
           className="rounded border border-gray-300 px-4 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
         >
-          Check all
+          Record all OK
         </button>
       </div>
 
       <div className="space-y-3">
-        {items.map(({ registration: reg, result, checking, error: itemError }) => (
-          <div
-            key={reg.registrationId}
-            className="rounded-lg border border-gray-200 bg-white p-4"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-900">{reg.name}</p>
-                {reg.endpointUrl && (
-                  <p className="text-xs text-gray-400 font-mono mt-0.5">{reg.endpointUrl}</p>
-                )}
-              </div>
-              <div className="flex items-center gap-3">
-                <Badge value={reg.statusCode} />
-                <button
-                  onClick={() => void runHealthCheck(reg.registrationId)}
-                  disabled={checking}
-                  className="rounded border border-gray-300 px-3 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-                >
-                  {checking ? 'Checking…' : 'Health check'}
-                </button>
-              </div>
-            </div>
-
-            {itemError && (
-              <p className="mt-2 text-xs text-red-600">{itemError}</p>
-            )}
-
-            {result && (
-              <div className="mt-3 rounded bg-gray-50 border border-gray-100 p-3">
-                <div className="flex items-center gap-2 mb-2">
-                  <Badge value={result.statusCode} />
-                  {result.latencyMs != null && (
-                    <span className="text-xs text-gray-500">{result.latencyMs}ms</span>
-                  )}
-                  <span className="text-xs text-gray-400">
-                    checked {new Date(result.checkedAt).toLocaleTimeString('en-GB')}
-                  </span>
+        {items.map(({ registration: reg, updated, checking, error: itemError }) => {
+          const display = updated ?? reg;
+          return (
+            <div
+              key={reg.registrationId}
+              className="rounded-lg border border-gray-200 bg-white p-4"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-900">{reg.displayName}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {reg.transportCode}
+                    {reg.endpointUrl && (
+                      <span className="font-mono ml-2">{reg.endpointUrl}</span>
+                    )}
+                  </p>
                 </div>
-                {result.message && (
-                  <p className="text-xs text-gray-600">{result.message}</p>
-                )}
+                <div className="flex items-center gap-3">
+                  <Badge value={display.healthStatusCode ?? (display.enabled ? 'enabled' : 'disabled')} />
+                  <div className="flex items-center gap-1">
+                    {(['ok', 'degraded', 'down'] as const).map(s => (
+                      <button
+                        key={s}
+                        onClick={() => void runHealthCheck(reg.registrationId, s)}
+                        disabled={checking}
+                        className="rounded border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                      >
+                        {checking ? '…' : s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
-            )}
-          </div>
-        ))}
+
+              {itemError && (
+                <p className="mt-2 text-xs text-red-600">{itemError}</p>
+              )}
+
+              {updated && (
+                <div className="mt-2 text-xs text-green-700">
+                  Status recorded at{' '}
+                  {updated.lastHealthCheckAt
+                    ? new Date(updated.lastHealthCheckAt).toLocaleTimeString('en-GB')
+                    : '—'}
+                </div>
+              )}
+            </div>
+          );
+        })}
 
         {items.length === 0 && (
           <p className="text-sm text-gray-400">No integrations registered.</p>
@@ -184,7 +187,7 @@ function ConnectorHealthTab() {
 
 type RunResult = { registrationId: string; label: string; replayJobId: string; error?: string };
 
-function VleReconcilePanel({ vleItems }: { vleItems: { registration: IntegrationRegistration; result: HealthCheckResult | null; checking: boolean; error: string }[] }) {
+function VleReconcilePanel({ vleItems }: { vleItems: RegistrationHealth[] }) {
   const [running,  setRunning]  = useState(false);
   const [results,  setResults]  = useState<RunResult[]>([]);
 
@@ -197,11 +200,11 @@ function VleReconcilePanel({ vleItems }: { vleItems: { registration: Integration
     for (const { registration: reg } of vleItems) {
       try {
         const { replayJobId } = await replayIntegration(reg.registrationId, { fromDate, toDate });
-        next.push({ registrationId: reg.registrationId, label: reg.name, replayJobId });
+        next.push({ registrationId: reg.registrationId, label: reg.displayName, replayJobId });
       } catch (e) {
         next.push({
           registrationId: reg.registrationId,
-          label: reg.name,
+          label: reg.displayName,
           replayJobId: '',
           error: e instanceof ApiError ? (e.detail ?? e.message) : 'Replay failed',
         });
@@ -308,14 +311,14 @@ function FailedExchangesTab() {
               {exchanges.map(ex => (
                 <tr key={ex.exchangeId} className="hover:bg-gray-50">
                   <td className="px-4 py-2 text-gray-500 whitespace-nowrap">
-                    {new Date(ex.occurredAt).toLocaleString('en-GB')}
+                    {new Date(ex.createdAt).toLocaleString('en-GB')}
                   </td>
                   <td className="px-4 py-2">
-                    <Badge value={ex.direction} />
+                    <Badge value={ex.directionCode} />
                   </td>
-                  <td className="px-4 py-2 font-mono text-xs text-gray-700">{ex.eventType ?? '—'}</td>
-                  <td className="px-4 py-2 text-xs text-red-700 max-w-xs truncate" title={ex.errorMessage ?? ''}>
-                    {ex.errorMessage ?? '—'}
+                  <td className="px-4 py-2 font-mono text-xs text-gray-700">{ex.exchangeTypeCode}</td>
+                  <td className="px-4 py-2 text-xs text-red-700 max-w-xs truncate" title={ex.lastError ?? ''}>
+                    {ex.lastError ?? '—'}
                   </td>
                 </tr>
               ))}

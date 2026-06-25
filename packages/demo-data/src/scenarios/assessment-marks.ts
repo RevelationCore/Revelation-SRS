@@ -2,9 +2,11 @@ import {
   academicPeriods,
   assessmentComponents,
   awardingBodies,
+  deploymentEnvironments,
   enrolments,
   examBoards,
   examEntries,
+  foiRequests,
   integrationExchanges,
   integrationRegistrations,
   marks,
@@ -103,6 +105,7 @@ export const manifest: ScenarioManifest = {
     'wellbeing',
     'integration',
     'notifications',
+    'regulatory',
   ],
 };
 
@@ -177,6 +180,7 @@ export async function load(
     case 'wellbeing':      return loadWellbeing(db, tenantId);
     case 'integration':    return loadIntegration(db, tenantId);
     case 'notifications':  return loadNotifications(db, tenantId);
+    case 'regulatory':     return loadRegulatory(db, tenantId);
     default:               return;
   }
 }
@@ -192,6 +196,20 @@ async function loadReferenceData(db: Db, tenantId: string): Promise<void> {
   await batchInsert(db, programmes,       curriculum.programmes);
   await batchInsert(db, modules,          curriculum.modules);
   await batchInsert(db, moduleOfferings,  curriculum.moduleOfferings);
+  await seedDeploymentEnvironment(db);
+}
+
+async function seedDeploymentEnvironment(db: Db): Promise<void> {
+  await batchInsert(db, deploymentEnvironments, [{
+    id:                      '00000000-0000-0000-0000-000000000002',
+    environmentCode:         'development',
+    displayName:             'Local development',
+    environmentTypeCode:     'local',
+    productionLike:          false,
+    liveIntegrationsAllowed: false,
+    configuration:           {},
+    active:                  true,
+  }]);
 }
 
 // ─── Phase: personas ──────────────────────────────────────────────────────────
@@ -547,4 +565,55 @@ async function loadNotifications(db: Db, tenantId: string): Promise<void> {
   ];
 
   await batchInsert(db, notifications, rows);
+}
+
+// ─── Phase: regulatory ────────────────────────────────────────────────────────
+// Seed representative FOI/SAR requests so RE-07 starts with visible data.
+
+async function loadRegulatory(db: Db, tenantId: string): Promise<void> {
+  const foiRows: typeof foiRequests.$inferInsert[] = [
+    {
+      versionId:             deterministicId('s4-foi', tenantId, '1'),
+      id:                    deterministicId('s4-foi', tenantId, '1'),
+      tenantId,
+      requestReference:      'FOI-2025-031',
+      receivedDate:          '2025-11-03',
+      statutoryDeadlineDate: '2026-01-02',
+      description:           'DEMO - Request for course completion statistics by department for 2024-25.',
+      statusCode:            'completed',
+      legalBasis:            'Freedom of Information Act 2000',
+      closedAt:              new Date('2025-12-18T11:00:00Z'),
+      validFrom:             new Date('2025-11-03T00:00:00Z'),
+      recordedAt:            new Date('2025-11-03T00:00:00Z'),
+    },
+    {
+      versionId:             deterministicId('s4-foi', tenantId, '2'),
+      id:                    deterministicId('s4-foi', tenantId, '2'),
+      tenantId,
+      requestReference:      'SAR-2025-089',
+      receivedDate:          '2025-12-10',
+      statutoryDeadlineDate: '2026-01-09',
+      description:           'DEMO - Subject access request: copies of all personal data held.',
+      statusCode:            'in-progress',
+      legalBasis:            'UK GDPR Article 15',
+      closedAt:              null,
+      validFrom:             new Date('2025-12-10T00:00:00Z'),
+      recordedAt:            new Date('2025-12-10T00:00:00Z'),
+    },
+    {
+      versionId:             deterministicId('s4-foi', tenantId, '3'),
+      id:                    deterministicId('s4-foi', tenantId, '3'),
+      tenantId,
+      requestReference:      'FOI-2026-002',
+      receivedDate:          '2026-01-15',
+      statutoryDeadlineDate: '2026-03-16',
+      description:           'DEMO - Request for information on student satisfaction survey results 2025.',
+      statusCode:            'open',
+      legalBasis:            'Freedom of Information Act 2000',
+      closedAt:              null,
+      validFrom:             new Date('2026-01-15T00:00:00Z'),
+      recordedAt:            new Date('2026-01-15T00:00:00Z'),
+    },
+  ];
+  await batchInsert(db, foiRequests, foiRows);
 }

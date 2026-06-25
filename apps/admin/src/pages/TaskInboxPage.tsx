@@ -48,8 +48,9 @@ export function TaskInboxPage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-semibold text-gray-900">Task inbox</h1>
         <div className="flex items-center gap-3">
-          <label className="text-sm text-gray-500">Status:</label>
+          <label htmlFor="task-status-filter" className="text-sm text-gray-500">Status:</label>
           <select
+            id="task-status-filter"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
             className="rounded border border-gray-300 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"

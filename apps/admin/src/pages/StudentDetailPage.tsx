@@ -1,11 +1,17 @@
 import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
+  type Adjustment,
+  type DisabilityDeclaration,
+  type ExceptionalCircumstances,
   type IdentityPatch,
   type Student,
   type StudentNotification,
   type PersonStatusCode,
   getStudent,
+  listAdjustments,
+  listDisabilityDeclarations,
+  listExceptionalCircumstances,
   updateStudentIdentity,
   updateHesaId,
   updatePersonStatus,
@@ -51,7 +57,7 @@ import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
 import { useValueSet } from '../hooks/useValueSet.js';
 
-type Tab = 'identity' | 'enrolments' | 'registrations' | 'assessment' | 'history' | 'corrections' | 'communications';
+type Tab = 'identity' | 'enrolments' | 'registrations' | 'assessment' | 'history' | 'wellbeing' | 'corrections' | 'communications';
 
 export function StudentDetailPage() {
   const { personId } = useParams<{ personId: string }>();
@@ -103,7 +109,7 @@ export function StudentDetailPage() {
 
       {/* Tabs */}
       <div className="border-b border-gray-200 mb-6">
-        {(['identity', 'enrolments', 'registrations', 'assessment', 'history', 'corrections', 'communications'] as Tab[]).map((t) => (
+        {(['identity', 'enrolments', 'registrations', 'assessment', 'history', 'wellbeing', 'corrections', 'communications'] as Tab[]).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -132,6 +138,9 @@ export function StudentDetailPage() {
       )}
       {tab === 'history' && personId && (
         <HistoryTab personId={personId} />
+      )}
+      {tab === 'wellbeing' && personId && (
+        <WellbeingTab personId={personId} />
       )}
       {tab === 'corrections' && personId && (
         <CorrectionsTab personId={personId} />
@@ -1259,10 +1268,10 @@ function CorrectionsTab({ personId }: { personId: string }) {
             <div key={c.caseId} className="bg-white rounded-lg border border-gray-200 p-4">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-sm font-medium text-gray-900 capitalize">{c.caseTypeCode}</p>
+                  <p className="text-sm font-medium text-gray-900">{caseTypes.find(s => s.code === c.caseTypeCode)?.displayLabel ?? c.caseTypeCode}</p>
                   <p className="text-xs text-gray-500 font-mono mt-0.5">{c.reference}</p>
                 </div>
-                <Badge value={c.statusCode} />
+                <Badge value={c.statusCode} label={caseStatuses.find(s => s.code === c.statusCode)?.displayLabel} />
               </div>
               {(() => {
                 const validTargets = CASE_FORWARD_TRANSITIONS[c.statusCode] ?? [];
@@ -1401,6 +1410,145 @@ function VleOverrideAuditSection({ enrolmentId }: { enrolmentId: string }) {
           </tbody>
         </table>
       </div>
+    </div>
+  );
+}
+
+// ── Wellbeing tab ─────────────────────────────────────────────────────────────
+
+function WellbeingTab({ personId }: { personId: string }) {
+  const [declarations, setDeclarations] = useState<DisabilityDeclaration[] | null>(null);
+  const [adjustments,  setAdjustments]  = useState<Adjustment[] | null>(null);
+  const [ecs,          setEcs]          = useState<ExceptionalCircumstances[] | null>(null);
+  const [loading,      setLoading]      = useState(true);
+  const [error,        setError]        = useState('');
+
+  const { members: disabilityCategories } = useValueSet('disability_declaration', 'disability_category_code');
+  const { members: declarationStatuses }  = useValueSet('disability_declaration', 'declaration_status_code');
+  const { members: adjustmentTypes }      = useValueSet('reasonable_adjustment',  'adjustment_type_code');
+  const { members: adjustmentScopes }     = useValueSet('reasonable_adjustment',  'scope_code');
+  const { members: ecOutcomes }           = useValueSet('exceptional_circumstances', 'outcome_code');
+
+  useEffect(() => {
+    setLoading(true);
+    Promise.all([
+      listDisabilityDeclarations(personId),
+      listAdjustments(personId),
+      listExceptionalCircumstances(personId),
+    ])
+      .then(([d, a, e]) => { setDeclarations(d); setAdjustments(a); setEcs(e); })
+      .catch(err => setError(err instanceof ApiError ? err.message : 'Failed to load wellbeing data'))
+      .finally(() => setLoading(false));
+  }, [personId]);
+
+  if (loading) return <div className="flex justify-center py-10"><Spinner /></div>;
+  if (error)   return <p className="text-red-600 text-sm">{error}</p>;
+
+  const label = (members: { code: string; displayLabel: string }[], code: string) =>
+    members.find(m => m.code === code)?.displayLabel ?? code;
+
+  return (
+    <div className="space-y-8">
+
+      {/* Disability declarations */}
+      <section>
+        <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">Disability Declarations</h2>
+        {declarations?.length === 0 ? (
+          <p className="text-sm text-gray-400">No disability declarations on record.</p>
+        ) : (
+          <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+            <table className="min-w-full divide-y divide-gray-200 text-sm">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Category</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Status</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Declared</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Notes</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {declarations?.map(d => (
+                  <tr key={d.declarationId} className="hover:bg-gray-50">
+                    <td className="px-4 py-3 text-gray-800">{label(disabilityCategories, d.disabilityCategoryCode)}</td>
+                    <td className="px-4 py-3"><Badge value={d.declarationStatusCode} label={label(declarationStatuses, d.declarationStatusCode)} /></td>
+                    <td className="px-4 py-3 text-gray-600">{new Date(d.declaredAt).toLocaleDateString('en-GB')}</td>
+                    <td className="px-4 py-3 text-gray-500">{d.notes ?? '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      {/* Reasonable adjustments */}
+      <section>
+        <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">Reasonable Adjustments</h2>
+        {adjustments?.length === 0 ? (
+          <p className="text-sm text-gray-400">No reasonable adjustments on record.</p>
+        ) : (
+          <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+            <table className="min-w-full divide-y divide-gray-200 text-sm">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Type</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Scope</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Valid From</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Valid To</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Notes</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {adjustments?.filter(a => a.recordedUntil === null).map(a => (
+                  <tr key={a.adjustmentId} className="hover:bg-gray-50">
+                    <td className="px-4 py-3 text-gray-800">{label(adjustmentTypes, a.adjustmentTypeCode)}</td>
+                    <td className="px-4 py-3 text-gray-600">{label(adjustmentScopes, a.scopeCode)}</td>
+                    <td className="px-4 py-3 text-gray-600">{new Date(a.validFrom).toLocaleDateString('en-GB')}</td>
+                    <td className="px-4 py-3 text-gray-600">{a.validTo ? new Date(a.validTo).toLocaleDateString('en-GB') : 'Open-ended'}</td>
+                    <td className="px-4 py-3 text-gray-500">{a.notes ?? '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      {/* Exceptional circumstances */}
+      <section>
+        <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">Exceptional Circumstances</h2>
+        {ecs?.length === 0 ? (
+          <p className="text-sm text-gray-400">No exceptional circumstances on record.</p>
+        ) : (
+          <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+            <table className="min-w-full divide-y divide-gray-200 text-sm">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Module</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Outcome</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Determination Date</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Notes</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {ecs?.filter(e => e.recordedUntil === null).map(e => (
+                  <tr key={e.exceptionalCircumstancesId} className="hover:bg-gray-50">
+                    <td className="px-4 py-3 text-gray-800">
+                      {e.moduleCode
+                        ? <><span className="font-mono text-xs text-gray-500 mr-1">{e.moduleCode}</span>{e.moduleTitle}</>
+                        : <span className="text-gray-400">—</span>}
+                    </td>
+                    <td className="px-4 py-3"><Badge value={e.outcomeCode} label={label(ecOutcomes, e.outcomeCode)} /></td>
+                    <td className="px-4 py-3 text-gray-600">{new Date(e.determinationDate).toLocaleDateString('en-GB')}</td>
+                    <td className="px-4 py-3 text-gray-500">{e.notes ?? '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
     </div>
   );
 }

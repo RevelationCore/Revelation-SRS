@@ -101,3 +101,57 @@ export interface StudentNotification {
 export function listStudentNotifications(personId: string): Promise<StudentNotification[]> {
   return api.get<StudentNotification[]>(`/api/v1/admin/students/${personId}/notifications`);
 }
+
+// ── Wellbeing data ────────────────────────────────────────────────────────────
+
+export interface DisabilityDeclaration {
+  declarationId:          string;
+  disabilityCategoryCode: string;
+  declarationStatusCode:  string;
+  declaredAt:             string;
+  validFrom:              string;
+  notes:                  string | null;
+}
+
+export function listDisabilityDeclarations(personId: string): Promise<DisabilityDeclaration[]> {
+  return api.get<DisabilityDeclaration[]>(`/api/v1/students/${personId}/disability-declarations`);
+}
+
+export interface Adjustment {
+  adjustmentId:       string;
+  enrolmentId:        string;
+  personId:           string;
+  adjustmentTypeCode: string;
+  scopeCode:          string;
+  notes:              string | null;
+  actorId:            string;
+  validFrom:          string;
+  validTo:            string | null;
+  recordedAt:         string;
+  recordedUntil:      string | null;
+}
+
+export function listAdjustments(personId: string): Promise<Adjustment[]> {
+  return api.get<Adjustment[]>(`/api/v1/students/${personId}/adjustments`);
+}
+
+export interface ExceptionalCircumstances {
+  exceptionalCircumstancesId: string;
+  enrolmentId:                string;
+  personId:                   string;
+  moduleOfferingId:           string | null;
+  moduleCode:                 string | null;
+  moduleTitle:                string | null;
+  outcomeCode:                string;
+  determinationDate:          string;
+  notes:                      string | null;
+  actorId:                    string;
+  validFrom:                  string;
+  validTo:                    string | null;
+  recordedAt:                 string;
+  recordedUntil:              string | null;
+}
+
+export function listExceptionalCircumstances(personId: string): Promise<ExceptionalCircumstances[]> {
+  return api.get<ExceptionalCircumstances[]>(`/api/v1/students/${personId}/exceptional-circumstances`);
+}

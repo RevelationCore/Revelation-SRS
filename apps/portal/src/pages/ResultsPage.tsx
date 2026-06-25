@@ -106,7 +106,7 @@ export function ResultsPage() {
                   <td className="px-4 py-3 text-gray-900 tabular-nums">{result.aggregateMark}</td>
                   <td className="px-4 py-3">
                     <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${resultColour(result.resultCode)}`}>
-                      {result.resultCode}
+                      {t(`portal.results.code.${result.resultCode}`, { defaultValue: result.resultCode })}
                     </span>
                   </td>
                 </tr>

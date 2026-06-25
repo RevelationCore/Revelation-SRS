@@ -233,7 +233,7 @@ function VleGradeSyncPanel() {
     listIntegrationRegistrations()
       .then(regs => {
         const vle = regs.find(r =>
-          r.name.toLowerCase().includes('vle') || r.endpointUrl?.toLowerCase().includes('vle'),
+          r.displayName.toLowerCase().includes('vle') || r.endpointUrl?.toLowerCase().includes('vle'),
         );
         if (vle) setVleRegistrationId(vle.registrationId);
       })
@@ -247,7 +247,7 @@ function VleGradeSyncPanel() {
     setChecking(true);
     setError('');
     try {
-      const result = await healthCheckIntegration(vleRegistrationId);
+      const result = await healthCheckIntegration(vleRegistrationId, 'ok');
       setHealthResult(result);
     } catch (e) {
       setError(e instanceof ApiError ? (e.detail ?? e.message) : 'Health check failed');
@@ -256,9 +256,7 @@ function VleGradeSyncPanel() {
     }
   }
 
-  const metrics = healthResult
-    ? (healthResult as HealthCheckResult & { details?: { unsubmittedMarks?: number; markConflicts?: number } }).details
-    : null;
+  const metrics = null; // VLE connector metrics not yet exposed via health-check endpoint
 
   return (
     <section className="rounded-lg border border-indigo-200 bg-indigo-50 p-5">
@@ -281,35 +279,14 @@ function VleGradeSyncPanel() {
         <div className="rounded bg-white border border-indigo-100 p-3 text-xs space-y-1">
           <div className="flex items-center gap-2">
             <span className={`rounded-full px-2 py-0.5 font-medium ${
-              healthResult.statusCode === 'healthy' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'
-            }`}>{healthResult.statusCode}</span>
-            {healthResult.latencyMs != null && (
-              <span className="text-gray-500">{healthResult.latencyMs}ms</span>
+              healthResult.healthStatusCode === 'ok' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'
+            }`}>{healthResult.healthStatusCode ?? 'recorded'}</span>
+            {healthResult.lastHealthCheckAt && (
+              <span className="text-gray-500">
+                at {new Date(healthResult.lastHealthCheckAt).toLocaleTimeString('en-GB')}
+              </span>
             )}
           </div>
-          {metrics && (
-            <dl className="grid grid-cols-2 gap-x-6 gap-y-1 mt-2">
-              {metrics.unsubmittedMarks !== undefined && (
-                <>
-                  <dt className="text-gray-500">Unsubmitted marks</dt>
-                  <dd className={metrics.unsubmittedMarks > 0 ? 'text-amber-700 font-medium' : 'text-green-700'}>
-                    {metrics.unsubmittedMarks}
-                  </dd>
-                </>
-              )}
-              {metrics.markConflicts !== undefined && (
-                <>
-                  <dt className="text-gray-500">Grade conflicts</dt>
-                  <dd className={metrics.markConflicts > 0 ? 'text-red-700 font-medium' : 'text-green-700'}>
-                    {metrics.markConflicts}
-                  </dd>
-                </>
-              )}
-            </dl>
-          )}
-          {healthResult.message && (
-            <p className="text-gray-600 mt-1">{healthResult.message}</p>
-          )}
         </div>
       )}
     </section>

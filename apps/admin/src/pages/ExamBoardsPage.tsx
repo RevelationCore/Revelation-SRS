@@ -93,7 +93,7 @@ export function ExamBoardsPage() {
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Year</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Meeting date</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ratified</th>
-                <th className="px-4 py-3" />
+                <th className="px-4 py-3"><span className="sr-only">Actions</span></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">

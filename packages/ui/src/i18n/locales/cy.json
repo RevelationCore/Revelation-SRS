@@ -74,7 +74,12 @@
       "scheduledDate":       "Dyddiad wedi'i drefnu",
       "room":                "Ystafell",
       "accommodations":      "Llety",
-      "noAccommodations":    "Dim wedi'i gofnodi"
+      "noAccommodations":    "Dim wedi'i gofnodi",
+      "status": {
+        "confirmed": "Wedi cadarnhau",
+        "deferred":  "Wedi'i ohirio",
+        "absent":    "Absennol"
+      }
     },
     "profile": {
       "editHeading":         "Golygu eich proffil",
@@ -116,13 +121,27 @@
       "registerButton":   "Ychwanegu modiwl",
       "confirmRegister":  "Cofrestru ar gyfer y modiwl hwn?",
       "withdrawButton":   "Tynnu'n ôl",
-      "confirmWithdraw":  "Tynnu'n ôl o'r modiwl hwn?"
+      "confirmWithdraw":  "Tynnu'n ôl o'r modiwl hwn?",
+      "status": {
+        "registered": "Wedi cofrestru",
+        "completed":  "Wedi cwblhau",
+        "withdrawn":  "Wedi tynnu'n ôl",
+        "pending":    "Yn aros"
+      }
     },
     "results": {
       "subheading":    "Canlyniadau cyhoeddedig yn unig. Dangosir canlyniadau unwaith y cânt eu cadarnhau gan eich bwrdd arholi.",
       "noResults":     "Nid oes canlyniadau cyhoeddedig ar gael eto.",
       "aggregateMark": "Marc",
-      "resultCode":    "Canlyniad"
+      "resultCode":    "Canlyniad",
+      "code": {
+        "pass":        "Pasio",
+        "compensated": "Pasio Cymhwyso",
+        "fail":        "Methu",
+        "defer":       "Gohiriwyd",
+        "distinction": "Rhagoriaeth",
+        "merit":       "Teilyngdod"
+      }
     },
     "notifications": {
       "empty": "Nid oes gennych unrhyw hysbysiadau ar hyn o bryd.",

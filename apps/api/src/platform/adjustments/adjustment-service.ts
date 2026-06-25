@@ -396,6 +396,7 @@ export class AdjustmentService {
           and(
             eq(reasonableAdjustments.id, adjustmentId as `${string}-${string}-${string}-${string}-${string}`),
             eq(reasonableAdjustments.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
+            isNull(reasonableAdjustments.recordedUntil),
           ),
         )
         .limit(1),

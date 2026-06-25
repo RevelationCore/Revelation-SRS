@@ -75,8 +75,8 @@ function RegistrationsTab() {
   async function handleToggle(reg: IntegrationRegistration) {
     setActingId(reg.registrationId); setError('');
     try {
-      if (reg.isEnabled) await disableIntegration(reg.registrationId);
-      else               await enableIntegration(reg.registrationId);
+      if (reg.enabled) await disableIntegration(reg.registrationId);
+      else             await enableIntegration(reg.registrationId);
       await load();
     } catch (err) {
       setError(err instanceof ApiError ? (err.detail ?? err.message) : 'Toggle failed');
@@ -88,7 +88,7 @@ function RegistrationsTab() {
   async function handleHealthCheck(reg: IntegrationRegistration) {
     setActingId(reg.registrationId); setError('');
     try {
-      const result = await healthCheckIntegration(reg.registrationId);
+      const result = await healthCheckIntegration(reg.registrationId, 'ok');
       setHealthResults(prev => ({ ...prev, [reg.registrationId]: result }));
     } catch (err) {
       setError(err instanceof ApiError ? (err.detail ?? err.message) : 'Health check failed');
@@ -119,28 +119,28 @@ function RegistrationsTab() {
           {regs.map(reg => {
             const health = healthResults[reg.registrationId];
             return (
-              <div key={reg.registrationId} className={`bg-white rounded-lg border p-4 ${reg.isEnabled ? 'border-gray-200' : 'border-gray-100 opacity-70'}`}>
+              <div key={reg.registrationId} className={`bg-white rounded-lg border p-4 ${reg.enabled ? 'border-gray-200' : 'border-gray-100 opacity-70'}`}>
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-sm font-medium text-gray-900">{reg.name}</p>
+                    <p className="text-sm font-medium text-gray-900">{reg.displayName}</p>
                     {reg.endpointUrl && <p className="text-xs text-gray-400 font-mono mt-0.5 truncate max-w-xs">{reg.endpointUrl}</p>}
                     <div className="mt-1 flex items-center gap-2">
-                      <Badge value={reg.statusCode} />
-                      {reg.isEnabled
+                      <Badge value={reg.healthStatusCode ?? (reg.enabled ? 'enabled' : 'disabled')} />
+                      {reg.enabled
                         ? <span className="text-xs text-green-600">enabled</span>
                         : <span className="text-xs text-gray-400">disabled</span>}
-                      {reg.lastHealthCheck && (
+                      {reg.lastHealthCheckAt && (
                         <span className="text-xs text-gray-400">
-                          Last check: {new Date(reg.lastHealthCheck).toLocaleString('en-GB')}
+                          Last check: {new Date(reg.lastHealthCheckAt).toLocaleString('en-GB')}
                         </span>
                       )}
                     </div>
                     {health && (
-                      <div className={`mt-1 text-xs rounded px-2 py-0.5 inline-block ${
-                        health.statusCode === 'healthy' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
-                      }`}>
-                        {health.statusCode}{health.latencyMs != null ? ` (${health.latencyMs}ms)` : ''}
-                        {health.message ? ` — ${health.message}` : ''}
+                      <div className="mt-1 text-xs rounded px-2 py-0.5 inline-block bg-green-50 text-green-700">
+                        Health recorded — {health.healthStatusCode ?? '—'}
+                        {health.lastHealthCheckAt
+                          ? ` at ${new Date(health.lastHealthCheckAt).toLocaleTimeString('en-GB')}`
+                          : ''}
                       </div>
                     )}
                   </div>
@@ -150,7 +150,7 @@ function RegistrationsTab() {
                       disabled={actingId === reg.registrationId}
                       className="rounded border border-gray-300 px-2.5 py-1 text-xs text-gray-600 hover:bg-gray-50 disabled:opacity-50"
                     >
-                      {actingId === reg.registrationId ? '…' : 'Health check'}
+                      {actingId === reg.registrationId ? '…' : 'Record OK'}
                     </button>
                     <button
                       onClick={() => setReplayFor(reg)}
@@ -162,12 +162,12 @@ function RegistrationsTab() {
                       onClick={() => void handleToggle(reg)}
                       disabled={actingId === reg.registrationId}
                       className={`rounded border px-2.5 py-1 text-xs disabled:opacity-50 ${
-                        reg.isEnabled
+                        reg.enabled
                           ? 'border-red-300 text-red-600 hover:bg-red-50'
                           : 'border-green-300 text-green-700 hover:bg-green-50'
                       }`}
                     >
-                      {reg.isEnabled ? 'Disable' : 'Enable'}
+                      {reg.enabled ? 'Disable' : 'Enable'}
                     </button>
                   </div>
                 </div>
@@ -200,14 +200,19 @@ function CreateRegModal({ onClose, onCreated }: { onClose: () => void; onCreated
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const fd          = new FormData(e.currentTarget);
-    const contractId  = String(fd.get('contractId')  ?? '').trim();
-    const name        = String(fd.get('name')        ?? '').trim();
-    const endpointUrl = String(fd.get('endpointUrl') ?? '').trim();
-    if (!contractId || !name) { setError('Contract ID and name are required.'); return; }
+    const fd           = new FormData(e.currentTarget);
+    const contractId   = String(fd.get('contractId')   ?? '').trim();
+    const transportCode = String(fd.get('transportCode') ?? '').trim();
+    const displayName  = String(fd.get('displayName')  ?? '').trim();
+    const endpointUrl  = String(fd.get('endpointUrl')  ?? '').trim();
+    if (!contractId || !transportCode) { setError('Contract ID and transport code are required.'); return; }
     setSubmitting(true); setError('');
     try {
-      await createIntegrationRegistration({ contractId, name, ...(endpointUrl ? { endpointUrl } : {}) });
+      await createIntegrationRegistration({
+        contractId, transportCode,
+        ...(displayName  ? { displayName }  : {}),
+        ...(endpointUrl  ? { endpointUrl }  : {}),
+      });
       onCreated();
     } catch (err) {
       setError(err instanceof ApiError ? (err.detail ?? err.message) : 'Create failed');
@@ -221,9 +226,10 @@ function CreateRegModal({ onClose, onCreated }: { onClose: () => void; onCreated
       <div className="bg-white rounded-lg border border-gray-200 p-6 w-full max-w-md shadow-xl" onClick={(e) => e.stopPropagation()}>
         <h2 className="text-base font-semibold text-gray-900 mb-4">New integration registration</h2>
         <form onSubmit={(e) => void handleSubmit(e)} className="space-y-3">
-          <MField name="contractId"  label="Contract ID *" />
-          <MField name="name"        label="Name *" />
-          <MField name="endpointUrl" label="Endpoint URL (optional)" />
+          <MField name="contractId"    label="Contract ID *" />
+          <MField name="transportCode" label="Transport code * (e.g. http, nats)" />
+          <MField name="displayName"   label="Display name (optional)" />
+          <MField name="endpointUrl"   label="Endpoint URL (optional)" />
           {error && <p className="text-sm text-red-600">{error}</p>}
           <div className="flex justify-end gap-3 pt-2">
             <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-gray-600">Cancel</button>
@@ -268,7 +274,7 @@ function ReplayModal({
   return (
     <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={onClose}>
       <div className="bg-white rounded-lg border border-gray-200 p-6 w-full max-w-md shadow-xl" onClick={(e) => e.stopPropagation()}>
-        <h2 className="text-base font-semibold text-gray-900 mb-1">Replay — {reg.name}</h2>
+        <h2 className="text-base font-semibold text-gray-900 mb-1">Replay — {reg.displayName}</h2>
         <p className="text-xs text-gray-500 mb-4">
           Re-process integration exchanges in a date range. This is a destructive operation that
           may produce duplicate events — confirm with your integration team before proceeding.
@@ -378,14 +384,14 @@ function ContractsTab() {
             <tbody className="divide-y divide-gray-100">
               {contracts.map(c => (
                 <tr key={c.contractId} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-medium text-gray-900">{c.name}</td>
-                  <td className="px-4 py-3 font-mono text-xs text-gray-600">{c.version}</td>
-                  <td className="px-4 py-3"><Badge value={c.direction} /></td>
-                  <td className="px-4 py-3 text-gray-600">{c.protocolCode}</td>
+                  <td className="px-4 py-3 font-medium text-gray-900">{c.displayName}</td>
+                  <td className="px-4 py-3 font-mono text-xs text-gray-600">{c.currentContractVersion}</td>
+                  <td className="px-4 py-3"><Badge value={c.directionCode} /></td>
+                  <td className="px-4 py-3 text-gray-600">{c.patternType}</td>
                   <td className="px-4 py-3">
-                    {c.isActive
+                    {c.deprecatedAt == null
                       ? <span className="text-xs text-green-600">Yes</span>
-                      : <span className="text-xs text-gray-400">No</span>}
+                      : <span className="text-xs text-gray-400">Deprecated</span>}
                   </td>
                 </tr>
               ))}
@@ -407,13 +413,13 @@ function ExchangesTab() {
   const [statusFilter, setStatusFilter] = useState('');
   const [dirFilter,    setDirFilter]    = useState('');
 
-  const load = useCallback(async (off: number, status?: string, direction?: string) => {
+  const load = useCallback(async (off: number, status?: string, directionCode?: string) => {
     setLoading(true); setError('');
     try {
       setExchanges(await listIntegrationExchanges({
         limit: PAGE_SIZE, offset: off,
-        ...(status    ? { statusCode: status } : {}),
-        ...(direction ? { direction }           : {}),
+        ...(status        ? { statusCode: status }        : {}),
+        ...(directionCode ? { directionCode }              : {}),
       }));
       setOffset(off);
     } catch (e) {
@@ -429,6 +435,7 @@ function ExchangesTab() {
     e.preventDefault();
     void load(0, statusFilter || undefined, dirFilter || undefined);
   }
+
 
   return (
     <div>
@@ -469,11 +476,11 @@ function ExchangesTab() {
             <tbody className="divide-y divide-gray-100">
               {exchanges.map(ex => (
                 <tr key={ex.exchangeId} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-mono text-xs text-gray-700">{ex.eventType ?? '—'}</td>
-                  <td className="px-4 py-3 text-gray-600 text-xs capitalize">{ex.direction}</td>
+                  <td className="px-4 py-3 font-mono text-xs text-gray-700">{ex.exchangeTypeCode}</td>
+                  <td className="px-4 py-3 text-gray-600 text-xs capitalize">{ex.directionCode}</td>
                   <td className="px-4 py-3"><Badge value={ex.statusCode} /></td>
-                  <td className="px-4 py-3 text-gray-500 text-xs">{new Date(ex.occurredAt).toLocaleString('en-GB')}</td>
-                  <td className="px-4 py-3 text-red-500 text-xs truncate max-w-xs">{ex.errorMessage ?? '—'}</td>
+                  <td className="px-4 py-3 text-gray-500 text-xs">{new Date(ex.createdAt).toLocaleString('en-GB')}</td>
+                  <td className="px-4 py-3 text-red-500 text-xs truncate max-w-xs">{ex.lastError ?? '—'}</td>
                 </tr>
               ))}
             </tbody>

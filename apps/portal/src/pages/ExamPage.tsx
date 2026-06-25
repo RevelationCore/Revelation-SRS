@@ -83,7 +83,7 @@ export function ExamPage() {
                   {t('portal.exam.candidateNumber')}: {entry.candidateNumber}
                 </h2>
                 <span className="flex-none rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-medium text-indigo-700">
-                  {entry.statusCode}
+                  {t(`portal.exam.status.${entry.statusCode}`, { defaultValue: entry.statusCode })}
                 </span>
               </div>
 

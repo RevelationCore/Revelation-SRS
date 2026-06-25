@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
 import {
   enrolments,
   marks,
@@ -212,11 +212,10 @@ export class MisconductService {
         .where(and(
           eq(misconductPenaltyEffects.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
           isNull(misconductPenaltyEffects.recordedUntil),
+          inArray(misconductPenaltyEffects.misconductOutcomeId, outcomeIds as Array<`${string}-${string}-${string}-${string}-${string}`>),
         )),
     );
-    return rows
-      .filter((row) => outcomeIds.includes(row.misconductOutcomeId))
-      .map(effectToDto);
+    return rows.map(effectToDto);
   }
 
   async #validatePenaltyCode(tenantId: string, penaltyCode: string): Promise<void> {

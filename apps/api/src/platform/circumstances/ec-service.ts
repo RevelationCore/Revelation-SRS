@@ -181,6 +181,7 @@ export class ExceptionalCircumstancesService {
           eq(exceptionalCircumstances.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
           ...(enrolmentId ? [eq(exceptionalCircumstances.enrolmentId, enrolmentId as `${string}-${string}-${string}-${string}-${string}`)] : []),
           isNull(exceptionalCircumstances.recordedUntil),
+          isNull(modules.recordedUntil),
         ))
         .orderBy(exceptionalCircumstances.determinationDate, exceptionalCircumstances.recordedAt),
     );

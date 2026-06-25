@@ -1,48 +1,55 @@
 import { api } from './client.js';
 
 export interface IntegrationContract {
-  contractId:      string;
-  name:            string;
-  description:     string | null;
-  version:         string;
-  direction:       'inbound' | 'outbound' | 'bidirectional';
-  protocolCode:    string;
-  schemaRef:       string | null;
-  isActive:        boolean;
-  createdAt:       string;
+  contractId:               string;
+  displayName:              string;
+  ownerModuleCode:          string;
+  directionCode:            string;
+  patternType:              string;
+  currentContractVersion:   string;
+  dataClassificationCode:   string;
+  deprecatedAt:             string | null;
+  minimumSupportedVersion:  string | null;
+  createdAt:                string;
 }
 
 export interface IntegrationRegistration {
-  registrationId:   string;
-  contractId:       string;
-  name:             string;
-  endpointUrl:      string | null;
-  statusCode:       string;
-  isEnabled:        boolean;
-  lastHealthCheck:  string | null;
-  healthStatusCode: string | null;
-  createdAt:        string;
-  updatedAt:        string;
+  registrationId:           string;
+  tenantId:                 string;
+  contractId:               string;
+  displayName:              string;
+  contractVersion:          string;
+  transportCode:            string;
+  endpointUrl:              string | null;
+  enabled:                  boolean;
+  healthStatusCode:         string | null;
+  lastHealthCheckAt:        string | null;
+  lastSuccessfulExchangeAt: string | null;
+  registeredAt:             string;
+  lastUpdatedAt:            string;
 }
 
-export interface HealthCheckResult {
-  registrationId: string;
-  statusCode:     string;
-  checkedAt:      string;
-  latencyMs:      number | null;
-  message:        string | null;
-}
+/** Returned by the health-check endpoint — same shape as IntegrationRegistration. */
+export type HealthCheckResult = IntegrationRegistration;
 
 export interface IntegrationExchange {
-  exchangeId:      string;
-  registrationId:  string | null;
-  direction:       string;
-  statusCode:      string;
-  eventType:       string | null;
-  payload:         Record<string, unknown> | null;
-  errorMessage:    string | null;
-  occurredAt:      string;
-  processedAt:     string | null;
+  exchangeId:       string;
+  registrationId:   string;
+  contractId:       string;
+  directionCode:    string;
+  exchangeTypeCode: string;
+  idempotencyKey:   string;
+  correlationId:    string | null;
+  sourceReference:  string | null;
+  statusCode:       string;
+  attemptCount:     number;
+  lastAttemptAt:    string | null;
+  lastError:        string | null;
+  payloadHash:      string | null;
+  payloadSummary:   Record<string, unknown> | null;
+  receivedAt:       string | null;
+  sentAt:           string | null;
+  createdAt:        string;
 }
 
 export function listIntegrationContracts(): Promise<IntegrationContract[]> {
@@ -53,14 +60,7 @@ export function getIntegrationContract(contractId: string): Promise<IntegrationC
   return api.get<IntegrationContract>(`/api/v1/integration-contracts/${contractId}`);
 }
 
-export function createIntegrationContract(body: {
-  name:         string;
-  description?: string;
-  version:      string;
-  direction:    'inbound' | 'outbound' | 'bidirectional';
-  protocolCode: string;
-  schemaRef?:   string;
-}): Promise<{ contractId: string }> {
+export function createIntegrationContract(body: Record<string, unknown>): Promise<{ contractId: string }> {
   return api.post('/api/v1/integration-contracts', body);
 }
 
@@ -69,11 +69,12 @@ export function listIntegrationRegistrations(): Promise<IntegrationRegistration[
 }
 
 export function createIntegrationRegistration(body: {
-  contractId:   string;
-  name:         string;
-  endpointUrl?: string;
-}): Promise<{ registrationId: string }> {
-  return api.post('/api/v1/integration-registrations', body);
+  contractId:    string;
+  displayName?:  string;
+  transportCode: string;
+  endpointUrl?:  string;
+}): Promise<IntegrationRegistration> {
+  return api.post<IntegrationRegistration>('/api/v1/integration-registrations', body);
 }
 
 export function getIntegrationRegistration(registrationId: string): Promise<IntegrationRegistration> {
@@ -82,7 +83,7 @@ export function getIntegrationRegistration(registrationId: string): Promise<Inte
 
 export function updateIntegrationRegistration(
   registrationId: string,
-  body: Partial<Pick<IntegrationRegistration, 'name' | 'endpointUrl'>>,
+  body: Partial<Pick<IntegrationRegistration, 'displayName' | 'endpointUrl'>>,
 ): Promise<void> {
   return api.patch(`/api/v1/integration-registrations/${registrationId}`, body);
 }
@@ -95,8 +96,14 @@ export function disableIntegration(registrationId: string): Promise<void> {
   return api.post(`/api/v1/integration-registrations/${registrationId}/disable`, {});
 }
 
-export function healthCheckIntegration(registrationId: string): Promise<HealthCheckResult> {
-  return api.post<HealthCheckResult>(`/api/v1/integration-registrations/${registrationId}/health-check`, {});
+export function healthCheckIntegration(
+  registrationId: string,
+  statusCode: string,
+): Promise<HealthCheckResult> {
+  return api.post<HealthCheckResult>(
+    `/api/v1/integration-registrations/${registrationId}/health-check`,
+    { statusCode },
+  );
 }
 
 export function replayIntegration(
@@ -109,14 +116,14 @@ export function replayIntegration(
 export function listIntegrationExchanges(params?: {
   registrationId?: string;
   statusCode?:     string;
-  direction?:      string;
+  directionCode?:  string;
   limit?:          number;
   offset?:         number;
 }): Promise<IntegrationExchange[]> {
   const qs = new URLSearchParams();
   if (params?.registrationId) qs.set('registrationId', params.registrationId);
   if (params?.statusCode)     qs.set('statusCode',     params.statusCode);
-  if (params?.direction)      qs.set('direction',      params.direction);
+  if (params?.directionCode)  qs.set('directionCode',  params.directionCode);
   if (params?.limit  != null) qs.set('limit',          String(params.limit));
   if (params?.offset != null) qs.set('offset',         String(params.offset));
   const query = qs.toString();

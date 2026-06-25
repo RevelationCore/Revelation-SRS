@@ -109,10 +109,8 @@ export function App() {
                   path="tenant-admin/integrations"
                   element={<RequireRole roles={INTEGRATION_ADMIN_ROLES}><IntegrationsPage /></RequireRole>}
                 />
-                <Route
-                  path="tenant-admin/audit"
-                  element={<RequireRole roles={TENANT_ADMIN_ROLES}><AuditPage /></RequireRole>}
-                />
+                {/* Audit log: API guards with audit-log:read (dpo, registry-administrator, system-administrator, wellbeing-auditor) */}
+                <Route path="tenant-admin/audit" element={<AuditPage />} />
 
                 {/* Reporting */}
                 <Route path="reporting"                          element={<ReportingPage />} />

@@ -107,6 +107,14 @@ Full plan: [docs/project-roadmap.md](docs/project-roadmap.md)
 
 ## Getting Started
 
+### Try a GitHub Codespaces demo
+
+A disposable demo can be started directly from GitHub Codespaces. The demo
+automatically starts the platform services, loads demo data, and exposes the
+admin console and student portal through forwarded Codespaces URLs.
+
+See [Running A Codespaces Demo](docs/codespaces-demo.md).
+
 ### Prerequisites
 
 - [OrbStack](https://orbstack.dev) (macOS) or any Docker-compatible runtime

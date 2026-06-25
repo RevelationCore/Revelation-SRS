@@ -74,7 +74,12 @@
       "scheduledDate":       "Scheduled date",
       "room":                "Room",
       "accommodations":      "Accommodations",
-      "noAccommodations":    "None recorded"
+      "noAccommodations":    "None recorded",
+      "status": {
+        "confirmed": "Confirmed",
+        "deferred":  "Deferred",
+        "absent":    "Absent"
+      }
     },
     "profile": {
       "editHeading":         "Edit your profile",
@@ -116,13 +121,27 @@
       "registerButton":   "Add module",
       "confirmRegister":  "Register for this module?",
       "withdrawButton":   "Withdraw",
-      "confirmWithdraw":  "Withdraw from this module?"
+      "confirmWithdraw":  "Withdraw from this module?",
+      "status": {
+        "registered": "Registered",
+        "completed":  "Completed",
+        "withdrawn":  "Withdrawn",
+        "pending":    "Pending"
+      }
     },
     "results": {
       "subheading":    "Published results only. Results are shown once ratified by your exam board.",
       "noResults":     "No published results are available yet.",
       "aggregateMark": "Mark",
-      "resultCode":    "Result"
+      "resultCode":    "Result",
+      "code": {
+        "pass":        "Pass",
+        "compensated": "Compensated Pass",
+        "fail":        "Fail",
+        "defer":       "Deferred",
+        "distinction": "Distinction",
+        "merit":       "Merit"
+      }
     },
     "notifications": {
       "empty": "You have no notifications at this time.",

@@ -112,7 +112,7 @@ export function ModulesPage() {
                   <td className="px-4 py-3 text-gray-600">{r.creditValue ?? '—'}</td>
                   <td className="px-4 py-3">
                     <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${regStatusColour(r.statusCode)}`}>
-                      {r.statusCode}
+                      {t(`portal.modules.status.${r.statusCode}`, { defaultValue: r.statusCode })}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-gray-600">{formatDate(r.registrationDate)}</td>

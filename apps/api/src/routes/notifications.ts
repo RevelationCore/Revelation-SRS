@@ -31,7 +31,11 @@ export async function notificationRoutes(fastify: FastifyInstance): Promise<void
       reply.raw.write(`event: ${event}\ndata: ${data}\n\n`);
     };
 
-    const personId = request.user.srsPersonId ?? request.user.sub;
+    const personId = request.user.srsPersonId;
+    if (!personId) {
+      reply.raw.end();
+      return;
+    }
 
     fastify.notificationService.addConnection(connectionId, {
       tenantId,
@@ -79,7 +83,8 @@ export async function notificationRoutes(fastify: FastifyInstance): Promise<void
   }, async (request, reply) => {
     const q = request.query as { limit?: number; unreadOnly?: boolean };
     const tenantId = request.tenantId;
-    const personId = request.user.srsPersonId ?? request.user.sub;
+    const personId = request.user.srsPersonId;
+    if (!personId) return reply.send([]);
 
     const opts: { limit?: number; unreadOnly?: boolean } = {};
     if (q.limit !== undefined)      opts.limit      = q.limit;
@@ -105,7 +110,8 @@ export async function notificationRoutes(fastify: FastifyInstance): Promise<void
   }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const tenantId = request.tenantId;
-    const personId = request.user.srsPersonId ?? request.user.sub;
+    const personId = request.user.srsPersonId;
+    if (!personId) return reply.status(404).send({ message: 'Notification not found or already read' });
 
     const updated = await fastify.notificationService.markRead(tenantId, personId, id);
     if (!updated) return reply.status(404).send({ message: 'Notification not found or already read' });

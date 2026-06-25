@@ -4,6 +4,7 @@ import {
   assessmentComponents,
   awardingBodies,
   awards,
+  deploymentEnvironments,
   enrolments,
   examBoardCandidateProfiles,
   examBoardDataPacks,
@@ -11,9 +12,12 @@ import {
   examBoards,
   examEntries,
   externalExaminerSignoffs,
+  foiRequests,
   hesaStudentReturns,
   hesaStudentReturnRecords,
   ucasApplications,
+  ukviCasRequests,
+  ukviComplianceAlerts,
   integrationExchanges,
   integrationRegistrations,
   marks,
@@ -283,6 +287,17 @@ export async function load(
 
 // ─── Phase: reference-data ────────────────────────────────────────────────────
 
+const DEMO_ENVIRONMENT = {
+  id:                      '00000000-0000-0000-0000-000000000002',
+  environmentCode:         'development',
+  displayName:             'Local development',
+  environmentTypeCode:     'local',
+  productionLike:          false,
+  liveIntegrationsAllowed: false,
+  configuration:           {} as Record<string, unknown>,
+  active:                  true,
+};
+
 async function loadReferenceData(db: Db, tenantId: string): Promise<void> {
   const calendar   = generateMultiYearCalendar(tenantId, [...manifest.academicYears]);
   const curriculum = generateCurriculum(tenantId, [...manifest.academicYears]);
@@ -291,6 +306,7 @@ async function loadReferenceData(db: Db, tenantId: string): Promise<void> {
   await batchInsert(db, programmes,       curriculum.programmes);
   await batchInsert(db, modules,          curriculum.modules);
   await batchInsert(db, moduleOfferings,  curriculum.moduleOfferings);
+  await batchInsert(db, deploymentEnvironments, [DEMO_ENVIRONMENT]);
 }
 
 // ─── Phase: personas ──────────────────────────────────────────────────────────
@@ -863,6 +879,89 @@ async function loadRegulatory(db: Db, tenantId: string): Promise<void> {
     ucasSeeded++;
   }
   await batchInsert(db, ucasApplications, ucasRows);
+
+  // UKVI CAS requests — cara (seq 3) plus a representative sample of other
+  // international students so RE-06 starts with visible data.
+  const UKVI_INTL_SEQS = [3, 20, 60, 100, 140] as const;
+  const UKVI_CAS_STATUSES = ['pending', 'assigned', 'issued', 'pending', 'assigned'] as const;
+  const casRows: typeof ukviCasRequests.$inferInsert[] = UKVI_INTL_SEQS.map((seq, i) => {
+    const eId       = enrolmentId(tenantId, seq);
+    const status    = UKVI_CAS_STATUSES[i]!;
+    const hasRef    = status !== 'pending';
+    const casId     = deterministicId('s6-ukvi-cas', tenantId, String(seq));
+    return {
+      versionId:    casId,
+      id:           casId,
+      tenantId,
+      enrolmentId:  eId,
+      casReference: hasRef ? `DEMO-CAS-${String(seq).padStart(7, '0')}` : null,
+      statusCode:   status,
+      requestedAt:  VALID_FROM,
+      validFrom:    VALID_FROM,
+      recordedAt:   VALID_FROM,
+    };
+  });
+  await batchInsert(db, ukviCasRequests, casRows);
+
+  // One unresolved compliance alert for cara so the Compliance Alerts tab is non-empty.
+  await batchInsert(db, ukviComplianceAlerts, [{
+    id:            deterministicId('s6-ukvi-alert', tenantId, '3'),
+    tenantId,
+    enrolmentId:   enrolmentId(tenantId, 3),
+    casReference:  null,
+    alertTypeCode: 'attendance-threshold-breach',
+    triggeredAt:   new Date('2026-03-10T09:00:00Z'),
+    resolvedAt:    null,
+    resolvedBy:    null,
+  }]);
+
+  // FOI requests — 3 representative records so the FOI/SAR page is non-empty for RE-07.
+  const FOI_DATE = new Date('2025-10-01T00:00:00Z');
+  const foiRows: typeof foiRequests.$inferInsert[] = [
+    {
+      versionId:             deterministicId('s6-foi', tenantId, '1'),
+      id:                    deterministicId('s6-foi', tenantId, '1'),
+      tenantId,
+      requestReference:      'FOI-2025-001',
+      receivedDate:          '2025-10-01',
+      statutoryDeadlineDate: '2025-11-19',
+      description:           'DEMO - Request for data on admissions policies and acceptance rates.',
+      statusCode:            'completed',
+      legalBasis:            'Freedom of Information Act 2000',
+      closedAt:              new Date('2025-11-10T14:00:00Z'),
+      validFrom:             FOI_DATE,
+      recordedAt:            FOI_DATE,
+    },
+    {
+      versionId:             deterministicId('s6-foi', tenantId, '2'),
+      id:                    deterministicId('s6-foi', tenantId, '2'),
+      tenantId,
+      requestReference:      'SAR-2025-042',
+      receivedDate:          '2026-01-15',
+      statutoryDeadlineDate: '2026-02-14',
+      description:           'DEMO - Subject access request for full student record.',
+      statusCode:            'in-progress',
+      legalBasis:            'UK GDPR Article 15',
+      closedAt:              null,
+      validFrom:             new Date('2026-01-15T00:00:00Z'),
+      recordedAt:            new Date('2026-01-15T00:00:00Z'),
+    },
+    {
+      versionId:             deterministicId('s6-foi', tenantId, '3'),
+      id:                    deterministicId('s6-foi', tenantId, '3'),
+      tenantId,
+      requestReference:      'FOI-2026-007',
+      receivedDate:          '2026-03-01',
+      statutoryDeadlineDate: '2026-04-29',
+      description:           'DEMO - Request for examination marking criteria and grade distributions.',
+      statusCode:            'open',
+      legalBasis:            'Freedom of Information Act 2000',
+      closedAt:              null,
+      validFrom:             new Date('2026-03-01T00:00:00Z'),
+      recordedAt:            new Date('2026-03-01T00:00:00Z'),
+    },
+  ];
+  await batchInsert(db, foiRequests, foiRows);
 }
 
 // ─── Phase: corrections ───────────────────────────────────────────────────────

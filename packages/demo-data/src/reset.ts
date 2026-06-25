@@ -73,25 +73,9 @@ async function wipeTenantScenarioData(db: Db, tenantId: string): Promise<void> {
   await db.execute(sql`DELETE FROM exam_board_data_pack        WHERE tenant_id = ${tenantId}`);
   await db.execute(sql`DELETE FROM exam_board                  WHERE tenant_id = ${tenantId}`);
   await db.execute(sql`DELETE FROM module_registration         WHERE tenant_id = ${tenantId}`);
-  // hesa_submission references integration_exchange — delete it first
-  await db.execute(sql`
-    DELETE FROM hesa_submission
-    WHERE hesa_student_return_id IN (SELECT id FROM hesa_student_return WHERE tenant_id = ${tenantId})
-  `);
-  await db.execute(sql`DELETE FROM integration_exchange        WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM integration_registration    WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM reenrolment_confirmation    WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM enrolment_status_transition WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM enrolment_downstream_trigger WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM fee_liability               WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM slc_notification           WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM student_regulatory_profile  WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM ukvi_attendance_report      WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM ukvi_cas_request            WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM ukvi_compliance_alert       WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM ukvi_visa_status            WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM ofs_extract                 WHERE tenant_id = ${tenantId}`);
-  // HESA child tables don't have tenant_id — cascade delete via hesa_student_return FK
+
+  // HESA child tables have no tenant_id — delete via correlated subquery through hesa_student_return.
+  // Must come BEFORE integration_exchange, which hesa_validation_report optionally references.
   await db.execute(sql`
     DELETE FROM hesa_validation_issue
     WHERE hesa_validation_report_id IN (
@@ -116,7 +100,24 @@ async function wipeTenantScenarioData(db: Db, tenantId: string): Promise<void> {
     WHERE hesa_student_return_id IN (SELECT id FROM hesa_student_return WHERE tenant_id = ${tenantId})
   `);
   await db.execute(sql`DELETE FROM hesa_student_return         WHERE tenant_id = ${tenantId}`);
+
+  await db.execute(sql`DELETE FROM integration_exchange        WHERE tenant_id = ${tenantId}`);
+  await db.execute(sql`DELETE FROM integration_registration    WHERE tenant_id = ${tenantId}`);
+  await db.execute(sql`DELETE FROM reenrolment_confirmation    WHERE tenant_id = ${tenantId}`);
+  await db.execute(sql`DELETE FROM enrolment_status_transition WHERE tenant_id = ${tenantId}`);
+  await db.execute(sql`DELETE FROM enrolment_downstream_trigger WHERE tenant_id = ${tenantId}`);
+  await db.execute(sql`DELETE FROM fee_liability               WHERE tenant_id = ${tenantId}`);
+  await db.execute(sql`DELETE FROM slc_notification           WHERE tenant_id = ${tenantId}`);
+  await db.execute(sql`DELETE FROM student_regulatory_profile  WHERE tenant_id = ${tenantId}`);
+  await db.execute(sql`DELETE FROM ukvi_attendance_report      WHERE tenant_id = ${tenantId}`);
+  await db.execute(sql`DELETE FROM ukvi_cas_request            WHERE tenant_id = ${tenantId}`);
+  await db.execute(sql`DELETE FROM ukvi_compliance_alert       WHERE tenant_id = ${tenantId}`);
+  await db.execute(sql`DELETE FROM ukvi_visa_status            WHERE tenant_id = ${tenantId}`);
+  await db.execute(sql`DELETE FROM ofs_extract                 WHERE tenant_id = ${tenantId}`);
   await db.execute(sql`DELETE FROM ucas_application            WHERE tenant_id = ${tenantId}`);
+  // foi_extract has a logical FK to foi_request — delete child before parent
+  await db.execute(sql`DELETE FROM foi_extract                 WHERE tenant_id = ${tenantId}`);
+  await db.execute(sql`DELETE FROM foi_request                 WHERE tenant_id = ${tenantId}`);
   await db.execute(sql`DELETE FROM enrolment                   WHERE tenant_id = ${tenantId}`);
   await db.execute(sql`DELETE FROM identity_verification_check WHERE tenant_id = ${tenantId}`);
   await db.execute(sql`DELETE FROM person_identity             WHERE tenant_id = ${tenantId}`);
