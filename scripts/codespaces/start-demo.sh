@@ -77,7 +77,7 @@ wait_for_url() {
 }
 
 configure_keycloak_redirects() {
-  node <<'NODE'
+  node --input-type=module <<'NODE'
 const adminUrl = 'http://localhost:8081';
 const realm = 'srs';
 const publicAdmin = process.env.PUBLIC_ADMIN_URL;
@@ -165,6 +165,12 @@ export PUBLIC_ADMIN_URL
 export PUBLIC_PORTAL_URL
 write_env_files
 
+# Export env vars so child processes (pnpm migrate, demo:reset) inherit DATABASE_URL etc.
+set -a
+# shellcheck source=.env
+source .env
+set +a
+
 corepack enable
 corepack prepare pnpm@9.15.9 --activate
 
@@ -194,7 +200,7 @@ echo "Running database migrations."
 pnpm migrate
 
 echo "Loading demo scenario: ${SCENARIO}"
-KEYCLOAK_REQUIRED=true pnpm demo:reset "${SCENARIO}"
+pnpm demo:reset "${SCENARIO}"
 
 start_process "api" pnpm --filter @revelation-srs/api dev
 start_process "admin" pnpm --filter @revelation-srs/admin dev -- --host 0.0.0.0
