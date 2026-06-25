@@ -198,8 +198,6 @@ pnpm lint
 
 ## Reference Model
 
-## Reference Model
-
 Revelation SRS is built on the **Revelation Student Records Enterprise Reference Model v2.1** — a published reference architecture for UK HE student records ecosystems.
 
 - [Reference model article](https://revelationcore.com/blogs/the-revelation-student-records-reference-model.html)

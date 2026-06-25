@@ -88,13 +88,16 @@ The demo-data platform provides pre-seeded scenario datasets for local developme
 
 ```bash
 # Load the CI golden scenario (small, fast)
-pnpm demo:reset --scenario ci-golden
+pnpm demo:reset ci-golden
 
 # Load the full institution-year scenario (50,000 students — takes several minutes)
-pnpm demo:reset --scenario institution-year
+pnpm demo:reset institution-year
+
+# Check what scenario is currently loaded
+pnpm demo:status
 
 # Validate the loaded scenario
-pnpm demo:validate
+pnpm demo:validate ci-golden
 ```
 
 Available scenarios: `ci-golden`, `applicant-pipeline`, `enrolment-induction`, `module-selection`, `assessment-marks`, `graduation-ceremony`, `institution-year`.
@@ -155,8 +158,9 @@ See [CONTRIBUTING.md](../CONTRIBUTING.md) for the full contribution guide and si
 | `pnpm lint` | ESLint across all packages |
 | `pnpm migrate` | Apply all pending database migrations |
 | `pnpm generate:openapi` | Regenerate `apps/api/openapi/v1.json` |
-| `pnpm demo:reset` | Load a demo scenario |
-| `pnpm demo:validate` | Validate the loaded demo scenario |
+| `pnpm demo:reset <slug>` | Load a named demo scenario |
+| `pnpm demo:validate <slug>` | Validate a named demo scenario |
+| `pnpm demo:status` | Show which scenario is currently loaded |
 | `pnpm test:e2e` | Run Playwright E2E tests (requires running stack) |
 
 ---

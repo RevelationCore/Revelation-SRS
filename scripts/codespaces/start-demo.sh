@@ -200,7 +200,7 @@ echo "Running database migrations."
 pnpm migrate
 
 echo "Loading demo scenario: ${SCENARIO}"
-pnpm demo:reset "${SCENARIO}"
+KEYCLOAK_REQUIRED=true pnpm demo:reset "${SCENARIO}"
 
 start_process "api" pnpm --filter @revelation-srs/api dev
 start_process "admin" pnpm --filter @revelation-srs/admin dev -- --host 0.0.0.0
