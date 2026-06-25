@@ -12,6 +12,8 @@ import {
   examEntries,
   externalExaminerSignoffs,
   hesaStudentReturns,
+  hesaStudentReturnRecords,
+  ucasApplications,
   integrationExchanges,
   integrationRegistrations,
   marks,
@@ -779,12 +781,20 @@ async function loadProgression(db: Db, tenantId: string): Promise<void> {
 // HESA student return history: 3 submitted returns for prior years,
 // 1 draft return for the current year.
 
+// Seqs belonging to each submitted year (exclude CURRENT_YEAR).
+// For seqs ≥ 7 the year cycles: (seq-7)%4 → 0='2022-23', 1='2023-24', 2='2024-25', 3='2025-26'.
+const HESA_YEAR_SEQS: Record<string, number[]> = {
+  '2022-23': [2, 6,  ...Array.from({ length: 250 }, (_, i) => 7  + i * 4)],
+  '2023-24': [5,     ...Array.from({ length: 250 }, (_, i) => 8  + i * 4)],
+  '2024-25': [4,     ...Array.from({ length: 250 }, (_, i) => 9  + i * 4)],
+};
+
 async function loadRegulatory(db: Db, tenantId: string): Promise<void> {
   const returnRows: typeof hesaStudentReturns.$inferInsert[] = [];
 
   for (const academicYear of ACADEMIC_YEARS) {
     const isCurrent = academicYear === CURRENT_YEAR;
-      returnRows.push({
+    returnRows.push({
       id:                  hesaReturnId(tenantId, academicYear),
       tenantId,
       academicYear,
@@ -795,10 +805,64 @@ async function loadRegulatory(db: Db, tenantId: string): Promise<void> {
       generatedBy:         ACTOR,
       generatedAt:         new Date(`${parseInt(academicYear.split('-')[0]!, 10) + 1}-01-10T09:00:00Z`),
     });
-
   }
 
   await batchInsert(db, hesaStudentReturns, returnRows);
+
+  // Seed stub student return records for submitted years so record counts are non-zero.
+  for (const [academicYear, seqs] of Object.entries(HESA_YEAR_SEQS)) {
+    const returnId = hesaReturnId(tenantId, academicYear);
+    const recordRows: typeof hesaStudentReturnRecords.$inferInsert[] = seqs
+      .filter(seq => seq <= TOTAL_STUDENTS)
+      .map(seq => {
+        const eId    = enrolmentId(tenantId, seq);
+        const husid  = `HESA-${String(seq).padStart(8, '0')}`;
+        // Birth year gives students aged ~22-27 depending on seq, all well over the 16-year floor
+        const birthYear = 1997 + (seq % 6);
+        return {
+          id:                  deterministicId('s6-hesa-record', tenantId, academicYear, String(seq)),
+          hesaStudentReturnId: returnId,
+          enrolmentId:         eId,
+          hesaId:              husid,
+          recordPayload:       {
+            _enrolmentId: eId,
+            HUSID:        husid,
+            BIRTHDTE:     `${birthYear}-09-01`,
+            MODE:         '01',   // full-time
+            YEARPRG:      1,
+          },
+        };
+      });
+    await batchInsert(db, hesaStudentReturnRecords, recordRows);
+  }
+
+  // UCAS applications — 500 representative records across 4 admission cycles.
+  // Enrolled students are linked via linkedEnrolmentId; final statuses reflect
+  // their outcome (unconditional = enrolled, rejected = no place).
+  const UCAS_APP_STATUSES = ['unconditional', 'unconditional', 'unconditional', 'conditional', 'rejected'] as const;
+  const UCAS_CYCLES = ['2022', '2023', '2024', '2025'] as const;
+  const ucasRows: typeof ucasApplications.$inferInsert[] = [];
+  let ucasSeeded = 0;
+  for (let seq = 7; seq <= TOTAL_STUDENTS && ucasSeeded < 500; seq++) {
+    if (isInternationalForSeq(seq)) continue;
+    if (seq % 9 === 0) continue; // direct-entry, not UCAS
+    const cycle  = UCAS_CYCLES[(seq - 7) % 4]!;
+    const status = UCAS_APP_STATUSES[(seq - 7) % UCAS_APP_STATUSES.length]!;
+    const eId    = enrolmentId(tenantId, seq);
+    ucasRows.push({
+      id:                deterministicId('s6-ucas-app', tenantId, String(seq)),
+      tenantId,
+      ucasPersonalId:    ucasPersonalId(seq),
+      cycle,
+      statusCode:        status,
+      linkedEnrolmentId: status !== 'rejected' ? eId : null,
+      rawPayload:        { source: 'demo', seq },
+      validFrom:         new Date(`${cycle}-09-01T00:00:00Z`),
+      recordedAt:        new Date(`${cycle}-09-01T00:00:00Z`),
+    });
+    ucasSeeded++;
+  }
+  await batchInsert(db, ucasApplications, ucasRows);
 }
 
 // ─── Phase: corrections ───────────────────────────────────────────────────────
@@ -818,7 +882,7 @@ async function loadCorrections(db: Db, tenantId: string): Promise<void> {
     ),
     generatePostRatificationCase(
       tenantId, enrolmentId(tenantId, 3_001), 3_001,
-      'appeal', 'dismissed', correctionDate,
+      'appeal', 'not-upheld', correctionDate,
     ),
   ];
   await batchInsert(db, postRatificationCases, cases);

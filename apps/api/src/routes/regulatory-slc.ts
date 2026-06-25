@@ -45,9 +45,11 @@ export function regulatorySlcRoutes(fastify: FastifyInstance): void {
     '/regulatory/slc/confirmations/generate',
     {
       schema: {
+        querystring: Type.Object({ dryRun: Type.Optional(Type.Boolean()) }),
         response: {
           200: Type.Object({
             processedCount: Type.Number(),
+            dryRun: Type.Boolean(),
             payload: Type.Object({ confirmations: Type.Array(SlcConfirmationRecordSchema) }),
           }),
         },
@@ -55,7 +57,8 @@ export function regulatorySlcRoutes(fastify: FastifyInstance): void {
       preHandler: [requirePermission('regulatory:write')],
     },
     async (request, reply) => {
-      const result = await fastify.slcService.generateConfirmations(request.tenantId, request.user.sub);
+      const { dryRun = false } = request.query as { dryRun?: boolean };
+      const result = await fastify.slcService.generateConfirmations(request.tenantId, request.user.sub, { dryRun });
       await fastify.audit.record({
         tenantId: request.tenantId,
         entityType: 'integration_exchange',
@@ -66,7 +69,7 @@ export function regulatorySlcRoutes(fastify: FastifyInstance): void {
         actorDisplayName: request.user.displayName,
         correlationId: request.id,
       });
-      await reply.send(result);
+      await reply.send({ ...result, dryRun });
     },
   );
 

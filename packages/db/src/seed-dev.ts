@@ -16,14 +16,26 @@ const db = createDb(connectionString);
 
 try {
   await db.execute(sql`
-    INSERT INTO tenant (id, code, name, active)
+    INSERT INTO tenant (id, code, name, configuration, active)
     VALUES (
       '00000000-0000-0000-0000-000000000001',
       'DEV',
       'Development University',
+      ${JSON.stringify({
+        institutionName:        'Revelation University',
+        defaultLocale:          'en-GB',
+        defaultTimezone:        'Europe/London',
+        defaultCurrencyCode:    'GBP',
+        academicYearStartMonth: 9,
+        ukprn:                  '10000001',
+        hesaSubscriberId:       '0001',
+        ucasProviderCode:       'R01',
+      })}::jsonb,
       true
     )
-    ON CONFLICT (id) DO NOTHING
+    ON CONFLICT (id) DO UPDATE SET
+      configuration = EXCLUDED.configuration
+      WHERE tenant.configuration = '{}'::jsonb
   `);
   console.log('Development tenant ready  (id: 00000000-0000-0000-0000-000000000001)');
 } catch (err) {

@@ -8,6 +8,7 @@ import { DemoBanner } from './DemoBanner.js';
 const NAV_ITEMS = [
   { to: '/dashboard',     label: 'portal.nav.dashboard'     },
   { to: '/profile',       label: 'portal.nav.profile'       },
+  { to: '/enrolments',    label: 'portal.nav.enrolments'    },
   { to: '/modules',       label: 'portal.nav.modules'       },
   { to: '/results',       label: 'portal.nav.results'       },
   { to: '/timetable',     label: 'portal.nav.timetable'     },

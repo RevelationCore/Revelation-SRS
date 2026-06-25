@@ -98,7 +98,7 @@ export async function integrationRegistryRoutes(fastify: FastifyInstance): Promi
   fastify.get(
     '/integration-contracts',
     {
-      preHandler: [requirePermission('integration:manage')],
+      preHandler: [requirePermission('integration:read')],
       schema: {
         querystring: Type.Object({ limit: Type.Optional(Type.Number()) }),
         response: {
@@ -116,7 +116,7 @@ export async function integrationRegistryRoutes(fastify: FastifyInstance): Promi
   fastify.get(
     '/integration-contracts/:contractId',
     {
-      preHandler: [requirePermission('integration:manage')],
+      preHandler: [requirePermission('integration:read')],
       schema: {
         params: Type.Object({ contractId: Type.String() }),
         response: {
@@ -138,7 +138,7 @@ export async function integrationRegistryRoutes(fastify: FastifyInstance): Promi
   fastify.get(
     '/integration-registrations',
     {
-      preHandler: [requirePermission('integration:manage')],
+      preHandler: [requirePermission('integration:read')],
       schema: {
         querystring: Type.Object({
           contractId: Type.Optional(Type.String()),
@@ -165,7 +165,7 @@ export async function integrationRegistryRoutes(fastify: FastifyInstance): Promi
   fastify.get(
     '/integration-registrations/:registrationId',
     {
-      preHandler: [requirePermission('integration:manage')],
+      preHandler: [requirePermission('integration:read')],
       schema: {
         params: Type.Object({ registrationId: Type.String() }),
         response: {
@@ -320,7 +320,7 @@ export async function integrationRegistryRoutes(fastify: FastifyInstance): Promi
   fastify.post(
     '/integration-registrations/:registrationId/health-check',
     {
-      preHandler: [requirePermission('integration:manage')],
+      preHandler: [requirePermission('integration:read')],
       schema: {
         params: Type.Object({ registrationId: Type.String() }),
         body: Type.Object({
@@ -349,7 +349,7 @@ export async function integrationRegistryRoutes(fastify: FastifyInstance): Promi
   fastify.post(
     '/integration-registrations/:registrationId/replay',
     {
-      preHandler: [requirePermission('integration:manage')],
+      preHandler: [requirePermission('integration:read')],
       schema: {
         params: Type.Object({ registrationId: Type.String() }),
         body: Type.Object({
@@ -381,7 +381,7 @@ export async function integrationRegistryRoutes(fastify: FastifyInstance): Promi
   fastify.get(
     '/integration-exchanges',
     {
-      preHandler: [requirePermission('integration:manage')],
+      preHandler: [requirePermission('integration:read')],
       schema: {
         querystring: Type.Object({
           registrationId: Type.Optional(Type.String()),
@@ -415,7 +415,7 @@ export async function integrationRegistryRoutes(fastify: FastifyInstance): Promi
   fastify.get(
     '/integration-exchanges/:exchangeId',
     {
-      preHandler: [requirePermission('integration:manage')],
+      preHandler: [requirePermission('integration:read')],
       schema: {
         params: Type.Object({ exchangeId: Type.String() }),
         response: {

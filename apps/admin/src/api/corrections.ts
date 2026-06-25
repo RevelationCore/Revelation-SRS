@@ -20,8 +20,11 @@ export function listCorrectionCases(enrolmentId: string): Promise<CorrectionCase
 export function createCorrectionCase(
   enrolmentId:  string,
   caseTypeCode: string,
+  reference?:   string,
 ): Promise<{ caseId: string }> {
-  return api.post(`/api/v1/enrolments/${enrolmentId}/correction-cases`, { caseTypeCode });
+  const body: { caseTypeCode: string; reference?: string } = { caseTypeCode };
+  if (reference) body.reference = reference;
+  return api.post(`/api/v1/enrolments/${enrolmentId}/correction-cases`, body);
 }
 
 export function updateCaseStatus(

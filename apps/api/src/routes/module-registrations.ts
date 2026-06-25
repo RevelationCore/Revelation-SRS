@@ -11,16 +11,20 @@ import type {
 
 const ModuleRegistrationSchema = Type.Object({
   moduleRegistrationId: Type.String(),
-  enrolmentId: Type.String(),
-  moduleOfferingId: Type.String(),
-  moduleId: Type.String(),
-  academicPeriodId: Type.String(),
-  statusCode: Type.String(),
-  registrationDate: Type.String(),
-  validFrom: Type.String(),
-  validTo: Type.Union([Type.String(), Type.Null()]),
-  recordedAt: Type.String(),
-  recordedUntil: Type.Union([Type.String(), Type.Null()]),
+  enrolmentId:          Type.String(),
+  moduleOfferingId:     Type.String(),
+  moduleId:             Type.String(),
+  moduleCode:           Type.String(),
+  moduleTitle:          Type.String(),
+  academicPeriodId:     Type.String(),
+  periodCode:           Type.String(),
+  creditValue:          Type.Union([Type.Number(), Type.Null()]),
+  statusCode:           Type.String(),
+  registrationDate:     Type.String(),
+  validFrom:            Type.String(),
+  validTo:              Type.Union([Type.String(), Type.Null()]),
+  recordedAt:           Type.String(),
+  recordedUntil:        Type.Union([Type.String(), Type.Null()]),
 });
 
 const TimetableRegistrationSchema = Type.Object({

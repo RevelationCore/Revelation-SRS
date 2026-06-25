@@ -186,6 +186,58 @@ export class LocaleService {
   }
 
   /**
+   * Batch-upsert translated labels for all members of a value set.
+   * Silently skips codes that don't exist in the set.
+   */
+  async batchUpsertValueSetLabels(
+    setCode:      string,
+    localeCode:   string,
+    labels:       Record<string, string>,
+    actorId:      string,
+  ): Promise<void> {
+    const sets = await this.db
+      .select({ id: valueSets.id })
+      .from(valueSets)
+      .where(eq(valueSets.setCode, setCode));
+
+    if (!sets[0]) throw new NotFoundError('ValueSet', setCode);
+
+    const members = await this.db
+      .select({ id: valueSetMembers.id, code: valueSetMembers.code })
+      .from(valueSetMembers)
+      .where(eq(valueSetMembers.valueSetId, sets[0].id));
+
+    const memberMap = new Map(members.map((m) => [m.code, m.id]));
+
+    for (const [code, displayLabel] of Object.entries(labels)) {
+      const memberId = memberMap.get(code);
+      if (!memberId) continue;
+      await this.db
+        .insert(valueSetMemberLabels)
+        .values({
+          id:               randomUUID(),
+          valueSetMemberId: memberId,
+          localeCode,
+          displayLabel,
+          description:      null,
+        })
+        .onConflictDoUpdate({
+          target: [valueSetMemberLabels.valueSetMemberId, valueSetMemberLabels.localeCode],
+          set:    { displayLabel },
+        });
+    }
+
+    await this.audit.record({
+      actorId,
+      actorType:  'user',
+      actionType: 'update',
+      entityType: 'value_set_labels',
+      entityId:   sets[0].id,
+      afterValue: { setCode, localeCode, labelCount: Object.keys(labels).length },
+    });
+  }
+
+  /**
    * Add a translated label for a value set member.
    * Replaces any existing label for the same (member, locale) pair.
    */

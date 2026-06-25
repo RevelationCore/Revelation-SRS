@@ -1,41 +1,64 @@
 import { api } from './client.js';
 
+export interface FeatureFlagVariant {
+  featureFlagVariantId: string;
+  variantKey:           string;
+  displayName:          string;
+  value:                unknown;
+  sortOrder:            number;
+}
+
 export interface FeatureFlag {
-  featureFlagId:   string;
-  flagKey:         string;
-  description:     string | null;
-  defaultValue:    boolean;
-  statusCode:      string;
-  governanceOwner: string | null;
-  retiredAt:       string | null;
-  createdAt:       string;
-  updatedAt:       string;
+  featureFlagId:       string;
+  flagKey:             string;
+  displayName:         string;
+  description:         string | null;
+  ownerModuleCode:     string;
+  statusCode:          string;
+  valueTypeCode:       string;
+  defaultVariantKey:   string;
+  createdBy:           string;
+  createdAt:           string;
+  updatedAt:           string;
+  variants:            FeatureFlagVariant[];
+  flagClassCode:       string;
+  riskClassCode:       string;
+  ownerContact:        string | null;
+  reviewDate:          string | null;
+  retirementCondition: string | null;
+  allowedScopeCodes:   string[];
+  nonBypassable:       boolean;
 }
 
 export interface FeatureFlagAssignment {
-  assignmentId:  string;
-  featureFlagId: string;
-  scopeTypeCode: string;
-  scopeId:       string | null;
-  value:         boolean;
-  expiresAt:     string | null;
-  createdAt:     string;
-}
-
-export interface FeatureFlagGovernance {
-  featureFlagId:    string;
-  approvedBy:       string | null;
-  approvedAt:       string | null;
-  rationale:        string | null;
-  reviewCycle:      string | null;
-  nextReviewAt:     string | null;
+  featureFlagAssignmentId:     string;
+  featureFlagId:               string;
+  tenantId:                    string | null;
+  environmentId:               string | null;
+  variantId:                   string | null;
+  roleCode:                    string | null;
+  cohortCode:                  string | null;
+  programmeId:                 string | null;
+  academicYear:                string | null;
+  sourceSystemCode:            string | null;
+  priority:                    number;
+  statusCode:                  string;
+  ruleExpression:              string | null;
+  configuration:               Record<string, unknown>;
+  activeFrom:                  string;
+  activeTo:                    string | null;
+  createdBy:                   string;
+  createdAt:                   string;
+  updatedAt:                   string;
 }
 
 export interface FeatureFlagImpact {
-  featureFlagId:    string;
-  affectedRuleIds:  string[];
-  affectedWorkflows: string[];
-  estimatedScope:   string | null;
+  activeAssignmentCount:      number;
+  activeTenantsCount:         number;
+  activeTenantIds:            string[];
+  referencingTriggerRuleKeys: string[];
+  currentDefaultVariantKey:   string;
+  currentDefaultValue:        unknown;
 }
 
 export function listFeatureFlags(): Promise<FeatureFlag[]> {
@@ -43,10 +66,11 @@ export function listFeatureFlags(): Promise<FeatureFlag[]> {
 }
 
 export function createFeatureFlag(body: {
-  flagKey:         string;
-  description?:    string;
-  defaultValue:    boolean;
-  governanceOwner?: string;
+  flagKey:          string;
+  displayName:      string;
+  ownerModuleCode:  string;
+  description?:     string;
+  defaultVariantKey?: string;
 }): Promise<{ featureFlagId: string }> {
   return api.post('/api/v1/feature-flags', body);
 }
@@ -57,7 +81,7 @@ export function getFeatureFlag(featureFlagId: string): Promise<FeatureFlag> {
 
 export function updateFeatureFlag(
   featureFlagId: string,
-  body: Partial<Pick<FeatureFlag, 'description' | 'defaultValue' | 'governanceOwner'>>,
+  body: { displayName?: string; description?: string; ownerModuleCode?: string; statusCode?: string; defaultVariantKey?: string },
 ): Promise<void> {
   return api.patch(`/api/v1/feature-flags/${featureFlagId}`, body);
 }
@@ -73,26 +97,18 @@ export function listFeatureFlagAssignments(featureFlagId: string): Promise<Featu
 export function createFeatureFlagAssignment(
   featureFlagId: string,
   body: {
-    scopeTypeCode: string;
-    scopeId?:      string;
-    value:         boolean;
-    expiresAt?:    string;
+    variantKey?:  string;
+    roleCode?:    string;
+    cohortCode?:  string;
+    programmeId?: string;
+    priority?:    number;
+    activeFrom?:  string;
+    activeTo?:    string;
   },
-): Promise<{ assignmentId: string }> {
+): Promise<{ featureFlagAssignmentId: string }> {
   return api.post(`/api/v1/feature-flags/${featureFlagId}/assignments`, body);
-}
-
-export function getFeatureFlagGovernance(featureFlagId: string): Promise<FeatureFlagGovernance> {
-  return api.get<FeatureFlagGovernance>(`/api/v1/feature-flags/${featureFlagId}/governance`);
 }
 
 export function getFeatureFlagImpact(featureFlagId: string): Promise<FeatureFlagImpact> {
   return api.get<FeatureFlagImpact>(`/api/v1/feature-flags/${featureFlagId}/impact`);
-}
-
-export function evaluateFeatureFlagPreview(
-  featureFlagId: string,
-  body: { context: Record<string, unknown> },
-): Promise<{ result: boolean; reason: string }> {
-  return api.post(`/api/v1/feature-flags/${featureFlagId}/evaluation-preview`, body);
 }

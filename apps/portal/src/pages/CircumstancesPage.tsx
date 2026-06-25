@@ -4,6 +4,7 @@ import { useAuth } from '../auth/AuthContext.js';
 import { useApiData } from '../hooks/useApiData.js';
 import {
   getEnrolments,
+  getModuleRegistrations,
   getExceptionalCircumstances,
   submitExceptionalCircumstances,
 } from '../api/me.js';
@@ -21,9 +22,17 @@ export function CircumstancesPage() {
 
   const currentEnrolment = enrolments?.find(e => e.statusCode === 'enrolled') ?? enrolments?.[0] ?? null;
 
+  const fetchRegistrations = useCallback(
+    () => currentEnrolment ? getModuleRegistrations(currentEnrolment.enrolmentId) : Promise.reject(new Error('')),
+    [currentEnrolment?.enrolmentId], // eslint-disable-line react-hooks/exhaustive-deps
+  );
+  const { data: registrations } = useApiData(currentEnrolment ? fetchRegistrations : null);
+
+  const [refreshKey, setRefreshKey] = useState(0);
+
   const fetchCircumstances = useCallback(
     () => personId ? getExceptionalCircumstances(personId, currentEnrolment?.enrolmentId) : Promise.reject(new Error('')),
-    [personId, currentEnrolment?.enrolmentId], // eslint-disable-line react-hooks/exhaustive-deps
+    [personId, currentEnrolment?.enrolmentId, refreshKey], // eslint-disable-line react-hooks/exhaustive-deps
   );
   const {
     data: circumstances,
@@ -34,11 +43,12 @@ export function CircumstancesPage() {
   const loading = eLoading || cLoading;
   const error   = eError ?? cError;
 
-  const [showForm,     setShowForm]     = useState(false);
-  const [description,  setDescription]  = useState('');
-  const [submitting,   setSubmitting]   = useState(false);
-  const [submitError,  setSubmitError]  = useState('');
-  const [successMsg,   setSuccessMsg]   = useState('');
+  const [showForm,           setShowForm]           = useState(false);
+  const [description,        setDescription]        = useState('');
+  const [moduleOfferingId,   setModuleOfferingId]   = useState('');
+  const [submitting,         setSubmitting]         = useState(false);
+  const [submitError,        setSubmitError]        = useState('');
+  const [successMsg,         setSuccessMsg]         = useState('');
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -48,12 +58,15 @@ export function CircumstancesPage() {
     setSuccessMsg('');
     try {
       await submitExceptionalCircumstances({
-        enrolmentId: currentEnrolment.enrolmentId,
-        description: description.trim(),
+        enrolmentId:      currentEnrolment.enrolmentId,
+        description:      description.trim(),
+        moduleOfferingId: moduleOfferingId || undefined,
       });
       setDescription('');
+      setModuleOfferingId('');
       setShowForm(false);
       setSuccessMsg(t('portal.circumstances.submitSuccess'));
+      setRefreshKey(k => k + 1);
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : 'Submission failed');
     } finally {
@@ -76,7 +89,7 @@ export function CircumstancesPage() {
         </div>
         {currentEnrolment && (
           <button
-            onClick={() => setShowForm(s => !s)}
+            onClick={() => { setShowForm(s => { if (s) { setModuleOfferingId(''); setDescription(''); } return !s; }); }}
             className="flex-none rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
           >
             {showForm ? t('actions.cancel') : t('portal.circumstances.submitButton')}
@@ -103,6 +116,27 @@ export function CircumstancesPage() {
           {submitError && <p className="text-sm text-red-700" role="alert">{submitError}</p>}
 
           <div>
+            <label htmlFor="ec-module" className="block text-sm font-medium text-gray-700 mb-1">
+              Related module <span className="font-normal text-gray-400">(optional)</span>
+            </label>
+            <select
+              id="ec-module"
+              value={moduleOfferingId}
+              onChange={e => setModuleOfferingId(e.target.value)}
+              className="block w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="">— Not module-specific —</option>
+              {(registrations ?? [])
+                .filter(r => r.statusCode === 'registered')
+                .map(r => (
+                  <option key={r.moduleOfferingId} value={r.moduleOfferingId}>
+                    {r.moduleCode} — {r.moduleTitle}
+                  </option>
+                ))}
+            </select>
+          </div>
+
+          <div>
             <label htmlFor="ec-description" className="block text-sm font-medium text-gray-700 mb-1">
               {t('portal.circumstances.descriptionLabel')}
             </label>
@@ -127,7 +161,7 @@ export function CircumstancesPage() {
             </button>
             <button
               type="button"
-              onClick={() => setShowForm(false)}
+              onClick={() => { setShowForm(false); setModuleOfferingId(''); setDescription(''); }}
               className="text-sm text-gray-500 hover:text-gray-800"
             >
               {t('actions.cancel')}

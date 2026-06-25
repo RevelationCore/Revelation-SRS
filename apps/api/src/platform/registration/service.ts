@@ -39,7 +39,11 @@ export interface ModuleRegistrationDto {
   enrolmentId: string;
   moduleOfferingId: string;
   moduleId: string;
+  moduleCode: string;
+  moduleTitle: string;
   academicPeriodId: string;
+  periodCode: string;
+  creditValue: number | null;
   statusCode: string;
   registrationDate: string;
   validFrom: Date;
@@ -78,8 +82,6 @@ interface OfferingContext {
   academicPeriodId: string;
   capacity: number | null;
   creditValue: number | null;
-  periodStartDate: string;
-  periodEndDate: string;
 }
 
 export class ModuleRegistrationService {
@@ -105,7 +107,6 @@ export class ModuleRegistrationService {
       );
     }
 
-    this.#validateRegistrationWindow(registrationDate, offering);
     await this.#ensureNoDuplicateCurrentRegistration(input.enrolmentId, input.moduleOfferingId, tenantId);
     await this.#ensureCapacityAvailable(input.moduleOfferingId, offering.capacity, tenantId);
     await this.#ensureModuleRulesSatisfied(input.enrolmentId, offering, tenantId);
@@ -158,37 +159,43 @@ export class ModuleRegistrationService {
     const rows = await withTenantContext(this.db, tenantId, async (tx) =>
       tx
         .select({
-          registration: moduleRegistrations,
-          moduleId: moduleOfferings.moduleId,
+          registration:    moduleRegistrations,
+          moduleId:        moduleOfferings.moduleId,
+          moduleCode:      modules.code,
+          moduleTitle:     modules.title,
+          creditValue:     modules.creditValue,
           academicPeriodId: moduleOfferings.academicPeriodId,
+          periodCode:      academicPeriods.periodCode,
         })
         .from(moduleRegistrations)
-        .innerJoin(moduleOfferings, eq(moduleRegistrations.moduleOfferingId, moduleOfferings.id))
+        .innerJoin(moduleOfferings,  eq(moduleRegistrations.moduleOfferingId, moduleOfferings.id))
+        .innerJoin(modules,          eq(moduleOfferings.moduleId,             modules.id))
+        .innerJoin(academicPeriods,  eq(moduleOfferings.academicPeriodId,     academicPeriods.id))
         .where(
           and(
-            eq(moduleRegistrations.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
-            eq(moduleOfferings.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
+            eq(moduleRegistrations.tenantId,  tenantId as `${string}-${string}-${string}-${string}-${string}`),
+            eq(moduleOfferings.tenantId,      tenantId as `${string}-${string}-${string}-${string}-${string}`),
             isNull(moduleRegistrations.recordedUntil),
-            ...(opts.enrolmentId ? [eq(moduleRegistrations.enrolmentId, opts.enrolmentId as `${string}-${string}-${string}-${string}-${string}`)] : []),
+            ...(opts.enrolmentId     ? [eq(moduleRegistrations.enrolmentId,    opts.enrolmentId     as `${string}-${string}-${string}-${string}-${string}`)] : []),
             ...(opts.moduleOfferingId ? [eq(moduleRegistrations.moduleOfferingId, opts.moduleOfferingId as `${string}-${string}-${string}-${string}-${string}`)] : []),
-            ...(opts.statusCode ? [eq(moduleRegistrations.statusCode, opts.statusCode)] : []),
+            ...(opts.statusCode      ? [eq(moduleRegistrations.statusCode,      opts.statusCode)] : []),
           ),
         )
         .orderBy(moduleRegistrations.registrationDate),
     );
 
-    return rows.map((row) => registrationToDto(row.registration, row.moduleId, row.academicPeriodId));
+    return rows.map((row) => registrationToDto(row.registration, row.moduleId, row.moduleCode, row.moduleTitle, row.academicPeriodId, row.periodCode, row.creditValue ?? null));
   }
 
   async getRegistration(moduleRegistrationId: string, tenantId: string): Promise<ModuleRegistrationDto | null> {
     const rows = await this.#selectRegistration(moduleRegistrationId, tenantId, true);
     const row = rows[0];
-    return row ? registrationToDto(row.registration, row.moduleId, row.academicPeriodId) : null;
+    return row ? registrationToDto(row.registration, row.moduleId, row.moduleCode, row.moduleTitle, row.academicPeriodId, row.periodCode, row.creditValue ?? null) : null;
   }
 
   async getRegistrationHistory(moduleRegistrationId: string, tenantId: string): Promise<ModuleRegistrationDto[]> {
     const rows = await this.#selectRegistration(moduleRegistrationId, tenantId, false);
-    return rows.map((row) => registrationToDto(row.registration, row.moduleId, row.academicPeriodId));
+    return rows.map((row) => registrationToDto(row.registration, row.moduleId, row.moduleCode, row.moduleTitle, row.academicPeriodId, row.periodCode, row.creditValue ?? null));
   }
 
   async withdrawRegistration(
@@ -366,17 +373,13 @@ export class ModuleRegistrationService {
           academicPeriodId: moduleOfferings.academicPeriodId,
           capacity:         moduleOfferings.capacity,
           creditValue:      modules.creditValue,
-          periodStartDate:  academicPeriods.startDate,
-          periodEndDate:    academicPeriods.endDate,
         })
         .from(moduleOfferings)
-        .innerJoin(academicPeriods, eq(moduleOfferings.academicPeriodId, academicPeriods.id))
         .innerJoin(modules, eq(moduleOfferings.moduleId, modules.id))
         .where(
           and(
             eq(moduleOfferings.id, moduleOfferingId as `${string}-${string}-${string}-${string}-${string}`),
             eq(moduleOfferings.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
-            eq(academicPeriods.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
             eq(modules.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
             isNull(modules.recordedUntil),
           ),
@@ -445,15 +448,6 @@ export class ModuleRegistrationService {
     );
 
     return rows.reduce((sum, row) => sum + (row.creditValue ?? 0), 0);
-  }
-
-  #validateRegistrationWindow(registrationDate: string, offering: OfferingContext): void {
-    if (registrationDate < offering.periodStartDate || registrationDate > offering.periodEndDate) {
-      throw new ValidationError(
-        'Registration date is outside the academic period registration window',
-        [{ field: 'registrationDate', message: 'Date must fall within the offering academic period' }],
-      );
-    }
   }
 
   async #ensureNoDuplicateCurrentRegistration(
@@ -608,17 +602,23 @@ export class ModuleRegistrationService {
     return withTenantContext(this.db, tenantId, async (tx) =>
       tx
         .select({
-          registration: moduleRegistrations,
-          moduleId: moduleOfferings.moduleId,
+          registration:    moduleRegistrations,
+          moduleId:        moduleOfferings.moduleId,
+          moduleCode:      modules.code,
+          moduleTitle:     modules.title,
+          creditValue:     modules.creditValue,
           academicPeriodId: moduleOfferings.academicPeriodId,
+          periodCode:      academicPeriods.periodCode,
         })
         .from(moduleRegistrations)
-        .innerJoin(moduleOfferings, eq(moduleRegistrations.moduleOfferingId, moduleOfferings.id))
+        .innerJoin(moduleOfferings,  eq(moduleRegistrations.moduleOfferingId, moduleOfferings.id))
+        .innerJoin(modules,          eq(moduleOfferings.moduleId,             modules.id))
+        .innerJoin(academicPeriods,  eq(moduleOfferings.academicPeriodId,     academicPeriods.id))
         .where(
           and(
-            eq(moduleRegistrations.id, moduleRegistrationId as `${string}-${string}-${string}-${string}-${string}`),
-            eq(moduleRegistrations.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
-            eq(moduleOfferings.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
+            eq(moduleRegistrations.id,       moduleRegistrationId as `${string}-${string}-${string}-${string}-${string}`),
+            eq(moduleRegistrations.tenantId, tenantId             as `${string}-${string}-${string}-${string}-${string}`),
+            eq(moduleOfferings.tenantId,     tenantId             as `${string}-${string}-${string}-${string}-${string}`),
             ...(currentOnly ? [isNull(moduleRegistrations.recordedUntil)] : []),
           ),
         )
@@ -630,14 +630,22 @@ export class ModuleRegistrationService {
 function registrationToDto(
   row: typeof moduleRegistrations.$inferSelect,
   moduleId: string,
+  moduleCode: string,
+  moduleTitle: string,
   academicPeriodId: string,
+  periodCode: string,
+  creditValue: number | null,
 ): ModuleRegistrationDto {
   return {
     moduleRegistrationId: row.id,
     enrolmentId: row.enrolmentId,
     moduleOfferingId: row.moduleOfferingId,
     moduleId,
+    moduleCode,
+    moduleTitle,
     academicPeriodId,
+    periodCode,
+    creditValue,
     statusCode: row.statusCode,
     registrationDate: row.registrationDate,
     validFrom: row.validFrom,

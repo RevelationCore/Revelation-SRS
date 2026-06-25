@@ -80,8 +80,25 @@ export function generateUcasConfirmations(): Promise<void> {
 
 // ── SLC ──────────────────────────────────────────────────────────────────────
 
-export function generateSlcConfirmations(): Promise<void> {
-  return api.post('/api/v1/regulatory/slc/confirmations/generate', {});
+export interface SlcConfirmationRecord {
+  triggerId:        string;
+  enrolmentId:      string;
+  slcReference:     string;
+  programmeId:      string | null;
+  modeOfStudyCode:  string;
+  confirmationType: 'enrolment' | 'withdrawal' | 'intermission';
+  feeAmount:        string | null;
+  startDate:        string;
+  expectedEndDate:  string | null;
+}
+
+export function generateSlcConfirmations(opts: { dryRun?: boolean } = {}): Promise<{
+  processedCount: number;
+  dryRun: boolean;
+  payload: { confirmations: SlcConfirmationRecord[] };
+}> {
+  const qs = opts.dryRun ? '?dryRun=true' : '';
+  return api.post(`/api/v1/regulatory/slc/confirmations/generate${qs}`, {});
 }
 
 // ── UKVI ─────────────────────────────────────────────────────────────────────
@@ -130,20 +147,24 @@ export function resolveComplianceAlert(alertId: string): Promise<void> {
 // ── OfS ──────────────────────────────────────────────────────────────────────
 
 export interface OfsB3Extract {
-  extractId:   string;
-  statusCode:  string;
-  generatedAt: string | null;
-  generatedBy: string | null;
+  extractId:       string;
+  extractTypeCode: string;
+  academicYear:    string;
+  statusCode:      string;
+  generatedAt:     string | null;
+  generatedBy:     string | null;
+  recordCount:     number;
+  payload:         Record<string, unknown>;
 }
 
-export function generateOfsB3Extract(): Promise<{ extractId: string }> {
-  return api.post('/api/v1/regulatory/ofs/b3-extracts', {});
+export function generateOfsB3Extract(academicYear: string): Promise<{ extractId: string }> {
+  return api.post('/api/v1/regulatory/ofs/b3-extracts', { academicYear });
 }
 
 export function getOfsB3Extract(extractId: string): Promise<OfsB3Extract> {
   return api.get<OfsB3Extract>(`/api/v1/regulatory/ofs/b3-extracts/${extractId}`);
 }
 
-export function generateOfsParticipationReport(): Promise<void> {
-  return api.post('/api/v1/regulatory/ofs/participation-reports', {});
+export function generateOfsParticipationReport(academicYear: string): Promise<{ extractId: string; recordCount: number; payload: Record<string, unknown> }> {
+  return api.post('/api/v1/regulatory/ofs/participation-reports', { academicYear });
 }

@@ -1,36 +1,55 @@
 import { api } from './client.js';
 
+export interface WorkflowStep {
+  stepKey:       string;
+  stepTypeCode:  string;
+  displayName:   string;
+  ownerRoleCode: string | null;
+  sortOrder:     number;
+}
+
 export interface WorkflowDefinition {
-  workflowDefinitionId: string;
-  workflowTypeCode:     string;
-  name:                 string;
-  description:          string | null;
-  isEnabled:            boolean;
-  currentVersionId:     string | null;
-  createdAt:            string;
-  updatedAt:            string;
+  workflowDefinitionId:   string;
+  tenantId:               string | null;
+  definitionCode:         string;
+  displayName:            string;
+  description:            string | null;
+  statusCode:             string;
+  currentVersionNumber:   number | null;
+  ownerModuleCode:        string;
+  createdBy:              string;
+  createdAt:              string;
+  updatedAt:              string;
 }
 
 export interface WorkflowDefinitionVersion {
   workflowDefinitionVersionId: string;
-  workflowDefinitionId:         string;
-  versionNumber:                number;
-  definition:                   Record<string, unknown>;
-  isCurrent:                    boolean;
-  publishedAt:                  string | null;
-  publishedBy:                  string | null;
-  createdAt:                    string;
+  workflowDefinitionId:        string;
+  versionNumber:               number;
+  statusCode:                  string;
+  definitionJson:              Record<string, unknown>;
+  bpmnSourceId:                string | null;
+  effectiveFrom:               string | null;
+  effectiveTo:                 string | null;
+  createdBy:                   string;
+  createdAt:                   string;
+  steps:                       WorkflowStep[];
 }
 
 export interface WorkflowAssignmentRule {
-  assignmentRuleId:  string;
-  workflowTypeCode:  string;
-  stepKey:           string;
-  assigneeRoleCode:  string;
-  priority:          number;
-  conditions:        Record<string, unknown> | null;
-  isEnabled:         boolean;
-  createdAt:         string;
+  workflowAssignmentRuleId:    string;
+  tenantId:                    string | null;
+  definitionCode:              string;
+  workflowDefinitionVersionId: string;
+  stepKey:                     string;
+  ruleKey:                     string;
+  priority:                    number;
+  roleCode:                    string | null;
+  assigneeRoleCode:            string | null;
+  assigneeExpression:          string | null;
+  configuration:               Record<string, unknown>;
+  active:                      boolean;
+  createdAt:                   string;
 }
 
 export function listWorkflowDefinitions(): Promise<WorkflowDefinition[]> {
@@ -38,9 +57,9 @@ export function listWorkflowDefinitions(): Promise<WorkflowDefinition[]> {
 }
 
 export function createWorkflowDefinition(body: {
-  workflowTypeCode: string;
-  name:             string;
-  description?:     string;
+  definitionCode: string;
+  displayName:    string;
+  description?:   string;
 }): Promise<{ workflowDefinitionId: string }> {
   return api.post('/api/v1/workflow-definitions', body);
 }
@@ -51,20 +70,13 @@ export function getWorkflowDefinition(workflowDefinitionId: string): Promise<Wor
 
 export function updateWorkflowDefinition(
   workflowDefinitionId: string,
-  body: Partial<Pick<WorkflowDefinition, 'name' | 'description' | 'isEnabled'>>,
+  body: { statusCode?: string; displayName?: string; description?: string },
 ): Promise<void> {
   return api.patch(`/api/v1/workflow-definitions/${workflowDefinitionId}`, body);
 }
 
 export function listWorkflowDefinitionVersions(workflowDefinitionId: string): Promise<WorkflowDefinitionVersion[]> {
   return api.get<WorkflowDefinitionVersion[]>(`/api/v1/workflow-definitions/${workflowDefinitionId}/versions`);
-}
-
-export function createWorkflowDefinitionVersion(
-  workflowDefinitionId: string,
-  body: { definition: Record<string, unknown> },
-): Promise<{ workflowDefinitionVersionId: string }> {
-  return api.post(`/api/v1/workflow-definitions/${workflowDefinitionId}/versions`, body);
 }
 
 export function getWorkflowDefinitionVersion(versionId: string): Promise<WorkflowDefinitionVersion> {
@@ -76,11 +88,11 @@ export function listWorkflowAssignmentRules(): Promise<WorkflowAssignmentRule[]>
 }
 
 export function createWorkflowAssignmentRule(body: {
-  workflowTypeCode: string;
-  stepKey:          string;
-  assigneeRoleCode: string;
-  priority?:        number;
-  conditions?:      Record<string, unknown>;
-}): Promise<{ assignmentRuleId: string }> {
+  workflowDefinitionVersionId: string;
+  stepKey:                     string;
+  ruleKey:                     string;
+  assigneeRoleCode?:           string;
+  priority?:                   number;
+}): Promise<{ workflowAssignmentRuleId: string }> {
   return api.post('/api/v1/workflow-assignment-rules', body);
 }

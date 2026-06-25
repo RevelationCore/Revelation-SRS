@@ -134,6 +134,25 @@ export function examBoardRoutes(fastify: FastifyInstance): void {
   );
 
   fastify.get(
+    '/exam-boards',
+    {
+      schema: {
+        querystring: Type.Object({
+          academicYear: Type.Optional(Type.String()),
+        }),
+        response: { 200: Type.Array(ExamBoardSchema) },
+      },
+      preHandler: [requirePermission('exam-board:read')],
+    },
+    async (request, reply) => {
+      const { academicYear } = request.query as { academicYear?: string };
+      const opts = academicYear ? { academicYear } : {};
+      const boards = await fastify.boardService.listExamBoards(request.tenantId, opts);
+      await reply.send(boards.map(boardToWire));
+    },
+  );
+
+  fastify.get(
     '/exam-boards/:boardId',
     {
       schema: {

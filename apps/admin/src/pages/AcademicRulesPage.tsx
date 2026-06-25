@@ -7,11 +7,14 @@ import {
   listAcademicRules,
 } from '../api/academicRules.js';
 import { ApiError } from '../api/client.js';
+import { useAuth } from '../auth/AuthContext.js';
 import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
 import { useValueSet } from '../hooks/useValueSet.js';
 
 export function AcademicRulesPage() {
+  const { roles }              = useAuth();
+  const canWrite               = roles.includes('tenant-administrator') || roles.includes('system-administrator');
   const { members: ruleTypes } = useValueSet('academic_rule', 'rule_type_code');
   const [rules,       setRules]       = useState<AcademicRule[]>([]);
   const [loading,     setLoading]     = useState(true);
@@ -73,6 +76,12 @@ export function AcademicRulesPage() {
     <div>
       <h1 className="text-xl font-semibold text-gray-900 mb-4">Academic rules</h1>
 
+      {!canWrite && (
+        <p className="mb-4 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2">
+          You have read-only access to academic rules.
+        </p>
+      )}
+
       <div className="flex items-center justify-between mb-4">
         <form onSubmit={handleFilter} className="flex items-center gap-3">
           <select
@@ -92,12 +101,14 @@ export function AcademicRulesPage() {
             </button>
           )}
         </form>
-        <button
-          onClick={() => setShowCreate(true)}
-          className="rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
-        >
-          New rule
-        </button>
+        {canWrite && (
+          <button
+            onClick={() => setShowCreate(true)}
+            className="rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+          >
+            New rule
+          </button>
+        )}
       </div>
 
       {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
@@ -115,7 +126,7 @@ export function AcademicRulesPage() {
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Effective from</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Effective to</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">v</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Recorded</th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
@@ -123,13 +134,13 @@ export function AcademicRulesPage() {
               {rules.map(r => (
                 <tr key={r.academicRuleId} className="hover:bg-gray-50">
                   <td className="px-4 py-3">
-                    <p className="font-medium text-gray-900">{r.name}</p>
+                    <p className="font-medium text-gray-900">{r.ruleKey}</p>
                     {r.description && <p className="text-xs text-gray-400">{r.description}</p>}
                   </td>
                   <td className="px-4 py-3"><Badge value={r.ruleTypeCode} /></td>
-                  <td className="px-4 py-3 text-gray-600 text-xs">{r.effectiveFrom}</td>
-                  <td className="px-4 py-3 text-gray-500 text-xs">{r.effectiveTo ?? '—'}</td>
-                  <td className="px-4 py-3 text-gray-500 text-xs">{r.version}</td>
+                  <td className="px-4 py-3 text-gray-600 text-xs">{r.validFrom ? new Date(r.validFrom).toLocaleDateString('en-GB') : '—'}</td>
+                  <td className="px-4 py-3 text-gray-500 text-xs">{r.validTo ? new Date(r.validTo).toLocaleDateString('en-GB') : '—'}</td>
+                  <td className="px-4 py-3 text-gray-500 text-xs">{r.recordedAt ? new Date(r.recordedAt).toLocaleDateString('en-GB') : '—'}</td>
                   <td className="px-4 py-3 text-right">
                     <span className="inline-flex items-center gap-3">
                       <button
@@ -138,26 +149,28 @@ export function AcademicRulesPage() {
                       >
                         History
                       </button>
-                      {confirmDel === r.academicRuleId ? (
-                        <span className="inline-flex items-center gap-2">
+                      {canWrite && (
+                        confirmDel === r.academicRuleId ? (
+                          <span className="inline-flex items-center gap-2">
+                            <button
+                              onClick={() => void handleDelete(r.academicRuleId)}
+                              disabled={deleting === r.academicRuleId}
+                              className="text-xs font-medium text-red-600 hover:text-red-800 disabled:opacity-50"
+                            >
+                              {deleting === r.academicRuleId ? 'Deleting…' : 'Confirm delete'}
+                            </button>
+                            <button onClick={() => setConfirmDel(null)} className="text-xs text-gray-500">
+                              Cancel
+                            </button>
+                          </span>
+                        ) : (
                           <button
-                            onClick={() => void handleDelete(r.academicRuleId)}
-                            disabled={deleting === r.academicRuleId}
-                            className="text-xs font-medium text-red-600 hover:text-red-800 disabled:opacity-50"
+                            onClick={() => setConfirmDel(r.academicRuleId)}
+                            className="text-xs text-red-400 hover:text-red-600"
                           >
-                            {deleting === r.academicRuleId ? 'Deleting…' : 'Confirm delete'}
+                            Delete
                           </button>
-                          <button onClick={() => setConfirmDel(null)} className="text-xs text-gray-500">
-                            Cancel
-                          </button>
-                        </span>
-                      ) : (
-                        <button
-                          onClick={() => setConfirmDel(r.academicRuleId)}
-                          className="text-xs text-red-400 hover:text-red-600"
-                        >
-                          Delete
-                        </button>
+                        )
                       )}
                     </span>
                   </td>
@@ -168,7 +181,7 @@ export function AcademicRulesPage() {
         </div>
       )}
 
-      {showCreate && (
+      {canWrite && showCreate && (
         <CreateRuleModal onClose={() => setShowCreate(false)} onCreated={handleCreated} ruleTypes={ruleTypes} />
       )}
 
@@ -200,24 +213,23 @@ function CreateRuleModal({
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const fd            = new FormData(e.currentTarget);
-    const ruleTypeCode  = String(fd.get('ruleTypeCode')  ?? '');
-    const name          = String(fd.get('name')          ?? '').trim();
-    const description   = String(fd.get('description')   ?? '').trim();
-    const effectiveFrom = String(fd.get('effectiveFrom') ?? '').trim();
-    const effectiveTo   = String(fd.get('effectiveTo')   ?? '').trim();
-    const definitionRaw = String(fd.get('definition')    ?? '').trim();
+    const fd           = new FormData(e.currentTarget);
+    const ruleTypeCode = String(fd.get('ruleTypeCode') ?? '');
+    const ruleKey      = String(fd.get('ruleKey')      ?? '').trim();
+    const description  = String(fd.get('description')  ?? '').trim();
+    const validFrom    = String(fd.get('validFrom')    ?? '').trim();
+    const ruleValueRaw = String(fd.get('ruleValue')    ?? '').trim();
 
-    if (!name || !effectiveFrom || !definitionRaw) {
-      setError('Name, effective from, and definition are required.');
+    if (!ruleKey || !ruleValueRaw) {
+      setError('Rule key and rule value (JSON) are required.');
       return;
     }
 
-    let definition: Record<string, unknown>;
+    let ruleValue: Record<string, unknown>;
     try {
-      definition = JSON.parse(definitionRaw) as Record<string, unknown>;
+      ruleValue = JSON.parse(ruleValueRaw) as Record<string, unknown>;
     } catch {
-      setError('Definition must be valid JSON.');
+      setError('Rule value must be valid JSON.');
       return;
     }
 
@@ -225,11 +237,10 @@ function CreateRuleModal({
     try {
       await createAcademicRule({
         ruleTypeCode,
-        name,
-        ...(description   ? { description }   : {}),
-        definition,
-        effectiveFrom,
-        ...(effectiveTo   ? { effectiveTo }    : {}),
+        ruleKey,
+        ...(description ? { description } : {}),
+        ruleValue,
+        ...(validFrom   ? { validFrom }   : {}),
       });
       onCreated();
     } catch (err) {
@@ -250,16 +261,15 @@ function CreateRuleModal({
               {ruleTypes.map(({ code, displayLabel }) => <option key={code} value={code}>{displayLabel}</option>)}
             </select>
           </div>
-          <ModalField name="name"          label="Name *" />
-          <ModalField name="description"   label="Description" />
-          <ModalField name="effectiveFrom" label="Effective from * (YYYY-MM-DD)" />
-          <ModalField name="effectiveTo"   label="Effective to (YYYY-MM-DD, optional)" />
+          <ModalField name="ruleKey"     label="Rule key *" />
+          <ModalField name="description" label="Description" />
+          <ModalField name="validFrom"   label="Valid from (YYYY-MM-DD, optional)" />
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Definition (JSON) *</label>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Rule value (JSON) *</label>
             <textarea
-              name="definition"
+              name="ruleValue"
               rows={4}
-              placeholder='{"type": "progression", ...}'
+              placeholder='{"threshold": 0.5, ...}'
               className="w-full rounded border border-gray-300 px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
@@ -297,7 +307,7 @@ function HistoryModal({
     <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={onClose}>
       <div className="bg-white rounded-lg border border-gray-200 p-6 w-full max-w-2xl shadow-xl max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-semibold text-gray-900">History — {rule.name}</h2>
+          <h2 className="text-base font-semibold text-gray-900">History — {rule.ruleKey}</h2>
           <button onClick={onClose} className="text-sm text-gray-500">Close</button>
         </div>
         {loading ? (
@@ -309,12 +319,12 @@ function HistoryModal({
             {history.map((h, i) => (
               <div key={i} className="rounded-lg border border-gray-100 p-3">
                 <div className="flex items-center gap-3 text-xs text-gray-500 mb-1">
-                  <span>v{h.version}</span>
-                  <span>Effective {h.effectiveFrom}{h.effectiveTo ? ` → ${h.effectiveTo}` : ''}</span>
-                  <span>Updated {new Date(h.updatedAt).toLocaleDateString('en-GB')}</span>
+                  <span className="font-mono">{h.ruleKey}</span>
+                  <span>Effective {h.validFrom ? new Date(h.validFrom).toLocaleDateString('en-GB') : '—'}{h.validTo ? ` → ${new Date(h.validTo).toLocaleDateString('en-GB')}` : ''}</span>
+                  <span>Recorded {new Date(h.recordedAt).toLocaleDateString('en-GB')}</span>
                 </div>
                 <pre className="text-xs text-gray-700 font-mono whitespace-pre-wrap">
-                  {JSON.stringify(h.definition, null, 2)}
+                  {JSON.stringify(h.ruleValue, null, 2)}
                 </pre>
               </div>
             ))}

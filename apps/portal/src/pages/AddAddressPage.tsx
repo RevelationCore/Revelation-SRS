@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../auth/AuthContext.js';
 import { useApiData } from '../hooks/useApiData.js';
 import { useFormSubmit } from '../hooks/useFormSubmit.js';
-import { postAddress, getFieldValueSet } from '../api/me.js';
+import { postAddress, getFieldValueSet, type StudentAddress } from '../api/me.js';
 import { Problem, Field, Spinner } from '@revelation-srs/ui';
 
 const schema = z.object({
@@ -26,6 +26,10 @@ export function AddAddressPage() {
   const navigate = useNavigate();
   const { personId } = useAuth();
 
+  const location = useLocation();
+  const existing = (location.state as { existing?: StudentAddress } | null)?.existing ?? null;
+  const isEdit   = existing !== null;
+
   const fetchAddressTypes = useCallback(
     () => getFieldValueSet('student_address', 'address_type_code'),
     [],
@@ -35,7 +39,14 @@ export function AddAddressPage() {
 
   const { register, handleSubmit, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { addressTypeCode: '' },
+    defaultValues: {
+      addressTypeCode: existing?.addressTypeCode ?? '',
+      line1:           existing?.line1           ?? '',
+      line2:           existing?.line2           ?? '',
+      city:            existing?.city            ?? '',
+      postcode:        existing?.postcode        ?? '',
+      countryCode:     existing?.countryCode     ?? '',
+    },
   });
 
   const { submitting, submitError, submit } = useFormSubmit<{ addressId: string }>();
@@ -55,18 +66,22 @@ export function AddAddressPage() {
     if (result !== undefined) navigate('/profile');
   };
 
+  const heading    = isEdit ? 'Update address'     : t('portal.address.addHeading');
+  const subheading = isEdit ? 'Change the details below and save to update this address.' : t('portal.address.addSubheading');
+  const submitLabel = isEdit ? 'Update address' : t('portal.address.addButton');
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">{t('portal.address.addHeading')}</h1>
-        <p className="mt-1 text-sm text-gray-500">{t('portal.address.addSubheading')}</p>
+        <h1 className="text-2xl font-bold text-gray-900">{heading}</h1>
+        <p className="mt-1 text-sm text-gray-500">{subheading}</p>
       </div>
 
       {submitError && <Problem title={t('status.error')} detail={submitError} />}
 
       <form onSubmit={handleSubmit(onSubmit)} noValidate>
         <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm space-y-4">
-          {/* Address type selector */}
+          {/* Address type */}
           <div className="space-y-1">
             <label htmlFor="addressTypeCode" className="block text-sm font-medium text-gray-700">
               {t('portal.address.typeLabel')} <span className="text-red-500" aria-hidden="true">*</span>
@@ -75,6 +90,15 @@ export function AddAddressPage() {
               <div className="flex items-center gap-2 py-2 text-sm text-gray-500">
                 <Spinner size="sm" /> Loading address types…
               </div>
+            ) : isEdit ? (
+              /* Lock type when editing — service upserts by type */
+              <>
+                <input type="hidden" {...register('addressTypeCode')} />
+                <p className="rounded border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
+                  {addressTypes.find(m => m.code === existing?.addressTypeCode)?.displayLabel
+                    ?? existing?.addressTypeCode}
+                </p>
+              </>
             ) : (
               <select
                 id="addressTypeCode"
@@ -130,9 +154,7 @@ export function AddAddressPage() {
             disabled={submitting || vsLoading}
             className="inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
           >
-            {submitting
-              ? <><Spinner size="sm" />{t('status.saving')}</>
-              : t('portal.address.addButton')}
+            {submitting ? <><Spinner size="sm" />{t('status.saving')}</> : submitLabel}
           </button>
           <button
             type="button"

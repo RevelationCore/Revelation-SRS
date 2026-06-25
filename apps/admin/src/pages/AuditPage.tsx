@@ -8,7 +8,7 @@ import { useAuth } from '../auth/AuthContext.js';
 import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
 
-const AUDIT_ROLES = ['dpo', 'system-administrator', 'wellbeing-auditor'];
+const AUDIT_ROLES = ['dpo', 'system-administrator', 'registry-administrator', 'wellbeing-auditor'];
 
 export function AuditPage() {
   const { roles } = useAuth();
@@ -34,7 +34,7 @@ export function AuditPage() {
         <div className="rounded-lg border border-gray-200 bg-white p-8 text-center">
           <p className="text-sm text-gray-500">
             Audit log access requires the <strong>dpo</strong>, <strong>system-administrator</strong>,
-            or <strong>wellbeing-auditor</strong> role.
+            <strong>registry-administrator</strong>, or <strong>wellbeing-auditor</strong> role.
           </p>
         </div>
       )}

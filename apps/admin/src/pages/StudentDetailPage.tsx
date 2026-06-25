@@ -3,11 +3,13 @@ import { Link, useParams } from 'react-router-dom';
 import {
   type IdentityPatch,
   type Student,
+  type StudentNotification,
   type PersonStatusCode,
   getStudent,
   updateStudentIdentity,
   updateHesaId,
   updatePersonStatus,
+  listStudentNotifications,
 } from '../api/students.js';
 import {
   type CorrectionCase,
@@ -36,12 +38,20 @@ import {
   listModuleRegistrations,
   withdrawRegistration,
 } from '../api/registrations.js';
+import {
+  type Mark,
+  type ModuleResult,
+  type AssessmentComponent,
+  listMarks,
+  getModuleResult,
+  listComponents,
+} from '../api/marks.js';
 import { ApiError } from '../api/client.js';
 import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
 import { useValueSet } from '../hooks/useValueSet.js';
 
-type Tab = 'identity' | 'enrolments' | 'registrations' | 'history' | 'corrections';
+type Tab = 'identity' | 'enrolments' | 'registrations' | 'assessment' | 'history' | 'corrections' | 'communications';
 
 export function StudentDetailPage() {
   const { personId } = useParams<{ personId: string }>();
@@ -93,7 +103,7 @@ export function StudentDetailPage() {
 
       {/* Tabs */}
       <div className="border-b border-gray-200 mb-6">
-        {(['identity', 'enrolments', 'registrations', 'history', 'corrections'] as Tab[]).map((t) => (
+        {(['identity', 'enrolments', 'registrations', 'assessment', 'history', 'corrections', 'communications'] as Tab[]).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -117,11 +127,17 @@ export function StudentDetailPage() {
       {tab === 'registrations' && personId && (
         <RegistrationsTab personId={personId} />
       )}
+      {tab === 'assessment' && personId && (
+        <AssessmentTab personId={personId} />
+      )}
       {tab === 'history' && personId && (
         <HistoryTab personId={personId} />
       )}
       {tab === 'corrections' && personId && (
         <CorrectionsTab personId={personId} />
+      )}
+      {tab === 'communications' && personId && (
+        <CommunicationsTab personId={personId} />
       )}
     </div>
   );
@@ -134,6 +150,7 @@ function IdentityTab({ student, onUpdated }: { student: Student; onUpdated: () =
   const [editHesa, setEditHesa]   = useState(false);
   const [saving, setSaving]       = useState(false);
   const [error, setError]         = useState('');
+  const { members: nationalities } = useValueSet('person_identity', 'nationality_code');
   const id = student.identity;
 
   async function handleIdentitySave(e: FormEvent<HTMLFormElement>) {
@@ -220,6 +237,14 @@ function IdentityTab({ student, onUpdated }: { student: Student; onUpdated: () =
             <IdentityRow label="Legal name"   value={id ? `${id.legalFirstName} ${id.legalFamilyName}` : '—'} />
             <IdentityRow label="Preferred"    value={id?.preferredName} />
             <IdentityRow label="Date of birth" value={id?.dateOfBirth} />
+            <IdentityRow
+              label="Nationality"
+              value={
+                id?.nationalityCode
+                  ? (nationalities.find(n => n.code === id.nationalityCode)?.displayLabel ?? id.nationalityCode)
+                  : undefined
+              }
+            />
             <IdentityRow label="Email (inst.)" value={id?.emailInstitutional} />
             <IdentityRow label="Email (pers.)" value={id?.emailPersonal} />
             <IdentityRow label="Mobile"        value={id?.phoneMobile} />
@@ -835,6 +860,157 @@ function RegistrationsTab({ personId }: { personId: string }) {
   );
 }
 
+// ── Assessment tab ────────────────────────────────────────────────────────────
+
+interface AssessmentRow {
+  registration: ModuleRegistration;
+  marks:        Mark[];
+  components:   Map<string, AssessmentComponent>;
+  result:       ModuleResult | null;
+  error:        string;
+}
+
+function AssessmentTab({ personId }: { personId: string }) {
+  const [enrolments,          setEnrolments]          = useState<Enrolment[]>([]);
+  const [selectedEnrolmentId, setSelectedEnrolmentId] = useState('');
+  const [rows,                setRows]                = useState<AssessmentRow[]>([]);
+  const [loading,             setLoading]             = useState(true);
+  const [error,               setError]               = useState('');
+
+  const loadAll = useCallback(async (enrolmentId: string) => {
+    if (!enrolmentId) return;
+    setLoading(true); setError('');
+    try {
+      const regs = await listAllModuleRegistrations(enrolmentId);
+      const loaded = await Promise.all(
+        regs.map(async (reg) => {
+          try {
+            const [marks, result, comps] = await Promise.all([
+              listMarks(reg.moduleRegistrationId),
+              getModuleResult(reg.moduleRegistrationId).catch(() => null),
+              listComponents(reg.moduleOfferingId).catch(() => [] as AssessmentComponent[]),
+            ]);
+            const components = new Map(comps.map(c => [c.assessmentComponentId, c]));
+            return { registration: reg, marks, components, result, error: '' };
+          } catch (e) {
+            const msg = e instanceof ApiError ? (e.detail ?? e.message) : 'Failed to load marks';
+            return { registration: reg, marks: [], components: new Map<string, AssessmentComponent>(), result: null, error: msg };
+          }
+        }),
+      );
+      setRows(loaded);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : 'Failed to load registrations');
+    } finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const enrols = await listStudentEnrolments(personId);
+        setEnrolments(enrols);
+        const first = enrols[0];
+        if (first) {
+          setSelectedEnrolmentId(first.enrolmentId);
+          await loadAll(first.enrolmentId);
+        } else { setLoading(false); }
+      } catch { setLoading(false); }
+    })();
+  }, [personId, loadAll]);
+
+  return (
+    <div>
+      {enrolments.length > 1 && (
+        <div className="mb-4 flex items-center gap-3">
+          <label className="text-sm text-gray-500">Enrolment:</label>
+          <select
+            value={selectedEnrolmentId}
+            onChange={(e) => { setSelectedEnrolmentId(e.target.value); void loadAll(e.target.value); }}
+            className="rounded border border-gray-300 px-2 py-1 text-sm"
+          >
+            {enrolments.map(e => (
+              <option key={e.enrolmentId} value={e.enrolmentId}>
+                {e.academicYearOfEntry} ({e.statusCode})
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+      {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
+      {loading ? (
+        <div className="flex justify-center py-8"><Spinner /></div>
+      ) : rows.length === 0 ? (
+        <p className="text-sm text-gray-400">No module registrations found.</p>
+      ) : (
+        <div className="space-y-4">
+          {rows.map((row) => (
+            <div key={row.registration.moduleRegistrationId} className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+              <div className="flex items-center gap-4 px-4 py-3 bg-gray-50 border-b border-gray-100">
+                <div className="flex-1 min-w-0">
+                  <span className="font-mono text-xs text-gray-500 mr-2">{row.registration.moduleCode}</span>
+                  <span className="text-sm font-medium text-gray-900">{row.registration.moduleTitle}</span>
+                </div>
+                <span className="text-xs text-gray-400">{row.registration.periodCode}</span>
+                <Badge value={row.registration.statusCode} />
+                {row.result && <Badge value={row.result.resultCode} />}
+                {row.result && (
+                  <span className="text-sm font-semibold text-gray-800">{row.result.aggregateMark}%</span>
+                )}
+                {row.result && (
+                  <span className={`text-xs font-medium px-2 py-0.5 rounded ${
+                    row.result.locked
+                      ? 'bg-green-100 text-green-700'
+                      : 'bg-yellow-100 text-yellow-700'
+                  }`}>
+                    {row.result.locked ? 'Locked' : 'Provisional'}
+                  </span>
+                )}
+              </div>
+              <div className="px-4 py-3">
+                {row.error ? (
+                  <p className="text-xs text-red-600">{row.error}</p>
+                ) : row.marks.length === 0 ? (
+                  <p className="text-xs text-gray-400">No marks recorded.</p>
+                ) : (
+                  <table className="min-w-full text-sm">
+                    <thead>
+                      <tr className="text-xs font-medium text-gray-500 uppercase">
+                        <th className="pr-6 py-1 text-left">Component</th>
+                        <th className="pr-6 py-1 text-left">Attempt</th>
+                        <th className="pr-6 py-1 text-left">Raw</th>
+                        <th className="pr-6 py-1 text-left">Adjusted</th>
+                        <th className="pr-6 py-1 text-left">Penalty</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {row.marks.map((m) => {
+                        const comp = row.components.get(m.assessmentComponentId);
+                        return (
+                        <tr key={m.markId} className="hover:bg-gray-50">
+                          <td className="pr-6 py-1.5 text-gray-700">
+                            {comp ? comp.title : <span className="text-xs text-gray-400 font-mono">{m.assessmentComponentId.slice(0, 8)}</span>}
+                          </td>
+                          <td className="pr-6 py-1.5 text-gray-600">{m.attemptNumber}</td>
+                          <td className="pr-6 py-1.5 font-semibold text-gray-900">{m.rawMark}</td>
+                          <td className="pr-6 py-1.5 text-gray-700">{m.adjustedMark ?? '—'}</td>
+                          <td className="pr-6 py-1.5 text-gray-500">
+                            {m.penaltyApplied ? `${m.penaltyPercent ?? '?'}%` : '—'}
+                          </td>
+                        </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── History tab ───────────────────────────────────────────────────────────────
 
 function HistoryTab({ personId }: { personId: string }) {
@@ -922,6 +1098,15 @@ function HistoryTab({ personId }: { personId: string }) {
   );
 }
 
+// Valid forward transitions — mirrors correction-service.ts ALLOWED_STATUS_TRANSITIONS
+const CASE_FORWARD_TRANSITIONS: Record<string, string[]> = {
+  'open':         ['under-review', 'not-upheld', 'withdrawn'],
+  'under-review': ['upheld', 'not-upheld', 'withdrawn'],
+  'upheld':       [],
+  'not-upheld':   [],
+  'withdrawn':    [],
+};
+
 // ── Corrections tab ───────────────────────────────────────────────────────────
 
 function CorrectionsTab({ personId }: { personId: string }) {
@@ -934,8 +1119,15 @@ function CorrectionsTab({ personId }: { personId: string }) {
   const [error,        setError]        = useState('');
   const [showCreate,   setShowCreate]   = useState(false);
   const [creating,     setCreating]     = useState(false);
-  const [newCaseType,  setNewCaseType]  = useState<string>('');
-  const [updatingId,   setUpdatingId]   = useState<string | null>(null);
+  const [newCaseType,    setNewCaseType]    = useState<string>('');
+  const [newCaseRef,     setNewCaseRef]     = useState<string>('');
+  const [updatingId,     setUpdatingId]     = useState<string | null>(null);
+
+  useEffect(() => {
+    if (newCaseType === '' && caseTypes.length > 0) {
+      setNewCaseType(caseTypes[0]!.code);
+    }
+  }, [caseTypes, newCaseType]);
 
   const loadCases = useCallback(async (enrolmentId: string) => {
     if (!enrolmentId) return;
@@ -966,8 +1158,9 @@ function CorrectionsTab({ personId }: { personId: string }) {
     if (!selectedEnrolId) return;
     setCreating(true); setError('');
     try {
-      await createCorrectionCase(selectedEnrolId, newCaseType);
+      await createCorrectionCase(selectedEnrolId, newCaseType, newCaseRef.trim() || undefined);
       setShowCreate(false);
+      setNewCaseRef('');
       await loadCases(selectedEnrolId);
     } catch (err) {
       setError(err instanceof ApiError ? (err.detail ?? err.message) : 'Failed to create case');
@@ -980,7 +1173,11 @@ function CorrectionsTab({ personId }: { personId: string }) {
       await updateCaseStatus(caseId, statusCode);
       await loadCases(selectedEnrolId);
     } catch (err) {
-      setError(err instanceof ApiError ? (err.detail ?? err.message) : 'Update failed');
+      if (err instanceof ApiError && (err.status === 422 || err.status === 400)) {
+        setError('This status transition is not permitted.');
+      } else {
+        setError(err instanceof ApiError ? (err.detail ?? err.message) : 'Update failed');
+      }
     } finally { setUpdatingId(null); }
   }
 
@@ -997,25 +1194,39 @@ function CorrectionsTab({ personId }: { personId: string }) {
       </div>
 
       {showCreate && (
-        <form onSubmit={(e) => void handleCreateCase(e)} className="mb-4 flex items-center gap-3 bg-indigo-50 rounded-lg p-4">
-          <label className="text-sm text-gray-700">Type:</label>
-          <select
-            value={newCaseType}
-            onChange={(e) => setNewCaseType(e.target.value)}
-            className="rounded border border-gray-300 px-2 py-1 text-sm"
-          >
-            {caseTypes.map(({ code, displayLabel }) => <option key={code} value={code}>{displayLabel}</option>)}
-          </select>
-          <button
-            type="submit"
-            disabled={creating}
-            className="rounded bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
-          >
-            {creating ? 'Creating…' : 'Create'}
-          </button>
-          <button type="button" onClick={() => setShowCreate(false)} className="text-sm text-gray-500">
-            Cancel
-          </button>
+        <form onSubmit={(e) => void handleCreateCase(e)} className="mb-4 bg-indigo-50 rounded-lg p-4 space-y-3">
+          <div className="flex items-center gap-3">
+            <label className="text-sm text-gray-700 w-24 flex-shrink-0">Type:</label>
+            <select
+              value={newCaseType}
+              onChange={(e) => setNewCaseType(e.target.value)}
+              className="rounded border border-gray-300 px-2 py-1 text-sm"
+            >
+              {caseTypes.map(({ code, displayLabel }) => <option key={code} value={code}>{displayLabel}</option>)}
+            </select>
+          </div>
+          <div className="flex items-start gap-3">
+            <label className="text-sm text-gray-700 w-24 flex-shrink-0 pt-1">Description:</label>
+            <textarea
+              value={newCaseRef}
+              onChange={(e) => setNewCaseRef(e.target.value)}
+              rows={3}
+              placeholder="Brief description of the issue…"
+              className="flex-1 rounded border border-gray-300 px-2 py-1 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            />
+          </div>
+          <div className="flex gap-2 justify-end">
+            <button
+              type="submit"
+              disabled={creating}
+              className="rounded bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+            >
+              {creating ? 'Creating…' : 'Create'}
+            </button>
+            <button type="button" onClick={() => setShowCreate(false)} className="text-sm text-gray-500">
+              Cancel
+            </button>
+          </div>
         </form>
       )}
 
@@ -1053,19 +1264,26 @@ function CorrectionsTab({ personId }: { personId: string }) {
                 </div>
                 <Badge value={c.statusCode} />
               </div>
-              <div className="mt-3 flex items-center gap-2 flex-wrap">
-                <span className="text-xs text-gray-500">Move to:</span>
-                {caseStatuses.filter(({ code }) => code !== c.statusCode).map(({ code, displayLabel }) => (
-                  <button
-                    key={code}
-                    disabled={updatingId === c.caseId}
-                    onClick={() => void handleStatusChange(c.caseId, code)}
-                    className="rounded border border-gray-300 px-2 py-0.5 text-xs text-gray-600 hover:bg-gray-50 disabled:opacity-40"
-                  >
-                    {displayLabel}
-                  </button>
-                ))}
-              </div>
+              {(() => {
+                const validTargets = CASE_FORWARD_TRANSITIONS[c.statusCode] ?? [];
+                const targetButtons = caseStatuses.filter(({ code }) => validTargets.includes(code));
+                if (targetButtons.length === 0) return null;
+                return (
+                  <div className="mt-3 flex items-center gap-2 flex-wrap">
+                    <span className="text-xs text-gray-500">Move to:</span>
+                    {targetButtons.map(({ code, displayLabel }) => (
+                      <button
+                        key={code}
+                        disabled={updatingId === c.caseId}
+                        onClick={() => void handleStatusChange(c.caseId, code)}
+                        className="rounded border border-gray-300 px-2 py-0.5 text-xs text-gray-600 hover:bg-gray-50 disabled:opacity-40"
+                      >
+                        {displayLabel}
+                      </button>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
           ))}
         </div>
@@ -1073,6 +1291,65 @@ function CorrectionsTab({ personId }: { personId: string }) {
 
       {selectedEnrolId && (
         <VleOverrideAuditSection enrolmentId={selectedEnrolId} />
+      )}
+    </div>
+  );
+}
+
+// ── Communications tab ────────────────────────────────────────────────────────
+
+function CommunicationsTab({ personId }: { personId: string }) {
+  const [notifications, setNotifications] = useState<StudentNotification[]>([]);
+  const [loading, setLoading]             = useState(true);
+  const [error, setError]                 = useState('');
+
+  useEffect(() => {
+    setLoading(true);
+    listStudentNotifications(personId)
+      .then(rows => { setNotifications(rows); setError(''); })
+      .catch(e => setError(e instanceof ApiError ? e.message : 'Failed to load communications'))
+      .finally(() => setLoading(false));
+  }, [personId]);
+
+  if (loading) return <div className="flex justify-center py-8"><Spinner /></div>;
+
+  return (
+    <div>
+      <h2 className="text-sm font-semibold text-gray-700 mb-4">Communications</h2>
+      {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
+      {notifications.length === 0 ? (
+        <p className="text-sm text-gray-400">No communications on record for this student.</p>
+      ) : (
+        <div className="space-y-3">
+          {notifications.map((n) => (
+            <div key={n.id} className="bg-white rounded-lg border border-gray-200 p-4">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900">{n.title}</p>
+                  <p className="text-sm text-gray-600 mt-0.5">{n.body}</p>
+                  {n.linkUrl && (
+                    <a href={n.linkUrl} className="text-xs text-indigo-600 hover:underline mt-1 inline-block">
+                      {n.linkUrl}
+                    </a>
+                  )}
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <span className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">
+                    {n.category}
+                  </span>
+                  <p className="text-xs text-gray-400 mt-1">
+                    {new Date(n.createdAt).toLocaleString('en-GB')}
+                  </p>
+                  {n.readAt && (
+                    <p className="text-xs text-green-600 mt-0.5">
+                      Read {new Date(n.readAt).toLocaleString('en-GB')}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );

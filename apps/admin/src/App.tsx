@@ -34,8 +34,10 @@ import { UkviPage } from './pages/UkviPage.js';
 import { ValueSetsPage } from './pages/ValueSetsPage.js';
 import { WorkflowDefsPage } from './pages/WorkflowDefsPage.js';
 import { AccessibilityStatementPage } from './pages/AccessibilityStatementPage.js';
+import { NotFoundPage } from './pages/NotFoundPage.js';
 
-const TENANT_ADMIN_ROLES = ['tenant-administrator', 'registry-administrator', 'system-administrator'];
+const TENANT_ADMIN_ROLES      = ['tenant-administrator', 'registry-administrator', 'system-administrator'];
+const INTEGRATION_ADMIN_ROLES = ['tenant-administrator', 'system-administrator'];
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { token, isReady } = useAuth();
@@ -51,7 +53,7 @@ export function App() {
       <Route path="/login"           element={<LoginPage />} />
       <Route path="/callback"        element={<CallbackPage />} />
       <Route path="/403"             element={<ForbiddenPage />} />
-      <Route path="/accessibility"   element={<AccessibilityStatementPage />} />
+      <Route path="/accessibility-statement" element={<AccessibilityStatementPage />} />
 
       {/* Protected routes */}
       <Route
@@ -105,7 +107,7 @@ export function App() {
                 />
                 <Route
                   path="tenant-admin/integrations"
-                  element={<RequireRole roles={TENANT_ADMIN_ROLES}><IntegrationsPage /></RequireRole>}
+                  element={<RequireRole roles={INTEGRATION_ADMIN_ROLES}><IntegrationsPage /></RequireRole>}
                 />
                 <Route
                   path="tenant-admin/audit"
@@ -122,6 +124,8 @@ export function App() {
                 <Route path="operations"                        element={<OperationsPage />} />
                 <Route path="operations/environment"            element={<EnvironmentRuntimePage />} />
                 <Route path="operations/integrations"           element={<IntegrationOpsPage />} />
+
+                <Route path="*" element={<NotFoundPage />} />
               </Routes>
             </Layout>
           </RequireAuth>

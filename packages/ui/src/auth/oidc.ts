@@ -52,6 +52,7 @@ export async function startLogin(cfg: OidcConfig): Promise<void> {
     code_challenge:        challenge,
     code_challenge_method: 'S256',
     state,
+    prompt:                'login',
   });
 
   window.location.href =

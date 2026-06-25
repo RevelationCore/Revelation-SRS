@@ -230,7 +230,7 @@ export class ExamEntryService {
 
   async getExamTimetable(moduleRegistrationId: string, tenantId: string): Promise<ExamTimetableDto> {
     const row = await this.#getCurrentEntryWithOwner(moduleRegistrationId, tenantId);
-    if (!row || row.entry.statusCode !== 'scheduled' || !row.entry.scheduledDate) {
+    if (!row) {
       throw new NotFoundError('Exam timetable', moduleRegistrationId);
     }
     return { ...toDto(row.entry), personId: row.personId };

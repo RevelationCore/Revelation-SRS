@@ -3,6 +3,8 @@ import { randomUUID } from 'node:crypto';
 import { and, asc, eq, isNull, or } from 'drizzle-orm';
 import {
   workflowAssignmentRules,
+  workflowDefinitionVersions,
+  workflowDefinitions,
   workflowTasks,
   type Db,
   withTenantContext,
@@ -12,6 +14,7 @@ import { ForbiddenError, NotFoundError, type Role, ROLES, ValidationError, hasPe
 export interface WorkflowAssignmentRuleDto {
   workflowAssignmentRuleId: string;
   tenantId: string | null;
+  definitionCode: string;
   workflowDefinitionVersionId: string;
   stepKey: string;
   ruleKey: string;
@@ -75,15 +78,29 @@ export class WorkflowResponsibilityService {
     opts: { workflowDefinitionVersionId?: string; stepKey?: string } = {},
   ): Promise<WorkflowAssignmentRuleDto[]> {
     const rows = await withTenantContext(this.db, tenantId, async (tx) =>
-      tx.select().from(workflowAssignmentRules).where(and(
+      tx.select({
+        rule:           workflowAssignmentRules,
+        definitionCode: workflowDefinitions.definitionCode,
+      })
+      .from(workflowAssignmentRules)
+      .leftJoin(
+        workflowDefinitionVersions,
+        eq(workflowAssignmentRules.workflowDefinitionVersionId, workflowDefinitionVersions.id),
+      )
+      .leftJoin(
+        workflowDefinitions,
+        eq(workflowDefinitionVersions.workflowDefinitionId, workflowDefinitions.id),
+      )
+      .where(and(
         or(isNull(workflowAssignmentRules.tenantId), eq(workflowAssignmentRules.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`)),
         ...(opts.workflowDefinitionVersionId
           ? [eq(workflowAssignmentRules.workflowDefinitionVersionId, opts.workflowDefinitionVersionId as `${string}-${string}-${string}-${string}-${string}`)]
           : []),
         ...(opts.stepKey ? [eq(workflowAssignmentRules.stepKey, opts.stepKey)] : []),
-      )).orderBy(asc(workflowAssignmentRules.priority), asc(workflowAssignmentRules.createdAt)),
+      ))
+      .orderBy(asc(workflowAssignmentRules.priority), asc(workflowAssignmentRules.createdAt)),
     );
-    return rows.map(ruleToDto);
+    return rows.map((r) => ruleToDto(r.rule, r.definitionCode));
   }
 
   async createAssignmentRule(
@@ -229,10 +246,11 @@ function validateRole(roleCode: string | undefined, fieldName: string): void {
   }
 }
 
-function ruleToDto(row: RuleRow): WorkflowAssignmentRuleDto {
+function ruleToDto(row: RuleRow, definitionCode: string | null): WorkflowAssignmentRuleDto {
   return {
     workflowAssignmentRuleId: row.id,
     tenantId: row.tenantId,
+    definitionCode: definitionCode ?? '',
     workflowDefinitionVersionId: row.workflowDefinitionVersionId,
     stepKey: row.stepKey,
     ruleKey: row.ruleKey,

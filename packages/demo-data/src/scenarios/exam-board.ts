@@ -662,7 +662,7 @@ async function loadCorrections(db: Db, tenantId: string): Promise<void> {
     ),
     generatePostRatificationCase(
       tenantId, enrolmentId(tenantId, 301), 301,
-      'appeal', 'dismissed', correctionDate,
+      'appeal', 'not-upheld', correctionDate,
     ),
   ];
   await batchInsert(db, postRatificationCases, cases);

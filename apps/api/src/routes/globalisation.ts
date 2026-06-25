@@ -121,7 +121,7 @@ const RecordExchangeRateBody = Type.Object({
 
 // eslint-disable-next-line @typescript-eslint/require-await
 export async function globalisationRoutes(fastify: FastifyInstance): Promise<void> {
-  const { localeService, currencyService } = fastify;
+  const { localeService, currencyService, valueSetService } = fastify;
 
   // ── Locales ─────────────────────────────────────────────────────────────────
 
@@ -163,6 +163,44 @@ export async function globalisationRoutes(fastify: FastifyInstance): Promise<voi
   });
 
   // ── Value set member labels ──────────────────────────────────────────────────
+
+  fastify.get('/admin/globalisation/value-set-labels', {
+    preHandler: [requirePermission('globalisation:read')],
+    schema: {
+      tags:     ['Globalisation'],
+      summary:  'List all value sets available for label customisation',
+      response: {
+        200: Type.Array(Type.Object({ setCode: Type.String() })),
+        401: ErrorSchema,
+        403: ErrorSchema,
+      },
+    },
+  }, async () => {
+    const sets = await valueSetService.listValueSets();
+    return sets.map((s) => ({ setCode: s.setCode }));
+  });
+
+  fastify.put('/admin/globalisation/value-set-labels/:setCode', {
+    preHandler: [requirePermission('globalisation:write')],
+    schema: {
+      tags:     ['Globalisation'],
+      summary:  'Batch-upsert display labels for all members of a value set',
+      params:   Type.Object({ setCode: Type.String() }),
+      body:     Type.Object({
+        labels:     Type.Record(Type.String(), Type.String()),
+        localeCode: Type.Optional(Type.String({ minLength: 2, maxLength: 35 })),
+      }),
+      response: { 204: Type.Null(), 401: ErrorSchema, 403: ErrorSchema, 404: ErrorSchema },
+    },
+  }, async (req, reply) => {
+    const { setCode }                           = req.params as { setCode: string };
+    const { labels, localeCode: bodyLocale }    = req.body as { labels: Record<string, string>; localeCode?: string };
+    const tenantConfig = await localeService.getTenantLocaleConfig(req.tenantId);
+    const localeCode   = bodyLocale ?? tenantConfig.defaultLocale;
+    await localeService.batchUpsertValueSetLabels(setCode, localeCode, labels, req.user.sub);
+    reply.code(204);
+    return null;
+  });
 
   fastify.post('/admin/globalisation/value-set-labels', {
     preHandler: [requirePermission('globalisation:write')],

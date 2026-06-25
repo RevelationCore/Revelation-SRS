@@ -2,8 +2,14 @@ import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../auth/AuthContext.js';
 import { useApiData } from '../hooks/useApiData.js';
-import { getEnrolments } from '../api/me.js';
+import { getEnrolments, getFieldValueSet, type ValueSetDto } from '../api/me.js';
 import { Spinner, Problem, EmptyState, formatDate } from '@revelation-srs/ui';
+
+function codeLabel(vs: ValueSetDto | null | undefined, code: string | null | undefined): string | null | undefined {
+  if (!code) return code;
+  if (!vs)   return code;
+  return vs.members.find(m => m.code === code)?.displayLabel ?? code;
+}
 
 export function EnrolmentsPage() {
   const { t }    = useTranslation();
@@ -13,7 +19,14 @@ export function EnrolmentsPage() {
     () => personId ? getEnrolments(personId) : Promise.reject(new Error('')),
     [personId],
   );
+  const fetchModeVS    = useCallback(() => getFieldValueSet('enrolment', 'mode_of_study_code').catch(() => undefined), []);
+  const fetchFeeVS     = useCallback(() => getFieldValueSet('enrolment', 'fee_band_code').catch(() => undefined), []);
+  const fetchFundingVS = useCallback(() => getFieldValueSet('enrolment', 'funding_source_code').catch(() => undefined), []);
+
   const { data: enrolments, loading, error } = useApiData(personId ? fetchEnrolments : null);
+  const { data: modeVS    } = useApiData(fetchModeVS);
+  const { data: feeVS     } = useApiData(fetchFeeVS);
+  const { data: fundingVS } = useApiData(fetchFundingVS);
 
   if (loading) {
     return <div className="flex justify-center py-16"><Spinner size="lg" label={t('status.loading')} /></div>;
@@ -52,8 +65,20 @@ export function EnrolmentsPage() {
               <dl className="mt-4 grid gap-3 sm:grid-cols-3 text-sm">
                 <div>
                   <dt className="text-xs font-medium text-gray-500">Mode of study</dt>
-                  <dd className="mt-0.5 text-gray-900">{e.modeOfStudyCode}</dd>
+                  <dd className="mt-0.5 text-gray-900">{codeLabel(modeVS, e.modeOfStudyCode) ?? '—'}</dd>
                 </div>
+                {e.feeBandCode && (
+                  <div>
+                    <dt className="text-xs font-medium text-gray-500">Fee status</dt>
+                    <dd className="mt-0.5 text-gray-900">{codeLabel(feeVS, e.feeBandCode)}</dd>
+                  </div>
+                )}
+                {e.fundingSourceCode && (
+                  <div>
+                    <dt className="text-xs font-medium text-gray-500">Funding source</dt>
+                    <dd className="mt-0.5 text-gray-900">{codeLabel(fundingVS, e.fundingSourceCode)}</dd>
+                  </div>
+                )}
                 {e.attendanceTypeCode && (
                   <div>
                     <dt className="text-xs font-medium text-gray-500">Attendance</dt>

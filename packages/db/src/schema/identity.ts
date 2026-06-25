@@ -48,6 +48,7 @@ export const personIdentities = pgTable('person_identity', {
   emailInstitutional:      text('email_institutional'),
   emailPersonal:           text('email_personal'),
   phoneMobile:             text('phone_mobile'),
+  preferredPronouns:       text('preferred_pronouns'),         // self-declared, free text e.g. 'they/them'
   communicationLocaleCode: text('communication_locale_code'),  // BCP-47, e.g. 'en-GB'
   preferredTimeZone:       text('preferred_time_zone'),        // IANA, e.g. 'Europe/London'
 });
@@ -108,6 +109,7 @@ export const disabilityDeclarations = pgTable('disability_declaration', {
   disabilityCategoryCode:  text('disability_category_code').notNull(),
   declarationStatusCode:   text('declaration_status_code').notNull().default('declared'),
   declaredAt:              timestamp('declared_at', { withTimezone: true }).notNull().defaultNow(),
+  notes:                   text('notes'),
 });
 
 export type DisabilityDeclaration    = typeof disabilityDeclarations.$inferSelect;

@@ -18,6 +18,7 @@ const PersonIdentitySchema = Type.Object({
   legalFirstName:     Type.String(),
   legalFamilyName:    Type.String(),
   preferredName:      Type.Union([Type.String(), Type.Null()]),
+  preferredPronouns:  Type.Union([Type.String(), Type.Null()]),
   dateOfBirth:        Type.Union([Type.String(), Type.Null()]),
   genderCode:         Type.Union([Type.String(), Type.Null()]),
   nationalityCode:    Type.Union([Type.String(), Type.Null()]),
@@ -74,8 +75,10 @@ export function studentRoutes(fastify: FastifyInstance): void {
     {
       schema: {
         querystring: Type.Object({
-          limit:  Type.Optional(Type.Integer({ minimum: 1, maximum: 100 })),
-          offset: Type.Optional(Type.Integer({ minimum: 0 })),
+          limit:      Type.Optional(Type.Integer({ minimum: 1, maximum: 100 })),
+          offset:     Type.Optional(Type.Integer({ minimum: 0 })),
+          search:     Type.Optional(Type.String()),
+          statusCode: Type.Optional(Type.String()),
         }),
         response: {
           200: Type.Array(Type.Object({
@@ -89,10 +92,12 @@ export function studentRoutes(fastify: FastifyInstance): void {
       preHandler: [requirePermission('student:read:all')],
     },
     async (request, reply) => {
-      const q = request.query as { limit?: number; offset?: number };
-      const opts: { limit?: number; offset?: number } = {};
-      if (q.limit  !== undefined) opts.limit  = q.limit;
-      if (q.offset !== undefined) opts.offset = q.offset;
+      const q = request.query as { limit?: number; offset?: number; search?: string; statusCode?: string };
+      const opts: { limit?: number; offset?: number; search?: string; statusCode?: string } = {};
+      if (q.limit      !== undefined) opts.limit      = q.limit;
+      if (q.offset     !== undefined) opts.offset     = q.offset;
+      if (q.search     !== undefined) opts.search     = q.search;
+      if (q.statusCode !== undefined) opts.statusCode = q.statusCode;
       const results = await fastify.studentService.listPersons(request.tenantId, opts);
       await reply.send(results);
     },
@@ -469,6 +474,7 @@ export function studentRoutes(fastify: FastifyInstance): void {
           legalFirstName:     Type.Optional(Type.String({ minLength: 1 })),
           legalFamilyName:    Type.Optional(Type.String({ minLength: 1 })),
           preferredName:      Type.Optional(Type.String()),
+          preferredPronouns:  Type.Optional(Type.Union([Type.String(), Type.Null()])),
           dateOfBirth:        Type.Optional(Type.String()),
           genderCode:         Type.Optional(Type.String()),
           nationalityCode:    Type.Optional(Type.String()),
@@ -648,6 +654,7 @@ export function studentRoutes(fastify: FastifyInstance): void {
         body: Type.Object({
           disabilityCategoryCode: Type.String({ minLength: 1 }),
           declarationStatusCode:  Type.Optional(Type.String()),
+          notes:                  Type.Optional(Type.Union([Type.String(), Type.Null()])),
         }),
         response: { 201: Type.Object({ declarationId: Type.String() }) },
       },
@@ -706,6 +713,7 @@ export function studentRoutes(fastify: FastifyInstance): void {
             declarationStatusCode:  Type.String(),
             declaredAt:             Type.String(),
             validFrom:              Type.String(),
+            notes:                  Type.Union([Type.String(), Type.Null()]),
           })),
         },
       },

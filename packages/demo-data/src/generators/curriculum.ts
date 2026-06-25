@@ -202,6 +202,7 @@ export function generateCurriculum(
         moduleId:         moduleId(tenantId, m.code),
         academicPeriodId: academicPeriodId(tenantId, year, term),
         deliveryModeCode: 'in-person',
+        capacity:         30,
       })),
     ),
   );

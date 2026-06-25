@@ -4,6 +4,8 @@ import { useAuth } from '../auth/AuthContext.js';
 import { getDisplayName } from '@revelation-srs/ui';
 import { DemoBanner } from './DemoBanner.js';
 
+const INTEGRATION_ADMIN_ROLES = ['tenant-administrator', 'system-administrator'];
+
 // ── Nav primitives ────────────────────────────────────────────────────────────
 
 function NavItem({ to, label, end }: { to: string; label: string; end?: boolean }) {
@@ -49,13 +51,30 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
+function SectionNavLink({ to, children }: { to: string; children: React.ReactNode }) {
+  return (
+    <NavLink
+      to={to}
+      end
+      className={({ isActive }) =>
+        `block px-3 pt-4 pb-1 text-xs font-semibold uppercase tracking-wider transition-colors ${
+          isActive ? 'text-indigo-600' : 'text-gray-400 hover:text-gray-700'
+        }`
+      }
+    >
+      {children}
+    </NavLink>
+  );
+}
+
 function Divider() {
   return <div className="my-2 border-t border-gray-100" />;
 }
 
 // ── Sidebar nav ───────────────────────────────────────────────────────────────
 
-function Sidebar({ onLogout, displayName }: { onLogout: () => void; displayName: string | null }) {
+function Sidebar({ onLogout, displayName, roles }: { onLogout: () => void; displayName: string | null; roles: string[] }) {
+  const canManageIntegrations = INTEGRATION_ADMIN_ROLES.some(r => roles.includes(r));
   return (
     <aside className="fixed inset-y-0 left-0 z-20 flex w-56 flex-col bg-white border-r border-gray-200">
       {/* Brand */}
@@ -74,7 +93,7 @@ function Sidebar({ onLogout, displayName }: { onLogout: () => void; displayName:
         <NavItem to="/exam-boards" label="Exam boards" />
 
         <Divider />
-        <SectionLabel>Regulatory</SectionLabel>
+        <SectionNavLink to="/regulatory">Regulatory</SectionNavLink>
         <SubItem to="/regulatory/hesa" label="HESA" />
         <SubItem to="/regulatory/ucas" label="UCAS" />
         <SubItem to="/regulatory/slc"  label="SLC" />
@@ -82,24 +101,24 @@ function Sidebar({ onLogout, displayName }: { onLogout: () => void; displayName:
         <SubItem to="/regulatory/ofs"  label="OfS" />
 
         <Divider />
-        <SectionLabel>Reporting</SectionLabel>
+        <SectionNavLink to="/reporting">Reporting</SectionNavLink>
         <SubItem to="/reporting/enrolments"        label="Enrolments" />
         <SubItem to="/reporting/regulatory-status" label="Regulatory status" />
         <SubItem to="/reporting/foi"               label="FOI / SAR" />
 
         <Divider />
-        <SectionLabel>Administration</SectionLabel>
+        <SectionNavLink to="/tenant-admin">Administration</SectionNavLink>
         <SubItem to="/tenant-admin/config"        label="Configuration" />
         <SubItem to="/tenant-admin/value-sets"    label="Value sets" />
         <SubItem to="/tenant-admin/globalisation" label="Globalisation" />
         <SubItem to="/tenant-admin/rules"         label="Academic rules" />
         <SubItem to="/tenant-admin/workflows"     label="Workflows" />
         <SubItem to="/tenant-admin/flags"         label="Feature flags" />
-        <SubItem to="/tenant-admin/integrations"  label="Integrations" />
+        {canManageIntegrations && <SubItem to="/tenant-admin/integrations" label="Integrations" />}
         <SubItem to="/tenant-admin/audit"         label="Audit log" />
 
         <Divider />
-        <SectionLabel>Operations</SectionLabel>
+        <SectionNavLink to="/operations">Operations</SectionNavLink>
         <SubItem to="/operations/environment"  label="Environment" />
         <SubItem to="/operations/integrations" label="Integrations" />
       </nav>
@@ -125,7 +144,7 @@ function Sidebar({ onLogout, displayName }: { onLogout: () => void; displayName:
 // ── Layout ────────────────────────────────────────────────────────────────────
 
 export function Layout({ children }: { children: React.ReactNode }) {
-  const { logout, user, sessionExpired } = useAuth();
+  const { logout, user, roles, sessionExpired } = useAuth();
   const navigate    = useNavigate();
   const { t }       = useTranslation();
   const displayName = user ? getDisplayName(user) : null;
@@ -151,13 +170,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <Sidebar onLogout={handleLogout} displayName={displayName} />
+    <div className="flex h-screen overflow-hidden bg-gray-50">
+      <Sidebar onLogout={handleLogout} displayName={displayName} roles={roles} />
 
       {/* Content area — offset by sidebar width */}
-      <div className="flex flex-1 flex-col ml-56 min-w-0">
+      <div className="flex flex-col flex-1 ml-56 min-w-0 overflow-hidden">
         <DemoBanner />
-        <main className="flex-1 px-8 py-8 max-w-6xl w-full">
+        <main className="flex-1 min-h-0 overflow-y-auto px-8 py-8 max-w-6xl w-full">
           {children}
         </main>
       </div>

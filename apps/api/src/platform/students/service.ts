@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import { and, eq, isNull, sql } from 'drizzle-orm';
+import { and, eq, ilike, isNull, or, sql } from 'drizzle-orm';
 import {
   disabilityDeclarations,
   identityVerificationChecks,
@@ -33,16 +33,17 @@ export interface CreatePersonInput {
 }
 
 export interface PersonIdentityPatch {
-  legalFirstName?:  string;
-  legalFamilyName?: string;
-  preferredName?:   string;
-  dateOfBirth?:     string;
-  genderCode?:      string;
-  nationalityCode?: string;
-  domicileCode?:    string;
+  legalFirstName?:     string;
+  legalFamilyName?:    string;
+  preferredName?:      string;
+  preferredPronouns?:  string | null;
+  dateOfBirth?:        string;
+  genderCode?:         string;
+  nationalityCode?:    string;
+  domicileCode?:       string;
   emailInstitutional?: string;
-  emailPersonal?:   string;
-  phoneMobile?:     string;
+  emailPersonal?:      string;
+  phoneMobile?:        string;
 }
 
 export interface AddressInput {
@@ -58,6 +59,7 @@ export interface AddressInput {
 export interface DisabilityDeclarationInput {
   disabilityCategoryCode: string;
   declarationStatusCode?: string;
+  notes?: string | null;
 }
 
 export interface IdentityVerificationRequestInput {
@@ -83,19 +85,20 @@ export interface PersonDto {
 }
 
 export interface PersonIdentityDto {
-  versionId:          string;
-  legalFirstName:     string;
-  legalFamilyName:    string;
-  preferredName:      string | null;
-  dateOfBirth:        string | null;
-  genderCode:         string | null;
-  nationalityCode:    string | null;
-  domicileCode:       string | null;
-  emailInstitutional: string | null;
-  emailPersonal:      string | null;
-  phoneMobile:        string | null;
-  validFrom:          Date;
-  recordedAt:         Date;
+  versionId:           string;
+  legalFirstName:      string;
+  legalFamilyName:     string;
+  preferredName:       string | null;
+  preferredPronouns:   string | null;
+  dateOfBirth:         string | null;
+  genderCode:          string | null;
+  nationalityCode:     string | null;
+  domicileCode:        string | null;
+  emailInstitutional:  string | null;
+  emailPersonal:       string | null;
+  phoneMobile:         string | null;
+  validFrom:           Date;
+  recordedAt:          Date;
 }
 
 export interface PersonSummaryDto {
@@ -111,6 +114,7 @@ export interface DisabilityDeclarationDto {
   declarationStatusCode:  string;
   declaredAt:             Date;
   validFrom:              Date;
+  notes:                  string | null;
 }
 
 export interface IdentityVerificationCheckDto {
@@ -265,32 +269,36 @@ export class StudentService {
       sourceSystem:    row.person.sourceSystem,
       createdAt:       row.person.createdAt,
       identity: row.person_identity ? {
-        versionId:          row.person_identity.versionId,
-        legalFirstName:     row.person_identity.legalFirstName,
-        legalFamilyName:    row.person_identity.legalFamilyName,
-        preferredName:      row.person_identity.preferredName,
-        dateOfBirth:        row.person_identity.dateOfBirth,
-        genderCode:         row.person_identity.genderCode,
-        nationalityCode:    row.person_identity.nationalityCode,
-        domicileCode:       row.person_identity.domicileCode,
-        emailInstitutional: row.person_identity.emailInstitutional,
-        emailPersonal:      row.person_identity.emailPersonal,
-        phoneMobile:        row.person_identity.phoneMobile,
-        validFrom:          row.person_identity.validFrom,
-        recordedAt:         row.person_identity.recordedAt,
+        versionId:           row.person_identity.versionId,
+        legalFirstName:      row.person_identity.legalFirstName,
+        legalFamilyName:     row.person_identity.legalFamilyName,
+        preferredName:       row.person_identity.preferredName,
+        preferredPronouns:   row.person_identity.preferredPronouns,
+        dateOfBirth:         row.person_identity.dateOfBirth,
+        genderCode:          row.person_identity.genderCode,
+        nationalityCode:     row.person_identity.nationalityCode,
+        domicileCode:        row.person_identity.domicileCode,
+        emailInstitutional:  row.person_identity.emailInstitutional,
+        emailPersonal:       row.person_identity.emailPersonal,
+        phoneMobile:         row.person_identity.phoneMobile,
+        validFrom:           row.person_identity.validFrom,
+        recordedAt:          row.person_identity.recordedAt,
       } : null,
     };
   }
 
   /**
-   * List person summaries for a tenant (paginated).
+   * List person summaries for a tenant (paginated, with optional search/filter).
    */
   async listPersons(
     tenantId: string,
-    opts: { limit?: number; offset?: number } = {},
+    opts: { limit?: number; offset?: number; search?: string; statusCode?: string } = {},
   ): Promise<PersonSummaryDto[]> {
     const limit  = opts.limit  ?? 20;
     const offset = opts.offset ?? 0;
+    const tokens = opts.search
+      ? opts.search.trim().split(/\s+/).map(t => `%${t}%`)
+      : [];
 
     const rows = await withTenantContext(this.db, tenantId, async (tx) => {
       return tx
@@ -308,7 +316,15 @@ export class StudentService {
             isNull(personIdentities.recordedUntil),
           ),
         )
-        .where(eq(persons.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`))
+        .where(and(
+          eq(persons.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
+          ...(opts.statusCode ? [eq(persons.personStatusCode, opts.statusCode)] : []),
+          ...tokens.map(pat => or(
+            ilike(personIdentities.legalFirstName,  pat),
+            ilike(personIdentities.legalFamilyName, pat),
+            ilike(persons.studentNumber,             pat),
+          )),
+        ))
         .limit(limit)
         .offset(offset);
     });
@@ -371,6 +387,7 @@ export class StudentService {
         legalFirstName:     patch.legalFirstName  ?? existing.legalFirstName,
         legalFamilyName:    patch.legalFamilyName ?? existing.legalFamilyName,
         preferredName:      patch.preferredName   ?? existing.preferredName,
+        preferredPronouns:  'preferredPronouns' in patch ? (patch.preferredPronouns ?? null) : existing.preferredPronouns,
         dateOfBirth:        patch.dateOfBirth     ?? existing.dateOfBirth,
         genderCode:         patch.genderCode      ?? existing.genderCode,
         nationalityCode:    patch.nationalityCode ?? existing.nationalityCode,
@@ -405,19 +422,20 @@ export class StudentService {
     });
 
     return rows.map((r) => ({
-      versionId:          r.versionId,
-      legalFirstName:     r.legalFirstName,
-      legalFamilyName:    r.legalFamilyName,
-      preferredName:      r.preferredName,
-      dateOfBirth:        r.dateOfBirth,
-      genderCode:         r.genderCode,
-      nationalityCode:    r.nationalityCode,
-      domicileCode:       r.domicileCode,
-      emailInstitutional: r.emailInstitutional,
-      emailPersonal:      r.emailPersonal,
-      phoneMobile:        r.phoneMobile,
-      validFrom:          r.validFrom,
-      recordedAt:         r.recordedAt,
+      versionId:           r.versionId,
+      legalFirstName:      r.legalFirstName,
+      legalFamilyName:     r.legalFamilyName,
+      preferredName:       r.preferredName,
+      preferredPronouns:   r.preferredPronouns,
+      dateOfBirth:         r.dateOfBirth,
+      genderCode:          r.genderCode,
+      nationalityCode:     r.nationalityCode,
+      domicileCode:        r.domicileCode,
+      emailInstitutional:  r.emailInstitutional,
+      emailPersonal:       r.emailPersonal,
+      phoneMobile:         r.phoneMobile,
+      validFrom:           r.validFrom,
+      recordedAt:          r.recordedAt,
     }));
   }
 
@@ -516,6 +534,7 @@ export class StudentService {
         disabilityCategoryCode: input.disabilityCategoryCode,
         declarationStatusCode:  input.declarationStatusCode ?? 'declared',
         declaredAt:             now,
+        notes:                  input.notes ?? null,
         validFrom:              now,
         validTo:                null,
         recordedAt:             now,
@@ -552,6 +571,7 @@ export class StudentService {
       declarationStatusCode:  r.declarationStatusCode,
       declaredAt:             r.declaredAt,
       validFrom:              r.validFrom,
+      notes:                  r.notes ?? null,
     }));
   }
 

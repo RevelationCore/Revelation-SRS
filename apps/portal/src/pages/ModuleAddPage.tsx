@@ -130,6 +130,9 @@ export function ModuleAddPage() {
                   Delivery
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
+                  Credits
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
                   Capacity
                 </th>
                 <th className="px-4 py-3" />
@@ -144,6 +147,7 @@ export function ModuleAddPage() {
                   </td>
                   <td className="px-4 py-3 text-gray-600">{offering.periodCode}</td>
                   <td className="px-4 py-3 text-gray-600">{offering.deliveryModeCode ?? '—'}</td>
+                  <td className="px-4 py-3 text-gray-600">{offering.creditValue ?? '—'}</td>
                   <td className="px-4 py-3 text-gray-600">{offering.capacity ?? '—'}</td>
                   <td className="px-4 py-3 text-right">
                     {confirming === offering.moduleOfferingId ? (

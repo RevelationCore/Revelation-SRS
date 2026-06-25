@@ -39,8 +39,8 @@ const AdvanceStatusBody = Type.Object({
   statusCode: Type.Union([
     Type.Literal('under-review'),
     Type.Literal('upheld'),
-    Type.Literal('dismissed'),
-    Type.Literal('not-eligible'),
+    Type.Literal('not-upheld'),
+    Type.Literal('withdrawn'),
   ]),
 });
 

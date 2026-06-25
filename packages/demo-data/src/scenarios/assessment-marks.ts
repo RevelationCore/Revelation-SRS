@@ -12,6 +12,7 @@ import {
   moduleRegistrations,
   moduleResults,
   modules,
+  notifications,
   personIdentities,
   persons,
   programmes,
@@ -101,6 +102,7 @@ export const manifest: ScenarioManifest = {
     'assessment',
     'wellbeing',
     'integration',
+    'notifications',
   ],
 };
 
@@ -174,6 +176,7 @@ export async function load(
     case 'assessment':     return loadAssessment(db, tenantId);
     case 'wellbeing':      return loadWellbeing(db, tenantId);
     case 'integration':    return loadIntegration(db, tenantId);
+    case 'notifications':  return loadNotifications(db, tenantId);
     default:               return;
   }
 }
@@ -490,4 +493,58 @@ async function loadIntegration(db: Db, tenantId: string): Promise<void> {
   }
 
   await batchInsert(db, integrationExchanges, exchanges);
+}
+
+// ─── Phase: notifications ─────────────────────────────────────────────────────
+
+async function loadNotifications(db: Db, tenantId: string): Promise<void> {
+  const now = new Date('2026-01-30T09:00:00Z');
+
+  const rows: typeof notifications.$inferInsert[] = [
+    // Alice (seq 1) — marks posted and module result available
+    {
+      id:        deterministicId('s4-notification', tenantId, '1', 'marks'),
+      tenantId,
+      personId:  mkPersonId(tenantId, 1),
+      category:  'assessment',
+      title:     'Your marks have been posted',
+      body:      'Marks have been submitted for all your registered modules. You can view your results on the Marks & Results page.',
+      linkUrl:   '/results',
+      createdAt: now,
+    },
+    {
+      id:        deterministicId('s4-notification', tenantId, '1', 'result'),
+      tenantId,
+      personId:  mkPersonId(tenantId, 1),
+      category:  'assessment',
+      title:     'Module results are available',
+      body:      'Your module results for 2025–26 have been calculated and are ready to view.',
+      linkUrl:   '/results',
+      createdAt: new Date('2026-01-30T10:00:00Z'),
+    },
+    // Bob (seq 2) — EC claim outcome
+    {
+      id:        deterministicId('s4-notification', tenantId, '2', 'ec'),
+      tenantId,
+      personId:  mkPersonId(tenantId, 2),
+      category:  'circumstances',
+      title:     'EC claim outcome recorded',
+      body:      'Your extenuating circumstances claim has been reviewed. Please check the Circumstances page for the outcome.',
+      linkUrl:   '/circumstances',
+      createdAt: now,
+    },
+    // Carol (seq 3) — adjustment confirmed
+    {
+      id:        deterministicId('s4-notification', tenantId, '3', 'adjustment'),
+      tenantId,
+      personId:  mkPersonId(tenantId, 3),
+      category:  'adjustments',
+      title:     'Learning adjustment confirmed',
+      body:      'Your reasonable adjustment has been approved and recorded. It will be applied to all forthcoming assessments.',
+      linkUrl:   '/adjustments',
+      createdAt: now,
+    },
+  ];
+
+  await batchInsert(db, notifications, rows);
 }

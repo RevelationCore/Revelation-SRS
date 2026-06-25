@@ -1,11 +1,24 @@
-import { and, asc, eq, isNull, or } from 'drizzle-orm';
+import { randomUUID } from 'node:crypto';
+
+import { and, asc, eq, inArray, isNull, or } from 'drizzle-orm';
 import {
   workflowDefinitions,
   workflowDefinitionVersions,
+  workflowSteps,
   type Db,
   withTenantContext,
 } from '@revelation-srs/db';
 import { NotFoundError } from '@revelation-srs/domain';
+
+import { clockNow } from '../clock.js';
+
+export interface WorkflowStepDto {
+  stepKey:       string;
+  stepTypeCode:  string;
+  displayName:   string;
+  ownerRoleCode: string | null;
+  sortOrder:     number;
+}
 
 export interface WorkflowDefinitionDto {
   workflowDefinitionId: string;
@@ -32,6 +45,20 @@ export interface WorkflowDefinitionVersionDto {
   effectiveTo: Date | null;
   createdBy: string;
   createdAt: Date;
+  steps: WorkflowStepDto[];
+}
+
+export interface CreateWorkflowDefinitionInput {
+  definitionCode:   string;
+  displayName:      string;
+  description?:     string;
+  ownerModuleCode?: string;
+}
+
+export interface UpdateWorkflowDefinitionInput {
+  statusCode?:  string;
+  displayName?: string;
+  description?: string;
 }
 
 export class WorkflowDefinitionService {
@@ -65,7 +92,13 @@ export class WorkflowDefinitionService {
         eq(workflowDefinitionVersions.workflowDefinitionId, workflowDefinitionId as `${string}-${string}-${string}-${string}-${string}`),
       ).orderBy(asc(workflowDefinitionVersions.versionNumber)),
     );
-    return rows.map(versionToDto);
+    if (rows.length === 0) return [];
+    const stepRows = await this.db
+      .select()
+      .from(workflowSteps)
+      .where(inArray(workflowSteps.workflowDefinitionVersionId, rows.map((r) => r.id)))
+      .orderBy(asc(workflowSteps.sortOrder));
+    return rows.map((r) => versionToDto(r, stepRows.filter((s) => s.workflowDefinitionVersionId === r.id)));
   }
 
   async getVersion(workflowDefinitionVersionId: string, tenantId: string): Promise<WorkflowDefinitionVersionDto> {
@@ -81,7 +114,63 @@ export class WorkflowDefinitionService {
         .limit(1),
     );
     if (!rows[0]) throw new NotFoundError('WorkflowDefinitionVersion', workflowDefinitionVersionId);
-    return versionToDto(rows[0].version);
+    const stepRows = await this.db
+      .select()
+      .from(workflowSteps)
+      .where(eq(workflowSteps.workflowDefinitionVersionId, workflowDefinitionVersionId as `${string}-${string}-${string}-${string}-${string}`))
+      .orderBy(asc(workflowSteps.sortOrder));
+    return versionToDto(rows[0].version, stepRows);
+  }
+
+  async createDefinition(
+    tenantId: string,
+    input: CreateWorkflowDefinitionInput,
+    actorId: string,
+  ): Promise<string> {
+    const id  = randomUUID();
+    const now = clockNow();
+    await withTenantContext(this.db, tenantId, async (tx) =>
+      tx.insert(workflowDefinitions).values({
+        id,
+        tenantId:       tenantId as `${string}-${string}-${string}-${string}-${string}`,
+        definitionCode: input.definitionCode,
+        displayName:    input.displayName,
+        description:    input.description ?? null,
+        ownerModuleCode: input.ownerModuleCode ?? 'custom',
+        statusCode:     'active',
+        createdBy:      actorId,
+        createdAt:      now,
+        updatedAt:      now,
+      }),
+    );
+    return id;
+  }
+
+  async updateDefinition(
+    workflowDefinitionId: string,
+    tenantId: string,
+    input: UpdateWorkflowDefinitionInput,
+  ): Promise<void> {
+    const existing = await withTenantContext(this.db, tenantId, async (tx) =>
+      tx.select({ id: workflowDefinitions.id })
+        .from(workflowDefinitions)
+        .where(and(
+          eq(workflowDefinitions.id, workflowDefinitionId as `${string}-${string}-${string}-${string}-${string}`),
+          or(isNull(workflowDefinitions.tenantId), eq(workflowDefinitions.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`)),
+        ))
+        .limit(1),
+    );
+    if (!existing[0]) throw new NotFoundError('WorkflowDefinition', workflowDefinitionId);
+    await withTenantContext(this.db, tenantId, async (tx) =>
+      tx.update(workflowDefinitions)
+        .set({
+          ...(input.statusCode  !== undefined ? { statusCode:  input.statusCode }  : {}),
+          ...(input.displayName !== undefined ? { displayName: input.displayName } : {}),
+          ...(input.description !== undefined ? { description: input.description } : {}),
+          updatedAt: clockNow(),
+        })
+        .where(eq(workflowDefinitions.id, workflowDefinitionId as `${string}-${string}-${string}-${string}-${string}`)),
+    );
   }
 }
 
@@ -101,7 +190,10 @@ function definitionToDto(row: typeof workflowDefinitions.$inferSelect): Workflow
   };
 }
 
-function versionToDto(row: typeof workflowDefinitionVersions.$inferSelect): WorkflowDefinitionVersionDto {
+function versionToDto(
+  row: typeof workflowDefinitionVersions.$inferSelect,
+  steps: typeof workflowSteps.$inferSelect[],
+): WorkflowDefinitionVersionDto {
   return {
     workflowDefinitionVersionId: row.id,
     workflowDefinitionId: row.workflowDefinitionId,
@@ -113,5 +205,12 @@ function versionToDto(row: typeof workflowDefinitionVersions.$inferSelect): Work
     effectiveTo: row.effectiveTo,
     createdBy: row.createdBy,
     createdAt: row.createdAt,
+    steps: steps.map((s) => ({
+      stepKey:       s.stepKey,
+      stepTypeCode:  s.stepTypeCode,
+      displayName:   s.displayName,
+      ownerRoleCode: s.ownerRoleCode ?? null,
+      sortOrder:     s.sortOrder,
+    })),
   };
 }

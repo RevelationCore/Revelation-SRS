@@ -2,16 +2,16 @@ import { api } from './client.js';
 
 export interface AcademicRule {
   academicRuleId:  string;
+  programmeId:     string | null;
   ruleTypeCode:    string;
-  name:            string;
+  ruleKey:         string;
+  ruleValue:       Record<string, unknown>;
   description:     string | null;
-  definition:      Record<string, unknown>;
-  effectiveFrom:   string;
-  effectiveTo:     string | null;
-  featureFlagId:   string | null;
-  version:         number;
-  createdAt:       string;
-  updatedAt:       string;
+  appliesToLevel:  number | null;
+  validFrom:       string;
+  validTo:         string | null;
+  recordedAt:      string;
+  recordedUntil:   string | null;
 }
 
 export function listAcademicRules(params?: {
@@ -24,13 +24,13 @@ export function listAcademicRules(params?: {
 }
 
 export function createAcademicRule(body: {
-  ruleTypeCode: string;
-  name:         string;
-  description?: string;
-  definition:   Record<string, unknown>;
-  effectiveFrom: string;
-  effectiveTo?:  string;
-  featureFlagId?: string;
+  ruleTypeCode:    string;
+  ruleKey:         string;
+  ruleValue:       Record<string, unknown>;
+  description?:    string;
+  programmeId?:    string;
+  appliesToLevel?: number;
+  validFrom?:      string;
 }): Promise<{ academicRuleId: string }> {
   return api.post('/api/v1/academic-rules', body);
 }
@@ -41,7 +41,7 @@ export function getAcademicRule(academicRuleId: string): Promise<AcademicRule> {
 
 export function updateAcademicRule(
   academicRuleId: string,
-  body: Partial<Pick<AcademicRule, 'name' | 'description' | 'definition' | 'effectiveTo' | 'featureFlagId'>>,
+  body: Partial<Pick<AcademicRule, 'ruleKey' | 'description' | 'ruleValue' | 'validTo' | 'appliesToLevel'>>,
 ): Promise<void> {
   return api.put(`/api/v1/academic-rules/${academicRuleId}`, body);
 }

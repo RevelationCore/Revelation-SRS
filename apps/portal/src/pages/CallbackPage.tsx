@@ -26,6 +26,8 @@ export function CallbackPage() {
     const errParam = params.get('error');
 
     if (errParam) {
+      sessionStorage.removeItem('srs_pkce_verifier');
+      sessionStorage.removeItem('srs_pkce_state');
       setError(params.get('error_description') ?? errParam);
       return;
     }

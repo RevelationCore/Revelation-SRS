@@ -13,15 +13,24 @@ import {
 } from '../api/globalisation.js';
 import { ApiError } from '../api/client.js';
 import { Spinner } from '../components/Spinner.js';
+import { useAuth } from '../auth/AuthContext.js';
 
 type Tab = 'locale' | 'currency' | 'labels';
 
 export function GlobalisationPage() {
+  const { roles }  = useAuth();
+  const canWrite   = roles.includes('tenant-administrator') || roles.includes('system-administrator');
   const [tab, setTab] = useState<Tab>('locale');
 
   return (
     <div>
       <h1 className="text-xl font-semibold text-gray-900 mb-4">Globalisation</h1>
+
+      {!canWrite && (
+        <p className="mb-4 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2">
+          You have read-only access to globalisation settings.
+        </p>
+      )}
 
       <div className="flex gap-1 mb-6 border-b border-gray-200">
         {(['locale', 'currency', 'labels'] as Tab[]).map(t => (
@@ -39,16 +48,16 @@ export function GlobalisationPage() {
         ))}
       </div>
 
-      {tab === 'locale'   && <LocaleTab />}
-      {tab === 'currency' && <CurrencyTab />}
-      {tab === 'labels'   && <LabelsTab />}
+      {tab === 'locale'   && <LocaleTab   canWrite={canWrite} />}
+      {tab === 'currency' && <CurrencyTab canWrite={canWrite} />}
+      {tab === 'labels'   && <LabelsTab   canWrite={canWrite} />}
     </div>
   );
 }
 
 // ── Locale tab ────────────────────────────────────────────────────────────────
 
-function LocaleTab() {
+function LocaleTab({ canWrite }: { canWrite: boolean }) {
   const [config,  setConfig]  = useState<LocaleConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving,  setSaving]  = useState(false);
@@ -64,10 +73,11 @@ function LocaleTab() {
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (!canWrite) return;
     const fd = new FormData(e.currentTarget);
     const patch: Partial<LocaleConfig> = {
       defaultLocale:   String(fd.get('defaultLocale')   ?? '').trim() || undefined,
-      defaultTimezone: String(fd.get('defaultTimezone') ?? '').trim() || undefined,
+      defaultTimeZone: String(fd.get('defaultTimeZone') ?? '').trim() || undefined,
     };
     setSaving(true); setError(''); setSuccess('');
     try {
@@ -86,8 +96,8 @@ function LocaleTab() {
   return (
     <section className="bg-white rounded-lg border border-gray-200 p-6 max-w-lg">
       <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
-        <ConfigField name="defaultLocale"   label="Default locale"   defaultValue={config?.defaultLocale ?? ''} placeholder="en-GB" />
-        <ConfigField name="defaultTimezone" label="Default timezone" defaultValue={config?.defaultTimezone ?? ''} placeholder="Europe/London" />
+        <ConfigField name="defaultLocale"   label="Default locale"   defaultValue={config?.defaultLocale ?? ''}   placeholder="en-GB"          disabled={!canWrite} />
+        <ConfigField name="defaultTimeZone" label="Default timezone" defaultValue={config?.defaultTimeZone ?? ''} placeholder="Europe/London" disabled={!canWrite} />
 
         <div>
           <p className="text-xs font-medium text-gray-600 mb-1">Supported locales</p>
@@ -97,15 +107,17 @@ function LocaleTab() {
         {error   && <p className="text-sm text-red-600">{error}</p>}
         {success && <p className="text-sm text-green-600">{success}</p>}
 
-        <div className="flex justify-end">
-          <button
-            type="submit"
-            disabled={saving}
-            className="rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
-          >
-            {saving ? 'Saving…' : 'Save'}
-          </button>
-        </div>
+        {canWrite && (
+          <div className="flex justify-end">
+            <button
+              type="submit"
+              disabled={saving}
+              className="rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+            >
+              {saving ? 'Saving…' : 'Save'}
+            </button>
+          </div>
+        )}
       </form>
     </section>
   );
@@ -113,7 +125,7 @@ function LocaleTab() {
 
 // ── Currency tab ──────────────────────────────────────────────────────────────
 
-function CurrencyTab() {
+function CurrencyTab({ canWrite }: { canWrite: boolean }) {
   const [config,  setConfig]  = useState<CurrencyConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving,  setSaving]  = useState(false);
@@ -129,6 +141,7 @@ function CurrencyTab() {
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (!canWrite) return;
     const fd = new FormData(e.currentTarget);
     const patch: Partial<CurrencyConfig> = {
       defaultCurrencyCode: String(fd.get('defaultCurrencyCode') ?? '').trim() || undefined,
@@ -150,25 +163,27 @@ function CurrencyTab() {
   return (
     <section className="bg-white rounded-lg border border-gray-200 p-6 max-w-lg">
       <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
-        <ConfigField name="defaultCurrencyCode" label="Default currency code" defaultValue={config?.defaultCurrencyCode ?? ''} placeholder="GBP" />
+        <ConfigField name="defaultCurrencyCode" label="Default currency code" defaultValue={config?.defaultCurrencyCode ?? ''} placeholder="GBP" disabled={!canWrite} />
 
         <div>
-          <p className="text-xs font-medium text-gray-600 mb-1">Supported currencies</p>
-          <p className="text-xs text-gray-500 font-mono">{config?.supportedCurrencies.join(', ') || '—'}</p>
+          <p className="text-xs font-medium text-gray-600 mb-1">Accepted currencies</p>
+          <p className="text-xs text-gray-500 font-mono">{config?.acceptedCurrencies?.join(', ') || '—'}</p>
         </div>
 
         {error   && <p className="text-sm text-red-600">{error}</p>}
         {success && <p className="text-sm text-green-600">{success}</p>}
 
-        <div className="flex justify-end">
-          <button
-            type="submit"
-            disabled={saving}
-            className="rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
-          >
-            {saving ? 'Saving…' : 'Save'}
-          </button>
-        </div>
+        {canWrite && (
+          <div className="flex justify-end">
+            <button
+              type="submit"
+              disabled={saving}
+              className="rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+            >
+              {saving ? 'Saving…' : 'Save'}
+            </button>
+          </div>
+        )}
       </form>
     </section>
   );
@@ -176,7 +191,7 @@ function CurrencyTab() {
 
 // ── Value-set labels tab ──────────────────────────────────────────────────────
 
-function LabelsTab() {
+function LabelsTab({ canWrite }: { canWrite: boolean }) {
   const [labelSets,  setLabelSets]  = useState<ValueSetLabels[]>([]);
   const [loading,    setLoading]    = useState(true);
   const [error,      setError]      = useState('');
@@ -210,7 +225,7 @@ function LabelsTab() {
 
   async function handleSave(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!editing) return;
+    if (!editing || !canWrite) return;
     const fd = new FormData(e.currentTarget);
     const labels: Record<string, string> = {};
     for (const [key, val] of fd.entries()) {
@@ -231,9 +246,9 @@ function LabelsTab() {
   if (loading) return <div className="flex justify-center py-8"><Spinner /></div>;
 
   return (
-    <div className="grid grid-cols-3 gap-6">
+    <div className="grid grid-cols-3 gap-6 items-start">
       <div className="col-span-1">
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div className="bg-white rounded-lg border border-gray-200 overflow-x-hidden overflow-y-auto max-h-[calc(100vh-16rem)]">
           <ul className="divide-y divide-gray-100">
             {labelSets.map(ls => (
               <li key={ls.setCode}>
@@ -251,7 +266,7 @@ function LabelsTab() {
         </div>
       </div>
 
-      <div className="col-span-2">
+      <div className="col-span-2 overflow-y-auto max-h-[calc(100vh-16rem)]">
         {error   && <p className="mb-3 text-sm text-red-600">{error}</p>}
         {success && <p className="mb-3 text-sm text-green-600">{success}</p>}
 
@@ -265,19 +280,22 @@ function LabelsTab() {
                   <input
                     name={code}
                     defaultValue={label}
-                    className="flex-1 rounded border border-gray-300 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    disabled={!canWrite}
+                    className="flex-1 rounded border border-gray-300 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-50 disabled:text-gray-500"
                   />
                 </div>
               ))}
-              <div className="flex justify-end pt-2">
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
-                >
-                  {saving ? 'Saving…' : 'Save labels'}
-                </button>
-              </div>
+              {canWrite && (
+                <div className="flex justify-end pt-2">
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    className="rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+                  >
+                    {saving ? 'Saving…' : 'Save labels'}
+                  </button>
+                </div>
+              )}
             </form>
           </div>
         ) : (
@@ -295,11 +313,13 @@ function ConfigField({
   label,
   defaultValue = '',
   placeholder = '',
+  disabled = false,
 }: {
   name:          string;
   label:         string;
   defaultValue?: string;
   placeholder?:  string;
+  disabled?:     boolean;
 }) {
   return (
     <div>
@@ -308,7 +328,8 @@ function ConfigField({
         name={name}
         defaultValue={defaultValue}
         placeholder={placeholder}
-        className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        disabled={disabled}
+        className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-50 disabled:text-gray-500"
       />
     </div>
   );

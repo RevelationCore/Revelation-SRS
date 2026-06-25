@@ -87,6 +87,7 @@ export class SlcService {
   async generateConfirmations(
     tenantId: string,
     actorId: string,
+    opts: { dryRun?: boolean } = {},
   ): Promise<{ processedCount: number; payload: SlcConfirmationPayload }> {
     const now = clockNow();
     const confirmations: SlcConfirmationRecord[] = [];
@@ -130,6 +131,8 @@ export class SlcService {
 
       const record = buildConfirmationRecord(row.trigger.id, row.enrolment, row.fee);
       confirmations.push(record);
+
+      if (opts.dryRun) continue;
 
       const exchange = await this.exchanges.recordExchange(
         tenantId,

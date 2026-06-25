@@ -30,11 +30,13 @@ export function TenantConfigPage() {
 // ── Current-tenant configuration ──────────────────────────────────────────────
 
 function TenantConfigForm() {
-  const [config,   setConfig]   = useState<TenantConfiguration | null>(null);
-  const [loading,  setLoading]  = useState(true);
-  const [saving,   setSaving]   = useState(false);
-  const [error,    setError]    = useState('');
-  const [success,  setSuccess]  = useState('');
+  const { roles }              = useAuth();
+  const canWrite               = roles.includes('tenant-administrator') || roles.includes('system-administrator');
+  const [config,   setConfig]  = useState<TenantConfiguration | null>(null);
+  const [loading,  setLoading] = useState(true);
+  const [saving,   setSaving]  = useState(false);
+  const [error,    setError]   = useState('');
+  const [success,  setSuccess] = useState('');
 
   useEffect(() => {
     getTenantConfiguration()
@@ -45,7 +47,7 @@ function TenantConfigForm() {
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!config) return;
+    if (!config || !canWrite) return;
     const fd = new FormData(e.currentTarget);
     const patch: Partial<TenantConfiguration> = {
       institutionName:        String(fd.get('institutionName')        ?? '').trim() || undefined,
@@ -77,28 +79,35 @@ function TenantConfigForm() {
   return (
     <section className="bg-white rounded-lg border border-gray-200 p-6">
       <h2 className="text-sm font-semibold text-gray-700 mb-4">Institution settings</h2>
+      {!canWrite && (
+        <p className="mb-4 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2">
+          You have read-only access to this configuration.
+        </p>
+      )}
       <form onSubmit={(e) => void handleSubmit(e)} className="grid grid-cols-2 gap-4">
-        <Field name="institutionName"     label="Institution name"          defaultValue={config?.institutionName ?? ''} />
-        <Field name="defaultLocale"       label="Default locale"            defaultValue={config?.defaultLocale ?? ''} />
-        <Field name="defaultTimezone"     label="Default timezone"          defaultValue={config?.defaultTimezone ?? ''} />
-        <Field name="defaultCurrencyCode" label="Default currency code"     defaultValue={config?.defaultCurrencyCode ?? ''} />
-        <Field name="academicYearStartMonth" label="Academic year start month (1–12)" defaultValue={String(config?.academicYearStartMonth ?? '')} type="number" />
-        <Field name="ukprn"               label="UKPRN"                     defaultValue={config?.ukprn ?? ''} />
-        <Field name="hesaSubscriberId"    label="HESA subscriber ID"        defaultValue={config?.hesaSubscriberId ?? ''} />
-        <Field name="ucasProviderCode"    label="UCAS provider code"        defaultValue={config?.ucasProviderCode ?? ''} />
+        <Field name="institutionName"        label="Institution name"               defaultValue={config?.institutionName ?? ''}           disabled={!canWrite} />
+        <Field name="defaultLocale"          label="Default locale"                 defaultValue={config?.defaultLocale ?? ''}             disabled={!canWrite} />
+        <Field name="defaultTimezone"        label="Default timezone"               defaultValue={config?.defaultTimezone ?? ''}           disabled={!canWrite} />
+        <Field name="defaultCurrencyCode"    label="Default currency code"          defaultValue={config?.defaultCurrencyCode ?? ''}       disabled={!canWrite} />
+        <Field name="academicYearStartMonth" label="Academic year start month (1–12)" defaultValue={String(config?.academicYearStartMonth ?? '')} type="number" disabled={!canWrite} />
+        <Field name="ukprn"                  label="UKPRN"                          defaultValue={config?.ukprn ?? ''}                    disabled={!canWrite} />
+        <Field name="hesaSubscriberId"       label="HESA subscriber ID"             defaultValue={config?.hesaSubscriberId ?? ''}          disabled={!canWrite} />
+        <Field name="ucasProviderCode"       label="UCAS provider code"             defaultValue={config?.ucasProviderCode ?? ''}          disabled={!canWrite} />
 
         {error   && <p className="col-span-2 text-sm text-red-600">{error}</p>}
         {success && <p className="col-span-2 text-sm text-green-600">{success}</p>}
 
-        <div className="col-span-2 flex justify-end pt-2">
-          <button
-            type="submit"
-            disabled={saving}
-            className="rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
-          >
-            {saving ? 'Saving…' : 'Save configuration'}
-          </button>
-        </div>
+        {canWrite && (
+          <div className="col-span-2 flex justify-end pt-2">
+            <button
+              type="submit"
+              disabled={saving}
+              className="rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+            >
+              {saving ? 'Saving…' : 'Save configuration'}
+            </button>
+          </div>
+        )}
       </form>
     </section>
   );
@@ -220,11 +229,13 @@ function Field({
   label,
   defaultValue = '',
   type = 'text',
+  disabled = false,
 }: {
   name:          string;
   label:         string;
   defaultValue?: string;
   type?:         string;
+  disabled?:     boolean;
 }) {
   return (
     <div>
@@ -233,7 +244,8 @@ function Field({
         name={name}
         type={type}
         defaultValue={defaultValue}
-        className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        disabled={disabled}
+        className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-50 disabled:text-gray-500"
       />
     </div>
   );

@@ -12,6 +12,7 @@ export function DisabilityPage() {
 
   const [showForm, setShowForm]     = useState(false);
   const [selected, setSelected]     = useState<Set<string>>(new Set());
+  const [notes, setNotes]           = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
 
   const fetchDeclarations = useCallback(
@@ -55,12 +56,14 @@ export function DisabilityPage() {
         await postDisabilityDeclaration(personId, {
           disabilityCategoryCode: code,
           declarationStatusCode:  'declared',
+          notes:                  notes.trim() || null,
         });
       }
       return true as const;
     });
     if (result !== undefined) {
       setSelected(new Set());
+      setNotes('');
       setShowForm(false);
       setRefreshKey(k => k + 1);
     }
@@ -68,6 +71,7 @@ export function DisabilityPage() {
 
   const handleCancel = () => {
     setSelected(new Set());
+    setNotes('');
     setShowForm(false);
   };
 
@@ -161,6 +165,20 @@ export function DisabilityPage() {
               })}
             </fieldset>
 
+            <div className="mt-4">
+              <label htmlFor="declaration-notes" className="block text-sm font-medium text-gray-700 mb-1">
+                Supporting notes <span className="font-normal text-gray-400">(optional)</span>
+              </label>
+              <textarea
+                id="declaration-notes"
+                rows={3}
+                value={notes}
+                onChange={e => setNotes(e.target.value)}
+                placeholder="Any additional context or supporting information..."
+                className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              />
+            </div>
+
             <div className="mt-4 flex items-center gap-3">
               <button
                 type="submit"
@@ -208,6 +226,9 @@ export function DisabilityPage() {
                   {t('portal.disability.declaredOn')} {formatDate(d.declaredAt)}
                   <span className="ml-2 font-mono">({d.disabilityCategoryCode})</span>
                 </p>
+                {d.notes && (
+                  <p className="mt-1 text-xs text-gray-600 italic">{d.notes}</p>
+                )}
               </div>
               <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${declarationStatusColour(d.declarationStatusCode)}`}>
                 {d.declarationStatusCode}

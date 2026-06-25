@@ -41,6 +41,7 @@ export interface ModuleOfferingDto {
   periodCode:       string;
   deliveryModeCode: string | null;
   capacity:         number | null;
+  creditValue:      number | null;
 }
 
 export class CalendarService {
@@ -135,6 +136,7 @@ export class CalendarService {
           capacity:         moduleOfferings.capacity,
           moduleCode:       modules.code,
           moduleTitle:      modules.title,
+          creditValue:      modules.creditValue,
           periodCode:       academicPeriods.periodCode,
         })
         .from(moduleOfferings)
@@ -159,6 +161,7 @@ export class CalendarService {
       periodCode:       r.periodCode,
       deliveryModeCode: r.deliveryModeCode,
       capacity:         r.capacity,
+      creditValue:      r.creditValue ?? null,
     }));
   }
 
@@ -173,6 +176,7 @@ export class CalendarService {
           capacity:         moduleOfferings.capacity,
           moduleCode:       modules.code,
           moduleTitle:      modules.title,
+          creditValue:      modules.creditValue,
           periodCode:       academicPeriods.periodCode,
         })
         .from(moduleOfferings)
@@ -198,6 +202,7 @@ export class CalendarService {
       periodCode:       r.periodCode,
       deliveryModeCode: r.deliveryModeCode,
       capacity:         r.capacity,
+      creditValue:      r.creditValue ?? null,
     };
   }
 

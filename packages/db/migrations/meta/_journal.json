@@ -211,6 +211,34 @@
       "when": 1750464000000,
       "tag": "0029_valueset_activefrom_nullable",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1750550400000,
+      "tag": "0030_seed_nationality_domicile",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1750636800000,
+      "tag": "0031_person_identity_pronouns",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1750723200000,
+      "tag": "0032_seed_fee_band_code",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1750809600000,
+      "tag": "0033_disability_declaration_notes",
+      "breakpoints": true
     }
   ]
 }

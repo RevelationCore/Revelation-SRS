@@ -181,6 +181,39 @@ export class BoardService {
     return rows[0]!.id;
   }
 
+  async listExamBoards(
+    tenantId: string,
+    opts: { academicYear?: string } = {},
+  ): Promise<ExamBoardDto[]> {
+    const rows = await withTenantContext(this.db, tenantId, async (tx) =>
+      tx
+        .select({
+          id:               examBoards.id,
+          tenantId:         examBoards.tenantId,
+          boardTypeCode:    examBoards.boardTypeCode,
+          academicYear:     examBoards.academicYear,
+          academicPeriodId: examBoards.academicPeriodId,
+          periodCode:       academicPeriods.periodCode,
+          meetingDate:      examBoards.meetingDate,
+          ratifiedAt:       examBoards.ratifiedAt,
+          deferredAt:       examBoards.deferredAt,
+          deferralReason:   examBoards.deferralReason,
+          quorumCount:      examBoards.quorumCount,
+          quorumRecordedAt: examBoards.quorumRecordedAt,
+          actorId:          examBoards.actorId,
+          createdAt:        examBoards.createdAt,
+        })
+        .from(examBoards)
+        .leftJoin(academicPeriods, eq(examBoards.academicPeriodId, academicPeriods.id))
+        .where(and(
+          eq(examBoards.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
+          ...(opts.academicYear ? [eq(examBoards.academicYear, opts.academicYear)] : []),
+        ))
+        .orderBy(examBoards.createdAt),
+    );
+    return rows.map(r => boardToDto(r as BoardRow));
+  }
+
   async getExamBoard(examBoardId: string, tenantId: string): Promise<ExamBoardDto> {
     const board = await this.#getBoard(examBoardId, tenantId);
     return boardToDto(board);

@@ -1,8 +1,10 @@
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Field, formatDate, formatNumber } from '@revelation-srs/ui';
+import { getEnrolmentVolumes } from '../api/reporting.js';
 
 const quickSearchSchema = z.object({
   query: z.string().min(1, 'Enter a search term.').max(200),
@@ -25,8 +27,16 @@ export function DashboardPage() {
     // Stub — full search wired in Stage 5a
   }
 
-  const today    = formatDate(new Date());
-  const enrolled = formatNumber(0);
+  const today = formatDate(new Date());
+  const [enrolledCount, setEnrolledCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    getEnrolmentVolumes()
+      .then(v => setEnrolledCount(v.byStatus['enrolled'] ?? v.total))
+      .catch(() => { /* leave as null — shown as — */ });
+  }, []);
+
+  const enrolled = enrolledCount === null ? '—' : formatNumber(enrolledCount);
 
   return (
     <div className="space-y-8">

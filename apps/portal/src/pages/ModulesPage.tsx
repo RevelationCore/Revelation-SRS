@@ -95,6 +95,7 @@ export function ModulesPage() {
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Module</th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Period</th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Credits</th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Status</th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Registered</th>
                 <th className="px-4 py-3" />
@@ -108,6 +109,7 @@ export function ModulesPage() {
                     <span className="font-medium">{r.moduleTitle}</span>
                   </td>
                   <td className="px-4 py-3 text-gray-600">{r.periodCode}</td>
+                  <td className="px-4 py-3 text-gray-600">{r.creditValue ?? '—'}</td>
                   <td className="px-4 py-3">
                     <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${regStatusColour(r.statusCode)}`}>
                       {r.statusCode}

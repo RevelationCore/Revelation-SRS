@@ -10,6 +10,7 @@ import {
 import { ApiError } from '../api/client.js';
 import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
+import { useAuth } from '../auth/AuthContext.js';
 
 function memberStatus(m: ValueSetMember): 'active' | 'retired' | 'scheduled' {
   const now = new Date();
@@ -32,9 +33,11 @@ function StatusBadge({ member }: { member: ValueSetMember }) {
 }
 
 export function ValueSetsPage() {
-  const [sets,     setSets]     = useState<ValueSet[]>([]);
-  const [loading,  setLoading]  = useState(true);
-  const [error,    setError]    = useState('');
+  const { roles }              = useAuth();
+  const canWrite               = roles.includes('tenant-administrator') || roles.includes('system-administrator');
+  const [sets,     setSets]    = useState<ValueSet[]>([]);
+  const [loading,  setLoading] = useState(true);
+  const [error,    setError]   = useState('');
   const [expanded, setExpanded] = useState<string | null>(null);
 
   useEffect(() => {
@@ -91,7 +94,7 @@ export function ValueSetsPage() {
               </button>
 
               {expanded === s.setCode && (
-                <SetMembersPanel setCode={s.setCode} isExtensible={s.isExtensible} />
+                <SetMembersPanel setCode={s.setCode} isExtensible={s.isExtensible} canWrite={canWrite} />
               )}
             </div>
           ))}
@@ -103,7 +106,7 @@ export function ValueSetsPage() {
 
 // ── Member panel ──────────────────────────────────────────────────────────────
 
-function SetMembersPanel({ setCode, isExtensible }: { setCode: string; isExtensible: boolean }) {
+function SetMembersPanel({ setCode, isExtensible, canWrite }: { setCode: string; isExtensible: boolean; canWrite: boolean }) {
   const [members,   setMembers]   = useState<ValueSetMember[]>([]);
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState('');
@@ -153,7 +156,7 @@ function SetMembersPanel({ setCode, isExtensible }: { setCode: string; isExtensi
                 </thead>
                 <tbody className="divide-y divide-gray-50">
                   {members.map(m =>
-                    editCode === m.code ? (
+                    canWrite && editCode === m.code ? (
                       <EditMemberRow
                         key={m.code}
                         setCode={setCode}
@@ -166,6 +169,7 @@ function SetMembersPanel({ setCode, isExtensible }: { setCode: string; isExtensi
                       <MemberRow
                         key={m.code}
                         member={m}
+                        canWrite={canWrite}
                         onEdit={() => setEditCode(m.code)}
                         onRetired={() => void load()}
                         onError={setError}
@@ -180,7 +184,7 @@ function SetMembersPanel({ setCode, isExtensible }: { setCode: string; isExtensi
             <p className="text-xs text-gray-400 mb-4">No members yet.</p>
           )}
 
-          {isExtensible && (
+          {isExtensible && canWrite && (
             showAdd ? (
               <AddMemberForm
                 setCode={setCode}
@@ -206,10 +210,11 @@ function SetMembersPanel({ setCode, isExtensible }: { setCode: string; isExtensi
 // ── Read-only / action row ────────────────────────────────────────────────────
 
 function MemberRow({
-  member, setCode, onEdit, onRetired, onError,
+  member, setCode, canWrite, onEdit, onRetired, onError,
 }: {
   member:    ValueSetMember;
   setCode:   string;
+  canWrite:  boolean;
   onEdit:    () => void;
   onRetired: () => void;
   onError:   (msg: string) => void;
@@ -242,7 +247,7 @@ function MemberRow({
       <td className="py-2 pr-4 text-gray-500">{member.activeTo ? member.activeTo.slice(0, 10) : '—'}</td>
       <td className="py-2 pr-4"><StatusBadge member={member} /></td>
       <td className="py-2 text-right whitespace-nowrap">
-        {member.isTenantOwned ? (
+        {member.isTenantOwned && canWrite ? (
           <span className="inline-flex items-center gap-3">
             <button onClick={onEdit} className="text-indigo-600 hover:text-indigo-800 font-medium">
               Edit

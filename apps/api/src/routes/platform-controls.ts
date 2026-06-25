@@ -17,6 +17,10 @@ import type {
   CreateWorkflowAssignmentRuleInput,
   WorkflowAssignmentRuleDto,
 } from '../platform/platform-controls/workflow-responsibility-service.js';
+import type {
+  CreateWorkflowDefinitionInput,
+  UpdateWorkflowDefinitionInput,
+} from '../platform/platform-controls/workflow-definition-service.js';
 
 const JsonRecord = Type.Record(Type.String(), Type.Unknown());
 const JsonValue = Type.Unknown();
@@ -175,6 +179,14 @@ const WorkflowDefinitionSchema = Type.Object({
   updatedAt: Type.String(),
 });
 
+const WorkflowStepSchema = Type.Object({
+  stepKey:       Type.String(),
+  stepTypeCode:  Type.String(),
+  displayName:   Type.String(),
+  ownerRoleCode: Type.Union([Type.String(), Type.Null()]),
+  sortOrder:     Type.Number(),
+});
+
 const WorkflowDefinitionVersionSchema = Type.Object({
   workflowDefinitionVersionId: Type.String(),
   workflowDefinitionId: Type.String(),
@@ -186,6 +198,7 @@ const WorkflowDefinitionVersionSchema = Type.Object({
   effectiveTo: Type.Union([Type.String(), Type.Null()]),
   createdBy: Type.String(),
   createdAt: Type.String(),
+  steps: Type.Array(WorkflowStepSchema),
 });
 
 const WorkflowInstanceSchema = Type.Object({
@@ -223,6 +236,7 @@ const WorkflowTaskSchema = Type.Object({
 const WorkflowAssignmentRuleSchema = Type.Object({
   workflowAssignmentRuleId: Type.String(),
   tenantId: Type.Union([Type.String(), Type.Null()]),
+  definitionCode: Type.String(),
   workflowDefinitionVersionId: Type.String(),
   stepKey: Type.String(),
   ruleKey: Type.String(),
@@ -394,6 +408,47 @@ export function platformControlRoutes(fastify: FastifyInstance): void {
     const { workflowDefinitionVersionId } = request.params as { workflowDefinitionVersionId: string };
     const version = await fastify.workflowDefinitionService.getVersion(workflowDefinitionVersionId, request.tenantId);
     await reply.send(workflowVersionToWire(version));
+  });
+
+  fastify.post('/workflow-definitions', {
+    schema: {
+      body: Type.Object({
+        definitionCode:   Type.String({ minLength: 1, maxLength: 120 }),
+        displayName:      Type.String({ minLength: 1, maxLength: 200 }),
+        description:      Type.Optional(Type.String()),
+        ownerModuleCode:  Type.Optional(Type.String()),
+      }),
+      response: { 201: Type.Object({ workflowDefinitionId: Type.String() }), 422: ErrorSchema },
+    },
+    preHandler: [requirePermission('workflow:write')],
+  }, async (request, reply) => {
+    const workflowDefinitionId = await fastify.workflowDefinitionService.createDefinition(
+      request.tenantId,
+      request.body as CreateWorkflowDefinitionInput,
+      request.user.sub,
+    );
+    await reply.code(201).send({ workflowDefinitionId });
+  });
+
+  fastify.patch('/workflow-definitions/:workflowDefinitionId', {
+    schema: {
+      params: Type.Object({ workflowDefinitionId: Type.String() }),
+      body: Type.Object({
+        statusCode:  Type.Optional(Type.String()),
+        displayName: Type.Optional(Type.String({ minLength: 1, maxLength: 200 })),
+        description: Type.Optional(Type.Union([Type.String(), Type.Null()])),
+      }),
+      response: { 204: Type.Null(), 404: ErrorSchema, 422: ErrorSchema },
+    },
+    preHandler: [requirePermission('workflow:write')],
+  }, async (request, reply) => {
+    const { workflowDefinitionId } = request.params as { workflowDefinitionId: string };
+    await fastify.workflowDefinitionService.updateDefinition(
+      workflowDefinitionId,
+      request.tenantId,
+      request.body as UpdateWorkflowDefinitionInput,
+    );
+    await reply.code(204).send();
   });
 
   fastify.get('/workflow-assignment-rules', {
@@ -978,6 +1033,7 @@ function workflowVersionToWire(version: {
   effectiveTo: Date | null;
   createdBy: string;
   createdAt: Date;
+  steps: { stepKey: string; stepTypeCode: string; displayName: string; ownerRoleCode: string | null; sortOrder: number }[];
 }) {
   return {
     ...version,

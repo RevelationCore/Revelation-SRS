@@ -3,15 +3,16 @@ import { api } from './client.js';
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export interface StudentIdentity {
-  legalFirstName:   string;
-  legalFamilyName:  string;
-  preferredName:    string | null;
-  dateOfBirth:      string | null;
-  genderCode:       string | null;
-  nationalityCode:  string | null;
+  legalFirstName:    string;
+  legalFamilyName:   string;
+  preferredName:     string | null;
+  preferredPronouns: string | null;
+  dateOfBirth:       string | null;
+  genderCode:        string | null;
+  nationalityCode:   string | null;
   emailInstitutional: string | null;
-  emailPersonal:    string | null;
-  phoneMobile:      string | null;
+  emailPersonal:     string | null;
+  phoneMobile:       string | null;
 }
 
 export interface StudentAddress {
@@ -44,6 +45,8 @@ export interface Enrolment {
   modeOfStudyCode:     string;
   attendanceTypeCode:  string | null;
   academicYearOfEntry: string;
+  feeBandCode:         string | null;
+  fundingSourceCode:   string | null;
   startDate:           string | null;
   expectedEndDate:     string | null;
   actualEndDate:       string | null;
@@ -60,6 +63,7 @@ export interface ModuleRegistration {
   moduleTitle:          string;
   academicPeriodId:     string;
   periodCode:           string;
+  creditValue:          number | null;
   statusCode:           string;
   registrationDate:     string;
   validFrom:            string;
@@ -163,11 +167,9 @@ export function getExceptionalCircumstances(
 
 export interface PatchIdentityBody {
   preferredName?:     string | null;
+  preferredPronouns?: string | null;
   emailPersonal?:     string | null;
   phoneMobile?:       string | null;
-  genderCode?:        string | null;
-  nationalityCode?:   string | null;
-  domicileCode?:      string | null;
 }
 
 export function patchIdentity(personId: string, body: PatchIdentityBody): Promise<void> {
@@ -193,6 +195,7 @@ export interface DisabilityDeclaration {
   declarationStatusCode: string;
   declaredAt:            string;
   validFrom:             string;
+  notes:                 string | null;
 }
 
 export function getDisabilityDeclarations(personId: string): Promise<DisabilityDeclaration[]> {
@@ -201,7 +204,7 @@ export function getDisabilityDeclarations(personId: string): Promise<DisabilityD
 
 export function postDisabilityDeclaration(
   personId: string,
-  body: { disabilityCategoryCode: string; declarationStatusCode?: string },
+  body: { disabilityCategoryCode: string; declarationStatusCode?: string; notes?: string | null },
 ): Promise<{ declarationId: string }> {
   return api.post(`/api/v1/students/${personId}/disability-declarations`, body);
 }
@@ -215,6 +218,7 @@ export interface ModuleOffering {
   periodCode:       string;
   deliveryModeCode: string | null;
   capacity:         number | null;
+  creditValue:      number | null;
 }
 
 export function getModuleOfferings(params?: { academicPeriodId?: string }): Promise<ModuleOffering[]> {

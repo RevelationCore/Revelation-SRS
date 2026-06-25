@@ -166,7 +166,7 @@ export function tenantAdminRoutes(fastify: FastifyInstance): void {
     '/tenant/configuration',
     {
       schema: { response: { 200: JsonRecord } },
-      preHandler: [requirePermission('config:write')],
+      preHandler: [requirePermission('config:read')],
     },
     async (request, reply) => {
       const tenant = await fastify.tenantAdminService.getTenant(request.tenantId);

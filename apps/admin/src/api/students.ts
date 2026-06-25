@@ -86,3 +86,18 @@ export function updateHesaId(personId: string, hesaId: string): Promise<void> {
 export function updatePersonStatus(personId: string, statusCode: PersonStatusCode): Promise<void> {
   return api.patch(`/api/v1/students/${personId}/status`, { statusCode });
 }
+
+export interface StudentNotification {
+  id:        string;
+  personId:  string;
+  category:  string;
+  title:     string;
+  body:      string;
+  linkUrl:   string | null;
+  readAt:    string | null;
+  createdAt: string;
+}
+
+export function listStudentNotifications(personId: string): Promise<StudentNotification[]> {
+  return api.get<StudentNotification[]>(`/api/v1/admin/students/${personId}/notifications`);
+}

@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../auth/AuthContext.js';
 import { useApiData } from '../hooks/useApiData.js';
-import { getEnrolments, getAdjustments } from '../api/me.js';
+import { getEnrolments, getAdjustments, getFieldValueSet } from '../api/me.js';
 import { Spinner, Problem, EmptyState, formatDate } from '@revelation-srs/ui';
 
 export function AdjustmentsPage() {
@@ -24,6 +24,14 @@ export function AdjustmentsPage() {
   const { data: adjustments, loading: aLoading, error: aError } = useApiData(
     personId ? fetchAdjustments : null,
   );
+
+  const fetchTypeSet  = useCallback(() => getFieldValueSet('reasonable_adjustment', 'adjustment_type_code'), []);
+  const fetchScopeSet = useCallback(() => getFieldValueSet('reasonable_adjustment', 'scope_code'), []);
+  const { data: typeSet  } = useApiData(fetchTypeSet);
+  const { data: scopeSet } = useApiData(fetchScopeSet);
+
+  const typeLabel  = (code: string) => typeSet?.members.find(m => m.code === code)?.displayLabel  ?? code;
+  const scopeLabel = (code: string) => scopeSet?.members.find(m => m.code === code)?.displayLabel ?? code;
 
   const loading = eLoading || aLoading;
   const error   = eError ?? aError;
@@ -57,10 +65,10 @@ export function AdjustmentsPage() {
             >
               <div className="flex items-start justify-between gap-4">
                 <h2 id={`adj-${adj.adjustmentId}`} className="text-base font-semibold text-gray-900">
-                  {adj.adjustmentTypeCode}
+                  {typeLabel(adj.adjustmentTypeCode)}
                 </h2>
                 <span className="flex-none rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-medium text-indigo-700">
-                  {adj.scopeCode}
+                  {scopeLabel(adj.scopeCode)}
                 </span>
               </div>
 

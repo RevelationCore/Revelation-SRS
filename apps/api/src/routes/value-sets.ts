@@ -156,7 +156,7 @@ export function valueSetsRoutes(fastify: FastifyInstance): void {
           404: Type.Object({ type: Type.String(), title: Type.String(), status: Type.Number() }),
         },
       },
-      preHandler: [requirePermission('config:write')],
+      preHandler: [requirePermission('config:read')],
     },
     async (request, reply) => {
       const { setCode } = request.params as { setCode: string };

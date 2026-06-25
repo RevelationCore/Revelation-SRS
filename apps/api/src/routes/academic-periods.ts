@@ -34,6 +34,7 @@ const ModuleOfferingSchema = Type.Object({
   periodCode:       Type.String(),
   deliveryModeCode: Type.Union([Type.String(), Type.Null()]),
   capacity:         Type.Union([Type.Number(), Type.Null()]),
+  creditValue:      Type.Union([Type.Number(), Type.Null()]),
 });
 
 export function academicPeriodsRoutes(fastify: FastifyInstance): void {

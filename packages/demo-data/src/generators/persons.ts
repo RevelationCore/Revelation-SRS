@@ -33,9 +33,9 @@ const DEMO_CITIES = [
 ] as const;
 
 const SOURCE_SYSTEMS = ['ucas', 'direct', 'direct', 'agent', 'international', 'international', 'clearing'] as const;
-const NATIONALITIES  = ['GB', 'GB', 'GB', 'GB', 'GB', 'GB', 'GB', 'GB', 'IE', 'DE', 'FR', 'IN', 'CN', 'NG'] as const;
-const DOMICILES      = ['GB', 'GB', 'GB', 'GB', 'GB', 'IE', 'DE', 'FR', 'IN', 'CN'] as const;
-const GENDERS        = ['M', 'F', 'F', 'M', 'F', 'M', 'X'] as const;
+const NATIONALITIES  = ['GBR', 'GBR', 'GBR', 'GBR', 'GBR', 'GBR', 'GBR', 'GBR', 'IRL', 'DEU', 'FRA', 'IND', 'CHN', 'NGA'] as const;
+const DOMICILES      = ['GBR', 'GBR', 'GBR', 'GBR', 'GBR', 'IRL', 'DEU', 'FRA', 'IND', 'CHN'] as const;
+const GENDERS        = ['1', '2', '2', '1', '2', '1', '3'] as const; // HESA SEXID: 1=Male 2=Female 3=Other
 
 // ─── ID helpers ───────────────────────────────────────────────────────────────
 
@@ -218,7 +218,7 @@ export function generateTermAddress(
     personId:        personPk,
     validFrom,
     recordedAt:      validFrom,
-    addressTypeCode: 'term',
+    addressTypeCode: 'term-time',
     line1:           `DEMO - ${termSeq % 200 + 1} University Quarter`,
     line2:           `Flat ${(seq % 40) + 1}`,
     city:            'Demo City',

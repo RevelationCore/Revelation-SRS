@@ -122,7 +122,11 @@ export function circumstancesRoutes(fastify: FastifyInstance): void {
       preHandler: [requirePermission('circumstances:submit')],
     },
     async (request, reply) => {
-      const personId = request.user.sub;
+      const personId = request.user.srsPersonId;
+      if (!personId) {
+        await reply.code(403).send({ title: 'Forbidden', detail: 'No SRS person linked to this account' });
+        return;
+      }
       const body = request.body as {
         enrolmentId: string;
         description: string;
@@ -142,7 +146,7 @@ export function circumstancesRoutes(fastify: FastifyInstance): void {
           request.tenantId,
           personId,
           input,
-          personId,
+          request.user.sub,
         );
 
       await fastify.audit.record({
@@ -151,7 +155,7 @@ export function circumstancesRoutes(fastify: FastifyInstance): void {
         entityId:         exceptionalCircumstancesId,
         actionType:       'create',
         actorType:        'user',
-        actorId:          personId,
+        actorId:          request.user.sub,
         actorDisplayName: request.user.displayName,
         correlationId:    request.id,
       });

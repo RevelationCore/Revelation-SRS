@@ -32,11 +32,11 @@ import { clockNow } from '../clock.js';
 export type AmendableEntityType = 'mark' | 'module_result' | 'progression_decision';
 
 export type CaseStatusCode =
-  | 'submitted'
+  | 'open'
   | 'under-review'
   | 'upheld'
-  | 'dismissed'
-  | 'not-eligible';
+  | 'not-upheld'
+  | 'withdrawn';
 
 export interface OpenCaseInput {
   enrolmentId: string;
@@ -77,11 +77,11 @@ export interface AmendmentDto {
 // ── Allowed status transitions ────────────────────────────────────────────────
 
 const ALLOWED_STATUS_TRANSITIONS: Record<CaseStatusCode, CaseStatusCode[]> = {
-  'submitted':    ['under-review', 'dismissed', 'not-eligible'],
-  'under-review': ['upheld', 'dismissed', 'not-eligible'],
+  'open':         ['under-review', 'not-upheld', 'withdrawn'],
+  'under-review': ['upheld', 'not-upheld', 'withdrawn'],
   'upheld':       [],
-  'dismissed':    [],
-  'not-eligible': [],
+  'not-upheld':   [],
+  'withdrawn':    [],
 };
 
 // ── Service ───────────────────────────────────────────────────────────────────
@@ -113,7 +113,7 @@ export class CorrectionService {
         tenantId:     tenantId as `${string}-${string}-${string}-${string}-${string}`,
         enrolmentId:  input.enrolmentId as `${string}-${string}-${string}-${string}-${string}`,
         caseTypeCode: input.caseTypeCode,
-        statusCode:   'submitted',
+        statusCode:   'open',
         reference:    input.reference ?? null,
         actorId,
         validFrom:    now,
@@ -238,6 +238,7 @@ export class CorrectionService {
       tx.select().from(postRatificationCases).where(and(
         eq(postRatificationCases.enrolmentId, enrolmentId as `${string}-${string}-${string}-${string}-${string}`),
         eq(postRatificationCases.tenantId,    tenantId    as `${string}-${string}-${string}-${string}-${string}`),
+        isNull(postRatificationCases.recordedUntil),
       )).orderBy(postRatificationCases.recordedAt),
     );
     return rows.map(caseToDto);

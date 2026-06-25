@@ -56,7 +56,7 @@ export function App() {
         </Route>
 
         {/* Public accessibility statement — no auth required */}
-        <Route path="/accessibility" element={<AccessibilityStatementPage />} />
+        <Route path="/accessibility-statement" element={<AccessibilityStatementPage />} />
 
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="*" element={<NotFoundPage />} />

@@ -73,6 +73,11 @@ async function wipeTenantScenarioData(db: Db, tenantId: string): Promise<void> {
   await db.execute(sql`DELETE FROM exam_board_data_pack        WHERE tenant_id = ${tenantId}`);
   await db.execute(sql`DELETE FROM exam_board                  WHERE tenant_id = ${tenantId}`);
   await db.execute(sql`DELETE FROM module_registration         WHERE tenant_id = ${tenantId}`);
+  // hesa_submission references integration_exchange — delete it first
+  await db.execute(sql`
+    DELETE FROM hesa_submission
+    WHERE hesa_student_return_id IN (SELECT id FROM hesa_student_return WHERE tenant_id = ${tenantId})
+  `);
   await db.execute(sql`DELETE FROM integration_exchange        WHERE tenant_id = ${tenantId}`);
   await db.execute(sql`DELETE FROM integration_registration    WHERE tenant_id = ${tenantId}`);
   await db.execute(sql`DELETE FROM reenrolment_confirmation    WHERE tenant_id = ${tenantId}`);
