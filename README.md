@@ -164,15 +164,17 @@ Choose one of two approaches depending on your goal:
 
 Pre-seeded datasets that represent realistic points in the academic year:
 
-| Scenario | Slug | Students | Load time | Use for |
+| Scenario | Slug | Students | Load time | Walkthroughs |
 |---|---|---|---|---|
-| CI Golden | `ci-golden` | 4 | ~5 sec | Unit and integration tests |
-| Applicant Pipeline | `applicant-pipeline` | ~200 | ~20 sec | Admissions and applicant workflows |
-| Enrolment and Induction | `enrolment-induction` | 1,000 | ~30 sec | Enrolment, module selection |
-| Module Selection Peak | `module-selection` | 1,000 | ~30 sec | Module registration workflows |
-| Assessment Marks | `assessment-marks` | 1,000 | ~45 sec | Marking, progression, wellbeing |
-| Exam Board and Ratification | `exam-board` | 1,000 | ~45 sec | Board governance, awards |
-| Full-Institution Year | `institution-year` | 50,000 | ~10 min | Performance testing, full walkthroughs |
+| CI Golden | `ci-golden` | 4 | ~5 sec | Tests only |
+| S1 — Applicant Pipeline | `applicant-pipeline` | ~200 | ~20 sec | [s1-applicant-pipeline.md](docs/demo-scenarios/s1-applicant-pipeline.md) |
+| S2 — Enrolment and Induction | `enrolment-induction` | 1,000 | ~30 sec | [s2-enrolment-induction.md](docs/demo-scenarios/s2-enrolment-induction.md) |
+| S3 — Module Selection Peak | `module-selection` | 1,000 | ~30 sec | [s3-module-selection.md](docs/demo-scenarios/s3-module-selection.md) |
+| S4 — Assessment Marks | `assessment-marks` | 1,000 | ~45 sec | [s4-assessment-marks.md](docs/demo-scenarios/s4-assessment-marks.md) |
+| S5 — Exam Board and Ratification | `exam-board` | 1,000 | ~45 sec | [s5-exam-board.md](docs/demo-scenarios/s5-exam-board.md) |
+| S6 — Full-Institution Year | `institution-year` | 50,000 | ~10 min | [s6-institution-year.md](docs/demo-scenarios/s6-institution-year.md) |
+
+Each S1–S6 walkthrough document describes the user personas, demo accounts, and step-by-step stories for that scenario. See [docs/demo-scenarios/README.md](docs/demo-scenarios/README.md) for instructions on how to run through them.
 
 ```bash
 # Load a scenario (replace the slug with your choice above)
