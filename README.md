@@ -38,6 +38,7 @@ Revelation SRS is a fully open source Student Information System designed specif
 | [Non-Functional Requirements](docs/requirements/non-functional-requirements.md) | Performance, security, accessibility, privacy, and compliance requirements |
 | [Actor Catalogue](docs/requirements/actor-catalogue.md) | Human and system actors; RBAC role hierarchy |
 | [Workflow Catalogue](docs/requirements/workflow-catalogue.md) | 12 fully specified business process workflows with state machines |
+| [UK HE Business Process Library](docs/business-processes/README.md) | Evidence-based, UK-wide processes across actors and systems, including national variations |
 | [Data Subject Register](docs/requirements/data-subject-register.md) | Personal data categories, lawful basis, sensitivity, and retention |
 | **Architecture** | |
 | [System Architecture](docs/architecture/system-architecture.md) | Component diagram, modular monolith design, repository structure |

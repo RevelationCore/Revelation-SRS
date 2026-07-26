@@ -22,6 +22,8 @@
     "check:types-drift": "openapi-typescript apps/api/openapi/v1.json -o packages/ui/src/api/v1.gen.ts && git diff --exit-code packages/ui/src/api/v1.gen.ts",
     "test:e2e": "playwright test",
     "check:bundle-size": "node scripts/check-bundle-size.mjs",
+    "generate:business-process-docs": "node scripts/generate-remaining-business-process-docs.mjs",
+    "check:business-process-docs": "node scripts/check-business-process-docs.mjs",
     "migrate": "pnpm --filter @revelation-srs/db migrate && pnpm --filter @revelation-srs/wellbeing migrate",
     "migrate:gen": "pnpm --filter @revelation-srs/db generate",
     "demo:list":           "pnpm --filter @revelation-srs/demo-data demo:list",

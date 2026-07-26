@@ -1,0 +1,207 @@
+# BP-045 — Manage reassessment, referral or repeat study
+
+> Status: Draft
+> Domain: 06 — Progression, awards and graduation
+> Owner: TBC
+> Version: 0.1
+> Last reviewed: 2026-07-26
+> Review by: 2027-01-26
+
+[Previous: BP-044](../06-progression-awards-and-graduation/bp-044-determine-progression.md) · [Domain index](README.md) · [Next: BP-046](../06-progression-awards-and-graduation/bp-046-determine-and-confer-an-award.md) · [Library home](../README.md)
+
+## Applicability
+
+| Dimension | Applies |
+|---|---|
+| Common | UK |
+| Nations | England; Scotland; Wales; Northern Ireland |
+| Provider types | Providers operating this process; exact regulatory scope is configured |
+| Levels and modes | UG; PGT; PGR; full-time; part-time; distance and collaborative provision where relevant |
+| Exclusions | Activities outside the stated start/end boundary |
+
+## Traceability
+
+| Type | References |
+|---|---|
+| Revelation workflows | W005/W010 partial |
+| Reference-model flows | See integration contract catalogue; confirm detailed F-number mapping during architecture review |
+| Functional requirements | See functional requirements; detailed mapping remains an SME/architecture review action |
+| Data entities | reassessment entitlement, next attempt and repeat-study plan; supporting identity, evidence, decision and integration-exchange records |
+| Domain events | Proposed: `srs.manage.reassessment.referral.or.repeat.study.completed` |
+| Integration contracts | SRS → finance/timetable/VLE/exams |
+
+## Purpose and outcome
+
+Manage reassessment, referral or repeat study creates a controlled, explainable and effective-dated reassessment entitlement, next attempt and repeat-study plan. The outcome preserves the evidence, authority and cross-system state needed for the Revelation SRS rather than reducing the process to a status update.
+
+## Scope
+
+**Starts when:** A ratified module/progression decision grants or requires further assessment/study.
+
+**Ends when:** The authorised outcome is recorded, communicated and reconciled, or the case is closed with an owned reason.
+
+**In scope:** Intake, validation, evidence, decision, effective dating, communication and downstream reconciliation.
+
+**Out of scope:** Upstream policy creation and later lifecycle processes referenced under Related processes.
+
+## Actors and responsibilities
+
+| Actor/system | Responsibility |
+|---|---|
+| Assessment Officer | Initiates or owns the principal business action |
+| Enrolled Student | Provides evidence, decision, system processing or governed support |
+| Registry | Provides evidence, decision, system processing or governed support |
+| Finance/Timetabling | Provides evidence, decision, system processing or governed support |
+
+**Accountable owner:** Assessment Officer service owner or delegated authority (TBC)
+
+**System of record:** SRS for the student-record outcome; specialist systems retain their governed source evidence.
+
+## Preconditions
+
+1. Canonical person, programme/period and source identifiers are available where applicable.
+2. The current policy/rule version and decision authority are configured.
+3. Required interfaces use stable identifiers, provenance and reconciliation controls.
+
+## Trigger
+
+A ratified module/progression decision grants or requires further assessment/study.
+
+## Main flow
+
+1. **Assessment Officer** interpret the authorised decision under attempt and capping rules.
+2. **Enrolled Student** create the next attempt with assessment pattern and due period.
+3. **Registry** decide reassessment without attendance, referral, repeat module or repeat stage.
+4. **Finance/Timetabling** record fees, attendance, visa and curriculum consequences.
+5. **Enrolled Student** publish eligible entries/registrations to operational systems.
+6. **Registry** track completion or expiry without overwriting previous attempts.
+
+## Alternative flows
+
+### A1 — Variant
+
+- **A1.1** Deferral normally preserves attempt treatment distinct from failure.
+
+### A2 — Variant
+
+- **A2.1** Repeat with/without attendance and exceptional additional attempt are separate outcomes.
+
+## Exception flows
+
+### E1 — Control exception
+
+- **E1.1** No available module/assessment version triggers curriculum resolution.
+
+### E2 — Control exception
+
+- **E2.1** Sponsor or maximum-period conflict requires specialist review.
+
+## Postconditions
+
+### Successful
+
+- The reassessment entitlement, next attempt and repeat-study plan is authoritative, effective-dated and linked to its evidence and decision authority.
+- Each required consumer has acknowledged the correct version or has an owned reconciliation item.
+
+### Unsuccessful or incomplete
+
+- No unapproved outcome is represented as final; the case retains reason, owner and next action.
+
+## Business rules and controls
+
+| ID | Classification | Rule/control | Applicability | Source |
+|---|---|---|---|---|
+| BR-1 | SECTOR | Apply the current authoritative requirement and provider regulation for the person, level, mode and nation | UK/configured | SRC-059, SRC-062 |
+| BR-2 | INSTITUTION | Decision roles, deadlines, evidence and permitted discretion are policy-versioned | Provider | Provider regulations |
+| BR-3 | REVELATION | Attempt entitlement and repeat-study plan are distributed across statuses rather than one governed record. | Revelation | SRC-015–SRC-019 |
+| BR-4 | PROPOSED | Proposed, approved, rejected and superseded states remain distinguishable | Revelation target | Process control |
+| BR-5 | PROPOSED | Corrections append provenance and trigger impact/reconciliation; they do not silently overwrite | Revelation target | Data governance |
+
+## National and institutional variations
+
+### England
+
+Provider award regulations apply within the English regulatory framework.
+
+### Scotland
+
+SCQF levels, ordinary/honours routes and Scottish degree structures require configurable rules.
+
+### Wales
+
+CQFW context, bilingual documentation and awarding/partner responsibilities may apply.
+
+### Northern Ireland
+
+Provider award regulations and Department for the Economy context apply.
+
+### Institutional policy points
+
+Terminology, authority, deadlines, evidence, thresholds, communication, appeals/reviews, partner responsibility and target-system ownership.
+
+## Data impact
+
+| Data concept | Action | System of record | Effective/provenance requirement | Sensitivity |
+|---|---|---|---|---|
+| reassessment entitlement, next attempt and repeat-study plan | Create/version | SRS or governed specialist source | Policy, actor, evidence, decision and effective/transaction times | Personal; may be sensitive |
+| Workflow/case evidence | Append | Owning service | Immutable source and restricted access | Personal/confidential |
+| Integration exchange | Append/update | SRS integration ledger | Contract version, correlation, attempts and acknowledgement | Personal |
+
+## Integration impact
+
+| From | To | Information/purpose | Contract/pattern | Failure and reconciliation |
+|---|---|---|---|---|
+| SRS | finance/timetable/VLE/exams | repeat plan | Versioned/idempotent contract | Retry, quarantine, acknowledge and reconcile |
+
+## Sequence diagram
+
+```mermaid
+sequenceDiagram
+    actor A1 as Assessment Officer
+    participant A2 as Enrolled Student
+    participant A3 as Registry
+    participant A4 as Finance/Timetabling
+    A1->>A2: 1. interpret the authorised decision under attempt and capping rules
+    A2->>A3: 2. create the next attempt with assessment pattern and due period
+    A3->>A4: 3. decide reassessment without attendance, referral, repeat module or repeat stage
+    A4->>A1: 4. record fees, attendance, visa and curriculum consequences
+    A1->>A2: 5. publish eligible entries/registrations to operational systems
+    A2->>A3: 6. track completion or expiry without overwriting previous attempts
+    alt Valid and authorised
+        A4->>A1: Record and communicate outcome
+    else Incomplete or exception
+        A4->>A1: Retain case with owner and reason
+    end
+```
+
+## Open questions and decisions
+
+| ID | Question/decision | Owner | Status |
+|---|---|---|---|
+| OQ-1 | Confirm the authoritative owner, workflow boundary and detailed requirement/contract mapping | Process owner/architect | Open |
+| OQ-2 | Which national, provider-type and mode variants require configuration? | Four-nation SME | Open |
+| OQ-3 | Which evidence stays in a specialist system and what minimum outcome enters the SRS? | Data protection/data owner | Open |
+
+## Sources
+
+| Source | Supported content |
+|---|---|
+| [SRC-059, SRC-062](../source-register.md) | External process, regulatory or sector evidence |
+| [SRC-015–SRC-019](../source-register.md) | Revelation workflows, actors, contracts, data and requirements |
+
+## Related processes
+
+[Process inventory](../process-inventory.md); adjacent lifecycle processes in the [process map](../process-map.md).
+
+## Review record
+
+| Review | Reviewer | Date | Outcome |
+|---|---|---|---|
+| Research/documentation | Codex implementation role | 2026-07-26 | Drafted |
+| Required reviews | Process, national, data and integration SMEs (TBC) | — | Pending |
+
+## Change history
+
+| Version | Date | Author | Change |
+|---|---|---|---|
+| 0.1 | 2026-07-26 | Codex | Initial research draft |
