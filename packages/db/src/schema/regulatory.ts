@@ -149,6 +149,39 @@ export const ukviComplianceAlerts = pgTable('ukvi_compliance_alert', {
   resolvedBy:    text('resolved_by'),
 });
 
+export const ukviEngagementEvidenceSnapshots = pgTable('ukvi_engagement_evidence_snapshot', {
+  id:                  uuid('id').primaryKey().defaultRandom(),
+  tenantId:            uuid('tenant_id').notNull().references(() => tenants.id),
+  enrolmentId:         uuid('enrolment_id').notNull(),
+  engagementAlertId:   uuid('engagement_alert_id').notNull(),
+  policyVersionId:     uuid('policy_version_id').notNull(),
+  evidenceWindowFrom:  timestamp('evidence_window_from', { withTimezone: true }).notNull(),
+  evidenceWindowTo:    timestamp('evidence_window_to', { withTimezone: true }).notNull(),
+  evidenceSummary:     jsonb('evidence_summary').notNull().$type<Record<string, unknown>>(),
+  evidenceHash:        text('evidence_hash').notNull(),
+  evidenceQualityCode: text('evidence_quality_code').notNull(),
+  sourceRecordedAt:    timestamp('source_recorded_at', { withTimezone: true }).notNull(),
+  createdAt:           timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  createdBy:           text('created_by').notNull(),
+});
+
+export const ukviSponsorDecisions = pgTable('ukvi_sponsor_decision', {
+  id:                 uuid('id').primaryKey().defaultRandom(),
+  tenantId:           uuid('tenant_id').notNull().references(() => tenants.id),
+  enrolmentId:        uuid('enrolment_id').notNull(),
+  evidenceSnapshotId: uuid('evidence_snapshot_id').notNull().references(() => ukviEngagementEvidenceSnapshots.id),
+  outcomeCode:        text('outcome_code').notNull(),
+  rationaleCode:      text('rationale_code').notNull(),
+  guidanceVersion:    text('guidance_version').notNull(),
+  statusCode:         text('status_code').notNull().default('pending-authorisation'),
+  decidedAt:          timestamp('decided_at', { withTimezone: true }).notNull().defaultNow(),
+  decidedBy:          text('decided_by').notNull(),
+  authorisedAt:       timestamp('authorised_at', { withTimezone: true }),
+  authorisedBy:       text('authorised_by'),
+  externalReportId:   uuid('external_report_id').references(() => ukviAttendanceReports.id),
+  createdAt:          timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const ofsExtracts = pgTable('ofs_extract', {
@@ -209,6 +242,8 @@ export type UkviCasRequest               = typeof ukviCasRequests.$inferSelect;
 export type UkviAttendanceReport         = typeof ukviAttendanceReports.$inferSelect;
 export type UkviVisaStatus               = typeof ukviVisaStatuses.$inferSelect;
 export type UkviComplianceAlert          = typeof ukviComplianceAlerts.$inferSelect;
+export type UkviEngagementEvidenceSnapshot = typeof ukviEngagementEvidenceSnapshots.$inferSelect;
+export type UkviSponsorDecision          = typeof ukviSponsorDecisions.$inferSelect;
 export type OfsExtract                   = typeof ofsExtracts.$inferSelect;
 export type FoiRequest                   = typeof foiRequests.$inferSelect;
 export type FoiExtract                   = typeof foiExtracts.$inferSelect;

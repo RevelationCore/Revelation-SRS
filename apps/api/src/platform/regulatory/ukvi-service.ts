@@ -6,6 +6,8 @@ import {
   ukviAttendanceReports,
   ukviCasRequests,
   ukviComplianceAlerts,
+  ukviEngagementEvidenceSnapshots,
+  ukviSponsorDecisions,
   ukviVisaStatuses,
   type Db,
   type UkviCasRequest,
@@ -137,6 +139,35 @@ export interface UkviComplianceAlertDto {
   triggeredAt: Date;
   resolvedAt: Date | null;
   resolvedBy: string | null;
+}
+
+export interface UkviEvidenceSnapshotDto {
+  snapshotId: string;
+  enrolmentId: string;
+  engagementAlertId: string;
+  policyVersionId: string;
+  evidenceWindowFrom: Date;
+  evidenceWindowTo: Date;
+  evidenceSummary: Record<string, unknown>;
+  evidenceHash: string;
+  evidenceQualityCode: string;
+  createdAt: Date;
+  createdBy: string;
+}
+
+export interface UkviSponsorDecisionDto {
+  decisionId: string;
+  enrolmentId: string;
+  evidenceSnapshotId: string;
+  outcomeCode: string;
+  rationaleCode: string;
+  guidanceVersion: string;
+  statusCode: string;
+  decidedAt: Date;
+  decidedBy: string;
+  authorisedAt: Date | null;
+  authorisedBy: string | null;
+  externalReportId: string | null;
 }
 
 export class UkviService {
@@ -282,77 +313,13 @@ export class UkviService {
   }
 
   async generateAttendanceReport(
-    tenantId: string,
-    academicPeriodId: string,
-    actorId: string,
+    _tenantId: string,
+    _academicPeriodId: string,
+    _actorId: string,
   ): Promise<{ reportId: string; payload: UkviAttendanceReportPayload }> {
-    const now = clockNow();
-    const threshold = await this.#getAttendanceThreshold(tenantId);
-    const sponsoredStudents = await this.#loadSponsoredStudents(tenantId);
-    const students = sponsoredStudents.map((student) => {
-      const absenceCount = 0;
-      return {
-        enrolmentId: student.enrolment_id,
-        personId: student.person_id,
-        casReference: student.cas_reference,
-        programmeId: student.programme_id,
-        programmeCode: student.programme_code,
-        programmeTitle: student.programme_title,
-        enrolmentStatusCode: student.status_code,
-        legalFirstName: student.legal_first_name,
-        legalFamilyName: student.legal_family_name,
-        absenceCount,
-        thresholdBreached: absenceCount >= threshold,
-        attendanceDataCompleteness: 'pending-attendance-integration' as const,
-      };
-    });
-
-    const payload: UkviAttendanceReportPayload = {
-      academicPeriodId,
-      generatedAt: now.toISOString(),
-      studentCount: students.length,
-      threshold: { unauthorisedAbsencesPerEightWeeks: threshold },
-      _attendance_data_completeness: 'pending-attendance-integration',
-      students,
-    };
-
-    let reportId = '';
-    await withTenantContext(this.db, tenantId, async (tx) => {
-      const inserted = await tx
-        .insert(ukviAttendanceReports)
-        .values({
-          tenantId,
-          academicPeriodId,
-          submittedAt: now,
-          reportPayload: payload as unknown as Record<string, unknown>,
-          submittedBy: actorId,
-        })
-        .returning({ id: ukviAttendanceReports.id });
-      reportId = inserted[0]!.id;
-    });
-
-    await this.exchanges.recordExchange(
-      tenantId,
-      'ukvi-sponsor-compliance.v1',
-      {
-        directionCode: 'outbound',
-        exchangeTypeCode: 'ukvi-attendance-report',
-        idempotencyKey: `ukvi-attendance:${academicPeriodId}:${tenantId}:${now.toISOString()}`,
-        payloadHash: hashPayload(payload),
-        payloadSummary: { academicPeriodId, reportId, studentCount: students.length },
-        sentAt: now,
-      },
-      actorId,
+    throw new ValidationError(
+      'Direct attendance-report generation is retired; create an engagement evidence snapshot, record a human sponsor decision and obtain independent authorisation',
     );
-
-    await this.#publishAttendanceSubmitted(tenantId, actorId, {
-      academicPeriodId,
-      reportId,
-      submittedAt: now.toISOString(),
-      studentCount: students.length,
-    });
-
-    return { reportId, payload };
   }
 
   async processVisaStatusUpdate(
@@ -502,6 +469,250 @@ export class UkviService {
       resolvedAt: row.resolvedAt,
       resolvedBy: row.resolvedBy,
     }));
+  }
+
+  async createEngagementEvidenceSnapshot(
+    tenantId: string,
+    engagementAlertId: string,
+    actorId: string,
+  ): Promise<UkviEvidenceSnapshotDto> {
+    const rows = (await withTenantContext(this.db, tenantId, async (tx) =>
+      tx.execute(sql`
+        SELECT ea.enrolment_id, ea.policy_version_id, ea.evidence_window_from,
+               ea.evidence_window_to, ea.evidence_snapshot, ea.evidence_hash,
+               ea.reevaluation_required, ea.recorded_at
+        FROM engagement_alert ea
+        WHERE ea.tenant_id = ${tenantId}
+          AND ea.id = ${engagementAlertId}
+          AND ea.recorded_until IS NULL
+          AND EXISTS (
+            SELECT 1
+            FROM engagement_intervention_case eic
+            JOIN engagement_referral er
+              ON er.intervention_case_id = eic.id
+             AND er.tenant_id = ea.tenant_id
+             AND er.target_service_code = 'sponsor-compliance-review'
+            WHERE eic.tenant_id = ea.tenant_id
+              AND eic.alert_id = ea.id
+              AND eic.recorded_until IS NULL
+          )
+        LIMIT 1
+      `),
+    )) as unknown as Array<{
+      enrolment_id: string;
+      policy_version_id: string;
+      evidence_window_from: Date;
+      evidence_window_to: Date;
+      evidence_snapshot: Record<string, unknown>;
+      evidence_hash: string;
+      reevaluation_required: boolean;
+      recorded_at: Date;
+    }>;
+    const source = rows[0];
+    if (!source) throw new NotFoundError('sponsor-compliance engagement referral', engagementAlertId);
+
+    const quality = source.reevaluation_required ? 'reconciliation-required' : 'verified';
+    const inserted = await withTenantContext(this.db, tenantId, async (tx) =>
+      tx.insert(ukviEngagementEvidenceSnapshots).values({
+        tenantId,
+        enrolmentId: source.enrolment_id,
+        engagementAlertId,
+        policyVersionId: source.policy_version_id,
+        evidenceWindowFrom: new Date(source.evidence_window_from),
+        evidenceWindowTo: new Date(source.evidence_window_to),
+        evidenceSummary: source.evidence_snapshot,
+        evidenceHash: source.evidence_hash,
+        evidenceQualityCode: quality,
+        sourceRecordedAt: new Date(source.recorded_at),
+        createdBy: actorId,
+      }).onConflictDoNothing().returning(),
+    );
+
+    const snapshot = inserted[0] ?? (await withTenantContext(this.db, tenantId, async (tx) =>
+      tx.select().from(ukviEngagementEvidenceSnapshots).where(and(
+        eq(ukviEngagementEvidenceSnapshots.tenantId, tenantId),
+        eq(ukviEngagementEvidenceSnapshots.engagementAlertId, engagementAlertId),
+        eq(ukviEngagementEvidenceSnapshots.evidenceHash, source.evidence_hash),
+      )).limit(1),
+    ))[0];
+    if (!snapshot) throw new ValidationError('Could not create UKVI engagement evidence snapshot');
+    return toEvidenceSnapshotDto(snapshot);
+  }
+
+  async createSponsorDecision(
+    tenantId: string,
+    input: {
+      evidenceSnapshotId: string;
+      outcomeCode: 'report' | 'no-report' | 'further-review';
+      rationaleCode: string;
+      guidanceVersion: string;
+    },
+    actorId: string,
+  ): Promise<UkviSponsorDecisionDto> {
+    if (!input.rationaleCode.trim() || !input.guidanceVersion.trim()) {
+      throw new ValidationError('Rationale code and guidance version are required');
+    }
+    const snapshots = await withTenantContext(this.db, tenantId, async (tx) =>
+      tx.select().from(ukviEngagementEvidenceSnapshots).where(and(
+        eq(ukviEngagementEvidenceSnapshots.id, input.evidenceSnapshotId),
+        eq(ukviEngagementEvidenceSnapshots.tenantId, tenantId),
+      )).limit(1),
+    );
+    const snapshot = snapshots[0];
+    if (!snapshot) throw new NotFoundError('UKVI engagement evidence snapshot', input.evidenceSnapshotId);
+    if (snapshot.evidenceQualityCode !== 'verified' && input.outcomeCode !== 'further-review') {
+      throw new ValidationError('Evidence requiring reconciliation cannot support a report/no-report decision');
+    }
+    const inserted = await withTenantContext(this.db, tenantId, async (tx) =>
+      tx.insert(ukviSponsorDecisions).values({
+        tenantId,
+        enrolmentId: snapshot.enrolmentId,
+        evidenceSnapshotId: snapshot.id,
+        outcomeCode: input.outcomeCode,
+        rationaleCode: input.rationaleCode,
+        guidanceVersion: input.guidanceVersion,
+        decidedBy: actorId,
+      }).onConflictDoNothing().returning(),
+    );
+    if (!inserted[0]) throw new ValidationError('A sponsor decision already exists for this evidence snapshot');
+    return toSponsorDecisionDto(inserted[0]);
+  }
+
+  async authoriseSponsorDecision(
+    decisionId: string,
+    tenantId: string,
+    actorId: string,
+  ): Promise<UkviSponsorDecisionDto> {
+    const decisions = await withTenantContext(this.db, tenantId, async (tx) =>
+      tx.select().from(ukviSponsorDecisions).where(and(
+        eq(ukviSponsorDecisions.id, decisionId),
+        eq(ukviSponsorDecisions.tenantId, tenantId),
+      )).limit(1),
+    );
+    const decision = decisions[0];
+    if (!decision) throw new NotFoundError('UKVI sponsor decision', decisionId);
+    if (decision.statusCode !== 'pending-authorisation') {
+      throw new ValidationError('Sponsor decision is already authorised');
+    }
+    if (decision.decidedBy === actorId) {
+      throw new ValidationError('The decision maker cannot authorise their own sponsor decision');
+    }
+    const now = clockNow();
+    let reportId: string | null = null;
+    if (decision.outcomeCode === 'report') {
+      const snapshots = await withTenantContext(this.db, tenantId, async (tx) =>
+        tx.select().from(ukviEngagementEvidenceSnapshots).where(eq(
+          ukviEngagementEvidenceSnapshots.id,
+          decision.evidenceSnapshotId,
+        )).limit(1),
+      );
+      const snapshot = snapshots[0]!;
+      const payload = {
+        decisionId,
+        enrolmentId: decision.enrolmentId,
+        guidanceVersion: decision.guidanceVersion,
+        rationaleCode: decision.rationaleCode,
+        evidenceSnapshotId: snapshot.id,
+        evidenceHash: snapshot.evidenceHash,
+        evidenceWindowFrom: snapshot.evidenceWindowFrom.toISOString(),
+        evidenceWindowTo: snapshot.evidenceWindowTo.toISOString(),
+        authorisedAt: now.toISOString(),
+        authorisedBy: actorId,
+      };
+      const academicPeriod = await this.#academicPeriodForEvidenceWindow(
+        tenantId,
+        snapshot.evidenceWindowFrom,
+      );
+      const reports = await withTenantContext(this.db, tenantId, async (tx) =>
+        tx.insert(ukviAttendanceReports).values({
+          tenantId,
+          academicPeriodId: academicPeriod,
+          submittedAt: now,
+          reportPayload: payload,
+          submittedBy: actorId,
+        }).returning({ id: ukviAttendanceReports.id }),
+      );
+      reportId = reports[0]!.id;
+      await this.exchanges.recordExchange(tenantId, 'ukvi-sponsor-compliance.v1', {
+        directionCode: 'outbound',
+        exchangeTypeCode: 'ukvi-sponsor-report',
+        idempotencyKey: `ukvi-sponsor-decision:${decisionId}`,
+        payloadHash: hashPayload(payload),
+        payloadSummary: { decisionId, reportId, enrolmentId: decision.enrolmentId },
+        sentAt: now,
+      }, actorId);
+      await this.#publishAttendanceSubmitted(tenantId, actorId, {
+        academicPeriodId: academicPeriod,
+        reportId,
+        submittedAt: now.toISOString(),
+        studentCount: 1,
+      });
+    }
+    const updated = await withTenantContext(this.db, tenantId, async (tx) =>
+      tx.update(ukviSponsorDecisions).set({
+        statusCode: 'authorised',
+        authorisedAt: now,
+        authorisedBy: actorId,
+        externalReportId: reportId,
+      }).where(and(
+        eq(ukviSponsorDecisions.id, decisionId),
+        eq(ukviSponsorDecisions.tenantId, tenantId),
+      )).returning(),
+    );
+    return toSponsorDecisionDto(updated[0]!);
+  }
+
+  async listSponsorDecisions(tenantId: string): Promise<UkviSponsorDecisionDto[]> {
+    const rows = await withTenantContext(this.db, tenantId, async (tx) =>
+      tx.select().from(ukviSponsorDecisions)
+        .where(eq(ukviSponsorDecisions.tenantId, tenantId)),
+    );
+    return rows.map(toSponsorDecisionDto);
+  }
+
+  async getOperationalStatus(tenantId: string): Promise<{
+    reconciliationRequired: number;
+    pendingAuthorisation: number;
+    failedExchanges: number;
+  }> {
+    const rows = (await withTenantContext(this.db, tenantId, async (tx) => tx.execute(sql`
+      SELECT
+        (SELECT count(*)::int FROM ukvi_engagement_evidence_snapshot
+          WHERE tenant_id = ${tenantId} AND evidence_quality_code = 'reconciliation-required')
+          AS reconciliation_required,
+        (SELECT count(*)::int FROM ukvi_sponsor_decision
+          WHERE tenant_id = ${tenantId} AND status_code = 'pending-authorisation')
+          AS pending_authorisation,
+        (SELECT count(*)::int FROM integration_exchange
+          WHERE tenant_id = ${tenantId}
+            AND contract_id = 'ukvi-sponsor-compliance.v1'
+            AND status_code IN ('failed', 'dead-letter'))
+          AS failed_exchanges
+    `))) as unknown as Array<{
+      reconciliation_required: number;
+      pending_authorisation: number;
+      failed_exchanges: number;
+    }>;
+    const row = rows[0]!;
+    return {
+      reconciliationRequired: row.reconciliation_required,
+      pendingAuthorisation: row.pending_authorisation,
+      failedExchanges: row.failed_exchanges,
+    };
+  }
+
+  async #academicPeriodForEvidenceWindow(tenantId: string, evidenceFrom: Date): Promise<string> {
+    const rows = (await withTenantContext(this.db, tenantId, async (tx) => tx.execute(sql`
+      SELECT id
+      FROM academic_period
+      WHERE tenant_id = ${tenantId}
+        AND start_date <= ${evidenceFrom.toISOString()}::date
+        AND end_date >= ${evidenceFrom.toISOString()}::date
+      ORDER BY start_date DESC
+      LIMIT 1
+    `))) as unknown as Array<{ id: string }>;
+    if (!rows[0]) throw new NotFoundError('academic period for UKVI evidence', evidenceFrom.toISOString());
+    return rows[0].id;
   }
 
   async #loadPendingCasSources(tenantId: string): Promise<CasSourceRow[]> {
@@ -798,6 +1009,43 @@ function toCasDto(row: UkviCasRequest): UkviCasRequestDto {
     casReference: row.casReference,
     statusCode: row.statusCode,
     requestedAt: row.requestedAt,
+  };
+}
+
+function toEvidenceSnapshotDto(
+  row: typeof ukviEngagementEvidenceSnapshots.$inferSelect,
+): UkviEvidenceSnapshotDto {
+  return {
+    snapshotId: row.id,
+    enrolmentId: row.enrolmentId,
+    engagementAlertId: row.engagementAlertId,
+    policyVersionId: row.policyVersionId,
+    evidenceWindowFrom: row.evidenceWindowFrom,
+    evidenceWindowTo: row.evidenceWindowTo,
+    evidenceSummary: row.evidenceSummary,
+    evidenceHash: row.evidenceHash,
+    evidenceQualityCode: row.evidenceQualityCode,
+    createdAt: row.createdAt,
+    createdBy: row.createdBy,
+  };
+}
+
+function toSponsorDecisionDto(
+  row: typeof ukviSponsorDecisions.$inferSelect,
+): UkviSponsorDecisionDto {
+  return {
+    decisionId: row.id,
+    enrolmentId: row.enrolmentId,
+    evidenceSnapshotId: row.evidenceSnapshotId,
+    outcomeCode: row.outcomeCode,
+    rationaleCode: row.rationaleCode,
+    guidanceVersion: row.guidanceVersion,
+    statusCode: row.statusCode,
+    decidedAt: row.decidedAt,
+    decidedBy: row.decidedBy,
+    authorisedAt: row.authorisedAt,
+    authorisedBy: row.authorisedBy,
+    externalReportId: row.externalReportId,
   };
 }
 

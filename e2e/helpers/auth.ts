@@ -19,8 +19,8 @@ function makeJwt(payload: Record<string, unknown>): string {
   return `${header}.${body}.test-sig`;
 }
 
-// Far-future exp so tokens never expire during tests.
-const EXP = 9_999_999_999;
+// Long enough for the suite without overflowing browser timer limits when OIDC is configured.
+const EXP = Math.floor(Date.now() / 1000) + 3_600;
 const IAT = 1_718_000_000;
 
 export const STAFF_TOKEN = makeJwt({

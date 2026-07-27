@@ -144,6 +144,39 @@ export function resolveComplianceAlert(alertId: string): Promise<void> {
   return api.post(`/api/v1/regulatory/ukvi/compliance-alerts/${alertId}/resolve`, {});
 }
 
+export interface SponsorDecision {
+  decisionId:         string;
+  enrolmentId:        string;
+  evidenceSnapshotId: string;
+  outcomeCode:        'report' | 'no-report' | 'further-review';
+  rationaleCode:      string;
+  guidanceVersion:    string;
+  statusCode:         'pending-authorisation' | 'authorised';
+  decidedAt:          string;
+  decidedBy:          string;
+  authorisedAt:       string | null;
+  authorisedBy:       string | null;
+  externalReportId:   string | null;
+}
+
+export interface UkviOperationalStatus {
+  reconciliationRequired: number;
+  pendingAuthorisation:   number;
+  failedExchanges:        number;
+}
+
+export function listSponsorDecisions(): Promise<SponsorDecision[]> {
+  return api.get<SponsorDecision[]>('/api/v1/regulatory/ukvi/sponsor-decisions');
+}
+
+export function authoriseSponsorDecision(decisionId: string): Promise<SponsorDecision> {
+  return api.post(`/api/v1/regulatory/ukvi/sponsor-decisions/${decisionId}/authorise`, {});
+}
+
+export function getUkviOperationalStatus(): Promise<UkviOperationalStatus> {
+  return api.get<UkviOperationalStatus>('/api/v1/regulatory/ukvi/operations/status');
+}
+
 // ── OfS ──────────────────────────────────────────────────────────────────────
 
 export interface OfsB3Extract {

@@ -10768,6 +10768,758 @@
         }
       }
     },
+    "/api/v1/regulatory/ukvi/engagement-evidence-snapshots": {
+      "post": {
+        "operationId": "createRegulatoryUkviEngagementEvidenceSnapshots",
+        "tags": [
+          "engagement"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "engagementAlertId"
+                ],
+                "properties": {
+                  "engagementAlertId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-publication-class": "reporting",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "snapshotId",
+                    "enrolmentId",
+                    "engagementAlertId",
+                    "policyVersionId",
+                    "evidenceWindowFrom",
+                    "evidenceWindowTo",
+                    "evidenceSummary",
+                    "evidenceHash",
+                    "evidenceQualityCode",
+                    "createdAt",
+                    "createdBy"
+                  ],
+                  "properties": {
+                    "snapshotId": {
+                      "type": "string"
+                    },
+                    "enrolmentId": {
+                      "type": "string"
+                    },
+                    "engagementAlertId": {
+                      "type": "string"
+                    },
+                    "policyVersionId": {
+                      "type": "string"
+                    },
+                    "evidenceWindowFrom": {
+                      "type": "string"
+                    },
+                    "evidenceWindowTo": {
+                      "type": "string"
+                    },
+                    "evidenceSummary": {
+                      "type": "object",
+                      "additionalProperties": {}
+                    },
+                    "evidenceHash": {
+                      "type": "string"
+                    },
+                    "evidenceQualityCode": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "verified"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "reconciliation-required"
+                          ]
+                        }
+                      ]
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "createdBy": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/regulatory/ukvi/sponsor-decisions": {
+      "post": {
+        "operationId": "createRegulatoryUkviSponsorDecisions",
+        "tags": [
+          "regulatory"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "evidenceSnapshotId",
+                  "outcomeCode",
+                  "rationaleCode",
+                  "guidanceVersion"
+                ],
+                "properties": {
+                  "evidenceSnapshotId": {
+                    "type": "string"
+                  },
+                  "outcomeCode": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "report"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "no-report"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "further-review"
+                        ]
+                      }
+                    ]
+                  },
+                  "rationaleCode": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "guidanceVersion": {
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-publication-class": "reporting",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "decisionId",
+                    "enrolmentId",
+                    "evidenceSnapshotId",
+                    "outcomeCode",
+                    "rationaleCode",
+                    "guidanceVersion",
+                    "statusCode",
+                    "decidedAt",
+                    "decidedBy",
+                    "authorisedAt",
+                    "authorisedBy",
+                    "externalReportId"
+                  ],
+                  "properties": {
+                    "decisionId": {
+                      "type": "string"
+                    },
+                    "enrolmentId": {
+                      "type": "string"
+                    },
+                    "evidenceSnapshotId": {
+                      "type": "string"
+                    },
+                    "outcomeCode": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "report"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "no-report"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "further-review"
+                          ]
+                        }
+                      ]
+                    },
+                    "rationaleCode": {
+                      "type": "string"
+                    },
+                    "guidanceVersion": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "pending-authorisation"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "authorised"
+                          ]
+                        }
+                      ]
+                    },
+                    "decidedAt": {
+                      "type": "string"
+                    },
+                    "decidedBy": {
+                      "type": "string"
+                    },
+                    "authorisedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "authorisedBy": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "externalReportId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "getRegulatoryUkviSponsorDecisions",
+        "tags": [
+          "regulatory"
+        ],
+        "x-publication-class": "reporting",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "decisionId",
+                      "enrolmentId",
+                      "evidenceSnapshotId",
+                      "outcomeCode",
+                      "rationaleCode",
+                      "guidanceVersion",
+                      "statusCode",
+                      "decidedAt",
+                      "decidedBy",
+                      "authorisedAt",
+                      "authorisedBy",
+                      "externalReportId"
+                    ],
+                    "properties": {
+                      "decisionId": {
+                        "type": "string"
+                      },
+                      "enrolmentId": {
+                        "type": "string"
+                      },
+                      "evidenceSnapshotId": {
+                        "type": "string"
+                      },
+                      "outcomeCode": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "enum": [
+                              "report"
+                            ]
+                          },
+                          {
+                            "type": "string",
+                            "enum": [
+                              "no-report"
+                            ]
+                          },
+                          {
+                            "type": "string",
+                            "enum": [
+                              "further-review"
+                            ]
+                          }
+                        ]
+                      },
+                      "rationaleCode": {
+                        "type": "string"
+                      },
+                      "guidanceVersion": {
+                        "type": "string"
+                      },
+                      "statusCode": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "enum": [
+                              "pending-authorisation"
+                            ]
+                          },
+                          {
+                            "type": "string",
+                            "enum": [
+                              "authorised"
+                            ]
+                          }
+                        ]
+                      },
+                      "decidedAt": {
+                        "type": "string"
+                      },
+                      "decidedBy": {
+                        "type": "string"
+                      },
+                      "authorisedAt": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "authorisedBy": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "externalReportId": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/regulatory/ukvi/sponsor-decisions/{decisionId}/authorise": {
+      "post": {
+        "operationId": "createRegulatoryUkviSponsorDecisionsByDecisionIdAuthorise",
+        "tags": [
+          "regulatory"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "decisionId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "reporting",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "decisionId",
+                    "enrolmentId",
+                    "evidenceSnapshotId",
+                    "outcomeCode",
+                    "rationaleCode",
+                    "guidanceVersion",
+                    "statusCode",
+                    "decidedAt",
+                    "decidedBy",
+                    "authorisedAt",
+                    "authorisedBy",
+                    "externalReportId"
+                  ],
+                  "properties": {
+                    "decisionId": {
+                      "type": "string"
+                    },
+                    "enrolmentId": {
+                      "type": "string"
+                    },
+                    "evidenceSnapshotId": {
+                      "type": "string"
+                    },
+                    "outcomeCode": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "report"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "no-report"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "further-review"
+                          ]
+                        }
+                      ]
+                    },
+                    "rationaleCode": {
+                      "type": "string"
+                    },
+                    "guidanceVersion": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "pending-authorisation"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "authorised"
+                          ]
+                        }
+                      ]
+                    },
+                    "decidedAt": {
+                      "type": "string"
+                    },
+                    "decidedBy": {
+                      "type": "string"
+                    },
+                    "authorisedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "authorisedBy": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "externalReportId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/regulatory/ukvi/operations/status": {
+      "get": {
+        "operationId": "getRegulatoryUkviOperationsStatus",
+        "tags": [
+          "regulatory"
+        ],
+        "x-publication-class": "reporting",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "reconciliationRequired",
+                    "pendingAuthorisation",
+                    "failedExchanges"
+                  ],
+                  "properties": {
+                    "reconciliationRequired": {
+                      "type": "number"
+                    },
+                    "pendingAuthorisation": {
+                      "type": "number"
+                    },
+                    "failedExchanges": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/regulatory/ukvi/cas-requests": {
       "get": {
         "operationId": "getRegulatoryUkviCasRequests",
@@ -11180,6 +11932,35 @@
             }
           },
           "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
             "description": "Default Response",
             "content": {
               "application/json": {

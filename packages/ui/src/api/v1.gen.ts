@@ -1029,6 +1029,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/regulatory/ukvi/engagement-evidence-snapshots": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createRegulatoryUkviEngagementEvidenceSnapshots"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/regulatory/ukvi/sponsor-decisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getRegulatoryUkviSponsorDecisions"];
+        put?: never;
+        post: operations["createRegulatoryUkviSponsorDecisions"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/regulatory/ukvi/sponsor-decisions/{decisionId}/authorise": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createRegulatoryUkviSponsorDecisionsByDecisionIdAuthorise"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/regulatory/ukvi/operations/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getRegulatoryUkviOperationsStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/regulatory/ukvi/cas-requests": {
         parameters: {
             query?: never;
@@ -7358,6 +7422,264 @@ export interface operations {
             };
         };
     };
+    createRegulatoryUkviEngagementEvidenceSnapshots: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    engagementAlertId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        snapshotId: string;
+                        enrolmentId: string;
+                        engagementAlertId: string;
+                        policyVersionId: string;
+                        evidenceWindowFrom: string;
+                        evidenceWindowTo: string;
+                        evidenceSummary: {
+                            [key: string]: unknown;
+                        };
+                        evidenceHash: string;
+                        evidenceQualityCode: "verified" | "reconciliation-required";
+                        createdAt: string;
+                        createdBy: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getRegulatoryUkviSponsorDecisions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        decisionId: string;
+                        enrolmentId: string;
+                        evidenceSnapshotId: string;
+                        outcomeCode: "report" | "no-report" | "further-review";
+                        rationaleCode: string;
+                        guidanceVersion: string;
+                        statusCode: "pending-authorisation" | "authorised";
+                        decidedAt: string;
+                        decidedBy: string;
+                        authorisedAt: string | null;
+                        authorisedBy: string | null;
+                        externalReportId: string | null;
+                    }[];
+                };
+            };
+        };
+    };
+    createRegulatoryUkviSponsorDecisions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    evidenceSnapshotId: string;
+                    outcomeCode: "report" | "no-report" | "further-review";
+                    rationaleCode: string;
+                    guidanceVersion: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        decisionId: string;
+                        enrolmentId: string;
+                        evidenceSnapshotId: string;
+                        outcomeCode: "report" | "no-report" | "further-review";
+                        rationaleCode: string;
+                        guidanceVersion: string;
+                        statusCode: "pending-authorisation" | "authorised";
+                        decidedAt: string;
+                        decidedBy: string;
+                        authorisedAt: string | null;
+                        authorisedBy: string | null;
+                        externalReportId: string | null;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createRegulatoryUkviSponsorDecisionsByDecisionIdAuthorise: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                decisionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        decisionId: string;
+                        enrolmentId: string;
+                        evidenceSnapshotId: string;
+                        outcomeCode: "report" | "no-report" | "further-review";
+                        rationaleCode: string;
+                        guidanceVersion: string;
+                        statusCode: "pending-authorisation" | "authorised";
+                        decidedAt: string;
+                        decidedBy: string;
+                        authorisedAt: string | null;
+                        authorisedBy: string | null;
+                        externalReportId: string | null;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getRegulatoryUkviOperationsStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        reconciliationRequired: number;
+                        pendingAuthorisation: number;
+                        failedExchanges: number;
+                    };
+                };
+            };
+        };
+    };
     getRegulatoryUkviCasRequests: {
         parameters: {
             query?: {
@@ -7499,6 +7821,20 @@ export interface operations {
             };
             /** @description Default Response */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

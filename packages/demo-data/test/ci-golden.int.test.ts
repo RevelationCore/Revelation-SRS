@@ -67,6 +67,7 @@ async function applyAllMigrations(db: Db): Promise<void> {
   await applyMigration(db, '0037_engagement_intervention.sql');
   await applyMigration(db, '0038_engagement_policy_alert_immutability.sql');
   await applyMigration(db, '0039_engagement_intervention_idempotency.sql');
+  await applyMigration(db, '0040_ukvi_engagement_decision_boundary.sql');
 }
 
 let container: StartedPostgreSqlContainer;

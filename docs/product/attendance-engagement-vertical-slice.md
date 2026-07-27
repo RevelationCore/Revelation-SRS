@@ -163,7 +163,7 @@ Proposed domain events:
 
 Inbound contracts must carry source event ID/version, tenant, canonical student/activity identifiers, event and received times, observation outcome, capture method, correction link and idempotency key. Dead-letter payloads contain no restricted narrative.
 
-The existing UKVI report endpoint must continue to state `pending-attendance-integration` until it consumes an approved engagement read model. Even after that integration, it may present evidence to a sponsor-compliance case but must not auto-submit a report.
+The legacy direct UKVI attendance-report endpoint is retired with a validation response. Migration `0040` provides an immutable, minimum-necessary engagement-evidence snapshot for sponsor-compliance review. A human records a `report`, `no-report` or `further-review` decision against that snapshot and a different authorised officer must approve it. Only an independently authorised `report` decision creates an outbound exchange; disputed or reconciliation-required evidence cannot support a report/no-report decision.
 
 ## Admin application
 
@@ -203,7 +203,7 @@ No nation implies an automatic adverse outcome from an attendance threshold.
 | D | Policy evaluation and explainable alert | Implemented and runtime-verified: approved policy versions drive deterministic evidence snapshots and duplicate-safe explainable alerts; unsafe evidence suspends for reconciliation and no direct adverse decision is permitted |
 | E | Intervention workflow and restricted referral | Implemented and runtime-verified: idempotent triage, assigned cases, accessible contacts, actions, authoritative-version reviews, closure and minimum-necessary referrals preserve the separate status/sponsor decision boundary |
 | F | Admin UI and demo data | Implemented and verified: role-sensitive evidence worklist, explainable alert queue, case timeline and policy administration; 18 CI-golden integration tests and 3 browser scenarios cover attended, alternative-engagement, disputed-evidence and human-referral stories with Welsh-language contact coverage |
-| G | UKVI boundary integration and operational controls | Placeholder removed only with approved read model; monitoring, replay and reconciliation verified |
+| G | UKVI boundary integration and operational controls | Implemented: migration `0040`, API and admin controls provide an immutable approved read model, human report/no-report/further-review decisions, independent authorisation, outbound exchange evidence and operational reconciliation/pending/failed counts; direct report generation is retired |
 
 ## Acceptance criteria
 

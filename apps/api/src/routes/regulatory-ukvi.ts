@@ -79,6 +79,45 @@ const ComplianceAlertSchema = Type.Object({
   resolvedBy: Type.Union([Type.String(), Type.Null()]),
 });
 
+const EvidenceSnapshotSchema = Type.Object({
+  snapshotId: Type.String(),
+  enrolmentId: Type.String(),
+  engagementAlertId: Type.String(),
+  policyVersionId: Type.String(),
+  evidenceWindowFrom: Type.String(),
+  evidenceWindowTo: Type.String(),
+  evidenceSummary: Type.Record(Type.String(), Type.Unknown()),
+  evidenceHash: Type.String(),
+  evidenceQualityCode: Type.Union([
+    Type.Literal('verified'),
+    Type.Literal('reconciliation-required'),
+  ]),
+  createdAt: Type.String(),
+  createdBy: Type.String(),
+});
+
+const SponsorDecisionSchema = Type.Object({
+  decisionId: Type.String(),
+  enrolmentId: Type.String(),
+  evidenceSnapshotId: Type.String(),
+  outcomeCode: Type.Union([
+    Type.Literal('report'),
+    Type.Literal('no-report'),
+    Type.Literal('further-review'),
+  ]),
+  rationaleCode: Type.String(),
+  guidanceVersion: Type.String(),
+  statusCode: Type.Union([
+    Type.Literal('pending-authorisation'),
+    Type.Literal('authorised'),
+  ]),
+  decidedAt: Type.String(),
+  decidedBy: Type.String(),
+  authorisedAt: Type.Union([Type.String(), Type.Null()]),
+  authorisedBy: Type.Union([Type.String(), Type.Null()]),
+  externalReportId: Type.Union([Type.String(), Type.Null()]),
+});
+
 export function regulatoryUkviRoutes(fastify: FastifyInstance): void {
   fastify.post(
     '/regulatory/ukvi/cas-requests/generate',
@@ -110,6 +149,128 @@ export function regulatoryUkviRoutes(fastify: FastifyInstance): void {
         correlationId: request.id,
       });
       await reply.send(result);
+    },
+  );
+
+  fastify.post(
+    '/regulatory/ukvi/engagement-evidence-snapshots',
+    {
+      schema: {
+        body: Type.Object({ engagementAlertId: Type.String() }),
+        response: { 201: EvidenceSnapshotSchema, 404: ErrorSchema, 422: ErrorSchema },
+      },
+      preHandler: [requirePermission('regulatory:write')],
+    },
+    async (request, reply) => {
+      const { engagementAlertId } = request.body as { engagementAlertId: string };
+      const result = await fastify.ukviService.createEngagementEvidenceSnapshot(
+        request.tenantId,
+        engagementAlertId,
+        request.user.sub,
+      );
+      await fastify.audit.record({
+        tenantId: request.tenantId,
+        entityType: 'ukvi_engagement_evidence_snapshot',
+        entityId: result.snapshotId,
+        actionType: 'create',
+        actorType: 'user',
+        actorId: request.user.sub,
+        actorDisplayName: request.user.displayName,
+        correlationId: request.id,
+      });
+      await reply.code(201).send(evidenceSnapshotToWire(result));
+    },
+  );
+
+  fastify.post(
+    '/regulatory/ukvi/sponsor-decisions',
+    {
+      schema: {
+        body: Type.Object({
+          evidenceSnapshotId: Type.String(),
+          outcomeCode: Type.Union([
+            Type.Literal('report'),
+            Type.Literal('no-report'),
+            Type.Literal('further-review'),
+          ]),
+          rationaleCode: Type.String({ minLength: 1 }),
+          guidanceVersion: Type.String({ minLength: 1 }),
+        }),
+        response: { 201: SponsorDecisionSchema, 404: ErrorSchema, 422: ErrorSchema },
+      },
+      preHandler: [requirePermission('regulatory:write')],
+    },
+    async (request, reply) => {
+      const result = await fastify.ukviService.createSponsorDecision(
+        request.tenantId,
+        request.body as {
+          evidenceSnapshotId: string;
+          outcomeCode: 'report' | 'no-report' | 'further-review';
+          rationaleCode: string;
+          guidanceVersion: string;
+        },
+        request.user.sub,
+      );
+      await reply.code(201).send(sponsorDecisionToWire(result));
+    },
+  );
+
+  fastify.get(
+    '/regulatory/ukvi/sponsor-decisions',
+    {
+      schema: { response: { 200: Type.Array(SponsorDecisionSchema) } },
+      preHandler: [requirePermission('regulatory:read')],
+    },
+    async (request, reply) => {
+      const rows = await fastify.ukviService.listSponsorDecisions(request.tenantId);
+      await reply.send(rows.map(sponsorDecisionToWire));
+    },
+  );
+
+  fastify.post(
+    '/regulatory/ukvi/sponsor-decisions/:decisionId/authorise',
+    {
+      schema: {
+        params: Type.Object({ decisionId: Type.String() }),
+        response: { 200: SponsorDecisionSchema, 404: ErrorSchema, 422: ErrorSchema },
+      },
+      preHandler: [requirePermission('regulatory:write')],
+    },
+    async (request, reply) => {
+      const { decisionId } = request.params as { decisionId: string };
+      const result = await fastify.ukviService.authoriseSponsorDecision(
+        decisionId,
+        request.tenantId,
+        request.user.sub,
+      );
+      await fastify.audit.record({
+        tenantId: request.tenantId,
+        entityType: 'ukvi_sponsor_decision',
+        entityId: decisionId,
+        actionType: 'update',
+        actorType: 'user',
+        actorId: request.user.sub,
+        actorDisplayName: request.user.displayName,
+        correlationId: request.id,
+      });
+      await reply.send(sponsorDecisionToWire(result));
+    },
+  );
+
+  fastify.get(
+    '/regulatory/ukvi/operations/status',
+    {
+      schema: {
+        response: { 200: Type.Object({
+          reconciliationRequired: Type.Number(),
+          pendingAuthorisation: Type.Number(),
+          failedExchanges: Type.Number(),
+        }) },
+      },
+      preHandler: [requirePermission('regulatory:read')],
+    },
+    async (request, reply) => {
+      await reply.send(await fastify.ukviService.getOperationalStatus(request.tenantId));
     },
   );
 
@@ -170,6 +331,7 @@ export function regulatoryUkviRoutes(fastify: FastifyInstance): void {
         response: {
           200: Type.Object({ reportId: Type.String(), payload: AttendanceReportPayloadSchema }),
           404: ErrorSchema,
+          422: ErrorSchema,
         },
       },
       preHandler: [requirePermission('regulatory:write')],
@@ -318,6 +480,27 @@ function alertToWire(row: UkviComplianceAlertDto) {
     ...row,
     triggeredAt: row.triggeredAt.toISOString(),
     resolvedAt: row.resolvedAt?.toISOString() ?? null,
+  };
+}
+
+function evidenceSnapshotToWire(
+  row: Awaited<ReturnType<FastifyInstance['ukviService']['createEngagementEvidenceSnapshot']>>,
+) {
+  return {
+    ...row,
+    evidenceWindowFrom: row.evidenceWindowFrom.toISOString(),
+    evidenceWindowTo: row.evidenceWindowTo.toISOString(),
+    createdAt: row.createdAt.toISOString(),
+  };
+}
+
+function sponsorDecisionToWire(
+  row: Awaited<ReturnType<FastifyInstance['ukviService']['createSponsorDecision']>>,
+) {
+  return {
+    ...row,
+    decidedAt: row.decidedAt.toISOString(),
+    authorisedAt: row.authorisedAt?.toISOString() ?? null,
   };
 }
 

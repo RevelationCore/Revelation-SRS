@@ -114,7 +114,7 @@ describe('UKVI compliance exchange', () => {
     });
   });
 
-  it('generates attendance reports for active sponsored students', async () => {
+  it('blocks the retired direct attendance-report path', async () => {
     const fixture = await createUkviEnrolment('Attendance', 'Report');
     const casRequestId = await generateCasRequestFor(fixture.enrolmentId);
     await assignCas(casRequestId, 'CAS-ATTEND-001');
@@ -126,16 +126,9 @@ describe('UKVI compliance exchange', () => {
       headers: { authorization: `Bearer ${jwt}` },
       payload: { academicPeriodId },
     });
-    expect(report.statusCode).toBe(200);
-    const body = report.json<{ reportId: string; payload: { studentCount: number; students: Array<{ enrolmentId: string; casReference: string | null }> } }>();
-    expect(body.reportId).toMatch(/^[0-9a-f-]{36}$/);
-    expect(body.payload.studentCount).toBeGreaterThanOrEqual(1);
-    expect(body.payload.students).toContainEqual(
-      expect.objectContaining({ enrolmentId: fixture.enrolmentId, casReference: 'CAS-ATTEND-001' }),
-    );
-    expect(events.find((e) => e.type === 'srs.regulatory.ukvi-attendance-submitted')).toMatchObject({
-      classification: 'regulatory',
-    });
+    expect(report.statusCode).toBe(422);
+    expect(report.json<{ detail: string }>().detail).toContain('independent authorisation');
+    expect(events.find((e) => e.type === 'srs.regulatory.ukvi-attendance-submitted')).toBeUndefined();
   });
 
   it('records curtailed visa updates and raises a compliance alert', async () => {
@@ -237,6 +230,129 @@ describe('UKVI compliance exchange', () => {
     expect(afterResolve.json<{ alertsRaised: number }>().alertsRaised).toBe(0);
   });
 
+  it('creates an immutable sponsor evidence snapshot only from a compliance referral', async () => {
+    const fixture = await createUkviEnrolment('Evidence', 'Snapshot');
+    const alertId = await createSponsorReferral(fixture, false);
+
+    const first = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/v1/regulatory/ukvi/engagement-evidence-snapshots',
+      headers: { authorization: `Bearer ${jwt}` },
+      payload: { engagementAlertId: alertId },
+    });
+    expect(first.statusCode, first.body).toBe(201);
+    const snapshot = first.json<{
+      snapshotId: string;
+      evidenceQualityCode: string;
+      evidenceHash: string;
+    }>();
+    expect(snapshot).toMatchObject({
+      evidenceQualityCode: 'verified',
+      evidenceHash: 'verified-engagement-hash',
+    });
+
+    const second = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/v1/regulatory/ukvi/engagement-evidence-snapshots',
+      headers: { authorization: `Bearer ${jwt}` },
+      payload: { engagementAlertId: alertId },
+    });
+    expect(second.statusCode).toBe(201);
+    expect(second.json<{ snapshotId: string }>().snapshotId).toBe(snapshot.snapshotId);
+
+    await expect(ctx.db.execute(sql`
+      UPDATE ukvi_engagement_evidence_snapshot
+      SET evidence_quality_code = 'reconciliation-required'
+      WHERE id = ${snapshot.snapshotId}
+    `)).rejects.toThrow(/append-only/);
+  });
+
+  it('requires separate human authorisation before producing a sponsor report', async () => {
+    const fixture = await createUkviEnrolment('Sponsor', 'Decision');
+    await createAcademicPeriod(`UKVI-G-${randomUUID().slice(0, 8)}`);
+    const alertId = await createSponsorReferral(fixture, false);
+    const snapshotResponse = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/v1/regulatory/ukvi/engagement-evidence-snapshots',
+      headers: { authorization: `Bearer ${jwt}` },
+      payload: { engagementAlertId: alertId },
+    });
+    const snapshotId = snapshotResponse.json<{ snapshotId: string }>().snapshotId;
+    const decisionResponse = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/v1/regulatory/ukvi/sponsor-decisions',
+      headers: { authorization: `Bearer ${jwt}` },
+      payload: {
+        evidenceSnapshotId: snapshotId,
+        outcomeCode: 'report',
+        rationaleCode: 'sustained-non-engagement',
+        guidanceVersion: 'student-sponsor-guidance-2027.1',
+      },
+    });
+    expect(decisionResponse.statusCode).toBe(201);
+    const decision = decisionResponse.json<{ decisionId: string; statusCode: string }>();
+    expect(decision.statusCode).toBe('pending-authorisation');
+
+    const selfAuthorisation = await ctx.app.inject({
+      method: 'POST',
+      url: `/api/v1/regulatory/ukvi/sponsor-decisions/${decision.decisionId}/authorise`,
+      headers: { authorization: `Bearer ${jwt}` },
+    });
+    expect(selfAuthorisation.statusCode).toBe(422);
+
+    const authoriserJwt = await ctx.makeJwt({ sub: 'independent-authoriser' });
+    const authorised = await ctx.app.inject({
+      method: 'POST',
+      url: `/api/v1/regulatory/ukvi/sponsor-decisions/${decision.decisionId}/authorise`,
+      headers: { authorization: `Bearer ${authoriserJwt}` },
+    });
+    expect(authorised.statusCode).toBe(200);
+    expect(authorised.json<{
+      statusCode: string;
+      authorisedBy: string;
+      externalReportId: string;
+    }>()).toMatchObject({
+      statusCode: 'authorised',
+      authorisedBy: 'independent-authoriser',
+      externalReportId: expect.stringMatching(/^[0-9a-f-]{36}$/),
+    });
+    expect(events.find((event) => event.type === 'srs.regulatory.ukvi-attendance-submitted'))
+      .toMatchObject({ classification: 'regulatory' });
+  });
+
+  it('blocks report/no-report decisions while engagement evidence needs reconciliation', async () => {
+    const fixture = await createUkviEnrolment('Disputed', 'Evidence');
+    const alertId = await createSponsorReferral(fixture, true);
+    const snapshot = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/v1/regulatory/ukvi/engagement-evidence-snapshots',
+      headers: { authorization: `Bearer ${jwt}` },
+      payload: { engagementAlertId: alertId },
+    });
+    const snapshotId = snapshot.json<{ snapshotId: string }>().snapshotId;
+    const decision = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/v1/regulatory/ukvi/sponsor-decisions',
+      headers: { authorization: `Bearer ${jwt}` },
+      payload: {
+        evidenceSnapshotId: snapshotId,
+        outcomeCode: 'no-report',
+        rationaleCode: 'evidence-disputed',
+        guidanceVersion: 'student-sponsor-guidance-2027.1',
+      },
+    });
+    expect(decision.statusCode).toBe(422);
+
+    const status = await ctx.app.inject({
+      method: 'GET',
+      url: '/api/v1/regulatory/ukvi/operations/status',
+      headers: { authorization: `Bearer ${jwt}` },
+    });
+    expect(status.statusCode).toBe(200);
+    expect(status.json<{ reconciliationRequired: number }>().reconciliationRequired)
+      .toBeGreaterThanOrEqual(1);
+  });
+
   it('does not expose UKVI CAS requests across tenants', async () => {
     const fixture = await createUkviEnrolment('Tenant', 'Isolation');
     await generateCasRequestFor(fixture.enrolmentId);
@@ -322,4 +438,60 @@ async function insertAttendanceReport(academicPeriodId: string, payload: Record<
     INSERT INTO ukvi_attendance_report (id, tenant_id, academic_period_id, submitted_at, report_payload, submitted_by)
     VALUES (${randomUUID()}, ${ctx.tenantId}, ${academicPeriodId}, NOW(), ${JSON.stringify(payload)}::jsonb, 'test-user')
   `);
+}
+
+async function createSponsorReferral(
+  fixture: { personId: string; enrolmentId: string },
+  reevaluationRequired: boolean,
+): Promise<string> {
+  const policyVersionId = randomUUID();
+  const policyId = randomUUID();
+  const alertVersionId = randomUUID();
+  const alertId = randomUUID();
+  const caseVersionId = randomUUID();
+  const caseId = randomUUID();
+  await ctx.db.execute(sql`
+    INSERT INTO engagement_policy_version (
+      version_id, id, tenant_id, policy_code, version_number, display_name,
+      status_code, applicability, evidence_window, alert_rules, review_deadline,
+      approved_by, approved_at, actor_id, valid_from
+    ) VALUES (
+      ${policyVersionId}, ${policyId}, ${ctx.tenantId}, ${`ukvi-test-${policyId}`}, 1, 'UKVI test policy',
+      'approved', '{}', '{}', '{}', '{}', 'policy-owner', NOW(), 'policy-owner', NOW()
+    )
+  `);
+  await ctx.db.execute(sql`
+    INSERT INTO engagement_alert (
+      version_id, id, tenant_id, person_id, enrolment_id, policy_version_id,
+      evidence_window_from, evidence_window_to, evidence_snapshot, evidence_hash,
+      explanation, severity_code, status_code, reevaluation_required, actor_id, valid_from
+    ) VALUES (
+      ${alertVersionId}, ${alertId}, ${ctx.tenantId}, ${fixture.personId}, ${fixture.enrolmentId},
+      ${policyVersionId}, '2027-09-20', '2027-10-20',
+      '{"expectedCount": 12, "attendedCount": 1, "absentCount": 11}',
+      ${reevaluationRequired ? 'disputed-engagement-hash' : 'verified-engagement-hash'},
+      '{"rule": "sustained-non-engagement"}', 'high', 'open',
+      ${reevaluationRequired}, 'policy-engine', NOW()
+    )
+  `);
+  await ctx.db.execute(sql`
+    INSERT INTO engagement_intervention_case (
+      version_id, id, tenant_id, alert_id, person_id, enrolment_id, status_code,
+      assigned_role_code, correlation_id, actor_id, valid_from
+    ) VALUES (
+      ${caseVersionId}, ${caseId}, ${ctx.tenantId}, ${alertId}, ${fixture.personId},
+      ${fixture.enrolmentId}, 'open', 'engagement-officer', ${randomUUID()},
+      'engagement-officer', NOW()
+    )
+  `);
+  await ctx.db.execute(sql`
+    INSERT INTO engagement_referral (
+      id, tenant_id, intervention_case_id, target_service_code, referral_type_code,
+      status_code, correlation_id, referred_by, idempotency_key
+    ) VALUES (
+      ${randomUUID()}, ${ctx.tenantId}, ${caseId}, 'sponsor-compliance-review',
+      'compliance-review', 'pending', ${randomUUID()}, 'engagement-officer', ${randomUUID()}
+    )
+  `);
+  return alertId;
 }
