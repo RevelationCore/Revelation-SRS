@@ -34,8 +34,8 @@ if (!docsIndex.includes('Current capabilities')) errors.push('Documentation inde
 if (!history.includes('pre-convergence-2026-07-27')) {
   errors.push('Documentation history does not identify the preservation tag');
 }
-if (!matrix.includes('Repository typecheck | **Fail**')) {
-  errors.push('Capability matrix does not record the current typecheck failure');
+if (!matrix.includes('Repository typecheck | Pass')) {
+  errors.push('Capability matrix does not record the passing repository typecheck');
 }
 if (!matrix.includes('Clean-clone application bootstrap | **Not verified')) {
   errors.push('Capability matrix does not record unverified clean-clone bootstrap');

@@ -32,7 +32,12 @@ const sdk = new NodeSDK({
     getNodeAutoInstrumentations({
       '@opentelemetry/instrumentation-fastify': { enabled: true },
       '@opentelemetry/instrumentation-http':    { enabled: true },
-      '@opentelemetry/instrumentation-pg':      { enabled: true, dbStatementSerializer: (sql) => sql.slice(0, 200) },
+      '@opentelemetry/instrumentation-pg':      {
+        enabled: true,
+        requestHook: (span, { query }) => {
+          span.setAttribute('db.statement', query.text.slice(0, 200));
+        },
+      },
       '@opentelemetry/instrumentation-fs':      { enabled: false },
     }),
   ],

@@ -99,7 +99,7 @@ Revelation SRS has substantial implemented foundations, services, integrations a
 | Implemented baseline | Tenant/temporal foundations, workflow platform and core identity/profile |
 | Partial | Admissions, CAS, registration, curriculum/modules, support, assessment/boards, awards, regulatory exchange, integrations and governance |
 | Proposed target | Attendance/engagement, PGR lifecycle and the newly reviewed P0 architecture |
-| Verification | Documentation checks pass; repository-wide typecheck currently fails; clean-clone application bootstrap is not yet verified |
+| Verification | Documentation checks, repository-wide typecheck and unit tests pass; clean-clone application bootstrap is not yet verified |
 
 The [Current Capability Matrix](docs/product/current-capabilities.md) is the authority for project status. Superseded plans and review evidence are available through the preservation references described in [Documentation History](docs/history.md).
 

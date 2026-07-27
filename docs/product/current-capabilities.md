@@ -54,17 +54,15 @@ ADR-016, ADR-017, ADR-019 and ADR-022 are accepted for generic product implement
 | Business-process documentation | Pass — 63 pages | Structural documentation integrity only |
 | P0 requirement/ADR coverage | Pass — 23 P0 items, 76 requirements, 7 ADRs | Traceability complete; ADRs remain proposed |
 | Data-model delta coverage | Pass — 19 capabilities | Target design complete; migrations not implemented |
-| Repository typecheck | **Fail** | VLE connector PostgreSQL telemetry option `dbStatementSerializer` does not match the installed instrumentation type; callback parameter is implicitly `any` |
+| Repository typecheck | Pass | `pnpm typecheck` passes across all 13 checked workspace projects; PostgreSQL telemetry uses the supported typed request hook |
 | Repository unit-test command | Pass under OrbStack | `pnpm test` completes across the workspace; focused attendance runtime evidence also includes 5 database invariant tests, 13 API integration scenarios and 18 CI-golden integration tests |
 | Clean-clone application bootstrap | **Not verified in this review** | Must pass before collaborator preview |
 
 ## Current launch blockers
 
-1. Fix the VLE connector type error and restore repository-wide type checking.
-2. Make test prerequisites explicit and ensure `pnpm test` does not ambiguously mix unit and container-dependent suites.
-3. Demonstrate clean-clone bootstrap, migration, demo load and selected UI journeys.
-4. Approve or revise the first target ADRs before implementing proposed P0 schema.
-5. Select and implement a coherent vertical slice rather than claiming BP-001–BP-063 coverage.
+1. Make test prerequisites explicit and ensure `pnpm test` does not ambiguously mix unit and container-dependent suites.
+2. Demonstrate clean-clone bootstrap, migration, demo load and selected UI journeys.
+3. Approve or revise the remaining target ADRs before implementing their proposed P0 schema.
 
 ## Status governance
 
