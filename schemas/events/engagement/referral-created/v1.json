@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/EngagementReferralCreatedV1Payload",
+  "definitions": {
+    "EngagementReferralCreatedV1Payload": {
+      "type": "object",
+      "properties": {
+        "referralId": {
+          "type": "string"
+        },
+        "interventionCaseId": {
+          "type": "string"
+        },
+        "personId": {
+          "type": "string"
+        },
+        "targetServiceCode": {
+          "type": "string"
+        },
+        "referralTypeCode": {
+          "type": "string"
+        },
+        "statusCode": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "referralId",
+        "interventionCaseId",
+        "personId",
+        "targetServiceCode",
+        "referralTypeCode",
+        "statusCode"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$id": "https://schemas.revelation-srs.io/events/engagement/referral-created/v1.json",
+  "title": "EngagementReferralCreatedV1Payload",
+  "description": "Payload schema for srs.engagement.referral.created v1.0.0"
+}

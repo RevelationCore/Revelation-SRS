@@ -50,6 +50,10 @@ export * from './engagement/observation-recorded.v1.js';
 export * from './engagement/observation-corrected.v1.js';
 export * from './engagement/alert-raised.v1.js';
 export * from './engagement/alert-suspended.v1.js';
+export * from './engagement/intervention-opened.v1.js';
+export * from './engagement/intervention-reviewed.v1.js';
+export * from './engagement/referral-created.v1.js';
+export * from './engagement/intervention-closed.v1.js';
 
 /** Canonical NATS subject names for all domain events. */
 export const EVENT_TYPES = {
@@ -109,6 +113,10 @@ export const EVENT_TYPES = {
   ENGAGEMENT_OBSERVATION_CORRECTED:          'srs.engagement.observation.corrected',
   ENGAGEMENT_ALERT_RAISED:                   'srs.engagement.alert.raised',
   ENGAGEMENT_ALERT_SUSPENDED:                'srs.engagement.alert.suspended',
+  ENGAGEMENT_INTERVENTION_OPENED:            'srs.engagement.intervention.opened',
+  ENGAGEMENT_INTERVENTION_REVIEWED:          'srs.engagement.intervention.reviewed',
+  ENGAGEMENT_REFERRAL_CREATED:               'srs.engagement.referral.created',
+  ENGAGEMENT_INTERVENTION_CLOSED:            'srs.engagement.intervention.closed',
   // ── Platform workflow controls ───────────────────────────────────────────
   WORKFLOW_TASK_ASSIGNED:                    'srs.workflow.task-assigned',
   WORKFLOW_TASK_COMPLETED:                   'srs.workflow.task-completed',

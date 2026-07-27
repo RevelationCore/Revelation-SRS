@@ -107,6 +107,7 @@ export const engagementInterventionCases = pgTable('engagement_intervention_case
   dueAt:                 timestamp('due_at', { withTimezone: true }),
   closedAt:              timestamp('closed_at', { withTimezone: true }),
   actorId:               text('actor_id').notNull(),
+  idempotencyKey:        text('idempotency_key'),
 });
 
 export const engagementContactAttempts = pgTable('engagement_contact_attempt', {
@@ -120,6 +121,7 @@ export const engagementContactAttempts = pgTable('engagement_contact_attempt', {
   operationalNote:       text('operational_note'),
   dataClassification:    text('data_classification').notNull().default('sensitive-personal'),
   actorId:               text('actor_id').notNull(),
+  idempotencyKey:        text('idempotency_key').notNull(),
   createdAt:             timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -135,6 +137,7 @@ export const engagementActions = pgTable('engagement_action', {
   completedAt:           timestamp('completed_at', { withTimezone: true }),
   completedBy:           text('completed_by'),
   createdBy:             text('created_by').notNull(),
+  idempotencyKey:        text('idempotency_key').notNull(),
   createdAt:             timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -151,6 +154,7 @@ export const engagementReferrals = pgTable('engagement_referral', {
   referredBy:            text('referred_by').notNull(),
   referredAt:            timestamp('referred_at', { withTimezone: true }).notNull().defaultNow(),
   acknowledgedAt:        timestamp('acknowledged_at', { withTimezone: true }),
+  idempotencyKey:        text('idempotency_key').notNull(),
 });
 
 export type EngagementPolicyVersion = typeof engagementPolicyVersions.$inferSelect;

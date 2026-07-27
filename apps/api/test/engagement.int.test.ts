@@ -329,6 +329,129 @@ describe('Attendance and engagement Increment D', () => {
   });
 });
 
+describe('Attendance and engagement Increment E', () => {
+  it('opens one assigned intervention from a triaged alert idempotently', async () => {
+    const { alertId } = await createOpenAlert('ENGE01');
+    const payload = {
+      decision: 'open-intervention', assignedRoleCode: 'engagement-officer',
+      assignedActorId: 'officer-1', dueAt: '2027-10-15T12:00:00.000Z', reasonCode: 'threshold-met',
+    };
+    const created = await ctx.app.inject({
+      method: 'POST', url: `/api/v1/engagement/alerts/${alertId}/triage`,
+      headers: { authorization: `Bearer ${engagementOfficerJwt}`, 'idempotency-key': 'triage-enge01' }, payload,
+    });
+    expect(created.statusCode).toBe(201);
+    const result = created.json<{ interventionCaseId: string }>();
+    const replay = await ctx.app.inject({
+      method: 'POST', url: `/api/v1/engagement/alerts/${alertId}/triage`,
+      headers: { authorization: `Bearer ${engagementOfficerJwt}`, 'idempotency-key': 'triage-enge01' }, payload,
+    });
+    expect(replay.statusCode).toBe(200);
+    expect(replay.json()).toMatchObject({ interventionCaseId: result.interventionCaseId, created: false });
+    expect(capturedEvents.filter((event) => event.type === 'srs.engagement.intervention.opened')).toHaveLength(1);
+  });
+
+  it('records accessible contacts and actions without restricted narrative', async () => {
+    const caseId = await createIntervention('ENGE02');
+    const contact = await ctx.app.inject({
+      method: 'POST', url: `/api/v1/engagement/cases/${caseId}/contacts`,
+      headers: { authorization: `Bearer ${engagementOfficerJwt}`, 'idempotency-key': 'contact-enge02' },
+      payload: {
+        channelCode: 'portal', attemptedAt: '2027-10-11T10:00:00.000Z',
+        outcomeCode: 'response-received', communicationLocale: 'cy',
+        operationalNote: 'Student requested an afternoon appointment.',
+      },
+    });
+    expect(contact.statusCode).toBe(201);
+    const action = await ctx.app.inject({
+      method: 'POST', url: `/api/v1/engagement/cases/${caseId}/actions`,
+      headers: { authorization: `Bearer ${engagementOfficerJwt}`, 'idempotency-key': 'action-enge02' },
+      payload: { actionTypeCode: 'academic-meeting', ownerRoleCode: 'personal-tutor', dueAt: '2027-10-16T12:00:00.000Z' },
+    });
+    expect(action.statusCode).toBe(201);
+    const restricted = await ctx.app.inject({
+      method: 'POST', url: `/api/v1/engagement/cases/${caseId}/contacts`,
+      headers: { authorization: `Bearer ${engagementOfficerJwt}`, 'idempotency-key': 'contact-enge02-restricted' },
+      payload: {
+        channelCode: 'telephone', attemptedAt: '2027-10-11T11:00:00.000Z',
+        outcomeCode: 'contacted', operationalNote: 'Medical diagnosis details were discussed.',
+      },
+    });
+    expect(restricted.statusCode).toBe(422);
+    const view = await ctx.app.inject({
+      method: 'GET', url: `/api/v1/engagement/cases/${caseId}`,
+      headers: { authorization: `Bearer ${personalTutorJwt}` },
+    });
+    expect(view.statusCode).toBe(200);
+    expect(view.json()).toMatchObject({
+      contacts: [expect.objectContaining({ communicationLocale: 'cy' })],
+      actions: [expect.objectContaining({ actionTypeCode: 'academic-meeting' })],
+    });
+  });
+
+  it('creates a minimum-necessary referral without making a status or sponsor decision', async () => {
+    const caseId = await createIntervention('ENGE03');
+    const view = await ctx.app.inject({
+      method: 'GET', url: `/api/v1/engagement/cases/${caseId}`,
+      headers: { authorization: `Bearer ${engagementOfficerJwt}` },
+    });
+    const versionId = view.json<{ intervention: { versionId: string } }>().intervention.versionId;
+    const referred = await ctx.app.inject({
+      method: 'POST', url: `/api/v1/engagement/cases/${caseId}/review`,
+      headers: { authorization: `Bearer ${engagementOfficerJwt}`, 'idempotency-key': 'review-enge03' },
+      payload: {
+        expectedVersionId: versionId, decision: 'refer', reviewAt: '2027-10-14T12:00:00.000Z',
+        referral: {
+          targetServiceCode: 'sponsor-compliance-review', referralTypeCode: 'compliance-review',
+          externalReference: 'SCR-OPAQUE-001',
+        },
+      },
+    });
+    expect(referred.statusCode).toBe(201);
+    expect(referred.json()).toMatchObject({ statusCode: 'referred' });
+    const caseView = await ctx.app.inject({
+      method: 'GET', url: `/api/v1/engagement/cases/${caseId}`,
+      headers: { authorization: `Bearer ${engagementOfficerJwt}` },
+    });
+    expect(caseView.json()).toMatchObject({
+      referrals: [expect.objectContaining({
+        targetServiceCode: 'sponsor-compliance-review', referralTypeCode: 'compliance-review', statusCode: 'pending',
+      })],
+    });
+    expect(JSON.stringify(caseView.json())).not.toMatch(/diagnosis|sponsorDecision|ukviSubmission/i);
+    expect(capturedEvents).toContainEqual(expect.objectContaining({ type: 'srs.engagement.referral.created' }));
+  });
+
+  it('closes a case with an authorised outcome and immutable prior version', async () => {
+    const caseId = await createIntervention('ENGE04');
+    const view = await ctx.app.inject({
+      method: 'GET', url: `/api/v1/engagement/cases/${caseId}`,
+      headers: { authorization: `Bearer ${engagementOfficerJwt}` },
+    });
+    const versionId = view.json<{ intervention: { versionId: string } }>().intervention.versionId;
+    const closed = await ctx.app.inject({
+      method: 'POST', url: `/api/v1/engagement/cases/${caseId}/review`,
+      headers: { authorization: `Bearer ${engagementOfficerJwt}`, 'idempotency-key': 'review-enge04-close' },
+      payload: {
+        expectedVersionId: versionId, decision: 'close', outcomeCode: 'engagement-restored',
+        reviewAt: '2027-10-14T12:00:00.000Z',
+      },
+    });
+    expect(closed.statusCode).toBe(201);
+    expect(closed.json()).toMatchObject({ statusCode: 'closed' });
+    const versions = await ctx.db.execute(sql`
+      SELECT status_code, recorded_until
+      FROM engagement_intervention_case
+      WHERE tenant_id = ${ctx.tenantId} AND id = ${caseId}
+      ORDER BY recorded_at
+    `) as Array<{ status_code: string; recorded_until: Date | null }>;
+    expect(versions).toHaveLength(2);
+    expect(versions[0]?.recorded_until).not.toBeNull();
+    expect(versions[1]).toMatchObject({ status_code: 'closed', recorded_until: null });
+    expect(capturedEvents).toContainEqual(expect.objectContaining({ type: 'srs.engagement.intervention.closed' }));
+  });
+});
+
 interface Fixture {
   personId: string;
   enrolmentId: string;
@@ -438,4 +561,32 @@ function evaluationPayload(fixture: Fixture, policyVersionId: string) {
     evidenceWindowFrom: '2027-10-01T00:00:00.000Z',
     evidenceWindowTo: '2027-10-10T00:00:00.000Z',
   };
+}
+
+async function createOpenAlert(code: string): Promise<{ alertId: string }> {
+  const fixture = await createFixture(code);
+  const eventId = await createEvent(fixture, `TT-${code}`);
+  await createObservation(eventId, `OBS-${code}`);
+  const policyVersionId = await createPolicy(`POLICY-${code}`, 1, 'approved');
+  const response = await ctx.app.inject({
+    method: 'POST', url: '/api/v1/engagement/evaluations',
+    headers: { authorization: `Bearer ${engagementOfficerJwt}` },
+    payload: evaluationPayload(fixture, policyVersionId),
+  });
+  expect(response.statusCode).toBe(201);
+  return { alertId: response.json<{ alert: { alertId: string } }>().alert.alertId };
+}
+
+async function createIntervention(code: string): Promise<string> {
+  const { alertId } = await createOpenAlert(code);
+  const response = await ctx.app.inject({
+    method: 'POST', url: `/api/v1/engagement/alerts/${alertId}/triage`,
+    headers: { authorization: `Bearer ${engagementOfficerJwt}`, 'idempotency-key': `triage-${code}` },
+    payload: {
+      decision: 'open-intervention', assignedRoleCode: 'engagement-officer',
+      dueAt: '2027-10-15T12:00:00.000Z', reasonCode: 'threshold-met',
+    },
+  });
+  expect(response.statusCode).toBe(201);
+  return response.json<{ interventionCaseId: string }>().interventionCaseId;
 }

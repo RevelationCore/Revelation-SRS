@@ -253,6 +253,13 @@
       "when": 1785193200000,
       "tag": "0038_engagement_policy_alert_immutability",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1785279600000,
+      "tag": "0039_engagement_intervention_idempotency",
+      "breakpoints": true
     }
   ]
 }

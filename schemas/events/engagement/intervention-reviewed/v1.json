@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/EngagementInterventionReviewedV1Payload",
+  "definitions": {
+    "EngagementInterventionReviewedV1Payload": {
+      "type": "object",
+      "properties": {
+        "interventionCaseId": {
+          "type": "string"
+        },
+        "personId": {
+          "type": "string"
+        },
+        "statusCode": {
+          "type": "string"
+        },
+        "reviewAt": {
+          "type": "string"
+        },
+        "outcomeCode": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "interventionCaseId",
+        "personId",
+        "statusCode",
+        "reviewAt"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$id": "https://schemas.revelation-srs.io/events/engagement/intervention-reviewed/v1.json",
+  "title": "EngagementInterventionReviewedV1Payload",
+  "description": "Payload schema for srs.engagement.intervention.reviewed v1.0.0"
+}

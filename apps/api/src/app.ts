@@ -23,6 +23,7 @@ import { MisconductService } from './platform/circumstances/misconduct-service.j
 import { EnrolmentService } from './platform/enrolment/service.js';
 import { EngagementService } from './platform/engagement/engagement-service.js';
 import { EngagementPolicyService } from './platform/engagement/engagement-policy-service.js';
+import { EngagementInterventionService } from './platform/engagement/engagement-intervention-service.js';
 import { ExamEntryService } from './platform/assessment/exam-entry-service.js';
 import { BoardService } from './platform/governance/board-service.js';
 import { AdmissionsService } from './platform/admissions/admissions-service.js';
@@ -62,6 +63,7 @@ import { academicPeriodsRoutes } from './routes/academic-periods.js';
 import { circumstancesRoutes } from './routes/circumstances.js';
 import { enrolmentRoutes } from './routes/enrolments.js';
 import { engagementRoutes } from './routes/engagement.js';
+import { engagementInterventionRoutes } from './routes/engagement-interventions.js';
 import { examBoardRoutes } from './routes/exam-boards.js';
 import { healthRoutes } from './routes/health.js';
 import { markRoutes } from './routes/marks.js';
@@ -234,6 +236,7 @@ export async function buildApp(
   const enrolments = new EnrolmentService(db, eventBus, valueSets, triggerRules);
   const engagement = new EngagementService(db, eventBus, valueSets);
   const engagementPolicy = new EngagementPolicyService(db, eventBus);
+  const engagementIntervention = new EngagementInterventionService(db, eventBus);
   const catalogue  = new CatalogueService(db, eventBus, valueSets);
   const calendar   = new CalendarService(db);
   const registrations = new ModuleRegistrationService(db, eventBus, rules);
@@ -290,6 +293,7 @@ export async function buildApp(
   fastify.decorate('enrolmentService', enrolments);
   fastify.decorate('engagementService', engagement);
   fastify.decorate('engagementPolicyService', engagementPolicy);
+  fastify.decorate('engagementInterventionService', engagementIntervention);
   fastify.decorate('catalogueService', catalogue);
   fastify.decorate('calendarService',  calendar);
   fastify.decorate('moduleRegistrationService', registrations);
@@ -504,6 +508,7 @@ export async function buildApp(
   await fastify.register(valueSetsRoutes,           { prefix: '/api/v1' });
   await fastify.register(adjustmentRoutes,          { prefix: '/api/v1' });
   await fastify.register(engagementRoutes,          { prefix: '/api/v1' });
+  await fastify.register(engagementInterventionRoutes, { prefix: '/api/v1' });
   await fastify.register(circumstancesRoutes,       { prefix: '/api/v1' });
   await fastify.register(examBoardRoutes,           { prefix: '/api/v1' });
   await fastify.register(progressionRoutes,         { prefix: '/api/v1' });
@@ -556,6 +561,7 @@ declare module 'fastify' {
     enrolmentService: EnrolmentService;
     engagementService: EngagementService;
     engagementPolicyService: EngagementPolicyService;
+    engagementInterventionService: EngagementInterventionService;
     catalogueService: CatalogueService;
     calendarService:  CalendarService;
     moduleRegistrationService: ModuleRegistrationService;

@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/EngagementInterventionOpenedV1Payload",
+  "definitions": {
+    "EngagementInterventionOpenedV1Payload": {
+      "type": "object",
+      "properties": {
+        "interventionCaseId": {
+          "type": "string"
+        },
+        "alertId": {
+          "type": "string"
+        },
+        "personId": {
+          "type": "string"
+        },
+        "enrolmentId": {
+          "type": "string"
+        },
+        "assignedRoleCode": {
+          "type": "string"
+        },
+        "dueAt": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "interventionCaseId",
+        "alertId",
+        "personId",
+        "enrolmentId",
+        "assignedRoleCode",
+        "dueAt"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$id": "https://schemas.revelation-srs.io/events/engagement/intervention-opened/v1.json",
+  "title": "EngagementInterventionOpenedV1Payload",
+  "description": "Payload schema for srs.engagement.intervention.opened v1.0.0"
+}

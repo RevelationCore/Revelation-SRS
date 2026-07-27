@@ -39,6 +39,8 @@
 | `engagement_observation` recorded | `srs.engagement.observation.recorded` | Engagement service, Registry, BI | Sensitive, minimised evidence event; source and idempotency controls prevent duplicates. |
 | `engagement_observation` corrected | `srs.engagement.observation.corrected` | Engagement service, Registry, BI | Identifies superseded and replacement versions; original evidence remains immutable. |
 | Engagement alert raised/suspended | `srs.engagement.alert.raised`, `srs.engagement.alert.suspended` | Personal tutor, Engagement Officer, Registry, integration operations | Explainable review prompt only; unsafe evidence suspends for reconciliation and cannot cause an automatic adverse decision. |
+| Engagement intervention opened/reviewed/closed | `srs.engagement.intervention.opened`, `srs.engagement.intervention.reviewed`, `srs.engagement.intervention.closed` | Engagement service, Personal Tutor, BI | Human workflow transitions; authoritative case versions and idempotency are retained. |
+| Restricted engagement referral created | `srs.engagement.referral.created` | Wellbeing or sponsor-compliance service | Minimum-necessary operational referral only; receiving service owns evidence and any separate decision. |
 | `assessment_submission` received | No dedicated event initially | Academic Integrity via context API | Use `srs.assessment.mark-received` when mark is ingested. |
 | `mark` received/updated | `srs.assessment.mark-received`, `srs.assessment.mark-updated` | Internal | May feed provisional grade publication if configured. |
 | `module_result` calculated/ratified | `srs.assessment.module-result-calculated`, `srs.assessment.module-result-ratified` | EWP, VLE, DW, BI | Ratified event is external-facing. |

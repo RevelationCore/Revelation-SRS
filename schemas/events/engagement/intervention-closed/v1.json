@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/EngagementInterventionClosedV1Payload",
+  "definitions": {
+    "EngagementInterventionClosedV1Payload": {
+      "type": "object",
+      "properties": {
+        "interventionCaseId": {
+          "type": "string"
+        },
+        "personId": {
+          "type": "string"
+        },
+        "outcomeCode": {
+          "type": "string"
+        },
+        "closedAt": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "interventionCaseId",
+        "personId",
+        "outcomeCode",
+        "closedAt"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$id": "https://schemas.revelation-srs.io/events/engagement/intervention-closed/v1.json",
+  "title": "EngagementInterventionClosedV1Payload",
+  "description": "Payload schema for srs.engagement.intervention.closed v1.0.0"
+}
