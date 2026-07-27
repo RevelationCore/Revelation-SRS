@@ -64,7 +64,7 @@ export function ValueSetsPage() {
       {loading ? (
         <div className="flex justify-center py-16"><Spinner /></div>
       ) : sets.length === 0 ? (
-        <p className="text-sm text-gray-400">No value sets found.</p>
+        <p className="text-sm text-gray-600">No value sets found.</p>
       ) : (
         <div className="space-y-2">
           {sets.map(s => (
@@ -76,7 +76,7 @@ export function ValueSetsPage() {
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-medium text-sm text-gray-900">{s.displayName}</span>
-                    <span className="font-mono text-xs text-gray-400">{s.setCode}</span>
+                    <span className="font-mono text-xs text-gray-600">{s.setCode}</span>
                     {s.isExtensible && (
                       <span className="rounded bg-indigo-100 text-indigo-700 px-1.5 py-0.5 text-xs font-medium">
                         extensible
@@ -88,8 +88,8 @@ export function ValueSetsPage() {
                   )}
                 </div>
                 <div className="flex items-center gap-3 ml-4 flex-shrink-0">
-                  <span className="text-xs text-gray-400">{s.source}</span>
-                  <span className="text-gray-400 text-sm">{expanded === s.setCode ? '▲' : '▼'}</span>
+                  <span className="text-xs text-gray-600">{s.source}</span>
+                  <span className="text-gray-600 text-sm">{expanded === s.setCode ? '▲' : '▼'}</span>
                 </div>
               </button>
 
@@ -143,7 +143,7 @@ function SetMembersPanel({ setCode, isExtensible, canWrite }: { setCode: string;
             <div className="overflow-x-auto mb-4">
               <table className="min-w-full text-xs">
                 <thead>
-                  <tr className="text-gray-400 uppercase border-b border-gray-100">
+                  <tr className="text-gray-600 uppercase border-b border-gray-100">
                     <th className="text-left pb-2 pr-4 font-medium">Code</th>
                     <th className="text-left pb-2 pr-4 font-medium">Label</th>
                     <th className="text-left pb-2 pr-4 font-medium">Description</th>
@@ -181,7 +181,7 @@ function SetMembersPanel({ setCode, isExtensible, canWrite }: { setCode: string;
               </table>
             </div>
           ) : (
-            <p className="text-xs text-gray-400 mb-4">No members yet.</p>
+            <p className="text-xs text-gray-600 mb-4">No members yet.</p>
           )}
 
           {isExtensible && canWrite && (
@@ -262,7 +262,7 @@ function MemberRow({
                   >
                     {retiring ? 'Retiring…' : 'Confirm'}
                   </button>
-                  <button onClick={() => setConfirm(false)} className="text-gray-400">
+                  <button onClick={() => setConfirm(false)} className="text-gray-600">
                     ✕
                   </button>
                 </span>
@@ -453,11 +453,11 @@ function AddMemberForm({
           <input name="sortOrder" type="number" min={0} defaultValue={0} className={inputCls} />
         </div>
         <div>
-          <label className={labelCls}>Active from <span className="font-normal text-gray-400">(blank = always)</span></label>
+          <label className={labelCls}>Active from <span className="font-normal text-gray-600">(blank = always)</span></label>
           <input name="activeFrom" type="date" className={inputCls} />
         </div>
         <div>
-          <label className={labelCls}>Active to <span className="font-normal text-gray-400">(blank = never)</span></label>
+          <label className={labelCls}>Active to <span className="font-normal text-gray-600">(blank = never)</span></label>
           <input name="activeTo" type="date" className={inputCls} />
         </div>
       </div>

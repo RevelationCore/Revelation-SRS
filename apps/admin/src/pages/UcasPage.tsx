@@ -64,7 +64,7 @@ export function UcasPage() {
       {loading ? (
         <div className="flex justify-center py-16"><Spinner /></div>
       ) : applications.length === 0 ? (
-        <p className="py-8 text-center text-sm text-gray-400">No UCAS applications on record.</p>
+        <p className="py-8 text-center text-sm text-gray-600">No UCAS applications on record.</p>
       ) : (
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
           <table className="min-w-full divide-y divide-gray-200 text-sm">
@@ -87,7 +87,7 @@ export function UcasPage() {
                     {new Date(a.receivedAt).toLocaleDateString('en-GB')}
                   </td>
                   <td className="px-4 py-3 font-mono text-xs text-gray-500">
-                    {a.linkedEnrolmentId ?? <span className="text-gray-400">—</span>}
+                    {a.linkedEnrolmentId ?? <span className="text-gray-600">—</span>}
                   </td>
                 </tr>
               ))}

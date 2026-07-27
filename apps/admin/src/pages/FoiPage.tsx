@@ -64,7 +64,7 @@ export function FoiPage() {
           {/* Request list */}
           <div className="w-80 flex-shrink-0">
             {requests.length === 0 ? (
-              <p className="text-sm text-gray-400">No requests recorded.</p>
+              <p className="text-sm text-gray-600">No requests recorded.</p>
             ) : (
               <ul className="space-y-1.5">
                 {requests.map(r => (
@@ -80,7 +80,7 @@ export function FoiPage() {
                       <p className="text-sm font-medium text-gray-900">{r.requestReference}</p>
                       <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{r.description}</p>
                       <div className="mt-1.5 flex items-center justify-between">
-                        <span className="text-xs text-gray-400">
+                        <span className="text-xs text-gray-600">
                           {new Date(r.receivedDate).toLocaleDateString('en-GB')}
                         </span>
                         <Badge value={r.statusCode} />
@@ -105,7 +105,7 @@ export function FoiPage() {
               />
             ) : (
               <div className="rounded-lg border border-dashed border-gray-200 p-8 text-center">
-                <p className="text-sm text-gray-400">Select a request to view details</p>
+                <p className="text-sm text-gray-600">Select a request to view details</p>
               </div>
             )}
           </div>

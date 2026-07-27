@@ -109,7 +109,7 @@ export function StudentsPage() {
             <tbody className="divide-y divide-gray-100">
               {students.length === 0 && (
                 <tr>
-                  <td colSpan={3} className="px-4 py-8 text-center text-sm text-gray-400">
+                  <td colSpan={3} className="px-4 py-8 text-center text-sm text-gray-600">
                     No students found.
                   </td>
                 </tr>

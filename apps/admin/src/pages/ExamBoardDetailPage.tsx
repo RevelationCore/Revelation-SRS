@@ -68,11 +68,11 @@ export function ExamBoardDetailPage() {
   return (
     <div>
       <div className="mb-6">
-        <p className="text-xs text-gray-400 mb-1">Exam board</p>
+        <p className="text-xs text-gray-600 mb-1">Exam board</p>
         <h1 className="text-xl font-semibold text-gray-900 capitalize">
           {board.boardTypeCode} — {board.academicYear}
         </h1>
-        <p className="text-xs text-gray-400 font-mono mt-0.5">{boardId}</p>
+        <p className="text-xs text-gray-600 font-mono mt-0.5">{boardId}</p>
       </div>
 
       <div className="flex gap-1 mb-6 border-b border-gray-200">
@@ -194,7 +194,7 @@ function OverviewTab({
             <InfoRow label="Generated"  value={new Date(dataPack.generatedAt).toLocaleString('en-GB')} />
           </dl>
         ) : (
-          <p className="text-sm text-gray-400">No data pack generated yet.</p>
+          <p className="text-sm text-gray-600">No data pack generated yet.</p>
         )}
       </section>
 
@@ -311,7 +311,7 @@ function EntriesTab({ boardId }: { boardId: string }) {
   if (loading) return <div className="flex justify-center py-8"><Spinner /></div>;
   if (error)   return <p className="text-sm text-red-600">{error}</p>;
 
-  if (entries.length === 0) return <p className="text-sm text-gray-400">No exam entries found.</p>;
+  if (entries.length === 0) return <p className="text-sm text-gray-600">No exam entries found.</p>;
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
@@ -332,12 +332,12 @@ function EntriesTab({ boardId }: { boardId: string }) {
               <td className="px-4 py-3 text-gray-600">
                 {e.scheduledDate
                   ? new Date(e.scheduledDate).toLocaleDateString('en-GB')
-                  : <span className="text-gray-400">—</span>}
+                  : <span className="text-gray-600">—</span>}
               </td>
-              <td className="px-4 py-3 text-gray-600">{e.roomReference ?? <span className="text-gray-400">—</span>}</td>
+              <td className="px-4 py-3 text-gray-600">{e.roomReference ?? <span className="text-gray-600">—</span>}</td>
               <td className="px-4 py-3"><Badge value={e.statusCode} /></td>
               <td className="px-4 py-3 text-gray-600 text-xs">
-                {e.accommodations.length > 0 ? e.accommodations.join(', ') : <span className="text-gray-400">—</span>}
+                {e.accommodations.length > 0 ? e.accommodations.join(', ') : <span className="text-gray-600">—</span>}
               </td>
             </tr>
           ))}
@@ -555,7 +555,7 @@ function InfoRow({ label, value }: { label: string; value?: string | null }) {
   return (
     <div className="flex gap-2">
       <dt className="w-32 flex-shrink-0 text-gray-500 text-xs pt-0.5">{label}</dt>
-      <dd className="text-gray-900 text-xs">{value ?? <span className="text-gray-400">—</span>}</dd>
+      <dd className="text-gray-900 text-xs">{value ?? <span className="text-gray-600">—</span>}</dd>
     </div>
   );
 }

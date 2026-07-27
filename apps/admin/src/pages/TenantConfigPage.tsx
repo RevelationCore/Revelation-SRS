@@ -195,7 +195,7 @@ function TenantsPanel() {
       {loading ? (
         <div className="flex justify-center py-4"><Spinner /></div>
       ) : tenants.length === 0 ? (
-        <p className="text-sm text-gray-400">No tenants found.</p>
+        <p className="text-sm text-gray-600">No tenants found.</p>
       ) : (
         <div className="overflow-hidden border border-gray-100 rounded-lg">
           <table className="min-w-full divide-y divide-gray-100 text-sm">
@@ -239,13 +239,14 @@ function Field({
 }) {
   return (
     <div>
-      <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
+      <label htmlFor={`tenant-config-${name}`} className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
       <input
+        id={`tenant-config-${name}`}
         name={name}
         type={type}
         defaultValue={defaultValue}
         disabled={disabled}
-        className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-50 disabled:text-gray-500"
+        className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-50 disabled:text-gray-700"
       />
     </div>
   );

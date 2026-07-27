@@ -105,7 +105,7 @@ function SponsorDecisionsTab() {
       )}
       {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
       {decisions.length === 0 ? (
-        <p className="text-sm text-gray-400">No sponsor decisions have been recorded.</p>
+        <p className="text-sm text-gray-600">No sponsor decisions have been recorded.</p>
       ) : (
         <div className="space-y-3">
           {decisions.map(decision => (
@@ -208,7 +208,7 @@ function CasTab() {
       {loading ? (
         <div className="flex justify-center py-8"><Spinner /></div>
       ) : requests.length === 0 ? (
-        <p className="text-sm text-gray-400">No CAS requests found.</p>
+        <p className="text-sm text-gray-600">No CAS requests found.</p>
       ) : (
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
           <table className="min-w-full divide-y divide-gray-200 text-sm">
@@ -225,7 +225,7 @@ function CasTab() {
                 <tr key={r.casRequestId} className="hover:bg-gray-50">
                   <td className="px-4 py-3 font-mono text-xs text-gray-700">{r.enrolmentId}</td>
                   <td className="px-4 py-3 font-mono text-xs text-gray-600">
-                    {r.casReference ?? <span className="text-gray-400">pending</span>}
+                    {r.casReference ?? <span className="text-gray-600">pending</span>}
                   </td>
                   <td className="px-4 py-3"><Badge value={r.statusCode} /></td>
                   <td className="px-4 py-3 text-gray-500 text-xs">
@@ -310,7 +310,7 @@ function ComplianceTab() {
       {loading ? (
         <div className="flex justify-center py-8"><Spinner /></div>
       ) : alerts.length === 0 ? (
-        <p className="text-sm text-gray-400">No compliance alerts.</p>
+        <p className="text-sm text-gray-600">No compliance alerts.</p>
       ) : (
         <div className="space-y-3">
           {alerts.map(a => (

@@ -47,7 +47,7 @@ export function AuditPage() {
             Open a student record and navigate to the <strong>History</strong> tab to view that
             student's full audit trail.
           </p>
-          <p className="text-xs text-gray-400 mt-3">
+          <p className="text-xs text-gray-600 mt-3">
             A consolidated audit search view is planned for a future release.
           </p>
         </div>
@@ -91,7 +91,7 @@ function IntegrationExchangeAudit() {
       {loading ? (
         <div className="flex justify-center py-8"><Spinner /></div>
       ) : exchanges.length === 0 ? (
-        <p className="text-sm text-gray-400">No exchange records found.</p>
+        <p className="text-sm text-gray-600">No exchange records found.</p>
       ) : (
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
           <table className="min-w-full divide-y divide-gray-200 text-sm">
@@ -108,7 +108,7 @@ function IntegrationExchangeAudit() {
             <tbody className="divide-y divide-gray-100">
               {exchanges.map(ex => (
                 <tr key={ex.exchangeId} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-mono text-xs text-gray-400">{ex.exchangeId.slice(0, 8)}…</td>
+                  <td className="px-4 py-3 font-mono text-xs text-gray-600">{ex.exchangeId.slice(0, 8)}…</td>
                   <td className="px-4 py-3 font-mono text-xs text-gray-700">{ex.exchangeTypeCode}</td>
                   <td className="px-4 py-3 text-gray-600 text-xs capitalize">{ex.directionCode}</td>
                   <td className="px-4 py-3"><Badge value={ex.statusCode} /></td>
@@ -118,7 +118,7 @@ function IntegrationExchangeAudit() {
                   <td className="px-4 py-3 text-gray-500 text-xs">
                     {ex.lastAttemptAt
                       ? new Date(ex.lastAttemptAt).toLocaleString('en-GB')
-                      : <span className="text-gray-400">—</span>}
+                      : <span className="text-gray-600">—</span>}
                   </td>
                 </tr>
               ))}

@@ -104,7 +104,7 @@ export function RegulatoryStatusPage() {
               </a>
             </div>
             {hesa.length === 0 ? (
-              <p className="px-5 py-4 text-sm text-gray-400">No HESA returns recorded.</p>
+              <p className="px-5 py-4 text-sm text-gray-600">No HESA returns recorded.</p>
             ) : (
               <table className="min-w-full divide-y divide-gray-100 text-sm">
                 <thead className="bg-gray-50">
@@ -132,9 +132,9 @@ export function RegulatoryStatusPage() {
           </section>
 
           {/* Note on SLC and OfS */}
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-gray-600">
             SLC confirmations and OfS extracts are generated on demand — see the{' '}
-            <a href="/regulatory" className="text-indigo-600 hover:underline">Regulatory hub</a>.
+            <a href="/regulatory" className="text-indigo-700 underline hover:no-underline">Regulatory hub</a>.
           </p>
         </div>
       ) : null}
@@ -156,9 +156,9 @@ function SummaryCard({
     <div className={`rounded-lg border p-4 bg-white ${alert ? 'border-red-200' : 'border-gray-200'}`}>
       <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">{title}</p>
       <p className="text-2xl font-bold text-gray-900 mt-1">{primary}</p>
-      <p className="text-xs text-gray-400">{detail}</p>
+      <p className="text-xs text-gray-600">{detail}</p>
       <div className="mt-2 flex items-center justify-between">
-        <span className="text-xs text-gray-400">{subtitle}</span>
+        <span className="text-xs text-gray-600">{subtitle}</span>
         {status && <Badge value={status} />}
       </div>
     </div>

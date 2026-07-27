@@ -45,7 +45,7 @@ function SubItem({ to, label }: { to: string; label: string }) {
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="px-3 pt-4 pb-1 text-xs font-semibold uppercase tracking-wider text-gray-400 select-none">
+    <p className="px-3 pt-4 pb-1 text-xs font-semibold uppercase tracking-wider text-gray-600 select-none">
       {children}
     </p>
   );
@@ -58,7 +58,7 @@ function SectionNavLink({ to, children }: { to: string; children: React.ReactNod
       end
       className={({ isActive }) =>
         `block px-3 pt-4 pb-1 text-xs font-semibold uppercase tracking-wider transition-colors ${
-          isActive ? 'text-indigo-600' : 'text-gray-400 hover:text-gray-700'
+          isActive ? 'text-indigo-600' : 'text-gray-600 hover:text-gray-700'
         }`
       }
     >
@@ -102,7 +102,7 @@ function Sidebar({ onLogout, displayName, roles }: { onLogout: () => void; displ
       <div className="flex h-14 items-center px-4 border-b border-gray-100 flex-shrink-0">
         <Link to="/" className="text-sm font-bold text-indigo-700 tracking-tight leading-tight">
           Revelation<br />
-          <span className="text-xs font-semibold text-indigo-400 tracking-widest">SRS</span>
+          <span className="text-xs font-semibold text-indigo-600 tracking-widest">SRS</span>
         </Link>
       </div>
 
@@ -162,7 +162,7 @@ function Sidebar({ onLogout, displayName, roles }: { onLogout: () => void; displ
         )}
         <button
           onClick={onLogout}
-          className="text-xs text-gray-400 hover:text-gray-700 transition-colors"
+          className="text-xs text-gray-600 hover:text-gray-700 transition-colors"
         >
           Sign out
         </button>

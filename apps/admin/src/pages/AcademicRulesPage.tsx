@@ -116,7 +116,7 @@ export function AcademicRulesPage() {
       {loading ? (
         <div className="flex justify-center py-16"><Spinner /></div>
       ) : rules.length === 0 ? (
-        <p className="py-8 text-center text-sm text-gray-400">No academic rules found.</p>
+        <p className="py-8 text-center text-sm text-gray-600">No academic rules found.</p>
       ) : (
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
           <table className="min-w-full divide-y divide-gray-200 text-sm">
@@ -135,7 +135,7 @@ export function AcademicRulesPage() {
                 <tr key={r.academicRuleId} className="hover:bg-gray-50">
                   <td className="px-4 py-3">
                     <p className="font-medium text-gray-900">{r.ruleKey}</p>
-                    {r.description && <p className="text-xs text-gray-400">{r.description}</p>}
+                    {r.description && <p className="text-xs text-gray-600">{r.description}</p>}
                   </td>
                   <td className="px-4 py-3"><Badge value={r.ruleTypeCode} /></td>
                   <td className="px-4 py-3 text-gray-600 text-xs">{r.validFrom ? new Date(r.validFrom).toLocaleDateString('en-GB') : '—'}</td>
@@ -313,7 +313,7 @@ function HistoryModal({
         {loading ? (
           <div className="flex justify-center py-8"><Spinner /></div>
         ) : history.length === 0 ? (
-          <p className="text-sm text-gray-400">No history records.</p>
+          <p className="text-sm text-gray-600">No history records.</p>
         ) : (
           <div className="space-y-3">
             {history.map((h, i) => (

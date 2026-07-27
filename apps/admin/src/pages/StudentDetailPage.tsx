@@ -258,7 +258,7 @@ function IdentityTab({ student, onUpdated }: { student: Student; onUpdated: () =
             <IdentityRow label="Email (pers.)" value={id?.emailPersonal} />
             <IdentityRow label="Mobile"        value={id?.phoneMobile} />
             {id && (
-              <p className="text-xs text-gray-400 pt-1">
+              <p className="text-xs text-gray-600 pt-1">
                 Updated {new Date(id.recordedAt).toLocaleDateString()}
               </p>
             )}
@@ -293,7 +293,7 @@ function IdentityTab({ student, onUpdated }: { student: Student; onUpdated: () =
               </button>
             </form>
           ) : (
-            <p className="text-sm font-mono text-gray-900">{student.hesaId ?? <span className="text-gray-400 font-sans">Not set</span>}</p>
+            <p className="text-sm font-mono text-gray-900">{student.hesaId ?? <span className="text-gray-600 font-sans">Not set</span>}</p>
           )}
         </section>
 
@@ -342,7 +342,7 @@ function IdentityRow({ label, value }: { label: string; value?: string | null })
   return (
     <div className="flex gap-2">
       <dt className="w-32 flex-shrink-0 text-gray-500">{label}</dt>
-      <dd className="text-gray-900">{value ?? <span className="text-gray-400">—</span>}</dd>
+      <dd className="text-gray-900">{value ?? <span className="text-gray-600">—</span>}</dd>
     </div>
   );
 }
@@ -404,7 +404,7 @@ function EnrolmentsTab({
       {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
 
       {enrolments.length === 0 ? (
-        <p className="text-sm text-gray-400">No enrolments on record.</p>
+        <p className="text-sm text-gray-600">No enrolments on record.</p>
       ) : (
         <div className="space-y-3">
           {enrolments.map((e) => (
@@ -495,12 +495,12 @@ function EnrolmentCard({
           <p className="text-xs text-gray-500 mt-0.5 truncate">
             {enrolment.programmeName
               ? <>{enrolment.programmeCode && <span className="font-mono mr-1">{enrolment.programmeCode}</span>}{enrolment.programmeName}</>
-              : <span className="text-gray-400 italic">No programme assigned</span>
+              : <span className="text-gray-600 italic">No programme assigned</span>
             }
           </p>
         </div>
         <Badge value={enrolment.statusCode} />
-        <span className="text-gray-400 text-sm">{expanded ? '▲' : '▼'}</span>
+        <span className="text-gray-600 text-sm">{expanded ? '▲' : '▼'}</span>
       </div>
 
       {expanded && (
@@ -545,13 +545,13 @@ function EnrolmentCard({
                   <div key={t.moduleRegistrationId} className="flex items-center gap-3 px-3 py-2 text-sm bg-gray-50">
                     <span className="font-mono text-xs text-gray-600 w-20 flex-shrink-0">{t.moduleCode}</span>
                     <span className="flex-1 text-gray-900 truncate">{t.moduleTitle}</span>
-                    <span className="text-xs text-gray-400">{t.periodCode}</span>
+                    <span className="text-xs text-gray-600">{t.periodCode}</span>
                   </div>
                 ))}
               </div>
             </div>
           ) : registrations !== null && registrations.length === 0 ? (
-            <p className="text-xs text-gray-400">No active module registrations.</p>
+            <p className="text-xs text-gray-600">No active module registrations.</p>
           ) : null}
         </div>
       )}
@@ -720,7 +720,7 @@ function InfoRow({ label, value }: { label: string; value?: string | null }) {
   return (
     <div className="flex gap-2">
       <dt className="w-28 flex-shrink-0 text-gray-500 text-xs pt-0.5">{label}</dt>
-      <dd className="text-gray-900">{value ?? <span className="text-gray-400">—</span>}</dd>
+      <dd className="text-gray-900">{value ?? <span className="text-gray-600">—</span>}</dd>
     </div>
   );
 }
@@ -795,7 +795,7 @@ function RegistrationsTab({ personId }: { personId: string }) {
       {loading ? (
         <div className="flex justify-center py-8"><Spinner /></div>
       ) : registrations.length === 0 ? (
-        <p className="text-sm text-gray-400">No module registrations found.</p>
+        <p className="text-sm text-gray-600">No module registrations found.</p>
       ) : (
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
           <table className="min-w-full divide-y divide-gray-200 text-sm">
@@ -949,7 +949,7 @@ function AssessmentTab({ personId }: { personId: string }) {
       {loading ? (
         <div className="flex justify-center py-8"><Spinner /></div>
       ) : rows.length === 0 ? (
-        <p className="text-sm text-gray-400">No module registrations found.</p>
+        <p className="text-sm text-gray-600">No module registrations found.</p>
       ) : (
         <div className="space-y-4">
           {rows.map((row) => (
@@ -959,7 +959,7 @@ function AssessmentTab({ personId }: { personId: string }) {
                   <span className="font-mono text-xs text-gray-500 mr-2">{row.registration.moduleCode}</span>
                   <span className="text-sm font-medium text-gray-900">{row.registration.moduleTitle}</span>
                 </div>
-                <span className="text-xs text-gray-400">{row.registration.periodCode}</span>
+                <span className="text-xs text-gray-600">{row.registration.periodCode}</span>
                 <Badge value={row.registration.statusCode} />
                 {row.result && <Badge value={row.result.resultCode} />}
                 {row.result && (
@@ -979,7 +979,7 @@ function AssessmentTab({ personId }: { personId: string }) {
                 {row.error ? (
                   <p className="text-xs text-red-600">{row.error}</p>
                 ) : row.marks.length === 0 ? (
-                  <p className="text-xs text-gray-400">No marks recorded.</p>
+                  <p className="text-xs text-gray-600">No marks recorded.</p>
                 ) : (
                   <table className="min-w-full text-sm">
                     <thead>
@@ -997,7 +997,7 @@ function AssessmentTab({ personId }: { personId: string }) {
                         return (
                         <tr key={m.markId} className="hover:bg-gray-50">
                           <td className="pr-6 py-1.5 text-gray-700">
-                            {comp ? comp.title : <span className="text-xs text-gray-400 font-mono">{m.assessmentComponentId.slice(0, 8)}</span>}
+                            {comp ? comp.title : <span className="text-xs text-gray-600 font-mono">{m.assessmentComponentId.slice(0, 8)}</span>}
                           </td>
                           <td className="pr-6 py-1.5 text-gray-600">{m.attemptNumber}</td>
                           <td className="pr-6 py-1.5 font-semibold text-gray-900">{m.rawMark}</td>
@@ -1078,7 +1078,7 @@ function HistoryTab({ personId }: { personId: string }) {
       {loading ? (
         <div className="flex justify-center py-8"><Spinner /></div>
       ) : history.length === 0 ? (
-        <p className="text-sm text-gray-400">No history records found.</p>
+        <p className="text-sm text-gray-600">No history records found.</p>
       ) : (
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
           <table className="min-w-full divide-y divide-gray-200 text-sm">
@@ -1261,7 +1261,7 @@ function CorrectionsTab({ personId }: { personId: string }) {
       {loading ? (
         <div className="flex justify-center py-8"><Spinner /></div>
       ) : cases.length === 0 ? (
-        <p className="text-sm text-gray-400">No correction or appeal cases on record.</p>
+        <p className="text-sm text-gray-600">No correction or appeal cases on record.</p>
       ) : (
         <div className="space-y-3">
           {cases.map(c => (
@@ -1327,7 +1327,7 @@ function CommunicationsTab({ personId }: { personId: string }) {
       <h2 className="text-sm font-semibold text-gray-700 mb-4">Communications</h2>
       {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
       {notifications.length === 0 ? (
-        <p className="text-sm text-gray-400">No communications on record for this student.</p>
+        <p className="text-sm text-gray-600">No communications on record for this student.</p>
       ) : (
         <div className="space-y-3">
           {notifications.map((n) => (
@@ -1346,7 +1346,7 @@ function CommunicationsTab({ personId }: { personId: string }) {
                   <span className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">
                     {n.category}
                   </span>
-                  <p className="text-xs text-gray-400 mt-1">
+                  <p className="text-xs text-gray-600 mt-1">
                     {new Date(n.createdAt).toLocaleString('en-GB')}
                   </p>
                   {n.readAt && (
@@ -1454,7 +1454,7 @@ function WellbeingTab({ personId }: { personId: string }) {
       <section>
         <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">Disability Declarations</h2>
         {declarations?.length === 0 ? (
-          <p className="text-sm text-gray-400">No disability declarations on record.</p>
+          <p className="text-sm text-gray-600">No disability declarations on record.</p>
         ) : (
           <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
             <table className="min-w-full divide-y divide-gray-200 text-sm">
@@ -1485,7 +1485,7 @@ function WellbeingTab({ personId }: { personId: string }) {
       <section>
         <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">Reasonable Adjustments</h2>
         {adjustments?.length === 0 ? (
-          <p className="text-sm text-gray-400">No reasonable adjustments on record.</p>
+          <p className="text-sm text-gray-600">No reasonable adjustments on record.</p>
         ) : (
           <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
             <table className="min-w-full divide-y divide-gray-200 text-sm">
@@ -1518,7 +1518,7 @@ function WellbeingTab({ personId }: { personId: string }) {
       <section>
         <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">Exceptional Circumstances</h2>
         {ecs?.length === 0 ? (
-          <p className="text-sm text-gray-400">No exceptional circumstances on record.</p>
+          <p className="text-sm text-gray-600">No exceptional circumstances on record.</p>
         ) : (
           <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
             <table className="min-w-full divide-y divide-gray-200 text-sm">
@@ -1536,7 +1536,7 @@ function WellbeingTab({ personId }: { personId: string }) {
                     <td className="px-4 py-3 text-gray-800">
                       {e.moduleCode
                         ? <><span className="font-mono text-xs text-gray-500 mr-1">{e.moduleCode}</span>{e.moduleTitle}</>
-                        : <span className="text-gray-400">—</span>}
+                        : <span className="text-gray-600">—</span>}
                     </td>
                     <td className="px-4 py-3"><Badge value={e.outcomeCode} label={label(ecOutcomes, e.outcomeCode)} /></td>
                     <td className="px-4 py-3 text-gray-600">{new Date(e.determinationDate).toLocaleDateString('en-GB')}</td>

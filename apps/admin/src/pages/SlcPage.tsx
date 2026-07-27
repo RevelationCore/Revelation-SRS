@@ -64,7 +64,7 @@ export function SlcPage() {
                 }`}>
                   {done ? '✓' : i + 1}
                 </span>
-                <span className={`text-sm ${active || done ? 'text-gray-900 font-medium' : 'text-gray-400'}`}>
+                <span className={`text-sm ${active || done ? 'text-gray-900 font-medium' : 'text-gray-600'}`}>
                   {label === 'preview' ? 'Preview' : label === 'review' ? 'Review records' : 'Submit to SLC'}
                 </span>
                 {i < 2 && <span className="text-gray-300 mx-1">›</span>}
@@ -114,7 +114,7 @@ export function SlcPage() {
             </div>
 
             {records.length === 0 ? (
-              <p className="px-4 py-6 text-sm text-gray-400">No pending SLC triggers found.</p>
+              <p className="px-4 py-6 text-sm text-gray-600">No pending SLC triggers found.</p>
             ) : (
               <table className="min-w-full divide-y divide-gray-200 text-sm">
                 <thead className="bg-gray-50">

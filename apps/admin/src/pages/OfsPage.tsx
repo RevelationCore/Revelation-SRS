@@ -85,8 +85,9 @@ function B3Tab({
       </p>
 
       <div className="flex items-center gap-3">
-        <label className="text-sm font-medium text-gray-700">Academic year</label>
+        <label htmlFor="ofs-b3-academic-year" className="text-sm font-medium text-gray-700">Academic year</label>
         <select
+          id="ofs-b3-academic-year"
           value={academicYear}
           onChange={e => setAcademicYear(e.target.value)}
           className="rounded border border-gray-300 px-2 py-1.5 text-sm"
@@ -106,7 +107,7 @@ function B3Tab({
       {successMsg && <p className="text-sm text-green-600">{successMsg}</p>}
 
       {extracts.length === 0 && !generating ? (
-        <p className="text-sm text-gray-400">No extracts generated in this session.</p>
+        <p className="text-sm text-gray-600">No extracts generated in this session.</p>
       ) : extracts.length > 0 && (
         <div className="space-y-4">
           <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
@@ -222,8 +223,9 @@ function ParticipationTab({
       </p>
 
       <div className="flex items-center gap-3">
-        <label className="text-sm font-medium text-gray-700">Academic year</label>
+        <label htmlFor="ofs-participation-academic-year" className="text-sm font-medium text-gray-700">Academic year</label>
         <select
+          id="ofs-participation-academic-year"
           value={academicYear}
           onChange={e => setAcademicYear(e.target.value)}
           className="rounded border border-gray-300 px-2 py-1.5 text-sm"
@@ -243,7 +245,7 @@ function ParticipationTab({
       {successMsg && <p className="text-sm text-green-600">{successMsg}</p>}
 
       {reports.length === 0 && !generating ? (
-        <p className="text-sm text-gray-400">No reports generated in this session.</p>
+        <p className="text-sm text-gray-600">No reports generated in this session.</p>
       ) : reports.length > 0 && (
         <div className="space-y-4">
           <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">

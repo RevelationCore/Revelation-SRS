@@ -59,7 +59,7 @@ test.describe('Admin — authenticated page rendering and axe scans', () => {
       // Wait for the page heading to appear (not the spinner)
       const locator =
         typeof heading === 'string'
-          ? page.getByRole('heading', { name: heading, exact: false })
+          ? page.getByRole('heading', { name: heading, exact: false, level: 1 })
           : page.getByRole('heading', { name: heading });
       await expect(locator).toBeVisible({ timeout: 10_000 });
 
@@ -78,8 +78,8 @@ test.describe('Admin — authenticated page rendering and axe scans', () => {
     await expect(page.getByRole('link', { name: 'Students' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Tasks' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Exam boards' })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Regulatory' })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Admin' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Regulatory', exact: true })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Administration', exact: true })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Reporting' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Operations' })).toBeVisible();
   });

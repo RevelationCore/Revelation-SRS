@@ -141,10 +141,10 @@ function DefinitionsTab({ canWrite }: { canWrite: boolean }) {
                     >
                       <p className="text-sm font-medium text-gray-900">{d.displayName}</p>
                       <div className="mt-0.5 flex items-center gap-2">
-                        <span className="font-mono text-xs text-gray-400">{d.definitionCode}</span>
+                        <span className="font-mono text-xs text-gray-600">{d.definitionCode}</span>
                         {d.statusCode === 'active'
                           ? <span className="text-xs text-green-600">active</span>
-                          : <span className="text-xs text-gray-400">{d.statusCode}</span>}
+                          : <span className="text-xs text-gray-600">{d.statusCode}</span>}
                       </div>
                     </button>
                   </li>
@@ -160,7 +160,7 @@ function DefinitionsTab({ canWrite }: { canWrite: boolean }) {
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <h2 className="text-sm font-semibold text-gray-900">{selected.displayName}</h2>
-                  <p className="text-xs font-mono text-gray-400 mt-0.5">{selected.definitionCode}</p>
+                  <p className="text-xs font-mono text-gray-600 mt-0.5">{selected.definitionCode}</p>
                   {selected.description && <p className="text-xs text-gray-500 mt-1">{selected.description}</p>}
                 </div>
                 {canWrite && (
@@ -184,7 +184,7 @@ function DefinitionsTab({ canWrite }: { canWrite: boolean }) {
               {versLoad ? (
                 <Spinner />
               ) : versions.length === 0 ? (
-                <p className="text-sm text-gray-400">No versions yet.</p>
+                <p className="text-sm text-gray-600">No versions yet.</p>
               ) : (
                 <div className="space-y-3">
                   {versions.map(v => (
@@ -196,7 +196,7 @@ function DefinitionsTab({ canWrite }: { canWrite: boolean }) {
                         <span className="font-medium">v{v.versionNumber}</span>
                         <Badge value={v.statusCode} />
                         {v.effectiveFrom && (
-                          <span className="text-gray-400">
+                          <span className="text-gray-600">
                             Published {new Date(v.effectiveFrom).toLocaleDateString('en-GB')}
                           </span>
                         )}
@@ -208,9 +208,9 @@ function DefinitionsTab({ canWrite }: { canWrite: boolean }) {
                             <div key={s.stepKey} className="flex items-center gap-2 text-xs">
                               <span className="w-5 text-right text-gray-300 flex-shrink-0">{idx + 1}.</span>
                               <span className="font-medium text-gray-700 flex-shrink-0">{s.displayName}</span>
-                              <span className="text-gray-400 font-mono">{s.stepTypeCode in STEP_TYPE_LABELS ? STEP_TYPE_LABELS[s.stepTypeCode] : s.stepTypeCode}</span>
+                              <span className="text-gray-600 font-mono">{s.stepTypeCode in STEP_TYPE_LABELS ? STEP_TYPE_LABELS[s.stepTypeCode] : s.stepTypeCode}</span>
                               {s.ownerRoleCode && (
-                                <span className="text-gray-400 italic">{s.ownerRoleCode}</span>
+                                <span className="text-gray-600 italic">{s.ownerRoleCode}</span>
                               )}
                             </div>
                           ))}
@@ -222,7 +222,7 @@ function DefinitionsTab({ canWrite }: { canWrite: boolean }) {
               )}
             </div>
           ) : (
-            <p className="text-sm text-gray-400 py-8 text-center">Select a definition to view details.</p>
+            <p className="text-sm text-gray-600 py-8 text-center">Select a definition to view details.</p>
           )}
         </div>
       </div>
@@ -349,7 +349,7 @@ function AssignmentsTab({ canWrite }: { canWrite: boolean }) {
       {loading ? (
         <div className="flex justify-center py-8"><Spinner /></div>
       ) : rules.length === 0 ? (
-        <p className="text-sm text-gray-400">No assignment rules.</p>
+        <p className="text-sm text-gray-600">No assignment rules.</p>
       ) : (
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
           <table className="min-w-full divide-y divide-gray-200 text-sm">
@@ -372,7 +372,7 @@ function AssignmentsTab({ canWrite }: { canWrite: boolean }) {
                   <td className="px-4 py-3">
                     {r.active
                       ? <span className="text-xs text-green-600">Yes</span>
-                      : <span className="text-xs text-gray-400">No</span>}
+                      : <span className="text-xs text-gray-600">No</span>}
                   </td>
                 </tr>
               ))}

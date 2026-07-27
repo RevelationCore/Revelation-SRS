@@ -97,7 +97,7 @@ function RuntimeTab() {
           </h2>
         </div>
         {data.workflowDefinitions.length === 0 ? (
-          <p className="px-5 py-4 text-sm text-gray-400">No workflow definitions registered.</p>
+          <p className="px-5 py-4 text-sm text-gray-600">No workflow definitions registered.</p>
         ) : (
           <table className="min-w-full divide-y divide-gray-100 text-sm">
             <thead className="bg-gray-50">
@@ -128,7 +128,7 @@ function RuntimeTab() {
           </h2>
         </div>
         {data.featureFlags.length === 0 ? (
-          <p className="px-5 py-4 text-sm text-gray-400">No feature flags registered.</p>
+          <p className="px-5 py-4 text-sm text-gray-600">No feature flags registered.</p>
         ) : (
           <table className="min-w-full divide-y divide-gray-100 text-sm">
             <thead className="bg-gray-50">
@@ -172,7 +172,7 @@ function EnvironmentsTab() {
   return (
     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
       {envs.length === 0 ? (
-        <p className="px-5 py-4 text-sm text-gray-400">No environments registered.</p>
+        <p className="px-5 py-4 text-sm text-gray-600">No environments registered.</p>
       ) : (
         <table className="min-w-full divide-y divide-gray-100 text-sm">
           <thead className="bg-gray-50">
@@ -250,7 +250,7 @@ function PromotionsTab() {
       ) : (
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
           {promotions.length === 0 ? (
-            <p className="px-5 py-4 text-sm text-gray-400">No promotions recorded.</p>
+            <p className="px-5 py-4 text-sm text-gray-600">No promotions recorded.</p>
           ) : (
             <table className="min-w-full divide-y divide-gray-100 text-sm">
               <thead className="bg-gray-50">
@@ -381,7 +381,7 @@ function CreatePromotionForm({
 function KV({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
     <div>
-      <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">{label}</p>
+      <p className="text-xs text-gray-600 font-medium uppercase tracking-wide">{label}</p>
       <p className={`mt-0.5 text-gray-900 ${mono ? 'font-mono text-xs' : 'text-sm'}`}>{value}</p>
     </div>
   );

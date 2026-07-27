@@ -130,7 +130,7 @@ function ConnectorHealthTab() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-900">{reg.displayName}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">
+                  <p className="text-xs text-gray-600 mt-0.5">
                     {reg.transportCode}
                     {reg.endpointUrl && (
                       <span className="font-mono ml-2">{reg.endpointUrl}</span>
@@ -171,7 +171,7 @@ function ConnectorHealthTab() {
         })}
 
         {items.length === 0 && (
-          <p className="text-sm text-gray-400">No integrations registered.</p>
+          <p className="text-sm text-gray-600">No integrations registered.</p>
         )}
       </div>
 
@@ -296,7 +296,7 @@ function FailedExchangesTab() {
 
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
         {exchanges.length === 0 ? (
-          <p className="px-5 py-8 text-sm text-gray-400 text-center">No failed exchanges.</p>
+          <p className="px-5 py-8 text-sm text-gray-600 text-center">No failed exchanges.</p>
         ) : (
           <table className="min-w-full divide-y divide-gray-100 text-sm">
             <thead className="bg-gray-50">

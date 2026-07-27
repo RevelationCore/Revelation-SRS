@@ -113,7 +113,7 @@ function RegistrationsTab() {
       {loading ? (
         <div className="flex justify-center py-16"><Spinner /></div>
       ) : regs.length === 0 ? (
-        <p className="text-sm text-gray-400">No integration registrations.</p>
+        <p className="text-sm text-gray-600">No integration registrations.</p>
       ) : (
         <div className="space-y-3">
           {regs.map(reg => {
@@ -123,14 +123,14 @@ function RegistrationsTab() {
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <p className="text-sm font-medium text-gray-900">{reg.displayName}</p>
-                    {reg.endpointUrl && <p className="text-xs text-gray-400 font-mono mt-0.5 truncate max-w-xs">{reg.endpointUrl}</p>}
+                    {reg.endpointUrl && <p className="text-xs text-gray-600 font-mono mt-0.5 truncate max-w-xs">{reg.endpointUrl}</p>}
                     <div className="mt-1 flex items-center gap-2">
                       <Badge value={reg.healthStatusCode ?? (reg.enabled ? 'enabled' : 'disabled')} />
                       {reg.enabled
                         ? <span className="text-xs text-green-600">enabled</span>
-                        : <span className="text-xs text-gray-400">disabled</span>}
+                        : <span className="text-xs text-gray-600">disabled</span>}
                       {reg.lastHealthCheckAt && (
-                        <span className="text-xs text-gray-400">
+                        <span className="text-xs text-gray-600">
                           Last check: {new Date(reg.lastHealthCheckAt).toLocaleString('en-GB')}
                         </span>
                       )}
@@ -368,7 +368,7 @@ function ContractsTab() {
       {loading ? (
         <div className="flex justify-center py-8"><Spinner /></div>
       ) : contracts.length === 0 ? (
-        <p className="text-sm text-gray-400">No contracts.</p>
+        <p className="text-sm text-gray-600">No contracts.</p>
       ) : (
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
           <table className="min-w-full divide-y divide-gray-200 text-sm">
@@ -391,7 +391,7 @@ function ContractsTab() {
                   <td className="px-4 py-3">
                     {c.deprecatedAt == null
                       ? <span className="text-xs text-green-600">Yes</span>
-                      : <span className="text-xs text-gray-400">Deprecated</span>}
+                      : <span className="text-xs text-gray-600">Deprecated</span>}
                   </td>
                 </tr>
               ))}
@@ -460,7 +460,7 @@ function ExchangesTab() {
       {loading ? (
         <div className="flex justify-center py-8"><Spinner /></div>
       ) : exchanges.length === 0 ? (
-        <p className="text-sm text-gray-400">No exchanges found.</p>
+        <p className="text-sm text-gray-600">No exchanges found.</p>
       ) : (
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
           <table className="min-w-full divide-y divide-gray-200 text-sm">

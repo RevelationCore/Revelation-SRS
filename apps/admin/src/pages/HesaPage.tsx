@@ -150,7 +150,7 @@ export function HesaPage() {
           ) : error ? (
             <p className="text-sm text-red-600">{error}</p>
           ) : returns.length === 0 ? (
-            <p className="text-sm text-gray-400">No returns yet.</p>
+            <p className="text-sm text-gray-600">No returns yet.</p>
           ) : (
             <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
               <ul className="divide-y divide-gray-100">
@@ -165,7 +165,7 @@ export function HesaPage() {
                       <div className="font-medium text-gray-900">{r.academicYear}</div>
                       <div className="mt-0.5 flex items-center gap-2">
                         <Badge value={r.statusCode} />
-                        <span className="text-xs text-gray-400">{r.recordCount} records</span>
+                        <span className="text-xs text-gray-600">{r.recordCount} records</span>
                       </div>
                     </button>
                   </li>
@@ -245,7 +245,7 @@ export function HesaPage() {
               )}
             </div>
           ) : (
-            <p className="text-sm text-gray-400 py-8 text-center">Select a return to view details.</p>
+            <p className="text-sm text-gray-600 py-8 text-center">Select a return to view details.</p>
           )}
         </div>
       </div>
@@ -257,7 +257,7 @@ function InfoRow({ label, value }: { label: string; value?: string | null }) {
   return (
     <div className="flex gap-2">
       <dt className="w-24 flex-shrink-0 text-gray-500 text-xs pt-0.5">{label}</dt>
-      <dd className="text-gray-900 text-xs">{value ?? <span className="text-gray-400">—</span>}</dd>
+      <dd className="text-gray-900 text-xs">{value ?? <span className="text-gray-600">—</span>}</dd>
     </div>
   );
 }

@@ -39,7 +39,7 @@ export function EnrolmentReportPage() {
           {loading ? 'Loading…' : 'Refresh'}
         </button>
         {data && (
-          <span className="text-xs text-gray-400">
+          <span className="text-xs text-gray-600">
             Generated {new Date(data.generatedAt).toLocaleString('en-GB')} · {data.total} enrolments
           </span>
         )}
@@ -79,7 +79,7 @@ export function EnrolmentReportPage() {
                 </div>
               ))}
               {Object.keys(data.byMode).length === 0 && (
-                <p className="text-sm text-gray-400">No data</p>
+                <p className="text-sm text-gray-600">No data</p>
               )}
             </div>
           </section>
@@ -137,7 +137,7 @@ export function EnrolmentReportPage() {
                     <tr key={p.programmeId} className="hover:bg-gray-50">
                       <td className="px-4 py-2 text-gray-900">
                         {p.programmeCode && <span className="font-mono text-xs text-gray-500 mr-1">{p.programmeCode}</span>}
-                        {p.programmeName ?? <span className="text-gray-400 italic">Unknown</span>}
+                        {p.programmeName ?? <span className="text-gray-600 italic">Unknown</span>}
                       </td>
                       <td className="px-4 py-2 font-medium text-gray-900">{p.count}</td>
                     </tr>

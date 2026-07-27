@@ -281,7 +281,7 @@ function LabelsTab({ canWrite }: { canWrite: boolean }) {
                     name={code}
                     defaultValue={label}
                     disabled={!canWrite}
-                    className="flex-1 rounded border border-gray-300 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-50 disabled:text-gray-500"
+                    className="flex-1 rounded border border-gray-300 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-50 disabled:text-gray-700"
                   />
                 </div>
               ))}
@@ -299,7 +299,7 @@ function LabelsTab({ canWrite }: { canWrite: boolean }) {
             </form>
           </div>
         ) : (
-          <p className="text-sm text-gray-400 py-8 text-center">Select a value set to edit its labels.</p>
+          <p className="text-sm text-gray-600 py-8 text-center">Select a value set to edit its labels.</p>
         )}
       </div>
     </div>
@@ -329,7 +329,7 @@ function ConfigField({
         defaultValue={defaultValue}
         placeholder={placeholder}
         disabled={disabled}
-        className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-50 disabled:text-gray-500"
+        className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-50 disabled:text-gray-700"
       />
     </div>
   );

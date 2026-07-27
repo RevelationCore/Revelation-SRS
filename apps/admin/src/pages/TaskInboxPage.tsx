@@ -73,7 +73,7 @@ export function TaskInboxPage() {
       {loading ? (
         <div className="flex justify-center py-16"><Spinner /></div>
       ) : tasks.length === 0 ? (
-        <p className="text-sm text-gray-400 py-8 text-center">No tasks found.</p>
+        <p className="text-sm text-gray-600 py-8 text-center">No tasks found.</p>
       ) : (
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
           <table className="min-w-full divide-y divide-gray-200 text-sm">

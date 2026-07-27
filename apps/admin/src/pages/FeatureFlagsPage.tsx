@@ -72,7 +72,7 @@ export function FeatureFlagsPage() {
           {loading ? (
             <div className="flex justify-center py-8"><Spinner /></div>
           ) : flags.length === 0 ? (
-            <p className="text-sm text-gray-400">No feature flags.</p>
+            <p className="text-sm text-gray-600">No feature flags.</p>
           ) : (
             <div className="bg-white rounded-lg border border-gray-200 overflow-x-hidden overflow-y-auto max-h-[calc(100vh-14rem)]">
               <ul className="divide-y divide-gray-100">
@@ -111,7 +111,7 @@ export function FeatureFlagsPage() {
               }}
             />
           ) : (
-            <p className="text-sm text-gray-400 py-8 text-center">Select a flag to view details.</p>
+            <p className="text-sm text-gray-600 py-8 text-center">Select a flag to view details.</p>
           )}
         </div>
       </div>
@@ -221,7 +221,7 @@ function FlagDetail({
       <div className="flex items-start justify-between mb-4">
         <div>
           <p className="text-base font-mono font-semibold text-gray-900">{flag.flagKey}</p>
-          <p className="text-xs text-gray-400 mt-0.5">{flag.displayName}</p>
+          <p className="text-xs text-gray-600 mt-0.5">{flag.displayName}</p>
           {flag.description && <p className="text-xs text-gray-500 mt-0.5">{flag.description}</p>}
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
@@ -302,11 +302,11 @@ function FlagDetail({
             {tab === 'assignments' && (
               <div>
                 {assignments.length === 0 ? (
-                  <p className="text-xs text-gray-400 mb-3">No overrides — default applies everywhere.</p>
+                  <p className="text-xs text-gray-600 mb-3">No overrides — default applies everywhere.</p>
                 ) : (
                   <table className="min-w-full text-xs mb-3">
                     <thead>
-                      <tr className="text-gray-400 uppercase text-xs">
+                      <tr className="text-gray-600 uppercase text-xs">
                         <th className="text-left pb-1 pr-4">Scope</th>
                         <th className="text-left pb-1 pr-4">Variant</th>
                         <th className="text-left pb-1 pr-4">Active from</th>
@@ -379,7 +379,7 @@ function FlagDetail({
                       <p className="font-medium text-gray-700 mb-1">Current default variant</p>
                       <p className="font-mono text-gray-600">{impact.currentDefaultVariantKey}
                         {impact.currentDefaultValue !== undefined && (
-                          <span className="ml-2 text-gray-400">({String(impact.currentDefaultValue)})</span>
+                          <span className="ml-2 text-gray-600">({String(impact.currentDefaultValue)})</span>
                         )}
                       </p>
                     </div>
@@ -403,7 +403,7 @@ function FlagDetail({
                     )}
                   </>
                 ) : (
-                  <p className="text-gray-400">No impact data available.</p>
+                  <p className="text-gray-600">No impact data available.</p>
                 )}
               </div>
             )}
@@ -482,7 +482,7 @@ function InfoRow({ label, value }: { label: string; value?: string | null }) {
   return (
     <div className="flex gap-2">
       <dt className="w-36 flex-shrink-0 text-gray-500">{label}</dt>
-      <dd className="text-gray-900">{value ?? <span className="text-gray-400">—</span>}</dd>
+      <dd className="text-gray-900">{value ?? <span className="text-gray-600">—</span>}</dd>
     </div>
   );
 }

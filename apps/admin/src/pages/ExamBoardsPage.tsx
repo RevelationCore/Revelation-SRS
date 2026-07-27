@@ -83,7 +83,7 @@ export function ExamBoardsPage() {
       {loading ? (
         <div className="flex justify-center py-16"><Spinner /></div>
       ) : boards.length === 0 ? (
-        <p className="py-8 text-center text-sm text-gray-400">No exam boards found.</p>
+        <p className="py-8 text-center text-sm text-gray-600">No exam boards found.</p>
       ) : (
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
           <table className="min-w-full divide-y divide-gray-200 text-sm">
@@ -104,7 +104,7 @@ export function ExamBoardsPage() {
                   <td className="px-4 py-3 text-gray-600">
                     {b.meetingDate
                       ? new Date(b.meetingDate).toLocaleDateString('en-GB')
-                      : <span className="text-gray-400">—</span>}
+                      : <span className="text-gray-600">—</span>}
                   </td>
                   <td className="px-4 py-3">
                     {b.ratifiedAt
