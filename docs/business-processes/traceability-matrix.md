@@ -5,6 +5,10 @@
 
 This matrix connects business outcomes to current Revelation design. It records alignment and gaps; it does not imply that current implementation defines sector practice.
 
+P0 findings have detailed [functional requirements and ADR mappings](p0-requirements-and-adr-traceability.md).
+
+Data findings BPR-D01–BPR-D19 have a completed [logical/physical delta assessment](../architecture/business-process-data-model-delta.md).
+
 ## Domain crosswalk
 
 | BP range | Domain | Existing workflows | Principal integration flows/contracts | Principal data areas | Initial finding |

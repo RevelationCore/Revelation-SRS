@@ -3,6 +3,7 @@
 > Status: Draft — Phase 2
 > Last updated: 2026-06-04
 > This document defines the logical data model, the bitemporal storage pattern, the multi-tenancy strategy, and the naming conventions that govern all database design. Full DDL is produced in Phase 3 as part of the platform foundation.
+> Business-process review: BPR-D01–BPR-D19 have been assessed in the [data-model delta](business-process-data-model-delta.md), with a proposed [target model](business-process-target-data-model.md) and [migration plan](business-process-data-migration-plan.md). Those additions remain proposed until their ADRs are approved.
 
 ---
 

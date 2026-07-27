@@ -17,6 +17,7 @@ This library documents UK higher education business processes that create, chang
 - Use the [traceability matrix](traceability-matrix.md) to connect processes to Revelation workflows, integration flows, requirements, and data.
 - Use the [SME review register](sme-review-register.md) to see which review roles remain unassigned.
 - Read the [completion review](completion-review.md), use the [SME review pack](sme-review-pack.md), and assess the proposed [Revelation change backlog](revelation-change-backlog.md).
+- Review the [P0 requirements and ADR traceability](p0-requirements-and-adr-traceability.md) before delivery planning.
 
 ## Browse by lifecycle
 

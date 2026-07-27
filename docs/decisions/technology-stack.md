@@ -38,6 +38,13 @@
 | Architectural style | Modular monolith (core); separate services (modules + adapters) | — | ADR-012 |
 | Bitemporal storage pattern | Four-column explicit timestamps (`valid_from/to`, `recorded_at/until`) | — | ADR-013 |
 | Multi-tenancy isolation | PostgreSQL Row-Level Security (RLS) + `tenant_id` column | — | ADR-014 |
+| Workflow/platform controls | SRS domain state + SRS workflow records + Temporal orchestration | — | ADR-015, ADR-016 |
+| Sensitive case boundary | Minimum-necessary SRS outcome; restricted specialist evidence | — | ADR-017 |
+| Regulatory lineage | Versioned collection snapshot, field lineage and sign-off | — | ADR-018 |
+| Integration assurance | Per-target exchange ledger and state reconciliation | — | ADR-019 |
+| Assessment authority | Staged marks/results with immutable ratification lock | — | ADR-020 |
+| Record governance | Linked identity, rights, retention and audit controls | — | ADR-021 |
+| Sponsor compliance | Governed CAS/compliance decisions reconciled with UKVI SMS | — | ADR-022 |
 
 ## Local Development Stack
 

@@ -4,6 +4,7 @@
 > Last updated: 2026-06-04
 > Traceability: Reference model flows are cited as F-nnn. See `docs/reference/revelation-student-records-enterprise-reference-model-2.1.json` for flow detail.
 > Priority: **M** = Must Have · **S** = Should Have · **C** = Could Have
+> P0 refinement: See [P0 Business Process Functional Requirements](business-process-p0-functional-requirements.md) for proposed detailed controls derived from BP-001–BP-063.
 
 ---
 

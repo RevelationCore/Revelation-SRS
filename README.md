@@ -35,6 +35,7 @@ Revelation SRS is a fully open source Student Information System designed specif
 | [Domain Glossary](docs/domain-glossary.md) | Authoritative definitions of all UK HE domain terms used in the system |
 | **Requirements** | |
 | [Functional Requirements](docs/requirements/functional-requirements.md) | 140+ testable requirements traced to reference model flows |
+| [P0 Business Process Requirements](docs/requirements/business-process-p0-functional-requirements.md) | Detailed controls derived from the UK HE process library |
 | [Non-Functional Requirements](docs/requirements/non-functional-requirements.md) | Performance, security, accessibility, privacy, and compliance requirements |
 | [Actor Catalogue](docs/requirements/actor-catalogue.md) | Human and system actors; RBAC role hierarchy |
 | [Workflow Catalogue](docs/requirements/workflow-catalogue.md) | 12 fully specified business process workflows with state machines |
@@ -43,6 +44,9 @@ Revelation SRS is a fully open source Student Information System designed specif
 | **Architecture** | |
 | [System Architecture](docs/architecture/system-architecture.md) | Component diagram, modular monolith design, repository structure |
 | [Data Model](docs/architecture/data-model.md) | Entity model, bitemporal schema pattern, multi-tenancy via RLS |
+| [Business Process Data-Model Delta](docs/architecture/business-process-data-model-delta.md) | BPR-D01–D19 assessment against logical and implemented schemas |
+| [Business Process Target Data Model](docs/architecture/business-process-target-data-model.md) | Proposed aggregates and ER relationships |
+| [Business Process Data Migration Plan](docs/architecture/business-process-data-migration-plan.md) | Staged expand/backfill/cutover plan from migration 0033 |
 | [Integration Layer](docs/architecture/integration-layer.md) | Event bus topology, REST API gateway, file exchange framework, plugin registry |
 | [Domain Events](docs/architecture/domain-events.md) | Complete event taxonomy (~95 events) with payload schemas and consumers |
 | [Integration Contract Catalogue](docs/architecture/integration-contract-catalogue.md) | Named contracts for all 69 reference model flows with failure handling and replay |
@@ -276,6 +280,14 @@ Full developer setup guide, including troubleshooting and monorepo commands: [do
 | [ADR-012](docs/decisions/ADR-012-architectural-style.md) | Modular monolith (core); separate services (modules + adapters) |
 | [ADR-013](docs/decisions/ADR-013-bitemporal-storage.md) | Four-column bitemporal timestamps |
 | [ADR-014](docs/decisions/ADR-014-multitenancy-isolation.md) | PostgreSQL Row-Level Security |
+| [ADR-015](docs/decisions/ADR-015-workflow-feature-flags-and-environment-promotion.md) | Workflow, feature flags, and environment promotion |
+| [ADR-016](docs/decisions/ADR-016-authoritative-business-state-and-workflow-separation.md) | Authoritative business state separated from workflow state |
+| [ADR-017](docs/decisions/ADR-017-minimum-necessary-outcomes-and-restricted-evidence.md) | Minimum-necessary outcomes and restricted evidence |
+| [ADR-018](docs/decisions/ADR-018-versioned-regulatory-submission-lineage.md) | Versioned regulatory submissions with field lineage |
+| [ADR-019](docs/decisions/ADR-019-per-target-exchange-ledger-and-reconciliation.md) | Per-target exchange ledger and reconciliation |
+| [ADR-020](docs/decisions/ADR-020-staged-assessment-authority-and-ratification-lock.md) | Staged assessment authority and ratification lock |
+| [ADR-021](docs/decisions/ADR-021-governed-identity-rights-retention-and-audit.md) | Governed identity, rights, retention and audit |
+| [ADR-022](docs/decisions/ADR-022-cas-and-sponsor-compliance-evidence-boundary.md) | CAS and sponsor-compliance evidence boundary |
 
 ---
 

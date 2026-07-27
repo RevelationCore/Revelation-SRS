@@ -6,6 +6,10 @@
 
 [Completion review](completion-review.md) · [Traceability matrix](traceability-matrix.md) · [Process inventory](process-inventory.md)
 
+All P0 items have been converted into proposed [detailed functional requirements](../requirements/business-process-p0-functional-requirements.md) and [ADR traceability](p0-requirements-and-adr-traceability.md).
+
+BPR-D01–BPR-D19 have also been classified against the logical and physical schemas in the [data-model delta assessment](../architecture/business-process-data-model-delta.md), with a proposed [target ER model](../architecture/business-process-target-data-model.md) and [migration plan](../architecture/business-process-data-migration-plan.md).
+
 ## Priority model
 
 - **P0** — regulatory, academic-record integrity, privacy or identity control.
@@ -98,4 +102,3 @@ Events represent completed authoritative facts, not requests or provisional sele
 5. Define privacy-classified contracts and events.
 6. Decompose or add durable workflows.
 7. Add acceptance scenarios linked to BP steps and alternatives.
-
