@@ -198,11 +198,11 @@ No nation implies an automatic adverse outcome from an attendance threshold.
 | Increment | Deliverable | Exit evidence |
 |---|---|---|
 | A | ADR/SME decisions and contract vocabulary | Complete for generic product development; institutional decisions remain deployment configuration |
-| B | Migration `0037`, Drizzle schema and RLS | Implemented; integration tests authored for tenant isolation, idempotency and correction-history immutability; execution awaits a working container runtime |
-| C | Expected-event and observation API | Implemented: OpenAPI and typed events cover creation/query, idempotent capture, correction history and timelines; integration tests are authored and await a working container runtime |
-| D | Policy evaluation and explainable alert | Implemented: approved policy versions drive deterministic evidence snapshots and duplicate-safe explainable alerts; unsafe evidence suspends for reconciliation and no direct adverse decision is permitted |
-| E | Intervention workflow and restricted referral | Implemented: idempotent triage, assigned cases, accessible contacts, actions, authoritative-version reviews, closure and minimum-necessary referrals preserve the separate status/sponsor decision boundary |
-| F | Admin UI and demo data | Implemented: role-sensitive evidence worklist, explainable alert queue, case timeline and policy administration; CI golden data provides attended, alternative-engagement, disputed-evidence and human-referral stories with Welsh-language contact coverage |
+| B | Migration `0037`, Drizzle schema and RLS | Implemented and runtime-verified under OrbStack: 5 database invariant tests pass for tenant isolation, idempotency and correction-history immutability |
+| C | Expected-event and observation API | Implemented: OpenAPI and typed events cover creation/query, idempotent capture, correction history and timelines; runtime verification is included in the 13 passing API integration scenarios for increments C–E |
+| D | Policy evaluation and explainable alert | Implemented and runtime-verified: approved policy versions drive deterministic evidence snapshots and duplicate-safe explainable alerts; unsafe evidence suspends for reconciliation and no direct adverse decision is permitted |
+| E | Intervention workflow and restricted referral | Implemented and runtime-verified: idempotent triage, assigned cases, accessible contacts, actions, authoritative-version reviews, closure and minimum-necessary referrals preserve the separate status/sponsor decision boundary |
+| F | Admin UI and demo data | Implemented and verified: role-sensitive evidence worklist, explainable alert queue, case timeline and policy administration; 18 CI-golden integration tests and 3 browser scenarios cover attended, alternative-engagement, disputed-evidence and human-referral stories with Welsh-language contact coverage |
 | G | UKVI boundary integration and operational controls | Placeholder removed only with approved read model; monitoring, replay and reconciliation verified |
 
 ## Acceptance criteria

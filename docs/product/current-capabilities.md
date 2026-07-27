@@ -30,7 +30,7 @@
 | Initial/annual registration and status | **Partial** | Enrolment, status transition, fee liability, re-enrolment schemas/services and portal views | Transfer, return, non-registration decision and leaver closure cases are incomplete |
 | Curriculum and catalogue | **Partial** | Programme, route, rule-set, module, relationships, assessment-pattern and calendar schemas/services | No atomic curriculum publication or explicit effective enrolment rule binding |
 | Module selection and registration | **Partial** | Module registration service, registration table and portal module-add route | Selection proposal, approval/exception, waitlist and atomic substitution are absent; service currently creates confirmed registration directly |
-| Attendance and academic engagement | **Partial** | Migrations `0037`–`0039`, APIs and admin workspace implement evidence, policy evaluation, explainable alerts, intervention casework and minimum referrals; four CI-golden demo stories and browser specs cover the journey | Database/browser integration execution awaits a container runtime; no approved UKVI read-model integration or production operational controls |
+| Attendance and academic engagement | **Partial** | Migrations `0037`–`0039`, APIs and admin workspace implement evidence, policy evaluation, explainable alerts, intervention casework and minimum referrals; four CI-golden demo stories and browser specs cover the journey. Under OrbStack, 5 database invariant tests, 13 API integration scenarios, 18 CI-golden integration tests and 3 browser scenarios pass | No approved UKVI read-model integration or production operational controls |
 | Reasonable adjustments and exceptional circumstances | **Partial** | Adjustment/distribution, EC and board-visibility schemas/services; portal surfaces; wellbeing module | Minimum-necessary outcome boundary, target contract version, attempts and reconciliation are incomplete |
 | Assessment marks and module results | **Partial** | Assessment component/submission, mark, result, calculation services and portal result views | Candidate attempt, mark-set/moderation evidence and complete rule-version explanation need extension |
 | Exam Boards and ratification | **Partial** | Board, immutable pack/profile, attendance/sign-off schemas, Board service and admin UI | Structured board decisions, pack hash/rule manifest, ratification record and publication lifecycle are incomplete |
@@ -55,7 +55,7 @@ ADR-016, ADR-017, ADR-019 and ADR-022 are accepted for generic product implement
 | P0 requirement/ADR coverage | Pass — 23 P0 items, 76 requirements, 7 ADRs | Traceability complete; ADRs remain proposed |
 | Data-model delta coverage | Pass — 19 capabilities | Target design complete; migrations not implemented |
 | Repository typecheck | **Fail** | VLE connector PostgreSQL telemetry option `dbStatementSerializer` does not match the installed instrumentation type; callback parameter is implicitly `any` |
-| Repository unit-test command | **Blocked/fail in this environment** | Database suites require a working Testcontainers container runtime; workflow unit tests passed before the database package stopped the recursive run |
+| Repository unit-test command | Pass under OrbStack | `pnpm test` completes across the workspace; focused attendance runtime evidence also includes 5 database invariant tests, 13 API integration scenarios and 18 CI-golden integration tests |
 | Clean-clone application bootstrap | **Not verified in this review** | Must pass before collaborator preview |
 
 ## Current launch blockers

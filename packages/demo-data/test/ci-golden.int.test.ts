@@ -54,6 +54,19 @@ async function applyAllMigrations(db: Db): Promise<void> {
   await applyMigration(db, '0021_phase9_vle_contracts.sql');
   await applyMigration(db, '0022_demo_tenant_mode.sql');
   await applyMigration(db, '0023_demo_status_checkpoint.sql');
+  await applyMigration(db, '0024_phase11_performance_indexes.sql');
+  await applyMigration(db, '0025_phase11_retention_anonymisation.sql');
+  await applyMigration(db, '0026_phase11_notifications.sql');
+  await applyMigration(db, '0027_valueset_picklists.sql');
+  await applyMigration(db, '0028_valueset_correction_status.sql');
+  await applyMigration(db, '0029_valueset_activefrom_nullable.sql');
+  await applyMigration(db, '0030_seed_nationality_domicile.sql');
+  await applyMigration(db, '0031_person_identity_pronouns.sql');
+  await applyMigration(db, '0032_seed_fee_band_code.sql');
+  await applyMigration(db, '0033_disability_declaration_notes.sql');
+  await applyMigration(db, '0037_engagement_intervention.sql');
+  await applyMigration(db, '0038_engagement_policy_alert_immutability.sql');
+  await applyMigration(db, '0039_engagement_intervention_idempotency.sql');
 }
 
 let container: StartedPostgreSqlContainer;

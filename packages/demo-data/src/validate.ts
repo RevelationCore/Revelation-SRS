@@ -18,6 +18,7 @@ import {
 } from '@revelation-srs/db';
 
 import { personId as mkPersonId } from './generators/persons.js';
+import { GOLDEN_IDS } from './golden-ids.js';
 import type { ScenarioManifest } from './types.js';
 
 export interface ValidationResult {
@@ -253,9 +254,14 @@ function checkStoryMarkersExist(manifest: ScenarioManifest): Check {
     if (manifest.storyMarkers.length === 0) return null;
 
     // Story markers correspond to person seqs 1 … storyMarkers.length
-    const expectedIds = manifest.storyMarkers.map((_, i) =>
-      mkPersonId(tenantId, i + 1),
-    );
+    const expectedIds = manifest.slug === 'ci-golden'
+      ? [
+          GOLDEN_IDS.PERSON_ENROLLED,
+          GOLDEN_IDS.PERSON_INTERMITTING,
+          GOLDEN_IDS.PERSON_WITHDRAWN,
+          GOLDEN_IDS.PERSON_GRADUATED,
+        ].slice(0, manifest.storyMarkers.length)
+      : manifest.storyMarkers.map((_, i) => mkPersonId(tenantId, i + 1));
 
     const rows = await db
       .select({ id: persons.id })
