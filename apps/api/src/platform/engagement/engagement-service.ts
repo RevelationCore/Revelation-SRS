@@ -4,6 +4,7 @@ import { and, asc, desc, eq, gte, isNull, lte } from 'drizzle-orm';
 import {
   engagementObservationRevisions,
   engagementObservations,
+  engagementAlerts,
   enrolments,
   expectedEngagementEvents,
   type Db,
@@ -398,6 +399,15 @@ export class EngagementService {
           recordedAt: now,
           correlationId: this.#uuidOrNull(correlationId),
         });
+        await tx.update(engagementAlerts)
+          .set({ reevaluationRequired: true })
+          .where(and(
+            eq(engagementAlerts.tenantId, tenantId as Uuid),
+            eq(engagementAlerts.personId, current.personId as Uuid),
+            lte(engagementAlerts.evidenceWindowFrom, eventTime),
+            gte(engagementAlerts.evidenceWindowTo, eventTime),
+            isNull(engagementAlerts.recordedUntil),
+          ));
       });
     } catch (error) {
       if (error instanceof ConflictError) throw error;

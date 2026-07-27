@@ -38,7 +38,7 @@
 | `expected_engagement_event` created | `srs.engagement.expected-event.created` | Engagement service, Registry, integration audit | Carries source identity/version and schedule; does not assert attendance or engagement. |
 | `engagement_observation` recorded | `srs.engagement.observation.recorded` | Engagement service, Registry, BI | Sensitive, minimised evidence event; source and idempotency controls prevent duplicates. |
 | `engagement_observation` corrected | `srs.engagement.observation.corrected` | Engagement service, Registry, BI | Identifies superseded and replacement versions; original evidence remains immutable. |
-| Engagement alert raised | `srs.engagement.alert.raised` (planned Increment D) | Personal tutor, Engagement Officer, Registry | Must remain an explainable review prompt, not an automatic adverse decision. |
+| Engagement alert raised/suspended | `srs.engagement.alert.raised`, `srs.engagement.alert.suspended` | Personal tutor, Engagement Officer, Registry, integration operations | Explainable review prompt only; unsafe evidence suspends for reconciliation and cannot cause an automatic adverse decision. |
 | `assessment_submission` received | No dedicated event initially | Academic Integrity via context API | Use `srs.assessment.mark-received` when mark is ingested. |
 | `mark` received/updated | `srs.assessment.mark-received`, `srs.assessment.mark-updated` | Internal | May feed provisional grade publication if configured. |
 | `module_result` calculated/ratified | `srs.assessment.module-result-calculated`, `srs.assessment.module-result-ratified` | EWP, VLE, DW, BI | Ratified event is external-facing. |

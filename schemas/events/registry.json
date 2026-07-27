@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "generated": "2026-07-27T09:51:42.148Z",
+  "generated": "2026-07-27T10:00:01.956Z",
   "description": "Machine-readable registry of all Revelation SRS domain events.",
   "schemaUriBase": "https://schemas.revelation-srs.io/events",
   "events": [
@@ -326,6 +326,32 @@
       "schemaPath": "schemas/events/engagement/observation-corrected/v1.json",
       "dataClass": "sensitive",
       "partitionKey": "observationId",
+      "consumers": [
+        "engagement-service",
+        "integration-operations"
+      ],
+      "status": "published"
+    },
+    {
+      "subject": "srs.engagement.alert.raised",
+      "version": "1.0.0",
+      "schemaRef": "https://schemas.revelation-srs.io/events/engagement/alert-raised/v1.json",
+      "schemaPath": "schemas/events/engagement/alert-raised/v1.json",
+      "dataClass": "sensitive",
+      "partitionKey": "personId",
+      "consumers": [
+        "engagement-service",
+        "personal-tutor-portal"
+      ],
+      "status": "published"
+    },
+    {
+      "subject": "srs.engagement.alert.suspended",
+      "version": "1.0.0",
+      "schemaRef": "https://schemas.revelation-srs.io/events/engagement/alert-suspended/v1.json",
+      "schemaPath": "schemas/events/engagement/alert-suspended/v1.json",
+      "dataClass": "sensitive",
+      "partitionKey": "personId",
       "consumers": [
         "engagement-service",
         "integration-operations"

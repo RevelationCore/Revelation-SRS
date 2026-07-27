@@ -2461,6 +2461,829 @@
         }
       }
     },
+    "/api/v1/engagement/policies": {
+      "post": {
+        "operationId": "createEngagementPolicies",
+        "tags": [
+          "engagement"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "policyCode",
+                  "versionNumber",
+                  "displayName",
+                  "statusCode",
+                  "validFrom",
+                  "evidenceWindowDays",
+                  "minimumExpectedEvents",
+                  "minimumAbsenceCount",
+                  "minimumAbsenceRate",
+                  "severityCode",
+                  "reviewDeadlineDays"
+                ],
+                "properties": {
+                  "policyCode": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "versionNumber": {
+                    "minimum": 1,
+                    "type": "integer"
+                  },
+                  "displayName": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "statusCode": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "draft"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "approved"
+                        ]
+                      }
+                    ]
+                  },
+                  "validFrom": {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  "validTo": {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  "applicability": {
+                    "type": "object",
+                    "additionalProperties": {}
+                  },
+                  "evidenceWindowDays": {
+                    "minimum": 1,
+                    "type": "integer"
+                  },
+                  "minimumExpectedEvents": {
+                    "minimum": 1,
+                    "type": "integer"
+                  },
+                  "minimumAbsenceCount": {
+                    "minimum": 1,
+                    "type": "integer"
+                  },
+                  "minimumAbsenceRate": {
+                    "minimum": 0,
+                    "maximum": 1,
+                    "type": "number"
+                  },
+                  "severityCode": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "low"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "medium"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "high"
+                        ]
+                      }
+                    ]
+                  },
+                  "reviewDeadlineDays": {
+                    "minimum": 1,
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-publication-class": "public",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "policyVersionId",
+                    "policyId",
+                    "policyCode",
+                    "versionNumber",
+                    "displayName",
+                    "statusCode",
+                    "validFrom",
+                    "validTo",
+                    "applicability",
+                    "evidenceWindow",
+                    "alertRules",
+                    "reviewDeadline",
+                    "approvedBy",
+                    "approvedAt"
+                  ],
+                  "properties": {
+                    "policyVersionId": {
+                      "type": "string"
+                    },
+                    "policyId": {
+                      "type": "string"
+                    },
+                    "policyCode": {
+                      "type": "string"
+                    },
+                    "versionNumber": {
+                      "type": "integer"
+                    },
+                    "displayName": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "type": "string"
+                    },
+                    "validFrom": {
+                      "type": "string"
+                    },
+                    "validTo": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "applicability": {
+                      "type": "object",
+                      "additionalProperties": {}
+                    },
+                    "evidenceWindow": {
+                      "type": "object",
+                      "additionalProperties": {}
+                    },
+                    "alertRules": {
+                      "type": "object",
+                      "additionalProperties": {}
+                    },
+                    "reviewDeadline": {
+                      "type": "object",
+                      "additionalProperties": {}
+                    },
+                    "approvedBy": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "approvedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "correlationId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "correlationId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "getEngagementPolicies",
+        "tags": [
+          "engagement"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "policyCode",
+            "required": false
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "policyVersionId",
+                      "policyId",
+                      "policyCode",
+                      "versionNumber",
+                      "displayName",
+                      "statusCode",
+                      "validFrom",
+                      "validTo",
+                      "applicability",
+                      "evidenceWindow",
+                      "alertRules",
+                      "reviewDeadline",
+                      "approvedBy",
+                      "approvedAt"
+                    ],
+                    "properties": {
+                      "policyVersionId": {
+                        "type": "string"
+                      },
+                      "policyId": {
+                        "type": "string"
+                      },
+                      "policyCode": {
+                        "type": "string"
+                      },
+                      "versionNumber": {
+                        "type": "integer"
+                      },
+                      "displayName": {
+                        "type": "string"
+                      },
+                      "statusCode": {
+                        "type": "string"
+                      },
+                      "validFrom": {
+                        "type": "string"
+                      },
+                      "validTo": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "applicability": {
+                        "type": "object",
+                        "additionalProperties": {}
+                      },
+                      "evidenceWindow": {
+                        "type": "object",
+                        "additionalProperties": {}
+                      },
+                      "alertRules": {
+                        "type": "object",
+                        "additionalProperties": {}
+                      },
+                      "reviewDeadline": {
+                        "type": "object",
+                        "additionalProperties": {}
+                      },
+                      "approvedBy": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "approvedAt": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/engagement/evaluations": {
+      "post": {
+        "operationId": "createEngagementEvaluations",
+        "tags": [
+          "engagement"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "policyVersionId",
+                  "personId",
+                  "enrolmentId",
+                  "evidenceWindowFrom",
+                  "evidenceWindowTo"
+                ],
+                "properties": {
+                  "policyVersionId": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "personId": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "enrolmentId": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "evidenceWindowFrom": {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  "evidenceWindowTo": {
+                    "format": "date-time",
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "matched",
+                    "alertCreated",
+                    "alert"
+                  ],
+                  "properties": {
+                    "matched": {
+                      "type": "boolean"
+                    },
+                    "alertCreated": {
+                      "type": "boolean"
+                    },
+                    "alert": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": [
+                            "alertId",
+                            "personId",
+                            "enrolmentId",
+                            "policyVersionId",
+                            "evidenceWindowFrom",
+                            "evidenceWindowTo",
+                            "evidenceSnapshot",
+                            "evidenceHash",
+                            "explanation",
+                            "severityCode",
+                            "statusCode",
+                            "reevaluationRequired",
+                            "recordedAt"
+                          ],
+                          "properties": {
+                            "alertId": {
+                              "type": "string"
+                            },
+                            "personId": {
+                              "type": "string"
+                            },
+                            "enrolmentId": {
+                              "type": "string"
+                            },
+                            "policyVersionId": {
+                              "type": "string"
+                            },
+                            "evidenceWindowFrom": {
+                              "type": "string"
+                            },
+                            "evidenceWindowTo": {
+                              "type": "string"
+                            },
+                            "evidenceSnapshot": {
+                              "type": "object",
+                              "additionalProperties": {}
+                            },
+                            "evidenceHash": {
+                              "type": "string"
+                            },
+                            "explanation": {
+                              "type": "object",
+                              "additionalProperties": {}
+                            },
+                            "severityCode": {
+                              "type": "string"
+                            },
+                            "statusCode": {
+                              "type": "string"
+                            },
+                            "reevaluationRequired": {
+                              "type": "boolean"
+                            },
+                            "recordedAt": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "matched",
+                    "alertCreated",
+                    "alert"
+                  ],
+                  "properties": {
+                    "matched": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "alertCreated": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "alert": {
+                      "type": "object",
+                      "required": [
+                        "alertId",
+                        "personId",
+                        "enrolmentId",
+                        "policyVersionId",
+                        "evidenceWindowFrom",
+                        "evidenceWindowTo",
+                        "evidenceSnapshot",
+                        "evidenceHash",
+                        "explanation",
+                        "severityCode",
+                        "statusCode",
+                        "reevaluationRequired",
+                        "recordedAt"
+                      ],
+                      "properties": {
+                        "alertId": {
+                          "type": "string"
+                        },
+                        "personId": {
+                          "type": "string"
+                        },
+                        "enrolmentId": {
+                          "type": "string"
+                        },
+                        "policyVersionId": {
+                          "type": "string"
+                        },
+                        "evidenceWindowFrom": {
+                          "type": "string"
+                        },
+                        "evidenceWindowTo": {
+                          "type": "string"
+                        },
+                        "evidenceSnapshot": {
+                          "type": "object",
+                          "additionalProperties": {}
+                        },
+                        "evidenceHash": {
+                          "type": "string"
+                        },
+                        "explanation": {
+                          "type": "object",
+                          "additionalProperties": {}
+                        },
+                        "severityCode": {
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "type": "string"
+                        },
+                        "reevaluationRequired": {
+                          "type": "boolean"
+                        },
+                        "recordedAt": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "correlationId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "correlationId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "correlationId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/engagement/alerts": {
+      "get": {
+        "operationId": "getEngagementAlerts",
+        "tags": [
+          "engagement"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "query",
+            "name": "personId",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "statusCode",
+            "required": false
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "alertId",
+                      "personId",
+                      "enrolmentId",
+                      "policyVersionId",
+                      "evidenceWindowFrom",
+                      "evidenceWindowTo",
+                      "evidenceSnapshot",
+                      "evidenceHash",
+                      "explanation",
+                      "severityCode",
+                      "statusCode",
+                      "reevaluationRequired",
+                      "recordedAt"
+                    ],
+                    "properties": {
+                      "alertId": {
+                        "type": "string"
+                      },
+                      "personId": {
+                        "type": "string"
+                      },
+                      "enrolmentId": {
+                        "type": "string"
+                      },
+                      "policyVersionId": {
+                        "type": "string"
+                      },
+                      "evidenceWindowFrom": {
+                        "type": "string"
+                      },
+                      "evidenceWindowTo": {
+                        "type": "string"
+                      },
+                      "evidenceSnapshot": {
+                        "type": "object",
+                        "additionalProperties": {}
+                      },
+                      "evidenceHash": {
+                        "type": "string"
+                      },
+                      "explanation": {
+                        "type": "object",
+                        "additionalProperties": {}
+                      },
+                      "severityCode": {
+                        "type": "string"
+                      },
+                      "statusCode": {
+                        "type": "string"
+                      },
+                      "reevaluationRequired": {
+                        "type": "boolean"
+                      },
+                      "recordedAt": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/exceptional-circumstances/submissions": {
       "post": {
         "operationId": "createExceptionalCircumstancesSubmissions",

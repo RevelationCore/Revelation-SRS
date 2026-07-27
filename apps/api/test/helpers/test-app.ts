@@ -77,6 +77,7 @@ export async function startTestApp(opts: StartTestAppOptions = {}): Promise<Test
   await applyMigration(db, '0032_seed_fee_band_code.sql');
   await applyMigration(db, '0033_disability_declaration_notes.sql');
   await applyMigration(db, '0037_engagement_intervention.sql');
+  await applyMigration(db, '0038_engagement_policy_alert_immutability.sql');
 
   // Seed a tenant for tests
   const tenantId = '00000000-0000-0000-0000-000000000001';
@@ -100,7 +101,7 @@ export async function startTestApp(opts: StartTestAppOptions = {}): Promise<Test
     deploymentEnvironmentCode: 'test',
     releaseVersion:   '0.0.0-test',
     imageDigest:      undefined,
-    migrationVersion: '0037_engagement_intervention',
+    migrationVersion: '0038_engagement_policy_alert_immutability',
     jwtSecret:        JWT_SECRET,
     keycloakJwksUrl:  undefined,
     corsOrigins:      ['http://localhost:5173'],

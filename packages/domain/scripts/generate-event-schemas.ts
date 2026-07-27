@@ -269,6 +269,24 @@ export const PUBLISHED_EVENTS: EventDef[] = [
     partitionKey: 'observationId',
     consumers: ['engagement-service', 'integration-operations'],
   },
+  {
+    typeName: 'EngagementAlertRaisedV1Payload',
+    file: 'engagement/alert-raised.v1.ts',
+    subject: 'srs.engagement.alert.raised',
+    schemaPath: 'engagement/alert-raised',
+    dataClass: 'sensitive',
+    partitionKey: 'personId',
+    consumers: ['engagement-service', 'personal-tutor-portal'],
+  },
+  {
+    typeName: 'EngagementAlertSuspendedV1Payload',
+    file: 'engagement/alert-suspended.v1.ts',
+    subject: 'srs.engagement.alert.suspended',
+    schemaPath: 'engagement/alert-suspended',
+    dataClass: 'sensitive',
+    partitionKey: 'personId',
+    consumers: ['engagement-service', 'integration-operations'],
+  },
   // ── Circumstances ────────────────────────────────────────────────────────
   {
     typeName: 'CircumstancesEcFlaggedV1Payload',

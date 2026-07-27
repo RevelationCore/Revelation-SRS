@@ -31,6 +31,7 @@
     "check:attendance-increment-a": "node scripts/check-attendance-increment-a.mjs",
     "check:attendance-increment-b": "node scripts/check-attendance-increment-b.mjs",
     "check:attendance-increment-c": "node scripts/check-attendance-increment-c.mjs",
+    "check:attendance-increment-d": "node scripts/check-attendance-increment-d.mjs",
     "migrate": "pnpm --filter @revelation-srs/db migrate && pnpm --filter @revelation-srs/wellbeing migrate",
     "migrate:gen": "pnpm --filter @revelation-srs/db generate",
     "demo:list":           "pnpm --filter @revelation-srs/demo-data demo:list",

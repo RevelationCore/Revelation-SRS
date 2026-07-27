@@ -35,6 +35,8 @@ let registryJwt: string;
 let tutorJwt: string;
 let personalTutorJwt: string;
 let studentJwt: string;
+let tenantAdminJwt: string;
+let engagementOfficerJwt: string;
 const capturedEvents: CapturedEvent[] = [];
 
 beforeAll(async () => {
@@ -43,6 +45,8 @@ beforeAll(async () => {
   tutorJwt = await ctx.makeJwt({ roles: ['module-tutor'] });
   personalTutorJwt = await ctx.makeJwt({ roles: ['personal-tutor'] });
   studentJwt = await ctx.makeJwt({ roles: ['student'] });
+  tenantAdminJwt = await ctx.makeJwt({ roles: ['tenant-administrator'] });
+  engagementOfficerJwt = await ctx.makeJwt({ roles: ['engagement-officer'] });
 }, 120_000);
 
 beforeEach(() => {
@@ -246,6 +250,85 @@ describe('Attendance and engagement Increment C', () => {
   });
 });
 
+describe('Attendance and engagement Increment D', () => {
+  it('uses an approved policy version to create one explainable review alert', async () => {
+    const fixture = await createFixture('ENGD01');
+    const eventId = await createEvent(fixture, 'TT-ENGD01');
+    await createObservation(eventId, 'OBS-ENGD01');
+    const policyVersionId = await createPolicy('STANDARD-ENGAGEMENT', 1, 'approved');
+    const payload = evaluationPayload(fixture, policyVersionId);
+
+    const created = await ctx.app.inject({
+      method: 'POST', url: '/api/v1/engagement/evaluations',
+      headers: { authorization: `Bearer ${engagementOfficerJwt}` }, payload,
+    });
+    expect(created.statusCode).toBe(201);
+    const result = created.json<{
+      alert: { alertId: string; evidenceHash: string; explanation: Record<string, unknown>; statusCode: string };
+    }>();
+    expect(result.alert.statusCode).toBe('open');
+    expect(result.alert.evidenceHash).toMatch(/^[a-f0-9]{64}$/);
+    expect(result.alert.explanation).toMatchObject({
+      policyCode: 'STANDARD-ENGAGEMENT', policyVersion: 1,
+      decision: 'human-review-required', automatedAdverseActionPermitted: false,
+    });
+
+    const replay = await ctx.app.inject({
+      method: 'POST', url: '/api/v1/engagement/evaluations',
+      headers: { authorization: `Bearer ${engagementOfficerJwt}` }, payload,
+    });
+    expect(replay.statusCode).toBe(200);
+    expect(replay.json()).toMatchObject({ matched: true, alertCreated: false });
+    expect(capturedEvents.filter((event) => event.type === 'srs.engagement.alert.raised')).toHaveLength(1);
+  });
+
+  it('suspends an alert when the source evidence is disputed', async () => {
+    const fixture = await createFixture('ENGD02');
+    const eventId = await createEvent(fixture, 'TT-ENGD02');
+    const observation = await ctx.app.inject({
+      method: 'POST', url: `/api/v1/engagement/events/${eventId}/observations`,
+      headers: { authorization: `Bearer ${tutorJwt}`, 'idempotency-key': 'OBS-ENGD02-v1' },
+      payload: { ...observationPayload('OBS-ENGD02', '1', 'absent'), dataQualityCode: 'disputed' },
+    });
+    expect(observation.statusCode).toBe(201);
+    const policyVersionId = await createPolicy('STANDARD-ENGAGEMENT', 2, 'approved');
+    const response = await ctx.app.inject({
+      method: 'POST', url: '/api/v1/engagement/evaluations',
+      headers: { authorization: `Bearer ${engagementOfficerJwt}` },
+      payload: evaluationPayload(fixture, policyVersionId),
+    });
+    expect(response.statusCode).toBe(201);
+    expect(response.json()).toMatchObject({
+      alert: {
+        statusCode: 'suspended-reconciliation', reevaluationRequired: true,
+        explanation: { decision: 'reconciliation-required', automatedAdverseActionPermitted: false },
+      },
+    });
+    expect(capturedEvents).toContainEqual(expect.objectContaining({ type: 'srs.engagement.alert.suspended' }));
+  });
+
+  it('rejects draft policies and protects policy and alert routes with RBAC', async () => {
+    const fixture = await createFixture('ENGD03');
+    const policyVersionId = await createPolicy('DRAFT-ENGAGEMENT', 1, 'draft');
+    const rejected = await ctx.app.inject({
+      method: 'POST', url: '/api/v1/engagement/evaluations',
+      headers: { authorization: `Bearer ${engagementOfficerJwt}` },
+      payload: evaluationPayload(fixture, policyVersionId),
+    });
+    expect(rejected.statusCode).toBe(404);
+    const forbiddenPolicy = await ctx.app.inject({
+      method: 'POST', url: '/api/v1/engagement/policies',
+      headers: { authorization: `Bearer ${registryJwt}` }, payload: policyPayload('FORBIDDEN', 1, 'approved'),
+    });
+    expect(forbiddenPolicy.statusCode).toBe(403);
+    const forbiddenAlerts = await ctx.app.inject({
+      method: 'GET', url: '/api/v1/engagement/alerts',
+      headers: { authorization: `Bearer ${studentJwt}` },
+    });
+    expect(forbiddenAlerts.statusCode).toBe(403);
+  });
+});
+
 interface Fixture {
   personId: string;
   enrolmentId: string;
@@ -326,4 +409,33 @@ async function createObservation(expectedEventId: string, sourceEventId: string)
   });
   expect(response.statusCode).toBe(201);
   return response.json<{ observationId: string }>().observationId;
+}
+
+function policyPayload(policyCode: string, versionNumber: number, statusCode: 'draft' | 'approved') {
+  return {
+    policyCode, versionNumber, displayName: `${policyCode} v${versionNumber}`, statusCode,
+    validFrom: '2027-09-01T00:00:00.000Z', evidenceWindowDays: 14,
+    minimumExpectedEvents: 1, minimumAbsenceCount: 1, minimumAbsenceRate: 1,
+    severityCode: 'medium', reviewDeadlineDays: 5,
+  };
+}
+
+async function createPolicy(
+  policyCode: string, versionNumber: number, statusCode: 'draft' | 'approved',
+): Promise<string> {
+  const response = await ctx.app.inject({
+    method: 'POST', url: '/api/v1/engagement/policies',
+    headers: { authorization: `Bearer ${tenantAdminJwt}` },
+    payload: policyPayload(policyCode, versionNumber, statusCode),
+  });
+  expect(response.statusCode).toBe(201);
+  return response.json<{ policyVersionId: string }>().policyVersionId;
+}
+
+function evaluationPayload(fixture: Fixture, policyVersionId: string) {
+  return {
+    policyVersionId, personId: fixture.personId, enrolmentId: fixture.enrolmentId,
+    evidenceWindowFrom: '2027-10-01T00:00:00.000Z',
+    evidenceWindowTo: '2027-10-10T00:00:00.000Z',
+  };
 }

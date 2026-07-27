@@ -9,6 +9,12 @@ import type {
   EngagementObservationDto,
   RecordObservationInput,
 } from '../platform/engagement/engagement-service.js';
+import type {
+  CreateEngagementPolicyInput,
+  EngagementAlertDto,
+  EngagementPolicyDto,
+  EvaluateEngagementInput,
+} from '../platform/engagement/engagement-policy-service.js';
 
 const ErrorSchema = Type.Object({
   type: Type.String(),
@@ -58,6 +64,23 @@ const ObservationSchema = Type.Object({
   deviceReference: Type.Union([Type.String(), Type.Null()]),
   operationalReference: Type.Union([Type.String(), Type.Null()]),
   actorId: Type.String(),
+  recordedAt: Type.String(),
+});
+
+const JsonObjectSchema = Type.Record(Type.String(), Type.Unknown());
+const PolicySchema = Type.Object({
+  policyVersionId: Type.String(), policyId: Type.String(), policyCode: Type.String(),
+  versionNumber: Type.Integer(), displayName: Type.String(), statusCode: Type.String(),
+  validFrom: Type.String(), validTo: Type.Union([Type.String(), Type.Null()]),
+  applicability: JsonObjectSchema, evidenceWindow: JsonObjectSchema, alertRules: JsonObjectSchema,
+  reviewDeadline: JsonObjectSchema, approvedBy: Type.Union([Type.String(), Type.Null()]),
+  approvedAt: Type.Union([Type.String(), Type.Null()]),
+});
+const AlertSchema = Type.Object({
+  alertId: Type.String(), personId: Type.String(), enrolmentId: Type.String(),
+  policyVersionId: Type.String(), evidenceWindowFrom: Type.String(), evidenceWindowTo: Type.String(),
+  evidenceSnapshot: JsonObjectSchema, evidenceHash: Type.String(), explanation: JsonObjectSchema,
+  severityCode: Type.String(), statusCode: Type.String(), reevaluationRequired: Type.Boolean(),
   recordedAt: Type.String(),
 });
 
@@ -293,6 +316,106 @@ export function engagementRoutes(fastify: FastifyInstance): void {
       });
     },
   );
+
+  fastify.post(
+    '/engagement/policies',
+    {
+      schema: {
+        body: Type.Object({
+          policyCode: Type.String({ minLength: 1 }), versionNumber: Type.Integer({ minimum: 1 }),
+          displayName: Type.String({ minLength: 1 }), statusCode: Type.Union([Type.Literal('draft'), Type.Literal('approved')]),
+          validFrom: Type.String({ format: 'date-time' }), validTo: Type.Optional(Type.String({ format: 'date-time' })),
+          applicability: Type.Optional(JsonObjectSchema), evidenceWindowDays: Type.Integer({ minimum: 1 }),
+          minimumExpectedEvents: Type.Integer({ minimum: 1 }), minimumAbsenceCount: Type.Integer({ minimum: 1 }),
+          minimumAbsenceRate: Type.Number({ minimum: 0, maximum: 1 }),
+          severityCode: Type.Union([Type.Literal('low'), Type.Literal('medium'), Type.Literal('high')]),
+          reviewDeadlineDays: Type.Integer({ minimum: 1 }),
+        }),
+        response: { 201: PolicySchema, 409: ErrorSchema, 422: ErrorSchema },
+      },
+      preHandler: [requirePermission('engagement:policy:manage')],
+    },
+    async (request, reply) => {
+      const policy = await fastify.engagementPolicyService.createPolicy(
+        request.tenantId, request.body as CreateEngagementPolicyInput, request.user.sub,
+      );
+      await fastify.audit.record({
+        tenantId: request.tenantId, entityType: 'engagement_policy_version',
+        entityId: policy.policyVersionId, actionType: 'create', actorType: 'user',
+        actorId: request.user.sub, actorDisplayName: request.user.displayName, correlationId: request.id,
+      });
+      await reply.code(201).send(policyToWire(policy));
+    },
+  );
+
+  fastify.get(
+    '/engagement/policies',
+    {
+      schema: {
+        querystring: Type.Object({ policyCode: Type.Optional(Type.String()) }),
+        response: { 200: Type.Array(PolicySchema) },
+      },
+      preHandler: [requirePermission('engagement:policy:read')],
+    },
+    async (request, reply) => {
+      const { policyCode } = request.query as { policyCode?: string };
+      const policies = await fastify.engagementPolicyService.listPolicies(request.tenantId, policyCode);
+      await reply.send(policies.map(policyToWire));
+    },
+  );
+
+  fastify.post(
+    '/engagement/evaluations',
+    {
+      schema: {
+        body: Type.Object({
+          policyVersionId: Type.String({ format: 'uuid' }), personId: Type.String({ format: 'uuid' }),
+          enrolmentId: Type.String({ format: 'uuid' }), evidenceWindowFrom: Type.String({ format: 'date-time' }),
+          evidenceWindowTo: Type.String({ format: 'date-time' }),
+        }),
+        response: {
+          200: Type.Object({ matched: Type.Boolean(), alertCreated: Type.Boolean(), alert: Type.Union([AlertSchema, Type.Null()]) }),
+          201: Type.Object({ matched: Type.Literal(true), alertCreated: Type.Literal(true), alert: AlertSchema }),
+          404: ErrorSchema, 409: ErrorSchema, 422: ErrorSchema,
+        },
+      },
+      preHandler: [requirePermission('engagement:evaluation:run')],
+    },
+    async (request, reply) => {
+      const result = await fastify.engagementPolicyService.evaluate(
+        request.tenantId, request.body as EvaluateEngagementInput, request.user.sub, request.id,
+      );
+      if (result.alertCreated && result.alert) {
+        await fastify.audit.record({
+          tenantId: request.tenantId, entityType: 'engagement_alert', entityId: result.alert.alertId,
+          actionType: 'create', actorType: 'user', actorId: request.user.sub,
+          actorDisplayName: request.user.displayName, correlationId: request.id,
+        });
+      }
+      await reply.code(result.alertCreated ? 201 : 200).send({
+        ...result, alert: result.alert ? alertToWire(result.alert) : null,
+      });
+    },
+  );
+
+  fastify.get(
+    '/engagement/alerts',
+    {
+      schema: {
+        querystring: Type.Object({
+          personId: Type.Optional(Type.String({ format: 'uuid' })), statusCode: Type.Optional(Type.String()),
+        }),
+        response: { 200: Type.Array(AlertSchema) },
+      },
+      preHandler: [requirePermission('engagement:alert:read')],
+    },
+    async (request, reply) => {
+      const alerts = await fastify.engagementPolicyService.listAlerts(
+        request.tenantId, request.query as { personId?: string; statusCode?: string },
+      );
+      await reply.send(alerts.map(alertToWire));
+    },
+  );
 }
 
 function eventToWire(event: EngagementEventDto) {
@@ -312,5 +435,19 @@ function observationToWire(observation: EngagementObservationDto) {
     eventTime: observation.eventTime.toISOString(),
     receivedAt: observation.receivedAt.toISOString(),
     recordedAt: observation.recordedAt.toISOString(),
+  };
+}
+
+function policyToWire(policy: EngagementPolicyDto) {
+  return {
+    ...policy, validFrom: policy.validFrom.toISOString(), validTo: policy.validTo?.toISOString() ?? null,
+    approvedAt: policy.approvedAt?.toISOString() ?? null,
+  };
+}
+
+function alertToWire(alert: EngagementAlertDto) {
+  return {
+    ...alert, evidenceWindowFrom: alert.evidenceWindowFrom.toISOString(),
+    evidenceWindowTo: alert.evidenceWindowTo.toISOString(), recordedAt: alert.recordedAt.toISOString(),
   };
 }

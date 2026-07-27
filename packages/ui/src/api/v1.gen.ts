@@ -228,6 +228,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/engagement/policies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getEngagementPolicies"];
+        put?: never;
+        post: operations["createEngagementPolicies"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/engagement/evaluations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createEngagementEvaluations"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/engagement/alerts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getEngagementAlerts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/exceptional-circumstances/submissions": {
         parameters: {
             query?: never;
@@ -3773,6 +3821,322 @@ export interface operations {
                         detail?: string;
                         correlationId?: string;
                     };
+                };
+            };
+        };
+    };
+    getEngagementPolicies: {
+        parameters: {
+            query?: {
+                policyCode?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        policyVersionId: string;
+                        policyId: string;
+                        policyCode: string;
+                        versionNumber: number;
+                        displayName: string;
+                        statusCode: string;
+                        validFrom: string;
+                        validTo: string | null;
+                        applicability: {
+                            [key: string]: unknown;
+                        };
+                        evidenceWindow: {
+                            [key: string]: unknown;
+                        };
+                        alertRules: {
+                            [key: string]: unknown;
+                        };
+                        reviewDeadline: {
+                            [key: string]: unknown;
+                        };
+                        approvedBy: string | null;
+                        approvedAt: string | null;
+                    }[];
+                };
+            };
+        };
+    };
+    createEngagementPolicies: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    policyCode: string;
+                    versionNumber: number;
+                    displayName: string;
+                    statusCode: "draft" | "approved";
+                    /** Format: date-time */
+                    validFrom: string;
+                    /** Format: date-time */
+                    validTo?: string;
+                    applicability?: {
+                        [key: string]: unknown;
+                    };
+                    evidenceWindowDays: number;
+                    minimumExpectedEvents: number;
+                    minimumAbsenceCount: number;
+                    minimumAbsenceRate: number;
+                    severityCode: "low" | "medium" | "high";
+                    reviewDeadlineDays: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        policyVersionId: string;
+                        policyId: string;
+                        policyCode: string;
+                        versionNumber: number;
+                        displayName: string;
+                        statusCode: string;
+                        validFrom: string;
+                        validTo: string | null;
+                        applicability: {
+                            [key: string]: unknown;
+                        };
+                        evidenceWindow: {
+                            [key: string]: unknown;
+                        };
+                        alertRules: {
+                            [key: string]: unknown;
+                        };
+                        reviewDeadline: {
+                            [key: string]: unknown;
+                        };
+                        approvedBy: string | null;
+                        approvedAt: string | null;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        correlationId?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        correlationId?: string;
+                    };
+                };
+            };
+        };
+    };
+    createEngagementEvaluations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    policyVersionId: string;
+                    /** Format: uuid */
+                    personId: string;
+                    /** Format: uuid */
+                    enrolmentId: string;
+                    /** Format: date-time */
+                    evidenceWindowFrom: string;
+                    /** Format: date-time */
+                    evidenceWindowTo: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        matched: boolean;
+                        alertCreated: boolean;
+                        alert: {
+                            alertId: string;
+                            personId: string;
+                            enrolmentId: string;
+                            policyVersionId: string;
+                            evidenceWindowFrom: string;
+                            evidenceWindowTo: string;
+                            evidenceSnapshot: {
+                                [key: string]: unknown;
+                            };
+                            evidenceHash: string;
+                            explanation: {
+                                [key: string]: unknown;
+                            };
+                            severityCode: string;
+                            statusCode: string;
+                            reevaluationRequired: boolean;
+                            recordedAt: string;
+                        } | null;
+                    };
+                };
+            };
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        matched: true;
+                        /** @enum {boolean} */
+                        alertCreated: true;
+                        alert: {
+                            alertId: string;
+                            personId: string;
+                            enrolmentId: string;
+                            policyVersionId: string;
+                            evidenceWindowFrom: string;
+                            evidenceWindowTo: string;
+                            evidenceSnapshot: {
+                                [key: string]: unknown;
+                            };
+                            evidenceHash: string;
+                            explanation: {
+                                [key: string]: unknown;
+                            };
+                            severityCode: string;
+                            statusCode: string;
+                            reevaluationRequired: boolean;
+                            recordedAt: string;
+                        };
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        correlationId?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        correlationId?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        correlationId?: string;
+                    };
+                };
+            };
+        };
+    };
+    getEngagementAlerts: {
+        parameters: {
+            query?: {
+                personId?: string;
+                statusCode?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        alertId: string;
+                        personId: string;
+                        enrolmentId: string;
+                        policyVersionId: string;
+                        evidenceWindowFrom: string;
+                        evidenceWindowTo: string;
+                        evidenceSnapshot: {
+                            [key: string]: unknown;
+                        };
+                        evidenceHash: string;
+                        explanation: {
+                            [key: string]: unknown;
+                        };
+                        severityCode: string;
+                        statusCode: string;
+                        reevaluationRequired: boolean;
+                        recordedAt: string;
+                    }[];
                 };
             };
         };

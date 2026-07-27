@@ -22,6 +22,7 @@ import { ExceptionalCircumstancesService } from './platform/circumstances/ec-ser
 import { MisconductService } from './platform/circumstances/misconduct-service.js';
 import { EnrolmentService } from './platform/enrolment/service.js';
 import { EngagementService } from './platform/engagement/engagement-service.js';
+import { EngagementPolicyService } from './platform/engagement/engagement-policy-service.js';
 import { ExamEntryService } from './platform/assessment/exam-entry-service.js';
 import { BoardService } from './platform/governance/board-service.js';
 import { AdmissionsService } from './platform/admissions/admissions-service.js';
@@ -232,6 +233,7 @@ export async function buildApp(
   const students   = new StudentService(db, valueSets);
   const enrolments = new EnrolmentService(db, eventBus, valueSets, triggerRules);
   const engagement = new EngagementService(db, eventBus, valueSets);
+  const engagementPolicy = new EngagementPolicyService(db, eventBus);
   const catalogue  = new CatalogueService(db, eventBus, valueSets);
   const calendar   = new CalendarService(db);
   const registrations = new ModuleRegistrationService(db, eventBus, rules);
@@ -287,6 +289,7 @@ export async function buildApp(
   fastify.decorate('studentService',  students);
   fastify.decorate('enrolmentService', enrolments);
   fastify.decorate('engagementService', engagement);
+  fastify.decorate('engagementPolicyService', engagementPolicy);
   fastify.decorate('catalogueService', catalogue);
   fastify.decorate('calendarService',  calendar);
   fastify.decorate('moduleRegistrationService', registrations);
@@ -552,6 +555,7 @@ declare module 'fastify' {
     studentService:   StudentService;
     enrolmentService: EnrolmentService;
     engagementService: EngagementService;
+    engagementPolicyService: EngagementPolicyService;
     catalogueService: CatalogueService;
     calendarService:  CalendarService;
     moduleRegistrationService: ModuleRegistrationService;

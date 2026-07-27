@@ -1,0 +1,57 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/EngagementAlertSuspendedV1Payload",
+  "definitions": {
+    "EngagementAlertSuspendedV1Payload": {
+      "type": "object",
+      "properties": {
+        "alertId": {
+          "type": "string"
+        },
+        "personId": {
+          "type": "string"
+        },
+        "enrolmentId": {
+          "type": "string"
+        },
+        "policyVersionId": {
+          "type": "string"
+        },
+        "evidenceHash": {
+          "type": "string"
+        },
+        "evidenceWindowFrom": {
+          "type": "string"
+        },
+        "evidenceWindowTo": {
+          "type": "string"
+        },
+        "severityCode": {
+          "type": "string"
+        },
+        "statusCode": {
+          "type": "string"
+        },
+        "reasonCode": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "alertId",
+        "personId",
+        "enrolmentId",
+        "policyVersionId",
+        "evidenceHash",
+        "evidenceWindowFrom",
+        "evidenceWindowTo",
+        "severityCode",
+        "statusCode",
+        "reasonCode"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$id": "https://schemas.revelation-srs.io/events/engagement/alert-suspended/v1.json",
+  "title": "EngagementAlertSuspendedV1Payload",
+  "description": "Payload schema for srs.engagement.alert.suspended v1.0.0"
+}
