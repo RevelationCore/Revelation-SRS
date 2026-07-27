@@ -24,6 +24,7 @@ This index separates maintained product knowledge from superseded delivery evide
 - [P0 functional requirements](requirements/business-process-p0-functional-requirements.md) specify priority controls derived from the process review.
 - [P0 traceability](business-processes/p0-requirements-and-adr-traceability.md) connects backlog items, requirements, processes and decisions.
 - [Revelation change backlog](business-processes/revelation-change-backlog.md) records implementation impacts discovered by the review.
+- [Attendance and engagement vertical slice](product/attendance-engagement-vertical-slice.md) specifies the first end-to-end implementation.
 
 ## Requirements and decisions
 

@@ -35,7 +35,12 @@
 
 ADR-013 is accepted and provides the temporal storage primitive. ADR-016–ADR-022 are proposed because product, architecture, security, data-protection, records and relevant domain SMEs have not yet approved the new controls.
 
+## Implementation specifications
+
+| Scope | Processes and requirements | Specification | Decision review |
+|---|---|---|---|
+| Attendance and academic engagement | BP-027–BP-028; ESP-001–ESP-006; BPR-W07; BPR-D08 | [Attendance and engagement vertical slice](../product/attendance-engagement-vertical-slice.md) | [Attendance ADR review](../decisions/attendance-vertical-slice-adr-review.md) |
+
 ## Coverage rule
 
 A P0 item is ready for delivery planning only when its process pages have an SME outcome, ADRs are accepted or superseded, requirements are reconciled with the existing catalogue, architecture trace targets are assigned and acceptance tests are linked.
-

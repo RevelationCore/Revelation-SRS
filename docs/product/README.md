@@ -7,6 +7,8 @@
 - [UK HE business processes](../business-processes/README.md) — researched target processes.
 - [P0 functional requirements](../requirements/business-process-p0-functional-requirements.md) — proposed priority controls.
 - [Data-model delta](../architecture/business-process-data-model-delta.md) — logical and physical changes required.
+- [Attendance and engagement vertical slice](attendance-engagement-vertical-slice.md) — first end-to-end implementation specification.
+- [Attendance ADR review](../decisions/attendance-vertical-slice-adr-review.md) — decision recommendations and approval gates.
 - [Documentation history](../history.md) — how to inspect superseded plans and review evidence without keeping them in the active tree.
 
 When documents disagree about implementation status, the current-capability matrix takes precedence until the inconsistency is resolved.
