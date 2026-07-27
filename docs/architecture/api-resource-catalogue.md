@@ -1,7 +1,7 @@
 # API Resource Catalogue
 
 > Status: Draft — Phase 2 remediation close-out
-> Last updated: 2026-06-04
+> Last updated: 2026-07-27
 > Purpose: Map the expanded data model to REST resources before Phase 3/4 OpenAPI generation.
 
 ## Resource Classes
@@ -26,7 +26,7 @@
 | Enrolments | `enrolment`, `reenrolment_period`, `reenrolment_confirmation` | Public core API / workflow API | `GET /api/v1/students/:id/enrolments`, `POST /api/v1/enrolments/:id/withdraw`, `POST /api/v1/enrolments/:id/intermit` | Status changes workflow-managed. |
 | Module registrations | `module_registration` | Public core API | `GET /api/v1/enrolments/:id/module-registrations`, `POST /api/v1/module-registrations`, `POST /api/v1/module-registrations/:id/withdrawal` | Student self-service within windows; staff override audited. |
 | Fees, payments, holds, obligations | `fee_liability`, `payment_confirmation`, `student_hold`, `student_obligation` | Public core API / integration API | `GET /api/v1/enrolments/:id/fee-liabilities`, `POST /api/v1/integrations/finance/payments`, `POST /api/v1/integrations/library/obligations` | Sensitive; Finance/Library service accounts scoped. |
-| Timetable and attendance | `timetabled_activity`, `student_timetable_entry`, `attendance_record`, `absence_alert`, `engagement_summary` | Public core API / integration API | `GET /api/v1/students/:id/timetable`, `POST /api/v1/integrations/timetabling/publications`, `POST /api/v1/integrations/attendance/records` | Attendance sensitive/regulatory where UKVI relevant. |
+| Timetable and academic engagement | `timetabled_activity`, `student_timetable_entry`, `expected_engagement_event`, `engagement_observation`, `engagement_observation_revision` | Public core API / integration API | `POST /api/v1/engagement/events`, `GET /api/v1/engagement/events`, `POST /api/v1/engagement/events/:eventId/observations`, `POST /api/v1/engagement/observations/:observationId/corrections`, `GET /api/v1/engagement/students/:personId/timeline` | Expected activity remains distinct from observed evidence; observations are sensitive and corrections are append-only. |
 | Assessment submissions and marks | `assessment_submission`, `assessment_component`, `mark`, `module_result` | Public core API / integration API | `POST /api/v1/integrations/vle/results`, `GET /api/v1/module-registrations/:id/results` | Student results only post-publication. |
 | Progression and awards | `progression_decision`, `award`, `student_document` | Public core API / workflow/reporting API | `GET /api/v1/students/:id/progression`, `GET /api/v1/students/:id/awards`, `POST /api/v1/awards/:id/documents` | Award documents have artefact/hash metadata. |
 | Adjustments and EC | `reasonable_adjustment`, `adjustment_distribution`, `exceptional_circumstances`, `exceptional_circumstances_board_visibility` | Internal service API / public read API | `POST /api/v1/internal/wellbeing/adjustment-outcomes`, `GET /api/v1/students/:id/adjustments` | Special-category; no downstream direct Wellbeing distribution. |

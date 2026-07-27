@@ -241,6 +241,34 @@ export const PUBLISHED_EVENTS: EventDef[] = [
     partitionKey: 'enrolmentId',
     consumers: ['assessment-venue-adapter', 'wellbeing-module'],
   },
+  // ── Attendance and engagement ───────────────────────────────────────────
+  {
+    typeName: 'EngagementExpectedEventCreatedV1Payload',
+    file: 'engagement/expected-event-created.v1.ts',
+    subject: 'srs.engagement.expected-event.created',
+    schemaPath: 'engagement/expected-event-created',
+    dataClass: 'personal',
+    partitionKey: 'personId',
+    consumers: ['attendance-adapter', 'engagement-service'],
+  },
+  {
+    typeName: 'EngagementObservationRecordedV1Payload',
+    file: 'engagement/observation-recorded.v1.ts',
+    subject: 'srs.engagement.observation.recorded',
+    schemaPath: 'engagement/observation-recorded',
+    dataClass: 'sensitive',
+    partitionKey: 'personId',
+    consumers: ['engagement-service'],
+  },
+  {
+    typeName: 'EngagementObservationCorrectedV1Payload',
+    file: 'engagement/observation-corrected.v1.ts',
+    subject: 'srs.engagement.observation.corrected',
+    schemaPath: 'engagement/observation-corrected',
+    dataClass: 'sensitive',
+    partitionKey: 'observationId',
+    consumers: ['engagement-service', 'integration-operations'],
+  },
   // ── Circumstances ────────────────────────────────────────────────────────
   {
     typeName: 'CircumstancesEcFlaggedV1Payload',

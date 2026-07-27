@@ -45,6 +45,9 @@ export * from './regulatory/ukvi-compliance-alert-raised.v1.js';
 export * from './regulatory/ofs-extract-generated.v1.js';
 export * from './governance/exam-entry-submitted.v1.js';
 export * from './governance/exam-schedule-received.v1.js';
+export * from './engagement/expected-event-created.v1.js';
+export * from './engagement/observation-recorded.v1.js';
+export * from './engagement/observation-corrected.v1.js';
 
 /** Canonical NATS subject names for all domain events. */
 export const EVENT_TYPES = {
@@ -98,6 +101,10 @@ export const EVENT_TYPES = {
   REGULATORY_OFS_EXTRACT_GENERATED:          'srs.regulatory.ofs-extract-generated',
   GOVERNANCE_EXAM_ENTRY_SUBMITTED:           'srs.governance.exam-entry-submitted',
   GOVERNANCE_EXAM_SCHEDULE_RECEIVED:         'srs.governance.exam-schedule-received',
+  // ── Attendance and engagement ────────────────────────────────────────────
+  ENGAGEMENT_EXPECTED_EVENT_CREATED:         'srs.engagement.expected-event.created',
+  ENGAGEMENT_OBSERVATION_RECORDED:           'srs.engagement.observation.recorded',
+  ENGAGEMENT_OBSERVATION_CORRECTED:          'srs.engagement.observation.corrected',
   // ── Platform workflow controls ───────────────────────────────────────────
   WORKFLOW_TASK_ASSIGNED:                    'srs.workflow.task-assigned',
   WORKFLOW_TASK_COMPLETED:                   'srs.workflow.task-completed',

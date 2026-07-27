@@ -199,7 +199,7 @@ No nation implies an automatic adverse outcome from an attendance threshold.
 |---|---|---|
 | A | ADR/SME decisions and contract vocabulary | Complete for generic product development; institutional decisions remain deployment configuration |
 | B | Migration `0037`, Drizzle schema and RLS | Implemented; integration tests authored for tenant isolation, idempotency and correction-history immutability; execution awaits a working container runtime |
-| C | Expected-event and observation API | Contract and integration tests cover manual, inbound, duplicate, offline and corrected evidence |
+| C | Expected-event and observation API | Implemented: OpenAPI and typed events cover creation/query, idempotent capture, correction history and timelines; integration tests are authored and await a working container runtime |
 | D | Policy evaluation and explainable alert | Tests prove policy versioning, evidence snapshot and no direct adverse decision |
 | E | Intervention workflow and restricted referral | Workflow tests cover reconciliation, contact, review, closure and referral boundary |
 | F | Admin UI and demo data | Accessible end-to-end walkthrough for the four demonstration students |

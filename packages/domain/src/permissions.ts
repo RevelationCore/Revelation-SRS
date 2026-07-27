@@ -3,6 +3,7 @@ export const ROLES = [
   'student',
   'module-tutor',
   'personal-tutor',
+  'engagement-officer',
   'research-supervisor',
   'wellbeing-advisor',
   'wellbeing-mental-health-advisor',
@@ -91,6 +92,11 @@ export const PERMISSION_ROLES = {
   'notifications:read':                 ['student', 'registry-administrator', 'tenant-administrator', 'system-administrator', 'external-examiner'] as Role[],
   'notifications:write':                ['registry-administrator', 'tenant-administrator', 'system-administrator'] as Role[],
   'circumstances:submit':               ['student'] as Role[],
+  'engagement:event:read':              ['module-tutor', 'personal-tutor', 'engagement-officer', 'registry-administrator', 'integration-service'] as Role[],
+  'engagement:event:write':             ['engagement-officer', 'registry-administrator', 'integration-service'] as Role[],
+  'engagement:observation:create':      ['module-tutor', 'engagement-officer', 'registry-administrator', 'integration-service'] as Role[],
+  'engagement:observation:correct':     ['module-tutor', 'engagement-officer', 'registry-administrator', 'integration-service'] as Role[],
+  'engagement:timeline:read':           ['personal-tutor', 'engagement-officer', 'registry-administrator'] as Role[],
 } as const;
 
 export type Permission = keyof typeof PERMISSION_ROLES;

@@ -4,6 +4,7 @@ export const STAFF_ROLES = [
   'registry-administrator',
   'module-tutor',
   'personal-tutor',
+  'engagement-officer',
   'research-supervisor',
   'wellbeing-advisor',
   'exam-board-member',

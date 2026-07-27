@@ -1,0 +1,60 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/EngagementObservationRecordedV1Payload",
+  "definitions": {
+    "EngagementObservationRecordedV1Payload": {
+      "type": "object",
+      "properties": {
+        "observationId": {
+          "type": "string"
+        },
+        "expectedEventId": {
+          "type": "string"
+        },
+        "personId": {
+          "type": "string"
+        },
+        "enrolmentId": {
+          "type": "string"
+        },
+        "captureMethodCode": {
+          "type": "string"
+        },
+        "outcomeCode": {
+          "type": "string"
+        },
+        "dataQualityCode": {
+          "type": "string"
+        },
+        "eventTime": {
+          "type": "string"
+        },
+        "sourceSystemCode": {
+          "type": "string"
+        },
+        "sourceEventId": {
+          "type": "string"
+        },
+        "sourceVersion": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "observationId",
+        "personId",
+        "enrolmentId",
+        "captureMethodCode",
+        "outcomeCode",
+        "dataQualityCode",
+        "eventTime",
+        "sourceSystemCode",
+        "sourceEventId",
+        "sourceVersion"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$id": "https://schemas.revelation-srs.io/events/engagement/observation-recorded/v1.json",
+  "title": "EngagementObservationRecordedV1Payload",
+  "description": "Payload schema for srs.engagement.observation.recorded v1.0.0"
+}

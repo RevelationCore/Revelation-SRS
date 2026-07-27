@@ -1,0 +1,56 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/EngagementExpectedEventCreatedV1Payload",
+  "definitions": {
+    "EngagementExpectedEventCreatedV1Payload": {
+      "type": "object",
+      "properties": {
+        "expectedEventId": {
+          "type": "string"
+        },
+        "personId": {
+          "type": "string"
+        },
+        "enrolmentId": {
+          "type": "string"
+        },
+        "activityTypeCode": {
+          "type": "string"
+        },
+        "eventModeCode": {
+          "type": "string"
+        },
+        "scheduledFrom": {
+          "type": "string"
+        },
+        "scheduledTo": {
+          "type": "string"
+        },
+        "sourceSystemCode": {
+          "type": "string"
+        },
+        "sourceEventId": {
+          "type": "string"
+        },
+        "sourceVersion": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "expectedEventId",
+        "personId",
+        "enrolmentId",
+        "activityTypeCode",
+        "eventModeCode",
+        "scheduledFrom",
+        "sourceSystemCode",
+        "sourceEventId",
+        "sourceVersion"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$id": "https://schemas.revelation-srs.io/events/engagement/expected-event-created/v1.json",
+  "title": "EngagementExpectedEventCreatedV1Payload",
+  "description": "Payload schema for srs.engagement.expected-event.created v1.0.0"
+}

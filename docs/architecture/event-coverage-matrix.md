@@ -1,7 +1,7 @@
 # Event Coverage Matrix
 
 > Status: Draft — Phase 2 remediation close-out
-> Last updated: 2026-06-04
+> Last updated: 2026-07-27
 > Purpose: Ensure every significant SRS state change has a domain event or an explicit no-event rationale.
 
 ## Coverage Rules
@@ -35,9 +35,10 @@
 | `student_hold` applied/released | `srs.student.hold-applied`, `srs.student.hold-released` | EWP, IAM | Hold details minimised where sensitive. |
 | `student_obligation` changed | No dedicated event initially | EWP via API, Registry | Use hold events if obligation affects access/status; otherwise query API. |
 | `timetabled_activity` / `student_timetable_entry` published | `srs.timetable.published` | EWP, AM, VLE | One event per publication batch. |
-| `attendance_record` received | `srs.attendance.record-received` | Registry, UKVI compliance, BI | UKVI-relevant flag included. |
-| `absence_alert` raised | `srs.attendance.absence-alert-raised` | Personal tutor, Registry, UKVI compliance | Resolution is workflow/status query unless consumer need emerges. |
-| `engagement_summary` calculated | No dedicated event initially | BI/DW via extracts | Add event if real-time engagement consumers are introduced. |
+| `expected_engagement_event` created | `srs.engagement.expected-event.created` | Engagement service, Registry, integration audit | Carries source identity/version and schedule; does not assert attendance or engagement. |
+| `engagement_observation` recorded | `srs.engagement.observation.recorded` | Engagement service, Registry, BI | Sensitive, minimised evidence event; source and idempotency controls prevent duplicates. |
+| `engagement_observation` corrected | `srs.engagement.observation.corrected` | Engagement service, Registry, BI | Identifies superseded and replacement versions; original evidence remains immutable. |
+| Engagement alert raised | `srs.engagement.alert.raised` (planned Increment D) | Personal tutor, Engagement Officer, Registry | Must remain an explainable review prompt, not an automatic adverse decision. |
 | `assessment_submission` received | No dedicated event initially | Academic Integrity via context API | Use `srs.assessment.mark-received` when mark is ingested. |
 | `mark` received/updated | `srs.assessment.mark-received`, `srs.assessment.mark-updated` | Internal | May feed provisional grade publication if configured. |
 | `module_result` calculated/ratified | `srs.assessment.module-result-calculated`, `srs.assessment.module-result-ratified` | EWP, VLE, DW, BI | Ratified event is external-facing. |

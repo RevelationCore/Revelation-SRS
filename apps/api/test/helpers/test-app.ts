@@ -69,6 +69,14 @@ export async function startTestApp(opts: StartTestAppOptions = {}): Promise<Test
   await applyMigration(db, '0024_phase11_performance_indexes.sql');
   await applyMigration(db, '0025_phase11_retention_anonymisation.sql');
   await applyMigration(db, '0026_phase11_notifications.sql');
+  await applyMigration(db, '0027_valueset_picklists.sql');
+  await applyMigration(db, '0028_valueset_correction_status.sql');
+  await applyMigration(db, '0029_valueset_activefrom_nullable.sql');
+  await applyMigration(db, '0030_seed_nationality_domicile.sql');
+  await applyMigration(db, '0031_person_identity_pronouns.sql');
+  await applyMigration(db, '0032_seed_fee_band_code.sql');
+  await applyMigration(db, '0033_disability_declaration_notes.sql');
+  await applyMigration(db, '0037_engagement_intervention.sql');
 
   // Seed a tenant for tests
   const tenantId = '00000000-0000-0000-0000-000000000001';
@@ -92,7 +100,7 @@ export async function startTestApp(opts: StartTestAppOptions = {}): Promise<Test
     deploymentEnvironmentCode: 'test',
     releaseVersion:   '0.0.0-test',
     imageDigest:      undefined,
-    migrationVersion: '0026_phase11_notifications',
+    migrationVersion: '0037_engagement_intervention',
     jwtSecret:        JWT_SECRET,
     keycloakJwksUrl:  undefined,
     corsOrigins:      ['http://localhost:5173'],

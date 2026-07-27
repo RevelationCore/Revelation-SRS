@@ -21,6 +21,7 @@ import { CatalogueService } from './platform/catalogue/service.js';
 import { ExceptionalCircumstancesService } from './platform/circumstances/ec-service.js';
 import { MisconductService } from './platform/circumstances/misconduct-service.js';
 import { EnrolmentService } from './platform/enrolment/service.js';
+import { EngagementService } from './platform/engagement/engagement-service.js';
 import { ExamEntryService } from './platform/assessment/exam-entry-service.js';
 import { BoardService } from './platform/governance/board-service.js';
 import { AdmissionsService } from './platform/admissions/admissions-service.js';
@@ -59,6 +60,7 @@ import { assessmentComponentRoutes } from './routes/assessment-components.js';
 import { academicPeriodsRoutes } from './routes/academic-periods.js';
 import { circumstancesRoutes } from './routes/circumstances.js';
 import { enrolmentRoutes } from './routes/enrolments.js';
+import { engagementRoutes } from './routes/engagement.js';
 import { examBoardRoutes } from './routes/exam-boards.js';
 import { healthRoutes } from './routes/health.js';
 import { markRoutes } from './routes/marks.js';
@@ -229,6 +231,7 @@ export async function buildApp(
   const triggerRules = new TriggerRuleEvaluator(db, featureFlags);
   const students   = new StudentService(db, valueSets);
   const enrolments = new EnrolmentService(db, eventBus, valueSets, triggerRules);
+  const engagement = new EngagementService(db, eventBus, valueSets);
   const catalogue  = new CatalogueService(db, eventBus, valueSets);
   const calendar   = new CalendarService(db);
   const registrations = new ModuleRegistrationService(db, eventBus, rules);
@@ -283,6 +286,7 @@ export async function buildApp(
   fastify.decorate('eventBus',        eventBus);
   fastify.decorate('studentService',  students);
   fastify.decorate('enrolmentService', enrolments);
+  fastify.decorate('engagementService', engagement);
   fastify.decorate('catalogueService', catalogue);
   fastify.decorate('calendarService',  calendar);
   fastify.decorate('moduleRegistrationService', registrations);
@@ -401,6 +405,7 @@ export async function buildApp(
         { name: 'calendar',             description: 'Academic calendar and periods' },
         { name: 'assessment',           description: 'Assessment structure and marks' },
         { name: 'adjustments',          description: 'Reasonable adjustments and distribution status' },
+        { name: 'engagement',           description: 'Expected academic engagement events and observations' },
         { name: 'circumstances',        description: 'Exceptional circumstances and misconduct outcomes' },
         { name: 'governance',           description: 'Exam boards, data packs, and governance workflows' },
         { name: 'progression',          description: 'Progression decisions, awards, and outcomes' },
@@ -429,6 +434,7 @@ export async function buildApp(
     const tagMap: Array<[string, string]> = [
       // More-specific patterns must precede their containing segments
       ['/adjustments',               'adjustments'],
+      ['/engagement',                'engagement'],
       ['/exceptional-circumstances', 'circumstances'],
       ['/misconduct-outcomes',       'circumstances'],
       ['/correction-cases',          'governance'],
@@ -494,6 +500,7 @@ export async function buildApp(
   await fastify.register(healthRoutes);
   await fastify.register(valueSetsRoutes,           { prefix: '/api/v1' });
   await fastify.register(adjustmentRoutes,          { prefix: '/api/v1' });
+  await fastify.register(engagementRoutes,          { prefix: '/api/v1' });
   await fastify.register(circumstancesRoutes,       { prefix: '/api/v1' });
   await fastify.register(examBoardRoutes,           { prefix: '/api/v1' });
   await fastify.register(progressionRoutes,         { prefix: '/api/v1' });
@@ -544,6 +551,7 @@ declare module 'fastify' {
     eventBus:         IntegrationBusPublisher;
     studentService:   StudentService;
     enrolmentService: EnrolmentService;
+    engagementService: EngagementService;
     catalogueService: CatalogueService;
     calendarService:  CalendarService;
     moduleRegistrationService: ModuleRegistrationService;

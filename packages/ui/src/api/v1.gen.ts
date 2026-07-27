@@ -164,6 +164,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/engagement/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getEngagementEvents"];
+        put?: never;
+        post: operations["createEngagementEvents"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/engagement/events/{eventId}/observations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createEngagementEventsByEventIdObservations"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/engagement/observations/{observationId}/corrections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createEngagementObservationsByObservationIdCorrections"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/engagement/students/{personId}/timeline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getEngagementStudentsByPersonIdTimeline"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/exceptional-circumstances/submissions": {
         parameters: {
             query?: never;
@@ -236,7 +300,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        get: operations["getExamBoards"];
         put?: never;
         post: operations["createExamBoards"];
         delete?: never;
@@ -1934,7 +1998,7 @@ export interface paths {
         };
         get: operations["getWorkflowDefinitions"];
         put?: never;
-        post?: never;
+        post: operations["createWorkflowDefinitions"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1970,7 +2034,7 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        patch: operations["updateWorkflowDefinitionsByWorkflowDefinitionId"];
         trace?: never;
     };
     "/api/v1/workflow-definition-versions/{workflowDefinitionVersionId}": {
@@ -2447,7 +2511,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** List all value sets available for label customisation */
+        get: operations["getAdminGlobalisationValueSetLabels"];
         put?: never;
         /** Add or update a translated label for a value set member */
         post: operations["createAdminGlobalisationValueSetLabels"];
@@ -2466,7 +2531,8 @@ export interface paths {
         };
         /** Get translated labels for all members of a value set */
         get: operations["getAdminGlobalisationValueSetLabelsBySetCode"];
-        put?: never;
+        /** Batch-upsert display labels for all members of a value set */
+        put: operations["replaceAdminGlobalisationValueSetLabelsBySetCode"];
         post?: never;
         delete?: never;
         options?: never;
@@ -2698,6 +2764,38 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["updateNotificationsByIdRead"];
+        trace?: never;
+    };
+    "/api/v1/admin/students/{personId}/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getAdminStudentsByPersonIdNotifications"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createAdminNotifications"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
 }
@@ -3222,6 +3320,463 @@ export interface operations {
             };
         };
     };
+    getEngagementEvents: {
+        parameters: {
+            query?: {
+                personId?: string;
+                enrolmentId?: string;
+                statusCode?: string;
+                scheduledFrom?: string;
+                scheduledTo?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        expectedEventId: string;
+                        personId: string;
+                        enrolmentId: string;
+                        activityTypeCode: string;
+                        activityReference: string | null;
+                        eventModeCode: string;
+                        scheduledFrom: string;
+                        scheduledTo: string | null;
+                        locationReference: string | null;
+                        sourceSystemCode: string;
+                        sourceEventId: string;
+                        sourceVersion: string;
+                        statusCode: string;
+                        validFrom: string;
+                        validTo: string | null;
+                        recordedAt: string;
+                    }[];
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        correlationId?: string;
+                    };
+                };
+            };
+        };
+    };
+    createEngagementEvents: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    personId: string;
+                    /** Format: uuid */
+                    enrolmentId: string;
+                    activityTypeCode: string;
+                    activityReference?: string;
+                    eventModeCode: string;
+                    /** Format: date-time */
+                    scheduledFrom: string;
+                    /** Format: date-time */
+                    scheduledTo?: string;
+                    locationReference?: string;
+                    sourceSystemCode: string;
+                    sourceEventId: string;
+                    sourceVersion: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        expectedEventId: string;
+                        /** @enum {boolean} */
+                        created: false;
+                    };
+                };
+            };
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        expectedEventId: string;
+                        /** @enum {boolean} */
+                        created: true;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        correlationId?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        correlationId?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        correlationId?: string;
+                    };
+                };
+            };
+        };
+    };
+    createEngagementEventsByEventIdObservations: {
+        parameters: {
+            query?: never;
+            header: {
+                "idempotency-key": string;
+            };
+            path: {
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    sourceSystemCode: string;
+                    sourceEventId: string;
+                    sourceVersion: string;
+                    captureMethodCode: string;
+                    outcomeCode: string;
+                    dataQualityCode?: string;
+                    /** Format: date-time */
+                    eventTime: string;
+                    /** Format: date-time */
+                    receivedAt?: string;
+                    deviceReference?: string;
+                    operationalReference?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        observationId: string;
+                        /** @enum {boolean} */
+                        created: false;
+                    };
+                };
+            };
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        observationId: string;
+                        /** @enum {boolean} */
+                        created: true;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        correlationId?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        correlationId?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        correlationId?: string;
+                    };
+                };
+            };
+        };
+    };
+    createEngagementObservationsByObservationIdCorrections: {
+        parameters: {
+            query?: never;
+            header: {
+                "idempotency-key": string;
+            };
+            path: {
+                observationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    sourceVersion: string;
+                    outcomeCode: string;
+                    dataQualityCode: string;
+                    /** Format: date-time */
+                    eventTime?: string;
+                    correctionReasonCode: string;
+                    correctionReason?: string;
+                    disputed?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        observationId: string;
+                        observationVersionId: string;
+                        /** @enum {boolean} */
+                        created: false;
+                    };
+                };
+            };
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        observationId: string;
+                        observationVersionId: string;
+                        /** @enum {boolean} */
+                        created: true;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        correlationId?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        correlationId?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        correlationId?: string;
+                    };
+                };
+            };
+        };
+    };
+    getEngagementStudentsByPersonIdTimeline: {
+        parameters: {
+            query?: {
+                from?: string;
+                to?: string;
+            };
+            header?: never;
+            path: {
+                personId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        events: {
+                            expectedEventId: string;
+                            personId: string;
+                            enrolmentId: string;
+                            activityTypeCode: string;
+                            activityReference: string | null;
+                            eventModeCode: string;
+                            scheduledFrom: string;
+                            scheduledTo: string | null;
+                            locationReference: string | null;
+                            sourceSystemCode: string;
+                            sourceEventId: string;
+                            sourceVersion: string;
+                            statusCode: string;
+                            validFrom: string;
+                            validTo: string | null;
+                            recordedAt: string;
+                        }[];
+                        observations: {
+                            observationId: string;
+                            observationVersionId: string;
+                            expectedEventId: string | null;
+                            personId: string;
+                            enrolmentId: string;
+                            sourceSystemCode: string;
+                            sourceEventId: string;
+                            sourceVersion: string;
+                            captureMethodCode: string;
+                            outcomeCode: string;
+                            dataQualityCode: string;
+                            eventTime: string;
+                            receivedAt: string;
+                            deviceReference: string | null;
+                            operationalReference: string | null;
+                            actorId: string;
+                            recordedAt: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        correlationId?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        correlationId?: string;
+                    };
+                };
+            };
+        };
+    };
     createExceptionalCircumstancesSubmissions: {
         parameters: {
             query?: never;
@@ -3553,6 +4108,42 @@ export interface operations {
                         status: number;
                         detail?: string;
                     };
+                };
+            };
+        };
+    };
+    getExamBoards: {
+        parameters: {
+            query?: {
+                academicYear?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        examBoardId: string;
+                        boardTypeCode: string;
+                        academicYear: string;
+                        academicPeriodId: string | null;
+                        periodCode: string | null;
+                        meetingDate: string | null;
+                        ratifiedAt: string | null;
+                        deferredAt: string | null;
+                        deferralReason: string | null;
+                        quorumCount: number | null;
+                        quorumRecordedAt: string | null;
+                        actorId: string;
+                        createdAt: string;
+                    }[];
                 };
             };
         };
@@ -4971,7 +5562,7 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
-                    statusCode: "under-review" | "upheld" | "dismissed" | "not-eligible";
+                    statusCode: "under-review" | "upheld" | "not-upheld" | "withdrawn";
                 };
             };
         };
@@ -5446,7 +6037,9 @@ export interface operations {
     };
     createRegulatorySlcConfirmationsGenerate: {
         parameters: {
-            query?: never;
+            query?: {
+                dryRun?: boolean;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -5461,6 +6054,7 @@ export interface operations {
                 content: {
                     "application/json": {
                         processedCount: number;
+                        dryRun: boolean;
                         payload: {
                             confirmations: {
                                 triggerId: string;
@@ -6549,6 +7143,8 @@ export interface operations {
             query?: {
                 limit?: number;
                 offset?: number;
+                search?: string;
+                statusCode?: string;
             };
             header?: never;
             path?: never;
@@ -6735,6 +7331,7 @@ export interface operations {
                             legalFirstName: string;
                             legalFamilyName: string;
                             preferredName: string | null;
+                            preferredPronouns: string | null;
                             dateOfBirth: string | null;
                             genderCode: string | null;
                             nationalityCode: string | null;
@@ -6929,6 +7526,7 @@ export interface operations {
                     legalFirstName?: string;
                     legalFamilyName?: string;
                     preferredName?: string;
+                    preferredPronouns?: string | null;
                     dateOfBirth?: string;
                     genderCode?: string;
                     nationalityCode?: string;
@@ -6987,6 +7585,7 @@ export interface operations {
                         legalFirstName: string;
                         legalFamilyName: string;
                         preferredName: string | null;
+                        preferredPronouns: string | null;
                         dateOfBirth: string | null;
                         genderCode: string | null;
                         nationalityCode: string | null;
@@ -7092,6 +7691,7 @@ export interface operations {
                         declarationStatusCode: string;
                         declaredAt: string;
                         validFrom: string;
+                        notes: string | null;
                     }[];
                 };
             };
@@ -7111,6 +7711,7 @@ export interface operations {
                 "application/json": {
                     disabilityCategoryCode: string;
                     declarationStatusCode?: string;
+                    notes?: string | null;
                 };
             };
         };
@@ -8595,6 +9196,7 @@ export interface operations {
                         periodCode: string;
                         deliveryModeCode: string | null;
                         capacity: number | null;
+                        creditValue: number | null;
                     }[];
                 };
             };
@@ -8671,6 +9273,7 @@ export interface operations {
                         periodCode: string;
                         deliveryModeCode: string | null;
                         capacity: number | null;
+                        creditValue: number | null;
                     };
                 };
             };
@@ -9206,7 +9809,11 @@ export interface operations {
                         enrolmentId: string;
                         moduleOfferingId: string;
                         moduleId: string;
+                        moduleCode: string;
+                        moduleTitle: string;
                         academicPeriodId: string;
+                        periodCode: string;
+                        creditValue: number | null;
                         statusCode: string;
                         registrationDate: string;
                         validFrom: string;
@@ -9364,7 +9971,11 @@ export interface operations {
                         enrolmentId: string;
                         moduleOfferingId: string;
                         moduleId: string;
+                        moduleCode: string;
+                        moduleTitle: string;
                         academicPeriodId: string;
+                        periodCode: string;
+                        creditValue: number | null;
                         statusCode: string;
                         registrationDate: string;
                         validFrom: string;
@@ -9398,7 +10009,11 @@ export interface operations {
                         enrolmentId: string;
                         moduleOfferingId: string;
                         moduleId: string;
+                        moduleCode: string;
+                        moduleTitle: string;
                         academicPeriodId: string;
+                        periodCode: string;
+                        creditValue: number | null;
                         statusCode: string;
                         registrationDate: string;
                         validFrom: string;
@@ -10021,6 +10636,51 @@ export interface operations {
             };
         };
     };
+    createWorkflowDefinitions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    definitionCode: string;
+                    displayName: string;
+                    description?: string;
+                    ownerModuleCode?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        workflowDefinitionId: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
     getWorkflowDefinitionsByWorkflowDefinitionIdVersions: {
         parameters: {
             query?: never;
@@ -10051,6 +10711,13 @@ export interface operations {
                         effectiveTo: string | null;
                         createdBy: string;
                         createdAt: string;
+                        steps: {
+                            stepKey: string;
+                            stepTypeCode: string;
+                            displayName: string;
+                            ownerRoleCode: string | null;
+                            sortOrder: number;
+                        }[];
                     }[];
                 };
             };
@@ -10118,6 +10785,62 @@ export interface operations {
             };
         };
     };
+    updateWorkflowDefinitionsByWorkflowDefinitionId: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workflowDefinitionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    statusCode?: string;
+                    displayName?: string;
+                    description?: string | null;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
     getWorkflowDefinitionVersionsByWorkflowDefinitionVersionId: {
         parameters: {
             query?: never;
@@ -10148,6 +10871,13 @@ export interface operations {
                         effectiveTo: string | null;
                         createdBy: string;
                         createdAt: string;
+                        steps: {
+                            stepKey: string;
+                            stepTypeCode: string;
+                            displayName: string;
+                            ownerRoleCode: string | null;
+                            sortOrder: number;
+                        }[];
                     };
                 };
             };
@@ -10188,6 +10918,7 @@ export interface operations {
                     "application/json": {
                         workflowAssignmentRuleId: string;
                         tenantId: string | null;
+                        definitionCode: string;
                         workflowDefinitionVersionId: string;
                         stepKey: string;
                         ruleKey: string;
@@ -12402,6 +13133,56 @@ export interface operations {
             };
         };
     };
+    getAdminGlobalisationValueSetLabels: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        setCode: string;
+                    }[];
+                };
+            };
+            /** @description Default Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
     createAdminGlobalisationValueSetLabels: {
         parameters: {
             query?: never;
@@ -12522,6 +13303,77 @@ export interface operations {
                         isFallback: boolean;
                     }[];
                 };
+            };
+            /** @description Default Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    replaceAdminGlobalisationValueSetLabelsBySetCode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                setCode: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    labels: {
+                        [key: string]: string;
+                    };
+                    localeCode?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Default Response */
             401: {
@@ -13352,6 +14204,86 @@ export interface operations {
                 content: {
                     "application/json": {
                         message: string;
+                    };
+                };
+            };
+        };
+    };
+    getAdminStudentsByPersonIdNotifications: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                personId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        /** Format: uuid */
+                        personId: string;
+                        category: string;
+                        title: string;
+                        body: string;
+                        linkUrl: string | null;
+                        readAt: string | null;
+                        createdAt: string;
+                    }[];
+                };
+            };
+        };
+    };
+    createAdminNotifications: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    personId: string;
+                    category: string;
+                    title: string;
+                    body: string;
+                    linkUrl?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        title: string;
+                        detail?: string;
                     };
                 };
             };

@@ -1,7 +1,7 @@
 # Actor Catalogue
 
 > Status: Draft — Phase 1
-> Last updated: 2026-06-04
+> Last updated: 2026-07-27
 > This catalogue defines every human and system actor that interacts with Revelation SRS. It is the primary input to the RBAC role model. Actors marked † are system actors (integrations); all others are human actors.
 
 ---
@@ -68,7 +68,19 @@ An academic member of staff assigned to a cohort of students for academic and pa
 
 ---
 
-### 6. Research Supervisor
+### 6. Engagement Officer
+A professional-services member of staff responsible for reviewing academic-engagement evidence and coordinating proportionate early intervention.
+
+| Attribute | Detail |
+|---|---|
+| Can read | Expected engagement events, current observations, data-quality state and student engagement timelines within their assigned scope |
+| Can initiate | Record or correct engagement observations; review evidence; initiate an intervention when a configured policy identifies possible non-engagement |
+| Workflow tasks | Reconcile missing or disputed evidence; contact students; coordinate actions; close or refer intervention cases |
+| Data access scope | Institution-configured cohort or organisational scope; no general access to restricted welfare, medical, disability or safeguarding narrative |
+
+---
+
+### 7. Research Supervisor
 An academic member of staff supervising one or more postgraduate research students.
 
 | Attribute | Detail |
@@ -80,7 +92,7 @@ An academic member of staff supervising one or more postgraduate research studen
 
 ---
 
-### 7. Disability Advisor / Wellbeing Practitioner
+### 8. Disability Advisor / Wellbeing Practitioner
 A member of the Student Wellbeing and Disability service who manages adjustment and EC cases.
 
 | Attribute | Detail |
@@ -92,7 +104,7 @@ A member of the Student Wellbeing and Disability service who manages adjustment 
 
 ---
 
-### 8. Exam Board Chair
+### 9. Exam Board Chair
 The academic member of staff who chairs an Exam Board meeting.
 
 | Attribute | Detail |
@@ -104,7 +116,7 @@ The academic member of staff who chairs an Exam Board meeting.
 
 ---
 
-### 9. External Examiner
+### 10. External Examiner
 An independent academic appointed from another UK HEI for standards assurance.
 
 | Attribute | Detail |
@@ -116,7 +128,7 @@ An independent academic appointed from another UK HEI for standards assurance.
 
 ---
 
-### 10. Academic Integrity Officer
+### 11. Academic Integrity Officer
 Member of staff managing academic misconduct cases.
 
 | Attribute | Detail |
@@ -128,7 +140,7 @@ Member of staff managing academic misconduct cases.
 
 ---
 
-### 11. Finance Administrator
+### 12. Finance Administrator
 Member of the Finance department responsible for student billing and bursaries.
 
 | Attribute | Detail |
@@ -140,7 +152,7 @@ Member of the Finance department responsible for student billing and bursaries.
 
 ---
 
-### 12. Tenant Administrator
+### 13. Tenant Administrator
 The institution-level system administrator responsible for configuring the SRS for their institution.
 
 | Attribute | Detail |
@@ -152,7 +164,7 @@ The institution-level system administrator responsible for configuring the SRS f
 
 ---
 
-### 13. System Administrator
+### 14. System Administrator
 The platform-level administrator with cross-tenant operational access.
 
 | Attribute | Detail |
@@ -164,7 +176,7 @@ The platform-level administrator with cross-tenant operational access.
 
 ---
 
-### 14. Data Protection Officer (DPO)
+### 15. Data Protection Officer (DPO)
 Responsible for GDPR compliance; may be internal or external to the institution.
 
 | Attribute | Detail |
@@ -223,6 +235,7 @@ The following application-level roles are defined. Roles are assigned to users w
 | `student` | Enrolled Student | Own records only |
 | `module-tutor` | Module Tutor | Assigned modules |
 | `personal-tutor` | Personal Tutor | Assigned student cohort |
+| `engagement-officer` | Engagement Officer | Institution-configured cohort or organisational scope |
 | `research-supervisor` | Research Supervisor | Supervised students |
 | `wellbeing-advisor` | Disability Advisor / Wellbeing Practitioner | Wellbeing cases; special category data |
 | `exam-board-member` | Exam Board member | Board data pack; read-only |

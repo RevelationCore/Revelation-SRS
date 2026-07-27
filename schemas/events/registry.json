@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "generated": "2026-06-18T14:24:52.376Z",
+  "generated": "2026-07-27T09:51:42.148Z",
   "description": "Machine-readable registry of all Revelation SRS domain events.",
   "schemaUriBase": "https://schemas.revelation-srs.io/events",
   "events": [
@@ -291,6 +291,44 @@
       "consumers": [
         "assessment-venue-adapter",
         "wellbeing-module"
+      ],
+      "status": "published"
+    },
+    {
+      "subject": "srs.engagement.expected-event.created",
+      "version": "1.0.0",
+      "schemaRef": "https://schemas.revelation-srs.io/events/engagement/expected-event-created/v1.json",
+      "schemaPath": "schemas/events/engagement/expected-event-created/v1.json",
+      "dataClass": "personal",
+      "partitionKey": "personId",
+      "consumers": [
+        "attendance-adapter",
+        "engagement-service"
+      ],
+      "status": "published"
+    },
+    {
+      "subject": "srs.engagement.observation.recorded",
+      "version": "1.0.0",
+      "schemaRef": "https://schemas.revelation-srs.io/events/engagement/observation-recorded/v1.json",
+      "schemaPath": "schemas/events/engagement/observation-recorded/v1.json",
+      "dataClass": "sensitive",
+      "partitionKey": "personId",
+      "consumers": [
+        "engagement-service"
+      ],
+      "status": "published"
+    },
+    {
+      "subject": "srs.engagement.observation.corrected",
+      "version": "1.0.0",
+      "schemaRef": "https://schemas.revelation-srs.io/events/engagement/observation-corrected/v1.json",
+      "schemaPath": "schemas/events/engagement/observation-corrected/v1.json",
+      "dataClass": "sensitive",
+      "partitionKey": "observationId",
+      "consumers": [
+        "engagement-service",
+        "integration-operations"
       ],
       "status": "published"
     },

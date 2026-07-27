@@ -1,0 +1,45 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/EngagementObservationCorrectedV1Payload",
+  "definitions": {
+    "EngagementObservationCorrectedV1Payload": {
+      "type": "object",
+      "properties": {
+        "observationId": {
+          "type": "string"
+        },
+        "supersededVersionId": {
+          "type": "string"
+        },
+        "replacementVersionId": {
+          "type": "string"
+        },
+        "correctionReasonCode": {
+          "type": "string"
+        },
+        "disputed": {
+          "type": "boolean"
+        },
+        "outcomeCode": {
+          "type": "string"
+        },
+        "dataQualityCode": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "observationId",
+        "supersededVersionId",
+        "replacementVersionId",
+        "correctionReasonCode",
+        "disputed",
+        "outcomeCode",
+        "dataQualityCode"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$id": "https://schemas.revelation-srs.io/events/engagement/observation-corrected/v1.json",
+  "title": "EngagementObservationCorrectedV1Payload",
+  "description": "Payload schema for srs.engagement.observation.corrected v1.0.0"
+}
