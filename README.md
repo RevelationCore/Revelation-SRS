@@ -2,7 +2,7 @@
 
 An open source Student Records System for UK Higher Education.
 
-> **Status**: v1.0.0 released — all 11 phases complete.
+> **Status**: Alpha — the implemented application is being reconciled with the reviewed UK HE business-process and target data models. See [Current Capabilities](docs/product/current-capabilities.md).
 
 [![AGPL v3](https://img.shields.io/badge/licence-AGPL--v3-blue.svg)](LICENSE)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
@@ -17,8 +17,8 @@ Revelation SRS is a fully open source Student Information System designed specif
 
 - **UK HE-native** — domain model, terminology, regulatory obligations (HESA, UCAS, SLC, UKVI, OfS), and workflow design follow UK HE conventions throughout.
 - **Pluggable architecture** — external systems and SRS modules integrate through a versioned, event-driven integration layer. Institutions substitute their own VLE, Finance, HR, or other systems without modifying core code.
-- **Bitemporal data** — all records that change over time store both valid-time and transaction-time history, enabling reconstruction of any past state for audit, regulatory returns, and board paper verification.
-- **Workflow-driven governance** — long-running processes (admissions, reasonable adjustments, exam board ratification, appeals) are managed by a durable workflow engine with human task assignment, deadline enforcement, and full audit trail.
+- **Bitemporal foundations** — implemented core records use valid-time and transaction-time history; the reviewed target model identifies additional entities that require the same treatment.
+- **Workflow platform** — durable workflow definitions, tasks and gateways are implemented; several reviewed domain processes still require decomposition or migration from service-driven behaviour.
 - **Feature-flagged process variation** — tenant administrators can enable modules, process variants, workflow steps, communications, and staged rollouts without forking the core platform.
 - **Environment promotion** — the same release artefacts can move through test, UAT, pre-production, and production with isolated data, secrets, integrations, and feature flag state.
 - **Multi-tenant** — a single deployment serves multiple institutions with complete database-layer data isolation.
@@ -31,7 +31,8 @@ Revelation SRS is a fully open source Student Information System designed specif
 | Document | Description |
 |---|---|
 | [Core Principles](docs/core-principles.md) | 21 non-negotiable principles governing design, development, and operation |
-| [Project Roadmap](docs/project-roadmap.md) | 11-phase development plan from requirements to open source release |
+| [Current Capabilities](docs/product/current-capabilities.md) | Authoritative implemented, partial and proposed capability status |
+| [Project Roadmap](docs/project-roadmap.md) | Historical 11-phase delivery plan; not the current capability authority |
 | [Domain Glossary](docs/domain-glossary.md) | Authoritative definitions of all UK HE domain terms used in the system |
 | **Requirements** | |
 | [Functional Requirements](docs/requirements/functional-requirements.md) | 140+ testable requirements traced to reference model flows |
@@ -91,22 +92,16 @@ Full rationale: [docs/decisions/technology-stack.md](docs/decisions/technology-s
 
 ## Project Status
 
-| Phase | Title | Status |
-|---|---|---|
-| 0 | Principles and Planning | Complete |
-| 1 | Requirements and Domain Definition | Complete |
-| 2 | Architecture and Design | Complete |
-| 3 | Platform Foundation | Complete |
-| 4 | Core SRS: Student Identity and Enrolment | Complete |
-| 5 | Core SRS: Assessment, Progression, Awards | Complete |
-| 6 | Core SRS: Regulatory Compliance | Complete |
-| 7 | Integration Layer: Published Interfaces | Complete |
-| 8 | Example First-Party Module: Wellbeing | Complete |
-| 9 | Example External Integration: VLE | Complete |
-| 10 | User Interfaces | Complete |
-| **11** | **Hardening and Open Source Release** | **Complete — v1.0.0** |
+Revelation SRS has substantial implemented foundations, services, integrations and user interfaces, but it is not currently represented as production-complete. The UK-wide process review identified material gaps in business authority, process decomposition, data modelling and cross-system reconciliation.
 
-Full plan: [docs/project-roadmap.md](docs/project-roadmap.md)
+| Current classification | Position |
+|---|---|
+| Implemented baseline | Tenant/temporal foundations, workflow platform and core identity/profile |
+| Partial | Admissions, CAS, registration, curriculum/modules, support, assessment/boards, awards, regulatory exchange, integrations and governance |
+| Proposed target | Attendance/engagement, PGR lifecycle and the newly reviewed P0 architecture |
+| Verification | Documentation checks pass; repository-wide typecheck currently fails; clean-clone application bootstrap is not yet verified |
+
+The [Current Capability Matrix](docs/product/current-capabilities.md) is the authority for project status. The [project roadmap](docs/project-roadmap.md) is retained as historical delivery context.
 
 ---
 

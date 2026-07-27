@@ -1,7 +1,9 @@
 # Revelation SRS — Project Roadmap
 
-> Status: Complete — v1.0.0 released 2026-06-18
-> Last updated: 2026-06-18
+> Status: Historical delivery record — not current capability authority
+> Original completion record: v1.0.0 released 2026-06-18
+> Status authority changed: 2026-07-27
+> Current status: [Current Capability Matrix](product/current-capabilities.md)
 
 ---
 
