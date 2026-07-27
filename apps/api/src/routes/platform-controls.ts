@@ -1,6 +1,7 @@
-import { requirePermission } from '@revelation-srs/auth';
+import { requireAnyPermission, requirePermission } from '@revelation-srs/auth';
 import { Type } from '@sinclair/typebox';
 import type { FastifyInstance } from 'fastify';
+import { hasPermission } from '@revelation-srs/domain';
 
 import { clockNow } from '../platform/clock.js';
 import type {
@@ -607,12 +608,20 @@ export function platformControlRoutes(fastify: FastifyInstance): void {
       }),
       response: { 200: Type.Array(WorkflowTaskSchema) },
     },
-    preHandler: [requirePermission('workflow:read')],
+    preHandler: [requireAnyPermission('workflow:read', 'workflow-task:complete')],
   }, async (request, reply) => {
-    const tasks = await fastify.workflowTaskService.listTasks(request.tenantId, request.query as {
+    const query = request.query as {
       statusCode?: string;
       assigneeRoleCode?: string;
       workflowInstanceId?: string;
+    };
+    const canReadAllWorkflows = hasPermission(request.user.roles, 'workflow:read');
+    const tasks = await fastify.workflowTaskService.listTasks(request.tenantId, {
+      ...query,
+      ...(canReadAllWorkflows ? {} : {
+        assigneeActorId: request.user.sub,
+        assigneeRoleCodes: request.user.roles,
+      }),
     });
     await reply.send(tasks.map((task) => ({
       ...task,

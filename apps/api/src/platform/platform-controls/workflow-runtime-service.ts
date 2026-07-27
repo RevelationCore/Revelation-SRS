@@ -1,4 +1,4 @@
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, inArray, or } from 'drizzle-orm';
 import {
   workflowInstances,
   workflowTasks,
@@ -74,7 +74,13 @@ export class WorkflowTaskService {
 
   async listTasks(
     tenantId: string,
-    opts: { statusCode?: string; assigneeRoleCode?: string; workflowInstanceId?: string } = {},
+    opts: {
+      statusCode?: string;
+      assigneeRoleCode?: string;
+      workflowInstanceId?: string;
+      assigneeActorId?: string;
+      assigneeRoleCodes?: string[];
+    } = {},
   ): Promise<WorkflowTaskDto[]> {
     const rows = await withTenantContext(this.db, tenantId, async (tx) =>
       tx.select().from(workflowTasks).where(and(
@@ -82,6 +88,12 @@ export class WorkflowTaskService {
         ...(opts.statusCode ? [eq(workflowTasks.statusCode, opts.statusCode)] : []),
         ...(opts.assigneeRoleCode ? [eq(workflowTasks.assigneeRoleCode, opts.assigneeRoleCode)] : []),
         ...(opts.workflowInstanceId ? [eq(workflowTasks.workflowInstanceId, opts.workflowInstanceId as `${string}-${string}-${string}-${string}-${string}`)] : []),
+        ...(opts.assigneeActorId ? [or(
+          eq(workflowTasks.assigneeActorId, opts.assigneeActorId),
+          ...(opts.assigneeRoleCodes?.length
+            ? [inArray(workflowTasks.assigneeRoleCode, opts.assigneeRoleCodes)]
+            : []),
+        )] : []),
       )).orderBy(desc(workflowTasks.createdAt)),
     );
     return rows.map(taskToDto);
