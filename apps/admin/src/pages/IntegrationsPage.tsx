@@ -17,6 +17,8 @@ import {
 import { ApiError } from '../api/client.js';
 import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
+import { useAuth } from '../auth/AuthContext.js';
+import { userHasAnyPermission } from '../auth/RequirePermission.js';
 
 type Tab = 'contracts' | 'registrations' | 'exchanges';
 
@@ -24,6 +26,8 @@ const PAGE_SIZE = 20;
 
 export function IntegrationsPage() {
   const [tab, setTab] = useState<Tab>('registrations');
+  const { roles } = useAuth();
+  const canManage = userHasAnyPermission(roles, ['integration:manage']);
 
   return (
     <div>
@@ -45,8 +49,8 @@ export function IntegrationsPage() {
         ))}
       </div>
 
-      {tab === 'registrations' && <RegistrationsTab />}
-      {tab === 'contracts'     && <ContractsTab />}
+      {tab === 'registrations' && <RegistrationsTab canManage={canManage} />}
+      {tab === 'contracts'     && <ContractsTab canManage={canManage} />}
       {tab === 'exchanges'     && <ExchangesTab />}
     </div>
   );
@@ -54,7 +58,7 @@ export function IntegrationsPage() {
 
 // ── Registrations tab ─────────────────────────────────────────────────────────
 
-function RegistrationsTab() {
+function RegistrationsTab({ canManage }: { canManage: boolean }) {
   const [regs,       setRegs]       = useState<IntegrationRegistration[]>([]);
   const [loading,    setLoading]    = useState(true);
   const [error,      setError]      = useState('');
@@ -99,14 +103,14 @@ function RegistrationsTab() {
 
   return (
     <div>
-      <div className="flex justify-end mb-4">
+      {canManage && <div className="flex justify-end mb-4">
         <button
           onClick={() => setShowCreate(true)}
           className="rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
         >
           New registration
         </button>
-      </div>
+      </div>}
 
       {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
 
@@ -144,7 +148,7 @@ function RegistrationsTab() {
                       </div>
                     )}
                   </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
+                  {canManage && <div className="flex items-center gap-2 flex-shrink-0">
                     <button
                       onClick={() => void handleHealthCheck(reg)}
                       disabled={actingId === reg.registrationId}
@@ -169,7 +173,7 @@ function RegistrationsTab() {
                     >
                       {reg.enabled ? 'Disable' : 'Enable'}
                     </button>
-                  </div>
+                  </div>}
                 </div>
               </div>
             );
@@ -177,14 +181,14 @@ function RegistrationsTab() {
         </div>
       )}
 
-      {showCreate && (
+      {canManage && showCreate && (
         <CreateRegModal
           onClose={() => setShowCreate(false)}
           onCreated={() => { setShowCreate(false); void load(); }}
         />
       )}
 
-      {replayFor && (
+      {canManage && replayFor && (
         <ReplayModal
           reg={replayFor}
           onClose={() => setReplayFor(null)}
@@ -305,7 +309,7 @@ function ReplayModal({
 
 // ── Contracts tab ─────────────────────────────────────────────────────────────
 
-function ContractsTab() {
+function ContractsTab({ canManage }: { canManage: boolean }) {
   const [contracts,  setContracts]  = useState<IntegrationContract[]>([]);
   const [loading,    setLoading]    = useState(true);
   const [error,      setError]      = useState('');
@@ -340,12 +344,12 @@ function ContractsTab() {
   return (
     <div>
       <div className="flex justify-end mb-4">
-        <button onClick={() => setShowCreate(s => !s)} className="rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
+        {canManage && <button onClick={() => setShowCreate(s => !s)} className="rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
           New contract
-        </button>
+        </button>}
       </div>
 
-      {showCreate && (
+      {canManage && showCreate && (
         <form onSubmit={(e) => void handleCreate(e)} className="flex items-end gap-3 mb-4 bg-indigo-50 rounded-lg p-4">
           <MiniField name="name"         label="Name" />
           <MiniField name="version"      label="Version" />

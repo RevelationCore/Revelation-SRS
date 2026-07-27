@@ -5,10 +5,14 @@ import { Spinner } from '../components/Spinner.js';
 import { ApiError } from '../api/client.js';
 import { Dialog, DialogClose } from '@revelation-srs/ui';
 import { useValueSet } from '../hooks/useValueSet.js';
+import { useAuth } from '../auth/AuthContext.js';
+import { userHasAnyPermission } from '../auth/RequirePermission.js';
 
 const PAGE_SIZE = 20;
 
 export function StudentsPage() {
+  const { roles } = useAuth();
+  const canCreateStudent = userHasAnyPermission(roles, ['student:write']);
   const [students, setStudents]   = useState<StudentSummary[]>([]);
   const [loading, setLoading]     = useState(true);
   const [offset, setOffset]       = useState(0);
@@ -48,12 +52,14 @@ export function StudentsPage() {
     <div>
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-semibold text-gray-900">Students</h1>
-        <button
-          onClick={() => setShowCreate(true)}
-          className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded hover:bg-indigo-700"
-        >
-          New student
-        </button>
+        {canCreateStudent && (
+          <button
+            onClick={() => setShowCreate(true)}
+            className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded hover:bg-indigo-700"
+          >
+            New student
+          </button>
+        )}
       </div>
 
       {/* Search / filter bar */}
@@ -156,7 +162,7 @@ export function StudentsPage() {
       )}
 
       <Dialog
-        open={showCreate}
+        open={canCreateStudent && showCreate}
         onOpenChange={(open) => { if (!open) setShowCreate(false); }}
         title="New student"
       >

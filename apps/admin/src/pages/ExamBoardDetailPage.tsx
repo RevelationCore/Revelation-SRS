@@ -18,6 +18,7 @@ import { listIntegrationRegistrations, healthCheckIntegration, type HealthCheckR
 import { ApiError } from '../api/client.js';
 import { useAuth } from '../auth/AuthContext.js';
 import { RequireRole } from '../auth/RequireRole.js';
+import { userHasAnyPermission } from '../auth/RequirePermission.js';
 import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
 
@@ -33,6 +34,10 @@ const SPECIAL_CATEGORY_ROLES = [
 ];
 
 export function ExamBoardDetailPage() {
+  const { roles } = useAuth();
+  const canWriteBoard = userHasAnyPermission(roles, ['exam-board:write']);
+  const canManageIntegrations = userHasAnyPermission(roles, ['integration:manage']);
+  const canReadIntegrations = userHasAnyPermission(roles, ['integration:read']);
   const { boardId } = useParams<{ boardId: string }>();
   const [board,   setBoard]   = useState<ExamBoard | null>(null);
   const [loading, setLoading] = useState(true);
@@ -91,7 +96,9 @@ export function ExamBoardDetailPage() {
         ))}
       </div>
 
-      {tab === 'overview'   && <OverviewTab   board={board} boardId={boardId} onRefresh={reload} />}
+      {tab === 'overview'   && <OverviewTab board={board} boardId={boardId} onRefresh={reload}
+        canWriteBoard={canWriteBoard} canReadIntegrations={canReadIntegrations}
+        canManageIntegrations={canManageIntegrations} />}
       {tab === 'entries'    && <EntriesTab    boardId={boardId} />}
       {tab === 'candidates' && <CandidatesTab boardId={boardId} />}
       {tab === 'signoff'    && <SignoffTab    board={board} boardId={boardId} onRefresh={reload} />}
@@ -105,10 +112,16 @@ function OverviewTab({
   board,
   boardId,
   onRefresh,
+  canWriteBoard,
+  canReadIntegrations,
+  canManageIntegrations,
 }: {
   board: ExamBoard;
   boardId: string;
   onRefresh: () => void;
+  canWriteBoard: boolean;
+  canReadIntegrations: boolean;
+  canManageIntegrations: boolean;
 }) {
   const [dataPack,       setDataPack]       = useState<ExamBoardDataPack | null>(null);
   const [loadingPack,    setLoadingPack]    = useState(false);
@@ -176,13 +189,13 @@ function OverviewTab({
       <section className="bg-white rounded-lg border border-gray-200 p-5">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm font-semibold text-gray-700">Data pack</h2>
-          <button
+          {canWriteBoard && <button
             onClick={() => void handleGeneratePack()}
             disabled={generatingPack}
             className="rounded border border-indigo-300 px-3 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-50 disabled:opacity-50"
           >
             {generatingPack ? 'Generating…' : dataPack ? 'Regenerate' : 'Generate'}
-          </button>
+          </button>}
         </div>
         {loadingPack ? (
           <Spinner />
@@ -206,24 +219,24 @@ function OverviewTab({
               Generate timetabled exam entries for all registered candidates.
             </p>
           </div>
-          <button
+          {canManageIntegrations && <button
             onClick={() => void handleGenerateEntries()}
             disabled={genEntries}
             className="rounded border border-indigo-300 px-3 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-50 disabled:opacity-50"
           >
             {genEntries ? 'Generating…' : 'Generate entries'}
-          </button>
+          </button>}
         </div>
       </section>
 
-      <VleGradeSyncPanel />
+      {canReadIntegrations && <VleGradeSyncPanel canManage={canManageIntegrations} />}
     </div>
   );
 }
 
 // ── VLE grade sync panel (R-VLE-001) ─────────────────────────────────────────
 
-function VleGradeSyncPanel() {
+function VleGradeSyncPanel({ canManage }: { canManage: boolean }) {
   const [vleRegistrationId, setVleRegistrationId] = useState<string | null>(null);
   const [healthResult,      setHealthResult]      = useState<HealthCheckResult | null>(null);
   const [checking,          setChecking]          = useState(false);
@@ -262,13 +275,13 @@ function VleGradeSyncPanel() {
     <section className="rounded-lg border border-indigo-200 bg-indigo-50 p-5">
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-sm font-semibold text-indigo-900">VLE grade sync (R-VLE-001)</h2>
-        <button
+        {canManage && <button
           onClick={() => void handleCheckGradeSync()}
           disabled={checking}
           className="rounded border border-indigo-400 bg-white px-3 py-1.5 text-xs font-medium text-indigo-800 hover:bg-indigo-50 disabled:opacity-50"
         >
           {checking ? 'Checking…' : 'Check grade sync'}
-        </button>
+        </button>}
       </div>
       <p className="text-xs text-indigo-700 mb-3">
         Checks the VLE connector for unsubmitted marks and grade conflicts. If conflicts are
@@ -480,6 +493,7 @@ function SignoffTab({
 
       <section className="bg-white rounded-lg border border-gray-200 p-5">
         <h2 className="text-sm font-semibold text-gray-700 mb-4">External examiner sign-off</h2>
+        {userHasAnyPermission(roles, ['exam-board:write']) ? (
         <form onSubmit={(e) => void handleSignOff(e)} className="space-y-3">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Commentary (optional)</label>
@@ -498,6 +512,9 @@ function SignoffTab({
             {signingOff ? 'Recording…' : 'Record sign-off'}
           </button>
         </form>
+        ) : (
+          <p className="text-sm text-gray-600">You have read-only access to external examiner sign-off.</p>
+        )}
       </section>
 
       <section className="bg-white rounded-lg border border-gray-200 p-5">

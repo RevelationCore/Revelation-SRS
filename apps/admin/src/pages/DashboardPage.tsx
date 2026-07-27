@@ -5,6 +5,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Field, formatDate, formatNumber } from '@revelation-srs/ui';
 import { getEnrolmentVolumes } from '../api/reporting.js';
+import { useAuth } from '../auth/AuthContext.js';
+import { userHasAnyPermission } from '../auth/RequirePermission.js';
 
 const quickSearchSchema = z.object({
   query: z.string().min(1, 'Enter a search term.').max(200),
@@ -14,6 +16,9 @@ type QuickSearchForm = z.infer<typeof quickSearchSchema>;
 
 export function DashboardPage() {
   const { t } = useTranslation();
+  const { roles } = useAuth();
+  const canReadEnrolmentReporting = userHasAnyPermission(roles, ['enrolment:read:all']);
+  const canSearchStudents = userHasAnyPermission(roles, ['student:read:all']);
 
   const {
     register,
@@ -31,10 +36,11 @@ export function DashboardPage() {
   const [enrolledCount, setEnrolledCount] = useState<number | null>(null);
 
   useEffect(() => {
+    if (!canReadEnrolmentReporting) return;
     getEnrolmentVolumes()
       .then(v => setEnrolledCount(v.byStatus['enrolled'] ?? v.total))
       .catch(() => { /* leave as null — shown as — */ });
-  }, []);
+  }, [canReadEnrolmentReporting]);
 
   const enrolled = enrolledCount === null ? '—' : formatNumber(enrolledCount);
 
@@ -46,12 +52,12 @@ export function DashboardPage() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <StatCard label="Enrolled students" value={enrolled} />
+        {canReadEnrolmentReporting && <StatCard label="Enrolled students" value={enrolled} />}
         <StatCard label="Pending tasks"     value="—" />
         <StatCard label="Active workflows"  value="—" />
       </div>
 
-      <section
+      {canSearchStudents && <section
         aria-labelledby="quick-search-heading"
         className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm max-w-md"
       >
@@ -74,7 +80,7 @@ export function DashboardPage() {
             {isSubmitting ? t('status.loading') : t('actions.view')}
           </button>
         </form>
-      </section>
+      </section>}
     </div>
   );
 }

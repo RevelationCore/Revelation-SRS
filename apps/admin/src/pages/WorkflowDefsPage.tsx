@@ -12,6 +12,7 @@ import {
 } from '../api/workflowDefs.js';
 import { ApiError } from '../api/client.js';
 import { useAuth } from '../auth/AuthContext.js';
+import { userHasAnyPermission } from '../auth/RequirePermission.js';
 import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
 
@@ -29,7 +30,7 @@ const STEP_TYPE_LABELS: Record<string, string> = {
 
 export function WorkflowDefsPage() {
   const { roles }  = useAuth();
-  const canWrite   = roles.includes('tenant-administrator') || roles.includes('system-administrator');
+  const canWrite   = userHasAnyPermission(roles, ['workflow:write']);
   const [tab, setTab] = useState<Tab>('definitions');
 
   return (

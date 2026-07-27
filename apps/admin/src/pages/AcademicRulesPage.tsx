@@ -8,13 +8,14 @@ import {
 } from '../api/academicRules.js';
 import { ApiError } from '../api/client.js';
 import { useAuth } from '../auth/AuthContext.js';
+import { userHasAnyPermission } from '../auth/RequirePermission.js';
 import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
 import { useValueSet } from '../hooks/useValueSet.js';
 
 export function AcademicRulesPage() {
   const { roles }              = useAuth();
-  const canWrite               = roles.includes('tenant-administrator') || roles.includes('system-administrator');
+  const canWrite               = userHasAnyPermission(roles, ['rule:write']);
   const { members: ruleTypes } = useValueSet('academic_rule', 'rule_type_code');
   const [rules,       setRules]       = useState<AcademicRule[]>([]);
   const [loading,     setLoading]     = useState(true);

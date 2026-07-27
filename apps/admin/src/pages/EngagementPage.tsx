@@ -7,6 +7,7 @@ import {
 } from '../api/engagement.js';
 import { ApiError } from '../api/client.js';
 import { useAuth } from '../auth/AuthContext.js';
+import { userHasAnyPermission } from '../auth/RequirePermission.js';
 import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
 
@@ -14,31 +15,31 @@ type Tab = 'events' | 'alerts' | 'policies';
 
 export function EngagementPage() {
   const { roles } = useAuth();
-  const canReadEvidence = roles.some((role) =>
-    ['module-tutor', 'personal-tutor', 'engagement-officer', 'registry-administrator'].includes(role));
-  const [tab, setTab] = useState<Tab>(canReadEvidence ? 'alerts' : 'policies');
+  const canReadEvents = userHasAnyPermission(roles, ['engagement:event:read']);
+  const canReadAlerts = userHasAnyPermission(roles, ['engagement:alert:read']);
+  const canReadPolicies = userHasAnyPermission(roles, ['engagement:policy:read']);
+  const [tab, setTab] = useState<Tab>(canReadAlerts ? 'alerts' : canReadEvents ? 'events' : 'policies');
   const [events, setEvents] = useState<EngagementEvent[]>([]);
   const [alerts, setAlerts] = useState<EngagementAlert[]>([]);
   const [policies, setPolicies] = useState<EngagementPolicy[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const canManagePolicy = roles.includes('tenant-administrator');
-  const canManageCases = roles.some((role) => ['engagement-officer', 'registry-administrator'].includes(role));
+  const canManagePolicy = userHasAnyPermission(roles, ['engagement:policy:manage']);
+  const canManageCases = userHasAnyPermission(roles, ['engagement:case:manage']);
 
   const load = useCallback(async () => {
     setLoading(true); setError('');
     try {
       const [eventRows, alertRows, policyRows] = await Promise.all([
-        canReadEvidence ? listEngagementEvents() : Promise.resolve([]),
-        canReadEvidence ? listEngagementAlerts() : Promise.resolve([]),
-        roles.some((role) => ['engagement-officer', 'registry-administrator', 'tenant-administrator'].includes(role))
-          ? listEngagementPolicies() : Promise.resolve([]),
+        canReadEvents ? listEngagementEvents() : Promise.resolve([]),
+        canReadAlerts ? listEngagementAlerts() : Promise.resolve([]),
+        canReadPolicies ? listEngagementPolicies() : Promise.resolve([]),
       ]);
       setEvents(eventRows); setAlerts(alertRows); setPolicies(policyRows);
     } catch (cause) {
       setError(cause instanceof ApiError ? (cause.detail ?? cause.message) : 'Unable to load engagement workspace');
     } finally { setLoading(false); }
-  }, [canReadEvidence, roles]);
+  }, [canReadAlerts, canReadEvents, canReadPolicies]);
   useEffect(() => { void load(); }, [load]);
 
   async function openCase(alert: EngagementAlert) {
@@ -64,9 +65,9 @@ export function EngagementPage() {
         <button onClick={() => void load()} className="rounded border border-gray-300 px-3 py-2 text-sm hover:bg-white">Refresh</button>
       </div>
       <div className="mb-5 flex gap-1 border-b border-gray-200" role="tablist" aria-label="Engagement workspace">
-        {canReadEvidence && <TabButton active={tab === 'alerts'} onClick={() => setTab('alerts')}>Alert queue ({alerts.length})</TabButton>}
-        {canReadEvidence && <TabButton active={tab === 'events'} onClick={() => setTab('events')}>Evidence worklist ({events.length})</TabButton>}
-        <TabButton active={tab === 'policies'} onClick={() => setTab('policies')}>Policies ({policies.length})</TabButton>
+        {canReadAlerts && <TabButton active={tab === 'alerts'} onClick={() => setTab('alerts')}>Alert queue ({alerts.length})</TabButton>}
+        {canReadEvents && <TabButton active={tab === 'events'} onClick={() => setTab('events')}>Evidence worklist ({events.length})</TabButton>}
+        {canReadPolicies && <TabButton active={tab === 'policies'} onClick={() => setTab('policies')}>Policies ({policies.length})</TabButton>}
       </div>
       {error && <div role="alert" className="mb-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
       {loading ? <div className="flex justify-center py-16"><Spinner /></div> : (

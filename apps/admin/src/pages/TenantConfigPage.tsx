@@ -9,6 +9,7 @@ import {
 } from '../api/tenant.js';
 import { ApiError } from '../api/client.js';
 import { useAuth } from '../auth/AuthContext.js';
+import { userHasAnyPermission } from '../auth/RequirePermission.js';
 import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
 
@@ -31,7 +32,7 @@ export function TenantConfigPage() {
 
 function TenantConfigForm() {
   const { roles }              = useAuth();
-  const canWrite               = roles.includes('tenant-administrator') || roles.includes('system-administrator');
+  const canWrite               = userHasAnyPermission(roles, ['config:write']);
   const [config,   setConfig]  = useState<TenantConfiguration | null>(null);
   const [loading,  setLoading] = useState(true);
   const [saving,   setSaving]  = useState(false);

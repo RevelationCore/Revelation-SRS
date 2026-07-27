@@ -11,11 +11,15 @@ import {
 import { ApiError } from '../api/client.js';
 import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
+import { useAuth } from '../auth/AuthContext.js';
+import { userHasAnyPermission } from '../auth/RequirePermission.js';
 
 type Tab = 'health' | 'failed';
 
 export function IntegrationOpsPage() {
   const [tab, setTab] = useState<Tab>('health');
+  const { roles } = useAuth();
+  const canManage = userHasAnyPermission(roles, ['integration:manage']);
 
   return (
     <div>
@@ -40,7 +44,7 @@ export function IntegrationOpsPage() {
         ))}
       </div>
 
-      {tab === 'health'  && <ConnectorHealthTab />}
+      {tab === 'health'  && <ConnectorHealthTab canManage={canManage} />}
       {tab === 'failed'  && <FailedExchangesTab />}
     </div>
   );
@@ -53,7 +57,7 @@ interface RegistrationHealth {
   error:         string;
 }
 
-function ConnectorHealthTab() {
+function ConnectorHealthTab({ canManage }: { canManage: boolean }) {
   const [items,   setItems]   = useState<RegistrationHealth[]>([]);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState('');
@@ -111,12 +115,12 @@ function ConnectorHealthTab() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <p className="text-sm text-gray-500">{items.length} registered connectors</p>
-        <button
+        {canManage && <button
           onClick={() => void checkAll()}
           className="rounded border border-gray-300 px-4 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
         >
           Record all OK
-        </button>
+        </button>}
       </div>
 
       <div className="space-y-3">
@@ -139,7 +143,7 @@ function ConnectorHealthTab() {
                 </div>
                 <div className="flex items-center gap-3">
                   <Badge value={display.healthStatusCode ?? (display.enabled ? 'enabled' : 'disabled')} />
-                  <div className="flex items-center gap-1">
+                  {canManage && <div className="flex items-center gap-1">
                     {(['ok', 'degraded', 'down'] as const).map(s => (
                       <button
                         key={s}
@@ -150,7 +154,7 @@ function ConnectorHealthTab() {
                         {checking ? '…' : s}
                       </button>
                     ))}
-                  </div>
+                  </div>}
                 </div>
               </div>
 
@@ -176,7 +180,7 @@ function ConnectorHealthTab() {
       </div>
 
       {/* VLE bulk reconciliation (R-VLE-003) */}
-      {vleItems.length > 0 && (
+      {canManage && vleItems.length > 0 && (
         <VleReconcilePanel vleItems={vleItems} />
       )}
     </div>

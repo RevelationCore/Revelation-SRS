@@ -56,10 +56,13 @@ import { ApiError } from '../api/client.js';
 import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
 import { useValueSet } from '../hooks/useValueSet.js';
+import { useAuth } from '../auth/AuthContext.js';
+import { userHasAnyPermission } from '../auth/RequirePermission.js';
 
 type Tab = 'identity' | 'enrolments' | 'registrations' | 'assessment' | 'history' | 'wellbeing' | 'corrections' | 'communications';
 
 export function StudentDetailPage() {
+  const { roles } = useAuth();
   const { personId } = useParams<{ personId: string }>();
   const [student, setStudent]  = useState<Student | null>(null);
   const [loading, setLoading]  = useState(true);
@@ -88,6 +91,24 @@ export function StudentDetailPage() {
   const displayName = student.identity
     ? `${student.identity.legalFirstName} ${student.identity.legalFamilyName}`
     : student.personId;
+  const canReadEnrolments = userHasAnyPermission(roles, ['enrolment:read:all']);
+  const canWriteStudent = userHasAnyPermission(roles, ['student:write']);
+  const canReadRegistrations = userHasAnyPermission(roles, ['module-registration:read:all']);
+  const canReadAssessment = userHasAnyPermission(roles, ['mark:read:all']);
+  const canReadCorrections = userHasAnyPermission(roles, ['exam-board:read']);
+  const canReadDisability = userHasAnyPermission(roles, ['disability:read']);
+  const canReadAdjustments = userHasAnyPermission(roles, ['adjustment:read:all']);
+  const canReadCircumstances = userHasAnyPermission(roles, ['circumstances:read']);
+  const canReadNotifications = userHasAnyPermission(roles, ['notifications:read']);
+  const tabs: Tab[] = [
+    'identity',
+    ...(canReadEnrolments ? ['enrolments', 'history'] as Tab[] : []),
+    ...(canReadEnrolments && canReadCorrections ? ['corrections'] as Tab[] : []),
+    ...(canReadRegistrations ? ['registrations'] as Tab[] : []),
+    ...(canReadAssessment ? ['assessment'] as Tab[] : []),
+    ...(canReadDisability || canReadAdjustments || canReadCircumstances ? ['wellbeing'] as Tab[] : []),
+    ...(canReadNotifications ? ['communications'] as Tab[] : []),
+  ];
 
   return (
     <div>
@@ -109,7 +130,7 @@ export function StudentDetailPage() {
 
       {/* Tabs */}
       <div className="border-b border-gray-200 mb-6">
-        {(['identity', 'enrolments', 'registrations', 'assessment', 'history', 'wellbeing', 'corrections', 'communications'] as Tab[]).map((t) => (
+        {tabs.map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -125,7 +146,7 @@ export function StudentDetailPage() {
       </div>
 
       {tab === 'identity' && (
-        <IdentityTab student={student} onUpdated={reload} />
+        <IdentityTab student={student} onUpdated={reload} canWrite={canWriteStudent} />
       )}
       {tab === 'enrolments' && personId && (
         <EnrolmentsTab personId={personId} student={student} onUpdated={reload} />
@@ -140,7 +161,8 @@ export function StudentDetailPage() {
         <HistoryTab personId={personId} />
       )}
       {tab === 'wellbeing' && personId && (
-        <WellbeingTab personId={personId} />
+        <WellbeingTab personId={personId} canReadDisability={canReadDisability}
+          canReadAdjustments={canReadAdjustments} canReadCircumstances={canReadCircumstances} />
       )}
       {tab === 'corrections' && personId && (
         <CorrectionsTab personId={personId} />
@@ -154,7 +176,15 @@ export function StudentDetailPage() {
 
 // ── Identity tab ──────────────────────────────────────────────────────────────
 
-function IdentityTab({ student, onUpdated }: { student: Student; onUpdated: () => void }) {
+function IdentityTab({
+  student,
+  onUpdated,
+  canWrite,
+}: {
+  student: Student;
+  onUpdated: () => void;
+  canWrite: boolean;
+}) {
   const [editing, setEditing]     = useState(false);
   const [editHesa, setEditHesa]   = useState(false);
   const [saving, setSaving]       = useState(false);
@@ -215,7 +245,7 @@ function IdentityTab({ student, onUpdated }: { student: Student; onUpdated: () =
       <section className="bg-white rounded-lg border border-gray-200 p-5">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm font-semibold text-gray-700">Personal identity</h2>
-          {!editing && (
+          {canWrite && !editing && (
             <button onClick={() => setEditing(true)} className="text-xs text-indigo-600 hover:underline">
               Edit
             </button>
@@ -272,7 +302,7 @@ function IdentityTab({ student, onUpdated }: { student: Student; onUpdated: () =
         <section className="bg-white rounded-lg border border-gray-200 p-5">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-gray-700">HESA identifier</h2>
-            {!editHesa && (
+            {canWrite && !editHesa && (
               <button onClick={() => setEditHesa(true)} className="text-xs text-indigo-600 hover:underline">
                 {student.hesaId ? 'Update' : 'Add'}
               </button>
@@ -302,7 +332,7 @@ function IdentityTab({ student, onUpdated }: { student: Student; onUpdated: () =
           <h2 className="text-sm font-semibold text-gray-700 mb-3">Lifecycle status</h2>
           <div className="flex items-center gap-3 flex-wrap">
             <Badge value={student.personStatusCode} />
-            {(['prospective','student','alumnus','deceased','merged'] as PersonStatusCode[]).map((s) => (
+            {canWrite && (['prospective','student','alumnus','deceased','merged'] as PersonStatusCode[]).map((s) => (
               s !== student.personStatusCode && (
                 <button
                   key={s}
@@ -1416,7 +1446,17 @@ function VleOverrideAuditSection({ enrolmentId }: { enrolmentId: string }) {
 
 // ── Wellbeing tab ─────────────────────────────────────────────────────────────
 
-function WellbeingTab({ personId }: { personId: string }) {
+function WellbeingTab({
+  personId,
+  canReadDisability,
+  canReadAdjustments,
+  canReadCircumstances,
+}: {
+  personId: string;
+  canReadDisability: boolean;
+  canReadAdjustments: boolean;
+  canReadCircumstances: boolean;
+}) {
   const [declarations, setDeclarations] = useState<DisabilityDeclaration[] | null>(null);
   const [adjustments,  setAdjustments]  = useState<Adjustment[] | null>(null);
   const [ecs,          setEcs]          = useState<ExceptionalCircumstances[] | null>(null);
@@ -1432,14 +1472,14 @@ function WellbeingTab({ personId }: { personId: string }) {
   useEffect(() => {
     setLoading(true);
     Promise.all([
-      listDisabilityDeclarations(personId),
-      listAdjustments(personId),
-      listExceptionalCircumstances(personId),
+      canReadDisability ? listDisabilityDeclarations(personId) : Promise.resolve([]),
+      canReadAdjustments ? listAdjustments(personId) : Promise.resolve([]),
+      canReadCircumstances ? listExceptionalCircumstances(personId) : Promise.resolve([]),
     ])
       .then(([d, a, e]) => { setDeclarations(d); setAdjustments(a); setEcs(e); })
       .catch(err => setError(err instanceof ApiError ? err.message : 'Failed to load wellbeing data'))
       .finally(() => setLoading(false));
-  }, [personId]);
+  }, [canReadAdjustments, canReadCircumstances, canReadDisability, personId]);
 
   if (loading) return <div className="flex justify-center py-10"><Spinner /></div>;
   if (error)   return <p className="text-red-600 text-sm">{error}</p>;

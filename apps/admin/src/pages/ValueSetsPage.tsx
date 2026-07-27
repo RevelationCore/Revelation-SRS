@@ -11,6 +11,7 @@ import { ApiError } from '../api/client.js';
 import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
 import { useAuth } from '../auth/AuthContext.js';
+import { userHasAnyPermission } from '../auth/RequirePermission.js';
 
 function memberStatus(m: ValueSetMember): 'active' | 'retired' | 'scheduled' {
   const now = new Date();
@@ -34,7 +35,7 @@ function StatusBadge({ member }: { member: ValueSetMember }) {
 
 export function ValueSetsPage() {
   const { roles }              = useAuth();
-  const canWrite               = roles.includes('tenant-administrator') || roles.includes('system-administrator');
+  const canWrite               = userHasAnyPermission(roles, ['config:write']);
   const [sets,     setSets]    = useState<ValueSet[]>([]);
   const [loading,  setLoading] = useState(true);
   const [error,    setError]   = useState('');
