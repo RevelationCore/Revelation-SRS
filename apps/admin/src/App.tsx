@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { useAuth } from './auth/AuthContext.js';
 import { RequireRole } from './auth/RequireRole.js';
+import { RequirePermission } from './auth/RequirePermission.js';
 import { Layout } from './components/Layout.js';
 import { AcademicRulesPage } from './pages/AcademicRulesPage.js';
 import { AuditPage } from './pages/AuditPage.js';
@@ -38,9 +39,16 @@ import { NotFoundPage } from './pages/NotFoundPage.js';
 import { EngagementPage } from './pages/EngagementPage.js';
 import { EngagementCasePage } from './pages/EngagementCasePage.js';
 
-const TENANT_ADMIN_ROLES      = ['tenant-administrator', 'registry-administrator', 'system-administrator'];
-const INTEGRATION_ADMIN_ROLES = ['tenant-administrator', 'system-administrator'];
 const ENGAGEMENT_ROLES = ['module-tutor', 'personal-tutor', 'engagement-officer', 'registry-administrator', 'tenant-administrator'];
+const ADMIN_PERMISSIONS = [
+  'config:read',
+  'globalisation:read',
+  'rule:read',
+  'workflow:read',
+  'feature-flag:read',
+  'integration:read',
+  'audit-log:read',
+] as const;
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { token, isReady } = useAuth();
@@ -67,66 +75,66 @@ export function App() {
               <Routes>
                 <Route index                              element={<Navigate to="/dashboard" replace />} />
                 <Route path="dashboard"                  element={<DashboardPage />} />
-                <Route path="tasks"                      element={<TaskInboxPage />} />
-                <Route path="students"                   element={<StudentsPage />} />
-                <Route path="students/:personId"         element={<StudentDetailPage />} />
-                <Route path="exam-boards"                element={<ExamBoardsPage />} />
-                <Route path="exam-boards/:boardId"       element={<ExamBoardDetailPage />} />
+                <Route path="tasks" element={<RequirePermission permissions={['workflow-task:complete']}><TaskInboxPage /></RequirePermission>} />
+                <Route path="students" element={<RequirePermission permissions={['student:read:all']}><StudentsPage /></RequirePermission>} />
+                <Route path="students/:personId" element={<RequirePermission permissions={['student:read:all']}><StudentDetailPage /></RequirePermission>} />
+                <Route path="exam-boards" element={<RequirePermission permissions={['exam-board:read']}><ExamBoardsPage /></RequirePermission>} />
+                <Route path="exam-boards/:boardId" element={<RequirePermission permissions={['exam-board:read']}><ExamBoardDetailPage /></RequirePermission>} />
                 <Route path="engagement" element={<RequireRole roles={ENGAGEMENT_ROLES}><EngagementPage /></RequireRole>} />
                 <Route path="engagement/cases/:caseId" element={<RequireRole roles={ENGAGEMENT_ROLES}><EngagementCasePage /></RequireRole>} />
-                <Route path="regulatory"                 element={<RegulatoryPage />} />
-                <Route path="regulatory/hesa"            element={<HesaPage />} />
-                <Route path="regulatory/ucas"            element={<UcasPage />} />
-                <Route path="regulatory/slc"             element={<SlcPage />} />
-                <Route path="regulatory/ukvi"            element={<UkviPage />} />
-                <Route path="regulatory/ofs"             element={<OfsPage />} />
+                <Route path="regulatory" element={<RequirePermission permissions={['regulatory:read']}><RegulatoryPage /></RequirePermission>} />
+                <Route path="regulatory/hesa" element={<RequirePermission permissions={['regulatory:read']}><HesaPage /></RequirePermission>} />
+                <Route path="regulatory/ucas" element={<RequirePermission permissions={['regulatory:read']}><UcasPage /></RequirePermission>} />
+                <Route path="regulatory/slc" element={<RequirePermission permissions={['regulatory:read']}><SlcPage /></RequirePermission>} />
+                <Route path="regulatory/ukvi" element={<RequirePermission permissions={['regulatory:read']}><UkviPage /></RequirePermission>} />
+                <Route path="regulatory/ofs" element={<RequirePermission permissions={['regulatory:read']}><OfsPage /></RequirePermission>} />
 
                 {/* Tenant administration — gated to tenant/registry/system roles */}
                 <Route
                   path="tenant-admin"
-                  element={<RequireRole roles={TENANT_ADMIN_ROLES}><TenantAdminPage /></RequireRole>}
+                  element={<RequirePermission permissions={[...ADMIN_PERMISSIONS]}><TenantAdminPage /></RequirePermission>}
                 />
                 <Route
                   path="tenant-admin/config"
-                  element={<RequireRole roles={TENANT_ADMIN_ROLES}><TenantConfigPage /></RequireRole>}
+                  element={<RequirePermission permissions={['config:read']}><TenantConfigPage /></RequirePermission>}
                 />
                 <Route
                   path="tenant-admin/value-sets"
-                  element={<RequireRole roles={TENANT_ADMIN_ROLES}><ValueSetsPage /></RequireRole>}
+                  element={<RequirePermission permissions={['config:read']}><ValueSetsPage /></RequirePermission>}
                 />
                 <Route
                   path="tenant-admin/globalisation"
-                  element={<RequireRole roles={TENANT_ADMIN_ROLES}><GlobalisationPage /></RequireRole>}
+                  element={<RequirePermission permissions={['globalisation:read']}><GlobalisationPage /></RequirePermission>}
                 />
                 <Route
                   path="tenant-admin/rules"
-                  element={<RequireRole roles={TENANT_ADMIN_ROLES}><AcademicRulesPage /></RequireRole>}
+                  element={<RequirePermission permissions={['rule:read']}><AcademicRulesPage /></RequirePermission>}
                 />
                 <Route
                   path="tenant-admin/workflows"
-                  element={<RequireRole roles={TENANT_ADMIN_ROLES}><WorkflowDefsPage /></RequireRole>}
+                  element={<RequirePermission permissions={['workflow:read']}><WorkflowDefsPage /></RequirePermission>}
                 />
                 <Route
                   path="tenant-admin/flags"
-                  element={<RequireRole roles={TENANT_ADMIN_ROLES}><FeatureFlagsPage /></RequireRole>}
+                  element={<RequirePermission permissions={['feature-flag:read']}><FeatureFlagsPage /></RequirePermission>}
                 />
                 <Route
                   path="tenant-admin/integrations"
-                  element={<RequireRole roles={INTEGRATION_ADMIN_ROLES}><IntegrationsPage /></RequireRole>}
+                  element={<RequirePermission permissions={['integration:read']}><IntegrationsPage /></RequirePermission>}
                 />
                 {/* Audit log: API guards with audit-log:read (dpo, registry-administrator, system-administrator, wellbeing-auditor) */}
-                <Route path="tenant-admin/audit" element={<AuditPage />} />
+                <Route path="tenant-admin/audit" element={<RequirePermission permissions={['audit-log:read']}><AuditPage /></RequirePermission>} />
 
                 {/* Reporting */}
-                <Route path="reporting"                          element={<ReportingPage />} />
-                <Route path="reporting/enrolments"              element={<EnrolmentReportPage />} />
-                <Route path="reporting/regulatory-status"       element={<RegulatoryStatusPage />} />
-                <Route path="reporting/foi"                     element={<FoiPage />} />
+                <Route path="reporting" element={<RequirePermission permissions={['enrolment:read:all', 'regulatory:read']}><ReportingPage /></RequirePermission>} />
+                <Route path="reporting/enrolments" element={<RequirePermission permissions={['enrolment:read:all']}><EnrolmentReportPage /></RequirePermission>} />
+                <Route path="reporting/regulatory-status" element={<RequirePermission permissions={['regulatory:read']}><RegulatoryStatusPage /></RequirePermission>} />
+                <Route path="reporting/foi" element={<RequirePermission permissions={['regulatory:read']}><FoiPage /></RequirePermission>} />
 
                 {/* Operations */}
-                <Route path="operations"                        element={<OperationsPage />} />
-                <Route path="operations/environment"            element={<EnvironmentRuntimePage />} />
-                <Route path="operations/integrations"           element={<IntegrationOpsPage />} />
+                <Route path="operations" element={<RequirePermission permissions={['environment:read', 'integration:read']}><OperationsPage /></RequirePermission>} />
+                <Route path="operations/environment" element={<RequirePermission permissions={['environment:read']}><EnvironmentRuntimePage /></RequirePermission>} />
+                <Route path="operations/integrations" element={<RequirePermission permissions={['integration:read']}><IntegrationOpsPage /></RequirePermission>} />
 
                 <Route path="*" element={<NotFoundPage />} />
               </Routes>

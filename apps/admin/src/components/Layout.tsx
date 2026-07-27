@@ -3,8 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../auth/AuthContext.js';
 import { getDisplayName } from '@revelation-srs/ui';
 import { DemoBanner } from './DemoBanner.js';
-
-const INTEGRATION_ADMIN_ROLES = ['tenant-administrator', 'system-administrator'];
+import { userHasAnyPermission } from '../auth/RequirePermission.js';
+import type { Permission } from '@revelation-srs/domain';
 
 // ── Nav primitives ────────────────────────────────────────────────────────────
 
@@ -74,9 +74,28 @@ function Divider() {
 // ── Sidebar nav ───────────────────────────────────────────────────────────────
 
 function Sidebar({ onLogout, displayName, roles }: { onLogout: () => void; displayName: string | null; roles: string[] }) {
-  const canManageIntegrations = INTEGRATION_ADMIN_ROLES.some(r => roles.includes(r));
-  const canViewEngagement = ['module-tutor', 'personal-tutor', 'engagement-officer', 'registry-administrator', 'tenant-administrator']
-    .some(r => roles.includes(r));
+  const can = (...permissions: Permission[]) => userHasAnyPermission(roles, permissions);
+  const canViewStudents = can('student:read:all');
+  const canViewTasks = can('workflow-task:complete');
+  const canViewExamBoards = can('exam-board:read');
+  const canViewEngagement = can(
+    'engagement:event:read',
+    'engagement:timeline:read',
+    'engagement:policy:read',
+    'engagement:alert:read',
+  );
+  const canViewRegulatory = can('regulatory:read');
+  const canViewEnrolmentReporting = can('enrolment:read:all');
+  const canViewAdministration = can(
+    'config:read',
+    'globalisation:read',
+    'rule:read',
+    'workflow:read',
+    'feature-flag:read',
+    'integration:read',
+    'audit-log:read',
+  );
+  const canViewOperations = can('environment:read', 'integration:read');
   return (
     <aside className="fixed inset-y-0 left-0 z-20 flex w-56 flex-col bg-white border-r border-gray-200">
       {/* Brand */}
@@ -90,40 +109,48 @@ function Sidebar({ onLogout, displayName, roles }: { onLogout: () => void; displ
       {/* Scrollable nav */}
       <nav className="flex-1 overflow-y-auto px-2 py-3">
         <NavItem to="/dashboard" label="Dashboard" end />
-        <NavItem to="/students"  label="Students" />
-        <NavItem to="/tasks"     label="Tasks" end />
-        <NavItem to="/exam-boards" label="Exam boards" />
+        {canViewStudents && <NavItem to="/students" label="Students" />}
+        {canViewTasks && <NavItem to="/tasks" label="Tasks" end />}
+        {canViewExamBoards && <NavItem to="/exam-boards" label="Exam boards" />}
         {canViewEngagement && <NavItem to="/engagement" label="Engagement" />}
 
-        <Divider />
-        <SectionNavLink to="/regulatory">Regulatory</SectionNavLink>
-        <SubItem to="/regulatory/hesa" label="HESA" />
-        <SubItem to="/regulatory/ucas" label="UCAS" />
-        <SubItem to="/regulatory/slc"  label="SLC" />
-        <SubItem to="/regulatory/ukvi" label="UKVI" />
-        <SubItem to="/regulatory/ofs"  label="OfS" />
+        {canViewRegulatory && <>
+          <Divider />
+          <SectionNavLink to="/regulatory">Regulatory</SectionNavLink>
+          <SubItem to="/regulatory/hesa" label="HESA" />
+          <SubItem to="/regulatory/ucas" label="UCAS" />
+          <SubItem to="/regulatory/slc"  label="SLC" />
+          <SubItem to="/regulatory/ukvi" label="UKVI" />
+          <SubItem to="/regulatory/ofs"  label="OfS" />
+        </>}
 
-        <Divider />
-        <SectionNavLink to="/reporting">Reporting</SectionNavLink>
-        <SubItem to="/reporting/enrolments"        label="Enrolments" />
-        <SubItem to="/reporting/regulatory-status" label="Regulatory status" />
-        <SubItem to="/reporting/foi"               label="FOI / SAR" />
+        {(canViewEnrolmentReporting || canViewRegulatory) && <>
+          <Divider />
+          <SectionNavLink to="/reporting">Reporting</SectionNavLink>
+          {canViewEnrolmentReporting && <SubItem to="/reporting/enrolments" label="Enrolments" />}
+          {canViewRegulatory && <SubItem to="/reporting/regulatory-status" label="Regulatory status" />}
+          {canViewRegulatory && <SubItem to="/reporting/foi" label="FOI / SAR" />}
+        </>}
 
-        <Divider />
-        <SectionNavLink to="/tenant-admin">Administration</SectionNavLink>
-        <SubItem to="/tenant-admin/config"        label="Configuration" />
-        <SubItem to="/tenant-admin/value-sets"    label="Value sets" />
-        <SubItem to="/tenant-admin/globalisation" label="Globalisation" />
-        <SubItem to="/tenant-admin/rules"         label="Academic rules" />
-        <SubItem to="/tenant-admin/workflows"     label="Workflows" />
-        <SubItem to="/tenant-admin/flags"         label="Feature flags" />
-        {canManageIntegrations && <SubItem to="/tenant-admin/integrations" label="Integrations" />}
-        <SubItem to="/tenant-admin/audit"         label="Audit log" />
+        {canViewAdministration && <>
+          <Divider />
+          <SectionNavLink to="/tenant-admin">Administration</SectionNavLink>
+          {can('config:read') && <SubItem to="/tenant-admin/config" label="Configuration" />}
+          {can('config:read') && <SubItem to="/tenant-admin/value-sets" label="Value sets" />}
+          {can('globalisation:read') && <SubItem to="/tenant-admin/globalisation" label="Globalisation" />}
+          {can('rule:read') && <SubItem to="/tenant-admin/rules" label="Academic rules" />}
+          {can('workflow:read') && <SubItem to="/tenant-admin/workflows" label="Workflows" />}
+          {can('feature-flag:read') && <SubItem to="/tenant-admin/flags" label="Feature flags" />}
+          {can('integration:read') && <SubItem to="/tenant-admin/integrations" label="Integrations" />}
+          {can('audit-log:read') && <SubItem to="/tenant-admin/audit" label="Audit log" />}
+        </>}
 
-        <Divider />
-        <SectionNavLink to="/operations">Operations</SectionNavLink>
-        <SubItem to="/operations/environment"  label="Environment" />
-        <SubItem to="/operations/integrations" label="Integrations" />
+        {canViewOperations && <>
+          <Divider />
+          <SectionNavLink to="/operations">Operations</SectionNavLink>
+          {can('environment:read') && <SubItem to="/operations/environment" label="Environment" />}
+          {can('integration:read') && <SubItem to="/operations/integrations" label="Integrations" />}
+        </>}
       </nav>
 
       {/* User footer */}

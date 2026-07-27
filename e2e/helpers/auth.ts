@@ -23,17 +23,23 @@ function makeJwt(payload: Record<string, unknown>): string {
 const EXP = Math.floor(Date.now() / 1000) + 3_600;
 const IAT = 1_718_000_000;
 
-export const STAFF_TOKEN = makeJwt({
-  sub:                'test-staff-001',
-  preferred_username: 'staff.user',
-  given_name:         'Staff',
-  family_name:        'User',
-  email:              'staff.user@test.ac.uk',
-  realm_access:       { roles: ['registry-administrator', 'tenant-administrator', 'system-administrator'] },
-  tenant_id:          'test-tenant-001',
-  exp:                EXP,
-  iat:                IAT,
-});
+export function makeStaffToken(
+  roles = ['registry-administrator', 'tenant-administrator', 'system-administrator'],
+): string {
+  return makeJwt({
+    sub:                'test-staff-001',
+    preferred_username: 'staff.user',
+    given_name:         'Staff',
+    family_name:        'User',
+    email:              'staff.user@test.ac.uk',
+    realm_access:       { roles },
+    tenant_id:          'test-tenant-001',
+    exp:                EXP,
+    iat:                IAT,
+  });
+}
+
+export const STAFF_TOKEN = makeStaffToken();
 
 export const STUDENT_TOKEN = makeJwt({
   sub:                'test-student-001',
@@ -50,13 +56,14 @@ export const STUDENT_TOKEN = makeJwt({
 // ── Injection helpers ─────────────────────────────────────────────────────────
 // Must be called before page.goto so addInitScript runs on the first load.
 
-export async function injectAdminAuth(page: Page): Promise<void> {
+export async function injectAdminAuth(page: Page, roles?: string[]): Promise<void> {
+  const staffToken = roles ? makeStaffToken(roles) : STAFF_TOKEN;
   await page.addInitScript(
     ({ token }: { token: string }) => {
       localStorage.setItem('srs_admin_token',         token);
       localStorage.setItem('srs_admin_refresh_token', token);
     },
-    { token: STAFF_TOKEN },
+    { token: staffToken },
   );
 }
 
