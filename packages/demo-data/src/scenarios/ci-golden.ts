@@ -20,6 +20,7 @@ import {
 } from '@revelation-srs/db';
 
 import { GOLDEN_IDS } from '../golden-ids.js';
+import { loadEngagementDemo } from '../generators/engagement.js';
 import { STORY_MARKERS } from '../story-markers.js';
 import type { ScenarioManifest } from '../types.js';
 
@@ -534,4 +535,5 @@ async function loadIntegration(db: Db, tenantId: string): Promise<void> {
       payload:            { decision: 'approved' },
     },
   ]).onConflictDoNothing();
+  await loadEngagementDemo(db, tenantId);
 }

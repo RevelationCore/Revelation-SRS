@@ -202,7 +202,7 @@ No nation implies an automatic adverse outcome from an attendance threshold.
 | C | Expected-event and observation API | Implemented: OpenAPI and typed events cover creation/query, idempotent capture, correction history and timelines; integration tests are authored and await a working container runtime |
 | D | Policy evaluation and explainable alert | Implemented: approved policy versions drive deterministic evidence snapshots and duplicate-safe explainable alerts; unsafe evidence suspends for reconciliation and no direct adverse decision is permitted |
 | E | Intervention workflow and restricted referral | Implemented: idempotent triage, assigned cases, accessible contacts, actions, authoritative-version reviews, closure and minimum-necessary referrals preserve the separate status/sponsor decision boundary |
-| F | Admin UI and demo data | Accessible end-to-end walkthrough for the four demonstration students |
+| F | Admin UI and demo data | Implemented: role-sensitive evidence worklist, explainable alert queue, case timeline and policy administration; CI golden data provides attended, alternative-engagement, disputed-evidence and human-referral stories with Welsh-language contact coverage |
 | G | UKVI boundary integration and operational controls | Placeholder removed only with approved read model; monitoring, replay and reconciliation verified |
 
 ## Acceptance criteria

@@ -35,9 +35,12 @@ import { ValueSetsPage } from './pages/ValueSetsPage.js';
 import { WorkflowDefsPage } from './pages/WorkflowDefsPage.js';
 import { AccessibilityStatementPage } from './pages/AccessibilityStatementPage.js';
 import { NotFoundPage } from './pages/NotFoundPage.js';
+import { EngagementPage } from './pages/EngagementPage.js';
+import { EngagementCasePage } from './pages/EngagementCasePage.js';
 
 const TENANT_ADMIN_ROLES      = ['tenant-administrator', 'registry-administrator', 'system-administrator'];
 const INTEGRATION_ADMIN_ROLES = ['tenant-administrator', 'system-administrator'];
+const ENGAGEMENT_ROLES = ['module-tutor', 'personal-tutor', 'engagement-officer', 'registry-administrator', 'tenant-administrator'];
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { token, isReady } = useAuth();
@@ -69,6 +72,8 @@ export function App() {
                 <Route path="students/:personId"         element={<StudentDetailPage />} />
                 <Route path="exam-boards"                element={<ExamBoardsPage />} />
                 <Route path="exam-boards/:boardId"       element={<ExamBoardDetailPage />} />
+                <Route path="engagement" element={<RequireRole roles={ENGAGEMENT_ROLES}><EngagementPage /></RequireRole>} />
+                <Route path="engagement/cases/:caseId" element={<RequireRole roles={ENGAGEMENT_ROLES}><EngagementCasePage /></RequireRole>} />
                 <Route path="regulatory"                 element={<RegulatoryPage />} />
                 <Route path="regulatory/hesa"            element={<HesaPage />} />
                 <Route path="regulatory/ucas"            element={<UcasPage />} />

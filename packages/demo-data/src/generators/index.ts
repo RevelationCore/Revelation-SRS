@@ -8,3 +8,4 @@ export * from './registrations.js';
 export * from './assessment.js';
 export * from './wellbeing.js';
 export * from './boards.js';
+export * from './engagement.js';

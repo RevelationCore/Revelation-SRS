@@ -144,8 +144,8 @@ describe('generateTermAddress', () => {
     expect(addr.postcode).toMatch(/^ZZ/);
   });
 
-  it('address type is term', () => {
-    expect(addr.addressTypeCode).toBe('term');
+  it('address type is term-time', () => {
+    expect(addr.addressTypeCode).toBe('term-time');
   });
 
   it('ID differs from home address ID', () => {
@@ -209,9 +209,9 @@ describe('generatePerson', () => {
     expect(p.personStatusCode).toBe('prospective');
   });
 
-  it('respects explicit statusCode', () => {
+  it('maps an explicit enrolment status to the person lifecycle', () => {
     const p = generatePerson(TENANT, 10, { statusCode: 'enrolled' });
-    expect(p.personStatusCode).toBe('enrolled');
+    expect(p.personStatusCode).toBe('student');
   });
 
   it('ID is stable', () => {

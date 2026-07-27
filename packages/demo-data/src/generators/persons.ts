@@ -198,7 +198,7 @@ export function generateHomeAddress(
     line2:           null,
     city:            DEMO_CITIES[seq % DEMO_CITIES.length]!,
     postcode:        postcode(seq),
-    countryCode:     NATIONALITIES[seq % NATIONALITIES.length] === 'GB' ? 'GB' : 'GB',
+    countryCode:     'GB',
   };
 }
 

@@ -75,6 +75,8 @@ function Divider() {
 
 function Sidebar({ onLogout, displayName, roles }: { onLogout: () => void; displayName: string | null; roles: string[] }) {
   const canManageIntegrations = INTEGRATION_ADMIN_ROLES.some(r => roles.includes(r));
+  const canViewEngagement = ['module-tutor', 'personal-tutor', 'engagement-officer', 'registry-administrator', 'tenant-administrator']
+    .some(r => roles.includes(r));
   return (
     <aside className="fixed inset-y-0 left-0 z-20 flex w-56 flex-col bg-white border-r border-gray-200">
       {/* Brand */}
@@ -91,6 +93,7 @@ function Sidebar({ onLogout, displayName, roles }: { onLogout: () => void; displ
         <NavItem to="/students"  label="Students" />
         <NavItem to="/tasks"     label="Tasks" end />
         <NavItem to="/exam-boards" label="Exam boards" />
+        {canViewEngagement && <NavItem to="/engagement" label="Engagement" />}
 
         <Divider />
         <SectionNavLink to="/regulatory">Regulatory</SectionNavLink>
