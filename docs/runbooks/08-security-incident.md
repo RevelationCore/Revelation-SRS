@@ -97,6 +97,6 @@ Contact: DPO at `dpo@example.com`
 
 1. Write a post-incident review within 5 business days.
 2. Record the incident in the ISMS register.
-3. Update `docs/release/phase-11/security-review.md` with the finding if it
+3. Record the finding in the institution's current security assurance register if it
    affects NFR attestations.
 4. File accepted-exception record if applicable.

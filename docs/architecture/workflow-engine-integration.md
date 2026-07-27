@@ -60,7 +60,7 @@ Workflow definitions are responsible for:
 
 This means a workflow may decide that an enrolment should be withdrawn, an exam board should be ratified, or an admissions application should proceed to enrolment. The relevant domain service still validates that the requested transition is legal and persists the authoritative data. A workflow rejection or retry is operational state; a successful domain service command is the system of record.
 
-The default workflow and feature-flag configuration must reproduce the current service behaviour captured in `docs/platform-workflow-feature-flag-stage-0-baseline.md` unless a later implementation stage explicitly changes product behaviour.
+The default workflow and feature-flag configuration must preserve implemented service behaviour unless an accepted requirement and architecture decision explicitly change it. Use the current capability matrix and automated tests as the active baseline; superseded implementation-stage records remain available through the preservation references described in `docs/history.md`.
 
 ---
 

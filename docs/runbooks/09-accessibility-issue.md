@@ -39,12 +39,12 @@ For a code fix:
 1. Create a branch from `main`.
 2. Fix the specific component or pattern.
 3. Run `pnpm test:e2e:playwright` to verify axe scans remain clean.
-4. Update `docs/release/phase-11/accessibility-audit.md` with the fix record.
+4. Update the institution's current accessibility audit record with the fix.
 
 For a formal exception (R-A11Y-001 pattern):
 1. Write a description of the issue and why it cannot be fixed immediately.
 2. Include: severity, mitigation, workaround for affected users, planned remediation date.
-3. Record in `docs/release/phase-11/release-checklist.md` under "Accepted exceptions".
+3. Record the decision in the current release evidence under "Accepted exceptions".
 4. Update the accessibility statement for the affected app.
 
 ---

@@ -1,6 +1,6 @@
 # Runbook 05 — Backup and Restore
 
-See also: `docs/release/phase-11/backup-restore-rehearsal.md` for RTO/RPO evidence.
+Record each rehearsal as dated operational evidence outside this maintained procedure. Superseded Phase 11 rehearsal evidence remains available through the preservation references in `docs/history.md`.
 
 ---
 

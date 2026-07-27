@@ -27,6 +27,7 @@
     "check:p0-business-process-requirements": "node scripts/check-p0-business-process-requirements.mjs",
     "check:business-process-data-model": "node scripts/check-business-process-data-model.mjs",
     "check:current-capabilities": "node scripts/check-current-capabilities.mjs",
+    "check:doc-links": "node scripts/check-doc-links.mjs",
     "migrate": "pnpm --filter @revelation-srs/db migrate && pnpm --filter @revelation-srs/wellbeing migrate",
     "migrate:gen": "pnpm --filter @revelation-srs/db generate",
     "demo:list":           "pnpm --filter @revelation-srs/demo-data demo:list",

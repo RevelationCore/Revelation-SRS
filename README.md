@@ -30,9 +30,9 @@ Revelation SRS is a fully open source Student Information System designed specif
 
 | Document | Description |
 |---|---|
+| [Documentation Home](docs/README.md) | Collaborator-oriented guide to the current documentation set |
 | [Core Principles](docs/core-principles.md) | 21 non-negotiable principles governing design, development, and operation |
 | [Current Capabilities](docs/product/current-capabilities.md) | Authoritative implemented, partial and proposed capability status |
-| [Project Roadmap](docs/project-roadmap.md) | Historical 11-phase delivery plan; not the current capability authority |
 | [Domain Glossary](docs/domain-glossary.md) | Authoritative definitions of all UK HE domain terms used in the system |
 | **Requirements** | |
 | [Functional Requirements](docs/requirements/functional-requirements.md) | 140+ testable requirements traced to reference model flows |
@@ -101,7 +101,7 @@ Revelation SRS has substantial implemented foundations, services, integrations a
 | Proposed target | Attendance/engagement, PGR lifecycle and the newly reviewed P0 architecture |
 | Verification | Documentation checks pass; repository-wide typecheck currently fails; clean-clone application bootstrap is not yet verified |
 
-The [Current Capability Matrix](docs/product/current-capabilities.md) is the authority for project status. The [project roadmap](docs/project-roadmap.md) is retained as historical delivery context.
+The [Current Capability Matrix](docs/product/current-capabilities.md) is the authority for project status. Superseded plans and review evidence are available through the preservation references described in [Documentation History](docs/history.md).
 
 ---
 
