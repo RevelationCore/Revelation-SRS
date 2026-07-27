@@ -33,7 +33,7 @@
 
 ## Decision status
 
-ADR-013 is accepted and provides the temporal storage primitive. ADR-016–ADR-022 are proposed because product, architecture, security, data-protection, records and relevant domain SMEs have not yet approved the new controls.
+ADR-013 provides the temporal storage primitive. ADR-016, ADR-017, ADR-019 and ADR-022 are accepted for generic product implementation; each institution retains its deployment approvals. ADR-018, ADR-020 and ADR-021 remain proposed pending their domain reviews.
 
 ## Implementation specifications
 

@@ -29,6 +29,7 @@
     "check:current-capabilities": "node scripts/check-current-capabilities.mjs",
     "check:doc-links": "node scripts/check-doc-links.mjs",
     "check:attendance-increment-a": "node scripts/check-attendance-increment-a.mjs",
+    "check:attendance-increment-b": "node scripts/check-attendance-increment-b.mjs",
     "migrate": "pnpm --filter @revelation-srs/db migrate && pnpm --filter @revelation-srs/wellbeing migrate",
     "migrate:gen": "pnpm --filter @revelation-srs/db generate",
     "demo:list":           "pnpm --filter @revelation-srs/demo-data demo:list",

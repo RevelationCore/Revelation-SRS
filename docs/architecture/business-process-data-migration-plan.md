@@ -1,6 +1,6 @@
 # Business Process Data-Model Migration Plan
 
-> Status: Proposed — no production migration authorised
+> Status: Active — migration `0037` implemented for generic development; production deployment not authorised
 > Date: 2026-07-27
 > Starting physical baseline: migration `0033`
 
@@ -16,7 +16,7 @@ Do not combine all BPR-D work into one migration. The sequence below is a planni
 
 **Entry:** Current production schema and services remain authoritative.
 
-1. Approve or supersede ADR-016–ADR-022.
+1. Approve or supersede the ADRs relevant to the aggregate being implemented.
 2. Confirm entity names, aggregate ownership and sensitive-data classifications.
 3. Add characterization tests for existing admissions, CAS, assessment, HESA, adjustment, integration and retention behaviour.
 4. Capture per-tenant row counts, null rates, code distributions and orphan checks.
@@ -31,7 +31,7 @@ Do not combine all BPR-D work into one migration. The sequence below is a planni
 | 0034 | Shared cases/evidence/source versions | Create shared primitives, RLS, indexes and FK rules | P0 foundation |
 | 0035 | Distribution item/attempt/acknowledgement | Create durable target ledger; retain `integration_exchange` compatibility | P0 foundation |
 | 0036 | CAS and sponsor compliance | Extend/bridge `ukvi_cas_request`; create checks, assignment/report versions | P0 |
-| 0037 | Engagement/intervention | Create expected event, evidence, alert and intervention tables | P0 |
+| 0037 | Engagement/intervention | **Implemented** — expected event, observation/correction, alert, intervention, contact, action and referral tables with RLS/value sets | P0 |
 | 0038 | Support outcome distribution | Extend adjustment/outcome and backfill distribution items | P0 |
 | 0039 | Assessment attempts/moderation | Create attempt, mark-set, moderation and exact-rule references | P0 |
 | 0040 | Board authority/ratification | Extend pack/board; create decisions, ratification and publication | P0 |
@@ -184,4 +184,3 @@ No generic “migration completed with warnings” outcome is permitted for P0 r
 - Temporal and idempotency property tests.
 - Data-protection and records sign-off.
 - Updated data model, contract catalogue, event taxonomy and workflow traceability.
-

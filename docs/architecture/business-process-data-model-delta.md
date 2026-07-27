@@ -37,7 +37,7 @@ Each item was checked against:
 | BPR-D05 | P1 | Programme route/rule sets exist | Route/rule tables exist, but enrolment has no explicit effective binding/publication root | **Extend** | Add `curriculum_publication`, `enrolment_rule_binding`, recognised-credit and authorised rule-exception records |
 | BPR-D06 | P1 | `module_registration` represents confirmed registration | Physical registration goes directly to `registered`/withdrawn/completed | **New aggregate** | Add `module_selection_proposal`, choices/preferences, validation results, approvals/exceptions, waitlist/capacity hold and atomic change set |
 | BPR-D07 | P1 | `staff_assignment` and `research_milestone` are described | Neither is implemented in Drizzle/migrations | **New aggregate** | Add supervision case/decision, bitemporal staff assignments, PGR review/panel/evidence and milestones |
-| BPR-D08 | P0 | Attendance, absence alert and engagement summary are described | No attendance/engagement tables are implemented | **New aggregate** | Add expected engagement event, observed evidence/correction, alert and intervention case; retain judgement separately from evidence |
+| BPR-D08 | P0 | Attendance, absence alert and engagement summary are described | Migration `0037` and Drizzle schema implement policy, expected event, observation/correction, alert, intervention, contact, action and referral storage | **Partial implementation** | Add services/APIs/workflows and extend shared exchange reconciliation; retain judgement separately from evidence |
 | BPR-D09 | P0 | Adjustment and per-target distribution are described | Both tables exist but lack decision reference, visibility, outcome version, contract/correlation, attempts and acknowledgement | **Extend** | Minimise outcome content; add source decision, review/supersession and full per-target exchange state |
 | BPR-D10 | P0 | Assessment patterns/components/submissions/marks/results exist | Implemented, but attempt is embedded on mark and moderation is workflow/audit only | **Extend** | Add candidate attempt, mark-set, moderation sample/decision, rule-version binding and calculation evidence relationships |
 | BPR-D11 | P0 | Board, pack, profile, attendance and sign-off exist | Implemented with source time/version; no pack hash, rule manifest, conflict/quorum decision, board-decision row or publication lock | **Extend** | Add pack hash/manifest, member conflicts, quorum decision, structured board decision and ratification/publication records |
@@ -54,7 +54,7 @@ Each item was checked against:
 
 ### Logical model ahead of implementation
 
-Attendance, engagement, staff assignment, research milestone, student document and archive-confirmation entities appear in `data-model.md` but not in the Drizzle schema or migrations. They must not be counted as implemented capabilities.
+Staff assignment, research milestone, student document and archive-confirmation entities appear in `data-model.md` but not in the Drizzle schema or migrations. Attendance/engagement storage is now partially implemented by migration `0037`, but it is not an end-to-end capability.
 
 ### Physical model ahead of business semantics
 
@@ -82,5 +82,4 @@ Workflow configuration and several assessment/regulatory tables are implemented,
 
 ## Decision required
 
-Architecture governance must approve ADR-016–ADR-022 and the target aggregates before physical migrations are authored. This assessment deliberately does not treat a proposed table name as an accepted API or storage contract.
-
+ADR-016, ADR-017, ADR-019 and ADR-022 are accepted for generic product implementation. The remaining ADRs retain their domain-specific gates. Migration `0037` establishes storage names but does not make its proposed service/API contracts implemented.

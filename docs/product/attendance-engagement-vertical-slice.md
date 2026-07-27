@@ -1,6 +1,6 @@
 # Attendance and Academic Engagement Vertical Slice
 
-> Status: Detailed implementation specification; ADR and SME approval pending
+> Status: Generic implementation in progress; institutional deployment approval remains local
 >
 > Version: 0.1
 >
@@ -197,8 +197,8 @@ No nation implies an automatic adverse outcome from an attendance threshold.
 
 | Increment | Deliverable | Exit evidence |
 |---|---|---|
-| A | ADR/SME decisions and contract vocabulary | [Approval pack](attendance-engagement-increment-a-approval-pack.md), [proposed vocabulary](../architecture/attendance-engagement-contract-vocabulary.md) and [privacy/threat review](../architecture/attendance-engagement-privacy-threat-assessment.md) prepared; named approvals pending |
-| B | Migration `0037`, Drizzle schema and RLS | Schema tests prove tenant isolation, temporal history and correction immutability |
+| A | ADR/SME decisions and contract vocabulary | Complete for generic product development; institutional decisions remain deployment configuration |
+| B | Migration `0037`, Drizzle schema and RLS | Implemented; integration tests authored for tenant isolation, idempotency and correction-history immutability; execution awaits a working container runtime |
 | C | Expected-event and observation API | Contract and integration tests cover manual, inbound, duplicate, offline and corrected evidence |
 | D | Policy evaluation and explainable alert | Tests prove policy versioning, evidence snapshot and no direct adverse decision |
 | E | Intervention workflow and restricted referral | Workflow tests cover reconciliation, contact, review, closure and referral boundary |

@@ -1,7 +1,9 @@
 # ADR-019: Use a Per-Target Exchange Ledger and State Reconciliation
 
-**Status**: Proposed
+**Status**: Accepted for generic product implementation
 **Date**: 2026-07-26
+
+Target contracts, acknowledgement capability and accepted-exception authority remain institution/integration-specific configuration.
 
 ## Context
 
@@ -49,4 +51,3 @@ Correction, withdrawal, identity merge, restriction, erasure and disposal use th
 - Requirements: ESP-010–ESP-012, ABR-017, IGA-004/012/015, XIC-001–XIC-007
 - Backlog: BPR-I03, I07–I08, I10–I12
 - Processes: BP-005, BP-032, BP-043, BP-050–BP-062
-

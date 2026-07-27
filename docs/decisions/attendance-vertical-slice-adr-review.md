@@ -1,6 +1,6 @@
 # Attendance and Engagement Vertical Slice — ADR Review
 
-> Review status: Architecture review complete; decision-owner and SME approval pending
+> Review status: Generic product baseline authorised; institutional adoption approval delegated
 >
 > Review date: 2026-07-27
 >
@@ -8,9 +8,7 @@
 
 ## Outcome
 
-The proposed attendance and engagement vertical slice can proceed to detailed implementation planning, but physical schema and production contracts remain gated by approval of ADR-016, ADR-019 and ADR-022. ADR-017 is required where intervention work crosses into restricted welfare, safeguarding or support evidence.
-
-No ADR status is changed by this review. `Proposed` remains accurate until the named decision owners and SMEs approve, amend or supersede each decision.
+The generic attendance and engagement vertical slice may proceed to implementation. ADR-016, ADR-017, ADR-019 and ADR-022 are accepted for the generic product baseline. Each deploying institution retains approval of its policies, roles, lawful bases, retention, source authority, contracts and sponsor decisions.
 
 ## Decision assessment
 
@@ -26,7 +24,7 @@ No ADR status is changed by this review. `Proposed` remains accurate until the n
 
 ## Findings against the current implementation
 
-1. There is no physical expected-event, observation, correction, alert or intervention schema.
+1. Migration `0037` and the Drizzle engagement schema now provide the physical expected-event, observation, correction, alert and intervention baseline.
 2. The UKVI service currently generates reports with zero absence counts and marks attendance completeness as `pending-attendance-integration`. This is an explicit placeholder, not an attendance system of record.
 3. The existing rules engine includes `ukvi-attendance-threshold`, but a threshold breach must create evidence for review rather than an adverse decision.
 4. The shared workflow platform can represent intervention tasks, deadlines and decisions, but domain state must not be stored only in workflow context.
@@ -53,6 +51,6 @@ No ADR status is changed by this review. `Proposed` remains accurate until the n
 5. Which policy variants apply by nation, provider, study mode, location, sponsor status and collaborative-delivery arrangement?
 6. What retention periods apply separately to raw observations, correction provenance, alerts, contact attempts and restricted referral links?
 
-## Entry gate for implementation
+## Implementation disposition
 
-Migration `0037` and public API contracts may be authored after ADR-016, ADR-019 and ADR-022 are accepted or superseded and the first four approval questions have recorded answers. Prototypes and test fixtures may be developed earlier if they are labelled non-authoritative and do not establish irreversible contract names.
+Generic physical design may proceed using the accepted contract vocabulary. Public API/event contracts remain versioned and reviewable. Institutions must complete the decisions in the approval pack before processing their identifiable student data; those deployment decisions do not block generic product development.

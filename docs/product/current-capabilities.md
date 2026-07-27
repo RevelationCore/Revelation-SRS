@@ -23,14 +23,14 @@
 | Capability | Status | Implemented evidence | Material limitation / target |
 |---|---|---|---|
 | Tenant, temporal and value-set foundations | **Implemented baseline** | PostgreSQL RLS migrations; bitemporal helper; tenant/value-set services | Not every reviewed future entity exists; new tables must repeat these controls |
-| Workflow, feature flag and environment platform | **Implemented baseline** | Workflow definition/runtime, task, gateway, feature-flag and environment schemas/services | Reviewed domain processes remain combined or service-driven; ADR-016 is proposed |
+| Workflow, feature flag and environment platform | **Implemented baseline** | Workflow definition/runtime, task, gateway, feature-flag and environment schemas/services | Reviewed domain processes remain combined or service-driven; ADR-016 is accepted but not yet applied across all domains |
 | Person identity and student profile | **Implemented baseline** | Person/identity/contact schemas, student service and portal profile routes | Duplicate resolution, correction cases and rights propagation are not implemented |
 | Admissions and applicant conversion | **Partial** | UCAS application schema/service, admissions workflow hand-off and communications | No channel-neutral application assessment, offer-condition aggregate, Clearing permission or governed conversion boundary |
 | CAS and Student sponsor compliance | **Partial** | UKVI CAS request, visa status, attendance report/alert schemas and UKVI service/admin UI | Eligibility checks, guidance version, approval evidence, immutable assignment versions and decision/report separation are absent |
 | Initial/annual registration and status | **Partial** | Enrolment, status transition, fee liability, re-enrolment schemas/services and portal views | Transfer, return, non-registration decision and leaver closure cases are incomplete |
 | Curriculum and catalogue | **Partial** | Programme, route, rule-set, module, relationships, assessment-pattern and calendar schemas/services | No atomic curriculum publication or explicit effective enrolment rule binding |
 | Module selection and registration | **Partial** | Module registration service, registration table and portal module-add route | Selection proposal, approval/exception, waitlist and atomic substitution are absent; service currently creates confirmed registration directly |
-| Attendance and academic engagement | **Proposed target** | Reference contracts and logical model describe attendance concepts | No physical attendance/expected-event/intervention schema or end-to-end application journey |
+| Attendance and academic engagement | **Partial** | Migration `0037`, Drizzle schema, RLS and value sets implement the engagement storage baseline; database invariant tests are authored | Integration tests await a container runtime; no expected-event/observation API, policy evaluation, intervention workflow or end-to-end application journey |
 | Reasonable adjustments and exceptional circumstances | **Partial** | Adjustment/distribution, EC and board-visibility schemas/services; portal surfaces; wellbeing module | Minimum-necessary outcome boundary, target contract version, attempts and reconciliation are incomplete |
 | Assessment marks and module results | **Partial** | Assessment component/submission, mark, result, calculation services and portal result views | Candidate attempt, mark-set/moderation evidence and complete rule-version explanation need extension |
 | Exam Boards and ratification | **Partial** | Board, immutable pack/profile, attendance/sign-off schemas, Board service and admin UI | Structured board decisions, pack hash/rule manifest, ratification record and publication lifecycle are incomplete |
@@ -45,7 +45,7 @@
 
 ## Approved-target position
 
-There are currently **no newly reviewed P0 targets classified as Approved target**. ADR-016–ADR-022 and the associated P0 requirements are `Proposed`. They must not be represented as implemented or committed delivery until architecture and SME governance approve them.
+ADR-016, ADR-017, ADR-019 and ADR-022 are accepted for generic product implementation. ADR-018, ADR-020 and ADR-021 remain proposed. Institutional policy, privacy, records, integration and sponsor approvals remain deployment responsibilities and must not be inferred from generic product status.
 
 ## Verification snapshot
 
@@ -72,4 +72,3 @@ There are currently **no newly reviewed P0 targets classified as Approved target
 - A proposed ADR or requirement does not change application status.
 - Each pull request changing capability status must update this matrix and cite tests.
 - The historical phase roadmap does not override this matrix.
-

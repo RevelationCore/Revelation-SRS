@@ -27,8 +27,10 @@ for (const id of expectedIds) {
 
 const newCount = (contents.delta.match(/\*\*New aggregate\*\*/g) ?? []).length;
 const extendCount = (contents.delta.match(/\*\*Extend\*\*/g) ?? []).length;
-if (newCount !== 11) errors.push(`Expected 11 new-aggregate classifications, found ${newCount}`);
+const partialCount = (contents.delta.match(/\*\*Partial implementation\*\*/g) ?? []).length;
+if (newCount !== 10) errors.push(`Expected 10 unimplemented new-aggregate classifications, found ${newCount}`);
 if (extendCount !== 8) errors.push(`Expected 8 extend classifications, found ${extendCount}`);
+if (partialCount !== 1) errors.push(`Expected 1 partial implementation classification, found ${partialCount}`);
 
 for (const [name, text] of Object.entries(contents)) {
   for (const match of text.matchAll(/\[[^\]]+\]\(([^)]+)\)/g)) {
@@ -68,6 +70,5 @@ if (errors.length > 0) {
   for (const error of errors) console.error(`- ${error}`);
   process.exitCode = 1;
 } else {
-  console.log('Business process data-model checks passed: 19 capabilities, 11 new aggregates, 8 extensions, 20 planned migrations.');
+  console.log('Business process data-model checks passed: 19 capabilities, 10 new aggregates, 8 extensions, 1 partial implementation and 20 planned migrations.');
 }
-

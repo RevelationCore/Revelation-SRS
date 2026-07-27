@@ -134,8 +134,7 @@ Priority is **M** (Must Have). Verification uses:
 ## Approval dependencies
 
 1. Relevant SMEs approve the source process boundaries and authorities.
-2. Architecture reviews ADR-016–ADR-022.
+2. Architecture accepts or supersedes the ADRs relevant to each implementation scope; ADR-016, ADR-017, ADR-019 and ADR-022 are accepted for generic product development.
 3. Product governance assigns these requirements to releases and reconciles overlap with existing requirements.
 4. Data protection, security and records owners approve ESP, IGA and XIC controls.
 5. Four-nation regulatory owners approve RSS applicability and contract scope.
-

@@ -1,7 +1,9 @@
 # ADR-017: Keep Restricted Evidence Outside General Student-Record Outcomes
 
-**Status**: Proposed
+**Status**: Accepted for generic product implementation
 **Date**: 2026-07-26
+
+Each deploying controller remains responsible for lawful basis, specialist-system ownership, visibility and retention approval.
 
 ## Context
 
@@ -45,4 +47,3 @@ No diagnosis, allegation detail, third-party narrative or safeguarding context s
 - Requirements: ESP-006–ESP-012, IGA-009, XIC-006
 - Backlog: BPR-W08, D09, I07
 - Processes: BP-030–BP-032, BP-034, BP-038, BP-060–BP-061
-

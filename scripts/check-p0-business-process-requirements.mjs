@@ -57,8 +57,11 @@ for (let number = 16; number <= 22; number += 1) {
   if (!existsSync(fullPath)) errors.push(`${prefix.slice(0, -1)} file is missing`);
   else {
     const contents = readFileSync(fullPath, 'utf8');
-    for (const section of ['**Status**: Proposed', '## Context', '## Decision', '## Rationale', '## Consequences', '## Alternatives Considered', '## Traceability']) {
+    for (const section of ['**Status**:', '## Context', '## Decision', '## Rationale', '## Consequences', '## Alternatives Considered', '## Traceability']) {
       if (!contents.includes(section)) errors.push(`${adrPath} is missing ${section}`);
+    }
+    if (!/\*\*Status\*\*: (?:Proposed|Accepted for generic product implementation)/.test(contents)) {
+      errors.push(`${adrPath} has an unsupported status`);
     }
   }
 }
@@ -83,4 +86,3 @@ if (errors.length > 0) {
 } else {
   console.log(`P0 requirement checks passed: ${p0Ids.size} backlog items, ${knownRequirementIds.size} requirements, 7 ADRs.`);
 }
-

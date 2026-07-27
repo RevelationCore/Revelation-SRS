@@ -1,7 +1,9 @@
 # ADR-016: Separate Authoritative Business State from Workflow State
 
-**Status**: Proposed
+**Status**: Accepted for generic product implementation
 **Date**: 2026-07-26
+
+Institution-specific workflow authority, role assignments and policy variants remain deployment approvals.
 
 ## Context
 
@@ -50,4 +52,3 @@ The first P0 decompositions are CAS/sponsor compliance, engagement intervention,
 - Requirements: BPC, ESP, ABR, RSS and IGA workflow requirements
 - Backlog: BPR-W02, W07–W10, W12–W13
 - Processes: BP-005, BP-027–BP-032, BP-033–BP-043, BP-050–BP-063
-

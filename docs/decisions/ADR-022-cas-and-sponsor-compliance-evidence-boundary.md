@@ -1,7 +1,9 @@
 # ADR-022: Treat CAS and Sponsor Compliance as Governed Evidence-Bearing Decisions
 
-**Status**: Proposed
+**Status**: Accepted for generic product implementation
 **Date**: 2026-07-26
+
+Each licensed sponsor remains responsible for its policy, evidence, authority and report/no-report decisions.
 
 ## Context
 
@@ -47,4 +49,3 @@ Only minimum necessary UKVI transaction data is copied into the SRS; immigration
 - Requirements: BPC-001–BPC-009, ESP-003–ESP-005, XIC-001–XIC-007
 - Backlog: BPR-W02, W07, D03, D08, I03
 - Processes: BP-005, BP-027–BP-028, BP-052
-

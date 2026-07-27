@@ -2,7 +2,7 @@
 
 > Status: Proposed
 > Date: 2026-07-27
-> Applies after: ADR-016–ADR-022 approval
+> Governance: apply each aggregate after its relevant ADRs are accepted; attendance-relevant ADRs are accepted for generic implementation
 
 [Delta assessment](business-process-data-model-delta.md) · [Current model](data-model.md) · [Migration plan](business-process-data-migration-plan.md)
 
@@ -221,4 +221,3 @@ erDiagram
 - `operational`: distribution state, hashes and acknowledgements, containing minimum personal data.
 
 The target model requires corresponding RBAC, RLS, read-audit, retention and export controls before production use.
-

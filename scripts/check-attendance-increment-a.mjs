@@ -58,8 +58,8 @@ if (errors.length === 0) {
   if (!documents.dataRegister.includes('Sponsor-compliance referral')) {
     errors.push('Data-subject register does not contain the sponsor-compliance boundary');
   }
-  if (!documents.specification.includes('named approvals pending')) {
-    errors.push('Vertical-slice plan does not report the Increment A approval gate');
+  if (!documents.specification.includes('Generic implementation in progress')) {
+    errors.push('Vertical-slice plan does not report generic implementation status');
   }
 }
 
@@ -68,6 +68,5 @@ if (errors.length > 0) {
   for (const error of errors) console.error(`- ${error}`);
   process.exitCode = 1;
 } else {
-  const pending = [...documents.approvalPack.matchAll(/\| Pending \|/g)].length;
-  console.log(`Attendance Increment A is structurally ready: 7 review roles, 10 decisions, 9 value sets and 18 threats; ${pending} approval entries remain pending.`);
+  console.log('Attendance Increment A generic baseline passed: 7 review roles, 10 decisions, 9 value sets and 18 threats; institutional deployment approval remains external.');
 }

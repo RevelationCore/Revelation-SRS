@@ -1,6 +1,6 @@
 # Attendance and Engagement Increment A Approval Pack
 
-> Status: Ready for named reviewers
+> Status: Generic product baseline authorised; institutional configuration approval required before deployment
 >
 > Prepared: 2026-07-27
 >
@@ -10,7 +10,7 @@
 
 ## Decision requested
 
-Reviewers are asked to approve, approve with non-material actions, return for amendment or reject the Increment A baseline. Approval authorises detailed physical design for migration `0037` and version 1 API/event contracts; it does not approve production deployment or automated adverse decisions.
+Generic product development is authorised to proceed with the recorded safe defaults. Deploying institutions approve, amend or reject the configurable policy, privacy, retention, integration and role decisions before processing their identifiable student data. This authorisation never permits automated adverse decisions.
 
 The following remain non-negotiable:
 
@@ -37,38 +37,38 @@ The following remain non-negotiable:
 
 | ID | Decision | Options or constraint | Owner | Status |
 |---|---|---|---|---|
-| ATT-A01 | Expected-event authority | SRS authoritative; or reconciled replica of a configured authoritative timetable/activity source | A-ARCH/A-PROC | Pending |
-| ATT-A02 | Observation authority | SRS normalised record with immutable source assertion; identify any source that remains legally/operationally authoritative | A-PROC/A-INT | Pending |
-| ATT-A03 | Core versus tenant-extensible values | Approve the core codes and extensibility flags in the vocabulary | A-PROC/A-UK | Pending |
-| ATT-A04 | Human authority | Identify case transitions requiring a named role, segregation of duties or second approval | A-PROC/A-SPON | Pending |
-| ATT-A05 | Restricted referral visibility | Approve the minimum referral type/status visible to each role | A-PRIV/A-SEC | Pending |
-| ATT-A06 | Policy dimensions | Confirm nation, provider, mode, level, location, sponsor and collaborative-delivery applicability | A-PROC/A-UK/A-SPON | Pending |
-| ATT-A07 | Lawful basis by purpose | Controller records its Article 6 basis and, where relevant, Article 9 condition for each purpose | A-PRIV | Pending |
-| ATT-A08 | Retention schedule | Approve separate periods for raw evidence, corrections, alerts, cases, contacts, referrals and audit | A-PRIV | Pending |
-| ATT-A09 | DPIA | Complete controller DPIA before pilot processing of identifiable student data | A-PRIV/A-SEC | Pending |
-| ATT-A10 | Student transparency and challenge | Approve notice content, access route and correction/challenge process | A-PRIV/A-PROC | Pending |
+| ATT-A01 | Expected-event authority | SRS authoritative; or reconciled replica of a configured authoritative timetable/activity source | A-ARCH/A-PROC | Generic default: SRS normalised authority; institution configures source authority |
+| ATT-A02 | Observation authority | SRS normalised record with immutable source assertion; identify any source that remains legally/operationally authoritative | A-PROC/A-INT | Generic default accepted |
+| ATT-A03 | Core versus tenant-extensible values | Approve the core codes and extensibility flags in the vocabulary | A-PROC/A-UK | Generic value sets accepted in migration `0037` |
+| ATT-A04 | Human authority | Identify case transitions requiring a named role, segregation of duties or second approval | A-PROC/A-SPON | Generic invariant: every adverse/status/sponsor decision is separate and human-authorised |
+| ATT-A05 | Restricted referral visibility | Approve the minimum referral type/status visible to each role | A-PRIV/A-SEC | Generic minimum-reference boundary accepted; role mapping is institutional |
+| ATT-A06 | Policy dimensions | Confirm nation, provider, mode, level, location, sponsor and collaborative-delivery applicability | A-PROC/A-UK/A-SPON | Generic configuration dimensions accepted |
+| ATT-A07 | Lawful basis by purpose | Controller records its Article 6 basis and, where relevant, Article 9 condition for each purpose | A-PRIV | Delegated to deploying controller; mandatory before live data |
+| ATT-A08 | Retention schedule | Approve separate periods for raw evidence, corrections, alerts, cases, contacts, referrals and audit | A-PRIV | Delegated to deploying controller; product keeps classes separate |
+| ATT-A09 | DPIA | Complete controller DPIA before pilot processing of identifiable student data | A-PRIV/A-SEC | Delegated deployment gate; cannot be disabled |
+| ATT-A10 | Student transparency and challenge | Approve notice content, access route and correction/challenge process | A-PRIV/A-PROC | Delegated deployment gate; correction capability is a product invariant |
 
 ## Proposed dispositions for ADRs
 
 | ADR | Proposed disposition | Approval dependency |
 |---|---|---|
-| ADR-016 | Accept | ATT-A01, ATT-A02 and ATT-A04 |
-| ADR-017 | Accept for the referral boundary | ATT-A05 and ATT-A07 |
-| ADR-019 | Accept with phased ledger extension | ATT-A02 and integration contract review |
-| ADR-022 | Accept | ATT-A04, ATT-A05 and sponsor SME confirmation |
+| ADR-016 | Accepted for generic product implementation | Institutional authority configuration |
+| ADR-017 | Accepted for generic product implementation | Controller purpose/access/retention approval |
+| ADR-019 | Accepted with phased ledger extension | Institution-specific target contract review |
+| ADR-022 | Accepted for generic product implementation | Licensed sponsor policy and human decision |
 | ADR-018, ADR-020, ADR-021 | Retain as Proposed; outside this approval except shared constraints | Separate domain reviews |
 
 ## Evidence checklist
 
 | Evidence | Prepared | Approved |
 |---|---|---|
-| Detailed vertical-slice specification | Yes | Pending |
-| ADR review and proposed dispositions | Yes | Pending |
-| Contract vocabulary and core value-set proposal | Yes | Pending |
-| Privacy/DPIA screening and threat assessment | Yes | Pending |
-| Data-subject-register amendment | Yes | Pending controller confirmation |
-| Requirement and process traceability | Yes | Pending |
-| Migration/API implementation | Not started; gated | Not applicable |
+| Detailed vertical-slice specification | Yes | Generic baseline authorised |
+| ADR review and proposed dispositions | Yes | Generic baseline authorised |
+| Contract vocabulary and core value-set proposal | Yes | Implemented in migration `0037` |
+| Privacy/DPIA screening and threat assessment | Yes | Controls accepted; controller DPIA remains |
+| Data-subject-register amendment | Yes | Generic categories accepted; controller confirmation remains |
+| Requirement and process traceability | Yes | Generic baseline authorised |
+| Migration/API implementation | Migration `0037` implemented; API not started | Increment B in progress |
 
 ## Decision record
 
@@ -84,15 +84,8 @@ The following remain non-negotiable:
 
 `Approved with actions` is permitted only where an action does not alter the domain boundary, lawful basis, data classification, authority, adverse-decision control or public contract. Any such material change returns the affected artefacts for amendment.
 
-## Exit gate
+## Exit and deployment gates
 
-Increment A is complete only when:
+Increment A is complete for generic product development: the architecture boundary, vocabulary, privacy controls and non-adverse-decision invariant are fixed for version 1.
 
-1. A-ARCH, A-PROC, A-PRIV, A-SEC, A-SPON and A-INT have an approving outcome;
-2. A-UK has approved or recorded bounded national actions;
-3. ATT-A01–ATT-A10 are resolved;
-4. ADR-016, ADR-019 and ADR-022 are accepted or superseded;
-5. the controller DPIA has an approval reference; and
-6. the accepted vocabulary version is recorded for migration and contract authors.
-
-Until then, `pnpm check:attendance-increment-a` reports the pack as structurally ready but approval-gated.
+Before an institution processes identifiable student data it must record A-PROC, A-UK, A-PRIV, A-SEC, A-SPON and A-INT outcomes, complete ATT-A01–ATT-A10 for its configuration and record its DPIA approval reference. `pnpm check:attendance-increment-a` verifies the generic baseline; institutional deployment assurance is intentionally external to the repository.
