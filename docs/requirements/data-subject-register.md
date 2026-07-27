@@ -1,7 +1,7 @@
 # Data Subject Register
 
-> Status: Draft — Phase 1
-> Last updated: 2026-06-04
+> Status: Draft — controller review required
+> Last updated: 2026-07-27
 > This register documents every category of personal data held by Revelation SRS, the lawful basis for processing, the sensitivity classification, and the applicable retention period. It satisfies the requirement of UK GDPR Article 30 (Records of Processing Activities) and supports principles §7 and §17.
 >
 > **Sensitivity tiers**:
@@ -132,10 +132,15 @@
 
 | Field Category | Examples | Sensitivity | Lawful Basis | Retention | Regulatory Obligation |
 |---|---|---|---|---|---|
-| Attendance records | Presence/absence per timetabled event | Standard Personal | Legal Obligation (UKVI) / Legitimate Interests | Duration of study + 2 years | UKVI |
-| Absence notifications | Authorised/unauthorised absence flags | Standard Personal | Legal Obligation / Legitimate Interests | Duration of study + 2 years | UKVI |
-| Engagement indicators | VLE login frequency, library usage (aggregate) | Standard Personal | Legitimate Interests | Duration of study + 1 year | — |
-| UKVI compliance flags | Attendance threshold breach alerts | Standard Personal | Legal Obligation | Duration of study + 6 years | UKVI |
+| Expected engagement events | Required activity, time, mode, module/placement/research reference | Standard Personal | Controller to document by teaching/contractual purpose | Controller schedule; proposed duration of study + 2 years | Sponsor duties only where applicable |
+| Engagement observations | Attendance/participation outcome, source, method and event/received times | Standard Personal; Sensitive Personal where behavioural context is combined | Controller to document by purpose; sponsor legal obligation only for applicable sponsored students | Controller schedule; proposed duration of study + 2 years | UKVI/SLC only where applicable |
+| Correction and dispute provenance | Superseded assertion, replacement, reason, actor and timestamps | Sensitive Personal | Same purpose as source record; accountability | Source retention plus approved audit period | UK GDPR accountability |
+| Non-engagement alerts | Policy version, evidence window, evidence snapshot/hash and explanation | Sensitive Personal (behavioural) | Controller to document; public task or legitimate interests may depend on controller and purpose | Controller schedule; proposed closure + 2 years | Sponsor duties only where applicable |
+| Intervention records | Contact outcome, response category, operational action and review deadline | Sensitive Personal | Controller to document by support/teaching purpose | Controller schedule; proposed closure + 3 years | — |
+| Restricted referral links | Referral type, target, minimum status and opaque specialist reference | Sensitive Personal; linked specialist content may be Special Category | Article 6 basis plus Article 9/DPA condition where applicable | Per receiving service and referral purpose | Safeguarding/sponsor duties where applicable |
+| Sponsor-compliance referral | Minimum engagement evidence and referral status; separate from report/no-report decision | Sensitive Personal | Legal Obligation for applicable sponsored students | Controller sponsor-compliance schedule | UKVI |
+
+The product does not prescribe one lawful basis or retention period for every provider. Each controller must document purpose, necessity, Article 6 basis, any Article 9/DPA condition and retention. A DPIA is required before the first slice processes identifiable pilot data; see the [privacy and threat assessment](../architecture/attendance-engagement-privacy-threat-assessment.md).
 
 ---
 

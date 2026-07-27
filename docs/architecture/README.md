@@ -22,6 +22,8 @@ This directory contains the technical architecture documentation for Revelation 
 | [Configuration Rules Framework](configuration-rules-framework.md) | Institutional configuration or feature flags. Business rules stored as bitemporal, versioned configuration; feature flag lifecycle. |
 | [Workflow Engine Integration](workflow-engine-integration.md) | Adding or modifying a durable workflow. Temporal integration patterns, human task assignment, activity retry policies, and the audit bridge. |
 | [Deployment Architecture](deployment-architecture.md) | Deploying or operating the system. Docker Compose (local + single institution), Kubernetes with Kustomize overlays, and environment promotion. |
+| [Attendance Contract Vocabulary](attendance-engagement-contract-vocabulary.md) | Reviewing the proposed attendance/engagement code sets, identifiers and contract semantics before implementation. |
+| [Attendance Privacy and Threat Assessment](attendance-engagement-privacy-threat-assessment.md) | Reviewing DPIA screening, trust boundaries, threats and mandatory mitigations for the first vertical slice. |
 
 ---
 

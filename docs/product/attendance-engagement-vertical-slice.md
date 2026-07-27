@@ -197,7 +197,7 @@ No nation implies an automatic adverse outcome from an attendance threshold.
 
 | Increment | Deliverable | Exit evidence |
 |---|---|---|
-| A | ADR/SME decisions and contract vocabulary | Decision record, approved value sets and threat/privacy review |
+| A | ADR/SME decisions and contract vocabulary | [Approval pack](attendance-engagement-increment-a-approval-pack.md), [proposed vocabulary](../architecture/attendance-engagement-contract-vocabulary.md) and [privacy/threat review](../architecture/attendance-engagement-privacy-threat-assessment.md) prepared; named approvals pending |
 | B | Migration `0037`, Drizzle schema and RLS | Schema tests prove tenant isolation, temporal history and correction immutability |
 | C | Expected-event and observation API | Contract and integration tests cover manual, inbound, duplicate, offline and corrected evidence |
 | D | Policy evaluation and explainable alert | Tests prove policy versioning, evidence snapshot and no direct adverse decision |
@@ -231,3 +231,4 @@ No nation implies an automatic adverse outcome from an attendance threshold.
 | Target model | Engagement and intervention aggregate; migration `0037` |
 | Capability matrix | Attendance and academic engagement — Proposed target |
 | ADR review | [Attendance vertical-slice ADR review](../decisions/attendance-vertical-slice-adr-review.md) |
+| Increment A governance | [Approval pack](attendance-engagement-increment-a-approval-pack.md); [contract vocabulary](../architecture/attendance-engagement-contract-vocabulary.md); [privacy/threat assessment](../architecture/attendance-engagement-privacy-threat-assessment.md) |

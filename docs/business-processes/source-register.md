@@ -1,7 +1,7 @@
 # Business Process Source Register
 
 > Status: Active
-> Last updated: 2026-07-26
+> Last updated: 2026-07-27
 > Third-party documents are cited, not copied into this repository.
 
 The register records research provenance and currency. `Review by` is deliberately shorter for volatile operational or regulatory guidance.
@@ -82,6 +82,7 @@ The register records research provenance and currency. `Review by` is deliberate
 | SRC-072 | Information Commissioner's Office | [Right to erasure](https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/individual-rights/individual-rights/right-to-erasure/) | UK | Current guidance; monitor legislative updates | 2026-07-26 | BP-061–BP-062 | STATUTORY regulator guidance | 2026-10-26 |
 | SRC-073 | Jisc | [Higher education records retention schedule](https://www.jisc.ac.uk/guides/records-retention-management) | UK sector reference | Current service guidance | 2026-07-26 | BP-062 | SECTOR reference | 2027-01-26 |
 | SRC-074 | Information Commissioner's Office | [Security logging and monitoring](https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/security/a-guide-to-data-security/) | UK | Current guidance | 2026-07-26 | BP-063 | STATUTORY regulator guidance | 2026-10-26 |
+| SRC-075 | Information Commissioner's Office | [A guide to lawful basis](https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/lawful-basis/a-guide-to-lawful-basis/) | UK | Updated 2026-04-02 for Data (Use and Access) Act changes | 2026-07-27 | BP-027–BP-028, BP-058 | STATUTORY regulator guidance | 2026-10-27 |
 
 ## Source quality notes
 

@@ -25,6 +25,7 @@ This index separates maintained product knowledge from superseded delivery evide
 - [P0 traceability](business-processes/p0-requirements-and-adr-traceability.md) connects backlog items, requirements, processes and decisions.
 - [Revelation change backlog](business-processes/revelation-change-backlog.md) records implementation impacts discovered by the review.
 - [Attendance and engagement vertical slice](product/attendance-engagement-vertical-slice.md) specifies the first end-to-end implementation.
+- [Attendance Increment A approval pack](product/attendance-engagement-increment-a-approval-pack.md) collects the decisions required before physical implementation.
 
 ## Requirements and decisions
 
