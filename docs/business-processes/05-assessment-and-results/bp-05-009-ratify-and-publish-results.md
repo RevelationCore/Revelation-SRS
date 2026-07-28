@@ -1,4 +1,4 @@
-# BP-041 — Ratify and publish results
+# BP-05-009 — Ratify and publish results
 
 > Status: Draft
 > Domain: 05 — Assessment and results
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2027-01-26
 
-[Previous: BP-040](../05-assessment-and-results/bp-040-complete-external-examiner-review.md) · [Domain index](README.md) · [Next: BP-042](../05-assessment-and-results/bp-042-submit-and-examine-a-pgr-thesis.md) · [Library home](../README.md)
+[Previous: BP-05-008](../05-assessment-and-results/bp-05-008-complete-external-examiner-review.md) · [Domain index](README.md) · [Next: BP-05-010](../05-assessment-and-results/bp-05-010-submit-and-examine-a-pgr-thesis.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-Ratify and publish results creates a controlled, explainable and effective-dated ratified result, decision lock and publication status. The outcome preserves the evidence, authority and cross-system state needed for the Revelation SRS rather than reducing the process to a status update.
+Ratifying and publishing results turns the board's decisions on a frozen data pack into a locked, authoritative outcome set and then releases it to students only at the authorised time, never before. Each decision, and any discretion the board exercised, is recorded with its reasons so the ratification can be explained later, and the student-facing outcome and appeal information is generated only from the locked, ratified set. The process tracks delivery and reconciles every portal and transcript consumer, so students, systems and the institution always agree on what was actually published.
 
 ## Scope
 
@@ -71,8 +71,8 @@ A quorate authorised board considers complete results.
 
 1. **Exam Board Chair** confirm quorum, conflicts, data-pack version and outstanding exceptions.
 2. **Board Chair** record each decision and any authorised discretion with reasons.
-3. **Assessment Officer** chair-sign and lock the ratified outcome set.
-4. **Enrolled Student** generate student-facing outcome text and review/appeal information.
+3. **Board Chair** chair-sign and lock the ratified outcome set.
+4. **Assessment Officer** generate student-facing outcome text and review/appeal information.
 5. **Board Chair** publish only at the authorised release time.
 6. **Assessment Officer** record delivery and reconcile portal/transcript consumers.
 
@@ -161,16 +161,16 @@ sequenceDiagram
     participant A2 as Board Chair
     participant A3 as Assessment Officer
     participant A4 as Enrolled Student
-    A1->>A2: 1. confirm quorum, conflicts, data-pack version and outstanding exceptions
-    A2->>A3: 2. record each decision and any authorised discretion with reasons
-    A3->>A4: 3. chair-sign and lock the ratified outcome set
-    A4->>A1: 4. generate student-facing outcome text and review/appeal information
-    A1->>A2: 5. publish only at the authorised release time
-    A2->>A3: 6. record delivery and reconcile portal/transcript consumers
+    A1->>A2: 1. confirms quorum, conflicts, data-pack version and outstanding exceptions
+    A2->>A3: 2. records each decision and any authorised discretion with reasons
+    A2->>A2: 3. chair-signs and locks the ratified outcome set
+    A3->>A4: 4. generates student-facing outcome text and review/appeal information
+    A2->>A3: 5. publishes only at the authorised release time
+    A3->>A3: 6. records delivery and reconciles portal/transcript consumers
     alt Valid and authorised
-        A4->>A1: Record and communicate outcome
+        A3->>A4: Record and communicate outcome
     else Incomplete or exception
-        A4->>A1: Retain case with owner and reason
+        A3->>A4: Retain case with owner and reason
     end
 ```
 

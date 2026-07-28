@@ -1,4 +1,4 @@
-# BP-054 — Produce Scottish Funding Council returns
+# BP-07-005 — Produce Scottish Funding Council returns
 
 > Status: Draft
 > Domain: 07 — Regulatory and statutory reporting
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2027-01-26
 
-[Previous: BP-053](../07-regulatory-and-statutory-reporting/bp-053-produce-ofs-regulatory-extracts.md) · [Domain index](README.md) · [Next: BP-055](../07-regulatory-and-statutory-reporting/bp-055-produce-medr-regulatory-and-funding-returns.md) · [Library home](../README.md)
+[Previous: BP-07-004](../07-regulatory-and-statutory-reporting/bp-07-004-produce-ofs-regulatory-extracts.md) · [Domain index](README.md) · [Next: BP-07-006](../07-regulatory-and-statutory-reporting/bp-07-006-produce-medr-regulatory-and-funding-returns.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-Produce Scottish Funding Council returns creates a controlled, explainable and effective-dated SFC return, certification and audit evidence. The outcome preserves the evidence, authority and cross-system state needed for the Revelation SRS rather than reducing the process to a status update.
+Producing Scottish Funding Council returns turns the institution's Scotland-specific student population and funding-rule calculations into the certified return the SFC requires, with every figure traceable back to its source. Validating totals, movements and audit samples against the institution's own records before certification catches a discrepancy before an external auditor does, and the required certificate or sign-off is obtained before anything is submitted. Receipt, audit evidence, corrections and reconciliation are retained together, so a later audit can be answered from the original submission record.
 
 ## Scope
 
@@ -71,8 +71,8 @@ An applicable SFC collection or funding information request is due.
 
 1. **SFC Returns Officer** confirm institution/collection scope, current guidance and deadline.
 2. **Data Owners** freeze the relevant Scottish population and coding definitions.
-3. **Accountable Signatory/Auditor** extract data with source lineage and funding-rule calculations.
-4. **SFC** validate totals, movements and audit samples.
+3. **Data Owners** extract data with source lineage and funding-rule calculations.
+4. **SFC Returns Officer** validate totals, movements and audit samples.
 5. **Data Owners** obtain required certificate/sign-off and submit.
 6. **Accountable Signatory/Auditor** retain receipt, audit evidence, corrections and reconciliation.
 
@@ -161,16 +161,16 @@ sequenceDiagram
     participant A2 as Data Owners
     participant A3 as Accountable Signatory/Auditor
     participant A4 as SFC
-    A1->>A2: 1. confirm institution/collection scope, current guidance and deadline
-    A2->>A3: 2. freeze the relevant Scottish population and coding definitions
-    A3->>A4: 3. extract data with source lineage and funding-rule calculations
-    A4->>A1: 4. validate totals, movements and audit samples
-    A1->>A2: 5. obtain required certificate/sign-off and submit
-    A2->>A3: 6. retain receipt, audit evidence, corrections and reconciliation
+    A1->>A2: 1. confirms institution/collection scope, current guidance and deadline
+    A2->>A2: 2. freezes the relevant Scottish population and coding definitions
+    A2->>A1: 3. extracts data with source lineage and funding-rule calculations
+    A1->>A2: 4. validates totals, movements and audit samples
+    A2->>A4: 5. obtains required certificate/sign-off and submits
+    A3->>A3: 6. retains receipt, audit evidence, corrections and reconciliation
     alt Valid and authorised
-        A4->>A1: Record and communicate outcome
+        A3->>A1: Record and communicate outcome
     else Incomplete or exception
-        A4->>A1: Retain case with owner and reason
+        A3->>A1: Retain case with owner and reason
     end
 ```
 

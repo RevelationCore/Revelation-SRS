@@ -1,4 +1,4 @@
-# BP-012 — Activate student access and entitlements
+# BP-02-005 — Activate student access and entitlements
 
 > Status: Draft
 > Domain: 02 — Registration and student status
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2027-01-26
 
-[Previous: BP-011](bp-011-complete-financial-registration.md) · [Domain index](README.md) · [Next: BP-013](bp-013-transfer-programme-route-or-mode.md) · [Library home](../README.md)
+[Previous: BP-02-004](bp-02-004-complete-financial-registration.md) · [Domain index](README.md) · [Next: BP-02-006](bp-02-006-transfer-programme-route-or-mode.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -90,7 +90,7 @@ Registration/financial condition or module-registration event makes an entitleme
 
 ### A5 — Module access pending
 
-- **A5.1** Activate base services and wait for BP-025 before module-specific VLE/roster access.
+- **A5.1** Activate base services and wait for BP-03-006 before module-specific VLE/roster access.
 
 ## Exception flows
 
@@ -100,7 +100,7 @@ Registration/financial condition or module-registration event makes an entitleme
 
 ### E3b — Duplicate/orphan account
 
-- **E3b.1** Stop unsafe provisioning, reconcile through BP-058 and record corrective action.
+- **E3b.1** Stop unsafe provisioning, reconcile through BP-08-001 and record corrective action.
 
 ## Postconditions
 
@@ -195,7 +195,7 @@ sequenceDiagram
 
 ## Related processes
 
-[BP-010](bp-010-complete-initial-academic-registration.md); [BP-011](bp-011-complete-financial-registration.md); BP-025; [BP-019](bp-019-close-leaver-record.md).
+[BP-02-003](bp-02-003-complete-initial-academic-registration.md); [BP-02-004](bp-02-004-complete-financial-registration.md); BP-03-006; [BP-02-012](bp-02-012-close-leaver-record.md).
 
 ## Review record
 

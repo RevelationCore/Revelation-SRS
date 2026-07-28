@@ -1,4 +1,4 @@
-# BP-042 — Submit and examine a PGR thesis
+# BP-05-010 — Submit and examine a PGR thesis
 
 > Status: Draft
 > Domain: 05 — Assessment and results
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2027-01-26
 
-[Previous: BP-041](../05-assessment-and-results/bp-041-ratify-and-publish-results.md) · [Domain index](README.md) · [Next: BP-043](../05-assessment-and-results/bp-043-correct-a-ratified-academic-outcome.md) · [Library home](../README.md)
+[Previous: BP-05-009](../05-assessment-and-results/bp-05-009-ratify-and-publish-results.md) · [Domain index](README.md) · [Next: BP-05-011](../05-assessment-and-results/bp-05-011-correct-a-ratified-academic-outcome.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-Submit and examine a PGR thesis creates a controlled, explainable and effective-dated thesis submission, examiners, viva and examination outcome. The outcome preserves the evidence, authority and cross-system state needed for the Revelation SRS rather than reducing the process to a status update.
+Submitting and examining a PGR thesis turns a completed piece of doctoral research into a formally examined, ratified outcome, from the immutable submitted version through independent examiner nomination, the viva itself, and a joint recommendation the examiners are willing to stand behind. Keeping examiner-nomination and independence checks distinct from the examiners' own conduct of the viva protects the process from a conflicted or under-qualified panel reaching a result. The ratified outcome — including any corrections or revisions required and their deadlines — is the authoritative record the student and institution rely on afterwards.
 
 ## Scope
 
@@ -69,11 +69,11 @@ An eligible PGR student gives notice and submits a thesis.
 
 ## Main flow
 
-1. **Enrolled Student** validate submission eligibility, notice, format and approved restrictions.
+1. **Enrolled Student** submits the thesis, meeting eligibility, notice, format and approved-restriction requirements.
 2. **PGR Administrator** record the immutable submitted thesis version and declarations.
-3. **Internal/External Examiner** approve examiner nominations, independence, expertise and conflicts.
-4. **Independent Chair** distribute securely and obtain independent preliminary reports.
-5. **PGR Administrator** conduct the viva/examination and record the joint recommendation.
+3. **Independent Chair** approve examiner nominations, independence, expertise and conflicts.
+4. **PGR Administrator** distribute the thesis securely and obtain independent preliminary reports.
+5. **Internal/External Examiner** conduct the viva/examination and record the joint recommendation.
 6. **Internal/External Examiner** ratify the outcome, corrections/revision requirements and deadlines.
 
 ## Alternative flows
@@ -162,16 +162,16 @@ sequenceDiagram
     participant A2 as PGR Administrator
     participant A3 as Internal/External Examiner
     participant A4 as Independent Chair
-    A1->>A2: 1. validate submission eligibility, notice, format and approved restrictions
-    A2->>A3: 2. record the immutable submitted thesis version and declarations
-    A3->>A4: 3. approve examiner nominations, independence, expertise and conflicts
-    A4->>A1: 4. distribute securely and obtain independent preliminary reports
-    A1->>A2: 5. conduct the viva/examination and record the joint recommendation
-    A2->>A3: 6. ratify the outcome, corrections/revision requirements and deadlines
+    A1->>A2: 1. submits the thesis, meeting eligibility, notice, format and approved-restriction requirements
+    A2->>A4: 2. records the immutable submitted thesis version and declarations
+    A4->>A2: 3. approves examiner nominations, independence, expertise and conflicts
+    A2->>A3: 4. distributes the thesis securely and obtains independent preliminary reports
+    A3->>A3: 5. conducts the viva/examination and records the joint recommendation
+    A3->>A4: 6. ratifies the outcome, corrections/revision requirements and deadlines
     alt Valid and authorised
-        A4->>A1: Record and communicate outcome
+        A3->>A1: Record and communicate outcome
     else Incomplete or exception
-        A4->>A1: Retain case with owner and reason
+        A3->>A1: Retain case with owner and reason
     end
 ```
 

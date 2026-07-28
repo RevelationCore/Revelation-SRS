@@ -115,13 +115,14 @@ The label describes authority, not confidence. Uncertain claims belong in open q
 
 ## 6. Process identity and filenames
 
-- Business process identifier: `BP-nnn`.
-- Page title: `BP-nnn — Verb-led outcome`.
-- Filename: `bp-nnn-kebab-case-title.md`.
-- Published identifiers are never reused.
+- Business process identifier: `BP-dd-nnn`, where `dd` is the two-digit domain number (`01`–`08`, matching the domain folder) and `nnn` is a three-digit sequence local to that domain.
+- Page title: `BP-dd-nnn — Verb-led outcome`.
+- Filename: `bp-dd-nnn-kebab-case-title.md`.
+- A new process is always assigned the next free `nnn` within its own domain, appended at the end of that domain's sequence. Adding a process to one domain never renumbers a page in another domain.
+- Published identifiers are never reused or renumbered.
 - A split or merge retires the old page with links to successors.
 
-The BP-001–BP-063 working inventory was baselined on 2026-07-26. These identifiers are stable; pages remain `Draft` until authorised SME review.
+The BP-01-001–BP-08-006 working inventory was baselined on 2026-07-26 and migrated from a flat `BP-nnn` global sequence to the domain-scoped `BP-dd-nnn` scheme on 2026-07-28, precisely so that future additions never require renumbering an unrelated domain. These identifiers are stable; pages remain `Draft` until authorised SME review.
 
 ## 7. Numbered flows
 

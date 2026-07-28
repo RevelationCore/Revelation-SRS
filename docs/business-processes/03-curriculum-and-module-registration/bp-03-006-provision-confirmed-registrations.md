@@ -1,4 +1,4 @@
-# BP-025 — Provision confirmed registrations downstream
+# BP-03-006 — Provision confirmed registrations downstream
 
 > Status: Draft
 > Domain: 03 — Curriculum and module registration
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2027-01-26
 
-[Previous: BP-024](bp-024-change-module-registration.md) · [Domain index](README.md) · [Next: BP-026](bp-026-establish-pgr-supervision.md) · [Library home](../README.md)
+[Previous: BP-03-005](bp-03-005-change-module-registration.md) · [Domain index](README.md) · [Next: BP-03-007](bp-03-007-establish-pgr-supervision.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -202,7 +202,7 @@ sequenceDiagram
 
 ## Related processes
 
-[BP-023](bp-023-validate-and-approve-module-selection.md); [BP-024](bp-024-change-module-registration.md); BP-027; BP-033.
+[BP-03-004](bp-03-004-validate-and-approve-module-selection.md); [BP-03-005](bp-03-005-change-module-registration.md); BP-04-001; BP-05-001.
 
 ## Review record
 

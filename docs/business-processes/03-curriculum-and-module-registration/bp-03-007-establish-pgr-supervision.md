@@ -1,4 +1,4 @@
-# BP-026 — Establish PGR supervision and research context
+# BP-03-007 — Establish PGR supervision and research context
 
 > Status: Draft
 > Domain: 03 — Curriculum and module registration
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2027-01-26
 
-[Previous: BP-025](bp-025-provision-confirmed-registrations.md) · [Domain index](README.md) · [Next: BP-027](../04-learning-engagement-and-support/README.md) · [Library home](../README.md)
+[Previous: BP-03-006](bp-03-006-provision-confirmed-registrations.md) · [Domain index](README.md) · [Next: BP-04-001](../04-learning-engagement-and-support/README.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -225,7 +225,7 @@ sequenceDiagram
 
 ## Related processes
 
-[BP-010](../02-registration-and-student-status/bp-010-complete-initial-academic-registration.md); [BP-021](bp-021-assign-programme-route-and-rules.md); BP-029; BP-042; BP-049.
+[BP-02-003](../02-registration-and-student-status/bp-02-003-complete-initial-academic-registration.md); [BP-03-002](bp-03-002-assign-programme-route-and-rules.md); BP-04-003; BP-05-010; BP-06-006.
 
 ## Review record
 

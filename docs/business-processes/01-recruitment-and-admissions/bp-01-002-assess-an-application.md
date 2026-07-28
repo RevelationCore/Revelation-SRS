@@ -1,4 +1,4 @@
-# BP-002 — Assess an application
+# BP-01-002 — Assess an application
 
 > Status: Draft
 > Domain: 01 — Recruitment and admissions
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2027-01-26
 
-[Previous: BP-001](../01-recruitment-and-admissions/bp-001-receive-an-application.md) · [Domain index](README.md) · [Next: BP-003](../01-recruitment-and-admissions/bp-003-make-and-manage-an-offer.md) · [Library home](../README.md)
+[Previous: BP-01-001](../01-recruitment-and-admissions/bp-01-001-receive-an-application.md) · [Domain index](README.md) · [Next: BP-01-003](../01-recruitment-and-admissions/bp-01-003-make-and-manage-an-offer.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-Assess an application creates a controlled, explainable and effective-dated assessment evidence and admissions decision recommendation. The outcome preserves the evidence, authority and cross-system state needed for the Revelation SRS rather than reducing the process to a status update.
+Assessing an application turns a validated intake record into a reasoned admissions recommendation. Academic evidence, and where relevant safeguarding or compliance considerations, are gathered and evaluated against the published entry criteria for the course, so the eventual offer decision rests on a documented, defensible judgement rather than an unrecorded personal view. The process keeps each piece of evidence, its assessor and its version identifiable, so a later challenge or audit can reconstruct exactly what was considered and by whom.
 
 ## Scope
 
@@ -71,10 +71,10 @@ A complete application enters an assessable queue.
 
 1. **Admissions Officer** confirm the applicable published entry criteria and decision authority.
 2. **Academic Selector** review academic evidence and contextual data under the configured policy.
-3. **Prospective Student** request only necessary missing evidence or assessment activity.
-4. **Safeguarding/Compliance Specialist** record each assessment outcome, assessor and evidence version.
-5. **Academic Selector** complete any interview, audition, portfolio or research-fit assessment.
-6. **Prospective Student** record a recommendation and route it to an authorised decision maker.
+3. **Admissions Officer** request only necessary missing evidence or assessment activity from the applicant.
+4. **Academic Selector** record each assessment outcome, assessor and evidence version.
+5. **Safeguarding/Compliance Specialist** confirm no outstanding safeguarding or compliance concern applies before the assessment proceeds.
+6. **Admissions Officer** record a recommendation and route it to an authorised decision maker.
 
 ## Alternative flows
 
@@ -161,16 +161,16 @@ sequenceDiagram
     participant A2 as Academic Selector
     participant A3 as Prospective Student
     participant A4 as Safeguarding/Compliance Specialist
-    A1->>A2: 1. confirm the applicable published entry criteria and decision authority
-    A2->>A3: 2. review academic evidence and contextual data under the configured policy
-    A3->>A4: 3. request only necessary missing evidence or assessment activity
-    A4->>A1: 4. record each assessment outcome, assessor and evidence version
-    A1->>A2: 5. complete any interview, audition, portfolio or research-fit assessment
-    A2->>A3: 6. record a recommendation and route it to an authorised decision maker
+    A1->>A1: 1. confirms the applicable published entry criteria and decision authority
+    A2->>A2: 2. reviews academic evidence and contextual data under the configured policy
+    A1->>A3: 3. requests only necessary missing evidence or assessment activity from the applicant
+    A2->>A2: 4. records each assessment outcome, assessor and evidence version
+    A4->>A1: 5. confirms no outstanding safeguarding or compliance concern applies before the assessment proceeds
+    A1->>A1: 6. records a recommendation and routes it to an authorised decision maker
     alt Valid and authorised
-        A4->>A1: Record and communicate outcome
+        A1->>A3: Record and communicate outcome
     else Incomplete or exception
-        A4->>A1: Retain case with owner and reason
+        A1->>A3: Retain case with owner and reason
     end
 ```
 

@@ -1,4 +1,4 @@
-# BP-057 — Resolve a statutory submission data-quality issue
+# BP-07-008 — Resolve a statutory submission data-quality issue
 
 > Status: Draft
 > Domain: 07 — Regulatory and statutory reporting
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2027-01-26
 
-[Previous: BP-056](../07-regulatory-and-statutory-reporting/bp-056-produce-department-for-the-economy-returns.md) · [Domain index](README.md) · [Next: BP-058](../08-record-governance-and-lifecycle/bp-058-resolve-a-duplicate-or-uncertain-identity.md) · [Library home](../README.md)
+[Previous: BP-07-007](../07-regulatory-and-statutory-reporting/bp-07-007-produce-department-for-the-economy-returns.md) · [Domain index](README.md) · [Next: BP-08-001](../08-record-governance-and-lifecycle/bp-08-001-resolve-a-duplicate-or-uncertain-identity.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-Resolve a statutory submission data-quality issue creates a controlled, explainable and effective-dated quality issue, source correction or submission amendment. The outcome preserves the evidence, authority and cross-system state needed for the Revelation SRS rather than reducing the process to a status update.
+Resolving a statutory submission data-quality issue gives the institution a controlled way to trace a queried or suspect figure back to its authoritative source, work out whether the problem is a source error, a transformation error, a timing difference or a legitimate exception, and correct it at the right layer rather than patching the symptom in the submitted return. Only the institution itself — never the regulator or funder — makes the correction, at the layer the classification shows it belongs. Affected outputs are regenerated and checked for consequences across every other return they feed, and the before/after evidence is retained alongside the regulator's or funder's acceptance of the resubmission.
 
 ## Scope
 
@@ -72,9 +72,9 @@ Validation, regulator query or reconciliation identifies a possible error.
 1. **Statutory Data Officer** record the issue against submission, fields, population and rule version.
 2. **Source Data Owner** trace the value to authoritative source and transformation.
 3. **Registry** classify source error, transformation error, timing difference or valid exception.
-4. **Regulator/Funder** authorise and make the correction at the proper layer.
+4. **Statutory Data Officer** authorise and make the correction at the proper layer.
 5. **Source Data Owner** regenerate affected outputs and assess cross-return consequences.
-6. **Registry** resubmit/respond and retain before/after evidence and acceptance.
+6. **Statutory Data Officer** resubmit/respond and retain before/after evidence and acceptance.
 
 ## Alternative flows
 
@@ -161,16 +161,16 @@ sequenceDiagram
     participant A2 as Source Data Owner
     participant A3 as Registry
     participant A4 as Regulator/Funder
-    A1->>A2: 1. record the issue against submission, fields, population and rule version
-    A2->>A3: 2. trace the value to authoritative source and transformation
-    A3->>A4: 3. classify source error, transformation error, timing difference or valid exception
-    A4->>A1: 4. authorise and make the correction at the proper layer
-    A1->>A2: 5. regenerate affected outputs and assess cross-return consequences
-    A2->>A3: 6. resubmit/respond and retain before/after evidence and acceptance
+    A1->>A2: 1. records the issue against submission, fields, population and rule version
+    A2->>A3: 2. traces the value to authoritative source and transformation
+    A3->>A1: 3. classifies source error, transformation error, timing difference or valid exception
+    A1->>A2: 4. authorises and makes the correction at the proper layer
+    A2->>A1: 5. regenerates affected outputs and assesses cross-return consequences
+    A1->>A4: 6. resubmits/responds and retains before/after evidence and acceptance
     alt Valid and authorised
-        A4->>A1: Record and communicate outcome
+        A1->>A4: Record and communicate outcome
     else Incomplete or exception
-        A4->>A1: Retain case with owner and reason
+        A1->>A4: Retain case with owner and reason
     end
 ```
 

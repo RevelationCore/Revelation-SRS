@@ -6,7 +6,7 @@
 
 | Field | Value |
 |---|---|
-| Candidate process | BP-nnn — title |
+| Candidate process | BP-dd-nnn — title |
 | Researcher | |
 | Research started | |
 | Boundary/question | |

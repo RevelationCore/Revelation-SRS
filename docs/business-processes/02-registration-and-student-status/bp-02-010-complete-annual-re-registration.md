@@ -1,4 +1,4 @@
-# BP-017 — Complete annual re-registration
+# BP-02-010 — Complete annual re-registration
 
 > Status: Draft
 > Domain: 02 — Registration and student status
@@ -46,7 +46,7 @@ Completion of provider re-registration and confirmation to a student finance bod
 
 **In scope:** Continuing students on taught and research programmes, including part-time, distance, placement and partner-delivered provision where the provider retains registration responsibility.
 
-**Out of scope:** Initial registration (BP-010), return from interruption (BP-015), module selection and approval (BP-022/BP-023), non-registration resolution (BP-018), and attendance confirmations after the applicable liability/attendance point (BP-051).
+**Out of scope:** Initial registration (BP-02-003), return from interruption (BP-02-008), module selection and approval (BP-03-003/BP-03-004), non-registration resolution (BP-02-011), and attendance confirmations after the applicable liability/attendance point (BP-07-002).
 
 ## Actors and responsibilities
 
@@ -90,7 +90,7 @@ A configured re-registration period opens. The SRS evaluates potentially continu
 7. **SRS** confirms successful re-registration to the **Enrolled Student** and enables the applicable successor processes, including module selection where this is not part of re-registration.
 8. **SRS** publishes confirmed status or eligibility to **Identity and Access Management**, **Library**, and the **Virtual Learning Environment** through the applicable integration contracts.
 9. **Receiving Systems** acknowledge or reconcile the entitlement/provisioning messages; the SRS retains each exchange outcome independently.
-10. **SRS** places any student-finance confirmation on the controlled BP-051 worklist, applying the relevant scheme, course, mode and attendance criteria rather than sending it solely because step 6 completed.
+10. **SRS** places any student-finance confirmation on the controlled BP-07-002 worklist, applying the relevant scheme, course, mode and attendance criteria rather than sending it solely because step 6 completed.
 
 ## Alternative flows
 
@@ -99,20 +99,20 @@ A configured re-registration period opens. The SRS evaluates potentially continu
 - **A1.1** At main step 1, the SRS finds that the relevant progression/assessment board outcome is not final.
 - **A1.2** The SRS does not present the student as fully eligible and records the blocking reason without exposing inappropriate assessment detail.
 - **A1.3** When the decision becomes final, the SRS re-evaluates eligibility and returns to main step 1.
-- **A1.4** If the outcome requires repeat or assessment-only study, continue in BP-045 and create the correct registration variant rather than assuming standard continuation.
+- **A1.4** If the outcome requires repeat or assessment-only study, continue in BP-06-002 and create the correct registration variant rather than assuming standard continuation.
 
 ### A3 — Programme, route, mode or study location is incorrect
 
 - **A3.1** At main step 3, the student reports that a material study fact is wrong or expected to change.
 - **A3.2** The SRS creates a governed review task; it does not allow the student to overwrite an authoritative academic fact.
-- **A3.3** A Registry Administrator resolves the change through BP-013.
+- **A3.3** A Registry Administrator resolves the change through BP-02-006.
 - **A3.4** Rejoin at main step 3 after the corrected effective-dated record is available.
 
 ### A4 — Personal or contact data changes
 
 - **A4.1** At main step 4, the student updates a self-service field.
 - **A4.2** The SRS records a new effective/transaction-time version with student provenance.
-- **A4.3** A change requiring evidence or approval is routed to BP-059.
+- **A4.3** A change requiring evidence or approval is routed to BP-08-002.
 - **A4.4** Rejoin at main step 4 when required fields are complete.
 
 ### A5 — Financial condition requires action
@@ -125,7 +125,7 @@ A configured re-registration period opens. The SRS evaluates potentially continu
 ### A5b — Immigration or right-to-study check is required
 
 - **A5b.1** At main step 5, the SRS identifies an expiring, missing or review-required immigration/right-to-study record.
-- **A5b.2** The UKVI Compliance Officer completes the applicable evidence check under BP-009/BP-052.
+- **A5b.2** The UKVI Compliance Officer completes the applicable evidence check under BP-02-002/BP-07-003.
 - **A5b.3** The SRS records only the necessary verification outcome and evidence reference in the registration context.
 - **A5b.4** Rejoin at main step 5 when the check permits continuation, or route to a governed compliance/status decision.
 
@@ -152,14 +152,14 @@ A configured re-registration period opens. The SRS evaluates potentially continu
 
 - **E2.1** At the configured reminder point, the SRS notifies the student again and records the communication.
 - **E2.2** At the deadline, the SRS marks the confirmation `lapsed` or `action-required` according to approved status codes.
-- **E2.3** The SRS opens BP-018 for contact, evidence review and a governed status decision.
+- **E2.3** The SRS opens BP-02-011 for contact, evidence review and a governed status decision.
 - **E2.4** Non-response does not silently become retrospective withdrawal; the applicable regulations, published provider policy, sponsorship duties and evidence determine the effective outcome.
 
 ### E5 — Conflicting or incomplete records
 
 - **E5.1** The SRS detects conflicting enrolment, identity, progression, fee or immigration facts.
 - **E5.2** The SRS prevents automatic confirmation, preserves the submitted information, and creates a data-quality task.
-- **E5.3** The responsible actor resolves the source fact through BP-058 or BP-059.
+- **E5.3** The responsible actor resolves the source fact through BP-08-001 or BP-08-002.
 - **E5.4** Rejoin at main step 5.
 
 ### E8 — Downstream message fails
@@ -173,7 +173,7 @@ A configured re-registration period opens. The SRS evaluates potentially continu
 
 - **E10.1** The student finance service rejects or cannot match a confirmation.
 - **E10.2** The SRS retains the provider re-registration outcome and records the rejected exchange separately.
-- **E10.3** A Registry Administrator/Student Data Officer resolves course, year, student or provider-reference differences under BP-051.
+- **E10.3** A Registry Administrator/Student Data Officer resolves course, year, student or provider-reference differences under BP-07-002.
 - **E10.4** The corrected message is resubmitted with an idempotent reference and reconciled.
 
 ## Postconditions
@@ -207,7 +207,7 @@ A configured re-registration period opens. The SRS evaluates potentially continu
 | BR-7 | REVELATION | W010 currently moves from an open window through confirmed/reminder/lapsed and routes lapse towards W007 | Revelation | SRC-015 |
 | BR-8 | REVELATION | The current data model stores period, status and confirmation time but not accepted terms version, channel or assisted-confirmation authority | Revelation | SRC-018 |
 | BR-9 | REVELATION | `srs.student.re-enrolled` is documented but explicitly listed as not implemented | Revelation | SRC-017 and Domain Events catalogue |
-| BR-10 | PROPOSED | Failure to re-register must enter BP-018 before a withdrawal/status change is committed | Revelation target | Process analysis |
+| BR-10 | PROPOSED | Failure to re-register must enter BP-02-011 before a withdrawal/status change is committed | Revelation target | Process analysis |
 
 ## National and institutional variations
 
@@ -316,7 +316,7 @@ sequenceDiagram
         SRS->>SRS: Route to responsible review
     else Deadline passes (E2)
         SRS->>SRS: Mark action required or lapsed
-        SRS->>SRS: Start BP-018 non-registration resolution
+        SRS->>SRS: Start BP-02-011 non-registration resolution
     end
 ```
 
@@ -329,7 +329,7 @@ sequenceDiagram
 | OQ-3 | Should accepted terms/declaration version, channel and confirming actor be added to `reenrolment_confirmation`? | Data architect/DPO | Open |
 | OQ-4 | Which exact SLC confirmation messages occur at annual re-registration versus later attendance points for each scheme/course/mode? | Student finance SME | Open |
 | OQ-5 | What minimum evidence should partner providers supply where Revelation's tenant retains registration responsibility? | Collaborative provision SME | Open |
-| OQ-6 | Should failure to re-register trigger W007 automatically, as currently documented, or always require a BP-018 decision? | Registry/product owner | Open |
+| OQ-6 | Should failure to re-register trigger W007 automatically, as currently documented, or always require a BP-02-011 decision? | Registry/product owner | Open |
 | OQ-7 | `srs.student.re-enrolled` is documented but not implemented; should it be implemented or replaced by a more general registration event? | Integration architect | Open |
 
 ## Sources
@@ -346,14 +346,14 @@ sequenceDiagram
 
 ## Related processes
 
-- **Predecessor:** BP-044 — Determine progression
-- **Alternative predecessor:** BP-015 — Return from interruption
-- **Successor:** BP-022 — Select modules
-- **Exception:** BP-018 — Resolve failure to register or re-register
-- **Related:** BP-009 — Verify identity, nationality and right to study
-- **Related:** BP-051 — Exchange registration, attendance and changes with student finance bodies
-- **Related:** BP-052 — Manage Student sponsor reporting and compliance
-- **Related:** BP-059 — Correct personal or enrolment data
+- **Predecessor:** BP-06-001 — Determine progression
+- **Alternative predecessor:** BP-02-008 — Return from interruption
+- **Successor:** BP-03-003 — Select modules
+- **Exception:** BP-02-011 — Resolve failure to register or re-register
+- **Related:** BP-02-002 — Verify identity, nationality and right to study
+- **Related:** BP-07-002 — Exchange registration, attendance and changes with student finance bodies
+- **Related:** BP-07-003 — Manage Student sponsor reporting and compliance
+- **Related:** BP-08-002 — Correct personal or enrolment data
 
 Related candidate pages are listed in the [process inventory](../process-inventory.md) and will become links when drafted.
 

@@ -4,7 +4,7 @@
 >
 > Prepared: 2026-07-27
 >
-> Scope: BP-027, BP-028 and the referral boundary to BP-052
+> Scope: BP-04-001, BP-04-002 and the referral boundary to BP-07-003
 
 [Vertical-slice specification](attendance-engagement-vertical-slice.md) · [ADR review](../decisions/attendance-vertical-slice-adr-review.md) · [Contract vocabulary](../architecture/attendance-engagement-contract-vocabulary.md) · [Privacy and threat assessment](../architecture/attendance-engagement-privacy-threat-assessment.md)
 
@@ -26,7 +26,7 @@ The following remain non-negotiable:
 | Review | Named role required | Scope | Required outcome |
 |---|---|---|---|
 | A-ARCH | Solution architect and product owner | ADR-016, ADR-019, aggregate boundary and migration sequencing | Accept, amend or supersede decisions |
-| A-PROC | Attendance/engagement and student-records SMEs | BP-027/BP-028 boundaries, actors, outcomes and terminology | Confirm operational feasibility |
+| A-PROC | Attendance/engagement and student-records SMEs | BP-04-001/BP-04-002 boundaries, actors, outcomes and terminology | Confirm operational feasibility |
 | A-UK | Scotland, Wales and Northern Ireland SMEs | Nation-specific terminology, funding ownership and Welsh-language operation | Confirm configuration points |
 | A-PRIV | DPO/data-protection and records leads | Purposes, lawful bases, DPIA, minimisation, rights and retention | Approve privacy controls or require amendment |
 | A-SEC | Security architect and safeguarding/wellbeing leads | Threats, restricted referral boundary and access model | Accept mitigations |
@@ -75,7 +75,7 @@ The following remain non-negotiable:
 | Review ID | Named reviewer and authority | Sources/version checked | Outcome | Conditions/actions | Date |
 |---|---|---|---|---|---|
 | A-ARCH | TBC | Repository baseline `8294e2b` or later | Pending | — | — |
-| A-PROC | TBC | BP-027/BP-028 v0.1 | Pending | — | — |
+| A-PROC | TBC | BP-04-001/BP-04-002 v0.1 | Pending | — | — |
 | A-UK | TBC | Four-nation sections and provider policy | Pending | — | — |
 | A-PRIV | TBC | ICO guidance current at review | Pending | — | — |
 | A-SEC | TBC | Threat assessment v0.1 | Pending | — | — |

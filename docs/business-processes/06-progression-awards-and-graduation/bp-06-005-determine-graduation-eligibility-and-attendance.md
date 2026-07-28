@@ -1,4 +1,4 @@
-# BP-048 — Determine graduation eligibility and attendance
+# BP-06-005 — Determine graduation eligibility and attendance
 
 > Status: Draft
 > Domain: 06 — Progression, awards and graduation
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2027-01-26
 
-[Previous: BP-047](../06-progression-awards-and-graduation/bp-047-issue-award-documentation-and-hear.md) · [Domain index](README.md) · [Next: BP-049](../06-progression-awards-and-graduation/bp-049-record-successful-pgr-completion.md) · [Library home](../README.md)
+[Previous: BP-06-004](../06-progression-awards-and-graduation/bp-06-004-issue-award-documentation-and-hear.md) · [Domain index](README.md) · [Next: BP-06-006](../06-progression-awards-and-graduation/bp-06-006-record-successful-pgr-completion.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-Determine graduation eligibility and attendance creates a controlled, explainable and effective-dated ceremony eligibility, invitation, response and allocation. The outcome preserves the evidence, authority and cross-system state needed for the Revelation SRS rather than reducing the process to a status update.
+Determining graduation eligibility and attendance turns a confirmed award into an invitation to a specific ceremony, and separately records who actually attended or presented — deliberately kept apart from the award conferment itself, so a ceremony no-show or a deferred attendance can never look like an unconferred award, or vice versa. Eligible invitees are derived only from authoritative award status, and the presentation list is frozen and reconciled against any late award change before the ceremony, so the institution never presents someone whose award status has since changed.
 
 ## Scope
 
@@ -70,10 +70,10 @@ A conferred or expected award enters a graduation cycle.
 ## Main flow
 
 1. **Graduation Team** define ceremony cycle, eligibility rules and capacity.
-2. **Graduate** derive eligible invitees from authoritative award status.
+2. **SRS** derive eligible invitees from authoritative award status.
 3. **SRS** send invitation and capture attendance/deferral/accessibility choices.
 4. **Ceremony Service** allocate ceremony, guest/ticket and presentation details.
-5. **Graduate** freeze the presentation list and reconcile late award changes.
+5. **Graduation Team** freeze the presentation list and reconcile late award changes.
 6. **SRS** record attendance/presentation separately from award conferment.
 
 ## Alternative flows
@@ -161,16 +161,16 @@ sequenceDiagram
     participant A2 as Graduate
     participant A3 as SRS
     participant A4 as Ceremony Service
-    A1->>A2: 1. define ceremony cycle, eligibility rules and capacity
-    A2->>A3: 2. derive eligible invitees from authoritative award status
-    A3->>A4: 3. send invitation and capture attendance/deferral/accessibility choices
-    A4->>A1: 4. allocate ceremony, guest/ticket and presentation details
-    A1->>A2: 5. freeze the presentation list and reconcile late award changes
-    A2->>A3: 6. record attendance/presentation separately from award conferment
+    A1->>A3: 1. defines ceremony cycle, eligibility rules and capacity
+    A3->>A3: 2. derives eligible invitees from authoritative award status
+    A3->>A4: 3. sends invitation and captures attendance/deferral/accessibility choices
+    A4->>A1: 4. allocates ceremony, guest/ticket and presentation details
+    A1->>A3: 5. freezes the presentation list and reconciles late award changes
+    A3->>A3: 6. records attendance/presentation separately from award conferment
     alt Valid and authorised
-        A4->>A1: Record and communicate outcome
+        A3->>A2: Record and communicate outcome
     else Incomplete or exception
-        A4->>A1: Retain case with owner and reason
+        A3->>A2: Retain case with owner and reason
     end
 ```
 

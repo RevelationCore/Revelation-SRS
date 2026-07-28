@@ -1,4 +1,4 @@
-# BP-039 — Prepare an exam board and data pack
+# BP-05-007 — Prepare an exam board and data pack
 
 > Status: Draft
 > Domain: 05 — Assessment and results
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2027-01-26
 
-[Previous: BP-038](../05-assessment-and-results/bp-038-investigate-academic-misconduct.md) · [Domain index](README.md) · [Next: BP-040](../05-assessment-and-results/bp-040-complete-external-examiner-review.md) · [Library home](../README.md)
+[Previous: BP-05-006](../05-assessment-and-results/bp-05-006-investigate-academic-misconduct.md) · [Domain index](README.md) · [Next: BP-05-008](../05-assessment-and-results/bp-05-008-complete-external-examiner-review.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-Prepare an exam board and data pack creates a controlled, explainable and effective-dated board instance, agenda and reproducible data snapshot. The outcome preserves the evidence, authority and cross-system state needed for the Revelation SRS rather than reducing the process to a status update.
+Preparing an exam board and its data pack turns a snapshot of candidate results, exceptional-circumstance and misconduct indicators into the single, access-controlled evidence pack the board will actually decide from. Freezing the population at a recorded cut-off, and running completeness and anomaly checks before the pack is produced, means the board never makes decisions from a partial or silently-changing data set. Any item that arrives after the freeze is tracked as a late item and issued as a versioned replacement or addendum, never merged invisibly into the original pack.
 
 ## Scope
 
@@ -73,7 +73,7 @@ A module/programme board cut-off is reached.
 2. **Board Chair** freeze the candidate/result population at a recorded cut-off.
 3. **SRS** join only authorised EC, misconduct and support indicators.
 4. **Case/Support Systems** run completeness, anomaly and prior-decision checks.
-5. **Board Chair** produce an access-controlled pack with calculation explanations.
+5. **Assessment Officer** produce an access-controlled pack with calculation explanations.
 6. **SRS** record late items and issue a versioned replacement or addendum.
 
 ## Alternative flows
@@ -161,16 +161,16 @@ sequenceDiagram
     participant A2 as Board Chair
     participant A3 as SRS
     participant A4 as Case/Support Systems
-    A1->>A2: 1. define board scope, membership, quorum, date and decision authority
-    A2->>A3: 2. freeze the candidate/result population at a recorded cut-off
-    A3->>A4: 3. join only authorised EC, misconduct and support indicators
-    A4->>A1: 4. run completeness, anomaly and prior-decision checks
-    A1->>A2: 5. produce an access-controlled pack with calculation explanations
-    A2->>A3: 6. record late items and issue a versioned replacement or addendum
+    A1->>A2: 1. defines board scope, membership, quorum, date and decision authority
+    A2->>A3: 2. freezes the candidate/result population at a recorded cut-off
+    A3->>A4: 3. joins only authorised EC, misconduct and support indicators
+    A4->>A1: 4. runs completeness, anomaly and prior-decision checks
+    A1->>A2: 5. produces an access-controlled pack with calculation explanations
+    A3->>A3: 6. records late items and issues a versioned replacement or addendum
     alt Valid and authorised
-        A4->>A1: Record and communicate outcome
+        A3->>A2: Record and communicate outcome
     else Incomplete or exception
-        A4->>A1: Retain case with owner and reason
+        A3->>A2: Retain case with owner and reason
     end
 ```
 

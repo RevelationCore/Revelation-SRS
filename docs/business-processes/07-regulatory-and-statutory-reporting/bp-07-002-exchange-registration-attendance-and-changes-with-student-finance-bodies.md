@@ -1,4 +1,4 @@
-# BP-051 — Exchange registration, attendance and changes with student finance bodies
+# BP-07-002 — Exchange registration, attendance and changes with student finance bodies
 
 > Status: Draft
 > Domain: 07 — Regulatory and statutory reporting
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2027-01-26
 
-[Previous: BP-050](../07-regulatory-and-statutory-reporting/bp-050-prepare-and-submit-hesa-student-data.md) · [Domain index](README.md) · [Next: BP-052](../07-regulatory-and-statutory-reporting/bp-052-manage-student-sponsor-reporting-and-compliance.md) · [Library home](../README.md)
+[Previous: BP-07-001](../07-regulatory-and-statutory-reporting/bp-07-001-prepare-and-submit-hesa-student-data.md) · [Domain index](README.md) · [Next: BP-07-003](../07-regulatory-and-statutory-reporting/bp-07-003-manage-student-sponsor-reporting-and-compliance.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-Exchange registration, attendance and changes with student finance bodies creates a controlled, explainable and effective-dated finance-body confirmation/notification and response. The outcome preserves the evidence, authority and cross-system state needed for the Revelation SRS rather than reducing the process to a status update.
+Exchanging registration, attendance and change information with student finance bodies keeps the Student Loans Company and other national finance bodies supplied with the confirmations they need to release and continue a student's funding, built only from validated identity, attendance and registration facts. Confirmations and changes are submitted with correlation and idempotency identifiers so a resend or retry can never create a duplicate or conflicting record on either side. Because a rejection or payment-impact response can affect a student's funding, every response is recorded and periodic reconciliation corrects the institution's own source facts where the finance body's records show a discrepancy.
 
 ## Scope
 
@@ -72,9 +72,9 @@ A funded student reaches a reportable registration, attendance or circumstance e
 1. **Student Finance Officer** identify scheme, domicile, course and reporting responsibility.
 2. **SRS** validate identity, attendance/registration status and effective dates.
 3. **SLC/National Finance Body** create the scheme-specific confirmation or change notification.
-4. **Enrolled Student** submit with correlation/idempotency identifiers.
+4. **SRS** submit with correlation/idempotency identifiers.
 5. **SRS** record response, rejection and payment-impact status.
-6. **SLC/National Finance Body** reconcile periodic lists and correct authoritative source facts where needed.
+6. **Student Finance Officer** reconcile periodic lists and correct authoritative source facts where needed.
 
 ## Alternative flows
 
@@ -161,16 +161,16 @@ sequenceDiagram
     participant A2 as SRS
     participant A3 as SLC/National Finance Body
     participant A4 as Enrolled Student
-    A1->>A2: 1. identify scheme, domicile, course and reporting responsibility
-    A2->>A3: 2. validate identity, attendance/registration status and effective dates
-    A3->>A4: 3. create the scheme-specific confirmation or change notification
-    A4->>A1: 4. submit with correlation/idempotency identifiers
-    A1->>A2: 5. record response, rejection and payment-impact status
-    A2->>A3: 6. reconcile periodic lists and correct authoritative source facts where needed
+    A1->>A2: 1. identifies scheme, domicile, course and reporting responsibility
+    A2->>A3: 2. validates identity, attendance/registration status and effective dates
+    A3->>A2: 3. creates the scheme-specific confirmation or change notification
+    A2->>A3: 4. submits with correlation/idempotency identifiers
+    A2->>A1: 5. records response, rejection and payment-impact status
+    A1->>A1: 6. reconciles periodic lists and corrects authoritative source facts where needed
     alt Valid and authorised
-        A4->>A1: Record and communicate outcome
+        A1->>A4: Record and communicate outcome
     else Incomplete or exception
-        A4->>A1: Retain case with owner and reason
+        A1->>A4: Retain case with owner and reason
     end
 ```
 

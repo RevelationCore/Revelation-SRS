@@ -1,4 +1,4 @@
-# BP-020 — Import and publish curriculum data to the SRS
+# BP-03-001 — Import and publish curriculum data to the SRS
 
 > Status: Draft
 > Domain: 03 — Curriculum and module registration
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2027-01-26
 
-[Domain index](README.md) · [Next: BP-021](bp-021-assign-programme-route-and-rules.md) · [Library home](../README.md)
+[Domain index](README.md) · [Next: BP-03-002](bp-03-002-assign-programme-route-and-rules.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -197,7 +197,7 @@ sequenceDiagram
 
 ## Related processes
 
-[BP-021](bp-021-assign-programme-route-and-rules.md); BP-033; BP-057.
+[BP-03-002](bp-03-002-assign-programme-route-and-rules.md); BP-05-001; BP-07-008.
 
 ## Review record
 

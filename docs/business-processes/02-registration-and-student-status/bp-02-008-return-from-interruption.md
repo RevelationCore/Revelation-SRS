@@ -1,4 +1,4 @@
-# BP-015 — Return from interruption
+# BP-02-008 — Return from interruption
 
 > Status: Draft
 > Domain: 02 — Registration and student status
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2027-01-26
 
-[Previous: BP-014](bp-014-interrupt-or-suspend-studies.md) · [Domain index](README.md) · [Next: BP-016](bp-016-withdraw-from-studies.md) · [Library home](../README.md)
+[Previous: BP-02-007](bp-02-007-interrupt-or-suspend-studies.md) · [Domain index](README.md) · [Next: BP-02-009](bp-02-009-withdraw-from-studies.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -89,7 +89,7 @@ Scheduled return review or student request.
 
 ### A5 — Extension of interruption
 
-- **A5.1** Assess a time-limited extension under BP-014 and maximum-period rules.
+- **A5.1** Assess a time-limited extension under BP-02-007 and maximum-period rules.
 
 ### A5b — Conditional return
 
@@ -99,7 +99,7 @@ Scheduled return review or student request.
 
 ### E2 — No response or student will not return
 
-- **E2.1** Follow BP-018 contact and decision controls; route an informed request through BP-016.
+- **E2.1** Follow BP-02-011 contact and decision controls; route an informed request through BP-02-009.
 
 ### E4 — Immigration/funding prevents planned date
 
@@ -180,7 +180,7 @@ sequenceDiagram
         SRS->>External: 7. Restore provisioning
         SRS-->>Student: 8. Confirm return
     else Extend or withdraw
-        SRS->>SRS: Route to BP-014, BP-016 or BP-018
+        SRS->>SRS: Route to BP-02-007, BP-02-009 or BP-02-011
     end
 ```
 
@@ -199,7 +199,7 @@ sequenceDiagram
 
 ## Related processes
 
-[BP-014](bp-014-interrupt-or-suspend-studies.md); [BP-016](bp-016-withdraw-from-studies.md); [BP-017](bp-017-complete-annual-re-registration.md); [BP-018](bp-018-resolve-failure-to-register.md).
+[BP-02-007](bp-02-007-interrupt-or-suspend-studies.md); [BP-02-009](bp-02-009-withdraw-from-studies.md); [BP-02-010](bp-02-010-complete-annual-re-registration.md); [BP-02-011](bp-02-011-resolve-failure-to-register.md).
 
 ## Review record
 

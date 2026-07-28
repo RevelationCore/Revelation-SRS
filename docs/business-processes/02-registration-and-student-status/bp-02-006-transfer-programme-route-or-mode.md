@@ -1,4 +1,4 @@
-# BP-013 — Transfer programme, route or mode
+# BP-02-006 — Transfer programme, route or mode
 
 > Status: Draft
 > Domain: 02 — Registration and student status
@@ -42,7 +42,7 @@ This process makes an authorised change to a student's programme, route/pathway,
 
 **In scope:** Internal programme/route/mode transfers and PGR degree-aim changes.
 
-**Out of scope:** Module-only changes (BP-024), provider-to-provider transfer, and initial changed-course offers.
+**Out of scope:** Module-only changes (BP-03-005), provider-to-provider transfer, and initial changed-course offers.
 
 ## Actors and responsibilities
 
@@ -86,7 +86,7 @@ The student submits a transfer/change request or an authorised board outcome pro
 ### A3 — Transfer takes effect next academic year
 
 - **A3.1** Destination entry cannot occur during the current period.
-- **A3.2** Record an approved future-dated transfer and, if required, route the intervening period through BP-014.
+- **A3.2** Record an approved future-dated transfer and, if required, route the intervening period through BP-02-007.
 
 ### A3b — Credit or level mapping differs
 
@@ -204,7 +204,7 @@ sequenceDiagram
 
 ## Related processes
 
-BP-014; BP-017; BP-021; BP-024; BP-051; BP-052.
+BP-02-007; BP-02-010; BP-03-002; BP-03-005; BP-07-002; BP-07-003.
 
 ## Review record
 

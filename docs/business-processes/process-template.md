@@ -1,4 +1,4 @@
-# BP-nnn — Process title
+# BP-dd-nnn — Process title
 
 > Status: Candidate
 > Domain: NN — Domain name
@@ -177,9 +177,9 @@ sequenceDiagram
 
 ## Related processes
 
-- **Predecessor:** [BP-nnn — Process](path.md)
-- **Successor:** [BP-nnn — Process](path.md)
-- **Related:** [BP-nnn — Process](path.md)
+- **Predecessor:** [BP-dd-nnn — Process](path.md)
+- **Successor:** [BP-dd-nnn — Process](path.md)
+- **Related:** [BP-dd-nnn — Process](path.md)
 
 ## Review record
 

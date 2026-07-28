@@ -1,4 +1,4 @@
-# BP-058 — Resolve a duplicate or uncertain identity
+# BP-08-001 — Resolve a duplicate or uncertain identity
 
 > Status: Draft
 > Domain: 08 — Record governance and lifecycle
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2027-01-26
 
-[Previous: BP-057](../07-regulatory-and-statutory-reporting/bp-057-resolve-a-statutory-submission-data-quality-issue.md) · [Domain index](README.md) · [Next: BP-059](../08-record-governance-and-lifecycle/bp-059-correct-personal-or-enrolment-data.md) · [Library home](../README.md)
+[Previous: BP-07-008](../07-regulatory-and-statutory-reporting/bp-07-008-resolve-a-statutory-submission-data-quality-issue.md) · [Domain index](README.md) · [Next: BP-08-002](../08-record-governance-and-lifecycle/bp-08-002-correct-personal-or-enrolment-data.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-Resolve a duplicate or uncertain identity creates a controlled, explainable and effective-dated identity resolution case, links and merge history. The outcome preserves the evidence, authority and cross-system state needed for the Revelation SRS rather than reducing the process to a status update.
+When matching detects that two or more person records may represent the same individual, or that a single record may in fact cover related but distinct people, this process establishes which is true before any merge takes place. It gives the Identity Resolution Officer a governed way to freeze automated matching, gather evidence and obtain independent sign-off, so that no student's academic history, funding record or statutory identifiers are combined or split without authority. The outcome is a durable case file that shows why identities were merged, kept separate or left open for review, with every system that held the old identifiers redirected and reconciled to the resolved identity.
 
 ## Scope
 
@@ -69,12 +69,12 @@ Matching identifies probable duplicate or conflicting person identities.
 
 ## Main flow
 
-1. **Identity Resolution Officer** open a restricted case containing candidate identities and match basis.
-2. **Registry** freeze automated merging and inspect authoritative identifiers/evidence.
-3. **Applicant/Student** distinguish duplicate, related persons, alias/name change and insufficient evidence.
-4. **Identity Service** obtain independent authority for a merge or maintained separation.
-5. **Registry** link/survive identifiers without deleting provenance or academic history.
-6. **Applicant/Student** publish identifier redirects and reconcile every consuming system.
+1. **Identity Resolution Officer** opens a restricted case containing the candidate identities and match basis.
+2. **Registry** freezes automated merging and inspects the authoritative identifiers and evidence.
+3. **Identity Resolution Officer** distinguishes duplicate, related persons, alias/name change and insufficient evidence, drawing on evidence provided by the Applicant/Student.
+4. **Registry** obtains independent authority for a merge or maintained separation.
+5. **Identity Service** links or marks identifiers as surviving without deleting provenance or academic history.
+6. **Identity Service** publishes identifier redirects and reconciles every consuming system.
 
 ## Alternative flows
 
@@ -161,16 +161,18 @@ sequenceDiagram
     participant A2 as Registry
     participant A3 as Applicant/Student
     participant A4 as Identity Service
-    A1->>A2: 1. open a restricted case containing candidate identities and match basis
-    A2->>A3: 2. freeze automated merging and inspect authoritative identifiers/evidence
-    A3->>A4: 3. distinguish duplicate, related persons, alias/name change and insufficient evidence
-    A4->>A1: 4. obtain independent authority for a merge or maintained separation
-    A1->>A2: 5. link/survive identifiers without deleting provenance or academic history
-    A2->>A3: 6. publish identifier redirects and reconcile every consuming system
+
+    A1->>A2: 1. Open a restricted case containing candidate identities and match basis
+    A2->>A1: 2. Freeze automated merging and inspect authoritative identifiers/evidence
+    Note over A3,A1: Applicant/Student provides supporting evidence
+    A1->>A2: 3. Distinguish duplicate, related persons, alias/name change and insufficient evidence
+    A2->>A4: 4. Obtain independent authority for a merge or maintained separation
+    A4->>A4: 5. Link or mark identifiers as surviving without deleting provenance or academic history
+    A4->>A1: 6. Publish identifier redirects and reconcile every consuming system
     alt Valid and authorised
-        A4->>A1: Record and communicate outcome
+        A4-->>A1: Record and communicate outcome
     else Incomplete or exception
-        A4->>A1: Retain case with owner and reason
+        A1->>A1: Retain case with owner and reason
     end
 ```
 

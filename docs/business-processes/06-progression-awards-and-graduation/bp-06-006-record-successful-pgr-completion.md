@@ -1,4 +1,4 @@
-# BP-049 — Record successful PGR completion
+# BP-06-006 — Record successful PGR completion
 
 > Status: Draft
 > Domain: 06 — Progression, awards and graduation
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2027-01-26
 
-[Previous: BP-048](../06-progression-awards-and-graduation/bp-048-determine-graduation-eligibility-and-attendance.md) · [Domain index](README.md) · [Next: BP-050](../07-regulatory-and-statutory-reporting/bp-050-prepare-and-submit-hesa-student-data.md) · [Library home](../README.md)
+[Previous: BP-06-005](../06-progression-awards-and-graduation/bp-06-005-determine-graduation-eligibility-and-attendance.md) · [Domain index](README.md) · [Next: BP-07-001](../07-regulatory-and-statutory-reporting/bp-07-001-prepare-and-submit-hesa-student-data.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-Record successful PGR completion creates a controlled, explainable and effective-dated PGR completion, final thesis deposit and research-profile closure. The outcome preserves the evidence, authority and cross-system state needed for the Revelation SRS rather than reducing the process to a status update.
+Recording successful PGR completion turns a ratified thesis examination outcome into the institution's confirmed record that a research candidature is complete, with the final thesis deposited under any approved access restriction and its intellectual-property declarations confirmed. Conferring the resulting award is deliberately routed through the same authority as any other award (BP-06-003), rather than treated as an automatic side effect of completion, so a research degree is conferred with the same rigour as a taught one. Supervision, milestones and the researcher's CRIS profile are closed or synchronised without deleting their history, preserving the full record of how the candidature progressed.
 
 ## Scope
 
@@ -69,11 +69,11 @@ A ratified successful PGR examination outcome and corrections are complete.
 
 ## Main flow
 
-1. **Enrolled Student** verify ratified examination outcome and correction approval.
+1. **PGR Administrator** verify ratified examination outcome and correction approval.
 2. **PGR Administrator** receive the final thesis and enforce any approved access restriction.
 3. **Repository** confirm deposit, metadata and intellectual-property declarations.
 4. **Award Authority** record research candidature completion and effective date.
-5. **PGR Administrator** confer the research award through BP-046 authority.
+5. **Award Authority** confer the research award through BP-06-003 authority.
 6. **Repository** close/synchronise supervision, milestones and CRIS profile without deleting history.
 
 ## Alternative flows
@@ -161,16 +161,16 @@ sequenceDiagram
     participant A2 as PGR Administrator
     participant A3 as Repository
     participant A4 as Award Authority
-    A1->>A2: 1. verify ratified examination outcome and correction approval
-    A2->>A3: 2. receive the final thesis and enforce any approved access restriction
-    A3->>A4: 3. confirm deposit, metadata and intellectual-property declarations
-    A4->>A1: 4. record research candidature completion and effective date
-    A1->>A2: 5. confer the research award through BP-046 authority
-    A2->>A3: 6. close/synchronise supervision, milestones and CRIS profile without deleting history
+    A2->>A2: 1. verifies ratified examination outcome and correction approval
+    A2->>A3: 2. receives the final thesis and enforces any approved access restriction
+    A3->>A4: 3. confirms deposit, metadata and intellectual-property declarations
+    A4->>A4: 4. records research candidature completion and effective date
+    A4->>A3: 5. confers the research award through BP-06-003 authority
+    A3->>A3: 6. closes/synchronises supervision, milestones and CRIS profile without deleting history
     alt Valid and authorised
-        A4->>A1: Record and communicate outcome
+        A3->>A1: Record and communicate outcome
     else Incomplete or exception
-        A4->>A1: Retain case with owner and reason
+        A3->>A1: Retain case with owner and reason
     end
 ```
 

@@ -1,4 +1,4 @@
-# BP-032 — Distribute an approved support outcome
+# BP-04-006 — Distribute an approved support outcome
 
 > Status: Draft
 > Domain: 04 — Learning, engagement and support
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2027-01-26
 
-[Previous: BP-031](../04-learning-engagement-and-support/bp-031-manage-exceptional-circumstances.md) · [Domain index](README.md) · [Next: BP-033](../05-assessment-and-results/bp-033-establish-assessment-structures.md) · [Library home](../README.md)
+[Previous: BP-04-005](../04-learning-engagement-and-support/bp-04-005-manage-exceptional-circumstances.md) · [Domain index](README.md) · [Next: BP-05-001](../05-assessment-and-results/bp-05-001-establish-assessment-structures.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-Distribute an approved support outcome creates a controlled, explainable and effective-dated per-system support distribution and acknowledgement. The outcome preserves the evidence, authority and cross-system state needed for the Revelation SRS rather than reducing the process to a status update.
+This process pushes an already-approved support or adjustment outcome — from reasonable-adjustment or exceptional-circumstances casework — out to every downstream system that needs to act on it, such as exam scheduling, the VLE and attendance monitoring, as per-target, effective-dated instructions. It exists so that each receiving system gets only the operational instruction it needs (add, change or withdraw), each hand-off is acknowledged and reconciled individually, and a failure to apply the outcome in one system never silently revokes the approved outcome or exposes the medical or personal context behind it.
 
 ## Scope
 
@@ -71,8 +71,8 @@ An approved adjustment or support outcome becomes effective or changes.
 ## Main flow
 
 1. **SRS** derive authorised recipients and the minimum instruction for each target.
-2. **Support Service** create one effective-dated distribution item per target.
-3. **Exam Scheduling** send add, change or withdraw instructions idempotently.
+2. **SRS** create one effective-dated distribution item per target.
+3. **SRS** send add, change or withdraw instructions idempotently.
 4. **VLE/Attendance** record acknowledgement and target reference.
 5. **Integration Administrator** surface incomplete delivery to the owning support service.
 6. **Support Service** reconcile target snapshots until every item is applied or explained.
@@ -158,20 +158,22 @@ Terminology, authority, deadlines, evidence, thresholds, communication, appeals/
 
 ```mermaid
 sequenceDiagram
-    actor A1 as SRS
-    participant A2 as Support Service
-    participant A3 as Exam Scheduling
-    participant A4 as VLE/Attendance
-    A1->>A2: 1. derive authorised recipients and the minimum instruction for each target
-    A2->>A3: 2. create one effective-dated distribution item per target
-    A3->>A4: 3. send add, change or withdraw instructions idempotently
-    A4->>A1: 4. record acknowledgement and target reference
-    A1->>A2: 5. surface incomplete delivery to the owning support service
-    A2->>A3: 6. reconcile target snapshots until every item is applied or explained
+    participant SRS
+    participant Support as Support Service
+    participant Exam as Exam Scheduling
+    participant VLE as VLE/Attendance
+    participant IntAdmin as Integration Administrator
+
+    SRS->>SRS: 1. Derive authorised recipients and the minimum instruction for each target
+    SRS->>SRS: 2. Create one effective-dated distribution item per target
+    SRS->>Exam: 3. Send add, change or withdraw instructions idempotently
+    VLE->>SRS: 4. Record acknowledgement and target reference
+    IntAdmin->>Support: 5. Surface incomplete delivery to the owning support service
+    Support->>Support: 6. Reconcile target snapshots until every item is applied or explained
     alt Valid and authorised
-        A4->>A1: Record and communicate outcome
+        SRS-->>Support: Record and communicate outcome
     else Incomplete or exception
-        A4->>A1: Retain case with owner and reason
+        SRS-->>Support: Retain case with owner and reason
     end
 ```
 

@@ -1,4 +1,4 @@
-# BP-059 — Correct personal or enrolment data
+# BP-08-002 — Correct personal or enrolment data
 
 > Status: Draft
 > Domain: 08 — Record governance and lifecycle
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2027-01-26
 
-[Previous: BP-058](../08-record-governance-and-lifecycle/bp-058-resolve-a-duplicate-or-uncertain-identity.md) · [Domain index](README.md) · [Next: BP-060](../08-record-governance-and-lifecycle/bp-060-fulfil-a-data-subject-access-request.md) · [Library home](../README.md)
+[Previous: BP-08-001](../08-record-governance-and-lifecycle/bp-08-001-resolve-a-duplicate-or-uncertain-identity.md) · [Domain index](README.md) · [Next: BP-08-003](../08-record-governance-and-lifecycle/bp-08-003-fulfil-a-data-subject-access-request.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-Correct personal or enrolment data creates a controlled, explainable and effective-dated authorised bitemporal correction and reason. The outcome preserves the evidence, authority and cross-system state needed for the Revelation SRS rather than reducing the process to a status update.
+Student and enrolment facts sometimes need correcting: a date of birth was mistyped, a programme code was wrong at enrolment, or a fact that was once true has since changed. This process gives Registry and the relevant data owner a controlled way to verify the evidence, check who has the authority to change the record and whether the change has statutory consequences, before the correction is applied. Because the SRS is bitemporal, the correction is appended as a new dated version with its reason recorded rather than overwriting history, and any reports, returns or derived figures that depended on the old value are recalculated and reissued to the systems that consumed them.
 
 ## Scope
 
@@ -69,12 +69,12 @@ An evidenced error or effective change to a core fact is reported.
 
 ## Main flow
 
-1. **Student/Requester** identify the exact fact, source, effective period and impacted outputs.
-2. **Registry Officer** classify correction versus current change and verify evidence.
-3. **Data Owner** check authority, sensitivity and statutory consequences.
-4. **SRS** append the new effective/transaction-time version with reason.
-5. **Registry Officer** recalculate and publish affected derived facts.
-6. **Data Owner** reconcile consumers and notify the requester/outcome owner.
+1. **Student/Requester** reports the fact believed to be incorrect, its source and the effective period affected.
+2. **Registry Officer** classifies correction versus current change, identifies impacted outputs and verifies the evidence.
+3. **Data Owner** checks authority, sensitivity and statutory consequences.
+4. **SRS** appends the new effective/transaction-time version with reason.
+5. **SRS** recalculates and publishes affected derived facts.
+6. **Data Owner** reconciles consumers and notifies the requester/outcome owner.
 
 ## Alternative flows
 
@@ -90,7 +90,7 @@ An evidenced error or effective change to a core fact is reported.
 
 ### E1 — Control exception
 
-- **E1.1** Academic judgement uses BP-043 rather than general correction.
+- **E1.1** Academic judgement uses BP-05-011 rather than general correction.
 
 ### E2 — Control exception
 
@@ -161,16 +161,17 @@ sequenceDiagram
     participant A2 as Registry Officer
     participant A3 as Data Owner
     participant A4 as SRS
-    A1->>A2: 1. identify the exact fact, source, effective period and impacted outputs
-    A2->>A3: 2. classify correction versus current change and verify evidence
-    A3->>A4: 3. check authority, sensitivity and statutory consequences
-    A4->>A1: 4. append the new effective/transaction-time version with reason
-    A1->>A2: 5. recalculate and publish affected derived facts
-    A2->>A3: 6. reconcile consumers and notify the requester/outcome owner
+
+    A1->>A2: 1. Report the fact believed to be incorrect, its source and effective period
+    A2->>A3: 2. Classify correction versus current change, identify impacted outputs and verify evidence
+    A3->>A4: 3. Check authority, sensitivity and statutory consequences
+    A4->>A4: 4. Append the new effective/transaction-time version with reason
+    A4->>A3: 5. Recalculate and publish affected derived facts
+    A3->>A1: 6. Reconcile consumers and notify the requester/outcome owner
     alt Valid and authorised
-        A4->>A1: Record and communicate outcome
+        A4-->>A1: Record and communicate outcome
     else Incomplete or exception
-        A4->>A1: Retain case with owner and reason
+        A2->>A2: Retain case with owner and reason
     end
 ```
 

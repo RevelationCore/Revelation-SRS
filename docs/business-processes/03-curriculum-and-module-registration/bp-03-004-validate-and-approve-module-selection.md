@@ -1,4 +1,4 @@
-# BP-023 — Validate and approve module selection
+# BP-03-004 — Validate and approve module selection
 
 > Status: Draft
 > Domain: 03 — Curriculum and module registration
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2027-01-26
 
-[Previous: BP-022](bp-022-select-modules.md) · [Domain index](README.md) · [Next: BP-024](bp-024-change-module-registration.md) · [Library home](../README.md)
+[Previous: BP-03-003](bp-03-003-select-modules.md) · [Domain index](README.md) · [Next: BP-03-005](bp-03-005-change-module-registration.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -36,7 +36,7 @@ This process applies the student's binding curriculum rules and authorised acade
 
 ## Scope
 
-**Starts when:** BP-022 submits a complete proposal.
+**Starts when:** BP-03-003 submits a complete proposal.
 
 **Ends when:** Registrations are confirmed, returned for reselection, waitlisted, or rejected with reasons.
 
@@ -77,7 +77,7 @@ Submission of a module-selection proposal.
 5. **Approver** approves, rejects, substitutes, waitlists or requests evidence within delegated authority.
 6. **Registry Administrator/SRS** confirms an internally consistent final set and records rules version, decision, authority and rationale.
 7. **SRS** creates bitemporal `registered` module registrations and publishes one idempotent event per confirmed registration.
-8. **SRS** notifies the student and starts BP-025.
+8. **SRS** notifies the student and starts BP-03-006.
 
 ## Alternative flows
 
@@ -97,7 +97,7 @@ Submission of a module-selection proposal.
 
 ### E2 — Invalid set
 
-- **E2.1** Return actionable reasons and permitted alternatives to BP-022 without partial hidden registration.
+- **E2.1** Return actionable reasons and permitted alternatives to BP-03-003 without partial hidden registration.
 
 ### E6 — Concurrent approval changes conflict
 
@@ -198,7 +198,7 @@ sequenceDiagram
 
 ## Related processes
 
-[BP-022](bp-022-select-modules.md); [BP-024](bp-024-change-module-registration.md); [BP-025](bp-025-provision-confirmed-registrations.md).
+[BP-03-003](bp-03-003-select-modules.md); [BP-03-005](bp-03-005-change-module-registration.md); [BP-03-006](bp-03-006-provision-confirmed-registrations.md).
 
 ## Review record
 

@@ -1,4 +1,4 @@
-# BP-008 — Prepare a student for initial registration
+# BP-02-001 — Prepare a student for initial registration
 
 > Status: Draft
 > Domain: 02 — Registration and student status
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2027-01-26
 
-[Domain index](README.md) · [Next: BP-009](bp-009-verify-identity-and-right-to-study.md) · [Library home](../README.md)
+[Domain index](README.md) · [Next: BP-02-002](bp-02-002-verify-identity-and-right-to-study.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -42,7 +42,7 @@ This process turns an accepted applicant outcome into a registration-ready stude
 
 **In scope:** UCAS/direct, taught/research and partner applicants.
 
-**Out of scope:** Identity approval (BP-009), academic registration (BP-010), financial registration (BP-011).
+**Out of scope:** Identity approval (BP-02-002), academic registration (BP-02-003), financial registration (BP-02-004).
 
 ## Actors and responsibilities
 
@@ -76,7 +76,7 @@ Accepted applicant reaches the provider's registration preparation point.
 4. **SRS** requests a limited pre-registration account from **Identity and Access Management**.
 5. **Identity and Access Management** returns the account reference/state.
 6. **SRS** invites the **Prospective Student** through a verified contact route and displays applicable deadlines/actions.
-7. **SRS** records delivery/account acknowledgement and makes the case ready for BP-009–BP-011.
+7. **SRS** records delivery/account acknowledgement and makes the case ready for BP-02-002–BP-02-004.
 
 ## Alternative flows
 
@@ -97,7 +97,7 @@ Accepted applicant reaches the provider's registration preparation point.
 
 ### E2 — Possible duplicate identity
 
-- **E2.1** Route to BP-058; do not issue a second permanent identity.
+- **E2.1** Route to BP-08-001; do not issue a second permanent identity.
 
 ## Postconditions
 
@@ -185,7 +185,7 @@ sequenceDiagram
 
 ## Related processes
 
-BP-007; [BP-009](bp-009-verify-identity-and-right-to-study.md); BP-010; BP-011.
+BP-01-007; [BP-02-002](bp-02-002-verify-identity-and-right-to-study.md); BP-02-003; BP-02-004.
 
 ## Review record
 

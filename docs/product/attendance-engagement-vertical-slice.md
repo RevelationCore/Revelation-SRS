@@ -10,7 +10,7 @@
 
 Deliver the first demonstrable, end-to-end capability created from the UK HE business-process review: derive expected academic engagement events, record and correct observations, identify possible non-engagement, and manage a proportionate intervention without allowing raw attendance to trigger an academic-status or sponsor-reporting decision.
 
-The slice implements [BP-027](../business-processes/04-learning-engagement-and-support/bp-027-record-attendance-and-academic-engagement-evidence.md) and the alert, triage, contact and closure portion of [BP-028](../business-processes/04-learning-engagement-and-support/bp-028-investigate-and-respond-to-non-engagement.md).
+The slice implements [BP-04-001](../business-processes/04-learning-engagement-and-support/bp-04-001-record-attendance-and-academic-engagement-evidence.md) and the alert, triage, contact and closure portion of [BP-04-002](../business-processes/04-learning-engagement-and-support/bp-04-002-investigate-and-respond-to-non-engagement.md).
 
 ## Scope boundary
 
@@ -224,7 +224,7 @@ No nation implies an automatic adverse outcome from an attendance threshold.
 
 | Concern | References |
 |---|---|
-| Business processes | BP-027; BP-028; referral boundary to BP-052 |
+| Business processes | BP-04-001; BP-04-002; referral boundary to BP-07-003 |
 | Backlog | BPR-W07; BPR-D08; BPR-I03 |
 | Requirements | ESP-001–ESP-006; BPC-007; XIC-001–XIC-007 |
 | Architecture decisions | ADR-016; ADR-017; ADR-019; ADR-022 |

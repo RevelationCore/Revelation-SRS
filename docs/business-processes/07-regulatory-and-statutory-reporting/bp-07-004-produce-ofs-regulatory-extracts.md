@@ -1,4 +1,4 @@
-# BP-053 — Produce OfS regulatory extracts
+# BP-07-004 — Produce OfS regulatory extracts
 
 > Status: Draft
 > Domain: 07 — Regulatory and statutory reporting
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2027-01-26
 
-[Previous: BP-052](../07-regulatory-and-statutory-reporting/bp-052-manage-student-sponsor-reporting-and-compliance.md) · [Domain index](README.md) · [Next: BP-054](../07-regulatory-and-statutory-reporting/bp-054-produce-scottish-funding-council-returns.md) · [Library home](../README.md)
+[Previous: BP-07-003](../07-regulatory-and-statutory-reporting/bp-07-003-manage-student-sponsor-reporting-and-compliance.md) · [Domain index](README.md) · [Next: BP-07-005](../07-regulatory-and-statutory-reporting/bp-07-005-produce-scottish-funding-council-returns.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-Produce OfS regulatory extracts creates a controlled, explainable and effective-dated England regulatory extract, evidence and sign-off. The outcome preserves the evidence, authority and cross-system state needed for the Revelation SRS rather than reducing the process to a status update.
+Producing OfS regulatory extracts turns the institution's live student records into the frozen, lineage-tracked data set the Office for Students requires for a specific regulatory return, with disclosure controls applied before anything leaves the institution. Freezing definitions and the population at a source cut-off, and validating the extract against prior submissions and source totals before it is signed off, catches a definitional drift or a totals mismatch before it reaches the regulator rather than after. The accountable officer's sign-off and the reproducible version of what was actually submitted are retained together, so the institution can always explain a past return.
 
 ## Scope
 
@@ -71,8 +71,8 @@ An OfS requirement, monitoring request or scheduled return is due.
 
 1. **Regulatory Data Officer** confirm provider category, requirement, notice and deadline.
 2. **Data Owner** freeze definitions, population and source cut-off.
-3. **Accountable Officer** extract with field/metric lineage and disclosure controls.
-4. **OfS** validate against prior submissions and source totals.
+3. **Data Owner** extract with field/metric lineage and disclosure controls.
+4. **Regulatory Data Officer** validate against prior submissions and source totals.
 5. **Data Owner** obtain accountable sign-off and submit securely.
 6. **Accountable Officer** retain receipt, queries, corrections and reproducible version.
 
@@ -161,16 +161,16 @@ sequenceDiagram
     participant A2 as Data Owner
     participant A3 as Accountable Officer
     participant A4 as OfS
-    A1->>A2: 1. confirm provider category, requirement, notice and deadline
-    A2->>A3: 2. freeze definitions, population and source cut-off
-    A3->>A4: 3. extract with field/metric lineage and disclosure controls
-    A4->>A1: 4. validate against prior submissions and source totals
-    A1->>A2: 5. obtain accountable sign-off and submit securely
-    A2->>A3: 6. retain receipt, queries, corrections and reproducible version
+    A1->>A2: 1. confirms provider category, requirement, notice and deadline
+    A2->>A2: 2. freezes definitions, population and source cut-off
+    A2->>A1: 3. extracts with field/metric lineage and disclosure controls
+    A1->>A2: 4. validates against prior submissions and source totals
+    A2->>A4: 5. obtains accountable sign-off and submits securely
+    A3->>A3: 6. retains receipt, queries, corrections and reproducible version
     alt Valid and authorised
-        A4->>A1: Record and communicate outcome
+        A3->>A1: Record and communicate outcome
     else Incomplete or exception
-        A4->>A1: Retain case with owner and reason
+        A3->>A1: Retain case with owner and reason
     end
 ```
 

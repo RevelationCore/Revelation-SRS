@@ -1,4 +1,4 @@
-# BP-061 — Assess restriction, rectification or erasure rights
+# BP-08-004 — Assess restriction, rectification or erasure rights
 
 > Status: Draft
 > Domain: 08 — Record governance and lifecycle
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2027-01-26
 
-[Previous: BP-060](../08-record-governance-and-lifecycle/bp-060-fulfil-a-data-subject-access-request.md) · [Domain index](README.md) · [Next: BP-062](../08-record-governance-and-lifecycle/bp-062-retain-archive-and-dispose-of-student-records.md) · [Library home](../README.md)
+[Previous: BP-08-003](../08-record-governance-and-lifecycle/bp-08-003-fulfil-a-data-subject-access-request.md) · [Domain index](README.md) · [Next: BP-08-005](../08-record-governance-and-lifecycle/bp-08-005-retain-archive-and-dispose-of-student-records.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-Assess restriction, rectification or erasure rights creates a controlled, explainable and effective-dated individual-rights decision and propagated action. The outcome preserves the evidence, authority and cross-system state needed for the Revelation SRS rather than reducing the process to a status update.
+Assessing restriction, rectification or erasure rights turns a data subject's Article 16, 17 or 18 request into a reasoned decision — approved, partly approved or refused — reached by consulting every data owner whose system holds the data in question, not just the one the request happened to arrive through. Each right is assessed on its own lawful basis and retention position rather than treated as a single all-or-nothing action, and any correction, restriction marker or erasure is applied at the authoritative source before being propagated to every system that received a copy. Minimal compliance evidence is retained so the institution can demonstrate what it did and why, without retaining more of the disputed data than necessary.
 
 ## Scope
 
@@ -69,12 +69,12 @@ A person requests rectification, restriction or erasure.
 
 ## Main flow
 
-1. **Data Subject** log and verify the request and exact data/processing in scope.
+1. **Data Subject** submit the request, identifying the data/processing believed to be in scope.
 2. **Data Protection Officer** identify lawful bases, statutory/contractual retention and exceptions.
-3. **Data Owner** consult data owners and assess each requested right separately.
-4. **Integration Administrator** record reasoned approve, partly approve or refuse decision.
-5. **Data Protection Officer** apply correction, restriction marker or governed erasure at authoritative sources.
-6. **Data Owner** propagate to recipients and retain minimal compliance evidence.
+3. **Data Protection Officer** consult data owners and assess each requested right separately.
+4. **Data Protection Officer** record reasoned approve, partly approve or refuse decision.
+5. **Data Owner** apply correction, restriction marker or governed erasure at authoritative sources.
+6. **Integration Administrator** propagate to recipients and retain minimal compliance evidence.
 
 ## Alternative flows
 
@@ -161,12 +161,12 @@ sequenceDiagram
     participant A2 as Data Protection Officer
     participant A3 as Data Owner
     participant A4 as Integration Administrator
-    A1->>A2: 1. log and verify the request and exact data/processing in scope
-    A2->>A3: 2. identify lawful bases, statutory/contractual retention and exceptions
-    A3->>A4: 3. consult data owners and assess each requested right separately
-    A4->>A1: 4. record reasoned approve, partly approve or refuse decision
-    A1->>A2: 5. apply correction, restriction marker or governed erasure at authoritative sources
-    A2->>A3: 6. propagate to recipients and retain minimal compliance evidence
+    A1->>A2: 1. submits the request, identifying the data/processing believed to be in scope
+    A2->>A2: 2. identifies lawful bases, statutory/contractual retention and exceptions
+    A2->>A3: 3. consults data owners and assesses each requested right separately
+    A2->>A3: 4. records reasoned approve, partly approve or refuse decision
+    A3->>A4: 5. applies correction, restriction marker or governed erasure at authoritative sources
+    A4->>A1: 6. propagates to recipients and retains minimal compliance evidence
     alt Valid and authorised
         A4->>A1: Record and communicate outcome
     else Incomplete or exception

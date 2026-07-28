@@ -1,4 +1,4 @@
-# BP-029 — Review PGR progress and milestones
+# BP-04-003 — Review PGR progress and milestones
 
 > Status: Draft
 > Domain: 04 — Learning, engagement and support
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2027-01-26
 
-[Previous: BP-028](../04-learning-engagement-and-support/bp-028-investigate-and-respond-to-non-engagement.md) · [Domain index](README.md) · [Next: BP-030](../04-learning-engagement-and-support/bp-030-manage-a-reasonable-adjustment-case.md) · [Library home](../README.md)
+[Previous: BP-04-002](../04-learning-engagement-and-support/bp-04-002-investigate-and-respond-to-non-engagement.md) · [Domain index](README.md) · [Next: BP-04-004](../04-learning-engagement-and-support/bp-04-004-manage-a-reasonable-adjustment-case.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-Review PGR progress and milestones creates a controlled, explainable and effective-dated PGR review, evidence, milestone and progression outcome. The outcome preserves the evidence, authority and cross-system state needed for the Revelation SRS rather than reducing the process to a status update.
+This process governs the formal review of a postgraduate research student's progress against their candidature and supervision milestones — covering initial, annual, upgrade/confirmation and return-from-interruption reviews. It exists to give progress decisions (continue, apply conditions, refer, transfer or escalate) proper independent scrutiny before they affect a student's candidature, so a supervisor's own evidence is checked by a panel that is not marking its own work, and the record shows what evidence was considered, who reviewed it, and under what authority the outcome was reached.
 
 ## Scope
 
@@ -69,12 +69,12 @@ A scheduled or exceptional PGR progress review is due.
 
 ## Main flow
 
-1. **Enrolled Student** open the review against the candidature and current supervision period.
+1. **PGR Administrator** open the review against the candidature and current supervision period.
 2. **Research Supervisor** collect student report, supervisory evidence, training and milestone status.
-3. **Independent Reviewer/Panel** check independence, conflicts and required panel composition.
-4. **PGR Administrator** conduct the review and record evidence considered.
-5. **Research Supervisor** decide satisfactory progress, conditions, referral, transfer or escalation under regulations.
-6. **Independent Reviewer/Panel** publish the authorised milestone/outcome and schedule follow-up.
+3. **PGR Administrator** check independence, conflicts and required panel composition.
+4. **Independent Reviewer/Panel** conduct the review and record evidence considered.
+5. **Independent Reviewer/Panel** decide satisfactory progress, conditions, referral, transfer or escalation under regulations.
+6. **PGR Administrator** publish the authorised milestone/outcome and schedule follow-up.
 
 ## Alternative flows
 
@@ -158,20 +158,21 @@ Terminology, authority, deadlines, evidence, thresholds, communication, appeals/
 
 ```mermaid
 sequenceDiagram
-    actor A1 as Enrolled Student
-    participant A2 as Research Supervisor
-    participant A3 as Independent Reviewer/Panel
-    participant A4 as PGR Administrator
-    A1->>A2: 1. open the review against the candidature and current supervision period
-    A2->>A3: 2. collect student report, supervisory evidence, training and milestone status
-    A3->>A4: 3. check independence, conflicts and required panel composition
-    A4->>A1: 4. conduct the review and record evidence considered
-    A1->>A2: 5. decide satisfactory progress, conditions, referral, transfer or escalation under regulations
-    A2->>A3: 6. publish the authorised milestone/outcome and schedule follow-up
+    actor Student as Enrolled Student
+    participant Supervisor as Research Supervisor
+    participant Panel as Independent Reviewer/Panel
+    participant Admin as PGR Administrator
+
+    Admin->>Supervisor: 1. Open the review against the candidature and current supervision period
+    Supervisor->>Admin: 2. Collect student report, supervisory evidence, training and milestone status
+    Admin->>Panel: 3. Check independence, conflicts and required panel composition
+    Panel->>Panel: 4. Conduct the review and record evidence considered
+    Panel->>Admin: 5. Decide satisfactory progress, conditions, referral, transfer or escalation under regulations
+    Admin->>Student: 6. Publish the authorised milestone/outcome and schedule follow-up
     alt Valid and authorised
-        A4->>A1: Record and communicate outcome
+        Admin-->>Student: Record and communicate outcome
     else Incomplete or exception
-        A4->>A1: Retain case with owner and reason
+        Admin-->>Student: Retain case with owner and reason
     end
 ```
 

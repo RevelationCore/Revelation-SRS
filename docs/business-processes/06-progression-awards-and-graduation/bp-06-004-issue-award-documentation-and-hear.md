@@ -1,4 +1,4 @@
-# BP-047 — Issue award documentation and HEAR
+# BP-06-004 — Issue award documentation and HEAR
 
 > Status: Draft
 > Domain: 06 — Progression, awards and graduation
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2027-01-26
 
-[Previous: BP-046](../06-progression-awards-and-graduation/bp-046-determine-and-confer-an-award.md) · [Domain index](README.md) · [Next: BP-048](../06-progression-awards-and-graduation/bp-048-determine-graduation-eligibility-and-attendance.md) · [Library home](../README.md)
+[Previous: BP-06-003](../06-progression-awards-and-graduation/bp-06-003-determine-and-confer-an-award.md) · [Domain index](README.md) · [Next: BP-06-005](../06-progression-awards-and-graduation/bp-06-005-determine-graduation-eligibility-and-attendance.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-Issue award documentation and HEAR creates a controlled, explainable and effective-dated issued certificate, transcript and HEAR version. The outcome preserves the evidence, authority and cross-system state needed for the Revelation SRS rather than reducing the process to a status update.
+Issuing award documentation and the Higher Education Achievement Report turns a conferred award into the certificate, transcript and HEAR a graduate can actually present to an employer or another institution, generated only from verified, authoritative award and result data. Each document is authorised and signed before it is issued, and delivered only through a secure channel, so a graduate always receives a document the institution can stand behind and later verify. Every issue, replacement, revocation and verification check is recorded, so the institution can always confirm what was issued to whom and whether it remains valid.
 
 ## Scope
 
@@ -70,10 +70,10 @@ A conferred award or authorised academic record is ready for documentation.
 ## Main flow
 
 1. **Registry Documents Officer** select the conferred award and approved document templates.
-2. **Graduate** assemble verified names, programme, results and achievement data.
+2. **Registry Documents Officer** assemble verified names, programme, results and achievement data.
 3. **Document Service** generate accessible certificate/transcript/HEAR outputs.
 4. **SRS** authorise and cryptographically/reference-sign the issue.
-5. **Graduate** deliver through the selected secure channel.
+5. **Document Service** deliver through the selected secure channel.
 6. **Document Service** record issue, replacement, revocation and verification status.
 
 ## Alternative flows
@@ -161,16 +161,16 @@ sequenceDiagram
     participant A2 as Graduate
     participant A3 as Document Service
     participant A4 as SRS
-    A1->>A2: 1. select the conferred award and approved document templates
-    A2->>A3: 2. assemble verified names, programme, results and achievement data
-    A3->>A4: 3. generate accessible certificate/transcript/HEAR outputs
-    A4->>A1: 4. authorise and cryptographically/reference-sign the issue
-    A1->>A2: 5. deliver through the selected secure channel
-    A2->>A3: 6. record issue, replacement, revocation and verification status
+    A1->>A1: 1. selects the conferred award and approved document templates
+    A1->>A3: 2. assembles verified names, programme, results and achievement data
+    A3->>A4: 3. generates accessible certificate/transcript/HEAR outputs
+    A4->>A3: 4. authorises and cryptographically/reference-signs the issue
+    A3->>A2: 5. delivers through the selected secure channel
+    A3->>A3: 6. records issue, replacement, revocation and verification status
     alt Valid and authorised
-        A4->>A1: Record and communicate outcome
+        A3->>A2: Record and communicate outcome
     else Incomplete or exception
-        A4->>A1: Retain case with owner and reason
+        A3->>A2: Retain case with owner and reason
     end
 ```
 

@@ -1,4 +1,4 @@
-# BP-035 — Receive or enter marks
+# BP-05-003 — Receive or enter marks
 
 > Status: Draft
 > Domain: 05 — Assessment and results
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2027-01-26
 
-[Previous: BP-034](../05-assessment-and-results/bp-034-create-examination-entries-and-accommodations.md) · [Domain index](README.md) · [Next: BP-036](../05-assessment-and-results/bp-036-moderate-and-confirm-marks.md) · [Library home](../README.md)
+[Previous: BP-05-002](../05-assessment-and-results/bp-05-002-create-examination-entries-and-accommodations.md) · [Domain index](README.md) · [Next: BP-05-004](../05-assessment-and-results/bp-05-004-moderate-and-confirm-marks.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-Receive or enter marks creates a controlled, explainable and effective-dated raw mark, grade, absence and submission evidence. The outcome preserves the evidence, authority and cross-system state needed for the Revelation SRS rather than reducing the process to a status update.
+Receiving or entering marks turns a marker's assessment of a candidate's work into a validated, provenance-tracked raw result the institution can rely on. Marks are checked against the marking scale, the marker's authority to mark that assessment, and the correct candidate before they are accepted, so an out-of-range, unauthorised or misattributed entry is caught before it ever reaches moderation. Keeping the raw entry and its source distinct from any later moderated value preserves an honest record of what was first submitted and by whom.
 
 ## Scope
 
@@ -161,16 +161,16 @@ sequenceDiagram
     participant A2 as Module Leader
     participant A3 as Assessment System
     participant A4 as SRS
-    A1->>A2: 1. open the correct assessment instance and candidate attempt
-    A2->>A3: 2. receive mark, grade, absence/non-submission code and source evidence
-    A3->>A4: 3. validate range, scale, marker authority and candidate mapping
-    A4->>A1: 4. store the raw result with provenance and transaction time
-    A1->>A2: 5. flag missing, anomalous or conflicting entries
-    A2->>A3: 6. close the entry window and hand the complete set to moderation
+    A1->>A2: 1. opens the correct assessment instance and candidate attempt
+    A2->>A3: 2. receives mark, grade, absence/non-submission code and source evidence
+    A3->>A4: 3. validates range, scale, marker authority and candidate mapping
+    A4->>A2: 4. stores the raw result with provenance and transaction time
+    A2->>A3: 5. flags missing, anomalous or conflicting entries
+    A3->>A4: 6. closes the entry window and hands the complete set to moderation
     alt Valid and authorised
-        A4->>A1: Record and communicate outcome
+        A3->>A1: Record and communicate outcome
     else Incomplete or exception
-        A4->>A1: Retain case with owner and reason
+        A3->>A1: Retain case with owner and reason
     end
 ```
 

@@ -1,4 +1,4 @@
-# BP-038 — Investigate academic misconduct
+# BP-05-006 — Investigate academic misconduct
 
 > Status: Draft
 > Domain: 05 — Assessment and results
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2027-01-26
 
-[Previous: BP-037](../05-assessment-and-results/bp-037-determine-a-module-result.md) · [Domain index](README.md) · [Next: BP-039](../05-assessment-and-results/bp-039-prepare-an-exam-board-and-data-pack.md) · [Library home](../README.md)
+[Previous: BP-05-005](../05-assessment-and-results/bp-05-005-determine-a-module-result.md) · [Domain index](README.md) · [Next: BP-05-007](../05-assessment-and-results/bp-05-007-prepare-an-exam-board-and-data-pack.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-Investigate academic misconduct creates a controlled, explainable and effective-dated misconduct case, finding and authorised penalty effect. The outcome preserves the evidence, authority and cross-system state needed for the Revelation SRS rather than reducing the process to a status update.
+Investigating academic misconduct turns an allegation into a fair, evidenced finding, kept separate from the module's academic marking so a live investigation cannot quietly bias a result before it is decided. The student is given a genuine opportunity to respond, and any finding, penalty or review route is recorded with its reasoning, so the process can withstand a later appeal. Only the authorised, final academic-record effect — not the investigation's internal working — is passed to assessment processing.
 
 ## Scope
 
@@ -70,11 +70,11 @@ A sufficiently specific academic misconduct allegation is raised.
 ## Main flow
 
 1. **Academic Integrity Officer** record the allegation and preserve source evidence with restricted access.
-2. **Enrolled Student** complete a threshold/conflict check.
+2. **Academic Integrity Officer** complete a threshold/conflict check.
 3. **Investigator** notify the student and provide a fair response opportunity.
-4. **Panel/Decision Maker** investigate and, where required, hold a panel/hearing.
-5. **Enrolled Student** record finding, reasons, penalty and review/appeal route.
-6. **Investigator** send only the authorised academic-record effect to assessment processing.
+4. **Investigator** investigate and, where required, hold a panel/hearing.
+5. **Panel/Decision Maker** record finding, reasons, penalty and review/appeal route.
+6. **Panel/Decision Maker** send only the authorised academic-record effect to assessment processing.
 
 ## Alternative flows
 
@@ -161,16 +161,16 @@ sequenceDiagram
     participant A2 as Enrolled Student
     participant A3 as Investigator
     participant A4 as Panel/Decision Maker
-    A1->>A2: 1. record the allegation and preserve source evidence with restricted access
-    A2->>A3: 2. complete a threshold/conflict check
-    A3->>A4: 3. notify the student and provide a fair response opportunity
-    A4->>A1: 4. investigate and, where required, hold a panel/hearing
-    A1->>A2: 5. record finding, reasons, penalty and review/appeal route
-    A2->>A3: 6. send only the authorised academic-record effect to assessment processing
+    A1->>A1: 1. records the allegation and preserves source evidence with restricted access
+    A1->>A3: 2. completes a threshold/conflict check
+    A3->>A2: 3. notifies the student and provides a fair response opportunity
+    A3->>A4: 4. investigates and, where required, holds a panel/hearing
+    A4->>A2: 5. records finding, reasons, penalty and review/appeal route
+    A4->>A4: 6. sends only the authorised academic-record effect to assessment processing
     alt Valid and authorised
-        A4->>A1: Record and communicate outcome
+        A4->>A2: Record and communicate outcome
     else Incomplete or exception
-        A4->>A1: Retain case with owner and reason
+        A4->>A2: Retain case with owner and reason
     end
 ```
 

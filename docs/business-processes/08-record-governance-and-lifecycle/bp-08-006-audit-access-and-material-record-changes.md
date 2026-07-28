@@ -1,4 +1,4 @@
-# BP-063 — Audit access and material record changes
+# BP-08-006 — Audit access and material record changes
 
 > Status: Draft
 > Domain: 08 — Record governance and lifecycle
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2027-01-26
 
-[Previous: BP-062](../08-record-governance-and-lifecycle/bp-062-retain-archive-and-dispose-of-student-records.md) · [Domain index](README.md) · [Library home](../README.md) · [Library home](../README.md)
+[Previous: BP-08-005](../08-record-governance-and-lifecycle/bp-08-005-retain-archive-and-dispose-of-student-records.md) · [Domain index](README.md) · [Library home](../README.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-Audit access and material record changes creates a controlled, explainable and effective-dated immutable access/change evidence and review case. The outcome preserves the evidence, authority and cross-system state needed for the Revelation SRS rather than reducing the process to a status update.
+Auditing access and material record changes turns tamper-evident system logs into a defensible answer to who accessed or changed a specific record, when, and under what authority — scoped to a defined audit purpose rather than open-ended surveillance. Correlating actor, role, purpose and before/after values against the stated purpose is what actually surfaces an anomalous access or an unauthorised change, rather than the raw logs alone. Findings and their evidence are preserved before the case is closed or referred on to whichever process — incident, disciplinary, correction or individual-rights — is actually equipped to act on them.
 
 ## Scope
 
@@ -161,16 +161,16 @@ sequenceDiagram
     participant A2 as Data Protection Officer
     participant A3 as System Owner
     participant A4 as Investigator
-    A1->>A2: 1. define audit purpose, scope, authority and review period
-    A2->>A3: 2. retrieve tamper-evident access, change and privileged-action logs
-    A3->>A4: 3. correlate actor, role, purpose, object, before/after reference and timestamp
-    A4->>A1: 4. identify anomalous access or unauthorised material change
-    A1->>A2: 5. record findings, evidence preservation and remediation owner
-    A2->>A3: 6. close or refer to incident, disciplinary, correction or rights processes
+    A1->>A2: 1. defines audit purpose, scope, authority and review period
+    A2->>A3: 2. retrieves tamper-evident access, change and privileged-action logs
+    A3->>A4: 3. correlates actor, role, purpose, object, before/after reference and timestamp
+    A4->>A2: 4. identifies anomalous access or unauthorised material change
+    A2->>A3: 5. records findings, evidence preservation and remediation owner
+    A3->>A3: 6. closes or refers to incident, disciplinary, correction or rights processes
     alt Valid and authorised
-        A4->>A1: Record and communicate outcome
+        A3->>A1: Record and communicate outcome
     else Incomplete or exception
-        A4->>A1: Retain case with owner and reason
+        A3->>A1: Retain case with owner and reason
     end
 ```
 

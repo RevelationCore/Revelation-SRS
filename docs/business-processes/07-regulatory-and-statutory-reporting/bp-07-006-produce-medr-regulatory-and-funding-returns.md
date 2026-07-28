@@ -1,4 +1,4 @@
-# BP-055 — Produce Medr regulatory and funding returns
+# BP-07-006 — Produce Medr regulatory and funding returns
 
 > Status: Draft
 > Domain: 07 — Regulatory and statutory reporting
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2027-01-26
 
-[Previous: BP-054](../07-regulatory-and-statutory-reporting/bp-054-produce-scottish-funding-council-returns.md) · [Domain index](README.md) · [Next: BP-056](../07-regulatory-and-statutory-reporting/bp-056-produce-department-for-the-economy-returns.md) · [Library home](../README.md)
+[Previous: BP-07-005](../07-regulatory-and-statutory-reporting/bp-07-005-produce-scottish-funding-council-returns.md) · [Domain index](README.md) · [Next: BP-07-007](../07-regulatory-and-statutory-reporting/bp-07-007-produce-department-for-the-economy-returns.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-Produce Medr regulatory and funding returns creates a controlled, explainable and effective-dated Medr return/analysis output and sign-off. The outcome preserves the evidence, authority and cross-system state needed for the Revelation SRS rather than reducing the process to a status update.
+Producing Medr regulatory and funding returns turns the institution's Welsh-medium, funding and apprenticeship data into the return Medr requires, built from a frozen population and definitions so the figures cannot silently drift while the return is being prepared. Validating funding, equality, apprenticeship and Welsh-medium classifications against the institution's own records before sign-off catches a misclassification before it reaches the regulator. Outputs, queries, corrections and a reproducible snapshot of what was submitted are all retained together.
 
 ## Scope
 
@@ -71,8 +71,8 @@ A Medr data requirement or funding return reaches its extraction date.
 
 1. **Medr Returns Officer** confirm provider type, requirement, HESA dependency and deadline.
 2. **Data Owners** freeze population, Welsh-medium and funding definitions.
-3. **Accountable Signatory** extract with lineage and applicable IRIS/data-quality mappings.
-4. **Medr** validate funding, equality, apprenticeship and Welsh-medium uses.
+3. **Data Owners** extract with lineage and applicable IRIS/data-quality mappings.
+4. **Medr Returns Officer** validate funding, equality, apprenticeship and Welsh-medium uses.
 5. **Data Owners** sign off and submit through the specified channel.
 6. **Accountable Signatory** retain outputs, queries, corrections and reproducible snapshot.
 
@@ -94,7 +94,7 @@ A Medr data requirement or funding return reaches its extraction date.
 
 ### E2 — Control exception
 
-- **E2.1** Quality-query correction follows BP-057.
+- **E2.1** Quality-query correction follows BP-07-008.
 
 ## Postconditions
 
@@ -161,16 +161,16 @@ sequenceDiagram
     participant A2 as Data Owners
     participant A3 as Accountable Signatory
     participant A4 as Medr
-    A1->>A2: 1. confirm provider type, requirement, HESA dependency and deadline
-    A2->>A3: 2. freeze population, Welsh-medium and funding definitions
-    A3->>A4: 3. extract with lineage and applicable IRIS/data-quality mappings
-    A4->>A1: 4. validate funding, equality, apprenticeship and Welsh-medium uses
-    A1->>A2: 5. sign off and submit through the specified channel
-    A2->>A3: 6. retain outputs, queries, corrections and reproducible snapshot
+    A1->>A2: 1. confirms provider type, requirement, HESA dependency and deadline
+    A2->>A2: 2. freezes population, Welsh-medium and funding definitions
+    A2->>A1: 3. extracts with lineage and applicable IRIS/data-quality mappings
+    A1->>A2: 4. validates funding, equality, apprenticeship and Welsh-medium uses
+    A2->>A4: 5. signs off and submits through the specified channel
+    A3->>A3: 6. retains outputs, queries, corrections and reproducible snapshot
     alt Valid and authorised
-        A4->>A1: Record and communicate outcome
+        A3->>A1: Record and communicate outcome
     else Incomplete or exception
-        A4->>A1: Retain case with owner and reason
+        A3->>A1: Retain case with owner and reason
     end
 ```
 

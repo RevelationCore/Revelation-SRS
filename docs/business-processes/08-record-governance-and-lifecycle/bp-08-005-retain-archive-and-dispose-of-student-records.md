@@ -1,4 +1,4 @@
-# BP-062 — Retain, archive and dispose of student records
+# BP-08-005 — Retain, archive and dispose of student records
 
 > Status: Draft
 > Domain: 08 — Record governance and lifecycle
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2027-01-26
 
-[Previous: BP-061](../08-record-governance-and-lifecycle/bp-061-assess-restriction-rectification-or-erasure-rights.md) · [Domain index](README.md) · [Next: BP-063](../08-record-governance-and-lifecycle/bp-063-audit-access-and-material-record-changes.md) · [Library home](../README.md)
+[Previous: BP-08-004](../08-record-governance-and-lifecycle/bp-08-004-assess-restriction-rectification-or-erasure-rights.md) · [Domain index](README.md) · [Next: BP-08-006](../08-record-governance-and-lifecycle/bp-08-006-audit-access-and-material-record-changes.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-Retain, archive and dispose of student records creates a controlled, explainable and effective-dated retention class, legal hold, archive and disposal certificate. The outcome preserves the evidence, authority and cross-system state needed for the Revelation SRS rather than reducing the process to a status update.
+Retaining, archiving and disposing of student records turns the institution's retention schedule into concrete, auditable action on records that have reached their trigger point, without ever disposing of something under legal hold, live investigation or research/archive interest. Approval to transfer, continue retaining, anonymise or dispose is a governance decision distinct from the technical act of carrying it out, so a record is never quietly deleted by whoever happens to have system access. Execution reaches every primary, derived and backup location a record lives in, and the evidence that a disposal or transfer happened is retained permanently — without ever retaining the disposed content itself.
 
 ## Scope
 
@@ -72,8 +72,8 @@ A record reaches a retention event or scheduled review.
 1. **Records Manager** classify records by purpose, authority, trigger and approved schedule.
 2. **Data Owner** calculate review/disposal dates from authoritative lifecycle events.
 3. **Archivist** check legal, investigation, complaint and research/archive holds.
-4. **System Administrator** approve transfer, continued retention, anonymisation or disposal.
-5. **Data Owner** execute across primary, derived and governed backup locations.
+4. **Records Manager** approve transfer, continued retention, anonymisation or disposal.
+5. **System Administrator** execute across primary, derived and governed backup locations.
 6. **Archivist** retain disposal/transfer evidence without retaining the disposed content.
 
 ## Alternative flows
@@ -161,16 +161,16 @@ sequenceDiagram
     participant A2 as Data Owner
     participant A3 as Archivist
     participant A4 as System Administrator
-    A1->>A2: 1. classify records by purpose, authority, trigger and approved schedule
-    A2->>A3: 2. calculate review/disposal dates from authoritative lifecycle events
-    A3->>A4: 3. check legal, investigation, complaint and research/archive holds
-    A4->>A1: 4. approve transfer, continued retention, anonymisation or disposal
-    A1->>A2: 5. execute across primary, derived and governed backup locations
-    A2->>A3: 6. retain disposal/transfer evidence without retaining the disposed content
+    A1->>A2: 1. classifies records by purpose, authority, trigger and approved schedule
+    A2->>A3: 2. calculates review/disposal dates from authoritative lifecycle events
+    A3->>A1: 3. checks legal, investigation, complaint and research/archive holds
+    A1->>A4: 4. approves transfer, continued retention, anonymisation or disposal
+    A4->>A3: 5. executes across primary, derived and governed backup locations
+    A3->>A3: 6. retains disposal/transfer evidence without retaining the disposed content
     alt Valid and authorised
-        A4->>A1: Record and communicate outcome
+        A3->>A1: Record and communicate outcome
     else Incomplete or exception
-        A4->>A1: Retain case with owner and reason
+        A3->>A1: Retain case with owner and reason
     end
 ```
 

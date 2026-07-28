@@ -63,7 +63,7 @@ docs/business-processes/
 ├── traceability-matrix.md
 ├── 01-recruitment-and-admissions/
 │   ├── README.md
-│   └── bp-001-*.md
+│   └── bp-01-001-*.md
 ├── 02-registration-and-student-status/
 │   ├── README.md
 │   └── bp-*.md
@@ -89,13 +89,13 @@ The process map will distinguish:
 - **integration flow** — exchange across a system boundary; and
 - **product journey** — actions exposed by the implemented Revelation user interface.
 
-These concepts must not share identifiers. New business processes use `BP-nnn`; existing workflows retain `Wnnn`; reference-model integration flows retain `Fnnn`; functional requirements retain `REQ-nnn`.
+These concepts must not share identifiers. New business processes use `BP-dd-nnn` (domain-scoped, see the process library README); existing workflows retain `Wnnn`; reference-model integration flows retain `Fnnn`; functional requirements retain `REQ-nnn`.
 
 ---
 
 ## 4. Process Page Standard
 
-Each `BP-nnn` page will use this required structure:
+Each `BP-dd-nnn` page will use this required structure:
 
 1. **Title and metadata**
    - process ID, lifecycle domain, status, owner, version, last reviewed date;
@@ -157,7 +157,7 @@ Rules:
 - Use glossary terms for domain concepts; add a proposed glossary entry rather than inventing a synonym locally.
 - Use active-voice step text in the form “Actor performs action”.
 - Use canonical business names in prose and diagrams; technical event names and status values remain in backticks.
-- Give each process one verb-led or outcome-led title and one stable `BP-nnn` identifier. Filenames are lower-case kebab-case: `bp-001-receive-ucas-application.md`.
+- Give each process one verb-led or outcome-led title and one stable `BP-dd-nnn` identifier. Filenames are lower-case kebab-case: `bp-01-001-receive-ucas-application.md`.
 - Never reuse or renumber a published identifier. Retired pages remain as redirects or tombstones.
 
 The terminology document will include a “do not use / use instead” table for resolved synonyms and a Mermaid participant-alias convention for long names.
@@ -426,7 +426,7 @@ A process page is complete only when:
 1. Agree whether the library is UK-wide with nation-specific variants or initially England-focused.
 2. Nominate the documentation owner and initial SME groups.
 3. Run the terminology reconciliation and process-inventory workshop.
-4. Baseline the `BP-nnn` inventory before assigning permanent IDs.
+4. Baseline the `BP-dd-nnn` inventory before assigning permanent IDs.
 5. Commit the folder structure, template, source register, and traceability matrix.
 6. Select and complete the pilot process.
 7. Review the pilot and adjust the standard before drafting the remaining waves.

@@ -1,4 +1,4 @@
-# BP-043 — Correct a ratified academic outcome
+# BP-05-011 — Correct a ratified academic outcome
 
 > Status: Draft
 > Domain: 05 — Assessment and results
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2027-01-26
 
-[Previous: BP-042](../05-assessment-and-results/bp-042-submit-and-examine-a-pgr-thesis.md) · [Domain index](README.md) · [Next: BP-044](../06-progression-awards-and-graduation/bp-044-determine-progression.md) · [Library home](../README.md)
+[Previous: BP-05-010](../05-assessment-and-results/bp-05-010-submit-and-examine-a-pgr-thesis.md) · [Domain index](README.md) · [Next: BP-06-001](../06-progression-awards-and-graduation/bp-06-001-determine-progression.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-Correct a ratified academic outcome creates a controlled, explainable and effective-dated authorised academic amendment and republication history. The outcome preserves the evidence, authority and cross-system state needed for the Revelation SRS rather than reducing the process to a status update.
+Correcting a ratified academic outcome gives the institution a controlled route to fix a genuine error in a result that has already been ratified, without ever allowing an unrecorded, informal edit to a decision students and downstream systems have already relied on. The type of issue — clerical, calculation, procedural or a genuine academic-judgement change — determines what authority is needed, and any correction is applied only by authority at least equivalent to the original decision. The superseded outcome is preserved alongside the new version, and every affected consumer — transcripts, downstream reports, the student themselves — is reissued and reconciled rather than left holding a stale value.
 
 ## Scope
 
@@ -72,7 +72,7 @@ A material error in a ratified outcome is evidenced.
 1. **Registry Officer** open an amendment case linked to the exact ratified version.
 2. **Authorised Academic Decision Maker** classify clerical, calculation, procedural or academic-judgement issue.
 3. **Assessment Officer** collect evidence and identify all downstream consequences.
-4. **Enrolled Student** obtain authority at least equivalent to the original decision.
+4. **Authorised Academic Decision Maker** obtain authority at least equivalent to the original decision.
 5. **Authorised Academic Decision Maker** append the corrected version and preserve the superseded outcome.
 6. **Assessment Officer** reissue documents/events and reconcile every affected consumer.
 
@@ -161,16 +161,16 @@ sequenceDiagram
     participant A2 as Authorised Academic Decision Maker
     participant A3 as Assessment Officer
     participant A4 as Enrolled Student
-    A1->>A2: 1. open an amendment case linked to the exact ratified version
-    A2->>A3: 2. classify clerical, calculation, procedural or academic-judgement issue
-    A3->>A4: 3. collect evidence and identify all downstream consequences
-    A4->>A1: 4. obtain authority at least equivalent to the original decision
-    A1->>A2: 5. append the corrected version and preserve the superseded outcome
-    A2->>A3: 6. reissue documents/events and reconcile every affected consumer
+    A1->>A2: 1. opens an amendment case linked to the exact ratified version
+    A2->>A3: 2. classifies clerical, calculation, procedural or academic-judgement issue
+    A3->>A2: 3. collects evidence and identifies all downstream consequences
+    A2->>A2: 4. obtains authority at least equivalent to the original decision
+    A2->>A3: 5. appends the corrected version and preserves the superseded outcome
+    A3->>A4: 6. reissues documents/events and reconciles every affected consumer
     alt Valid and authorised
-        A4->>A1: Record and communicate outcome
+        A3->>A4: Record and communicate outcome
     else Incomplete or exception
-        A4->>A1: Retain case with owner and reason
+        A3->>A4: Retain case with owner and reason
     end
 ```
 

@@ -1,4 +1,4 @@
-# BP-037 — Determine a module result
+# BP-05-005 — Determine a module result
 
 > Status: Draft
 > Domain: 05 — Assessment and results
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2027-01-26
 
-[Previous: BP-036](../05-assessment-and-results/bp-036-moderate-and-confirm-marks.md) · [Domain index](README.md) · [Next: BP-038](../05-assessment-and-results/bp-038-investigate-academic-misconduct.md) · [Library home](../README.md)
+[Previous: BP-05-004](../05-assessment-and-results/bp-05-004-moderate-and-confirm-marks.md) · [Domain index](README.md) · [Next: BP-05-006](../05-assessment-and-results/bp-05-006-investigate-academic-misconduct.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-Determine a module result creates a controlled, explainable and effective-dated module result, credit and reassessment entitlement. The outcome preserves the evidence, authority and cross-system state needed for the Revelation SRS rather than reducing the process to a status update.
+Determining a module result turns a set of confirmed marks into the pass/fail, credit and reassessment outcome a student and the institution can act on, applying the correct rounding, compensation and mandatory-component rules for their assessment-rule version. Because exceptional circumstances or misconduct findings can legitimately change the calculated outcome, the process applies only approved effects and routes any exception to authorised human review rather than allowing a silent manual override. The provisional result is recorded for ratification, not treated as final until the board confirms it.
 
 ## Scope
 
@@ -72,7 +72,7 @@ All required confirmed component outcomes are available or formally absent.
 1. **SRS Calculation Service** bind the student attempt to the applicable assessment-rule version.
 2. **Assessment Officer** calculate aggregate outcome with rounding, compensation and mandatory-component rules.
 3. **Module Board** apply approved exceptional-circumstance and misconduct effects.
-4. **Enrolled Student** derive pass/fail, credit and reassessment eligibility.
+4. **SRS Calculation Service** derive pass/fail, credit and reassessment eligibility.
 5. **Assessment Officer** present exceptions for authorised review rather than manual hidden override.
 6. **Module Board** record the provisional module result for ratification.
 
@@ -161,16 +161,16 @@ sequenceDiagram
     participant A2 as Assessment Officer
     participant A3 as Module Board
     participant A4 as Enrolled Student
-    A1->>A2: 1. bind the student attempt to the applicable assessment-rule version
-    A2->>A3: 2. calculate aggregate outcome with rounding, compensation and mandatory-component rules
-    A3->>A4: 3. apply approved exceptional-circumstance and misconduct effects
-    A4->>A1: 4. derive pass/fail, credit and reassessment eligibility
-    A1->>A2: 5. present exceptions for authorised review rather than manual hidden override
-    A2->>A3: 6. record the provisional module result for ratification
+    A1->>A2: 1. binds the student attempt to the applicable assessment-rule version
+    A2->>A3: 2. calculates aggregate outcome with rounding, compensation and mandatory-component rules
+    A3->>A1: 3. applies approved exceptional-circumstance and misconduct effects
+    A1->>A2: 4. derives pass/fail, credit and reassessment eligibility
+    A2->>A3: 5. presents exceptions for authorised review rather than manual hidden override
+    A3->>A3: 6. records the provisional module result for ratification
     alt Valid and authorised
-        A4->>A1: Record and communicate outcome
+        A3->>A4: Record and communicate outcome
     else Incomplete or exception
-        A4->>A1: Retain case with owner and reason
+        A3->>A4: Retain case with owner and reason
     end
 ```
 

@@ -1,4 +1,4 @@
-# BP-016 — Withdraw from studies
+# BP-02-009 — Withdraw from studies
 
 > Status: Draft
 > Domain: 02 — Registration and student status
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2027-01-26
 
-[Previous: BP-015](bp-015-return-from-interruption.md) · [Domain index](README.md) · [Next: BP-017](bp-017-complete-annual-re-registration.md) · [Library home](../README.md)
+[Previous: BP-02-008](bp-02-008-return-from-interruption.md) · [Domain index](README.md) · [Next: BP-02-010](bp-02-010-complete-annual-re-registration.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -38,7 +38,7 @@ This process ends an enrolment through a voluntary or authorised institutional d
 
 **Starts when:** The student gives clear notice or an authorised institutional process supplies a withdrawal outcome.
 
-**Ends when:** Withdrawal is recorded/notified and closure work passes to BP-019.
+**Ends when:** Withdrawal is recorded/notified and closure work passes to BP-02-012.
 
 **In scope:** Voluntary, non-registration, non-engagement and institution-required outcomes after due process.
 
@@ -78,7 +78,7 @@ Voluntary notice or authorised institutional outcome.
 6. **Registry Administrator** authorises withdrawal.
 7. **SRS** creates a `withdrawn` enrolment version with reason category, authority and effective date, preserving prior academic facts.
 8. **SRS** notifies the student and publishes applicable SLC, UKVI, Finance, IAM, Library, VLE and CRM changes.
-9. **SRS** records acknowledgements and starts BP-019.
+9. **SRS** records acknowledgements and starts BP-02-012.
 
 ## Alternative flows
 
@@ -89,7 +89,7 @@ Voluntary notice or authorised institutional outcome.
 
 ### A2 — Student chooses interruption
 
-- **A2.1** If viable and requested, stop withdrawal and continue under BP-014.
+- **A2.1** If viable and requested, stop withdrawal and continue under BP-02-007.
 
 ### A4 — Exit award possible
 
@@ -201,7 +201,7 @@ sequenceDiagram
 
 ## Related processes
 
-[BP-014](bp-014-interrupt-or-suspend-studies.md); [BP-018](bp-018-resolve-failure-to-register.md); [BP-019](bp-019-close-leaver-record.md); BP-046.
+[BP-02-007](bp-02-007-interrupt-or-suspend-studies.md); [BP-02-011](bp-02-011-resolve-failure-to-register.md); [BP-02-012](bp-02-012-close-leaver-record.md); BP-06-003.
 
 ## Review record
 

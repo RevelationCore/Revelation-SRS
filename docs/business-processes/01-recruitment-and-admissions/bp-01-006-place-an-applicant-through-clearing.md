@@ -1,4 +1,4 @@
-# BP-006 — Place an applicant through Clearing
+# BP-01-006 — Place an applicant through Clearing
 
 > Status: Draft
 > Domain: 01 — Recruitment and admissions
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2027-01-26
 
-[Previous: BP-005](../01-recruitment-and-admissions/bp-005-create-and-assign-a-cas.md) · [Domain index](README.md) · [Next: BP-007](../01-recruitment-and-admissions/bp-007-convert-an-accepted-applicant-to-a-prospective-student-record.md) · [Library home](../README.md)
+[Previous: BP-01-005](../01-recruitment-and-admissions/bp-01-005-create-and-assign-a-cas.md) · [Domain index](README.md) · [Next: BP-01-007](../01-recruitment-and-admissions/bp-01-007-convert-an-accepted-applicant-to-a-prospective-student-record.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-Place an applicant through Clearing creates a controlled, explainable and effective-dated Clearing contact, permission, choice and confirmed place. The outcome preserves the evidence, authority and cross-system state needed for the Revelation SRS rather than reducing the process to a status update.
+Placing an applicant through Clearing turns a live conversation about a vacancy into a confirmed place, without ever treating a verbal indication as a commitment on either side. Capacity and entry requirements are checked before any provisional permission is given, and only the applicant's formal UCAS Clearing choice — not the phone call — creates the binding change of course, so the institution never confirms more places than it has vacancies for.
 
 ## Scope
 
@@ -69,7 +69,7 @@ An eligible applicant seeks a place on a course with a declared vacancy.
 
 ## Main flow
 
-1. **Prospective Student** confirm current Clearing eligibility and retrieve the authoritative application.
+1. **Clearing Adviser** confirm the applicant's current Clearing eligibility and retrieve the authoritative application.
 2. **Clearing Adviser** check live course/intake capacity and essential entry requirements.
 3. **Admissions Officer** record the discussion and time-limited provisional permission.
 4. **UCAS** issue the applicant instruction to add the Clearing choice.
@@ -162,16 +162,16 @@ sequenceDiagram
     participant A2 as Clearing Adviser
     participant A3 as Admissions Officer
     participant A4 as UCAS
-    A1->>A2: 1. confirm current Clearing eligibility and retrieve the authoritative application
-    A2->>A3: 2. check live course/intake capacity and essential entry requirements
-    A3->>A4: 3. record the discussion and time-limited provisional permission
-    A4->>A1: 4. issue the applicant instruction to add the Clearing choice
-    A1->>A2: 5. receive and match the formal UCAS choice
-    A2->>A3: 6. make and return the confirmation decision, then reconcile the place and vacancy
+    A1->>A2: 1. confirms the applicant's current Clearing eligibility and retrieves the authoritative application
+    A2->>A3: 2. checks live course/intake capacity and essential entry requirements
+    A3->>A1: 3. records the discussion and time-limited provisional permission
+    A4->>A1: 4. issues the applicant instruction to add the Clearing choice
+    A2->>A3: 5. receives and matches the formal UCAS choice
+    A3->>A1: 6. makes and returns the confirmation decision, then reconciles the place and vacancy
     alt Valid and authorised
-        A4->>A1: Record and communicate outcome
+        A3->>A1: Record and communicate outcome
     else Incomplete or exception
-        A4->>A1: Retain case with owner and reason
+        A3->>A1: Retain case with owner and reason
     end
 ```
 

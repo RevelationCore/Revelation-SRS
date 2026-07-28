@@ -2,7 +2,7 @@
 
 > Status: Ready for named reviewers
 > Prepared: 2026-07-26
-> Baseline: BP-001–BP-063 version 0.1
+> Baseline: BP-01-001–BP-08-006 version 0.1
 
 [Completion review](completion-review.md) · [Reviewer register](sme-review-register.md) · [Source register](source-register.md) · [Change backlog](revelation-change-backlog.md)
 
@@ -25,14 +25,14 @@ For every assigned range:
 
 | Batch | Pages | Primary expertise | Supporting review |
 |---|---|---|---|
-| R1 | BP-001–BP-007 | Admissions, UCAS and CAS operations | UKVI, identity and national admissions |
-| R2 | BP-008–BP-019 | Registry and student status | Finance, UKVI, records and integration |
-| R3 | BP-020–BP-026 | Curriculum, module registration and PGR | Academic quality, data and integration |
-| R4 | BP-027–BP-032 | Engagement, disability/support and PGR progress | UKVI, assessment, privacy and national SMEs |
-| R5 | BP-033–BP-043 | Assessment, boards, external examining and PGR examination | Academic governance, privacy and data |
-| R6 | BP-044–BP-049 | Progression, awards, documents and graduation | PGR, qualifications frameworks and records |
-| R7 | BP-050–BP-057 | HESA and statutory reporting | OfS, SFC, Medr, DfE, SLC and UKVI |
-| R8 | BP-058–BP-063 | Data protection, identity, records and audit | Security, architecture and system owners |
+| R1 | BP-01-001–BP-01-007 | Admissions, UCAS and CAS operations | UKVI, identity and national admissions |
+| R2 | BP-02-001–BP-02-012 | Registry and student status | Finance, UKVI, records and integration |
+| R3 | BP-03-001–BP-03-007 | Curriculum, module registration and PGR | Academic quality, data and integration |
+| R4 | BP-04-001–BP-04-006 | Engagement, disability/support and PGR progress | UKVI, assessment, privacy and national SMEs |
+| R5 | BP-05-001–BP-05-011 | Assessment, boards, external examining and PGR examination | Academic governance, privacy and data |
+| R6 | BP-06-001–BP-06-006 | Progression, awards, documents and graduation | PGR, qualifications frameworks and records |
+| R7 | BP-07-001–BP-07-008 | HESA and statutory reporting | OfS, SFC, Medr, DfE, SLC and UKVI |
+| R8 | BP-08-001–BP-08-006 | Data protection, identity, records and audit | Security, architecture and system owners |
 
 ## Four-nation prompts
 

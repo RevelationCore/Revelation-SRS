@@ -1,4 +1,4 @@
-# BP-004 — Confirm offer conditions
+# BP-01-004 — Confirm offer conditions
 
 > Status: Draft
 > Domain: 01 — Recruitment and admissions
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2027-01-26
 
-[Previous: BP-003](../01-recruitment-and-admissions/bp-003-make-and-manage-an-offer.md) · [Domain index](README.md) · [Next: BP-005](../01-recruitment-and-admissions/bp-005-create-and-assign-a-cas.md) · [Library home](../README.md)
+[Previous: BP-01-003](../01-recruitment-and-admissions/bp-01-003-make-and-manage-an-offer.md) · [Domain index](README.md) · [Next: BP-01-005](../01-recruitment-and-admissions/bp-01-005-create-and-assign-a-cas.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-Confirm offer conditions creates a controlled, explainable and effective-dated condition evidence, verification and confirmation decision. The outcome preserves the evidence, authority and cross-system state needed for the Revelation SRS rather than reducing the process to a status update.
+Confirming offer conditions turns exam results or other required evidence into a definitive decision on whether a conditional offer is met. Each condition is tested individually against verified evidence, so a partial or borderline result can be resolved fairly rather than defaulting to an all-or-nothing outcome, and the institution retains a clear record of what evidence supported the confirmation and who authorised it.
 
 ## Scope
 
@@ -69,12 +69,12 @@ Evidence or examination results become available for a conditional offer.
 
 ## Main flow
 
-1. **Prospective Student** freeze the offer and condition versions being tested.
-2. **Admissions Officer** receive and provenance results or applicant evidence.
+1. **Admissions System** freeze the offer and condition versions being tested.
+2. **Admissions Officer** receive results or applicant evidence and record their provenance.
 3. **Qualification/Results Service** verify authenticity and map evidence to each condition.
 4. **Admissions System** record met, waived, unmet or pending per condition with authority.
 5. **Admissions Officer** make the overall confirmation decision including authorised alternatives.
-6. **Qualification/Results Service** publish and reconcile the outcome with the applicant channel.
+6. **Admissions System** publish and reconcile the outcome with the applicant channel.
 
 ## Alternative flows
 
@@ -162,12 +162,12 @@ sequenceDiagram
     participant A2 as Admissions Officer
     participant A3 as Qualification/Results Service
     participant A4 as Admissions System
-    A1->>A2: 1. freeze the offer and condition versions being tested
-    A2->>A3: 2. receive and provenance results or applicant evidence
-    A3->>A4: 3. verify authenticity and map evidence to each condition
-    A4->>A1: 4. record met, waived, unmet or pending per condition with authority
-    A1->>A2: 5. make the overall confirmation decision including authorised alternatives
-    A2->>A3: 6. publish and reconcile the outcome with the applicant channel
+    A4->>A4: 1. freezes the offer and condition versions being tested
+    A1->>A2: 2. Admissions Officer receives results or applicant evidence and records their provenance
+    A2->>A3: 3. verifies authenticity and maps evidence to each condition
+    A3->>A4: 4. records met, waived, unmet or pending per condition with authority
+    A4->>A2: 5. Admissions Officer makes the overall confirmation decision including authorised alternatives
+    A4->>A1: 6. publishes and reconciles the outcome with the applicant channel
     alt Valid and authorised
         A4->>A1: Record and communicate outcome
     else Incomplete or exception

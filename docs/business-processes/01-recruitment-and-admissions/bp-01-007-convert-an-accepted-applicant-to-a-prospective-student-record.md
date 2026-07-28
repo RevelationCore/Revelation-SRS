@@ -1,4 +1,4 @@
-# BP-007 — Convert an accepted applicant to a prospective student record
+# BP-01-007 — Convert an accepted applicant to a prospective student record
 
 > Status: Draft
 > Domain: 01 — Recruitment and admissions
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2027-01-26
 
-[Previous: BP-006](../01-recruitment-and-admissions/bp-006-place-an-applicant-through-clearing.md) · [Domain index](README.md) · [Next: BP-008](../02-registration-and-student-status/bp-008-prepare-initial-registration.md) · [Library home](../README.md)
+[Previous: BP-01-006](../01-recruitment-and-admissions/bp-01-006-place-an-applicant-through-clearing.md) · [Domain index](README.md) · [Next: BP-02-001](../02-registration-and-student-status/bp-02-001-prepare-initial-registration.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-Convert an accepted applicant to a prospective student record creates a controlled, explainable and effective-dated person, accepted application and registration precursor. The outcome preserves the evidence, authority and cross-system state needed for the Revelation SRS rather than reducing the process to a status update.
+Converting an accepted applicant to a prospective student record turns admissions data into the identity and access foundation the student needs before arrival, without creating a second, disconnected record for the same person. Identifiers are allocated once and reused if the person already has one, only governed facts — not the whole application — are copied forward, and pre-arrival services such as IT accounts are provisioned from that single, traceable source, so the student's eventual registration in BP-02-001 starts from one clean, correctly identified record.
 
 ## Scope
 
@@ -72,9 +72,9 @@ An accepted and sufficiently confirmed applicant becomes eligible for pre-regist
 1. **Admissions System** verify the accepted application, offer and identity resolution status.
 2. **Registry** allocate or reuse the canonical person and student identifiers.
 3. **Identity and Access Management** copy only governed facts with source provenance rather than duplicating the application.
-4. **Prospective Student** create the prospective-student/registration-precursor state.
+4. **Registry** create the prospective-student/registration-precursor state.
 5. **Registry** publish identifiers to authorised pre-arrival services.
-6. **Identity and Access Management** reconcile downstream acknowledgements and route the person to BP-008.
+6. **Identity and Access Management** reconcile downstream acknowledgements and route the person to BP-02-001.
 
 ## Alternative flows
 
@@ -90,7 +90,7 @@ An accepted and sufficiently confirmed applicant becomes eligible for pre-regist
 
 ### E1 — Control exception
 
-- **E1.1** Uncertain identity routes to BP-058.
+- **E1.1** Uncertain identity routes to BP-08-001.
 
 ### E2 — Control exception
 
@@ -162,16 +162,16 @@ sequenceDiagram
     participant A2 as Registry
     participant A3 as Identity and Access Management
     participant A4 as Prospective Student
-    A1->>A2: 1. verify the accepted application, offer and identity resolution status
-    A2->>A3: 2. allocate or reuse the canonical person and student identifiers
-    A3->>A4: 3. copy only governed facts with source provenance rather than duplicating the application
-    A4->>A1: 4. create the prospective-student/registration-precursor state
-    A1->>A2: 5. publish identifiers to authorised pre-arrival services
-    A2->>A3: 6. reconcile downstream acknowledgements and route the person to BP-008
+    A1->>A2: 1. verifies the accepted application, offer and identity resolution status
+    A2->>A3: 2. allocates or reuses the canonical person and student identifiers
+    A3->>A2: 3. copies only governed facts with source provenance rather than duplicating the application
+    A2->>A2: 4. creates the prospective-student/registration-precursor state
+    A2->>A3: 5. publishes identifiers to authorised pre-arrival services
+    A3->>A4: 6. reconciles downstream acknowledgements and routes the person to BP-02-001
     alt Valid and authorised
-        A4->>A1: Record and communicate outcome
+        A3->>A4: Record and communicate outcome
     else Incomplete or exception
-        A4->>A1: Retain case with owner and reason
+        A3->>A4: Retain case with owner and reason
     end
 ```
 

@@ -1,4 +1,4 @@
-# BP-001 — Receive an application
+# BP-01-001 — Receive an application
 
 > Status: Draft
 > Domain: 01 — Recruitment and admissions
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2027-01-26
 
-[Domain index](README.md) · [Domain index](README.md) · [Next: BP-002](../01-recruitment-and-admissions/bp-002-assess-an-application.md) · [Library home](../README.md)
+[Domain index](README.md) · [Domain index](README.md) · [Next: BP-01-002](../01-recruitment-and-admissions/bp-01-002-assess-an-application.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-Receive an application creates a controlled, explainable and effective-dated application and applicant identity. The outcome preserves the evidence, authority and cross-system state needed for the Revelation SRS rather than reducing the process to a status update.
+This process captures a new application accurately at the point it arrives, whichever channel or admissions cycle it came through, and turns it into a working application linked to a specific applicant identity. Getting the intake right matters because every later admissions decision, offer and item of regulatory reporting depends on an unaltered record of what was actually submitted and when. The process keeps the original received data intact, resolves identity carefully rather than merging uncertain matches, and gives downstream systems clear acknowledgement that the application has been received.
 
 ## Scope
 
@@ -69,7 +69,7 @@ A UCAS, other admissions-service or direct application arrives.
 
 ## Main flow
 
-1. **Prospective Student** receive the application with channel and cycle identifiers.
+1. **Prospective Student** submits the application with channel and cycle identifiers.
 2. **Admissions System** validate schema, course/intake and minimum required fields.
 3. **Admissions Officer** match or create the applicant identity without merging uncertain matches.
 4. **Identity Service** store the immutable received payload and create the working application.
@@ -94,7 +94,7 @@ A UCAS, other admissions-service or direct application arrives.
 
 ### E2 — Control exception
 
-- **E2.1** Probable duplicate identity is held for BP-058.
+- **E2.1** Probable duplicate identity is held for BP-08-001.
 
 ## Postconditions
 
@@ -162,16 +162,16 @@ sequenceDiagram
     participant A2 as Admissions System
     participant A3 as Admissions Officer
     participant A4 as Identity Service
-    A1->>A2: 1. receive the application with channel and cycle identifiers
-    A2->>A3: 2. validate schema, course/intake and minimum required fields
-    A3->>A4: 3. match or create the applicant identity without merging uncertain matches
-    A4->>A1: 4. store the immutable received payload and create the working application
-    A1->>A2: 5. acknowledge receipt and publish the application-received state
-    A2->>A3: 6. route incomplete, duplicate or restricted applications to an owned worklist
+    A1->>A2: 1. submits the application with channel and cycle identifiers
+    A2->>A2: 2. validates schema, course/intake and minimum required fields
+    A3->>A4: 3. matches or creates the applicant identity without merging uncertain matches
+    A4->>A2: 4. stores the immutable received payload and creates the working application
+    A2->>A1: 5. acknowledges receipt and publishes the application-received state
+    A3->>A3: 6. routes incomplete, duplicate or restricted applications to an owned worklist
     alt Valid and authorised
-        A4->>A1: Record and communicate outcome
+        A2->>A1: Record and communicate outcome
     else Incomplete or exception
-        A4->>A1: Retain case with owner and reason
+        A2->>A1: Retain case with owner and reason
     end
 ```
 

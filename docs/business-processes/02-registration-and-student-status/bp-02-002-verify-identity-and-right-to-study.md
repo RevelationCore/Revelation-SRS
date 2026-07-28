@@ -1,4 +1,4 @@
-# BP-009 — Verify identity, nationality and right to study
+# BP-02-002 — Verify identity, nationality and right to study
 
 > Status: Draft
 > Domain: 02 — Registration and student status
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2026-10-26
 
-[Previous: BP-008](bp-008-prepare-initial-registration.md) · [Domain index](README.md) · [Next: BP-010](bp-010-complete-initial-academic-registration.md) · [Library home](../README.md)
+[Previous: BP-02-001](bp-02-001-prepare-initial-registration.md) · [Domain index](README.md) · [Next: BP-02-003](bp-02-003-complete-initial-academic-registration.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -75,7 +75,7 @@ The student begins identity checks or a prior verification expires/changes.
 3. **Registry Administrator/Online ID Verification** verifies identity, authenticity and match to the person record.
 4. Where applicable, **UKVI Compliance Officer** verifies immigration permission, study conditions and sponsor evidence.
 5. **SRS** records separate identity and right-to-study outcomes, evidence references, checker/method, checked/expiry dates and restrictions.
-6. **SRS** permits BP-010 when required checks pass and schedules recheck where time-limited.
+6. **SRS** permits BP-02-003 when required checks pass and schedules recheck where time-limited.
 7. **SRS** notifies the student of completion or specific next action.
 
 ## Alternative flows
@@ -96,7 +96,7 @@ The student begins identity checks or a prior verification expires/changes.
 
 ### E3 — Possible fraud or mismatch
 
-- **E3.1** Stop automatic registration, restrict disclosure and route securely to trained staff/BP-058.
+- **E3.1** Stop automatic registration, restrict disclosure and route securely to trained staff/BP-08-001.
 
 ### E4 — Permission missing, expired or incompatible
 
@@ -193,7 +193,7 @@ sequenceDiagram
 
 ## Related processes
 
-[BP-008](bp-008-prepare-initial-registration.md); [BP-010](bp-010-complete-initial-academic-registration.md); BP-052; BP-058.
+[BP-02-001](bp-02-001-prepare-initial-registration.md); [BP-02-003](bp-02-003-complete-initial-academic-registration.md); BP-07-003; BP-08-001.
 
 ## Review record
 

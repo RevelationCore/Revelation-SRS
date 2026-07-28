@@ -1,4 +1,4 @@
-# BP-005 — Create and assign a CAS
+# BP-01-005 — Create and assign a CAS
 
 > Status: Draft
 > Domain: 01 — Recruitment and admissions
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2027-01-26
 
-[Previous: BP-004](../01-recruitment-and-admissions/bp-004-confirm-offer-conditions.md) · [Domain index](README.md) · [Next: BP-006](../01-recruitment-and-admissions/bp-006-place-an-applicant-through-clearing.md) · [Library home](../README.md)
+[Previous: BP-01-004](../01-recruitment-and-admissions/bp-01-004-confirm-offer-conditions.md) · [Domain index](README.md) · [Next: BP-01-006](../01-recruitment-and-admissions/bp-01-006-place-an-applicant-through-clearing.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-Create and assign a CAS creates a controlled, explainable and effective-dated CAS request, evidence, assignment and sponsor history. The outcome preserves the evidence, authority and cross-system state needed for the Revelation SRS rather than reducing the process to a status update.
+Creating and assigning a Confirmation of Acceptance for Studies turns a Student-route applicant's evidence into the formal sponsorship record UK Visas and Immigration requires before a visa application can proceed. Because a CAS carries real immigration and sponsor-licence consequences, the process separates who validates the evidence from who approves the assignment, and keeps a durable snapshot of the guidance version and evidence relied on, so the institution can demonstrate compliance with its sponsor duties at any later point.
 
 ## Scope
 
@@ -69,10 +69,10 @@ An eligible international applicant needs Student-route sponsorship.
 
 ## Main flow
 
-1. **Prospective Student** confirm the current Student sponsor guidance version and responsible sponsor.
+1. **International Compliance Officer** confirm the current Student sponsor guidance version and responsible sponsor.
 2. **International Compliance Officer** validate unconditional status, identity, immigration history, course and financial evidence.
-3. **SRS** assess academic progression, English language and genuine-student evidence where required.
-4. **UKVI Sponsor Management System** approve the CAS request using segregation of duties.
+3. **SRS** check recorded academic progression, English language and genuine-student evidence, flagging any case that needs human judgement.
+4. **International Compliance Officer** approve the CAS request under segregation-of-duties controls, recorded by the UKVI Sponsor Management System.
 5. **International Compliance Officer** create and assign the CAS through the Sponsor Management System.
 6. **SRS** record the CAS number, assigned data, evidence snapshot and later status changes.
 
@@ -161,16 +161,16 @@ sequenceDiagram
     participant A2 as International Compliance Officer
     participant A3 as SRS
     participant A4 as UKVI Sponsor Management System
-    A1->>A2: 1. confirm the current Student sponsor guidance version and responsible sponsor
-    A2->>A3: 2. validate unconditional status, identity, immigration history, course and financial evidence
-    A3->>A4: 3. assess academic progression, English language and genuine-student evidence where required
-    A4->>A1: 4. approve the CAS request using segregation of duties
-    A1->>A2: 5. create and assign the CAS through the Sponsor Management System
-    A2->>A3: 6. record the CAS number, assigned data, evidence snapshot and later status changes
+    A2->>A2: 1. confirms the current Student sponsor guidance version and responsible sponsor
+    A2->>A3: 2. validates unconditional status, identity, immigration history, course and financial evidence
+    A3->>A2: 3. checks recorded academic progression, English language and genuine-student evidence, flagging any case that needs human judgement
+    A2->>A4: 4. approves the CAS request under segregation-of-duties controls, recorded by the Sponsor Management System
+    A2->>A4: 5. creates and assigns the CAS through the Sponsor Management System
+    A3->>A1: 6. records the CAS number, assigned data, evidence snapshot and later status changes
     alt Valid and authorised
-        A4->>A1: Record and communicate outcome
+        A3->>A1: Record and communicate outcome
     else Incomplete or exception
-        A4->>A1: Retain case with owner and reason
+        A3->>A1: Retain case with owner and reason
     end
 ```
 

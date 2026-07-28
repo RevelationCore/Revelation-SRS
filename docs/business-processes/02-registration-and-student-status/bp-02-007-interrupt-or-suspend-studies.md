@@ -1,4 +1,4 @@
-# BP-014 — Interrupt or suspend studies
+# BP-02-007 — Interrupt or suspend studies
 
 > Status: Draft
 > Domain: 02 — Registration and student status
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2027-01-26
 
-[Previous: BP-013](bp-013-transfer-programme-route-or-mode.md) · [Domain index](README.md) · [Next: BP-015](bp-015-return-from-interruption.md) · [Library home](../README.md)
+[Previous: BP-02-006](bp-02-006-transfer-programme-route-or-mode.md) · [Domain index](README.md) · [Next: BP-02-008](bp-02-008-return-from-interruption.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -42,7 +42,7 @@ An authorised interruption/suspension temporarily stops active study for an agre
 
 **In scope:** Voluntary interruption, required suspension, PGR interruption and partner cases.
 
-**Out of scope:** Short absence, disciplinary casework itself, and return (BP-015).
+**Out of scope:** Short absence, disciplinary casework itself, and return (BP-02-008).
 
 ## Actors and responsibilities
 
@@ -78,7 +78,7 @@ Student request or authorised institutional outcome.
 5. **Authorised Decision-maker** approves, varies or rejects the request and records conditions.
 6. **SRS** creates a bitemporal `intermitting`/`suspended` enrolment version with effective and expected return dates.
 7. **SRS** updates liabilities/obligations and publishes the governed change to SLC, UKVI and entitlement systems as applicable.
-8. **SRS** notifies the student and schedules return review under BP-015.
+8. **SRS** notifies the student and schedules return review under BP-02-008.
 
 ## Alternative flows
 
@@ -94,13 +94,13 @@ Student request or authorised institutional outcome.
 
 ### A5 — Partial or different study arrangement
 
-- **A5.1** If the student will continue at reduced intensity, use BP-013 rather than interruption.
+- **A5.1** If the student will continue at reduced intensity, use BP-02-006 rather than interruption.
 
 ## Exception flows
 
 ### E4 — Sponsor or programme constraint prevents proposed break
 
-- **E4.1** Do not commit the requested dates; present lawful/academically viable alternatives or BP-016.
+- **E4.1** Do not commit the requested dates; present lawful/academically viable alternatives or BP-02-009.
 
 ### E7 — External rejection
 
@@ -200,7 +200,7 @@ sequenceDiagram
 
 ## Related processes
 
-[BP-013](bp-013-transfer-programme-route-or-mode.md); [BP-015](bp-015-return-from-interruption.md); BP-016; BP-051; BP-052.
+[BP-02-006](bp-02-006-transfer-programme-route-or-mode.md); [BP-02-008](bp-02-008-return-from-interruption.md); BP-02-009; BP-07-002; BP-07-003.
 
 ## Review record
 

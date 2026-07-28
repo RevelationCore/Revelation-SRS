@@ -1,4 +1,4 @@
-# BP-034 — Create examination entries and accommodations
+# BP-05-002 — Create examination entries and accommodations
 
 > Status: Draft
 > Domain: 05 — Assessment and results
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2027-01-26
 
-[Previous: BP-033](../05-assessment-and-results/bp-033-establish-assessment-structures.md) · [Domain index](README.md) · [Next: BP-035](../05-assessment-and-results/bp-035-receive-or-enter-marks.md) · [Library home](../README.md)
+[Previous: BP-05-001](../05-assessment-and-results/bp-05-001-establish-assessment-structures.md) · [Domain index](README.md) · [Next: BP-05-003](../05-assessment-and-results/bp-05-003-receive-or-enter-marks.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-Create examination entries and accommodations creates a controlled, explainable and effective-dated exam entry, candidate and accommodation. The outcome preserves the evidence, authority and cross-system state needed for the Revelation SRS rather than reducing the process to a status update.
+Creating examination entries and accommodations turns a candidate's current registration into a concrete assessment instance — the specific paper, sitting and any approved accommodation they are entitled to — before the exam takes place. Approved accommodations are applied as a floor the exam scheduler must honour, not a suggestion, so a student is never scheduled into an arrangement that conflicts with an agreed adjustment. Keeping entries, accommodations and later changes distinctly recorded lets the institution reconcile who actually sat what, where and under what conditions.
 
 ## Scope
 
@@ -161,16 +161,16 @@ sequenceDiagram
     participant A2 as SRS
     participant A3 as Exam Scheduling
     participant A4 as Disability Support
-    A1->>A2: 1. derive eligible candidates from effective registrations and attempt status
-    A2->>A3: 2. apply approved accommodations as minimum operational instructions
-    A3->>A4: 3. validate identity, clashes, location and assessment eligibility
-    A4->>A1: 4. publish entries and accommodation requirements to scheduling
-    A1->>A2: 5. receive seat/session allocations and expose them securely
-    A2->>A3: 6. reconcile adds, withdrawals and late changes before the examination
+    A1->>A2: 1. derives eligible candidates from effective registrations and attempt status
+    A2->>A3: 2. applies approved accommodations as minimum operational instructions
+    A3->>A4: 3. validates identity, clashes, location and assessment eligibility
+    A4->>A3: 4. publishes entries and accommodation requirements to scheduling
+    A2->>A2: 5. receives seat/session allocations and exposes them securely
+    A3->>A3: 6. reconciles adds, withdrawals and late changes before the examination
     alt Valid and authorised
-        A4->>A1: Record and communicate outcome
+        A3->>A1: Record and communicate outcome
     else Incomplete or exception
-        A4->>A1: Retain case with owner and reason
+        A3->>A1: Retain case with owner and reason
     end
 ```
 

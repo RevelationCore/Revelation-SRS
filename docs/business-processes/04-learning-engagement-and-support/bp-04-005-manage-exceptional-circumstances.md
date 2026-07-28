@@ -1,4 +1,4 @@
-# BP-031 — Manage exceptional circumstances
+# BP-04-005 — Manage exceptional circumstances
 
 > Status: Draft
 > Domain: 04 — Learning, engagement and support
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2027-01-26
 
-[Previous: BP-030](../04-learning-engagement-and-support/bp-030-manage-a-reasonable-adjustment-case.md) · [Domain index](README.md) · [Next: BP-032](../04-learning-engagement-and-support/bp-032-distribute-an-approved-support-outcome.md) · [Library home](../README.md)
+[Previous: BP-04-004](../04-learning-engagement-and-support/bp-04-004-manage-a-reasonable-adjustment-case.md) · [Domain index](README.md) · [Next: BP-04-006](../04-learning-engagement-and-support/bp-04-006-distribute-an-approved-support-outcome.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-Manage exceptional circumstances creates a controlled, explainable and effective-dated exceptional-circumstances claim and determination. The outcome preserves the evidence, authority and cross-system state needed for the Revelation SRS rather than reducing the process to a status update.
+This process manages a student's claim that specific circumstances affected their ability to complete or perform in named assessments, from submission through to an authorised, policy-based determination. It exists to keep the sensitive evidence behind a claim restricted to those who need it, while giving exam boards only the minimum decided flag or remedy needed to adjust an assessment outcome — the exam board acts on that authorised determination rather than adjudicating the personal circumstances behind it.
 
 ## Scope
 
@@ -71,8 +71,8 @@ A student submits circumstances affecting specified assessment or study.
 
 1. **Enrolled Student** record the claim, affected period/assessments and requested remedy.
 2. **Case Officer** check timeliness, evidence requirement and accessibility.
-3. **Authorised Decision Maker** collect proportionate evidence with restricted access.
-4. **Exam Board Chair** assess against the policy version without deciding academic marks.
+3. **Case Officer** collect proportionate evidence with restricted access.
+4. **Authorised Decision Maker** assess against the policy version without deciding academic marks.
 5. **Case Officer** record upheld, partly upheld, not upheld or referred and any review route.
 6. **Authorised Decision Maker** publish the minimum approved flag/remedy for assessment decision making.
 
@@ -157,20 +157,21 @@ Terminology, authority, deadlines, evidence, thresholds, communication, appeals/
 
 ```mermaid
 sequenceDiagram
-    actor A1 as Enrolled Student
-    participant A2 as Case Officer
-    participant A3 as Authorised Decision Maker
-    participant A4 as Exam Board Chair
-    A1->>A2: 1. record the claim, affected period/assessments and requested remedy
-    A2->>A3: 2. check timeliness, evidence requirement and accessibility
-    A3->>A4: 3. collect proportionate evidence with restricted access
-    A4->>A1: 4. assess against the policy version without deciding academic marks
-    A1->>A2: 5. record upheld, partly upheld, not upheld or referred and any review route
-    A2->>A3: 6. publish the minimum approved flag/remedy for assessment decision making
+    actor Student as Enrolled Student
+    participant Officer as Case Officer
+    participant Decider as Authorised Decision Maker
+    participant Chair as Exam Board Chair
+
+    Student->>Officer: 1. Record the claim, affected period/assessments and requested remedy
+    Officer->>Officer: 2. Check timeliness, evidence requirement and accessibility
+    Officer->>Decider: 3. Collect proportionate evidence with restricted access
+    Decider->>Decider: 4. Assess against the policy version without deciding academic marks
+    Officer->>Officer: 5. Record upheld, partly upheld, not upheld or referred and any review route
+    Decider->>Chair: 6. Publish the minimum approved flag/remedy for assessment decision making
     alt Valid and authorised
-        A4->>A1: Record and communicate outcome
+        Decider-->>Student: Record and communicate outcome
     else Incomplete or exception
-        A4->>A1: Retain case with owner and reason
+        Decider-->>Student: Retain case with owner and reason
     end
 ```
 

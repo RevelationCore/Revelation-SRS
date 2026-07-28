@@ -1,4 +1,4 @@
-# BP-050 — Prepare and submit HESA student data
+# BP-07-001 — Prepare and submit HESA student data
 
 > Status: Draft
 > Domain: 07 — Regulatory and statutory reporting
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2027-01-26
 
-[Previous: BP-049](../06-progression-awards-and-graduation/bp-049-record-successful-pgr-completion.md) · [Domain index](README.md) · [Next: BP-051](../07-regulatory-and-statutory-reporting/bp-051-exchange-registration-attendance-and-changes-with-student-finance-bodies.md) · [Library home](../README.md)
+[Previous: BP-06-006](../06-progression-awards-and-graduation/bp-06-006-record-successful-pgr-completion.md) · [Domain index](README.md) · [Next: BP-07-002](../07-regulatory-and-statutory-reporting/bp-07-002-exchange-registration-attendance-and-changes-with-student-finance-bodies.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-Prepare and submit HESA student data creates a controlled, explainable and effective-dated collection snapshot, validation, submission and sign-off. The outcome preserves the evidence, authority and cross-system state needed for the Revelation SRS rather than reducing the process to a status update.
+Prepare and submit HESA student data turns the institution's student records into HESA's required in-year and end-of-year collection formats, then takes that data through Jisc's local and platform validation before a named officer signs it off for submission. It matters because HESA returns underpin national funding, regulatory monitoring and published sector statistics, so each submitted version must be traceable back to its source data and to the person who authorised it, and any later correction must link cleanly to the original collection rather than silently overwriting it.
 
 ## Scope
 
@@ -69,12 +69,12 @@ A HESA collection/reference period reaches an extraction or quality checkpoint.
 
 ## Main flow
 
-1. **Statutory Data Officer** freeze collection specification, reference dates and provider scope.
+1. **Statutory Data Officer** freezes the collection specification, reference dates and provider scope.
 2. **Data Owners** extract source facts with field-level lineage.
-3. **SRS** transform to the required entities/codes without changing source meaning.
-4. **HESA/Jisc Platform** run local and platform validation and triage quality queries.
-5. **Data Owners** obtain accountable sign-off and submit the versioned return.
-6. **SRS** retain receipt, quality outputs, amendments and reproducible snapshot.
+3. **SRS** transforms the data to the required entities/codes without changing source meaning.
+4. **HESA/Jisc Platform** runs local and platform validation and triages quality queries.
+5. **Statutory Data Officer** obtains accountable sign-off and submits the versioned return.
+6. **SRS** retains the receipt, quality outputs, amendments and reproducible snapshot.
 
 ## Alternative flows
 
@@ -161,17 +161,18 @@ sequenceDiagram
     participant A2 as Data Owners
     participant A3 as SRS
     participant A4 as HESA/Jisc Platform
-    A1->>A2: 1. freeze collection specification, reference dates and provider scope
-    A2->>A3: 2. extract source facts with field-level lineage
-    A3->>A4: 3. transform to the required entities/codes without changing source meaning
-    A4->>A1: 4. run local and platform validation and triage quality queries
-    A1->>A2: 5. obtain accountable sign-off and submit the versioned return
-    A2->>A3: 6. retain receipt, quality outputs, amendments and reproducible snapshot
+    A1->>A2: 1. Freeze collection specification, reference dates and provider scope
+    A2->>A3: 2. Extract source facts with field-level lineage
+    A3->>A4: 3. Transform to required entities/codes without changing source meaning
+    A4-->>A1: 4. Run local and platform validation and triage quality queries
+    A1->>A4: 5. Obtain accountable sign-off and submit the versioned return
+    A3-->>A3: 6. Retain receipt, quality outputs, amendments and reproducible snapshot
     alt Valid and authorised
-        A4->>A1: Record and communicate outcome
-    else Incomplete or exception
-        A4->>A1: Retain case with owner and reason
+        A4-->>A1: Confirm accepted submission
+    else Rejected (E2)
+        A4-->>A1: E2.1 Reject submission for controlled correction and resubmission
     end
+    Note over A1: E1.1 Specification ambiguity is logged as a decision, not silently coded
 ```
 
 ## Open questions and decisions

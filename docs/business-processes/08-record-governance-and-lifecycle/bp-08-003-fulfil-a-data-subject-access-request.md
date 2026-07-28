@@ -1,4 +1,4 @@
-# BP-060 — Fulfil a data subject access request
+# BP-08-003 — Fulfil a data subject access request
 
 > Status: Draft
 > Domain: 08 — Record governance and lifecycle
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2027-01-26
 
-[Previous: BP-059](../08-record-governance-and-lifecycle/bp-059-correct-personal-or-enrolment-data.md) · [Domain index](README.md) · [Next: BP-061](../08-record-governance-and-lifecycle/bp-061-assess-restriction-rectification-or-erasure-rights.md) · [Library home](../README.md)
+[Previous: BP-08-002](../08-record-governance-and-lifecycle/bp-08-002-correct-personal-or-enrolment-data.md) · [Domain index](README.md) · [Next: BP-08-004](../08-record-governance-and-lifecycle/bp-08-004-assess-restriction-rectification-or-erasure-rights.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-Fulfil a data subject access request creates a controlled, explainable and effective-dated rights request, search scope, review and disclosure. The outcome preserves the evidence, authority and cross-system state needed for the Revelation SRS rather than reducing the process to a status update.
+When a data subject exercises their right to ask what personal data the institution holds about them, this process coordinates a complete and defensible response within the statutory deadline. It brings together the Data Protection Team, the owners of every system that might hold relevant data, and a disclosure reviewer who checks for third-party information, exemptions and security sensitivities before anything is released. The outcome is a secure, accessible disclosure package together with a recorded trail of what was searched, what was withheld and why, and confirmation that the request has been closed.
 
 ## Scope
 
@@ -69,12 +69,12 @@ A valid subject access request is received.
 
 ## Main flow
 
-1. **Data Subject** log receipt, identity assurance, request scope and statutory deadline.
-2. **Data Protection Team** locate personal data across SRS, integrations, cases, documents and logs.
+1. **Data Protection Team** logs receipt of the request, confirms identity assurance, the request scope and the statutory deadline.
+2. **Data Protection Team** locates personal data across SRS, integrations, cases, documents and logs.
 3. **System/Data Owners** collect reproducible search evidence without altering source records.
-4. **Disclosure Reviewer** review third-party data, exemptions, privilege and security.
-5. **Data Protection Team** produce an accessible secure disclosure with required supplementary information.
-6. **System/Data Owners** record delivery, decisions, correspondence and closure.
+4. **Disclosure Reviewer** reviews third-party data, exemptions, privilege and security.
+5. **Data Protection Team** produces an accessible, secure disclosure with the required supplementary information.
+6. **Data Protection Team** records delivery, decisions, correspondence and closure.
 
 ## Alternative flows
 
@@ -161,16 +161,18 @@ sequenceDiagram
     participant A2 as Data Protection Team
     participant A3 as System/Data Owners
     participant A4 as Disclosure Reviewer
-    A1->>A2: 1. log receipt, identity assurance, request scope and statutory deadline
-    A2->>A3: 2. locate personal data across SRS, integrations, cases, documents and logs
-    A3->>A4: 3. collect reproducible search evidence without altering source records
-    A4->>A1: 4. review third-party data, exemptions, privilege and security
-    A1->>A2: 5. produce an accessible secure disclosure with required supplementary information
-    A2->>A3: 6. record delivery, decisions, correspondence and closure
+
+    A1->>A2: Trigger — submit a valid subject access request
+    A2->>A2: 1. Log receipt, confirm identity assurance, request scope and statutory deadline
+    A2->>A3: 2. Locate personal data across SRS, integrations, cases, documents and logs
+    A3->>A4: 3. Collect reproducible search evidence without altering source records
+    A4->>A2: 4. Review third-party data, exemptions, privilege and security
+    A2->>A2: 5. Produce an accessible, secure disclosure with required supplementary information
+    A2->>A1: 6. Record delivery, decisions, correspondence and closure
     alt Valid and authorised
-        A4->>A1: Record and communicate outcome
+        A2-->>A1: Record and communicate outcome
     else Incomplete or exception
-        A4->>A1: Retain case with owner and reason
+        A2->>A2: Retain case with owner and reason
     end
 ```
 

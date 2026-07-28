@@ -4,7 +4,7 @@
 >
 > Review date: 2026-07-27
 >
-> Scope: BP-027, BP-028, BPR-W07, BPR-D08 and ESP-001–ESP-006
+> Scope: BP-04-001, BP-04-002, BPR-W07, BPR-D08 and ESP-001–ESP-006
 
 ## Outcome
 

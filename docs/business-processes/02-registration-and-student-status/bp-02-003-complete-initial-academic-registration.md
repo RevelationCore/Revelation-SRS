@@ -1,4 +1,4 @@
-# BP-010 — Complete initial academic registration
+# BP-02-003 — Complete initial academic registration
 
 > Status: Draft
 > Domain: 02 — Registration and student status
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2027-01-26
 
-[Previous: BP-009](bp-009-verify-identity-and-right-to-study.md) · [Domain index](README.md) · [Next: BP-011](bp-011-complete-financial-registration.md) · [Library home](../README.md)
+[Previous: BP-02-002](bp-02-002-verify-identity-and-right-to-study.md) · [Domain index](README.md) · [Next: BP-02-004](bp-02-004-complete-financial-registration.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -74,14 +74,14 @@ Student enters academic registration or Registry begins an authorised assisted r
 3. **Prospective Student** supplies permitted updates, confirms intention to study and accepts versioned terms/regulations/data notices.
 4. **SRS** validates completeness, eligibility, concurrent enrolment and outstanding academic obligations.
 5. **SRS** creates the effective-dated enrolment and records actor, channel, declaration versions and source provenance.
-6. **SRS** confirms academic registration to the student and makes BP-011/BP-012 and module processes eligible.
+6. **SRS** confirms academic registration to the student and makes BP-02-004/BP-02-005 and module processes eligible.
 7. **SRS** sends the applicable UCAS/provider admissions confirmation and records acknowledgement.
 
 ## Alternative flows
 
 ### A2 — Academic fact is wrong
 
-- **A2.1** Route to Registry/BP-013; re-present the corrected fact before confirmation.
+- **A2.1** Route to Registry/BP-02-006; re-present the corrected fact before confirmation.
 
 ### A5 — Assisted registration
 
@@ -191,7 +191,7 @@ sequenceDiagram
 
 ## Related processes
 
-[BP-008](bp-008-prepare-initial-registration.md); [BP-009](bp-009-verify-identity-and-right-to-study.md); [BP-011](bp-011-complete-financial-registration.md); [BP-012](bp-012-activate-access-and-entitlements.md).
+[BP-02-001](bp-02-001-prepare-initial-registration.md); [BP-02-002](bp-02-002-verify-identity-and-right-to-study.md); [BP-02-004](bp-02-004-complete-financial-registration.md); [BP-02-005](bp-02-005-activate-access-and-entitlements.md).
 
 ## Review record
 

@@ -1,4 +1,4 @@
-# BP-056 — Produce Department for the Economy returns
+# BP-07-007 — Produce Department for the Economy returns
 
 > Status: Draft
 > Domain: 07 — Regulatory and statutory reporting
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2027-01-26
 
-[Previous: BP-055](../07-regulatory-and-statutory-reporting/bp-055-produce-medr-regulatory-and-funding-returns.md) · [Domain index](README.md) · [Next: BP-057](../07-regulatory-and-statutory-reporting/bp-057-resolve-a-statutory-submission-data-quality-issue.md) · [Library home](../README.md)
+[Previous: BP-07-006](../07-regulatory-and-statutory-reporting/bp-07-006-produce-medr-regulatory-and-funding-returns.md) · [Domain index](README.md) · [Next: BP-07-008](../07-regulatory-and-statutory-reporting/bp-07-008-resolve-a-statutory-submission-data-quality-issue.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-Produce Department for the Economy returns creates a controlled, explainable and effective-dated Northern Ireland return/extract and sign-off. The outcome preserves the evidence, authority and cross-system state needed for the Revelation SRS rather than reducing the process to a status update.
+Producing Department for the Economy returns turns the institution's Northern Ireland student population into the return the Department requires, cross-checked against HESA and prior-period totals so an inconsistency between returns is caught internally rather than by the Department. Freezing the population before extraction, and obtaining institutional sign-off before secure submission, means the figures the Department receives are the same figures the institution can reproduce and explain later. Receipt, queries, amendments and a reproducible snapshot are retained as a single evidential record.
 
 ## Scope
 
@@ -71,8 +71,8 @@ A Department for the Economy data or funding requirement is due.
 
 1. **DfE Returns Officer** confirm collection scope, HESA dependency, definitions and deadline.
 2. **Data Owners** freeze the Northern Ireland provider/student population.
-3. **Accountable Signatory** extract with source and code lineage.
-4. **Department for the Economy** validate against HESA, finance and prior-period totals.
+3. **Data Owners** extract with source and code lineage.
+4. **DfE Returns Officer** validate against HESA, finance and prior-period totals.
 5. **Data Owners** obtain institutional sign-off and submit securely.
 6. **Accountable Signatory** retain receipt, queries, amendments and reproducible snapshot.
 
@@ -161,16 +161,16 @@ sequenceDiagram
     participant A2 as Data Owners
     participant A3 as Accountable Signatory
     participant A4 as Department for the Economy
-    A1->>A2: 1. confirm collection scope, HESA dependency, definitions and deadline
-    A2->>A3: 2. freeze the Northern Ireland provider/student population
-    A3->>A4: 3. extract with source and code lineage
-    A4->>A1: 4. validate against HESA, finance and prior-period totals
-    A1->>A2: 5. obtain institutional sign-off and submit securely
-    A2->>A3: 6. retain receipt, queries, amendments and reproducible snapshot
+    A1->>A2: 1. confirms collection scope, HESA dependency, definitions and deadline
+    A2->>A2: 2. freezes the Northern Ireland provider/student population
+    A2->>A1: 3. extracts with source and code lineage
+    A1->>A2: 4. validates against HESA, finance and prior-period totals
+    A2->>A4: 5. obtains institutional sign-off and submits securely
+    A3->>A3: 6. retains receipt, queries, amendments and reproducible snapshot
     alt Valid and authorised
-        A4->>A1: Record and communicate outcome
+        A3->>A1: Record and communicate outcome
     else Incomplete or exception
-        A4->>A1: Retain case with owner and reason
+        A3->>A1: Retain case with owner and reason
     end
 ```
 

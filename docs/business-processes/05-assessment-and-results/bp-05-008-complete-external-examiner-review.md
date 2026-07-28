@@ -1,4 +1,4 @@
-# BP-040 — Complete external examiner review
+# BP-05-008 — Complete external examiner review
 
 > Status: Draft
 > Domain: 05 — Assessment and results
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2027-01-26
 
-[Previous: BP-039](../05-assessment-and-results/bp-039-prepare-an-exam-board-and-data-pack.md) · [Domain index](README.md) · [Next: BP-041](../05-assessment-and-results/bp-041-ratify-and-publish-results.md) · [Library home](../README.md)
+[Previous: BP-05-007](../05-assessment-and-results/bp-05-007-prepare-an-exam-board-and-data-pack.md) · [Domain index](README.md) · [Next: BP-05-009](../05-assessment-and-results/bp-05-009-ratify-and-publish-results.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-Complete external examiner review creates a controlled, explainable and effective-dated external examiner access, review and sign-off. The outcome preserves the evidence, authority and cross-system state needed for the Revelation SRS rather than reducing the process to a status update.
+Completing external examiner review gives an appointed external examiner secure access to the sample, assessment and standards evidence they need to check the institution's marking and moderation against sector standards, and a formal channel to raise queries before results are ratified. Material queries are resolved or explicitly deferred rather than silently ignored, and the examiner's sign-off — or qualified or withheld sign-off — is captured with its reasons as part of the board's permanent evidence. Systemic issues the examiner raises are fed to quality processes so they inform practice beyond the single board.
 
 ## Scope
 
@@ -71,9 +71,9 @@ The approved mark/result evidence is ready for external review.
 
 1. **External Examiner** verify appointment, scope, conflicts and secure access.
 2. **Assessment Officer** provide the authorised sample, assessment and standards evidence.
-3. **Board Chair** record comments, queries and requested actions.
-4. **SRS** resolve material queries before ratification or explicitly defer them.
-5. **Assessment Officer** capture sign-off or qualified/non-sign-off with reasons.
+3. **External Examiner** record comments, queries and requested actions.
+4. **Assessment Officer** resolve material queries before ratification or explicitly defer them.
+5. **External Examiner** capture sign-off or qualified/non-sign-off with reasons.
 6. **Board Chair** retain the review as board evidence and feed systemic issues to quality processes.
 
 ## Alternative flows
@@ -162,16 +162,16 @@ sequenceDiagram
     participant A2 as Assessment Officer
     participant A3 as Board Chair
     participant A4 as SRS
-    A1->>A2: 1. verify appointment, scope, conflicts and secure access
-    A2->>A3: 2. provide the authorised sample, assessment and standards evidence
-    A3->>A4: 3. record comments, queries and requested actions
-    A4->>A1: 4. resolve material queries before ratification or explicitly defer them
-    A1->>A2: 5. capture sign-off or qualified/non-sign-off with reasons
-    A2->>A3: 6. retain the review as board evidence and feed systemic issues to quality processes
+    A1->>A2: 1. verifies appointment, scope, conflicts and secure access
+    A2->>A1: 2. provides the authorised sample, assessment and standards evidence
+    A1->>A2: 3. records comments, queries and requested actions
+    A2->>A1: 4. resolves material queries before ratification or explicitly defers them
+    A1->>A3: 5. captures sign-off or qualified/non-sign-off with reasons
+    A3->>A3: 6. retains the review as board evidence and feeds systemic issues to quality processes
     alt Valid and authorised
-        A4->>A1: Record and communicate outcome
+        A3->>A2: Record and communicate outcome
     else Incomplete or exception
-        A4->>A1: Retain case with owner and reason
+        A3->>A2: Retain case with owner and reason
     end
 ```
 

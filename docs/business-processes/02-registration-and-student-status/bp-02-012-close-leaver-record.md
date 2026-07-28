@@ -1,4 +1,4 @@
-# BP-019 — Close a leaver record and entitlements
+# BP-02-012 — Close a leaver record and entitlements
 
 > Status: Draft
 > Domain: 02 — Registration and student status
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2027-01-26
 
-[Previous: BP-018](bp-018-resolve-failure-to-register.md) · [Domain index](README.md) · [Library home](../README.md)
+[Previous: BP-02-011](bp-02-011-resolve-failure-to-register.md) · [Domain index](README.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -67,7 +67,7 @@ This process completes operational closure after withdrawal, transfer-out, exclu
 
 ## Trigger
 
-BP-016, BP-018, BP-046/049 or another authorised status-ending process completes.
+BP-02-009, BP-02-011, BP-06-003/049 or another authorised status-ending process completes.
 
 ## Main flow
 
@@ -85,7 +85,7 @@ BP-016, BP-018, BP-046/049 or another authorised status-ending process completes
 
 ### A2 — Exit award pending
 
-- **A2.1** Keep award/document tasks open and route to BP-046 while closing unrelated entitlements.
+- **A2.1** Keep award/document tasks open and route to BP-06-003 while closing unrelated entitlements.
 
 ### A4 — Continuing limited access
 
@@ -201,7 +201,7 @@ sequenceDiagram
 
 ## Related processes
 
-[BP-016](bp-016-withdraw-from-studies.md); [BP-018](bp-018-resolve-failure-to-register.md); BP-046; BP-062.
+[BP-02-009](bp-02-009-withdraw-from-studies.md); [BP-02-011](bp-02-011-resolve-failure-to-register.md); BP-06-003; BP-08-005.
 
 ## Review record
 

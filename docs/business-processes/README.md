@@ -51,18 +51,20 @@ A `UK` label does not imply identical national regulation. Where the core sequen
 
 Only an authorised SME can move a page from `SME review` to `Approved`. Pages may be technically complete while remaining at `Draft` until reviewers are appointed.
 
-The working inventory now has a draft page for every identifier from BP-001 through BP-063. Structural completeness does not imply policy approval: open decisions and source currency must be resolved through the [SME review register](sme-review-register.md).
+The working inventory now has a draft page for every identifier from BP-01-001 through BP-08-006. Structural completeness does not imply policy approval: open decisions and source currency must be resolved through the [SME review register](sme-review-register.md).
 
 ## Identifier model
 
 | Identifier | Meaning | Authority |
 |---|---|---|
-| `BP-nnn` | Business process page | This library |
+| `BP-dd-nnn` | Business process page, domain-scoped | This library |
 | `Wnnn` | Durable Revelation workflow | [Workflow Catalogue](../requirements/workflow-catalogue.md) |
 | `Fnnn` | Enterprise reference-model integration flow | [Reference Model](../reference/revelation-student-records-reference-model.md) |
 | `REQ-AREA-nnn` | Revelation functional requirement | [Functional Requirements](../requirements/functional-requirements.md) |
 
 These identifiers are related through traceability but are not interchangeable.
+
+`BP-dd-nnn` uses a two-digit domain number (`01`–`08`, matching this library's domain folders) followed by a three-digit sequence local to that domain. A new process is always appended at the end of its own domain's sequence — for example the next process added to domain 05 becomes `BP-05-012` regardless of how many processes exist in other domains. This means adding a process to one domain never requires renumbering any page in another domain. The library previously used a single global sequence (`BP-001`–`BP-063`); it was replaced on 2026-07-28 because a global sequence forces every subsequent ID to shift whenever a process is inserted ahead of the last domain. Migrating from the flat sequence to the domain-scoped one was a one-time, mechanical rename; it does not by itself violate the "never reuse or renumber a published identifier" rule below, which governs additions from this point forward.
 
 ## Current baseline findings
 

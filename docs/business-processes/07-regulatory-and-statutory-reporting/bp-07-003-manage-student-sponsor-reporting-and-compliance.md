@@ -1,4 +1,4 @@
-# BP-052 — Manage Student sponsor reporting and compliance
+# BP-07-003 — Manage Student sponsor reporting and compliance
 
 > Status: Draft
 > Domain: 07 — Regulatory and statutory reporting
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2027-01-26
 
-[Previous: BP-051](../07-regulatory-and-statutory-reporting/bp-051-exchange-registration-attendance-and-changes-with-student-finance-bodies.md) · [Domain index](README.md) · [Next: BP-053](../07-regulatory-and-statutory-reporting/bp-053-produce-ofs-regulatory-extracts.md) · [Library home](../README.md)
+[Previous: BP-07-002](../07-regulatory-and-statutory-reporting/bp-07-002-exchange-registration-attendance-and-changes-with-student-finance-bodies.md) · [Domain index](README.md) · [Next: BP-07-004](../07-regulatory-and-statutory-reporting/bp-07-004-produce-ofs-regulatory-extracts.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-Manage Student sponsor reporting and compliance creates a controlled, explainable and effective-dated sponsor compliance case, SMS report and evidence. The outcome preserves the evidence, authority and cross-system state needed for the Revelation SRS rather than reducing the process to a status update.
+Managing student sponsor reporting and compliance turns evidence about a Student-route sponsored student's engagement and circumstances into the correct compliance decision — report, support, consider withdrawing sponsorship, or no report required — under the current UKVI guidance. Because a report can affect a student's visa status, the decision and the approval to act on it are kept as distinct, accountable steps, and only the correct report is submitted to the Sponsor Management System within its statutory deadline. Every report, its supporting evidence and its receipt are recorded, so the institution can demonstrate compliance with its sponsor duties at any later point.
 
 ## Scope
 
@@ -70,10 +70,10 @@ A sponsored-student event or compliance review becomes due.
 ## Main flow
 
 1. **International Compliance Officer** apply the current guidance and identify sponsor/CAS/student.
-2. **Enrolled Student** assemble verified enrolment, engagement and circumstance evidence.
-3. **SRS** decide whether reporting, support, withdrawal of sponsorship or no report is required.
-4. **UKVI Sponsor Management System** obtain authorised compliance approval.
-5. **Enrolled Student** submit the correct SMS report within the applicable deadline.
+2. **SRS** assemble verified enrolment, engagement and circumstance evidence.
+3. **International Compliance Officer** decide whether reporting, support, withdrawal of sponsorship or no report is required.
+4. **International Compliance Officer** obtain authorised compliance approval, recorded by the UKVI Sponsor Management System.
+5. **International Compliance Officer** submit the correct SMS report within the applicable deadline.
 6. **SRS** record exact report, evidence, receipt and later correction/reconciliation.
 
 ## Alternative flows
@@ -161,16 +161,16 @@ sequenceDiagram
     participant A2 as Enrolled Student
     participant A3 as SRS
     participant A4 as UKVI Sponsor Management System
-    A1->>A2: 1. apply the current guidance and identify sponsor/CAS/student
-    A2->>A3: 2. assemble verified enrolment, engagement and circumstance evidence
-    A3->>A4: 3. decide whether reporting, support, withdrawal of sponsorship or no report is required
-    A4->>A1: 4. obtain authorised compliance approval
-    A1->>A2: 5. submit the correct SMS report within the applicable deadline
-    A2->>A3: 6. record exact report, evidence, receipt and later correction/reconciliation
+    A1->>A3: 1. applies the current guidance and identifies sponsor/CAS/student
+    A3->>A1: 2. assembles verified enrolment, engagement and circumstance evidence
+    A1->>A1: 3. decides whether reporting, support, withdrawal of sponsorship or no report is required
+    A1->>A4: 4. obtains authorised compliance approval, recorded by the Sponsor Management System
+    A1->>A4: 5. submits the correct SMS report within the applicable deadline
+    A3->>A3: 6. records exact report, evidence, receipt and later correction/reconciliation
     alt Valid and authorised
-        A4->>A1: Record and communicate outcome
+        A3->>A2: Record and communicate outcome
     else Incomplete or exception
-        A4->>A1: Retain case with owner and reason
+        A3->>A2: Retain case with owner and reason
     end
 ```
 

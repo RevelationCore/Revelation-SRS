@@ -1,4 +1,4 @@
-# BP-033 — Establish assessment structures
+# BP-05-001 — Establish assessment structures
 
 > Status: Draft
 > Domain: 05 — Assessment and results
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2027-01-26
 
-[Previous: BP-032](../04-learning-engagement-and-support/bp-032-distribute-an-approved-support-outcome.md) · [Domain index](README.md) · [Next: BP-034](../05-assessment-and-results/bp-034-create-examination-entries-and-accommodations.md) · [Library home](../README.md)
+[Previous: BP-04-006](../04-learning-engagement-and-support/bp-04-006-distribute-an-approved-support-outcome.md) · [Domain index](README.md) · [Next: BP-05-002](../05-assessment-and-results/bp-05-002-create-examination-entries-and-accommodations.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-Establish assessment structures creates a controlled, explainable and effective-dated assessment pattern, component and calculation-rule versions. The outcome preserves the evidence, authority and cross-system state needed for the Revelation SRS rather than reducing the process to a status update.
+This process defines the assessment pattern for a module before teaching begins — the components, weightings, pass rules, learning outcomes and permitted attempts that determine how the module will be assessed. It requires the pattern to be checked for accuracy and regulatory compatibility and formally approved before publication to teaching and assessment systems. Once published and cohorts are relying on it, the pattern is protected from retrospective change; any later correction produces a new version rather than an unrecorded edit.
 
 ## Scope
 
@@ -69,12 +69,12 @@ An approved curriculum offering requires assessment setup.
 
 ## Main flow
 
-1. **Assessment Designer** import or create components against the approved module version.
-2. **Module Leader** define weights, pass rules, learning outcomes and permitted attempts.
-3. **Quality Approver** validate totals, dates and regulatory compatibility.
-4. **SRS** approve the complete assessment pattern.
-5. **Module Leader** publish an immutable effective version to teaching and assessment systems.
-6. **Quality Approver** protect active cohorts from retrospective rule change.
+1. **Assessment Designer** imports or creates assessment components against the approved module version.
+2. **Module Leader** defines weights, pass rules, learning outcomes and permitted attempts.
+3. **Quality Approver** validates totals, dates and regulatory compatibility against sector and institutional requirements.
+4. **Quality Approver** approves the complete assessment pattern.
+5. **SRS** records the approved pattern as an immutable, effective-dated version and publishes it to teaching and assessment systems.
+6. **SRS** protects active cohorts from retrospective rule change once a version is published.
 
 ## Alternative flows
 
@@ -161,16 +161,16 @@ sequenceDiagram
     participant A2 as Module Leader
     participant A3 as Quality Approver
     participant A4 as SRS
-    A1->>A2: 1. import or create components against the approved module version
-    A2->>A3: 2. define weights, pass rules, learning outcomes and permitted attempts
-    A3->>A4: 3. validate totals, dates and regulatory compatibility
-    A4->>A1: 4. approve the complete assessment pattern
-    A1->>A2: 5. publish an immutable effective version to teaching and assessment systems
-    A2->>A3: 6. protect active cohorts from retrospective rule change
+    A1->>A4: 1. Import or create assessment components against the approved module version
+    A2->>A4: 2. Define weights, pass rules, learning outcomes and permitted attempts
+    A3->>A3: 3. Validate totals, dates and regulatory compatibility against sector and institutional requirements
+    A3->>A4: 4. Approve the complete assessment pattern
+    A4->>A4: 5. Record the approved pattern as an immutable, effective-dated version and publish it to teaching and assessment systems
+    A4->>A4: 6. Protect active cohorts from retrospective rule change once a version is published
     alt Valid and authorised
-        A4->>A1: Record and communicate outcome
+        A4-->>A1: Confirm pattern recorded and communicated
     else Incomplete or exception
-        A4->>A1: Retain case with owner and reason
+        A3-->>A1: Retain case with owner and reason
     end
 ```
 

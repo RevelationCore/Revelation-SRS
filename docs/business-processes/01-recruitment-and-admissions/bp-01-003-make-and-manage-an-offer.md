@@ -1,4 +1,4 @@
-# BP-003 — Make and manage an offer
+# BP-01-003 — Make and manage an offer
 
 > Status: Draft
 > Domain: 01 — Recruitment and admissions
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2027-01-26
 
-[Previous: BP-002](../01-recruitment-and-admissions/bp-002-assess-an-application.md) · [Domain index](README.md) · [Next: BP-004](../01-recruitment-and-admissions/bp-004-confirm-offer-conditions.md) · [Library home](../README.md)
+[Previous: BP-01-002](../01-recruitment-and-admissions/bp-01-002-assess-an-application.md) · [Domain index](README.md) · [Next: BP-01-004](../01-recruitment-and-admissions/bp-01-004-confirm-offer-conditions.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-Make and manage an offer creates a controlled, explainable and effective-dated offer, conditions, response and history. The outcome preserves the evidence, authority and cross-system state needed for the Revelation SRS rather than reducing the process to a status update.
+Making and managing an offer turns an authorised admissions decision into a formal offer the applicant can respond to, with any conditions stated in a form that can later be tested individually against evidence. Because an offer may be amended, declined, withdrawn or allowed to expire, the process keeps every version and the applicant's response on record, so the institution and UCAS always agree on the current status of the offer and can explain how it reached that status.
 
 ## Scope
 
@@ -70,10 +70,10 @@ An authorised admissions decision permits an offer.
 ## Main flow
 
 1. **Admissions Officer** select the approved programme, intake, mode, fee status basis and offer type.
-2. **Prospective Student** create individually testable academic and non-academic conditions.
-3. **Admissions System** authorise the offer under delegated authority.
+2. **Admissions Officer** create individually testable academic and non-academic conditions.
+3. **Admissions System** applies the delegated-authority decision and creates the authorised offer record.
 4. **UCAS/Admissions Service** publish the offer through the authoritative channel.
-5. **Prospective Student** record delivery and the applicant response with source timestamp.
+5. **Prospective Student** submits their response — accept, decline or request a change — with source timestamp.
 6. **Admissions System** version any authorised change and close declined, withdrawn or expired offers.
 
 ## Alternative flows
@@ -162,16 +162,16 @@ sequenceDiagram
     participant A2 as Prospective Student
     participant A3 as Admissions System
     participant A4 as UCAS/Admissions Service
-    A1->>A2: 1. select the approved programme, intake, mode, fee status basis and offer type
-    A2->>A3: 2. create individually testable academic and non-academic conditions
-    A3->>A4: 3. authorise the offer under delegated authority
-    A4->>A1: 4. publish the offer through the authoritative channel
-    A1->>A2: 5. record delivery and the applicant response with source timestamp
-    A2->>A3: 6. version any authorised change and close declined, withdrawn or expired offers
+    A1->>A3: 1. selects the approved programme, intake, mode, fee status basis and offer type
+    A1->>A3: 2. creates individually testable academic and non-academic conditions
+    A3->>A4: 3. applies the delegated-authority decision and creates the authorised offer record
+    A4->>A2: 4. publishes the offer through the authoritative channel
+    A2->>A4: 5. submits their response — accept, decline or request a change — with source timestamp
+    A3->>A3: 6. versions any authorised change and closes declined, withdrawn or expired offers
     alt Valid and authorised
-        A4->>A1: Record and communicate outcome
+        A3->>A2: Record and communicate outcome
     else Incomplete or exception
-        A4->>A1: Retain case with owner and reason
+        A3->>A2: Retain case with owner and reason
     end
 ```
 

@@ -1,4 +1,4 @@
-# BP-027 — Record attendance and academic engagement evidence
+# BP-04-001 — Record attendance and academic engagement evidence
 
 > Status: Draft
 > Domain: 04 — Learning, engagement and support
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2027-01-26
 
-[Previous: BP-026](../03-curriculum-and-module-registration/bp-026-establish-pgr-supervision.md) · [Domain index](README.md) · [Next: BP-028](../04-learning-engagement-and-support/bp-028-investigate-and-respond-to-non-engagement.md) · [Library home](../README.md)
+[Previous: BP-03-007](../03-curriculum-and-module-registration/bp-03-007-establish-pgr-supervision.md) · [Domain index](README.md) · [Next: BP-04-002](../04-learning-engagement-and-support/bp-04-002-investigate-and-respond-to-non-engagement.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-Record attendance and academic engagement evidence creates a controlled, explainable and effective-dated attendance and engagement evidence. The outcome preserves the evidence, authority and cross-system state needed for the Revelation SRS rather than reducing the process to a status update.
+This process turns raw attendance capture and academic engagement signals — from timetabled activity, in-class registers and monitoring systems — into a single, trustworthy engagement record for each student. It separates what was actually captured (the raw event and its source) from the institution's engagement judgement (what that capture means under current policy), so tutors, support services and compliance functions can act on a consistent picture rather than reconciling conflicting local records. Only the reconciled engagement outcome needed for monitoring and support decisions is retained centrally; source-system capture detail and correction history stay with the capturing system.
 
 ## Scope
 
@@ -69,11 +69,11 @@ A scheduled or recognised academic engagement event occurs.
 
 ## Main flow
 
-1. **Enrolled Student** derive expected engagement events from authoritative study activity.
+1. **Attendance Monitoring** derive expected engagement events from authoritative study activity.
 2. **Teaching Staff** capture attended, absent, authorised absence or other evidenced outcome.
 3. **Attendance Monitoring** retain event, source, capture method and correction provenance.
 4. **SRS** distinguish raw attendance from the provider engagement judgement.
-5. **Teaching Staff** publish new evidence to the student engagement view.
+5. **SRS** publish new evidence to the student engagement view.
 6. **Attendance Monitoring** reconcile missing rosters, duplicate scans and late corrections.
 
 ## Alternative flows
@@ -157,20 +157,21 @@ Terminology, authority, deadlines, evidence, thresholds, communication, appeals/
 
 ```mermaid
 sequenceDiagram
-    actor A1 as Enrolled Student
-    participant A2 as Teaching Staff
-    participant A3 as Attendance Monitoring
-    participant A4 as SRS
-    A1->>A2: 1. derive expected engagement events from authoritative study activity
-    A2->>A3: 2. capture attended, absent, authorised absence or other evidenced outcome
-    A3->>A4: 3. retain event, source, capture method and correction provenance
-    A4->>A1: 4. distinguish raw attendance from the provider engagement judgement
-    A1->>A2: 5. publish new evidence to the student engagement view
-    A2->>A3: 6. reconcile missing rosters, duplicate scans and late corrections
+    actor Student as Enrolled Student
+    participant Teaching as Teaching Staff
+    participant AttMon as Attendance Monitoring
+    participant SRS
+
+    AttMon->>AttMon: 1. Derive expected engagement events from authoritative study activity
+    Teaching->>AttMon: 2. Capture attended, absent, authorised absence or other evidenced outcome
+    AttMon->>SRS: 3. Retain event, source, capture method and correction provenance
+    SRS->>SRS: 4. Distinguish raw attendance from the provider engagement judgement
+    SRS->>Student: 5. Publish new evidence to the student engagement view
+    AttMon->>AttMon: 6. Reconcile missing rosters, duplicate scans and late corrections
     alt Valid and authorised
-        A4->>A1: Record and communicate outcome
+        SRS-->>Student: Record and communicate outcome
     else Incomplete or exception
-        A4->>A1: Retain case with owner and reason
+        SRS-->>Student: Retain case with owner and reason
     end
 ```
 

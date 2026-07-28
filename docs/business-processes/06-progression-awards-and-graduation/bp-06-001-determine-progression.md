@@ -1,4 +1,4 @@
-# BP-044 — Determine progression
+# BP-06-001 — Determine progression
 
 > Status: Draft
 > Domain: 06 — Progression, awards and graduation
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2027-01-26
 
-[Previous: BP-043](../05-assessment-and-results/bp-043-correct-a-ratified-academic-outcome.md) · [Domain index](README.md) · [Next: BP-045](../06-progression-awards-and-graduation/bp-045-manage-reassessment-referral-or-repeat-study.md) · [Library home](../README.md)
+[Previous: BP-05-011](../05-assessment-and-results/bp-05-011-correct-a-ratified-academic-outcome.md) · [Domain index](README.md) · [Next: BP-06-002](../06-progression-awards-and-graduation/bp-06-002-manage-reassessment-referral-or-repeat-study.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-Determine progression creates a controlled, explainable and effective-dated progression decision and rule explanation. The outcome preserves the evidence, authority and cross-system state needed for the Revelation SRS rather than reducing the process to a status update.
+Progression decisions tell a student whether they may proceed to the next stage of study, on what basis, and with what conditions, once their assessment results for a progression point have been ratified. This process applies the correct rule set for the student's cohort, lets the progression board apply legitimate discretion to individual cases, and records the resulting decision as an authoritative, dated fact rather than a provisional note. Downstream services such as registration and the student portal need this outcome immediately and reliably, so the decision is published with enough explanation that the student, the board and later reviewers can all see why it was reached.
 
 ## Scope
 
@@ -69,12 +69,12 @@ Ratified results for a progression point are available.
 
 ## Main flow
 
-1. **Progression Board** bind the enrolment to the applicable progression-rule version.
-2. **Assessment Officer** assemble ratified credit, attempts and approved case effects.
-3. **SRS** calculate the default progression outcome with explanation.
-4. **Enrolled Student** present exceptions and permitted discretion to the board.
-5. **Assessment Officer** record the authorised decision, reason and next study state.
-6. **SRS** publish the decision and trigger registration/reassessment actions.
+1. **Progression Board** confirms the progression-rule version applicable to the cohort's progression point, so the enrolment is bound to that version.
+2. **Assessment Officer** assembles ratified credit, attempts and approved case effects for the board's consideration.
+3. **SRS** calculates the default progression outcome with explanation.
+4. **Enrolled Student** submits documented exceptions and evidence supporting permitted discretion for the board's consideration.
+5. **Assessment Officer** records the authorised decision, reason and next study state on the board's behalf.
+6. **SRS** publishes the decision and triggers registration/reassessment actions.
 
 ## Alternative flows
 
@@ -84,7 +84,7 @@ Ratified results for a progression point are available.
 
 ### A2 — Variant
 
-- **A2.1** PGR progression is handled by BP-029.
+- **A2.1** PGR progression is handled by BP-04-003.
 
 ## Exception flows
 
@@ -157,20 +157,21 @@ Terminology, authority, deadlines, evidence, thresholds, communication, appeals/
 
 ```mermaid
 sequenceDiagram
-    actor A1 as Progression Board
-    participant A2 as Assessment Officer
-    participant A3 as SRS
-    participant A4 as Enrolled Student
-    A1->>A2: 1. bind the enrolment to the applicable progression-rule version
-    A2->>A3: 2. assemble ratified credit, attempts and approved case effects
-    A3->>A4: 3. calculate the default progression outcome with explanation
-    A4->>A1: 4. present exceptions and permitted discretion to the board
-    A1->>A2: 5. record the authorised decision, reason and next study state
-    A2->>A3: 6. publish the decision and trigger registration/reassessment actions
-    alt Valid and authorised
-        A4->>A1: Record and communicate outcome
-    else Incomplete or exception
-        A4->>A1: Retain case with owner and reason
+    actor Board as Progression Board
+    participant AO as Assessment Officer
+    participant SRS
+    actor Student as Enrolled Student
+
+    Board->>SRS: 1. Confirm progression-rule version; bind enrolment
+    AO->>Board: 2. Assemble ratified credit, attempts and approved case effects
+    SRS->>SRS: 3. Calculate the default progression outcome with explanation
+    Student->>Board: 4. Submit documented exceptions and discretion evidence
+    AO->>SRS: 5. Record the authorised decision, reason and next study state
+    SRS->>SRS: 6. Publish the decision; trigger registration/reassessment actions
+    alt E1 — Missing or uncertain results
+        SRS-->>AO: E1.1 Defer the case rather than fail progression
+    else E2 — Unconfigured discretion requested
+        SRS-->>Board: E2.1 Reject the free-text override; require configured discretion
     end
 ```
 

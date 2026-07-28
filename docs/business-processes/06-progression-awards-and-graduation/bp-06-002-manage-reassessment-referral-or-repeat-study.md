@@ -1,4 +1,4 @@
-# BP-045 — Manage reassessment, referral or repeat study
+# BP-06-002 — Manage reassessment, referral or repeat study
 
 > Status: Draft
 > Domain: 06 — Progression, awards and graduation
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2027-01-26
 
-[Previous: BP-044](../06-progression-awards-and-graduation/bp-044-determine-progression.md) · [Domain index](README.md) · [Next: BP-046](../06-progression-awards-and-graduation/bp-046-determine-and-confer-an-award.md) · [Library home](../README.md)
+[Previous: BP-06-001](../06-progression-awards-and-graduation/bp-06-001-determine-progression.md) · [Domain index](README.md) · [Next: BP-06-003](../06-progression-awards-and-graduation/bp-06-003-determine-and-confer-an-award.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-Manage reassessment, referral or repeat study creates a controlled, explainable and effective-dated reassessment entitlement, next attempt and repeat-study plan. The outcome preserves the evidence, authority and cross-system state needed for the Revelation SRS rather than reducing the process to a status update.
+When a progression or module decision requires a student to be reassessed, referred, or to repeat study, this process turns that requirement into a concrete, time-bound plan: which attempt it is, under what rules, and by when it must be completed. It coordinates the academic entitlement with the practical consequences that follow from it, such as fees, timetabling, visa and curriculum implications, so the student's next attempt is acted on consistently rather than left to informal follow-up. Keeping each attempt as a distinct, dated record, rather than overwriting the previous one, preserves the history needed for later regulatory, appeals or classification purposes.
 
 ## Scope
 
@@ -69,12 +69,12 @@ A ratified module/progression decision grants or requires further assessment/stu
 
 ## Main flow
 
-1. **Assessment Officer** interpret the authorised decision under attempt and capping rules.
-2. **Enrolled Student** create the next attempt with assessment pattern and due period.
-3. **Registry** decide reassessment without attendance, referral, repeat module or repeat stage.
-4. **Finance/Timetabling** record fees, attendance, visa and curriculum consequences.
-5. **Enrolled Student** publish eligible entries/registrations to operational systems.
-6. **Registry** track completion or expiry without overwriting previous attempts.
+1. **Assessment Officer** interprets the authorised decision under attempt and capping rules.
+2. **Registry** creates the next attempt record, with assessment pattern and due period, and notifies the student.
+3. **Assessment Officer** decides whether reassessment without attendance, referral, repeat module or repeat stage applies.
+4. **Finance/Timetabling** records fees, attendance, visa and curriculum consequences.
+5. **Registry** publishes eligible entries/registrations to operational systems.
+6. **Registry** tracks completion or expiry without overwriting previous attempts.
 
 ## Alternative flows
 
@@ -157,20 +157,21 @@ Terminology, authority, deadlines, evidence, thresholds, communication, appeals/
 
 ```mermaid
 sequenceDiagram
-    actor A1 as Assessment Officer
-    participant A2 as Enrolled Student
-    participant A3 as Registry
-    participant A4 as Finance/Timetabling
-    A1->>A2: 1. interpret the authorised decision under attempt and capping rules
-    A2->>A3: 2. create the next attempt with assessment pattern and due period
-    A3->>A4: 3. decide reassessment without attendance, referral, repeat module or repeat stage
-    A4->>A1: 4. record fees, attendance, visa and curriculum consequences
-    A1->>A2: 5. publish eligible entries/registrations to operational systems
-    A2->>A3: 6. track completion or expiry without overwriting previous attempts
-    alt Valid and authorised
-        A4->>A1: Record and communicate outcome
-    else Incomplete or exception
-        A4->>A1: Retain case with owner and reason
+    actor AO as Assessment Officer
+    actor Student as Enrolled Student
+    participant Registry
+    participant FT as Finance/Timetabling
+
+    AO->>Registry: 1. Interpret the authorised decision under attempt and capping rules
+    Registry->>Student: 2. Create the next attempt (assessment pattern, due period)
+    AO->>Registry: 3. Decide reassessment type (RWA, referral, repeat module, repeat stage)
+    FT->>Registry: 4. Record fees, attendance, visa and curriculum consequences
+    Registry->>Student: 5. Publish eligible entries/registrations to operational systems
+    Registry->>Registry: 6. Track completion or expiry without overwriting previous attempts
+    alt E1 — No available module/assessment version
+        Registry-->>AO: E1.1 Trigger curriculum resolution
+    else E2 — Sponsor or maximum-period conflict
+        Registry-->>FT: E2.1 Escalate for specialist review
     end
 ```
 

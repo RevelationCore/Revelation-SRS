@@ -1,4 +1,4 @@
-# BP-018 — Resolve failure to register or re-register
+# BP-02-011 — Resolve failure to register or re-register
 
 > Status: Draft
 > Domain: 02 — Registration and student status
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2027-01-26
 
-[Previous: BP-017](bp-017-complete-annual-re-registration.md) · [Domain index](README.md) · [Next: BP-019](bp-019-close-leaver-record.md) · [Library home](../README.md)
+[Previous: BP-02-010](bp-02-010-complete-annual-re-registration.md) · [Domain index](README.md) · [Next: BP-02-012](bp-02-012-close-leaver-record.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -17,7 +17,7 @@
 | Nations | England; Scotland; Wales; Northern Ireland |
 | Provider types | All providers retaining responsibility for the student record, including partner-delivered provision |
 | Levels and modes | UG; PGT; PGR; full-time; part-time; distance; placement |
-| Exclusions | A confirmed voluntary withdrawal; failure to engage after successful registration, handled in BP-028 |
+| Exclusions | A confirmed voluntary withdrawal; failure to engage after successful registration, handled in BP-04-002 |
 
 ## Traceability
 
@@ -40,7 +40,7 @@ Its outcome is either completed registration, an approved extension/exception, r
 
 **Starts when:** A registration deadline or escalation threshold passes with the required confirmation incomplete.
 
-**Ends when:** The student registers, receives an approved exception, enters another status process, or an authorised non-registration outcome is recorded and handed to BP-019.
+**Ends when:** The student registers, receives an approved exception, enters another status process, or an authorised non-registration outcome is recorded and handed to BP-02-012.
 
 **In scope:** Initial and annual registration failures, inability to contact, unresolved holds, late arrival and partner-confirmation failures.
 
@@ -79,9 +79,9 @@ The deadline or configured escalation point passes, or a partner/service reports
 4. **Registry Administrator** consults the relevant **Personal Tutor**, **Research Supervisor**, partner, Finance or compliance role where their evidence is material.
 5. **Student** responds with their intention and completes registration, requests an exception/status change, or confirms they will not continue.
 6. **Registry Administrator** evaluates the evidence against the applicable published rule and records a reasoned decision and effective date.
-7. **SRS** either returns the student to BP-010/BP-017, routes them to BP-014/BP-016, or records the authorised non-registration/withdrawal status bitemporally.
+7. **SRS** either returns the student to BP-02-003/BP-02-010, routes them to BP-02-007/BP-02-009, or records the authorised non-registration/withdrawal status bitemporally.
 8. **SRS** notifies the student of the decision, reasons, effective date, consequences and available review/appeal route.
-9. If status ended, **SRS** publishes the governed status change and starts BP-019; downstream exchanges are acknowledged and reconciled separately.
+9. If status ended, **SRS** publishes the governed status change and starts BP-02-012; downstream exchanges are acknowledged and reconciled separately.
 
 ## Alternative flows
 
@@ -98,12 +98,12 @@ The deadline or configured escalation point passes, or a partner/service reports
 ### A5 — Student intends to continue
 
 - **A5.1** The student completes outstanding actions or receives an authorised extension.
-- **A5.2** Continue in BP-010 or BP-017; close this case without a status-change event.
+- **A5.2** Continue in BP-02-003 or BP-02-010; close this case without a status-change event.
 
 ### A5b — Student requests interruption or withdrawal
 
 - **A5b.1** Preserve the request date and claimed last engagement date.
-- **A5b.2** Continue in BP-014 or BP-016; do not use the missed deadline as the effective date automatically.
+- **A5b.2** Continue in BP-02-007 or BP-02-009; do not use the missed deadline as the effective date automatically.
 
 ### A5c — Sponsored student
 
@@ -134,7 +134,7 @@ The deadline or configured escalation point passes, or a partner/service reports
 
 - There is an evidence-based, authorised outcome with effective and transaction times.
 - The student has been notified and a review route recorded.
-- Any status-ending outcome proceeds to BP-019.
+- Any status-ending outcome proceeds to BP-02-012.
 
 ### Unsuccessful or incomplete
 
@@ -213,9 +213,9 @@ sequenceDiagram
         Student->>Registry: 5. State intention and evidence
         Registry->>SRS: 6. Record reasoned decision
         alt Continue
-            SRS->>SRS: 7. Return to BP-010 or BP-017
+            SRS->>SRS: 7. Return to BP-02-003 or BP-02-010
         else Status change
-            SRS->>SRS: 7. Route to BP-014/BP-016 or commit authorised outcome
+            SRS->>SRS: 7. Route to BP-02-007/BP-02-009 or commit authorised outcome
             SRS-->>Student: 8. Notify decision and review route
             SRS->>External: 9. Publish governed status
         end
@@ -243,11 +243,11 @@ sequenceDiagram
 
 ## Related processes
 
-- [BP-017 — Complete annual re-registration](bp-017-complete-annual-re-registration.md)
-- BP-010 — Complete initial academic registration
-- BP-014 — Interrupt or suspend studies
-- BP-016 — Withdraw from studies
-- [BP-019 — Close a leaver record and entitlements](bp-019-close-leaver-record.md)
+- [BP-02-010 — Complete annual re-registration](bp-02-010-complete-annual-re-registration.md)
+- BP-02-003 — Complete initial academic registration
+- BP-02-007 — Interrupt or suspend studies
+- BP-02-009 — Withdraw from studies
+- [BP-02-012 — Close a leaver record and entitlements](bp-02-012-close-leaver-record.md)
 
 ## Review record
 

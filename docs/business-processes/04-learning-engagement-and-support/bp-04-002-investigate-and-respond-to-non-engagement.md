@@ -1,4 +1,4 @@
-# BP-028 — Investigate and respond to non-engagement
+# BP-04-002 — Investigate and respond to non-engagement
 
 > Status: Draft
 > Domain: 04 — Learning, engagement and support
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2027-01-26
 
-[Previous: BP-027](../04-learning-engagement-and-support/bp-027-record-attendance-and-academic-engagement-evidence.md) · [Domain index](README.md) · [Next: BP-029](../04-learning-engagement-and-support/bp-029-review-pgr-progress-and-milestones.md) · [Library home](../README.md)
+[Previous: BP-04-001](../04-learning-engagement-and-support/bp-04-001-record-attendance-and-academic-engagement-evidence.md) · [Domain index](README.md) · [Next: BP-04-003](../04-learning-engagement-and-support/bp-04-003-review-pgr-progress-and-milestones.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-Investigate and respond to non-engagement creates a controlled, explainable and effective-dated engagement alert, intervention case and outcome. The outcome preserves the evidence, authority and cross-system state needed for the Revelation SRS rather than reducing the process to a status update.
+This process turns a non-engagement signal into a governed case: an engagement officer triages the alert, a personal tutor makes contact and records the student's response, and the case is closed, continued or referred for a formal decision — with the evidence, contact history and decision authority kept together and effective-dated. It exists to keep pastoral contact separate from compliance and academic-status decisions, so that a welfare risk is routed to safeguarding rather than treated as an automatic sanction, and so that any sponsor-reporting duty (for example to UKVI) follows an authorised decision rather than the alert itself.
 
 ## Scope
 
@@ -70,11 +70,11 @@ Configured evidence indicates possible non-engagement.
 ## Main flow
 
 1. **Engagement Officer** create an alert using the applicable cohort policy and evidence window.
-2. **Enrolled Student** triage data quality, authorised absence, support and immediate-risk indicators.
+2. **Engagement Officer** triage data quality, authorised absence, support and immediate-risk indicators.
 3. **Personal Tutor** contact the student through accessible channels.
-4. **Wellbeing/Compliance Teams** record response, context and agreed re-engagement actions.
-5. **Enrolled Student** review new evidence by the policy deadline.
-6. **Personal Tutor** close, continue support or refer an authorised status/sponsor decision.
+4. **Personal Tutor** record response, context and agreed re-engagement actions.
+5. **Enrolled Student** submit new evidence by the policy deadline.
+6. **Engagement Officer** close, continue support or refer to Wellbeing/Compliance Teams for an authorised status/sponsor decision.
 
 ## Alternative flows
 
@@ -158,20 +158,21 @@ Terminology, authority, deadlines, evidence, thresholds, communication, appeals/
 
 ```mermaid
 sequenceDiagram
-    actor A1 as Engagement Officer
-    participant A2 as Enrolled Student
-    participant A3 as Personal Tutor
-    participant A4 as Wellbeing/Compliance Teams
-    A1->>A2: 1. create an alert using the applicable cohort policy and evidence window
-    A2->>A3: 2. triage data quality, authorised absence, support and immediate-risk indicators
-    A3->>A4: 3. contact the student through accessible channels
-    A4->>A1: 4. record response, context and agreed re-engagement actions
-    A1->>A2: 5. review new evidence by the policy deadline
-    A2->>A3: 6. close, continue support or refer an authorised status/sponsor decision
+    participant Officer as Engagement Officer
+    actor Student as Enrolled Student
+    participant Tutor as Personal Tutor
+    participant Wellbeing as Wellbeing/Compliance Teams
+
+    Officer->>Officer: 1. Create an alert using the applicable cohort policy and evidence window
+    Officer->>Officer: 2. Triage data quality, authorised absence, support and immediate-risk indicators
+    Tutor->>Student: 3. Contact the student through accessible channels
+    Tutor->>Officer: 4. Record response, context and agreed re-engagement actions
+    Student->>Officer: 5. Submit new evidence by the policy deadline
+    Officer->>Wellbeing: 6. Close, continue support or refer for an authorised status/sponsor decision
     alt Valid and authorised
-        A4->>A1: Record and communicate outcome
+        Officer-->>Student: Record and communicate outcome
     else Incomplete or exception
-        A4->>A1: Retain case with owner and reason
+        Officer-->>Student: Retain case with owner and reason
     end
 ```
 

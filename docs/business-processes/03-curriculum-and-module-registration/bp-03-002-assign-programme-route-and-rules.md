@@ -1,4 +1,4 @@
-# BP-021 — Assign a programme route and rule set
+# BP-03-002 — Assign a programme route and rule set
 
 > Status: Draft
 > Domain: 03 — Curriculum and module registration
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2027-01-26
 
-[Previous: BP-020](bp-020-import-and-publish-curriculum-data.md) · [Domain index](README.md) · [Next: BP-022](bp-022-select-modules.md) · [Library home](../README.md)
+[Previous: BP-03-001](bp-03-001-import-and-publish-curriculum-data.md) · [Domain index](README.md) · [Next: BP-03-003](bp-03-003-select-modules.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -17,7 +17,7 @@
 | Nations | England; Scotland; Wales; Northern Ireland |
 | Provider types | All |
 | Levels and modes | UG; PGT; PGR where structured route/rules apply |
-| Exclusions | A later transfer, handled by BP-013 |
+| Exclusions | A later transfer, handled by BP-02-006 |
 
 ## Traceability
 
@@ -193,7 +193,7 @@ sequenceDiagram
 
 ## Related processes
 
-[BP-020](bp-020-import-and-publish-curriculum-data.md); [BP-022](bp-022-select-modules.md); BP-013; BP-044.
+[BP-03-001](bp-03-001-import-and-publish-curriculum-data.md); [BP-03-003](bp-03-003-select-modules.md); BP-02-006; BP-06-001.
 
 ## Review record
 

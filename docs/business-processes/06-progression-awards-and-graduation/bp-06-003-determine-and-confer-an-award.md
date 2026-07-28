@@ -1,4 +1,4 @@
-# BP-046 — Determine and confer an award
+# BP-06-003 — Determine and confer an award
 
 > Status: Draft
 > Domain: 06 — Progression, awards and graduation
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2027-01-26
 
-[Previous: BP-045](../06-progression-awards-and-graduation/bp-045-manage-reassessment-referral-or-repeat-study.md) · [Domain index](README.md) · [Next: BP-047](../06-progression-awards-and-graduation/bp-047-issue-award-documentation-and-hear.md) · [Library home](../README.md)
+[Previous: BP-06-002](../06-progression-awards-and-graduation/bp-06-002-manage-reassessment-referral-or-repeat-study.md) · [Domain index](README.md) · [Next: BP-06-004](../06-progression-awards-and-graduation/bp-06-004-issue-award-documentation-and-hear.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-Determine and confer an award creates a controlled, explainable and effective-dated award recommendation, conferment and classification. The outcome preserves the evidence, authority and cross-system state needed for the Revelation SRS rather than reducing the process to a status update.
+This process turns a student's accumulated, ratified results into a formal award decision: what qualification they have earned, at what classification, and under whose authority it was conferred. Because conferment is a legally and reputationally significant act, the process keeps the board's recommendation, the exercise of delegated conferment authority, and the resulting immutable award fact as distinct, evidenced steps rather than a single undifferentiated approval. Once conferred, the award record cannot be silently changed; any later correction or revocation is applied as a new, evidenced event so the qualification's history remains fully accountable.
 
 ## Scope
 
@@ -69,12 +69,12 @@ A student reaches an award decision point with ratified results.
 
 ## Main flow
 
-1. **Award Board** bind the student to award and classification regulations.
-2. **Registry** assemble eligible credit, level, residency and professional requirements.
-3. **SRS Calculation Service** calculate the default award/classification and exit alternatives.
-4. **Delegated Conferment Authority** record board recommendation and authorised discretion.
-5. **Registry** obtain conferment under delegated institutional authority.
-6. **SRS Calculation Service** create the immutable conferred award and publish the event.
+1. **Award Board** confirms the award and classification regulations applicable to the student, so the record is bound to that regulation set.
+2. **Registry** assembles eligible credit, level, residency and professional requirements.
+3. **SRS Calculation Service** calculates the default award/classification and exit alternatives.
+4. **Registry** records the board's recommendation and any authorised discretion.
+5. **Delegated Conferment Authority** confers the award under delegated institutional authority.
+6. **SRS Calculation Service** creates the immutable conferred award and publishes the event.
 
 ## Alternative flows
 
@@ -157,20 +157,21 @@ Terminology, authority, deadlines, evidence, thresholds, communication, appeals/
 
 ```mermaid
 sequenceDiagram
-    actor A1 as Award Board
-    participant A2 as Registry
-    participant A3 as SRS Calculation Service
-    participant A4 as Delegated Conferment Authority
-    A1->>A2: 1. bind the student to award and classification regulations
-    A2->>A3: 2. assemble eligible credit, level, residency and professional requirements
-    A3->>A4: 3. calculate the default award/classification and exit alternatives
-    A4->>A1: 4. record board recommendation and authorised discretion
-    A1->>A2: 5. obtain conferment under delegated institutional authority
-    A2->>A3: 6. create the immutable conferred award and publish the event
-    alt Valid and authorised
-        A4->>A1: Record and communicate outcome
-    else Incomplete or exception
-        A4->>A1: Retain case with owner and reason
+    actor Board as Award Board
+    participant Registry
+    participant Calc as SRS Calculation Service
+    actor DCA as Delegated Conferment Authority
+
+    Board->>Registry: 1. Confirm award/classification regulations; bind student record
+    Registry->>Calc: 2. Assemble eligible credit, level, residency and professional requirements
+    Calc->>Registry: 3. Calculate the default award/classification and exit alternatives
+    Registry->>DCA: 4. Record the board's recommendation and authorised discretion
+    DCA->>Calc: 5. Confer the award under delegated institutional authority
+    Calc->>Calc: 6. Create the immutable conferred award; publish the event
+    alt E1 — Outstanding academic decision
+        Board-->>Registry: E1.1 Defer the award pending the outstanding decision
+    else E2 — Revocation or correction required
+        Calc-->>Registry: E2.1 Record revocation/correction without overwriting the conferred record
     end
 ```
 

@@ -1,4 +1,4 @@
-# BP-011 — Complete financial registration
+# BP-02-004 — Complete financial registration
 
 > Status: Draft
 > Domain: 02 — Registration and student status
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2027-01-26
 
-[Previous: BP-010](bp-010-complete-initial-academic-registration.md) · [Domain index](README.md) · [Next: BP-012](bp-012-activate-access-and-entitlements.md) · [Library home](../README.md)
+[Previous: BP-02-003](bp-02-003-complete-initial-academic-registration.md) · [Domain index](README.md) · [Next: BP-02-005](bp-02-005-activate-access-and-entitlements.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -17,7 +17,7 @@
 | Nations | England; Scotland; Wales; Northern Ireland |
 | Provider types | All charging/recording fees or sponsorship |
 | Levels and modes | All |
-| Exclusions | Student-finance attendance confirmation itself (BP-051) |
+| Exclusions | Student-finance attendance confirmation itself (BP-07-002) |
 
 ## Traceability
 
@@ -76,15 +76,15 @@ Academic registration or provider-defined precondition opens financial registrat
 4. **Finance Administrator** validates sponsor evidence, exceptions and mismatches.
 5. **Finance** records the authoritative arrangement and returns completion/hold state.
 6. **SRS** records financial-registration outcome and links the Finance reference without duplicating payment ledger detail.
-7. **SRS** notifies the student and enables BP-012 subject to provider policy.
-8. Applicable student-finance confirmation remains queued for BP-051 at the correct evidence point.
+7. **SRS** notifies the student and enables BP-02-005 subject to provider policy.
+8. Applicable student-finance confirmation remains queued for BP-07-002 at the correct evidence point.
 
 ## Alternative flows
 
 ### A3 — Student finance expected
 
 - **A3.1** Match scheme/application reference and record expected payer.
-- **A3.2** Do not mark external registration/attendance confirmed until BP-051 criteria are met.
+- **A3.2** Do not mark external registration/attendance confirmed until BP-07-002 criteria are met.
 
 ### A3b — External sponsor/scholarship
 
@@ -98,7 +98,7 @@ Academic registration or provider-defined precondition opens financial registrat
 
 ### E2 — Liability dispute or source fact mismatch
 
-- **E2.1** Preserve both source references and route correction to Finance or BP-013/BP-059.
+- **E2.1** Preserve both source references and route correction to Finance or BP-02-006/BP-08-002.
 
 ### E5 — Finance integration unavailable
 
@@ -159,7 +159,7 @@ Blocking holds, deposit/payment thresholds, sponsor evidence, instalments, excep
 |---|---|---|---|---|
 | SRS | Finance | Study/liability facts | `finance-fee-liability.v1` | Replay current snapshot |
 | Finance | SRS | Payment/hold state | `finance-payment-and-hold.v1` | Source-owned correction |
-| SRS | SLC | Later controlled confirmation | BP-051 contract | Separate worklist |
+| SRS | SLC | Later controlled confirmation | BP-07-002 contract | Separate worklist |
 
 ## Sequence diagram
 
@@ -176,7 +176,7 @@ sequenceDiagram
     Finance->>Finance: 4–5. Validate and record
     Finance-->>SRS: 5. Return completion/hold state
     SRS-->>Student: 6–7. Record and notify
-    SRS->>SRS: 8. Queue BP-051 criteria
+    SRS->>SRS: 8. Queue BP-07-002 criteria
 ```
 
 ## Open questions and decisions
@@ -194,7 +194,7 @@ sequenceDiagram
 
 ## Related processes
 
-[BP-010](bp-010-complete-initial-academic-registration.md); [BP-012](bp-012-activate-access-and-entitlements.md); BP-051.
+[BP-02-003](bp-02-003-complete-initial-academic-registration.md); [BP-02-005](bp-02-005-activate-access-and-entitlements.md); BP-07-002.
 
 ## Review record
 

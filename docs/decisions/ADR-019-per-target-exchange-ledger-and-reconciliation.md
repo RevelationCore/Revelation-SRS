@@ -7,7 +7,7 @@ Target contracts, acknowledgement capability and accepted-exception authority re
 
 ## Context
 
-The existing integration architecture specifies retry and dead-letter behaviour, but BP-005, BP-032, BP-043 and BP-050–BP-062 require evidence that each target applied the correct authoritative version. Broker delivery is not equivalent to VLE membership, support implementation, corrected result publication, regulator acceptance or rights-action propagation.
+The existing integration architecture specifies retry and dead-letter behaviour, but BP-01-005, BP-04-006, BP-05-011 and BP-07-001–BP-08-005 require evidence that each target applied the correct authoritative version. Broker delivery is not equivalent to VLE membership, support implementation, corrected result publication, regulator acceptance or rights-action propagation.
 
 ## Decision
 
@@ -50,4 +50,4 @@ Correction, withdrawal, identity merge, restriction, erasure and disposal use th
 
 - Requirements: ESP-010–ESP-012, ABR-017, IGA-004/012/015, XIC-001–XIC-007
 - Backlog: BPR-I03, I07–I08, I10–I12
-- Processes: BP-005, BP-032, BP-043, BP-050–BP-062
+- Processes: BP-01-005, BP-04-006, BP-05-011, BP-07-001–BP-08-005

@@ -2,7 +2,7 @@
 
 > Status: Completed — formal SME approval pending
 > Review date: 2026-07-26
-> Scope: BP-001–BP-063
+> Scope: BP-01-001–BP-08-006
 
 [Library home](README.md) · [SME review pack](sme-review-pack.md) · [Revelation change backlog](revelation-change-backlog.md)
 
@@ -34,7 +34,7 @@ This completion review does not mark any business process `Approved`. Approval r
 - `Disability Adviser` uses UK spelling.
 - A committee, human decision role and external system are represented separately where that distinction affects authority.
 - Existing technical identifiers remain unchanged even where their wording differs from business vocabulary.
-- BP-001–BP-063 are stable working identifiers; page status remains `Draft`.
+- BP-01-001–BP-08-006 are stable working identifiers; page status remains `Draft`.
 
 ## Cross-process boundaries confirmed
 

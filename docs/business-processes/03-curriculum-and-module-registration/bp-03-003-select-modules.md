@@ -1,4 +1,4 @@
-# BP-022 — Select modules
+# BP-03-003 — Select modules
 
 > Status: Draft
 > Domain: 03 — Curriculum and module registration
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2027-01-26
 
-[Previous: BP-021](bp-021-assign-programme-route-and-rules.md) · [Domain index](README.md) · [Next: BP-023](bp-023-validate-and-approve-module-selection.md) · [Library home](../README.md)
+[Previous: BP-03-002](bp-03-002-assign-programme-route-and-rules.md) · [Domain index](README.md) · [Next: BP-03-004](bp-03-004-validate-and-approve-module-selection.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -38,7 +38,7 @@ This process captures a student's proposed optional/elective module choices for 
 
 **Starts when:** An eligible module-selection window opens.
 
-**Ends when:** A complete proposal is submitted to BP-023 or the student is told why submission is not possible.
+**Ends when:** A complete proposal is submitted to BP-03-004 or the student is told why submission is not possible.
 
 **In scope:** Compulsory allocation, options/electives, ranked alternatives and cross-school choices.
 
@@ -76,7 +76,7 @@ Selection window opens or an authorised actor invites/resets selection.
 4. **SRS** gives immediate provisional warnings for duplicate study, missing prerequisites/co-requisites, exclusions, credit/load imbalance and obvious timetable/capacity issues.
 5. **Student** revises or submits the complete proposal and any permitted rationale.
 6. **SRS** records the proposal, source curriculum/rule version, actor/time/channel and preferences without yet treating provisional choices as registered.
-7. **SRS** routes the proposal to BP-023 and confirms submission to the student.
+7. **SRS** routes the proposal to BP-03-004 and confirms submission to the student.
 
 ## Alternative flows
 
@@ -100,7 +100,7 @@ Selection window opens or an authorised actor invites/resets selection.
 
 ### E1 — Wrong route/rule binding
 
-- **E1.1** Stop selection and route to BP-021/BP-013 rather than offering an arbitrary diet.
+- **E1.1** Stop selection and route to BP-03-002/BP-02-006 rather than offering an arbitrary diet.
 
 ### E4 — Catalogue changes during session
 
@@ -193,7 +193,7 @@ sequenceDiagram
 
 ## Related processes
 
-[BP-021](bp-021-assign-programme-route-and-rules.md); [BP-023](bp-023-validate-and-approve-module-selection.md); BP-017.
+[BP-03-002](bp-03-002-assign-programme-route-and-rules.md); [BP-03-004](bp-03-004-validate-and-approve-module-selection.md); BP-02-010.
 
 ## Review record
 

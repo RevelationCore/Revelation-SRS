@@ -14,13 +14,13 @@ function markdownFiles(directory) {
 }
 
 const files = markdownFiles(libraryRoot);
-const processPages = files.filter((path) => /\/bp-\d{3}-[^/]+\.md$/.test(path));
+const processPages = files.filter((path) => /\/bp-\d{2}-\d{3}-[^/]+\.md$/.test(path));
 const seenIds = new Map();
 const inventoryPath = join(libraryRoot, 'process-inventory.md');
 const sourceRegisterPath = join(libraryRoot, 'source-register.md');
 const inventoryContents = readFileSync(inventoryPath, 'utf8');
 const sourceRegisterContents = readFileSync(sourceRegisterPath, 'utf8');
-const inventoryIds = new Set([...inventoryContents.matchAll(/\[(BP-\d{3})\]\([^)]+\.md\)/g)].map((match) => match[1]));
+const inventoryIds = new Set([...inventoryContents.matchAll(/\[(BP-\d{2}-\d{3})\]\([^)]+\.md\)/g)].map((match) => match[1]));
 const sourceIds = new Set([...sourceRegisterContents.matchAll(/^\| (SRC-\d{3}) \|/gm)].map((match) => match[1]));
 const requiredHeadings = [
   '## Applicability',
@@ -77,7 +77,7 @@ for (const file of files) {
 for (const file of processPages) {
   const contents = readFileSync(file, 'utf8');
   const displayPath = relative(repositoryRoot, file);
-  const titleMatch = contents.match(/^# (BP-\d{3}) — (.+)$/m);
+  const titleMatch = contents.match(/^# (BP-\d{2}-\d{3}) — (.+)$/m);
 
   if (!titleMatch) {
     errors.push(`${displayPath}: missing canonical process title`);
@@ -90,7 +90,7 @@ for (const file of processPages) {
   }
   seenIds.set(id, displayPath);
 
-  const filenameId = file.match(/\/(bp-\d{3})-/)?.[1]?.toUpperCase();
+  const filenameId = file.match(/\/(bp-\d{2}-\d{3})-/)?.[1]?.toUpperCase();
   if (filenameId !== id) {
     errors.push(`${displayPath}: filename ID does not match title ID ${id}`);
   }

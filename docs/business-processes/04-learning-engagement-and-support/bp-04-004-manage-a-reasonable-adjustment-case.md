@@ -1,4 +1,4 @@
-# BP-030 — Manage a reasonable adjustment case
+# BP-04-004 — Manage a reasonable adjustment case
 
 > Status: Draft
 > Domain: 04 — Learning, engagement and support
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2027-01-26
 
-[Previous: BP-029](../04-learning-engagement-and-support/bp-029-review-pgr-progress-and-milestones.md) · [Domain index](README.md) · [Next: BP-031](../04-learning-engagement-and-support/bp-031-manage-exceptional-circumstances.md) · [Library home](../README.md)
+[Previous: BP-04-003](../04-learning-engagement-and-support/bp-04-003-review-pgr-progress-and-milestones.md) · [Domain index](README.md) · [Next: BP-04-005](../04-learning-engagement-and-support/bp-04-005-manage-exceptional-circumstances.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-Manage a reasonable adjustment case creates a controlled, explainable and effective-dated adjustment case and approved support plan. The outcome preserves the evidence, authority and cross-system state needed for the Revelation SRS rather than reducing the process to a status update.
+This process manages an individual student's reasonable-adjustment case from disclosure through to an approved, implementable support plan. A disability adviser and specialist assessor gather only the evidence needed to identify the barriers a student faces in teaching, assessment and services, and turn that into concrete, approved adjustments. It exists to keep clinical or diagnostic detail inside the specialist service while the SRS and wider Registry receive only the minimum approved outcome needed to implement and track the adjustment across other systems.
 
 ## Scope
 
@@ -72,9 +72,9 @@ A student declares a disability or requests disability-related support.
 1. **Enrolled Student** open a confidential case and confirm communication/access needs.
 2. **Disability Adviser** collect proportionate evidence or arrange assessment.
 3. **Specialist Assessor** identify barriers across teaching, assessment and services.
-4. **Registry** draft reasonable and implementable adjustment outcomes.
+4. **Specialist Assessor** draft reasonable and implementable adjustment outcomes.
 5. **Disability Adviser** approve or review the plan under delegated authority.
-6. **Specialist Assessor** send only the necessary approved outcome to the SRS for distribution.
+6. **Registry** send only the necessary approved outcome to the SRS for distribution.
 
 ## Alternative flows
 
@@ -158,20 +158,22 @@ Terminology, authority, deadlines, evidence, thresholds, communication, appeals/
 
 ```mermaid
 sequenceDiagram
-    actor A1 as Enrolled Student
-    participant A2 as Disability Adviser
-    participant A3 as Specialist Assessor
-    participant A4 as Registry
-    A1->>A2: 1. open a confidential case and confirm communication/access needs
-    A2->>A3: 2. collect proportionate evidence or arrange assessment
-    A3->>A4: 3. identify barriers across teaching, assessment and services
-    A4->>A1: 4. draft reasonable and implementable adjustment outcomes
-    A1->>A2: 5. approve or review the plan under delegated authority
-    A2->>A3: 6. send only the necessary approved outcome to the SRS for distribution
+    actor Student as Enrolled Student
+    participant Adviser as Disability Adviser
+    participant Assessor as Specialist Assessor
+    participant Registry
+    participant SRS
+
+    Student->>Adviser: 1. Open a confidential case and confirm communication/access needs
+    Adviser->>Assessor: 2. Collect proportionate evidence or arrange assessment
+    Assessor->>Assessor: 3. Identify barriers across teaching, assessment and services
+    Assessor->>Adviser: 4. Draft reasonable and implementable adjustment outcomes
+    Adviser->>Adviser: 5. Approve or review the plan under delegated authority
+    Registry->>SRS: 6. Send only the necessary approved outcome to the SRS for distribution
     alt Valid and authorised
-        A4->>A1: Record and communicate outcome
+        Registry-->>Student: Record and communicate outcome
     else Incomplete or exception
-        A4->>A1: Retain case with owner and reason
+        Registry-->>Student: Retain case with owner and reason
     end
 ```
 

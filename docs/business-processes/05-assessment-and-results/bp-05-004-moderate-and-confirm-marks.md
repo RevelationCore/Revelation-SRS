@@ -1,4 +1,4 @@
-# BP-036 — Moderate and confirm marks
+# BP-05-004 — Moderate and confirm marks
 
 > Status: Draft
 > Domain: 05 — Assessment and results
@@ -7,7 +7,7 @@
 > Last reviewed: 2026-07-26
 > Review by: 2027-01-26
 
-[Previous: BP-035](../05-assessment-and-results/bp-035-receive-or-enter-marks.md) · [Domain index](README.md) · [Next: BP-037](../05-assessment-and-results/bp-037-determine-a-module-result.md) · [Library home](../README.md)
+[Previous: BP-05-003](../05-assessment-and-results/bp-05-003-receive-or-enter-marks.md) · [Domain index](README.md) · [Next: BP-05-005](../05-assessment-and-results/bp-05-005-determine-a-module-result.md) · [Library home](../README.md)
 
 ## Applicability
 
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-Moderate and confirm marks creates a controlled, explainable and effective-dated moderation sample, change and confirmed mark. The outcome preserves the evidence, authority and cross-system state needed for the Revelation SRS rather than reducing the process to a status update.
+Moderating and confirming marks turns a set of raw marks into a set the institution can stand behind, by sampling and checking them against departmental and external-examiner standards before they are used to calculate results. Any change a moderator or examiner makes is applied with its reason recorded and the original value preserved, so the moderation process itself remains auditable rather than silently overwriting the marker's original judgement. Only a confirmed, signed-off set is released to module-result calculation.
 
 ## Scope
 
@@ -161,16 +161,16 @@ sequenceDiagram
     participant A2 as Module Leader
     participant A3 as External Examiner
     participant A4 as Assessment Officer
-    A1->>A2: 1. freeze the mark set/version and select the required sample
-    A2->>A3: 2. record moderation method, sample and evidence
-    A3->>A4: 3. identify systematic or individual issues under policy
-    A4->>A1: 4. authorise any changes with reason and original value preserved
-    A1->>A2: 5. confirm completeness and sign-off
-    A2->>A3: 6. release the confirmed set to module-result calculation
+    A1->>A2: 1. freezes the mark set/version and selects the required sample
+    A2->>A3: 2. records moderation method, sample and evidence
+    A3->>A4: 3. identifies systematic or individual issues under policy
+    A4->>A1: 4. authorises any changes with reason and original value preserved
+    A2->>A3: 5. confirms completeness and sign-off
+    A3->>A3: 6. releases the confirmed set to module-result calculation
     alt Valid and authorised
-        A4->>A1: Record and communicate outcome
+        A3->>A4: Record and communicate outcome
     else Incomplete or exception
-        A4->>A1: Retain case with owner and reason
+        A3->>A4: Retain case with owner and reason
     end
 ```
 
