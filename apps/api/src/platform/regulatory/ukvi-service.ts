@@ -2,6 +2,7 @@ import { createHash, randomUUID } from 'node:crypto';
 
 import { and, eq, isNull, sql } from 'drizzle-orm';
 import {
+  engagementOutcomes,
   enrolmentDownstreamTriggers,
   ukviAttendanceReports,
   ukviCasRequests,
@@ -471,59 +472,57 @@ export class UkviService {
     }));
   }
 
+  /**
+   * Reads the attendance module's sponsor-compliance-referral handoff
+   * (POST /students/:personId/engagement-outcomes, outcomeCode
+   * 'referred-sponsor-compliance') rather than joining the module's own
+   * alert/case/referral tables directly — those moved to modules/attendance
+   * in the Stage 1 extraction and are no longer reachable from core.
+   */
   async createEngagementEvidenceSnapshot(
     tenantId: string,
     engagementAlertId: string,
     actorId: string,
   ): Promise<UkviEvidenceSnapshotDto> {
-    const rows = (await withTenantContext(this.db, tenantId, async (tx) =>
-      tx.execute(sql`
-        SELECT ea.enrolment_id, ea.policy_version_id, ea.evidence_window_from,
-               ea.evidence_window_to, ea.evidence_snapshot, ea.evidence_hash,
-               ea.reevaluation_required, ea.recorded_at
-        FROM engagement_alert ea
-        WHERE ea.tenant_id = ${tenantId}
-          AND ea.id = ${engagementAlertId}
-          AND ea.recorded_until IS NULL
-          AND EXISTS (
-            SELECT 1
-            FROM engagement_intervention_case eic
-            JOIN engagement_referral er
-              ON er.intervention_case_id = eic.id
-             AND er.tenant_id = ea.tenant_id
-             AND er.target_service_code = 'sponsor-compliance-review'
-            WHERE eic.tenant_id = ea.tenant_id
-              AND eic.alert_id = ea.id
-              AND eic.recorded_until IS NULL
-          )
-        LIMIT 1
-      `),
-    )) as unknown as Array<{
-      enrolment_id: string;
-      policy_version_id: string;
-      evidence_window_from: Date;
-      evidence_window_to: Date;
-      evidence_snapshot: Record<string, unknown>;
-      evidence_hash: string;
-      reevaluation_required: boolean;
-      recorded_at: Date;
-    }>;
+    const rows = await withTenantContext(this.db, tenantId, async (tx) =>
+      tx.select({
+        enrolmentId:          engagementOutcomes.enrolmentId,
+        policyVersionId:      engagementOutcomes.policyVersionId,
+        evidenceWindowFrom:   engagementOutcomes.evidenceWindowFrom,
+        evidenceWindowTo:     engagementOutcomes.evidenceWindowTo,
+        evidenceSnapshot:     engagementOutcomes.evidenceSnapshot,
+        evidenceHash:         engagementOutcomes.evidenceHash,
+        reevaluationRequired: engagementOutcomes.reevaluationRequired,
+        recordedAt:           engagementOutcomes.recordedAt,
+      })
+        .from(engagementOutcomes)
+        .where(and(
+          eq(engagementOutcomes.tenantId, tenantId),
+          eq(engagementOutcomes.sourceAlertId, engagementAlertId),
+          eq(engagementOutcomes.outcomeCode, 'referred-sponsor-compliance'),
+          isNull(engagementOutcomes.recordedUntil),
+        ))
+        .limit(1),
+    );
     const source = rows[0];
-    if (!source) throw new NotFoundError('sponsor-compliance engagement referral', engagementAlertId);
+    if (!source || !source.policyVersionId || !source.evidenceWindowFrom
+      || !source.evidenceWindowTo || !source.evidenceSnapshot || !source.evidenceHash) {
+      throw new NotFoundError('sponsor-compliance engagement referral', engagementAlertId);
+    }
 
-    const quality = source.reevaluation_required ? 'reconciliation-required' : 'verified';
+    const quality = source.reevaluationRequired ? 'reconciliation-required' : 'verified';
     const inserted = await withTenantContext(this.db, tenantId, async (tx) =>
       tx.insert(ukviEngagementEvidenceSnapshots).values({
         tenantId,
-        enrolmentId: source.enrolment_id,
+        enrolmentId: source.enrolmentId,
         engagementAlertId,
-        policyVersionId: source.policy_version_id,
-        evidenceWindowFrom: new Date(source.evidence_window_from),
-        evidenceWindowTo: new Date(source.evidence_window_to),
-        evidenceSummary: source.evidence_snapshot,
-        evidenceHash: source.evidence_hash,
+        policyVersionId: source.policyVersionId!,
+        evidenceWindowFrom: new Date(source.evidenceWindowFrom!),
+        evidenceWindowTo: new Date(source.evidenceWindowTo!),
+        evidenceSummary: source.evidenceSnapshot!,
+        evidenceHash: source.evidenceHash!,
         evidenceQualityCode: quality,
-        sourceRecordedAt: new Date(source.recorded_at),
+        sourceRecordedAt: new Date(source.recordedAt),
         createdBy: actorId,
       }).onConflictDoNothing().returning(),
     );
@@ -532,7 +531,7 @@ export class UkviService {
       tx.select().from(ukviEngagementEvidenceSnapshots).where(and(
         eq(ukviEngagementEvidenceSnapshots.tenantId, tenantId),
         eq(ukviEngagementEvidenceSnapshots.engagementAlertId, engagementAlertId),
-        eq(ukviEngagementEvidenceSnapshots.evidenceHash, source.evidence_hash),
+        eq(ukviEngagementEvidenceSnapshots.evidenceHash, source.evidenceHash!),
       )).limit(1),
     ))[0];
     if (!snapshot) throw new ValidationError('Could not create UKVI engagement evidence snapshot');

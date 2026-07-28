@@ -440,57 +440,32 @@ async function insertAttendanceReport(academicPeriodId: string, payload: Record<
   `);
 }
 
+/**
+ * Simulates the attendance module's outcome handoff (POST
+ * /students/:personId/engagement-outcomes, outcomeCode
+ * 'referred-sponsor-compliance') that occurs when the module refers an
+ * engagement case for sponsor-compliance review. The module's own
+ * alert/case/referral tables live in its own schema (modules/attendance)
+ * since the Stage 1 extraction — core only ever sees this outcome row.
+ */
 async function createSponsorReferral(
   fixture: { personId: string; enrolmentId: string },
   reevaluationRequired: boolean,
 ): Promise<string> {
-  const policyVersionId = randomUUID();
-  const policyId = randomUUID();
-  const alertVersionId = randomUUID();
   const alertId = randomUUID();
-  const caseVersionId = randomUUID();
-  const caseId = randomUUID();
   await ctx.db.execute(sql`
-    INSERT INTO engagement_policy_version (
-      version_id, id, tenant_id, policy_code, version_number, display_name,
-      status_code, applicability, evidence_window, alert_rules, review_deadline,
-      approved_by, approved_at, actor_id, valid_from
+    INSERT INTO engagement_outcome (
+      version_id, id, tenant_id, person_id, enrolment_id, outcome_code, source_alert_id,
+      source_module, actor_id, valid_from, recorded_at,
+      policy_version_id, evidence_window_from, evidence_window_to,
+      evidence_snapshot, evidence_hash, reevaluation_required
     ) VALUES (
-      ${policyVersionId}, ${policyId}, ${ctx.tenantId}, ${`ukvi-test-${policyId}`}, 1, 'UKVI test policy',
-      'approved', '{}', '{}', '{}', '{}', 'policy-owner', NOW(), 'policy-owner', NOW()
-    )
-  `);
-  await ctx.db.execute(sql`
-    INSERT INTO engagement_alert (
-      version_id, id, tenant_id, person_id, enrolment_id, policy_version_id,
-      evidence_window_from, evidence_window_to, evidence_snapshot, evidence_hash,
-      explanation, severity_code, status_code, reevaluation_required, actor_id, valid_from
-    ) VALUES (
-      ${alertVersionId}, ${alertId}, ${ctx.tenantId}, ${fixture.personId}, ${fixture.enrolmentId},
-      ${policyVersionId}, '2027-09-20', '2027-10-20',
+      ${randomUUID()}, ${randomUUID()}, ${ctx.tenantId}, ${fixture.personId}, ${fixture.enrolmentId},
+      'referred-sponsor-compliance', ${alertId}, 'attendance', 'engagement-officer', NOW(), NOW(),
+      ${randomUUID()}, '2027-09-20', '2027-10-20',
       '{"expectedCount": 12, "attendedCount": 1, "absentCount": 11}',
       ${reevaluationRequired ? 'disputed-engagement-hash' : 'verified-engagement-hash'},
-      '{"rule": "sustained-non-engagement"}', 'high', 'open',
-      ${reevaluationRequired}, 'policy-engine', NOW()
-    )
-  `);
-  await ctx.db.execute(sql`
-    INSERT INTO engagement_intervention_case (
-      version_id, id, tenant_id, alert_id, person_id, enrolment_id, status_code,
-      assigned_role_code, correlation_id, actor_id, valid_from
-    ) VALUES (
-      ${caseVersionId}, ${caseId}, ${ctx.tenantId}, ${alertId}, ${fixture.personId},
-      ${fixture.enrolmentId}, 'open', 'engagement-officer', ${randomUUID()},
-      'engagement-officer', NOW()
-    )
-  `);
-  await ctx.db.execute(sql`
-    INSERT INTO engagement_referral (
-      id, tenant_id, intervention_case_id, target_service_code, referral_type_code,
-      status_code, correlation_id, referred_by, idempotency_key
-    ) VALUES (
-      ${randomUUID()}, ${ctx.tenantId}, ${caseId}, 'sponsor-compliance-review',
-      'compliance-review', 'pending', ${randomUUID()}, 'engagement-officer', ${randomUUID()}
+      ${reevaluationRequired}
     )
   `);
   return alertId;

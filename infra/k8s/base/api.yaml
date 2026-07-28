@@ -94,6 +94,8 @@ spec:
               value: srs-temporal:7233
             - name: WELLBEING_URL
               value: http://srs-wellbeing:3002
+            - name: ATTENDANCE_API_URL
+              value: http://srs-attendance:3004
             - name: ALLOWED_ORIGINS
               valueFrom:
                 configMapKeyRef:

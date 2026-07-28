@@ -104,6 +104,9 @@ export const PERMISSION_ROLES = {
   'engagement:case:read':               ['personal-tutor', 'engagement-officer', 'registry-administrator'] as Role[],
   'engagement:case:manage':             ['engagement-officer', 'registry-administrator'] as Role[],
   'engagement:case:refer':              ['engagement-officer', 'registry-administrator'] as Role[],
+  'engagement-outcome:write':           ['integration-service', 'engagement-officer', 'registry-administrator'] as Role[],
+  'engagement-outcome:read:own':        ['student'] as Role[],
+  'engagement-outcome:read:all':        ['personal-tutor', 'engagement-officer', 'registry-administrator', 'integration-service'] as Role[],
 } as const;
 
 export type Permission = keyof typeof PERMISSION_ROLES;

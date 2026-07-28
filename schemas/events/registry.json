@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "generated": "2026-07-27T10:16:24.347Z",
+  "generated": "2026-07-28T08:18:52.214Z",
   "description": "Machine-readable registry of all Revelation SRS domain events.",
   "schemaUriBase": "https://schemas.revelation-srs.io/events",
   "events": [
@@ -405,6 +405,18 @@
       "partitionKey": "personId",
       "consumers": [
         "engagement-service",
+        "bi-adapter"
+      ],
+      "status": "published"
+    },
+    {
+      "subject": "srs.engagement.outcome-recorded",
+      "version": "1.0.0",
+      "schemaRef": "https://schemas.revelation-srs.io/events/engagement/outcome-recorded/v1.json",
+      "schemaPath": "schemas/events/engagement/outcome-recorded/v1.json",
+      "dataClass": "sensitive",
+      "partitionKey": "personId",
+      "consumers": [
         "bi-adapter"
       ],
       "status": "published"

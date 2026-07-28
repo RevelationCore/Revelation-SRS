@@ -1,5 +1,14 @@
 import { ApiError, api, getStoredToken } from './client.js';
 
+/**
+ * The attendance/engagement admin surface is served by the standalone
+ * attendance module (modules/attendance) as of the Stage 1 extraction, but
+ * core reverse-proxies /api/v1/engagement/* to it server-side (see
+ * apps/api/src/routes/engagement-proxy.ts) — the module is internal-only
+ * and never exposed through the ingress, so the browser keeps talking to
+ * the same core origin it always has.
+ */
+
 export interface EngagementEvent {
   expectedEventId: string; personId: string; enrolmentId: string; activityTypeCode: string;
   activityReference: string | null; eventModeCode: string; scheduledFrom: string;

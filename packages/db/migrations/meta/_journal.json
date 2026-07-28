@@ -267,6 +267,27 @@
       "when": 1785366000000,
       "tag": "0040_ukvi_engagement_decision_boundary",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1785452400000,
+      "tag": "0041_engagement_outcome",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1785538800000,
+      "tag": "0042_engagement_extraction_cutover",
+      "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1785625200000,
+      "tag": "0043_engagement_outcome_sponsor_evidence",
+      "breakpoints": true
     }
   ]
 }

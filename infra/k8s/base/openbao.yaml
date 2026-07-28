@@ -21,7 +21,7 @@
 #        bao secrets enable database
 #        bao write database/config/srs-postgres \
 #          plugin_name=postgresql-database-plugin \
-#          allowed_roles="srs-api,srs-worker,srs-wellbeing,srs-adapter" \
+#          allowed_roles="srs-api,srs-worker,srs-wellbeing,srs-attendance,srs-adapter" \
 #          connection_url="postgresql://{{username}}:{{password}}@postgres:5432/srs" \
 #          username="bao_root" \
 #          password="<root-password>"
@@ -72,6 +72,14 @@ data:
       capabilities = ["read"]
     }
 
+  policy-attendance.hcl: |
+    path "database/creds/srs-attendance" {
+      capabilities = ["read"]
+    }
+    path "kv/data/srs/nats" {
+      capabilities = ["read"]
+    }
+
   policy-adapter.hcl: |
     path "database/creds/srs-adapter" {
       capabilities = ["read"]
@@ -96,7 +104,7 @@ data:
 
     NAMESPACE=revelation-srs
 
-    for svc in api worker wellbeing temporal; do
+    for svc in api worker wellbeing attendance temporal; do
       echo "Applying policy: srs-${svc}"
       bao policy write "srs-${svc}" - < /dev/stdin <<POLICY
     $(cat "/etc/openbao-policies/policy-${svc}.hcl")
@@ -109,7 +117,7 @@ data:
     POLICY
 
     # Create Kubernetes auth roles (TTL 1h; max 24h)
-    for svc in api worker wellbeing temporal; do
+    for svc in api worker wellbeing attendance temporal; do
       echo "Creating Kubernetes auth role: srs-${svc}"
       bao write "auth/kubernetes/role/srs-${svc}" \
         bound_service_account_names="srs-${svc}" \
@@ -128,7 +136,7 @@ data:
       max_ttl=24h
 
     # Dynamic DB roles
-    for role in srs-api srs-worker srs-wellbeing srs-adapter; do
+    for role in srs-api srs-worker srs-wellbeing srs-attendance srs-adapter; do
       echo "Creating DB role: ${role}"
       bao write "database/roles/${role}" \
         db_name=srs-postgres \

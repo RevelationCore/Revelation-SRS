@@ -1,18 +1,16 @@
 import { randomUUID } from 'node:crypto';
 
 import { and, asc, eq, isNull } from 'drizzle-orm';
+
+import type { AttendanceDb } from '../db/client.js';
+import { withAttendanceTenantContext } from '../db/client.js';
 import {
   engagementActions, engagementAlerts, engagementContactAttempts, engagementInterventionCases,
-  engagementReferrals, type Db, withTenantContext,
-} from '@revelation-srs/db';
-import {
-  ConflictError, EVENT_TYPES, NotFoundError, ValidationError,
-  type EngagementInterventionClosedV1Payload, type EngagementInterventionOpenedV1Payload,
-  type EngagementInterventionReviewedV1Payload, type EngagementReferralCreatedV1Payload,
-} from '@revelation-srs/domain';
-
-import { clockNow } from '../clock.js';
-import type { IntegrationBusPublisher } from '../integration-bus/publisher.js';
+  engagementReferrals,
+} from '../db/schema/index.js';
+import type { SrsEngagementOutcomeClient } from '../srs/srs-engagement-outcome-client.js';
+import { ConflictError, NotFoundError, ValidationError } from './engagement-service.js';
+import type { LocalEventSink } from './engagement-service.js';
 
 type Uuid = `${string}-${string}-${string}-${string}-${string}`;
 
@@ -51,14 +49,18 @@ export interface ReviewCaseInput {
 }
 
 export class EngagementInterventionService {
-  constructor(private readonly db: Db, private readonly eventBus: IntegrationBusPublisher) {}
+  constructor(
+    private readonly db: AttendanceDb,
+    private readonly srsOutcomeClient: SrsEngagementOutcomeClient,
+    private readonly onEvent: LocalEventSink = () => {},
+  ) {}
 
   async triage(
     alertId: string, tenantId: string, input: TriageAlertInput, idempotencyKey: string,
     actorId: string, correlationId: string,
   ): Promise<{ interventionCaseId: string | null; created: boolean; alertStatusCode: string }> {
     this.#key(idempotencyKey);
-    const duplicate = await withTenantContext(this.db, tenantId, (tx) =>
+    const duplicate = await withAttendanceTenantContext(this.db, tenantId, (tx) =>
       tx.select().from(engagementInterventionCases).where(and(
         eq(engagementInterventionCases.tenantId, tenantId as Uuid),
         eq(engagementInterventionCases.idempotencyKey, idempotencyKey),
@@ -67,16 +69,16 @@ export class EngagementInterventionService {
     if (duplicate[0]) {
       return { interventionCaseId: duplicate[0].id, created: false, alertStatusCode: 'intervention-opened' };
     }
-    const alerts = await withTenantContext(this.db, tenantId, (tx) =>
+    const alerts = await withAttendanceTenantContext(this.db, tenantId, (tx) =>
       tx.select().from(engagementAlerts).where(and(
         eq(engagementAlerts.tenantId, tenantId as Uuid), eq(engagementAlerts.id, alertId as Uuid),
         isNull(engagementAlerts.recordedUntil),
       )).limit(1),
     );
     const alert = alerts[0];
-    if (!alert) throw new NotFoundError('Engagement alert', alertId);
+    if (!alert) throw new NotFoundError(`Engagement alert ${alertId} not found`);
     if (input.decision === 'no-action') {
-      await withTenantContext(this.db, tenantId, (tx) => tx.update(engagementAlerts)
+      await withAttendanceTenantContext(this.db, tenantId, (tx) => tx.update(engagementAlerts)
         .set({ statusCode: 'triaged-no-action', actorId })
         .where(and(eq(engagementAlerts.tenantId, tenantId as Uuid), eq(engagementAlerts.id, alertId as Uuid))));
       return { interventionCaseId: null, created: false, alertStatusCode: 'triaged-no-action' };
@@ -88,10 +90,10 @@ export class EngagementInterventionService {
       throw new ValidationError('assignedRoleCode and dueAt are required to open an intervention');
     }
     const dueAt = this.#date(input.dueAt, 'dueAt');
-    const now = clockNow();
+    const now = new Date();
     const caseId = randomUUID();
     const versionId = randomUUID();
-    await withTenantContext(this.db, tenantId, async (tx) => {
+    await withAttendanceTenantContext(this.db, tenantId, async (tx) => {
       await tx.insert(engagementInterventionCases).values({
         versionId, id: caseId, tenantId: tenantId as Uuid, alertId: alertId as Uuid,
         personId: alert.personId, enrolmentId: alert.enrolmentId, statusCode: 'open',
@@ -103,14 +105,11 @@ export class EngagementInterventionService {
       await tx.update(engagementAlerts).set({ statusCode: 'intervention-opened', actorId })
         .where(and(eq(engagementAlerts.tenantId, tenantId as Uuid), eq(engagementAlerts.id, alertId as Uuid)));
     });
-    if (this.eventBus.isConnected()) {
-      const payload: EngagementInterventionOpenedV1Payload = {
-        interventionCaseId: caseId, alertId, personId: alert.personId, enrolmentId: alert.enrolmentId,
-        assignedRoleCode: input.assignedRoleCode, dueAt: dueAt.toISOString(),
-      };
-      await this.eventBus.publish(EVENT_TYPES.ENGAGEMENT_INTERVENTION_OPENED, '1.0.0', tenantId,
-        correlationId, 'sensitive', payload, { validAt: now });
-    }
+    this.onEvent({
+      id: randomUUID(), type: 'attendance.intervention.opened', tenantId, correlationId,
+      occurredAt: now.toISOString(),
+      payload: { interventionCaseId: caseId, alertId, personId: alert.personId, assignedRoleCode: input.assignedRoleCode },
+    });
     return { interventionCaseId: caseId, created: true, alertStatusCode: 'intervention-opened' };
   }
 
@@ -122,7 +121,7 @@ export class EngagementInterventionService {
       throw new ValidationError('Operational notes must not contain restricted health, disability or safeguarding narrative');
     }
     await this.#currentCase(caseId, tenantId);
-    const existing = await withTenantContext(this.db, tenantId, (tx) =>
+    const existing = await withAttendanceTenantContext(this.db, tenantId, (tx) =>
       tx.select({ id: engagementContactAttempts.id }).from(engagementContactAttempts).where(and(
         eq(engagementContactAttempts.tenantId, tenantId as Uuid),
         eq(engagementContactAttempts.idempotencyKey, idempotencyKey),
@@ -130,12 +129,12 @@ export class EngagementInterventionService {
     );
     if (existing[0]) return { contactAttemptId: existing[0].id, created: false };
     const id = randomUUID();
-    await withTenantContext(this.db, tenantId, (tx) => tx.insert(engagementContactAttempts).values({
+    await withAttendanceTenantContext(this.db, tenantId, (tx) => tx.insert(engagementContactAttempts).values({
       id, tenantId: tenantId as Uuid, interventionCaseId: caseId as Uuid,
       channelCode: input.channelCode, attemptedAt: this.#date(input.attemptedAt, 'attemptedAt'),
       outcomeCode: input.outcomeCode, communicationLocale: input.communicationLocale ?? null,
       operationalNote: input.operationalNote ?? null, dataClassification: 'sensitive-personal',
-      actorId, idempotencyKey, createdAt: clockNow(),
+      actorId, idempotencyKey, createdAt: new Date(),
     }));
     return { contactAttemptId: id, created: true };
   }
@@ -145,19 +144,19 @@ export class EngagementInterventionService {
   ): Promise<{ actionId: string; created: boolean }> {
     this.#key(idempotencyKey);
     await this.#currentCase(caseId, tenantId);
-    const existing = await withTenantContext(this.db, tenantId, (tx) =>
+    const existing = await withAttendanceTenantContext(this.db, tenantId, (tx) =>
       tx.select({ id: engagementActions.id }).from(engagementActions).where(and(
         eq(engagementActions.tenantId, tenantId as Uuid), eq(engagementActions.idempotencyKey, idempotencyKey),
       )).limit(1),
     );
     if (existing[0]) return { actionId: existing[0].id, created: false };
     const id = randomUUID();
-    await withTenantContext(this.db, tenantId, (tx) => tx.insert(engagementActions).values({
+    await withAttendanceTenantContext(this.db, tenantId, (tx) => tx.insert(engagementActions).values({
       id, tenantId: tenantId as Uuid, interventionCaseId: caseId as Uuid,
       actionTypeCode: input.actionTypeCode, operationalInstruction: input.operationalInstruction ?? null,
       ownerRoleCode: input.ownerRoleCode ?? null, ownerActorId: input.ownerActorId ?? null,
       dueAt: input.dueAt ? this.#date(input.dueAt, 'dueAt') : null,
-      completedAt: null, completedBy: null, createdBy: actorId, idempotencyKey, createdAt: clockNow(),
+      completedAt: null, completedBy: null, createdBy: actorId, idempotencyKey, createdAt: new Date(),
     }));
     return { actionId: id, created: true };
   }
@@ -168,7 +167,7 @@ export class EngagementInterventionService {
   ): Promise<{ interventionCaseId: string; versionId: string; statusCode: string; referralId?: string; created: boolean }> {
     this.#key(idempotencyKey);
     const current = await this.#currentCase(caseId, tenantId);
-    const duplicate = await withTenantContext(this.db, tenantId, (tx) =>
+    const duplicate = await withAttendanceTenantContext(this.db, tenantId, (tx) =>
       tx.select().from(engagementInterventionCases).where(and(
         eq(engagementInterventionCases.tenantId, tenantId as Uuid),
         eq(engagementInterventionCases.idempotencyKey, idempotencyKey),
@@ -183,10 +182,10 @@ export class EngagementInterventionService {
     if (closed && !input.outcomeCode) throw new ValidationError('outcomeCode is required to close a case');
     if (input.decision === 'refer' && !input.referral) throw new ValidationError('referral is required for a referral decision');
     const statusCode = closed ? 'closed' : input.decision === 'refer' ? 'referred' : 'review-due';
-    const now = clockNow();
+    const now = new Date();
     const versionId = randomUUID();
     let referralId: string | undefined;
-    await withTenantContext(this.db, tenantId, async (tx) => {
+    await withAttendanceTenantContext(this.db, tenantId, async (tx) => {
       const updated = await tx.update(engagementInterventionCases).set({ recordedUntil: now }).where(and(
         eq(engagementInterventionCases.tenantId, tenantId as Uuid),
         eq(engagementInterventionCases.id, caseId as Uuid), isNull(engagementInterventionCases.recordedUntil),
@@ -214,14 +213,14 @@ export class EngagementInterventionService {
         });
       }
     });
-    await this.#publishReview(current.personId, caseId, statusCode, input.outcomeCode, reviewAt,
-      referralId, input.referral, tenantId, correlationId, now);
+    await this.#publishReview(current.personId, current.enrolmentId, current.alertId, caseId, statusCode,
+      input.outcomeCode, reviewAt, referralId, input.referral, tenantId, correlationId, now);
     return { interventionCaseId: caseId, versionId, statusCode, ...(referralId ? { referralId } : {}), created: true };
   }
 
   async getCase(caseId: string, tenantId: string) {
     const intervention = await this.#currentCase(caseId, tenantId);
-    const related = await withTenantContext(this.db, tenantId, async (tx) => {
+    const related = await withAttendanceTenantContext(this.db, tenantId, async (tx) => {
       const [contacts, actions, referrals] = await Promise.all([
         tx.select().from(engagementContactAttempts).where(and(
           eq(engagementContactAttempts.tenantId, tenantId as Uuid),
@@ -240,41 +239,80 @@ export class EngagementInterventionService {
   }
 
   async #currentCase(caseId: string, tenantId: string) {
-    const rows = await withTenantContext(this.db, tenantId, (tx) =>
+    const rows = await withAttendanceTenantContext(this.db, tenantId, (tx) =>
       tx.select().from(engagementInterventionCases).where(and(
         eq(engagementInterventionCases.tenantId, tenantId as Uuid),
         eq(engagementInterventionCases.id, caseId as Uuid), isNull(engagementInterventionCases.recordedUntil),
       )).limit(1),
     );
-    if (!rows[0]) throw new NotFoundError('Engagement intervention case', caseId);
+    if (!rows[0]) throw new NotFoundError(`Engagement intervention case ${caseId} not found`);
     return rows[0];
   }
   async #publishReview(
-    personId: string, caseId: string, statusCode: string, outcomeCode: string | undefined,
-    reviewAt: Date, referralId: string | undefined, referral: ReviewCaseInput['referral'],
-    tenantId: string, correlationId: string, now: Date,
+    personId: string, enrolmentId: string, alertId: string, caseId: string, statusCode: string,
+    outcomeCode: string | undefined, reviewAt: Date, referralId: string | undefined,
+    referral: ReviewCaseInput['referral'], tenantId: string, correlationId: string, now: Date,
   ): Promise<void> {
-    if (!this.eventBus.isConnected()) return;
-    const reviewed: EngagementInterventionReviewedV1Payload = {
-      interventionCaseId: caseId, personId, statusCode, reviewAt: reviewAt.toISOString(),
-      ...(outcomeCode ? { outcomeCode } : {}),
-    };
-    await this.eventBus.publish(EVENT_TYPES.ENGAGEMENT_INTERVENTION_REVIEWED, '1.0.0', tenantId,
-      correlationId, 'sensitive', reviewed, { validAt: reviewAt });
+    this.onEvent({
+      id: randomUUID(), type: 'attendance.intervention.reviewed', tenantId, correlationId,
+      occurredAt: now.toISOString(),
+      payload: { interventionCaseId: caseId, personId, statusCode, reviewAt: reviewAt.toISOString(), ...(outcomeCode ? { outcomeCode } : {}) },
+    });
     if (referralId && referral) {
-      const referred: EngagementReferralCreatedV1Payload = {
-        referralId, interventionCaseId: caseId, personId, targetServiceCode: referral.targetServiceCode,
-        referralTypeCode: referral.referralTypeCode, statusCode: 'pending',
-      };
-      await this.eventBus.publish(EVENT_TYPES.ENGAGEMENT_REFERRAL_CREATED, '1.0.0', tenantId,
-        correlationId, 'sensitive', referred, { validAt: now });
+      this.onEvent({
+        id: randomUUID(), type: 'attendance.referral.created', tenantId, correlationId,
+        occurredAt: now.toISOString(),
+        payload: { referralId, interventionCaseId: caseId, personId, targetServiceCode: referral.targetServiceCode },
+      });
+
+      if (referral.targetServiceCode === 'sponsor-compliance-review') {
+        // Core has no local join to this module's alert table — the evidence
+        // needed for the UKVI sponsor-compliance evidence snapshot travels
+        // with this handoff (see srs-engagement-outcome-client.ts).
+        const alert = await withAttendanceTenantContext(this.db, tenantId, (tx) =>
+          tx.select().from(engagementAlerts).where(and(
+            eq(engagementAlerts.tenantId, tenantId as Uuid),
+            eq(engagementAlerts.id, alertId as Uuid),
+            isNull(engagementAlerts.recordedUntil),
+          )).limit(1),
+        );
+        const source = alert[0];
+        if (source) {
+          await this.srsOutcomeClient.submitOutcome({
+            idempotencyKey: referralId,
+            personId,
+            enrolmentId,
+            outcomeCode: 'referred-sponsor-compliance',
+            severityCode: source.severityCode,
+            effectiveFrom: now.toISOString(),
+            sourceAlertId: alertId,
+            policyVersionId: source.policyVersionId,
+            evidenceWindowFrom: source.evidenceWindowFrom.toISOString(),
+            evidenceWindowTo: source.evidenceWindowTo.toISOString(),
+            evidenceSnapshot: source.evidenceSnapshot,
+            evidenceHash: source.evidenceHash,
+            reevaluationRequired: source.reevaluationRequired,
+          });
+        }
+      }
     }
     if (statusCode === 'closed' && outcomeCode) {
-      const closed: EngagementInterventionClosedV1Payload = {
-        interventionCaseId: caseId, personId, outcomeCode, closedAt: now.toISOString(),
-      };
-      await this.eventBus.publish(EVENT_TYPES.ENGAGEMENT_INTERVENTION_CLOSED, '1.0.0', tenantId,
-        correlationId, 'sensitive', closed, { validAt: now });
+      this.onEvent({
+        id: randomUUID(), type: 'attendance.intervention.closed', tenantId, correlationId,
+        occurredAt: now.toISOString(),
+        payload: { interventionCaseId: caseId, personId, outcomeCode, closedAt: now.toISOString() },
+      });
+
+      // Hand off the closure outcome to core SRS — the operational effect of
+      // this casework is what core needs to know, not the case itself.
+      await this.srsOutcomeClient.submitOutcome({
+        idempotencyKey: `${caseId}-closed`,
+        personId,
+        enrolmentId,
+        outcomeCode,
+        effectiveFrom: now.toISOString(),
+        sourceAlertId: alertId,
+      });
     }
   }
   #key(value: string): void {

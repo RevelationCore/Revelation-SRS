@@ -73,6 +73,13 @@ spec:
               app.kubernetes.io/name: srs-wellbeing
       ports:
         - port: 3002
+    # To Attendance module (reverse-proxied /api/v1/engagement/*)
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: srs-attendance
+      ports:
+        - port: 3004
     # To OpenBao (for sidecar agent)
     - to:
         - namespaceSelector:
@@ -209,6 +216,7 @@ spec:
                   - srs-worker
                   - srs-vle-adapter
                   - srs-wellbeing
+                  - srs-attendance
       ports:
         - port: 4222
     # NATS cluster peering (production multi-node)
@@ -225,6 +233,29 @@ spec:
               kubernetes.io/metadata.name: monitoring
       ports:
         - port: 8222
+
+---
+# ── Attendance module: accept ingress from API only ───────────────────────────
+# Core reverse-proxies /api/v1/engagement/* here (see engagement-proxy.ts); the
+# module is internal-only and is never reached directly from the ingress
+# controller, unlike api/admin/portal.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-to-attendance
+  namespace: revelation-srs
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: srs-attendance
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: srs-api
+      ports:
+        - port: 3004
 
 ---
 # ── Temporal: accept ingress from API and Worker ──────────────────────────────

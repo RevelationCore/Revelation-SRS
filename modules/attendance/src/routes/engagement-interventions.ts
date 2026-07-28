@@ -1,11 +1,10 @@
 import { requirePermission } from '@revelation-srs/auth';
-import type { AuditActionType } from '@revelation-srs/db';
 import { Type } from '@sinclair/typebox';
 import type { FastifyInstance } from 'fastify';
 
 import type {
   AddActionInput, RecordContactInput, ReviewCaseInput, TriageAlertInput,
-} from '../platform/engagement/engagement-intervention-service.js';
+} from '../services/engagement-intervention-service.js';
 
 const ErrorSchema = Type.Object({
   type: Type.String(), title: Type.String(), status: Type.Number(),
@@ -36,9 +35,6 @@ export function engagementInterventionRoutes(fastify: FastifyInstance): void {
       alertId, request.tenantId, request.body as TriageAlertInput,
       String(request.headers['idempotency-key'] ?? ''), request.user.sub, request.id,
     );
-    if (result.created && result.interventionCaseId) {
-      await audit(fastify, request, 'engagement_intervention_case', result.interventionCaseId, 'create');
-    }
     await reply.code(result.created ? 201 : 200).send(result);
   });
 
@@ -83,7 +79,6 @@ export function engagementInterventionRoutes(fastify: FastifyInstance): void {
       caseId, request.tenantId, request.body as RecordContactInput,
       String(request.headers['idempotency-key'] ?? ''), request.user.sub,
     );
-    if (result.created) await audit(fastify, request, 'engagement_contact_attempt', result.contactAttemptId, 'create');
     await reply.code(result.created ? 201 : 200).send(result);
   });
 
@@ -105,7 +100,6 @@ export function engagementInterventionRoutes(fastify: FastifyInstance): void {
       caseId, request.tenantId, request.body as AddActionInput,
       String(request.headers['idempotency-key'] ?? ''), request.user.sub,
     );
-    if (result.created) await audit(fastify, request, 'engagement_action', result.actionId, 'create');
     await reply.code(result.created ? 201 : 200).send(result);
   });
 
@@ -138,22 +132,12 @@ export function engagementInterventionRoutes(fastify: FastifyInstance): void {
       caseId, request.tenantId, request.body as ReviewCaseInput,
       String(request.headers['idempotency-key'] ?? ''), request.user.sub, request.id,
     );
-    if (result.created) await audit(fastify, request, 'engagement_intervention_case', caseId, 'update');
     await reply.code(result.created ? 201 : 200).send(result);
   });
 }
 
-async function audit(
-  fastify: FastifyInstance,
-  request: { tenantId: string; user: { sub: string; displayName?: string }; id: string },
-  entityType: string,
-  entityId: string,
-  actionType: AuditActionType,
-) {
-  await fastify.audit.record({
-    tenantId: request.tenantId, entityType, entityId, actionType,
-    actorType: 'user', actorId: request.user.sub,
-    ...(request.user.displayName ? { actorDisplayName: request.user.displayName } : {}),
-    correlationId: request.id,
-  });
+declare module 'fastify' {
+  interface FastifyInstance {
+    engagementInterventionService: import('../services/engagement-intervention-service.js').EngagementInterventionService;
+  }
 }

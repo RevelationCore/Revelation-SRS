@@ -1,52 +1,71 @@
+/**
+ * Full engagement-domain coverage, migrated from apps/api/test/engagement.int.test.ts
+ * as part of the Stage 1 cutover. Fixtures now seed the module's local
+ * enrolment_person_map via a synthetic srs.student.enrolled event (dispatched
+ * directly, no NATS) instead of calling core's /students and /enrolments
+ * endpoints, which this module no longer has access to. Local state changes
+ * are captured via the onEvent sink instead of a spied SRS_EVENTS publisher,
+ * since this module never publishes onto that stream.
+ */
+
+import { randomUUID } from 'node:crypto';
+
 import { sql } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import type { DomainEventEnvelope } from '@revelation-srs/domain';
+import { EVENT_TYPES } from '@revelation-srs/domain';
 
-import type { IntegrationBusPublisher } from '../src/platform/integration-bus/publisher.js';
+import { AttendanceEventConsumer } from '../src/consumers/consumer.js';
+import type { LocalEngagementEvent } from '../src/services/engagement-service.js';
+import type { ValueSetClient } from '../src/srs/srs-value-set-client.js';
 
-import { startTestApp, type TestApp } from './helpers/test-app.js';
+import { startTestApp, type TestAttendanceApp } from './helpers/test-db.js';
 
-interface CapturedEvent {
-  type: string;
-  classification: string;
-  payload: unknown;
+/** Rejects only the one known-bad code the original core value-set config disallowed. */
+class TestValueSetClient implements ValueSetClient {
+  // eslint-disable-next-line @typescript-eslint/require-await
+  async validateFieldValue(_entity: string, _field: string, value: string): Promise<boolean | null> {
+    return value !== 'automatically-withdrawn';
+  }
 }
 
-function createSpyBus(capture: CapturedEvent[]): IntegrationBusPublisher {
-  return {
-    isConnected: () => true,
-    publish: (
-      type: string,
-      _version: string,
-      _tenantId: string,
-      _correlationId: string,
-      classification: string,
-      payload: unknown,
-    ): Promise<void> => {
-      capture.push({ type, classification, payload });
-      return Promise.resolve();
-    },
-    connect: () => Promise.resolve(),
-    close: () => Promise.resolve(),
-  } as unknown as IntegrationBusPublisher;
-}
-
-let ctx: TestApp;
+let ctx: TestAttendanceApp;
+let consumer: AttendanceEventConsumer;
 let registryJwt: string;
 let tutorJwt: string;
 let personalTutorJwt: string;
 let studentJwt: string;
 let tenantAdminJwt: string;
 let engagementOfficerJwt: string;
-const capturedEvents: CapturedEvent[] = [];
+const capturedEvents: LocalEngagementEvent[] = [];
+
+function makeEnvelope<T>(type: string, payload: T, tenantId: string): DomainEventEnvelope<T> {
+  return {
+    id:                 randomUUID(),
+    type,
+    version:            '1.0.0',
+    schemaRef:          `https://schemas.srs.ac.uk/events/${type}/v1.0.0`,
+    tenantId,
+    occurredAt:         new Date().toISOString(),
+    publishedAt:        new Date().toISOString(),
+    validAt:            new Date().toISOString(),
+    correlationId:      randomUUID(),
+    causationId:        randomUUID(),
+    source:             'srs-core',
+    dataClassification: 'personal',
+    payload,
+  };
+}
 
 beforeAll(async () => {
-  ctx = await startTestApp({ eventBus: createSpyBus(capturedEvents) });
-  registryJwt = await ctx.makeJwt({ roles: ['registry-administrator'] });
-  tutorJwt = await ctx.makeJwt({ roles: ['module-tutor'] });
-  personalTutorJwt = await ctx.makeJwt({ roles: ['personal-tutor'] });
-  studentJwt = await ctx.makeJwt({ roles: ['student'] });
-  tenantAdminJwt = await ctx.makeJwt({ roles: ['tenant-administrator'] });
-  engagementOfficerJwt = await ctx.makeJwt({ roles: ['engagement-officer'] });
+  ctx = await startTestApp({ onEvent: (event) => capturedEvents.push(event), valueSetClient: new TestValueSetClient() });
+  consumer = new AttendanceEventConsumer('nats://unused', ctx.db, ctx.app.log);
+  registryJwt = ctx.makeJwt({ roles: ['registry-administrator'] });
+  tutorJwt = ctx.makeJwt({ roles: ['module-tutor'] });
+  personalTutorJwt = ctx.makeJwt({ roles: ['personal-tutor'] });
+  studentJwt = ctx.makeJwt({ roles: ['student'] });
+  tenantAdminJwt = ctx.makeJwt({ roles: ['tenant-administrator'] });
+  engagementOfficerJwt = ctx.makeJwt({ roles: ['engagement-officer'] });
 }, 120_000);
 
 beforeEach(() => {
@@ -93,7 +112,7 @@ describe('Attendance and engagement Increment C', () => {
         activityTypeCode: 'lecture',
       }));
 
-    expect(capturedEvents.filter((event) => event.type === 'srs.engagement.expected-event.created'))
+    expect(capturedEvents.filter((event) => event.type === 'attendance.expected-event.created'))
       .toHaveLength(1);
   });
 
@@ -125,7 +144,7 @@ describe('Attendance and engagement Increment C', () => {
     });
     expect(replay.statusCode).toBe(200);
     expect(replay.json()).toEqual({ observationId: result.observationId, created: false });
-    expect(capturedEvents.filter((event) => event.type === 'srs.engagement.observation.recorded'))
+    expect(capturedEvents.filter((event) => event.type === 'attendance.observation.recorded'))
       .toHaveLength(1);
   });
 
@@ -153,7 +172,7 @@ describe('Attendance and engagement Increment C', () => {
 
     const versions = await ctx.db.execute(sql`
       SELECT outcome_code, data_quality_code, recorded_until
-      FROM engagement_observation
+      FROM attendance.engagement_observation
       WHERE tenant_id = ${ctx.tenantId} AND id = ${observationId}
       ORDER BY recorded_at
     `) as Array<{ outcome_code: string; data_quality_code: string; recorded_until: Date | null }>;
@@ -168,13 +187,12 @@ describe('Attendance and engagement Increment C', () => {
 
     const revisions = await ctx.db.execute(sql`
       SELECT correction_reason_code, disputed
-      FROM engagement_observation_revision
+      FROM attendance.engagement_observation_revision
       WHERE tenant_id = ${ctx.tenantId} AND observation_id = ${observationId}
     `) as Array<{ correction_reason_code: string; disputed: boolean }>;
     expect(revisions).toEqual([{ correction_reason_code: 'staff-entry-error', disputed: false }]);
     expect(capturedEvents).toContainEqual(expect.objectContaining({
-      type: 'srs.engagement.observation.corrected',
-      classification: 'sensitive',
+      type: 'attendance.observation.corrected',
     }));
   });
 
@@ -233,7 +251,7 @@ describe('Attendance and engagement Increment C', () => {
     });
     expect(forbidden.statusCode).toBe(403);
 
-    const otherTenantJwt = await ctx.makeJwt({
+    const otherTenantJwt = ctx.makeJwt({
       tenantId: ctx.secondTenantId,
       roles: ['registry-administrator'],
     });
@@ -279,7 +297,7 @@ describe('Attendance and engagement Increment D', () => {
     });
     expect(replay.statusCode).toBe(200);
     expect(replay.json()).toMatchObject({ matched: true, alertCreated: false });
-    expect(capturedEvents.filter((event) => event.type === 'srs.engagement.alert.raised')).toHaveLength(1);
+    expect(capturedEvents.filter((event) => event.type === 'attendance.alert.raised')).toHaveLength(1);
   });
 
   it('suspends an alert when the source evidence is disputed', async () => {
@@ -304,7 +322,7 @@ describe('Attendance and engagement Increment D', () => {
         explanation: { decision: 'reconciliation-required', automatedAdverseActionPermitted: false },
       },
     });
-    expect(capturedEvents).toContainEqual(expect.objectContaining({ type: 'srs.engagement.alert.suspended' }));
+    expect(capturedEvents).toContainEqual(expect.objectContaining({ type: 'attendance.alert.suspended' }));
   });
 
   it('rejects draft policies and protects policy and alert routes with RBAC', async () => {
@@ -348,7 +366,7 @@ describe('Attendance and engagement Increment E', () => {
     });
     expect(replay.statusCode).toBe(200);
     expect(replay.json()).toMatchObject({ interventionCaseId: result.interventionCaseId, created: false });
-    expect(capturedEvents.filter((event) => event.type === 'srs.engagement.intervention.opened')).toHaveLength(1);
+    expect(capturedEvents.filter((event) => event.type === 'attendance.intervention.opened')).toHaveLength(1);
   });
 
   it('records accessible contacts and actions without restricted narrative', async () => {
@@ -419,7 +437,7 @@ describe('Attendance and engagement Increment E', () => {
       })],
     });
     expect(JSON.stringify(caseView.json())).not.toMatch(/diagnosis|sponsorDecision|ukviSubmission/i);
-    expect(capturedEvents).toContainEqual(expect.objectContaining({ type: 'srs.engagement.referral.created' }));
+    expect(capturedEvents).toContainEqual(expect.objectContaining({ type: 'attendance.referral.created' }));
   });
 
   it('closes a case with an authorised outcome and immutable prior version', async () => {
@@ -441,14 +459,14 @@ describe('Attendance and engagement Increment E', () => {
     expect(closed.json()).toMatchObject({ statusCode: 'closed' });
     const versions = await ctx.db.execute(sql`
       SELECT status_code, recorded_until
-      FROM engagement_intervention_case
+      FROM attendance.engagement_intervention_case
       WHERE tenant_id = ${ctx.tenantId} AND id = ${caseId}
       ORDER BY recorded_at
     `) as Array<{ status_code: string; recorded_until: Date | null }>;
     expect(versions).toHaveLength(2);
     expect(versions[0]?.recorded_until).not.toBeNull();
     expect(versions[1]).toMatchObject({ status_code: 'closed', recorded_until: null });
-    expect(capturedEvents).toContainEqual(expect.objectContaining({ type: 'srs.engagement.intervention.closed' }));
+    expect(capturedEvents).toContainEqual(expect.objectContaining({ type: 'attendance.intervention.closed' }));
   });
 });
 
@@ -457,28 +475,20 @@ interface Fixture {
   enrolmentId: string;
 }
 
+/**
+ * Seeds the module's local enrolment_person_map by dispatching a synthetic
+ * srs.student.enrolled event, replacing the original test's calls to core's
+ * /students and /enrolments endpoints (this module has no access to those).
+ */
 async function createFixture(code: string): Promise<Fixture> {
-  const student = await ctx.app.inject({
-    method: 'POST',
-    url: '/api/v1/students',
-    headers: { authorization: `Bearer ${registryJwt}` },
-    payload: { legalFirstName: code, legalFamilyName: 'Engagement' },
-  });
-  expect(student.statusCode).toBe(201);
-  const personId = student.json<{ personId: string }>().personId;
-  const enrolment = await ctx.app.inject({
-    method: 'POST',
-    url: '/api/v1/enrolments',
-    headers: { authorization: `Bearer ${registryJwt}` },
-    payload: {
-      personId,
-      modeOfStudyCode: 'full-time',
-      academicYearOfEntry: '2027-28',
-      startDate: '2027-09-20',
-    },
-  });
-  expect(enrolment.statusCode).toBe(201);
-  return { personId, enrolmentId: enrolment.json<{ enrolmentId: string }>().enrolmentId };
+  const personId = randomUUID();
+  const enrolmentId = randomUUID();
+  await consumer.dispatch(makeEnvelope(
+    EVENT_TYPES.STUDENT_ENROLLED,
+    { personId, enrolmentId, academicYear: '2027/28', modeOfStudy: 'full-time' },
+    ctx.tenantId,
+  ));
+  return { personId, enrolmentId };
 }
 
 function eventPayload(fixture: Fixture) {

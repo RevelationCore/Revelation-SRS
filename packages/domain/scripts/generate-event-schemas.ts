@@ -323,6 +323,18 @@ export const PUBLISHED_EVENTS: EventDef[] = [
     partitionKey: 'personId',
     consumers: ['engagement-service', 'bi-adapter'],
   },
+  {
+    // Published by core SRS in response to a REST handoff from the standalone
+    // attendance module (modules/attendance) — mirrors the adjustment.approved
+    // outcome-confirmation pattern, not a module-published event.
+    typeName: 'EngagementOutcomeRecordedV1Payload',
+    file: 'engagement/outcome-recorded.v1.ts',
+    subject: 'srs.engagement.outcome-recorded',
+    schemaPath: 'engagement/outcome-recorded',
+    dataClass: 'sensitive',
+    partitionKey: 'personId',
+    consumers: ['bi-adapter'],
+  },
   // ── Circumstances ────────────────────────────────────────────────────────
   {
     typeName: 'CircumstancesEcFlaggedV1Payload',

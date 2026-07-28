@@ -80,6 +80,9 @@ export async function startTestApp(opts: StartTestAppOptions = {}): Promise<Test
   await applyMigration(db, '0038_engagement_policy_alert_immutability.sql');
   await applyMigration(db, '0039_engagement_intervention_idempotency.sql');
   await applyMigration(db, '0040_ukvi_engagement_decision_boundary.sql');
+  await applyMigration(db, '0041_engagement_outcome.sql');
+  await applyMigration(db, '0042_engagement_extraction_cutover.sql');
+  await applyMigration(db, '0043_engagement_outcome_sponsor_evidence.sql');
 
   // Seed a tenant for tests
   const tenantId = '00000000-0000-0000-0000-000000000001';
@@ -103,7 +106,7 @@ export async function startTestApp(opts: StartTestAppOptions = {}): Promise<Test
     deploymentEnvironmentCode: 'test',
     releaseVersion:   '0.0.0-test',
     imageDigest:      undefined,
-    migrationVersion: '0040_ukvi_engagement_decision_boundary',
+    migrationVersion: '0041_engagement_outcome',
     jwtSecret:        JWT_SECRET,
     keycloakJwksUrl:  undefined,
     corsOrigins:      ['http://localhost:5173'],

@@ -54,6 +54,7 @@ export * from './engagement/intervention-opened.v1.js';
 export * from './engagement/intervention-reviewed.v1.js';
 export * from './engagement/referral-created.v1.js';
 export * from './engagement/intervention-closed.v1.js';
+export * from './engagement/outcome-recorded.v1.js';
 
 /** Canonical NATS subject names for all domain events. */
 export const EVENT_TYPES = {
@@ -117,6 +118,7 @@ export const EVENT_TYPES = {
   ENGAGEMENT_INTERVENTION_REVIEWED:          'srs.engagement.intervention.reviewed',
   ENGAGEMENT_REFERRAL_CREATED:               'srs.engagement.referral.created',
   ENGAGEMENT_INTERVENTION_CLOSED:            'srs.engagement.intervention.closed',
+  ENGAGEMENT_OUTCOME_RECORDED:               'srs.engagement.outcome-recorded',
   // ── Platform workflow controls ───────────────────────────────────────────
   WORKFLOW_TASK_ASSIGNED:                    'srs.workflow.task-assigned',
   WORKFLOW_TASK_COMPLETED:                   'srs.workflow.task-completed',

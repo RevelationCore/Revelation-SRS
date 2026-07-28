@@ -1,17 +1,14 @@
 import { createHash, randomUUID } from 'node:crypto';
 
 import { and, asc, eq, gte, inArray, isNull, lte } from 'drizzle-orm';
-import {
-  engagementAlerts, engagementObservations, engagementPolicyVersions, enrolments,
-  expectedEngagementEvents, type Db, withTenantContext,
-} from '@revelation-srs/db';
-import {
-  EVENT_TYPES, NotFoundError, ValidationError,
-  type EngagementAlertRaisedV1Payload, type EngagementAlertSuspendedV1Payload,
-} from '@revelation-srs/domain';
 
-import { clockNow } from '../clock.js';
-import type { IntegrationBusPublisher } from '../integration-bus/publisher.js';
+import type { AttendanceDb } from '../db/client.js';
+import { withAttendanceTenantContext } from '../db/client.js';
+import { engagementAlerts, engagementObservations, engagementPolicyVersions, expectedEngagementEvents } from '../db/schema/index.js';
+import { findPersonIdByEnrolmentId } from '../repositories/projection-repository.js';
+import type { SrsEngagementOutcomeClient } from '../srs/srs-engagement-outcome-client.js';
+import { NotFoundError, ValidationError } from './engagement-service.js';
+import type { LocalEventSink } from './engagement-service.js';
 
 type Uuid = `${string}-${string}-${string}-${string}-${string}`;
 
@@ -46,7 +43,11 @@ interface Rules {
 }
 
 export class EngagementPolicyService {
-  constructor(private readonly db: Db, private readonly eventBus: IntegrationBusPublisher) {}
+  constructor(
+    private readonly db: AttendanceDb,
+    private readonly srsOutcomeClient: SrsEngagementOutcomeClient,
+    private readonly onEvent: LocalEventSink = () => {},
+  ) {}
 
   async createPolicy(tenantId: string, input: CreateEngagementPolicyInput, actorId: string): Promise<EngagementPolicyDto> {
     const validFrom = this.#date(input.validFrom, 'validFrom');
@@ -62,8 +63,8 @@ export class EngagementPolicyService {
     if (input.minimumAbsenceRate < 0 || input.minimumAbsenceRate > 1) {
       throw new ValidationError('minimumAbsenceRate must be between 0 and 1');
     }
-    const now = clockNow();
-    const rows = await withTenantContext(this.db, tenantId, (tx) =>
+    const now = new Date();
+    const rows = await withAttendanceTenantContext(this.db, tenantId, (tx) =>
       tx.insert(engagementPolicyVersions).values({
         versionId: randomUUID(), id: randomUUID(), tenantId: tenantId as Uuid,
         policyCode: input.policyCode, versionNumber: input.versionNumber, displayName: input.displayName,
@@ -83,7 +84,7 @@ export class EngagementPolicyService {
   }
 
   async listPolicies(tenantId: string, policyCode?: string): Promise<EngagementPolicyDto[]> {
-    const rows = await withTenantContext(this.db, tenantId, (tx) =>
+    const rows = await withAttendanceTenantContext(this.db, tenantId, (tx) =>
       tx.select().from(engagementPolicyVersions).where(and(
         eq(engagementPolicyVersions.tenantId, tenantId as Uuid), isNull(engagementPolicyVersions.recordedUntil),
         policyCode ? eq(engagementPolicyVersions.policyCode, policyCode) : undefined,
@@ -106,7 +107,7 @@ export class EngagementPolicyService {
     }
     await this.#ensureEnrolment(input.enrolmentId, input.personId, tenantId);
     const rules = this.#rules(policy.alertRules);
-    const evidence = await withTenantContext(this.db, tenantId, async (tx) => {
+    const evidence = await withAttendanceTenantContext(this.db, tenantId, async (tx) => {
       const events = await tx.select().from(expectedEngagementEvents).where(and(
         eq(expectedEngagementEvents.tenantId, tenantId as Uuid),
         eq(expectedEngagementEvents.personId, input.personId as Uuid),
@@ -148,7 +149,7 @@ export class EngagementPolicyService {
       decision: unsafeEvidenceCount > 0 ? 'reconciliation-required' : 'human-review-required',
       automatedAdverseActionPermitted: false,
     };
-    const existing = await withTenantContext(this.db, tenantId, (tx) =>
+    const existing = await withAttendanceTenantContext(this.db, tenantId, (tx) =>
       tx.select().from(engagementAlerts).where(and(
         eq(engagementAlerts.tenantId, tenantId as Uuid), eq(engagementAlerts.personId, input.personId as Uuid),
         eq(engagementAlerts.policyVersionId, input.policyVersionId as Uuid),
@@ -158,8 +159,8 @@ export class EngagementPolicyService {
     );
     if (existing[0]) return { matched: true, alertCreated: false, alert: this.#alert(existing[0]) };
     const statusCode = unsafeEvidenceCount > 0 ? 'suspended-reconciliation' : 'open';
-    const now = clockNow();
-    const rows = await withTenantContext(this.db, tenantId, (tx) =>
+    const now = new Date();
+    const rows = await withAttendanceTenantContext(this.db, tenantId, (tx) =>
       tx.insert(engagementAlerts).values({
         versionId: randomUUID(), id: randomUUID(), tenantId: tenantId as Uuid,
         personId: input.personId as Uuid, enrolmentId: input.enrolmentId as Uuid,
@@ -170,24 +171,32 @@ export class EngagementPolicyService {
       }).returning(),
     );
     const alert = this.#alert(rows[0]!);
-    if (this.eventBus.isConnected()) {
-      const common: EngagementAlertRaisedV1Payload = {
-        alertId: alert.alertId, personId: alert.personId, enrolmentId: alert.enrolmentId,
-        policyVersionId: alert.policyVersionId, evidenceHash, evidenceWindowFrom: from.toISOString(),
-        evidenceWindowTo: to.toISOString(), severityCode: rules.severityCode, statusCode,
-      };
-      const payload: EngagementAlertRaisedV1Payload | EngagementAlertSuspendedV1Payload =
-        statusCode === 'suspended-reconciliation' ? { ...common, reasonCode: 'unsafe-evidence-quality' } : common;
-      await this.eventBus.publish(
-        statusCode === 'suspended-reconciliation' ? EVENT_TYPES.ENGAGEMENT_ALERT_SUSPENDED : EVENT_TYPES.ENGAGEMENT_ALERT_RAISED,
-        '1.0.0', tenantId, correlationId, 'sensitive', payload, { validAt: now },
-      );
+    this.onEvent({
+      id: randomUUID(),
+      type: statusCode === 'suspended-reconciliation' ? 'attendance.alert.suspended' : 'attendance.alert.raised',
+      tenantId, correlationId, occurredAt: now.toISOString(),
+      payload: { alertId: alert.alertId, personId: alert.personId, severityCode: rules.severityCode, statusCode },
+    });
+
+    // Hand off the recorded outcome to core SRS — core is the system of
+    // record for the operational effect; this module owns only the evidence
+    // and evaluation that produced it.
+    if (statusCode !== 'suspended-reconciliation') {
+      await this.srsOutcomeClient.submitOutcome({
+        idempotencyKey: alert.alertId,
+        personId: alert.personId,
+        enrolmentId: alert.enrolmentId,
+        outcomeCode: 'at-risk',
+        severityCode: rules.severityCode,
+        effectiveFrom: now.toISOString(),
+        sourceAlertId: alert.alertId,
+      });
     }
     return { matched: true, alertCreated: true, alert };
   }
 
   async listAlerts(tenantId: string, filter: { personId?: string; statusCode?: string }): Promise<EngagementAlertDto[]> {
-    const rows = await withTenantContext(this.db, tenantId, (tx) =>
+    const rows = await withAttendanceTenantContext(this.db, tenantId, (tx) =>
       tx.select().from(engagementAlerts).where(and(
         eq(engagementAlerts.tenantId, tenantId as Uuid), isNull(engagementAlerts.recordedUntil),
         filter.personId ? eq(engagementAlerts.personId, filter.personId as Uuid) : undefined,
@@ -198,24 +207,21 @@ export class EngagementPolicyService {
   }
 
   async #approvedPolicy(id: string, tenantId: string, at: Date): Promise<EngagementPolicyDto> {
-    const rows = await withTenantContext(this.db, tenantId, (tx) =>
+    const rows = await withAttendanceTenantContext(this.db, tenantId, (tx) =>
       tx.select().from(engagementPolicyVersions).where(and(
         eq(engagementPolicyVersions.tenantId, tenantId as Uuid), eq(engagementPolicyVersions.versionId, id as Uuid),
         eq(engagementPolicyVersions.statusCode, 'approved'), lte(engagementPolicyVersions.validFrom, at),
         isNull(engagementPolicyVersions.recordedUntil),
       )).limit(1),
     );
-    if (!rows[0] || (rows[0].validTo && rows[0].validTo <= at)) throw new NotFoundError('Approved engagement policy version', id);
+    if (!rows[0] || (rows[0].validTo && rows[0].validTo <= at)) throw new NotFoundError(`Approved engagement policy version ${id} not found`);
     return this.#policy(rows[0]);
   }
-  async #ensureEnrolment(id: string, personId: string, tenantId: string): Promise<void> {
-    const rows = await withTenantContext(this.db, tenantId, (tx) =>
-      tx.select({ id: enrolments.id }).from(enrolments).where(and(
-        eq(enrolments.tenantId, tenantId as Uuid), eq(enrolments.id, id as Uuid),
-        eq(enrolments.personId, personId as Uuid), isNull(enrolments.recordedUntil),
-      )).limit(1),
+  async #ensureEnrolment(enrolmentId: string, personId: string, tenantId: string): Promise<void> {
+    const resolvedPersonId = await withAttendanceTenantContext(this.db, tenantId, (tx) =>
+      findPersonIdByEnrolmentId(tx, tenantId, enrolmentId),
     );
-    if (!rows[0]) throw new NotFoundError('Enrolment', id);
+    if (!resolvedPersonId || resolvedPersonId !== personId) throw new NotFoundError(`Enrolment ${enrolmentId} not found`);
   }
   #rules(value: Record<string, unknown>): Rules {
     const valueRules = value as Partial<Rules>;

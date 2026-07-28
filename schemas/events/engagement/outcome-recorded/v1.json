@@ -1,0 +1,43 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/EngagementOutcomeRecordedV1Payload",
+  "definitions": {
+    "EngagementOutcomeRecordedV1Payload": {
+      "type": "object",
+      "properties": {
+        "engagementOutcomeId": {
+          "type": "string"
+        },
+        "personId": {
+          "type": "string"
+        },
+        "enrolmentId": {
+          "type": "string"
+        },
+        "moduleRegistrationId": {
+          "type": "string"
+        },
+        "outcomeCode": {
+          "type": "string"
+        },
+        "severityCode": {
+          "type": "string"
+        },
+        "effectiveFrom": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "engagementOutcomeId",
+        "personId",
+        "enrolmentId",
+        "outcomeCode",
+        "effectiveFrom"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$id": "https://schemas.revelation-srs.io/events/engagement/outcome-recorded/v1.json",
+  "title": "EngagementOutcomeRecordedV1Payload",
+  "description": "Payload schema for srs.engagement.outcome-recorded v1.0.0"
+}

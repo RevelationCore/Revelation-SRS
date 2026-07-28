@@ -5,6 +5,7 @@ export interface Config {
   nodeEnv:      string;
   databaseUrl:  string;
   natsUrl:      string;
+  attendanceApiUrl: string;
   temporalAddress: string;
   deploymentEnvironmentCode: string;
   releaseVersion: string;
@@ -39,6 +40,7 @@ export function loadConfig(): Config {
     nodeEnv:         process.env['NODE_ENV'] ?? 'development',
     databaseUrl:     required('DATABASE_URL'),
     natsUrl:         process.env['NATS_URL'] ?? 'nats://localhost:4222',
+    attendanceApiUrl: process.env['ATTENDANCE_API_URL'] ?? 'http://localhost:3004',
     temporalAddress: process.env['TEMPORAL_ADDRESS'] ?? 'localhost:7233',
     deploymentEnvironmentCode: process.env['SRS_ENVIRONMENT_CODE'] ?? process.env['NODE_ENV'] ?? 'local',
     releaseVersion: process.env['SRS_RELEASE_VERSION'] ?? process.env['npm_package_version'] ?? '0.0.0',

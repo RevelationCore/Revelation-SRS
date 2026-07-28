@@ -345,3 +345,129 @@ spec:
       port: 3002
       targetPort: http
   type: ClusterIP
+
+---
+# ── Attendance Module — ServiceAccount ───────────────────────────────────────
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: srs-attendance
+  namespace: revelation-srs
+  annotations:
+    openbao.org/role: "srs-attendance"
+
+---
+# ── Attendance Module — Deployment ───────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: srs-attendance
+  namespace: revelation-srs
+  labels:
+    app.kubernetes.io/name: srs-attendance
+    app.kubernetes.io/component: module
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: srs-attendance
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: srs-attendance
+        app.kubernetes.io/component: module
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: "srs-attendance"
+        vault.hashicorp.com/agent-inject-secret-db: "database/creds/srs-attendance"
+        vault.hashicorp.com/agent-inject-template-db: |
+          {{- with secret "database/creds/srs-attendance" -}}
+          postgresql://{{ .Data.username }}:{{ .Data.password }}@postgres:5432/srs
+          {{- end }}
+        vault.hashicorp.com/agent-inject-secret-nats: "kv/data/srs/nats"
+        vault.hashicorp.com/agent-inject-template-nats: |
+          {{- with secret "kv/data/srs/nats" -}}
+          {{ .Data.data.nkey_seed }}
+          {{- end }}
+    spec:
+      serviceAccountName: srs-attendance
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: attendance
+          image: ghcr.io/revelation-srs/attendance:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 3004
+              protocol: TCP
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: ATTENDANCE_PORT
+              value: "3004"
+            - name: NATS_URL
+              value: nats://srs-nats:4222
+            - name: SRS_API_URL
+              value: http://srs-api:3000
+          command:
+            - /bin/sh
+            - -c
+            - |
+              export DATABASE_URL="$(cat /vault/secrets/db)"
+              export NATS_NKEY_SEED="$(cat /vault/secrets/nats)"
+              exec node dist/main.js
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 400m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 10
+      volumes:
+        - name: tmp
+          emptyDir: {}
+
+---
+# ── Attendance Module — Service ──────────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: srs-attendance
+  namespace: revelation-srs
+  labels:
+    app.kubernetes.io/name: srs-attendance
+    app.kubernetes.io/component: module
+spec:
+  selector:
+    app.kubernetes.io/name: srs-attendance
+  ports:
+    - name: http
+      port: 3004
+      targetPort: http
+  type: ClusterIP

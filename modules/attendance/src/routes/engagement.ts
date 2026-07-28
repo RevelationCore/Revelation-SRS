@@ -8,13 +8,13 @@ import type {
   EngagementEventDto,
   EngagementObservationDto,
   RecordObservationInput,
-} from '../platform/engagement/engagement-service.js';
+} from '../services/engagement-service.js';
 import type {
   CreateEngagementPolicyInput,
   EngagementAlertDto,
   EngagementPolicyDto,
   EvaluateEngagementInput,
-} from '../platform/engagement/engagement-policy-service.js';
+} from '../services/engagement-policy-service.js';
 
 const ErrorSchema = Type.Object({
   type: Type.String(),
@@ -32,6 +32,7 @@ const EventSchema = Type.Object({
   expectedEventId: Type.String(),
   personId: Type.String(),
   enrolmentId: Type.String(),
+  moduleRegistrationId: Type.Union([Type.String(), Type.Null()]),
   activityTypeCode: Type.String(),
   activityReference: Type.Union([Type.String(), Type.Null()]),
   eventModeCode: Type.String(),
@@ -84,6 +85,11 @@ const AlertSchema = Type.Object({
   recordedAt: Type.String(),
 });
 
+function bearerToken(request: { headers: Record<string, unknown> }): string {
+  const header = request.headers['authorization'];
+  return typeof header === 'string' ? header.replace(/^Bearer\s+/i, '') : '';
+}
+
 export function engagementRoutes(fastify: FastifyInstance): void {
   fastify.post(
     '/engagement/events',
@@ -92,6 +98,7 @@ export function engagementRoutes(fastify: FastifyInstance): void {
         body: Type.Object({
           personId: Type.String({ format: 'uuid' }),
           enrolmentId: Type.String({ format: 'uuid' }),
+          moduleRegistrationId: Type.Optional(Type.String({ format: 'uuid' })),
           activityTypeCode: Type.String({ minLength: 1 }),
           activityReference: Type.Optional(Type.String({ minLength: 1 })),
           eventModeCode: Type.String({ minLength: 1 }),
@@ -118,19 +125,8 @@ export function engagementRoutes(fastify: FastifyInstance): void {
         request.body as CreateExpectedEventInput,
         request.user.sub,
         request.id,
+        bearerToken(request),
       );
-      if (result.created) {
-        await fastify.audit.record({
-          tenantId: request.tenantId,
-          entityType: 'expected_engagement_event',
-          entityId: result.expectedEventId,
-          actionType: 'create',
-          actorType: 'user',
-          actorId: request.user.sub,
-          actorDisplayName: request.user.displayName,
-          correlationId: request.id,
-        });
-      }
       await reply.code(result.created ? 201 : 200).send(result);
     },
   );
@@ -203,19 +199,8 @@ export function engagementRoutes(fastify: FastifyInstance): void {
         idempotencyKey,
         request.user.sub,
         request.id,
+        bearerToken(request),
       );
-      if (result.created) {
-        await fastify.audit.record({
-          tenantId: request.tenantId,
-          entityType: 'engagement_observation',
-          entityId: result.observationId,
-          actionType: 'create',
-          actorType: 'user',
-          actorId: request.user.sub,
-          actorDisplayName: request.user.displayName,
-          correlationId: request.id,
-        });
-      }
       await reply.code(result.created ? 201 : 200).send(result);
     },
   );
@@ -264,21 +249,8 @@ export function engagementRoutes(fastify: FastifyInstance): void {
         idempotencyKey,
         request.user.sub,
         request.id,
+        bearerToken(request),
       );
-      if (result.created) {
-        await fastify.audit.record({
-          tenantId: request.tenantId,
-          entityType: 'engagement_observation',
-          entityId: observationId,
-          actionType: 'update',
-          actorType: 'user',
-          actorId: request.user.sub,
-          actorDisplayName: request.user.displayName,
-          correlationId: request.id,
-          reasonCode: body.correctionReasonCode,
-          ...(body.correctionReason ? { reasonText: body.correctionReason } : {}),
-        });
-      }
       await reply.code(result.created ? 201 : 200).send(result);
     },
   );
@@ -339,11 +311,6 @@ export function engagementRoutes(fastify: FastifyInstance): void {
       const policy = await fastify.engagementPolicyService.createPolicy(
         request.tenantId, request.body as CreateEngagementPolicyInput, request.user.sub,
       );
-      await fastify.audit.record({
-        tenantId: request.tenantId, entityType: 'engagement_policy_version',
-        entityId: policy.policyVersionId, actionType: 'create', actorType: 'user',
-        actorId: request.user.sub, actorDisplayName: request.user.displayName, correlationId: request.id,
-      });
       await reply.code(201).send(policyToWire(policy));
     },
   );
@@ -385,13 +352,6 @@ export function engagementRoutes(fastify: FastifyInstance): void {
       const result = await fastify.engagementPolicyService.evaluate(
         request.tenantId, request.body as EvaluateEngagementInput, request.user.sub, request.id,
       );
-      if (result.alertCreated && result.alert) {
-        await fastify.audit.record({
-          tenantId: request.tenantId, entityType: 'engagement_alert', entityId: result.alert.alertId,
-          actionType: 'create', actorType: 'user', actorId: request.user.sub,
-          actorDisplayName: request.user.displayName, correlationId: request.id,
-        });
-      }
       await reply.code(result.alertCreated ? 201 : 200).send({
         ...result, alert: result.alert ? alertToWire(result.alert) : null,
       });
@@ -450,4 +410,11 @@ function alertToWire(alert: EngagementAlertDto) {
     ...alert, evidenceWindowFrom: alert.evidenceWindowFrom.toISOString(),
     evidenceWindowTo: alert.evidenceWindowTo.toISOString(), recordedAt: alert.recordedAt.toISOString(),
   };
+}
+
+declare module 'fastify' {
+  interface FastifyInstance {
+    engagementService: import('../services/engagement-service.js').EngagementService;
+    engagementPolicyService: import('../services/engagement-policy-service.js').EngagementPolicyService;
+  }
 }

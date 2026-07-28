@@ -1,34 +1,34 @@
 import { randomUUID } from 'node:crypto';
 
 import { and, asc, desc, eq, gte, isNull, lte } from 'drizzle-orm';
+
+import type { AttendanceDb } from '../db/client.js';
+import { withAttendanceTenantContext } from '../db/client.js';
 import {
   engagementObservationRevisions,
   engagementObservations,
-  engagementAlerts,
-  enrolments,
   expectedEngagementEvents,
-  type Db,
-  withTenantContext,
-} from '@revelation-srs/db';
-import {
-  ConflictError,
-  EVENT_TYPES,
-  NotFoundError,
-  ValidationError,
-  type EngagementExpectedEventCreatedV1Payload,
-  type EngagementObservationCorrectedV1Payload,
-  type EngagementObservationRecordedV1Payload,
-} from '@revelation-srs/domain';
-
-import { clockNow } from '../clock.js';
-import type { IntegrationBusPublisher } from '../integration-bus/publisher.js';
-import type { ValueSetService } from '../value-sets/service.js';
+} from '../db/schema/index.js';
+import { findPersonIdByEnrolmentId } from '../repositories/projection-repository.js';
+import type { ValueSetClient } from '../srs/srs-value-set-client.js';
 
 type Uuid = `${string}-${string}-${string}-${string}-${string}`;
+
+export class NotFoundError extends Error {
+  readonly statusCode = 404;
+}
+export class ValidationError extends Error {
+  readonly statusCode = 422;
+  constructor(message: string, public readonly details?: unknown) { super(message); }
+}
+export class ConflictError extends Error {
+  readonly statusCode = 409;
+}
 
 export interface CreateExpectedEventInput {
   personId: string;
   enrolmentId: string;
+  moduleRegistrationId?: string;
   activityTypeCode: string;
   activityReference?: string;
   eventModeCode: string;
@@ -67,6 +67,7 @@ export interface EngagementEventDto {
   expectedEventId: string;
   personId: string;
   enrolmentId: string;
+  moduleRegistrationId: string | null;
   activityTypeCode: string;
   activityReference: string | null;
   eventModeCode: string;
@@ -102,11 +103,29 @@ export interface EngagementObservationDto {
   recordedAt: Date;
 }
 
+/**
+ * A local, module-internal notification — NOT a published SRS_EVENTS
+ * envelope (this module never publishes onto that stream; core is the sole
+ * publisher). Useful for local logging/observability hooks. Callers that
+ * want core to know about a state change use an SrsEngagementOutcomeClient
+ * instead.
+ */
+export interface LocalEngagementEvent {
+  id: string;
+  type: string;
+  tenantId: string;
+  correlationId: string;
+  occurredAt: string;
+  payload: Record<string, unknown>;
+}
+
+export type LocalEventSink = (event: LocalEngagementEvent) => void;
+
 export class EngagementService {
   constructor(
-    private readonly db: Db,
-    private readonly eventBus: IntegrationBusPublisher,
-    private readonly valueSets: ValueSetService,
+    private readonly db: AttendanceDb,
+    private readonly valueSets: ValueSetClient,
+    private readonly onEvent: LocalEventSink = () => {},
   ) {}
 
   async createExpectedEvent(
@@ -114,6 +133,7 @@ export class EngagementService {
     input: CreateExpectedEventInput,
     actorId: string,
     correlationId: string,
+    authToken: string,
   ): Promise<{ expectedEventId: string; created: boolean }> {
     const scheduledFrom = this.#date(input.scheduledFrom, 'scheduledFrom');
     const scheduledTo = input.scheduledTo ? this.#date(input.scheduledTo, 'scheduledTo') : null;
@@ -124,11 +144,11 @@ export class EngagementService {
     }
     await this.#ensureEnrolment(input.enrolmentId, input.personId, tenantId);
     await Promise.all([
-      this.#validateCode('expected_engagement_event', 'activity_type_code', input.activityTypeCode, tenantId, scheduledFrom),
-      this.#validateCode('expected_engagement_event', 'event_mode_code', input.eventModeCode, tenantId, scheduledFrom),
+      this.#validateCode('expected_engagement_event', 'activity_type_code', input.activityTypeCode, tenantId, authToken, scheduledFrom),
+      this.#validateCode('expected_engagement_event', 'event_mode_code', input.eventModeCode, tenantId, authToken, scheduledFrom),
     ]);
 
-    const existing = await withTenantContext(this.db, tenantId, async (tx) =>
+    const existing = await withAttendanceTenantContext(this.db, tenantId, async (tx) =>
       tx.select({ id: expectedEngagementEvents.id })
         .from(expectedEngagementEvents)
         .where(and(
@@ -142,15 +162,16 @@ export class EngagementService {
     if (existing[0]) return { expectedEventId: existing[0].id, created: false };
 
     const expectedEventId = randomUUID();
-    const now = clockNow();
+    const now = new Date();
     try {
-      await withTenantContext(this.db, tenantId, async (tx) => {
+      await withAttendanceTenantContext(this.db, tenantId, async (tx) => {
         await tx.insert(expectedEngagementEvents).values({
           versionId: randomUUID(),
           id: expectedEventId,
           tenantId: tenantId as Uuid,
           personId: input.personId as Uuid,
           enrolmentId: input.enrolmentId as Uuid,
+          moduleRegistrationId: input.moduleRegistrationId ? input.moduleRegistrationId as Uuid : null,
           activityTypeCode: input.activityTypeCode,
           activityReference: input.activityReference ?? null,
           eventModeCode: input.eventModeCode,
@@ -172,29 +193,14 @@ export class EngagementService {
       this.#rethrowUnique(error, 'Expected event source version already exists');
     }
 
-    if (this.eventBus.isConnected()) {
-      const payload: EngagementExpectedEventCreatedV1Payload = {
-        expectedEventId,
-        personId: input.personId,
-        enrolmentId: input.enrolmentId,
-        activityTypeCode: input.activityTypeCode,
-        eventModeCode: input.eventModeCode,
-        scheduledFrom: scheduledFrom.toISOString(),
-        ...(scheduledTo ? { scheduledTo: scheduledTo.toISOString() } : {}),
-        sourceSystemCode: input.sourceSystemCode,
-        sourceEventId: input.sourceEventId,
-        sourceVersion: input.sourceVersion,
-      };
-      await this.eventBus.publish(
-        EVENT_TYPES.ENGAGEMENT_EXPECTED_EVENT_CREATED,
-        '1.0.0',
-        tenantId,
-        correlationId,
-        'personal',
-        payload,
-        { validAt: scheduledFrom },
-      );
-    }
+    this.onEvent({
+      id: randomUUID(),
+      type: 'attendance.expected-event.created',
+      tenantId,
+      correlationId,
+      occurredAt: now.toISOString(),
+      payload: { expectedEventId, personId: input.personId, enrolmentId: input.enrolmentId },
+    });
     return { expectedEventId, created: true };
   }
 
@@ -210,7 +216,7 @@ export class EngagementService {
   ): Promise<EngagementEventDto[]> {
     const from = filter.scheduledFrom ? this.#date(filter.scheduledFrom, 'scheduledFrom') : undefined;
     const to = filter.scheduledTo ? this.#date(filter.scheduledTo, 'scheduledTo') : undefined;
-    return withTenantContext(this.db, tenantId, async (tx) => {
+    return withAttendanceTenantContext(this.db, tenantId, async (tx) => {
       const rows = await tx.select()
         .from(expectedEngagementEvents)
         .where(and(
@@ -234,18 +240,19 @@ export class EngagementService {
     idempotencyKey: string,
     actorId: string,
     correlationId: string,
+    authToken: string,
   ): Promise<{ observationId: string; created: boolean }> {
     if (!idempotencyKey.trim()) throw new ValidationError('Idempotency-Key header is required');
     const event = await this.#getExpectedEvent(expectedEventId, tenantId);
     const eventTime = this.#date(input.eventTime, 'eventTime');
-    const receivedAt = input.receivedAt ? this.#date(input.receivedAt, 'receivedAt') : clockNow();
+    const receivedAt = input.receivedAt ? this.#date(input.receivedAt, 'receivedAt') : new Date();
     await Promise.all([
-      this.#validateCode('engagement_observation', 'capture_method_code', input.captureMethodCode, tenantId, eventTime),
-      this.#validateCode('engagement_observation', 'outcome_code', input.outcomeCode, tenantId, eventTime),
-      this.#validateCode('engagement_observation', 'data_quality_code', input.dataQualityCode ?? 'valid', tenantId, eventTime),
+      this.#validateCode('engagement_observation', 'capture_method_code', input.captureMethodCode, tenantId, authToken, eventTime),
+      this.#validateCode('engagement_observation', 'outcome_code', input.outcomeCode, tenantId, authToken, eventTime),
+      this.#validateCode('engagement_observation', 'data_quality_code', input.dataQualityCode ?? 'valid', tenantId, authToken, eventTime),
     ]);
 
-    const existing = await withTenantContext(this.db, tenantId, async (tx) =>
+    const existing = await withAttendanceTenantContext(this.db, tenantId, async (tx) =>
       tx.select({ id: engagementObservations.id })
         .from(engagementObservations)
         .where(and(
@@ -261,7 +268,7 @@ export class EngagementService {
     const versionId = randomUUID();
     const dataQualityCode = input.dataQualityCode ?? 'valid';
     try {
-      await withTenantContext(this.db, tenantId, async (tx) => {
+      await withAttendanceTenantContext(this.db, tenantId, async (tx) => {
         await tx.insert(engagementObservations).values({
           versionId,
           id: observationId,
@@ -283,7 +290,7 @@ export class EngagementService {
           actorId,
           validFrom: eventTime,
           validTo: null,
-          recordedAt: clockNow(),
+          recordedAt: new Date(),
           recordedUntil: null,
         });
       });
@@ -291,30 +298,14 @@ export class EngagementService {
       this.#rethrowUnique(error, 'Observation source version or idempotency key already exists');
     }
 
-    if (this.eventBus.isConnected()) {
-      const payload: EngagementObservationRecordedV1Payload = {
-        observationId,
-        expectedEventId,
-        personId: event.personId,
-        enrolmentId: event.enrolmentId,
-        captureMethodCode: input.captureMethodCode,
-        outcomeCode: input.outcomeCode,
-        dataQualityCode,
-        eventTime: eventTime.toISOString(),
-        sourceSystemCode: input.sourceSystemCode,
-        sourceEventId: input.sourceEventId,
-        sourceVersion: input.sourceVersion,
-      };
-      await this.eventBus.publish(
-        EVENT_TYPES.ENGAGEMENT_OBSERVATION_RECORDED,
-        '1.0.0',
-        tenantId,
-        correlationId,
-        'sensitive',
-        payload,
-        { validAt: eventTime },
-      );
-    }
+    this.onEvent({
+      id: randomUUID(),
+      type: 'attendance.observation.recorded',
+      tenantId,
+      correlationId,
+      occurredAt: new Date().toISOString(),
+      payload: { observationId, personId: event.personId, enrolmentId: event.enrolmentId, outcomeCode: input.outcomeCode },
+    });
     return { observationId, created: true };
   }
 
@@ -325,16 +316,17 @@ export class EngagementService {
     idempotencyKey: string,
     actorId: string,
     correlationId: string,
+    authToken: string,
   ): Promise<{ observationId: string; observationVersionId: string; created: boolean }> {
     if (!idempotencyKey.trim()) throw new ValidationError('Idempotency-Key header is required');
     const current = await this.#getObservation(observationId, tenantId);
     const eventTime = input.eventTime ? this.#date(input.eventTime, 'eventTime') : current.eventTime;
     await Promise.all([
-      this.#validateCode('engagement_observation', 'outcome_code', input.outcomeCode, tenantId, eventTime),
-      this.#validateCode('engagement_observation', 'data_quality_code', input.dataQualityCode, tenantId, eventTime),
+      this.#validateCode('engagement_observation', 'outcome_code', input.outcomeCode, tenantId, authToken, eventTime),
+      this.#validateCode('engagement_observation', 'data_quality_code', input.dataQualityCode, tenantId, authToken, eventTime),
     ]);
 
-    const duplicate = await withTenantContext(this.db, tenantId, async (tx) =>
+    const duplicate = await withAttendanceTenantContext(this.db, tenantId, async (tx) =>
       tx.select({ versionId: engagementObservations.versionId })
         .from(engagementObservations)
         .where(and(
@@ -349,9 +341,9 @@ export class EngagementService {
     }
 
     const replacementVersionId = randomUUID();
-    const now = clockNow();
+    const now = new Date();
     try {
-      await withTenantContext(this.db, tenantId, async (tx) => {
+      await withAttendanceTenantContext(this.db, tenantId, async (tx) => {
         const closed = await tx.update(engagementObservations)
           .set({ recordedUntil: now })
           .where(and(
@@ -399,41 +391,20 @@ export class EngagementService {
           recordedAt: now,
           correlationId: this.#uuidOrNull(correlationId),
         });
-        await tx.update(engagementAlerts)
-          .set({ reevaluationRequired: true })
-          .where(and(
-            eq(engagementAlerts.tenantId, tenantId as Uuid),
-            eq(engagementAlerts.personId, current.personId as Uuid),
-            lte(engagementAlerts.evidenceWindowFrom, eventTime),
-            gte(engagementAlerts.evidenceWindowTo, eventTime),
-            isNull(engagementAlerts.recordedUntil),
-          ));
       });
     } catch (error) {
       if (error instanceof ConflictError) throw error;
       this.#rethrowUnique(error, 'Correction source version or idempotency key already exists');
     }
 
-    if (this.eventBus.isConnected()) {
-      const payload: EngagementObservationCorrectedV1Payload = {
-        observationId,
-        supersededVersionId: current.observationVersionId,
-        replacementVersionId,
-        correctionReasonCode: input.correctionReasonCode,
-        disputed: input.disputed ?? false,
-        outcomeCode: input.outcomeCode,
-        dataQualityCode: input.dataQualityCode,
-      };
-      await this.eventBus.publish(
-        EVENT_TYPES.ENGAGEMENT_OBSERVATION_CORRECTED,
-        '1.0.0',
-        tenantId,
-        correlationId,
-        'sensitive',
-        payload,
-        { validAt: eventTime },
-      );
-    }
+    this.onEvent({
+      id: randomUUID(),
+      type: 'attendance.observation.corrected',
+      tenantId,
+      correlationId,
+      occurredAt: now.toISOString(),
+      payload: { observationId, supersededVersionId: current.observationVersionId, replacementVersionId },
+    });
     return { observationId, observationVersionId: replacementVersionId, created: true };
   }
 
@@ -444,7 +415,7 @@ export class EngagementService {
   ): Promise<{ events: EngagementEventDto[]; observations: EngagementObservationDto[] }> {
     const from = filter.from ? this.#date(filter.from, 'from') : undefined;
     const to = filter.to ? this.#date(filter.to, 'to') : undefined;
-    const timeline = await withTenantContext(this.db, tenantId, async (tx) => {
+    return withAttendanceTenantContext(this.db, tenantId, async (tx) => {
       const [events, observations] = await Promise.all([
         tx.select().from(expectedEngagementEvents).where(and(
           eq(expectedEngagementEvents.tenantId, tenantId as Uuid),
@@ -466,57 +437,39 @@ export class EngagementService {
         observations: observations.map((row) => this.#observationDto(row)),
       };
     });
-    if (timeline.events.length === 0 && timeline.observations.length === 0) {
-      await this.#ensurePerson(personId, tenantId);
-    }
-    return timeline;
   }
 
   async #getExpectedEvent(expectedEventId: string, tenantId: string): Promise<EngagementEventDto> {
-    const rows = await withTenantContext(this.db, tenantId, async (tx) =>
+    const rows = await withAttendanceTenantContext(this.db, tenantId, async (tx) =>
       tx.select().from(expectedEngagementEvents).where(and(
         eq(expectedEngagementEvents.tenantId, tenantId as Uuid),
         eq(expectedEngagementEvents.id, expectedEventId as Uuid),
         isNull(expectedEngagementEvents.recordedUntil),
       )).limit(1),
     );
-    if (!rows[0]) throw new NotFoundError('Expected engagement event', expectedEventId);
+    if (!rows[0]) throw new NotFoundError(`Expected engagement event ${expectedEventId} not found`);
     return this.#eventDto(rows[0]);
   }
 
   async #getObservation(observationId: string, tenantId: string): Promise<EngagementObservationDto> {
-    const rows = await withTenantContext(this.db, tenantId, async (tx) =>
+    const rows = await withAttendanceTenantContext(this.db, tenantId, async (tx) =>
       tx.select().from(engagementObservations).where(and(
         eq(engagementObservations.tenantId, tenantId as Uuid),
         eq(engagementObservations.id, observationId as Uuid),
         isNull(engagementObservations.recordedUntil),
       )).limit(1),
     );
-    if (!rows[0]) throw new NotFoundError('Engagement observation', observationId);
+    if (!rows[0]) throw new NotFoundError(`Engagement observation ${observationId} not found`);
     return this.#observationDto(rows[0]);
   }
 
   async #ensureEnrolment(enrolmentId: string, personId: string, tenantId: string): Promise<void> {
-    const rows = await withTenantContext(this.db, tenantId, async (tx) =>
-      tx.select({ id: enrolments.id }).from(enrolments).where(and(
-        eq(enrolments.tenantId, tenantId as Uuid),
-        eq(enrolments.id, enrolmentId as Uuid),
-        eq(enrolments.personId, personId as Uuid),
-        isNull(enrolments.recordedUntil),
-      )).limit(1),
+    const resolvedPersonId = await withAttendanceTenantContext(this.db, tenantId, (tx) =>
+      findPersonIdByEnrolmentId(tx, tenantId, enrolmentId),
     );
-    if (!rows[0]) throw new NotFoundError('Enrolment', enrolmentId);
-  }
-
-  async #ensurePerson(personId: string, tenantId: string): Promise<void> {
-    const rows = await withTenantContext(this.db, tenantId, async (tx) =>
-      tx.select({ personId: enrolments.personId }).from(enrolments).where(and(
-        eq(enrolments.tenantId, tenantId as Uuid),
-        eq(enrolments.personId, personId as Uuid),
-        isNull(enrolments.recordedUntil),
-      )).limit(1),
-    );
-    if (!rows[0]) throw new NotFoundError('Student', personId);
+    if (!resolvedPersonId || resolvedPersonId !== personId) {
+      throw new NotFoundError(`Enrolment ${enrolmentId} not found`);
+    }
   }
 
   async #validateCode(
@@ -524,9 +477,10 @@ export class EngagementService {
     fieldName: string,
     value: string,
     tenantId: string,
+    authToken: string,
     at: Date,
   ): Promise<void> {
-    const valid = await this.valueSets.validateFieldValue(entityName, fieldName, value, tenantId, at);
+    const valid = await this.valueSets.validateFieldValue(entityName, fieldName, value, tenantId, authToken, at);
     if (valid === false) {
       throw new ValidationError(`Invalid ${fieldName}: '${value}'`, [
         { field: fieldName, message: 'must be an active configured value' },
@@ -547,6 +501,7 @@ export class EngagementService {
       expectedEventId: row.id,
       personId: row.personId,
       enrolmentId: row.enrolmentId,
+      moduleRegistrationId: row.moduleRegistrationId,
       activityTypeCode: row.activityTypeCode,
       activityReference: row.activityReference,
       eventModeCode: row.eventModeCode,

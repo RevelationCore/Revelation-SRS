@@ -20,4 +20,4 @@ export * from './globalisation.js';
 export * from './communications.js';
 export * from './demo.js';
 export * from './notifications.js';
-export * from './engagement.js';
+export * from './engagement-outcome.js';
