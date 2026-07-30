@@ -24,7 +24,7 @@
 | Type | References |
 |---|---|
 | Revelation workflows | W001/W012 partial |
-| Reference-model flows | F025–F026, F051–F052 |
+| Reference-model flows | F-SIS-OIV-01, F-OIV-SIS-01, F-SIS-UKVI-01, F-UKVI-SIS-01 |
 | Functional requirements | SID identity requirements; UKV regulatory requirements |
 | Data entities | `person_identity`, `identity_verification_check`, `student_document`, `visa_status`, `sponsor_evidence_record` |
 | Domain events | `srs.identity.verification-requested`, `srs.identity.verification-completed` |
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-This process verifies that the person registering is the person represented in the student record and, where immigration control applies, records whether current evidence permits the intended study. Identity assurance and immigration permission are related but distinct checks with different evidence, access and review obligations.
+Registering as a student involves two separate checks that are easy to conflate. First, that the person registering is genuinely the same person the application and offer were made for, not someone else using their details. Second, for students subject to UK immigration control, whether their current visa or immigration status actually permits the study they're about to start. This process keeps those two checks distinct because they rely on different evidence, are reviewed by different people, and carry different consequences if they fail: a failed identity check is a records-integrity and potential fraud issue, while a failed right-to-study check is an immigration-compliance issue with real sponsor-licence consequences for the institution.
 
 ## Scope
 

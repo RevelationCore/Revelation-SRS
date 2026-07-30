@@ -24,7 +24,7 @@
 | Type | References |
 |---|---|
 | Revelation workflows | W007 partial |
-| Reference-model flows | F006–F010, F015, F021, F023, F037, F049, F051 |
+| Reference-model flows | F-SIS-CRM-01, F-LIB-SIS-01, F-SIS-LIB-01, F-SIS-FIN-01, F-FIN-SIS-01, F-SIS-VLE-01, F-SIS-IAM-01, F-SIS-EDRMS-01, F-SIS-CRIS-01, F-SIS-SLC-01, F-SIS-UKVI-01 |
 | Functional requirements | ENR-002–ENR-003, ENR-006; regulatory and audit requirements |
 | Data entities | `enrolment`, `fee_liability`, `student_obligation`, `slc_notification`, `ukvi_compliance_case`, `student_document` |
 | Domain events | `srs.student.status-changed` |
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-This process ends an enrolment through a voluntary or authorised institutional decision, with an evidenced effective date and clear academic, fee, funding, immigration, access and record consequences. It protects prior achievement and determines whether an exit award/transcript review is required.
+Withdrawal permanently ends a student's enrolment, whether the student chooses to leave or the institution ends it for them — after repeated academic failure or non-payment, for example. This process fixes exactly when the withdrawal takes effect and works through every consequence that follows from it — fee liability, funding, visa status, system access — while protecting whatever the student has already achieved: someone who withdraws partway through a programme may still be entitled to an interim award (a Certificate or Diploma below the full degree, for instance) or at minimum a transcript of the credit they've earned, and this process checks whether that applies rather than letting a withdrawal silently erase it.
 
 ## Scope
 

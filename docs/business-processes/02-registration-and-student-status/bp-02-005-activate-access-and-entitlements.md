@@ -24,7 +24,7 @@
 | Type | References |
 |---|---|
 | Revelation workflows | W001 partial |
-| Reference-model flows | F008, F012, F014–F015, F017, F021, F041 |
+| Reference-model flows | F-SIS-LIB-01, F-SIS-EWP-01, F-SIS-AM-01, F-SIS-VLE-01, F-SIS-ACC-01, F-SIS-IAM-01, F-SIS-CMS-01 |
 | Functional requirements | EWP, LIB, ATT, VLE, IAM and related integration requirements |
 | Data entities | `enrolment`, `account_access_state`, `module_registration`, `student_timetable_entry`, `integration_exchange` |
 | Domain events | `srs.student.enrolled` and registration/module events |
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-This process translates authoritative registered status and confirmed study scope into least-privilege access and service entitlements. It records each target independently so one failure does not erase registration or conceal partial provisioning.
+Once a student is registered, they need actual access to the services their registration entitles them to — a VLE account, library borrowing rights, building access and similar — but only the access their specific registration justifies (their course, their modules, their status), not blanket access to everything. This process provisions each service independently, so a failure to set up one of them (the library, say) never undoes the student's registration, and the institution can always see exactly which entitlements are live and which are still outstanding, rather than treating provisioning as a single all-or-nothing step.
 
 ## Scope
 

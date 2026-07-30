@@ -24,7 +24,7 @@
 | Type | References |
 |---|---|
 | Revelation workflows | W001 partial; no dedicated assignment workflow |
-| Reference-model flows | F001, F005, F045 |
+| Reference-model flows | F-CM-SIS-01, F-CRM-SIS-01, F-UCAS-SIS-01 |
 | Functional requirements | CAT-001, CAT-007–CAT-009; ENR-001, ENR-009 |
 | Data entities | `enrolment`, `programme`, `programme_route`, `programme_rule_set`, `academic_rule` |
 | Domain events | Gap — no specific route/rule assignment event |
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-This process binds a student's enrolment to the exact approved programme, route/pathway, cohort and regulation set that govern module choice, progression, assessment and award. It prevents later catalogue changes from silently changing the rules applied to an existing student.
+When a student enrols, they need to be tied to one specific, fixed version of their programme's rules: which route or pathway they're on, which cohort (year group) they belong to, and which set of regulations governs their module choices, progression and eventual award. This process makes that binding explicit and fixed at the point of assignment, so that when the curriculum team later revises the programme — a routine and expected occurrence — an existing student's rules don't silently change underneath them. They continue under the version they were assigned to unless a formal, authorised transfer says otherwise.
 
 ## Scope
 
@@ -154,7 +154,7 @@ Rule precedence, route declaration timing, advanced entry, teach-out, student co
 
 | From | To | Information/purpose | Contract/pattern | Failure and reconciliation |
 |---|---|---|---|---|
-| Curriculum Management | SRS | Route/rule versions | F001 contract | Reject/replay publication |
+| Curriculum Management | SRS | Route/rule versions | F-CM-SIS-01 contract | Reject/replay publication |
 | Admissions | SRS | Intended programme/route/intake | Admissions contracts | Resolve source mismatch |
 
 ## Sequence diagram

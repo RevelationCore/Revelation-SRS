@@ -24,7 +24,7 @@
 | Type | References |
 |---|---|
 | Revelation workflows | W007/W011 partial; gap — no closure orchestration |
-| Reference-model flows | F006–F010, F015, F021–F024, F029, F037, F049, F051 |
+| Reference-model flows | F-SIS-CRM-01, F-LIB-SIS-01, F-SIS-LIB-01, F-SIS-FIN-01, F-FIN-SIS-01, F-SIS-VLE-01, F-SIS-IAM-01, F-IAM-SIS-01, F-SIS-EDRMS-01, F-EDRMS-SIS-01, F-SIS-DW-01, F-SIS-CRIS-01, F-SIS-SLC-01, F-SIS-UKVI-01 |
 | Functional requirements | ENR-002–ENR-006; audit, retention and integration requirements |
 | Data entities | `enrolment`, `student_obligation`, `fee_liability`, `account_access_state`, `student_document`, `document_archive_confirmation`, `integration_exchange` |
 | Domain events | `srs.student.status-changed` plus document/integration events as applicable |
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-This process completes operational closure after withdrawal, transfer-out, exclusion, completion or another permanent leaving outcome. It removes inappropriate active entitlements, settles open work, preserves lawful continuing access, creates final records/documents and establishes retention controls.
+Once a student has left the institution for any reason — withdrawal, transfer to another institution, exclusion, or successful completion — there is still administrative work to finish: removing the access and entitlements that only made sense while they were an active student, closing off any open cases or outstanding tasks, keeping in place whatever access a former student is still lawfully entitled to (retrieving their own transcript, for instance), issuing final documents, and setting how long their record must be retained. This process makes sure that work is done consistently and that a leaver's record is neither prematurely locked away nor left indefinitely as if they were still active.
 
 ## Scope
 

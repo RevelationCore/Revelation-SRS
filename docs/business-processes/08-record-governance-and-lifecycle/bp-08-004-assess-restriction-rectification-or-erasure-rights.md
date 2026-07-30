@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-Assessing restriction, rectification or erasure rights turns a data subject's Article 16, 17 or 18 request into a reasoned decision — approved, partly approved or refused — reached by consulting every data owner whose system holds the data in question, not just the one the request happened to arrive through. Each right is assessed on its own lawful basis and retention position rather than treated as a single all-or-nothing action, and any correction, restriction marker or erasure is applied at the authoritative source before being propagated to every system that received a copy. Minimal compliance evidence is retained so the institution can demonstrate what it did and why, without retaining more of the disputed data than necessary.
+Assessing restriction, rectification or erasure rights turns a data subject's request under UK GDPR Article 16 (rectification — correcting inaccurate data), Article 17 (erasure — deleting data, sometimes called the "right to be forgotten") or Article 18 (restriction — freezing further use of data without deleting it) into a reasoned decision — approved, partly approved or refused — reached by consulting every data owner whose system holds the data in question, not just the one the request happened to arrive through. Each right is assessed on its own lawful basis and retention position rather than treated as a single all-or-nothing action, and any correction, restriction marker or erasure is applied at the authoritative source before being propagated to every system that received a copy. Minimal compliance evidence is retained so the institution can demonstrate what it did and why, without retaining more of the disputed data than necessary.
 
 ## Scope
 

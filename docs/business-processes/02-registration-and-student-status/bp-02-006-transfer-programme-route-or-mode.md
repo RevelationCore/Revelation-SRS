@@ -24,7 +24,7 @@
 | Type | References |
 |---|---|
 | Revelation workflows | Gap — no complete durable workflow |
-| Reference-model flows | F003, F006, F009, F014–F015, F021, F037, F049, F051 |
+| Reference-model flows | F-SIS-TTB-01, F-SIS-CRM-01, F-SIS-FIN-01, F-SIS-AM-01, F-SIS-VLE-01, F-SIS-IAM-01, F-SIS-CRIS-01, F-SIS-SLC-01, F-SIS-UKVI-01 |
 | Functional requirements | ENR-001–ENR-003, ENR-006–ENR-010; REG-002, REG-004–REG-007 |
 | Data entities | `enrolment`, `programme_route`, `programme_rule_set`, `module_registration`, `fee_liability`, `cas_request`, `slc_notification` |
 | Domain events | `srs.student.status-changed`; more specific transfer event is a gap |
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-This process makes an authorised change to a student's programme, route/pathway, study mode, intensity, location or attendance pattern while preserving academic history and the effective date of each fact. The outcome is an approved and reconciled new study configuration, or a rejected request with the original enrolment unchanged.
+Students sometimes need to change programme, switch to a different route or pathway within the same programme, change their study mode (for example full-time to part-time), or change their study intensity, location or attendance pattern — and each of these changes has knock-on effects on fees, funding, timetabling and, for international students, visa sponsorship. This process makes sure a requested change is properly authorised and its consequences worked through before anything actually changes, while keeping the student's academic history intact and dated exactly when each version applied. The result is either an approved, fully reconciled new study configuration, or a rejected request that leaves the original enrolment completely unchanged.
 
 ## Scope
 

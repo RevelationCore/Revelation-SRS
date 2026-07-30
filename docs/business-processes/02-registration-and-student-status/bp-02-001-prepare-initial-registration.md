@@ -24,7 +24,7 @@
 | Type | References |
 |---|---|
 | Revelation workflows | W001 partial |
-| Reference-model flows | F005, F021, F025, F045 |
+| Reference-model flows | F-CRM-SIS-01, F-SIS-IAM-01, F-SIS-OIV-01, F-UCAS-SIS-01 |
 | Functional requirements | SID-001 onward; ENR-001, ENR-007, ENR-009 |
 | Data entities | `person`, `person_identity`, `student_application`, `admissions_offer`, `student_obligation`, `identity_verification_check` |
 | Domain events | `srs.student.created`, identity verification events |
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-This process turns an accepted applicant outcome into a registration-ready student context without yet declaring the person academically registered. It resolves identity, creates controlled credentials, establishes the intended programme/intake, and creates outstanding actions for identity, finance, declarations and other conditions.
+Before a newly accepted applicant can actually register, the institution needs their identity resolved, a limited pre-registration account set up, and a clear checklist of what still has to happen — proving identity, sorting out finance, accepting declarations — before registration can complete. This process does that preparatory work and builds the checklist, but does not itself make the person a registered student: that only happens once every required action (identity verification, academic registration, financial registration) is separately completed in the processes that follow.
 
 ## Scope
 

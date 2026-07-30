@@ -24,7 +24,7 @@
 | Type | References |
 |---|---|
 | Revelation workflows | W010; W007 may follow unresolved non-registration |
-| Reference-model flows | F009, F011, F015, F021, F049 and related entitlement flows, depending on provider design |
+| Reference-model flows | F-SIS-FIN-01, F-EWP-SIS-01, F-SIS-VLE-01, F-SIS-IAM-01, F-SIS-SLC-01 and related entitlement flows, depending on provider design |
 | Functional requirements | ENR-003, ENR-005, ENR-008, ENR-009, ENR-010; REG-001–REG-007 where module selection is coupled |
 | Data entities | `enrolment`, `reenrolment_period`, `reenrolment_confirmation`, `person_identity`, `student_address`, `student_contact_method`, `student_hold`, `student_obligation`, `fee_liability`, `slc_notification`, `integration_exchange` |
 | Domain events | `srs.student.re-enrolled` is documented but remains in the not-implemented backlog; `srs.student.status-changed` applies only if a later status decision is made |

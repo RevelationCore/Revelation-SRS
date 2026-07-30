@@ -24,7 +24,7 @@
 | Type | References |
 |---|---|
 | Revelation workflows | W001 |
-| Reference-model flows | F005, F011, F045–F046 |
+| Reference-model flows | F-CRM-SIS-01, F-EWP-SIS-01, F-UCAS-SIS-01, F-SIS-UCAS-01 |
 | Functional requirements | ENR-001, ENR-004, ENR-008–ENR-010 |
 | Data entities | `person`, `enrolment`, `programme_route`, `student_address`, `student_contact_method`, `student_obligation` |
 | Domain events | `srs.student.created`, `srs.student.enrolled` |
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-Initial academic registration establishes the formal provider–student relationship for a programme and period. It confirms current study facts, declarations and terms and creates the authoritative enrolment independently from later entitlement, student-finance or attendance confirmations.
+Academic registration is the step that actually creates a student's enrolment — the formal, dated relationship between the person and the institution for a specific programme and period — confirmed by checking their current study details are still correct and having them accept the institution's terms, regulations and data-protection notices. It is deliberately kept separate from financial registration, service entitlements (library, VLE access and similar), and confirmation to student-finance bodies: each of those can succeed or fail on its own timetable without ever calling into question the fact that the student is academically enrolled.
 
 ## Scope
 

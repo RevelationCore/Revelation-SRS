@@ -24,7 +24,7 @@
 | Type | References |
 |---|---|
 | Revelation workflows | Gap — no durable selection workflow |
-| Reference-model flows | F011 |
+| Reference-model flows | F-EWP-SIS-01 |
 | Functional requirements | REG-001–REG-003; EWP-002 |
 | Data entities | `enrolment`, `programme_rule_set`, `module`, `module_offering`, `module_relationship`, `module_registration` |
 | Domain events | No event until confirmation; proposed-selection event is a gap |
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-This process captures a student's proposed optional/elective module choices for a study period while automatically including compulsory modules. The outcome is a complete proposal ready for validation and approval, not necessarily a confirmed registration.
+For each study period, a student needs to choose their optional or elective modules — compulsory modules are added automatically and never need choosing — from the module diet their route and level actually permit. This process captures that choice as a proposal: it is not yet a confirmed registration, only a complete, submitted set of preferences ready for the checks and approvals carried out in the next process.
 
 ## Scope
 
@@ -159,7 +159,7 @@ Window, compulsory auto-allocation, preference ranking, timetable warning, reser
 | From | To | Information/purpose | Contract/pattern | Failure and reconciliation |
 |---|---|---|---|---|
 | Portal | SRS | Proposed choices/preferences | `portal-self-service-update.v1` | Idempotent submission/draft recovery |
-| Curriculum Management | SRS | Diet/offering descriptions | F001 | Publication reconciliation |
+| Curriculum Management | SRS | Diet/offering descriptions | F-CM-SIS-01 | Publication reconciliation |
 
 ## Sequence diagram
 

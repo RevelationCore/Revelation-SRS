@@ -24,7 +24,7 @@
 | Type | References |
 |---|---|
 | Revelation workflows | W010; W007 only after an authorised outcome |
-| Reference-model flows | F006, F008, F015, F021, F049, F051 as applicable |
+| Reference-model flows | F-SIS-CRM-01, F-SIS-LIB-01, F-SIS-VLE-01, F-SIS-IAM-01, F-SIS-SLC-01, F-SIS-UKVI-01 as applicable |
 | Functional requirements | ENR-002, ENR-006, ENR-008; PLT-AUD and PLT-WFL controls |
 | Data entities | `reenrolment_confirmation`, `enrolment`, `student_obligation`, `student_hold`, `slc_notification`, `ukvi_compliance_case`, `integration_exchange` |
 | Domain events | `srs.student.status-changed` only after a status decision |

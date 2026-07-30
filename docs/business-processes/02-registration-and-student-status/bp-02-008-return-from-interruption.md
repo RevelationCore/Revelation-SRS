@@ -24,7 +24,7 @@
 | Type | References |
 |---|---|
 | Revelation workflows | Gap — W007 does not specify return |
-| Reference-model flows | F003, F006, F008–F009, F014–F015, F021, F037, F049, F051 |
+| Reference-model flows | F-SIS-TTB-01, F-SIS-CRM-01, F-SIS-LIB-01, F-SIS-FIN-01, F-SIS-AM-01, F-SIS-VLE-01, F-SIS-IAM-01, F-SIS-CRIS-01, F-SIS-SLC-01, F-SIS-UKVI-01 |
 | Functional requirements | ENR-001–ENR-003, ENR-005–ENR-009 |
 | Data entities | `enrolment`, `student_obligation`, `fee_liability`, `module_registration`, `visa_status`, `research_milestone` |
 | Domain events | `srs.student.status-changed` |
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-This process establishes whether and how a student returns after an authorised interruption. It verifies conditions, determines the correct academic restart point and creates a new active enrolment version and downstream entitlements.
+When a student's period of interruption ends, this process checks whether any conditions attached to their return have been met, works out exactly where in their programme they should resume — the same point they left, or an earlier point if they need to repeat material they missed — and reactivates their enrolment and the services that depend on it.
 
 ## Scope
 

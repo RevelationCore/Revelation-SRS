@@ -9,6 +9,7 @@ This library documents UK higher education business processes that create, chang
 
 ## How to use this library
 
+- New to UK higher education administration, or unsure what a term (CAS, SFC, compensation, condonement, viva) means? Check the [domain glossary](../domain-glossary.md) first — every acronym and sector-specific term used across this library is defined there.
 - Start with the [process map](process-map.md) to browse by student lifecycle domain.
 - Use the [process inventory](process-inventory.md) for scope, priority, and drafting status.
 - Read [terminology and conventions](terminology-and-conventions.md) before authoring or reviewing a page.

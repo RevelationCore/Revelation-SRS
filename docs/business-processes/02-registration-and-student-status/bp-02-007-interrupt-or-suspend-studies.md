@@ -24,7 +24,7 @@
 | Type | References |
 |---|---|
 | Revelation workflows | W007 partial |
-| Reference-model flows | F006, F008–F009, F015, F021, F037, F049, F051 |
+| Reference-model flows | F-SIS-CRM-01, F-SIS-LIB-01, F-SIS-FIN-01, F-SIS-VLE-01, F-SIS-IAM-01, F-SIS-CRIS-01, F-SIS-SLC-01, F-SIS-UKVI-01 |
 | Functional requirements | ENR-002–ENR-003, ENR-006; UKV and SLC requirements |
 | Data entities | `enrolment`, `fee_liability`, `student_obligation`, `slc_notification`, `ukvi_compliance_case`, `research_milestone` |
 | Domain events | `srs.student.status-changed` |
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-An authorised interruption/suspension temporarily stops active study for an agreed period while retaining a route to return. The process records authority, reason category, effective and expected return dates, academic/financial consequences and external notifications without exposing unnecessary sensitive evidence.
+Sometimes a student needs to pause their studies temporarily — for health, personal or other reasons — while keeping the right to come back and continue, rather than having to withdraw and reapply from scratch. This process records who authorised the pause, a reason category (without necessarily recording sensitive personal detail beyond what the decision actually needs), when it takes effect, when the student is expected to return, and what it means for their fees, funding and any external body — the Student Loans Company or UKVI, for a sponsored international student — that needs to be told.
 
 ## Scope
 

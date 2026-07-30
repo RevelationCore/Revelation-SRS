@@ -24,7 +24,7 @@
 | Type | References |
 |---|---|
 | Revelation workflows | Gap — no durable approval workflow |
-| Reference-model flows | F011; enables F003/F014/F015 |
+| Reference-model flows | F-EWP-SIS-01; enables F-SIS-TTB-01/F-SIS-AM-01/F-SIS-VLE-01 |
 | Functional requirements | REG-001–REG-003 |
 | Data entities | `module_registration`, `module_offering`, `module_relationship`, `programme_rule_set`, `academic_rule` |
 | Domain events | `srs.enrolment.module-registered` |
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-This process applies the student's binding curriculum rules and authorised academic decisions to a proposed module set. It confirms registrations only when credit, diet, prerequisites, exclusions, capacity, period and required approvals are satisfied.
+A student's proposed module choices need to be checked against the rules that actually govern their curriculum before they can count as a real registration: do they add up to the right amount of credit, do they come from the module diet actually available to that route, level and period, are prerequisites met and mutually-exclusive combinations avoided, is there capacity on each module, and does anyone with academic authority need to approve an unusual combination? This process runs those checks and confirms a registration only once every applicable rule and required approval is satisfied — a proposal that fails a check is returned or held for a decision, never silently confirmed.
 
 ## Scope
 

@@ -24,7 +24,7 @@
 | Type | References |
 |---|---|
 | Revelation workflows | W001 partial |
-| Reference-model flows | F009–F010, F049–F050 |
+| Reference-model flows | F-SIS-FIN-01, F-FIN-SIS-01, F-SIS-SLC-01, F-SLC-SIS-01 |
 | Functional requirements | ENR-003, ENR-005–ENR-006; FIN and SLC requirements |
 | Data entities | `fee_liability`, `payment_confirmation`, `student_hold`, `slc_entitlement`, `slc_notification` |
 | Domain events | Fee-liability update is documented but in event backlog |
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-Financial registration establishes the fee liability, payer/funding source and acceptable payment/sponsorship arrangement for the study period. It records whether the provider's financial stage is complete without treating a student-finance application or expected funding as cash received.
+Financial registration works out exactly what a student owes for the period ahead, who is expected to pay it — the student themselves, a sponsor, or a student-finance body — and whether an acceptable payment or sponsorship arrangement is actually in place. Applying for student finance, or having a sponsor's letter on file, is not the same as the money having arrived; this process only records the financial stage as complete once a genuine payment or funding arrangement exists, never merely an expectation that one will follow.
 
 ## Scope
 

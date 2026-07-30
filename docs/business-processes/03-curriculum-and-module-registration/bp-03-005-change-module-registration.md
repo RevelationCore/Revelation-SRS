@@ -24,7 +24,7 @@
 | Type | References |
 |---|---|
 | Revelation workflows | Gap — no durable add/drop approval workflow |
-| Reference-model flows | F003, F009, F011, F014–F015 |
+| Reference-model flows | F-SIS-TTB-01, F-SIS-FIN-01, F-EWP-SIS-01, F-SIS-AM-01, F-SIS-VLE-01 |
 | Functional requirements | REG-001–REG-007; ENR-003 |
 | Data entities | `module_registration`, `module_offering`, `fee_liability`, assessment/exam entities where already created |
 | Domain events | Module registered/registration withdrawn events |
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-This process adds, drops, substitutes or corrects a module after an initial set was confirmed. It applies time-window, academic, fee, funding, assessment and downstream consequences and preserves the complete effective history.
+After a student's module registration is confirmed, they sometimes need to add a module, drop one, swap one for another, or correct a mistake in what was registered. This process applies whatever time-window, academic, fee, funding and assessment consequences follow from that kind of change — a late add might need special permission, a drop might affect fee liability or funding eligibility — and keeps a complete, dated history of every registration state the student has actually held, rather than overwriting the record of what they were registered for before the change.
 
 ## Scope
 

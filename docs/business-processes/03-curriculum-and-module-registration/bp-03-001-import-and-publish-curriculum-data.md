@@ -24,7 +24,7 @@
 | Type | References |
 |---|---|
 | Revelation workflows | Gap — no durable publication workflow |
-| Reference-model flows | F001 inbound; F002 feedback |
+| Reference-model flows | F-CM-SIS-01 inbound; F-SIS-CM-01 feedback |
 | Functional requirements | CAT-001–CAT-009 |
 | Data entities | `awarding_body`, `programme`, `programme_route`, `programme_rule_set`, `module`, `module_relationship`, `learning_outcome`, `assessment_pattern`, `academic_period`, `module_offering` |
 | Domain events | Catalogue programme/module/relationship/learning-outcome updated events |
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-This process makes an approved curriculum version available to the SRS for a stated effective period. It preserves programme, route, module, credit, level, learning-outcome, assessment, relationship and delivery facts so that student records can always be reconstructed against the curriculum that applied to them.
+Before students can register onto modules or have their progress correctly assessed, the SRS needs an authoritative copy of the curriculum: the approved programmes, routes, modules, credit values, levels, learning outcomes, assessment patterns, and how modules relate to each other (which are compulsory, which exclude one another, and so on), dated to the exact period each version applied. This process brings that approved curriculum into the SRS and keeps every version, so a student's record can always be checked against the curriculum rules that actually applied to them at the time — even years later — rather than against whatever the curriculum happens to say today.
 
 ## Scope
 
@@ -185,7 +185,7 @@ sequenceDiagram
 
 | ID | Question/decision | Owner | Status |
 |---|---|---|---|
-| OQ-1 | Are route/rule/assessment/offering imports complete in the current F001 implementation? | Integration/product owner | Open |
+| OQ-1 | Are route/rule/assessment/offering imports complete in the current F-CM-SIS-01 implementation? | Integration/product owner | Open |
 | OQ-2 | Add publication/version entity and atomic reconciliation report? | Data architect | Open |
 
 ## Sources

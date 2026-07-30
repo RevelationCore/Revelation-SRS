@@ -24,7 +24,7 @@
 | Type | References |
 |---|---|
 | Revelation workflows | Gap — no durable supervision-establishment workflow |
-| Reference-model flows | F034, F037–F040 |
+| Reference-model flows | F-HR-SIS-01, F-SIS-CRIS-01, F-CRIS-SIS-01, F-SIS-RP-01, F-RP-SIS-01 |
 | Functional requirements | HRP-002–HRP-006 |
 | Data entities | `enrolment`, `staff_assignment`, `research_milestone`, `integration_exchange` |
 | Domain events | `srs.staff-assignment.updated`; `srs.research.milestone-recorded` |
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-This process establishes an approved, effective-dated PGR supervisory team and the research context needed by the student, supervisors, Registry, the research office and connected systems. It preserves the approval basis and responsibilities instead of treating an inbound staff assignment as sufficient evidence of academic approval.
+A postgraduate research student needs a formally approved supervisory team — typically a principal supervisor plus one or more co-supervisors — before their research can properly begin, and that approval needs to be on record with a clear basis (who approved it, under what regulations), not just inferred from whichever member of staff happens to be assigned to them in the HR system. This process establishes that approved, dated supervisory team and the research context — degree aim, research area, school — that the student, supervisors, Registry and the research office all need to see, treating academic approval of the team as a distinct, necessary step rather than assuming a staff assignment alone is evidence that proper governance has taken place.
 
 ## Scope
 
@@ -132,7 +132,7 @@ Acceptance/enrolment preparation, research project allocation, transfer of resea
 | BR-1 | SECTOR | A PGR student has an approved supervisory team under the awarding provider's regulations | UK | SRC-047–SRC-050 |
 | BR-2 | SECTOR | The team should provide appropriate expertise, continuity and defined responsibilities | UK | SRC-047–SRC-050 |
 | BR-3 | INSTITUTION | Team size, role names, eligibility, training, workload and approval authority are provider-configured | UK | Provider regulations |
-| BR-4 | REVELATION | HR assignment confirmation does not replace the academic nomination and approval decision | Revelation target | HRP-002; F034 |
+| BR-4 | REVELATION | HR assignment confirmation does not replace the academic nomination and approval decision | Revelation target | HRP-002; F-HR-SIS-01 |
 | BR-5 | PROPOSED | Assignments are effective-dated and changes preserve prior teams and approval provenance | Revelation target | Data governance control |
 | BR-6 | PROPOSED | External supervisors require an accountable internal relationship and governed identity/access | Where applicable | Process control |
 

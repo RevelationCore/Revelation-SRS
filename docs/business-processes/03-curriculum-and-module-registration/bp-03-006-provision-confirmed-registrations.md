@@ -24,7 +24,7 @@
 | Type | References |
 |---|---|
 | Revelation workflows | Gap — integration events/reconciliation, no end-to-end workflow |
-| Reference-model flows | F003–F004, F014–F016; later F031/F061/F070 consumers |
+| Reference-model flows | F-SIS-TTB-01, F-TTB-SIS-01, F-SIS-AM-01, F-SIS-VLE-01, F-VLE-SIS-01; later F-SIS-SETS-01/F-SIS-EXAMS-01/F-SIS-AI-01 consumers |
 | Functional requirements | REG-004–REG-007; VLE-001; ATT and portal requirements |
 | Data entities | `module_registration`, `module_offering`, `student_timetable_entry`, `integration_exchange`, target mapping/ledger entities |
 | Domain events | `srs.enrolment.module-registered`, module-registration withdrawn/completed |
@@ -32,7 +32,7 @@
 
 ## Purpose and outcome
 
-This process distributes confirmed module registrations to systems that need them for teaching, learning access, timetabling and engagement. It records each target independently and reconciles final target state so event delivery is not mistaken for successful provisioning.
+Once a module registration is confirmed, the systems that actually deliver teaching and track engagement — the VLE, timetabling, attendance — need to know about it, so the student can access their course content, appear on class lists, and be tracked correctly. This process sends the confirmed registration to each of those systems and checks, independently for each one, that it actually took effect there. Sending the message is not treated as the same thing as the target system successfully applying it, so a silent failure at one downstream system is caught rather than assumed away.
 
 ## Scope
 
@@ -118,7 +118,7 @@ Confirmed add, withdrawal, completion, effective-date change or full reconciliat
 | ID | Classification | Rule/control | Applicability | Source |
 |---|---|---|---|---|
 | BR-1 | SECTOR | Formal module registration controls teaching/access/assessment eligibility | UK | SRC-043–SRC-046 |
-| BR-2 | REVELATION | F003, F014 and F015 publish confirmed registration data | Revelation | SRC-017, SRC-019 |
+| BR-2 | REVELATION | F-SIS-TTB-01, F-SIS-AM-01 and F-SIS-VLE-01 publish confirmed registration data | Revelation | SRC-017, SRC-019 |
 | BR-3 | PROPOSED | Per-target acknowledgement and snapshot reconciliation are mandatory | Revelation target | Integration architecture |
 | BR-4 | PROPOSED | Downstream failure must not cause duplicate/repeated academic registration | Revelation target | Process control |
 
