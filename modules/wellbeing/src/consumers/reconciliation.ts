@@ -9,7 +9,7 @@
  * Called as a CLI command via `tsx src/consumers/reconciliation.ts <personId>`
  * or invoked from a Temporal activity in later stages.
  *
- * The SRS REST calls use the F053 wellbeing-student-context contract.
+ * The SRS REST calls use the F-SIS-WELL-01 wellbeing-student-context contract.
  */
 
 import { createHash } from 'node:crypto';
@@ -48,7 +48,7 @@ export async function reconcilePerson(
     repairedAt: null,
   };
 
-  // Fetch authoritative data from SRS F053 endpoint.
+  // Fetch authoritative data from SRS F-SIS-WELL-01 endpoint.
   const srsData = await fetchSrsPersonContext(srsApiUrl, authToken, personId);
 
   if (!srsData) {

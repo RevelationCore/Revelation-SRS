@@ -1,5 +1,5 @@
 /**
- * Stage 5 — Adjustment Distribution Flow (F059).
+ * Stage 5 — Adjustment Distribution Flow (F-SIS-VLE-02).
  *
  * Verifies:
  * - targetSystem filtering: only 'vle' distributions are applied.
@@ -25,7 +25,7 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import type { DomainEventEnvelope } from '@revelation-srs/domain';
 import type { AdjustmentDistributedV1Payload } from '@revelation-srs/domain';
 
-import { getAdjustmentMapping } from '../src/consumers/f059/adjustment-map-repository.js';
+import { getAdjustmentMapping } from '../src/consumers/f-sis-vle-02/adjustment-map-repository.js';
 import { VleEventConsumer } from '../src/consumers/vle-event-consumer.js';
 import { adjustmentMap } from '../src/db/schema/adjustment-map.js';
 import { eventLedger } from '../src/db/schema/event-ledger.js';

@@ -6,7 +6,7 @@
  * Headers: { X-Idempotency-Key }
  * Returns: 201 { engagementOutcomeId }
  *
- * Mirrors the F063 adjustment-handoff pattern: the attendance module owns the
+ * Mirrors the F-WELL-SIS-01 adjustment-handoff pattern: the attendance module owns the
  * engagement case (evidence, policy evaluation, alerting, intervention
  * casework); core SRS is the system of record for the recorded operational
  * outcome and is solely responsible for publishing

@@ -317,7 +317,7 @@ export async function ecClaimRoutes(
         await transitionEcStatus(tx, tenantId, claimId, newStatus, actorId);
 
         if (boardVisible) {
-          // Derive F066 outcomeCode from determinationCode
+          // Derive F-WELL-SIS-02 outcomeCode from determinationCode
           const outcomeCode = body.determinationCode.replace('_', '-');
 
           await enqueueEcHandoff(tx, tenantId, claimId, personId, {

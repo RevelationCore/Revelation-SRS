@@ -17,11 +17,11 @@ Machine-readable JSON Schema files are in `schemas/file-contracts/`. The registr
 
 | Contract | Statutory Body | Flows | Document |
 |---|---|---|---|
-| UCAS Admissions Exchange | UCAS | F045, F046 | [ucas-admissions-exchange.md](ucas-admissions-exchange.md) |
-| HESA Student Return | HESA | F047, F048 | [hesa-student-return.md](hesa-student-return.md) |
-| SLC Enrolment Exchange | SLC | F049, F050 | [slc-enrolment-exchange.md](slc-enrolment-exchange.md) |
-| UKVI Sponsor Compliance | UKVI | F051, F052 | [ukvi-sponsor-compliance.md](ukvi-sponsor-compliance.md) |
-| Exam Scheduling Exchange | (internal/vendor) | F061, F062 | [exam-scheduling.md](exam-scheduling.md) |
+| UCAS Admissions Exchange | UCAS | F-UCAS-SIS-01, F-SIS-UCAS-01 | [ucas-admissions-exchange.md](ucas-admissions-exchange.md) |
+| HESA Student Return | HESA | F-SIS-HESA-01, F-HESA-SIS-01 | [hesa-student-return.md](hesa-student-return.md) |
+| SLC Enrolment Exchange | SLC | F-SIS-SLC-01, F-SLC-SIS-01 | [slc-enrolment-exchange.md](slc-enrolment-exchange.md) |
+| UKVI Sponsor Compliance | UKVI | F-SIS-UKVI-01, F-UKVI-SIS-01 | [ukvi-sponsor-compliance.md](ukvi-sponsor-compliance.md) |
+| Exam Scheduling Exchange | (internal/vendor) | F-SIS-EXAMS-01, F-EXAMS-SIS-01 | [exam-scheduling.md](exam-scheduling.md) |
 
 ---
 

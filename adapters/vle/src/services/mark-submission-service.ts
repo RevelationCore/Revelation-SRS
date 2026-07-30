@@ -1,7 +1,7 @@
 /**
  * MarkSubmissionService — submits VLE grades to SRS via REST.
  *
- * This is the outbound direction of F016: VLE assessment data flows to SRS,
+ * This is the outbound direction of F-VLE-SIS-01: VLE assessment data flows to SRS,
  * not the other way around.  The service is kept separate from the event
  * consumer because it is triggered by VLE-side events (grades available),
  * not by SRS events.
@@ -17,7 +17,7 @@ import type { SrsMarkClient, SrsMarkSubmitInput } from '../srs-client/mark-clien
 import {
   getMarkReceipt,
   upsertMarkReceipt,
-} from '../consumers/f016/mark-receipt-repository.js';
+} from '../consumers/f-vle-sis-01/mark-receipt-repository.js';
 
 export interface MarkSubmitOptions {
   moduleRegistrationId:  string;

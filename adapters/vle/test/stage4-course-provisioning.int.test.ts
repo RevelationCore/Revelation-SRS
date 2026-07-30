@@ -1,5 +1,5 @@
 /**
- * Stage 4 — Course Provisioning Flow (F015).
+ * Stage 4 — Course Provisioning Flow (F-SIS-VLE-01).
  *
  * Verifies:
  * - toVleAccessState: SRS status codes → VLE access states.
@@ -11,7 +11,7 @@
  * - handleStudentStatusChanged: updates all VLE enrolments for an enrolment.
  * - handleModuleRegistrationWithdrawn: withdraws a VLE enrolment.
  * - handleModuleRegistrationCompleted: completes a VLE enrolment.
- * - VleEventConsumer.dispatch() end-to-end for the full F015 provisioning sequence.
+ * - VleEventConsumer.dispatch() end-to-end for the full F-SIS-VLE-01 provisioning sequence.
  * - canWrite=false (no vleClient) does not prevent local DB state from being recorded.
  *
  * NATS is not started — dispatch() is called directly.
@@ -25,10 +25,10 @@ import { pino } from 'pino';
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import type { DomainEventEnvelope } from '@revelation-srs/domain';
 
-import { toVleAccessState } from '../src/consumers/f015/access-state.js';
-import { getCourseMapping } from '../src/consumers/f015/course-map-repository.js';
-import { getEnrolmentMapping } from '../src/consumers/f015/enrolment-map-repository.js';
-import { getPersonIdForEnrolment } from '../src/consumers/f015/student-enrolment-repository.js';
+import { toVleAccessState } from '../src/consumers/f-sis-vle-01/access-state.js';
+import { getCourseMapping } from '../src/consumers/f-sis-vle-01/course-map-repository.js';
+import { getEnrolmentMapping } from '../src/consumers/f-sis-vle-01/enrolment-map-repository.js';
+import { getPersonIdForEnrolment } from '../src/consumers/f-sis-vle-01/student-enrolment-repository.js';
 import { VleEventConsumer } from '../src/consumers/vle-event-consumer.js';
 import { courseMap } from '../src/db/schema/course-map.js';
 import { enrolmentMap } from '../src/db/schema/enrolment-map.js';
@@ -499,7 +499,7 @@ describe('Stage 4 — handleModuleRegistrationWithdrawn and Completed', () => {
 
 // ── Suite 7: full provisioning sequence ──────────────────────────────────────
 
-describe('Stage 4 — full F015 provisioning sequence', () => {
+describe('Stage 4 — full F-SIS-VLE-01 provisioning sequence', () => {
   let ctx: TestVleApp;
 
   beforeAll(async () => {

@@ -9,7 +9,10 @@
       "name": "UCAS Admissions Exchange",
       "description": "UCAS application ingestion (inbound) and enrolment/withdrawal/deferral confirmation (outbound).",
       "statutoryBody": "UCAS",
-      "flows": ["F045", "F046"],
+      "flows": [
+        "F-UCAS-SIS-01",
+        "F-SIS-UCAS-01"
+      ],
       "exchanges": [
         {
           "direction": "inbound",
@@ -42,7 +45,10 @@
       "name": "HESA Student Return",
       "description": "HESA student return generation, XML file download, validation report ingestion, and amendment generation.",
       "statutoryBody": "HESA",
-      "flows": ["F047", "F048"],
+      "flows": [
+        "F-SIS-HESA-01",
+        "F-HESA-SIS-01"
+      ],
       "exchanges": [
         {
           "direction": "outbound",
@@ -77,7 +83,10 @@
       "name": "SLC Enrolment Exchange",
       "description": "SLC enrolment confirmation batch (outbound) and inbound payment/entitlement notifications.",
       "statutoryBody": "SLC",
-      "flows": ["F049", "F050"],
+      "flows": [
+        "F-SIS-SLC-01",
+        "F-SLC-SIS-01"
+      ],
       "exchanges": [
         {
           "direction": "outbound",
@@ -110,7 +119,10 @@
       "name": "UKVI Sponsor Compliance",
       "description": "CAS request generation (outbound), CAS assignment ingestion (inbound), attendance report (outbound), and visa status update (inbound).",
       "statutoryBody": "UKVI",
-      "flows": ["F051", "F052"],
+      "flows": [
+        "F-SIS-UKVI-01",
+        "F-UKVI-SIS-01"
+      ],
       "exchanges": [
         {
           "direction": "outbound",
@@ -168,7 +180,10 @@
       "name": "Exam Scheduling Exchange",
       "description": "Exam entry batch (outbound to exam scheduling system) and finalised exam schedule reception (inbound).",
       "statutoryBody": null,
-      "flows": ["F061", "F062"],
+      "flows": [
+        "F-SIS-EXAMS-01",
+        "F-EXAMS-SIS-01"
+      ],
       "exchanges": [
         {
           "direction": "outbound",

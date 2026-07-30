@@ -56,7 +56,7 @@ export interface EngagementOutcomeDto {
  * Records the operational outcome handed off by the attendance module
  * (modules/attendance). SRS is the system of record for this outcome and is
  * solely responsible for publishing srs.engagement.outcome-recorded to
- * downstream consumers — mirroring the F063 reasonable-adjustment pattern.
+ * downstream consumers — mirroring the F-WELL-SIS-01 reasonable-adjustment pattern.
  */
 export class EngagementOutcomeService {
   constructor(

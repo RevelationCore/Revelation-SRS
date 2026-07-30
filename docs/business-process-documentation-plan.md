@@ -31,7 +31,7 @@ The codebase reports v1.0.0 as released and all eleven delivery phases as comple
 | [Actor Catalogue](requirements/actor-catalogue.md) | Existing human roles, external system actors, and RBAC mappings |
 | [Workflow Catalogue](requirements/workflow-catalogue.md) | Twelve long-running workflow state models, W001–W012 |
 | [Functional Requirements](requirements/functional-requirements.md) | Testable SRS capabilities and REQ identifiers |
-| [Enterprise Reference Model](reference/revelation-student-records-reference-model.md) | System landscape and F001–F070 integration-flow taxonomy |
+| [Enterprise Reference Model](reference/revelation-student-records-reference-model.md) | System landscape and 69-flow integration taxonomy (`F-<FROM>-<TO>-<nn>`) |
 | [Integration Contract Catalogue](architecture/integration-contract-catalogue.md) | Current integration ownership, direction, payload, and failure semantics |
 | [Data Model](architecture/data-model.md) | Current entities, relationships, temporal history, and ownership |
 | [Domain Events](architecture/domain-events.md) | Published event names and meanings |
@@ -415,7 +415,7 @@ A process page is complete only when:
 - 100% of student-record mutations identify the authoritative system and affected data concept.
 - 100% of regulatory rules identify jurisdiction, source version/effective date, and review date.
 - 100% of pages have no broken internal links or invalid Mermaid blocks.
-- All existing W001–W012 workflows and F001–F070 reference-model flows are mapped to at least one process or have a documented exclusion rationale.
+- All existing W001–W012 workflows and reference-model flows (see [Enterprise Reference Model](reference/revelation-student-records-reference-model.md)) are mapped to at least one process or have a documented exclusion rationale.
 - Every high-risk process has named SME, integration, and data reviewers.
 - Cross-process assurance produces no unexplained actor, system, terminology, or lifecycle discontinuity.
 

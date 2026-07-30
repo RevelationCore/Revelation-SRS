@@ -28,7 +28,7 @@ The system is designed for extensibility from inception. All integration points 
 - **Plugin registry**: the platform maintains a registry of active integrations, their contract versions, enabled status, and health.
 - **Hot-swappable**: any module or integration adapter can be replaced without requiring changes to the core SRS.
 
-This principle underpins compliance with the reference model's logical flow architecture (F001–F070) while allowing institutions to substitute their own system implementations.
+This principle underpins compliance with the reference model's logical flow architecture (69 flows across 33 systems, identified as `F-<FROM>-<TO>-<nn>` — see [Enterprise Reference Model](reference/revelation-student-records-reference-model.md)) while allowing institutions to substitute their own system implementations.
 
 ---
 
@@ -186,7 +186,7 @@ Revelation SRS is published under the **GNU Affero General Public License v3 (AG
 - Any modified version made available over a network must also be published under the AGPL — this closes the "SaaS loophole" and ensures that hosted derivatives remain open.
 - Commercial use is permitted, but commercial parties may not distribute closed-source derivatives.
 
-The codebase is structured so that institution-specific configuration (integration endpoints, business rules, branding) is separated from platform code, enabling institutions to customise without forking the core. The reference model (flows F001–F070, 33 systems and actors) provides the canonical integration vocabulary; institutions map their own systems against it.
+The codebase is structured so that institution-specific configuration (integration endpoints, business rules, branding) is separated from platform code, enabling institutions to customise without forking the core. The reference model (69 flows, 33 systems and actors — see [Enterprise Reference Model](reference/revelation-student-records-reference-model.md)) provides the canonical integration vocabulary; institutions map their own systems against it.
 
 ---
 

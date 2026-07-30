@@ -13,7 +13,7 @@ import { tenants } from './tenant.js';
  * observations, alert evaluation, and intervention casework. It never writes
  * to SRS directly; it calls POST /students/:personId/engagement-outcomes,
  * and this table is SRS's authoritative record of the outcome, mirroring the
- * F063 reasonable-adjustment pattern.
+ * F-WELL-SIS-01 reasonable-adjustment pattern.
  */
 export const engagementOutcomes = pgTable('engagement_outcome', {
   ...bitemporalColumns,

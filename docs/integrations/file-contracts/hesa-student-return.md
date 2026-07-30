@@ -1,7 +1,7 @@
 # HESA Student Return
 
 > Contract ID: `hesa-student-return.v1`
-> Flows: F047 (return generation and submission), F048 (validation report and HESA IDs)
+> Flows: F-SIS-HESA-01 (return generation and submission), F-HESA-SIS-01 (validation report and HESA IDs)
 > Direction: Bidirectional
 > Pattern: REST API (JSON management) + XML file download
 > Data classification: regulatory

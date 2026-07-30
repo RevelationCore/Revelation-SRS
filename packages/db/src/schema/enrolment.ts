@@ -64,7 +64,7 @@ export type NewEnrolmentStatusTransition = typeof enrolmentStatusTransitions.$in
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Fee liability generated as part of enrolment creation (F009). */
+/** Fee liability generated as part of enrolment creation (F-SIS-FIN-01). */
 export const feeLiabilities = pgTable('fee_liability', {
   id:                uuid('id').primaryKey().defaultRandom(),
   tenantId:          uuid('tenant_id').notNull().references(() => tenants.id),

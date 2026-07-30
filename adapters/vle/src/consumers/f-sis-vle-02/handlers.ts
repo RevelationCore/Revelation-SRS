@@ -1,5 +1,5 @@
 /**
- * F059 — Adjustment Distribution Flow handlers.
+ * F-SIS-VLE-02 — Adjustment Distribution Flow handlers.
  *
  * Translates srs.adjustment.distributed events into VLE adjustment writes and
  * acknowledges successful distributions to the SRS.
@@ -41,14 +41,14 @@ export async function handleAdjustmentDistributed(
 
   // Only process distributions targeting the VLE connector.
   if (targetSystem !== 'vle') {
-    log.debug({ distributionId, targetSystem }, 'F059: adjustment distribution not for VLE — skipping');
+    log.debug({ distributionId, targetSystem }, 'F-SIS-VLE-02: adjustment distribution not for VLE — skipping');
     return;
   }
 
   // Idempotency: skip if already acknowledged.
   const existing = await getAdjustmentMapping(tx, tenantId, distributionId);
   if (existing?.statusCode === 'acknowledged') {
-    log.debug({ adjustmentId, distributionId }, 'F059: adjustment already acknowledged — skipping');
+    log.debug({ adjustmentId, distributionId }, 'F-SIS-VLE-02: adjustment already acknowledged — skipping');
     return;
   }
 
@@ -91,6 +91,6 @@ export async function handleAdjustmentDistributed(
   // Never log payload — adjustment content is special-category data.
   log.debug(
     { eventId: envelope.id, adjustmentId, distributionId },
-    'F059: adjustment applied to VLE and acknowledged to SRS',
+    'F-SIS-VLE-02: adjustment applied to VLE and acknowledged to SRS',
   );
 }

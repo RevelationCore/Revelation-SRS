@@ -1,7 +1,7 @@
 # SLC Enrolment Exchange
 
 > Contract ID: `slc-enrolment-exchange.v1`
-> Flows: F049 (enrolment confirmation and status notification), F050 (inbound notifications)
+> Flows: F-SIS-SLC-01 (enrolment confirmation and status notification), F-SLC-SIS-01 (inbound notifications)
 > Direction: Bidirectional
 > Pattern: REST API (JSON)
 > Data classification: regulatory

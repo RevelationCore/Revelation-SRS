@@ -10,9 +10,9 @@
 
 A VLE integration with Revelation SRS has two main jobs:
 
-1. **Course provisioning** (F015): create and update VLE course shells when programmes and modules change in the SRS; enrol students when they register on modules; apply access suspensions and withdrawals from status-change events.
-2. **Adjustment distribution** (F059): receive approved adjustment outcomes (extra time, extended deadlines, alternative formats) via distribution events and apply them in the VLE; acknowledge receipt to SRS.
-3. **Mark submission** (F016): push assessment results from the VLE back into the SRS after online assessments and portfolio submissions.
+1. **Course provisioning** (F-SIS-VLE-01): create and update VLE course shells when programmes and modules change in the SRS; enrol students when they register on modules; apply access suspensions and withdrawals from status-change events.
+2. **Adjustment distribution** (F-SIS-VLE-02): receive approved adjustment outcomes (extra time, extended deadlines, alternative formats) via distribution events and apply them in the VLE; acknowledge receipt to SRS.
+3. **Mark submission** (F-VLE-SIS-01): push assessment results from the VLE back into the SRS after online assessments and portfolio submissions.
 
 The VLE is an external integration — it uses only published event subjects and public REST endpoints. It does not have access to special-category or internal-only data beyond what is explicitly included in published events.
 
@@ -39,7 +39,7 @@ Subjects:
 
 See [`event-consumer-guide.md`](../event-consumer-guide.md) for connection details, envelope structure, and consumer group configuration.
 
-### Event payloads for course provisioning (F015)
+### Event payloads for course provisioning (F-SIS-VLE-01)
 
 **`srs.catalogue.module-updated`** — create or update a VLE course shell:
 
@@ -134,7 +134,7 @@ Store `moduleRegistrationId` — it is the key for mark submission and reconcili
 
 Map `newStatus` values: `student` → active, `interrupted` / `suspended` → suspended, `alumnus` / `withdrawn` → deactivate.
 
-### Event payloads for adjustment distribution (F059)
+### Event payloads for adjustment distribution (F-SIS-VLE-02)
 
 **`srs.adjustment.distributed`** — apply an approved adjustment in the VLE:
 
@@ -175,7 +175,7 @@ Response: `204 No Content`. If the VLE call fails before you can acknowledge, re
 
 ---
 
-## Mark Submission (F016)
+## Mark Submission (F-VLE-SIS-01)
 
 After online assessments (quizzes, portfolio submissions, written assignments marked in the VLE), submit results to the SRS.
 
@@ -258,7 +258,7 @@ Content-Type: application/json
 }
 ```
 
-Register a separate entry for each contract (`vle-course-provisioning.v1`, `vle-assessment-results.v1`, `vle-adjustments.v1`). The mark-submission side (F016) is an inbound REST write — no separate registration is required for that direction.
+Register a separate entry for each contract (`vle-course-provisioning.v1`, `vle-assessment-results.v1`, `vle-adjustments.v1`). The mark-submission side (F-VLE-SIS-01) is an inbound REST write — no separate registration is required for that direction.
 
 ---
 

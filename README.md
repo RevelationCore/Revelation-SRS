@@ -62,7 +62,7 @@ Revelation SRS is a fully open source Student Information System designed specif
 | [Deployment Architecture](docs/architecture/deployment-architecture.md) | Docker Compose (local + single institution), Kubernetes (multi-institution) |
 | **Reference Model** | |
 | [Reference Model Article](docs/reference/revelation-student-records-reference-model.md) | The Revelation Student Records Enterprise Reference Model (v2.1) |
-| [Reference Model JSON](docs/reference/revelation-student-records-enterprise-reference-model-2.1.json) | Full model JSON (33 systems, 70 flows) |
+| [Reference Model JSON](docs/reference/revelation-student-records-enterprise-reference-model-3.0.json) | Full model JSON (33 systems, 69 flows) |
 | **Decisions** | |
 | [Technology Stack](docs/decisions/technology-stack.md) | Complete stack summary with licence and ADR references |
 | [ADR Index](#architecture-decision-records) | All architecture decision records |
@@ -292,7 +292,7 @@ Revelation SRS is built on the **Revelation Student Records Enterprise Reference
 
 - [Reference model article](https://revelationcore.com/blogs/the-revelation-student-records-reference-model.html)
 - [Local copy — article](docs/reference/revelation-student-records-reference-model.md)
-- [Local copy — JSON model](docs/reference/revelation-student-records-enterprise-reference-model-2.1.json)
+- [Local copy — JSON model](docs/reference/revelation-student-records-enterprise-reference-model-3.0.json)
 
 The reference model is © RevelationCore 2026, licensed [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/).
 

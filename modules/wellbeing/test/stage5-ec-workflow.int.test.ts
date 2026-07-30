@@ -3,7 +3,7 @@
  *
  * Covers the full EC claim lifecycle: create → evidence review → determination,
  * with the key data-governance requirement that only upheld/partially_upheld
- * claims reach SRS board preparation (F066 handoff), while not_upheld
+ * claims reach SRS board preparation (F-WELL-SIS-02 handoff), while not_upheld
  * determinations and withdrawn claims stay entirely local.
  */
 

@@ -1,5 +1,5 @@
 /**
- * F015 — Course Provisioning Flow handlers.
+ * F-SIS-VLE-01 — Course Provisioning Flow handlers.
  *
  * These handlers translate SRS domain events into VLE write operations.
  * All handlers receive a HandlerContext that carries the active DB transaction
@@ -55,9 +55,9 @@ export async function handleModuleUpdated(
   if (vleClient) {
     const result = await vleClient.upsertCourse({ moduleId, code, title, creditValue });
     await upsertCourseMapping(tx, tenantId, moduleId, result.vleCourseId, { title, code });
-    log.debug({ moduleId, vleCourseId: result.vleCourseId }, 'F015: module-updated → VLE course upserted');
+    log.debug({ moduleId, vleCourseId: result.vleCourseId }, 'F-SIS-VLE-01: module-updated → VLE course upserted');
   } else {
-    log.debug({ moduleId }, 'F015: module-updated — vleClient unavailable, skipping VLE write');
+    log.debug({ moduleId }, 'F-SIS-VLE-01: module-updated — vleClient unavailable, skipping VLE write');
   }
 }
 
@@ -71,7 +71,7 @@ export async function handleStudentEnrolled(
   const { tx, tenantId, log } = ctx;
 
   await upsertStudentEnrolment(tx, tenantId, enrolmentId, personId);
-  log.debug({ personId, enrolmentId }, 'F015: student.enrolled → enrolment map seeded');
+  log.debug({ personId, enrolmentId }, 'F-SIS-VLE-01: student.enrolled → enrolment map seeded');
 }
 
 // ── student.status-changed ────────────────────────────────────────────────────
@@ -84,7 +84,7 @@ export async function handleStudentStatusChanged(
   const { tx, tenantId, vleClient, log } = ctx;
 
   if (!enrolmentId || !newStatus) {
-    log.warn({ eventId: envelope.id }, 'F015: status-changed — missing payload fields, skipping');
+    log.warn({ eventId: envelope.id }, 'F-SIS-VLE-01: status-changed — missing payload fields, skipping');
     return;
   }
 
@@ -97,7 +97,7 @@ export async function handleStudentStatusChanged(
     .where(and(eq(enrolmentMap.tenantId, tenantId), eq(enrolmentMap.enrolmentId, enrolmentId)));
 
   if (rows.length === 0) {
-    log.debug({ enrolmentId, newStatus }, 'F015: status-changed — no module registrations found, skipping');
+    log.debug({ enrolmentId, newStatus }, 'F-SIS-VLE-01: status-changed — no module registrations found, skipping');
     return;
   }
 
@@ -114,7 +114,7 @@ export async function handleStudentStatusChanged(
 
   log.debug(
     { enrolmentId, newStatus, vleStatus, count: rows.length },
-    'F015: status-changed → VLE enrolment statuses updated',
+    'F-SIS-VLE-01: status-changed → VLE enrolment statuses updated',
   );
 }
 
@@ -132,7 +132,7 @@ export async function handleModuleRegistered(
   if (!personId) {
     log.warn(
       { enrolmentId, moduleRegistrationId },
-      'F015: module-registered — personId not found in enrolment map; marking processed for later reconciliation',
+      'F-SIS-VLE-01: module-registered — personId not found in enrolment map; marking processed for later reconciliation',
     );
     // Still mark as processed — reconciliation job will repair later.
     return;
@@ -143,7 +143,7 @@ export async function handleModuleRegistered(
   if (!courseMapping) {
     log.warn(
       { moduleId, moduleRegistrationId },
-      'F015: module-registered — no course mapping found; marking processed for later reconciliation',
+      'F-SIS-VLE-01: module-registered — no course mapping found; marking processed for later reconciliation',
     );
     return;
   }
@@ -166,7 +166,7 @@ export async function handleModuleRegistered(
     });
     log.debug(
       { moduleRegistrationId, vleEnrolmentId: result.vleEnrolmentId },
-      'F015: module-registered → VLE enrolment created',
+      'F-SIS-VLE-01: module-registered → VLE enrolment created',
     );
   } else {
     await upsertEnrolmentMapping(tx, tenantId, {
@@ -176,7 +176,7 @@ export async function handleModuleRegistered(
       personId,
       statusCode: 'active',
     });
-    log.debug({ moduleRegistrationId }, 'F015: module-registered — local map recorded, vleClient unavailable');
+    log.debug({ moduleRegistrationId }, 'F-SIS-VLE-01: module-registered — local map recorded, vleClient unavailable');
   }
 }
 
@@ -190,13 +190,13 @@ export async function handleModuleRegistrationWithdrawn(
   const { tx, tenantId, vleClient, log } = ctx;
 
   if (!moduleRegistrationId) {
-    log.warn({ eventId: envelope.id }, 'F015: module-registration-withdrawn — missing moduleRegistrationId, skipping');
+    log.warn({ eventId: envelope.id }, 'F-SIS-VLE-01: module-registration-withdrawn — missing moduleRegistrationId, skipping');
     return;
   }
 
   const existing = await getEnrolmentMapping(tx, tenantId, moduleRegistrationId);
   if (!existing) {
-    log.debug({ moduleRegistrationId }, 'F015: withdrawal — no enrolment map row found, skipping');
+    log.debug({ moduleRegistrationId }, 'F-SIS-VLE-01: withdrawal — no enrolment map row found, skipping');
     return;
   }
 
@@ -209,7 +209,7 @@ export async function handleModuleRegistrationWithdrawn(
   }
   await updateEnrolmentStatus(tx, tenantId, moduleRegistrationId, 'withdrawn');
 
-  log.debug({ moduleRegistrationId }, 'F015: module-registration-withdrawn → VLE enrolment withdrawn');
+  log.debug({ moduleRegistrationId }, 'F-SIS-VLE-01: module-registration-withdrawn → VLE enrolment withdrawn');
 }
 
 // ── enrolment.module-registration-completed ───────────────────────────────────
@@ -222,13 +222,13 @@ export async function handleModuleRegistrationCompleted(
   const { tx, tenantId, vleClient, log } = ctx;
 
   if (!moduleRegistrationId) {
-    log.warn({ eventId: envelope.id }, 'F015: module-registration-completed — missing moduleRegistrationId, skipping');
+    log.warn({ eventId: envelope.id }, 'F-SIS-VLE-01: module-registration-completed — missing moduleRegistrationId, skipping');
     return;
   }
 
   const existing = await getEnrolmentMapping(tx, tenantId, moduleRegistrationId);
   if (!existing) {
-    log.debug({ moduleRegistrationId }, 'F015: completion — no enrolment map row found, skipping');
+    log.debug({ moduleRegistrationId }, 'F-SIS-VLE-01: completion — no enrolment map row found, skipping');
     return;
   }
 
@@ -241,5 +241,5 @@ export async function handleModuleRegistrationCompleted(
   }
   await updateEnrolmentStatus(tx, tenantId, moduleRegistrationId, 'completed');
 
-  log.debug({ moduleRegistrationId }, 'F015: module-registration-completed → VLE enrolment completed');
+  log.debug({ moduleRegistrationId }, 'F-SIS-VLE-01: module-registration-completed → VLE enrolment completed');
 }

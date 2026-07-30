@@ -10,7 +10,7 @@ import { w } from './wellbeing-case.js';
  * that retrospective audit can reconstruct what the adjustment was at the
  * point it was applied to an assessment (Equality Act requirement).
  *
- * Writes to SRS are only via F063 (disability adjustments) and F066
+ * Writes to SRS are only via F-WELL-SIS-01 (disability adjustments) and F-WELL-SIS-02
  * (assessment venue), never directly to SRS tables.
  */
 export const adjustmentCases = w.table('adjustment_case', {
@@ -25,7 +25,7 @@ export const adjustmentCases = w.table('adjustment_case', {
   recommendedAdjustment: text('recommended_adjustment'),
   rationale:             text('rationale'),
   dsaEntitlementId:      uuid('dsa_entitlement_id'),
-  srsApplicationRef:     text('srs_application_ref'),           // ref returned by F063/F066 after approval
+  srsApplicationRef:     text('srs_application_ref'),           // ref returned by F-WELL-SIS-01/F-WELL-SIS-02 after approval
   actorId:               text('actor_id').notNull(),
   validFrom:             timestamp('valid_from',    { withTimezone: true }).notNull(),
   validTo:               timestamp('valid_to',      { withTimezone: true }),

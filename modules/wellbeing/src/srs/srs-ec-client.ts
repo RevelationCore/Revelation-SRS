@@ -1,5 +1,5 @@
 /**
- * SRS EC handoff client — wraps the F066 POST endpoint.
+ * SRS EC handoff client — wraps the F-WELL-SIS-02 POST endpoint.
  *
  * POST /api/v1/students/:personId/exceptional-circumstances
  * Body: { enrolmentId, moduleOfferingId?, outcomeCode, determinationDate, notes? }
@@ -59,7 +59,7 @@ export class SrsEcHttpClient implements SrsEcClient {
 
     if (!res.ok) {
       const text = await res.text().catch(() => '');
-      throw new Error(`SRS F066 EC handoff failed: ${res.status} ${res.statusText} — ${text}`);
+      throw new Error(`SRS F-WELL-SIS-02 EC handoff failed: ${res.status} ${res.statusText} — ${text}`);
     }
 
     const data = await res.json() as { exceptionalCircumstancesId: string };

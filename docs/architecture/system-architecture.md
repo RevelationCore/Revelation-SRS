@@ -181,11 +181,11 @@ Separate deployable services that connect external institutional systems to the 
 
 | Adapter | Pattern | Flows |
 |---|---|---|
-| VLE Connector | NATS subscriber (outbound) + REST consumer (inbound) | F015, F016, F059 |
-| UCAS Adapter | REST + file | F045, F046 |
-| HESA Adapter | File (outbound annual) | F047, F048 |
-| SLC Adapter | REST + file | F049, F050 |
-| UKVI Adapter | REST + file | F051, F052 |
+| VLE Connector | NATS subscriber (outbound) + REST consumer (inbound) | F-SIS-VLE-01, F-VLE-SIS-01, F-SIS-VLE-02 |
+| UCAS Adapter | REST + file | F-UCAS-SIS-01, F-SIS-UCAS-01 |
+| HESA Adapter | File (outbound annual) | F-SIS-HESA-01, F-HESA-SIS-01 |
+| SLC Adapter | REST + file | F-SIS-SLC-01, F-SLC-SIS-01 |
+| UKVI Adapter | REST + file | F-SIS-UKVI-01, F-UKVI-SIS-01 |
 
 ---
 

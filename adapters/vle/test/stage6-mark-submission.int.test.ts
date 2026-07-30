@@ -1,5 +1,5 @@
 /**
- * Stage 6 — Mark Submission Flow (F016).
+ * Stage 6 — Mark Submission Flow (F-VLE-SIS-01).
  *
  * Verifies:
  * - MarkSubmissionService.submitMark: posts mark to SRS and stores receipt.
@@ -24,7 +24,7 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import type { DomainEventEnvelope } from '@revelation-srs/domain';
 import type { AssessmentModuleResultRatifiedV1Payload } from '@revelation-srs/domain';
 
-import { getMarkReceipt } from '../src/consumers/f016/mark-receipt-repository.js';
+import { getMarkReceipt } from '../src/consumers/f-vle-sis-01/mark-receipt-repository.js';
 import { VleEventConsumer } from '../src/consumers/vle-event-consumer.js';
 import { markReceipt } from '../src/db/schema/mark-receipt.js';
 import { eventLedger } from '../src/db/schema/event-ledger.js';

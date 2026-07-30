@@ -1,7 +1,7 @@
 # UCAS Admissions Exchange
 
 > Contract ID: `ucas-admissions-exchange.v1`
-> Flows: F045 (application ingestion), F046 (confirmation outbound)
+> Flows: F-UCAS-SIS-01 (application ingestion), F-SIS-UCAS-01 (confirmation outbound)
 > Direction: Bidirectional
 > Pattern: REST API (JSON)
 > Data classification: personal / regulatory

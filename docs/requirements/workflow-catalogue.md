@@ -131,7 +131,7 @@
 | `not_upheld` | Student notified | `closed` | System |
 
 ### On reaching `upheld`
-- Approved EC outcome transmitted to SIS core (F066)
+- Approved EC outcome transmitted to SIS core (F-WELL-SIS-02)
 - SIS records EC flag bitemporally against student and module
 - Flag surfaced in next Exam Board data pack
 - Domain event `srs.exceptional-circumstances.flagged` published
@@ -171,11 +171,11 @@
 | `panel_hearing_scheduled` | Hearing conducted | `panel_hearing` | Panel |
 | `panel_hearing` | Panel deliberates | `decision_made` | Panel |
 | `decision_made` | Penalty determined | `penalty_applied` | AI Officer |
-| `penalty_applied` | Outcome transmitted to SIS (F069) | `closed` | System |
+| `penalty_applied` | Outcome transmitted to SIS (F-AI-SIS-01) | `closed` | System |
 | `no_case_to_answer` | Student notified | `closed` | System |
 
 ### On reaching `penalty_applied`
-- Outcome and penalty transmitted to SIS (F069)
+- Outcome and penalty transmitted to SIS (F-AI-SIS-01)
 - SIS records against student and assessment
 - Misconduct flag surfaced in Exam Board data pack
 - Domain event `srs.misconduct.outcome-recorded` published
@@ -206,8 +206,8 @@
 |---|---|---|---|
 | `marks_collection` | All module results confirmed | `data_preparation` | System |
 | `data_preparation` | Data pack generated | `pre_board_review` | Registry |
-| `pre_board_review` | External examiner confirmation received (F068) | `board_meeting` | System |
-| `board_meeting` | Board ratification recorded (F065) | `ratified` | Exam Board Chair |
+| `pre_board_review` | External examiner confirmation received (F-EXTEX-EXAMBOARD-01) | `board_meeting` | System |
+| `board_meeting` | Board ratification recorded (F-EXAMBOARD-SIS-01) | `ratified` | Exam Board Chair |
 | `ratified` | Record lock applied to all covered records | `records_locked` | System |
 | `records_locked` | SLC notification sent (if applicable) | — | System |
 | `records_locked` | Results publication approved | `results_published` | Registry |
@@ -361,7 +361,7 @@
 | `under_review` | Review complete, no action | `resolved_no_action` | Compliance Officer |
 | `contact_student` | Satisfactory explanation | `resolved_no_action` | Compliance Officer |
 | `contact_student` | No satisfactory explanation / no response | `sponsor_action_required` | Compliance Officer |
-| `sponsor_action_required` | UKVI notified (F051) | `reported_to_ukvi` | System |
+| `sponsor_action_required` | UKVI notified (F-SIS-UKVI-01) | `reported_to_ukvi` | System |
 | `resolved_no_action` | Case closed | `closed` | System |
 | `reported_to_ukvi` | Case closed | `closed` | System |
 
@@ -426,7 +426,7 @@
 
 ### On reaching `closed`
 - Enrolment status updated to Graduated (bitemporally)
-- EDRMS notified of certificate record (F023)
+- EDRMS notified of certificate record (F-SIS-EDRMS-01)
 - IAM account status updated
 - Domain event `srs.student.graduated` published
 
@@ -454,6 +454,6 @@
 |---|---|---|---|
 | `request_raised` | Verification initiated | `verification_pending` | Registry |
 | `verification_pending` | Verification complete | `verified` | Registry |
-| `verified` | CAS submitted to UKVI (F051) | `cas_created` | System |
+| `verified` | CAS submitted to UKVI (F-SIS-UKVI-01) | `cas_created` | System |
 | `cas_created` | CAS reference received | `cas_issued_to_student` | System |
 | `cas_issued_to_student` | Student notified | `closed` | System |

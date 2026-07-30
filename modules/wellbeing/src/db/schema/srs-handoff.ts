@@ -11,7 +11,7 @@ import { w } from './wellbeing-case.js';
  * is ever created and only one SRS submission is ever attempted.
  *
  * The background processor (or synchronous post-approve step) reads pending
- * rows and POSTs to the SRS F063 endpoint.
+ * rows and POSTs to the SRS F-WELL-SIS-01 endpoint.
  */
 export const srsHandoffOutbox = w.table('srs_handoff_outbox', {
   id:                uuid('id').primaryKey().defaultRandom(),

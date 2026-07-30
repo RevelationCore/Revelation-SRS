@@ -1,5 +1,5 @@
 /**
- * SRS adjustment handoff client — wraps the F063 POST endpoint.
+ * SRS adjustment handoff client — wraps the F-WELL-SIS-01 POST endpoint.
  *
  * POST /api/v1/students/:personId/adjustments
  * Body: { enrolmentId, adjustmentTypeCode, scopeCode, validFrom, validTo?, notes? }
@@ -61,7 +61,7 @@ export class SrsAdjustmentHttpClient implements SrsAdjustmentClient {
 
     if (!res.ok) {
       const text = await res.text().catch(() => '');
-      throw new Error(`SRS F063 handoff failed: ${res.status} ${res.statusText} — ${text}`);
+      throw new Error(`SRS F-WELL-SIS-01 handoff failed: ${res.status} ${res.statusText} — ${text}`);
     }
 
     const data = await res.json() as { adjustmentId: string };

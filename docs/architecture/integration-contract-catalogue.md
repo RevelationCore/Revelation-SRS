@@ -28,60 +28,60 @@ Every contract below must be implemented with the full field set above. Where de
 
 | Contract ID | Flows | Direction | Pattern | Owner module | Trigger | Failure handling | Replay / backfill | Idempotency key | Security scope | Data classification |
 |---|---|---|---|---|---|---|---|---|---|---|
-| `curriculum-catalogue-sync.v1` | F001 | Inbound | REST/file | Enrolment & Registration | CM update/scheduled poll | Reject invalid payload; alert; retain prior version | Full catalogue snapshot | CM version hash | `integration-service:curriculum:write` | Standard |
-| `curriculum-performance-metrics.v1` | F002 | Outbound | Event/file | Enrolment & Registration | Period close/on demand | Retry/DLQ; alert | Metrics snapshot API | Report period + programme | `integration-service:curriculum:read` | Sensitive aggregate |
-| `timetable-demand-feed.v1` | F003 | Outbound | Event/file | Enrolment & Registration | Registration change/scheduled extract | Retry/DLQ; alert | Module-registration snapshot | Extract period + module offering | `integration-service:timetable:read` | Personal |
-| `timetable-publication.v1` | F004 | Inbound | REST/file | Enrolment & Registration | TTB publication | Reject invalid publication; retain prior version | TTB resubmits publication | TTB publication version | `integration-service:timetable:write` | Personal |
-| `crm-admissions-feed.v1` | F005 | Inbound | REST/file | Student Identity | CRM applicant/offer push | Validation error to CRM; alert | CRM resubmits application | CRM application reference | `integration-service:crm:write` | Personal |
-| `crm-student-lifecycle-updates.v1` | F006 | Outbound | Event | Student Identity | Student lifecycle event | Retry/DLQ; alert | Student lifecycle snapshot | Event ID | `integration-service:crm:read` | Personal |
-| `library-obligations.v1` | F007 | Inbound | REST | Student Standing / Enrolment | Library obligation notice | Reject invalid notice; alert | Library resends open obligations | Library item/fine reference | `integration-service:library:write` | Sensitive |
-| `library-access-entitlement.v1` | F008 | Outbound | Event | Student Identity | Enrolment/status change | Retry/DLQ; alert | Student snapshot | Event ID | `integration-service:library:read` | Personal |
-| `finance-fee-liability.v1` | F009 | Outbound | Event/file | Enrolment & Registration | Fee liability change | Retry/DLQ; alert | Fee-liability snapshot | Fee liability ID + version | `integration-service:finance:read` | Sensitive |
-| `finance-payment-and-hold.v1` | F010 | Inbound | REST | Enrolment & Registration | Finance payment/hold update | Reject invalid payload; alert | Finance resends transaction | Finance payment/hold reference | `integration-service:finance:write` | Sensitive |
-| `portal-self-service-update.v1` | F011 | Inbound | REST | Student Identity / Enrolment | User self-service action | RFC 7807; audit; workflow fallback | User retries operation | Portal operation reference | Human RBAC | Personal / special-category where declarations |
-| `portal-student-record-read.v1` | F012 | Outbound/read | REST | All domain modules | User reads portal data | RFC 7807; read audit where required | Current/historical API query | Request ID | Human RBAC | Personal / sensitive / special-category |
-| `attendance-records-alerts.v1` | F013 | Inbound | REST/event | Engagement / Compliance | AM attendance event/alert | Reject invalid event; alert | AM resends from high-water mark | AM event ID | `integration-service:attendance:write` | Sensitive / regulatory |
-| `attendance-roster-feed.v1` | F014 | Outbound | Event/file | Enrolment & Registration | Registration/calendar change | Retry/DLQ; alert | Roster snapshot | Event/extract ID | `integration-service:attendance:read` | Personal |
-| `vle-course-provisioning.v1` | F015 | Outbound | Event | Enrolment & Registration | Enrolment/module registration change | Retry/DLQ; alert | Course provisioning snapshot | Event ID | `integration-service:vle:read` | Personal |
-| `vle-assessment-results.v1` | F016 | Inbound | REST | Assessment | VLE grade/completion push | Reject invalid result; reconciliation queue | VLE resends by submission reference | VLE submission/result reference | `integration-service:vle:write` | Sensitive |
-| `accommodation-eligibility.v1` | F017 | Outbound | Event/file | Student Identity | Enrolment/profile change | Retry/DLQ; alert | Eligibility snapshot | Event/extract ID | `integration-service:accommodation:read` | Personal |
-| `accommodation-booking-status.v1` | F018 | Inbound | REST/file | Student Standing / Enrolment | Accommodation booking update | Reject invalid update; alert | ACC resends booking state | ACC booking reference | `integration-service:accommodation:write` | Personal |
-| `estates-occupancy-forecast.v1` | F019 | Outbound | File/event | Reporting | Scheduled forecast | Retry; alert | Forecast extract | Forecast period | `integration-service:estates:read` | Aggregate |
-| `estates-room-availability.v1` | F020 | Inbound | REST/file | Timetable support | Estates availability update | Reject invalid update; alert | EST resends availability snapshot | EST publication reference | `integration-service:estates:write` | Standard |
-| `iam-account-provisioning.v1` | F021 | Outbound | Event | Student Identity | Student status/access change | Retry/DLQ; alert | Account eligibility snapshot | Event ID | `integration-service:iam:read` | Personal |
-| `iam-account-state.v1` | F022 | Inbound | REST/event | Student Identity | IAM account state event | Reject invalid update; reconciliation queue | IAM resends from high-water mark | IAM event ID | `integration-service:iam:write` | Sensitive |
-| `document-archive-submission.v1` | F023 | Outbound | REST/file | Records / Governance | Document generated | Retry; alert; manual repair | Document resend by document ID | Student document ID + version | `integration-service:edrms:write` | Personal / sensitive |
-| `document-archive-confirmation.v1` | F024 | Inbound | REST/event | Records / Governance | EDRMS archive confirmation | Reject invalid confirmation; alert | EDRMS resends confirmation | EDRMS document reference | `integration-service:edrms:write` | Personal / sensitive |
-| `identity-verification-request.v1` | F025 | Outbound | REST | Student Identity | Verification requested | Retry; manual review on failure | Request resend by check ID | Verification check ID | `integration-service:oiv:write` | Sensitive |
-| `identity-verification-outcome.v1` | F026 | Inbound | REST/webhook | Student Identity | OIV outcome callback | Reject invalid outcome; alert | OIV resends outcome | Provider verification reference | `integration-service:oiv:write` | Sensitive |
-| `bi-student-performance-feed.v1` | F027 | Outbound | Event/file | Reporting | Scheduled/on demand extract | Retry; alert | Extract by high-water mark | Extract ID | `integration-service:bi:read` | Sensitive |
-| `bi-risk-flags.v1` | F028 | Inbound | REST/event | Engagement / Student Support | BI risk flag | Reject invalid flag; audit lawful basis | BI resends by flag ID | BI flag ID | `integration-service:bi:write` | Sensitive |
-| `dw-student-extract.v1` | F029 | Outbound | File/event | Reporting | Scheduled extract | Retry; alert | Full or incremental extract | Extract ID/high-water mark | `integration-service:dw:read` | Sensitive |
-| `dw-data-quality-feedback.v1` | F030 | Inbound | REST/file | Data Administration | DW quality report | Reject invalid report; alert | DW resends issue list | DW issue/report reference | `integration-service:dw:write` | Sensitive |
-| `sets-survey-roster.v1` | F031 | Outbound | File/API | Enrolment & Registration | Survey window opens | Retry; alert | Roster snapshot | Survey period + module | `integration-service:sets:read` | Personal |
-| `sets-survey-summary.v1` | F032 | Inbound | REST/file | Reporting | Survey summary published | Reject invalid aggregate | SETS resends summary | Survey summary reference | `integration-service:sets:write` | Aggregate |
-| `hr-student-staff-roles.v1` | F033 | Outbound | Event/file | HR/Payroll support | Student-staff role change | Retry; alert | Role snapshot | Event/extract ID | `integration-service:hr:read` | Sensitive |
-| `hr-staff-assignments.v1` | F034 | Inbound | REST/event | Enrolment & Registration | HR assignment confirmation | Reject invalid assignment; alert | HR resends assignments | HR assignment reference | `integration-service:hr:write` | Personal |
-| `payroll-student-pay-authorisation.v1` | F035 | Outbound | File/API | Finance support | Payment authorisation approved | Retry; alert | Authorisation snapshot | Authorisation ID | `integration-service:payroll:read` | Sensitive |
-| `payroll-payment-confirmation.v1` | F036 | Inbound | REST/file | Finance support | Payroll payment confirmation | Reject invalid payment; alert | Payroll resends payment | Payroll payment reference | `integration-service:payroll:write` | Sensitive |
-| `cris-pgr-profile.v1` | F037 | Outbound | REST/event | Research / PGR | PGR enrolment/profile change | Retry; alert | PGR profile snapshot | Event ID | `integration-service:cris:read` | Personal |
-| `cris-pgr-milestones.v1` | F038 | Inbound | REST/event | Research / PGR | CRIS milestone update | Reject invalid milestone; alert | CRIS resends milestone | CRIS milestone reference | `integration-service:cris:write` | Sensitive |
-| `research-proposal-eligibility.v1` | F039 | Outbound | REST/API | Research / PGR | Eligibility request/change | Retry; alert | Eligibility snapshot | Request ID | `integration-service:research-proposals:read` | Personal |
-| `research-studentship-award.v1` | F040 | Inbound | REST/API | Research / Finance support | Studentship award notification | Reject invalid award; alert | RP resends award | RP award reference | `integration-service:research-proposals:write` | Sensitive |
-| `cms-cohort-personalisation.v1` | F041 | Outbound | API/event | Student Identity / Reporting | Cohort/programme change | Retry; alert | Cohort snapshot | Event/extract ID | `integration-service:cms:read` | Personal |
-| `cms-policy-publication.v1` | F042 | Inbound | REST/event | Records / Compliance | CMS policy publication | Reject invalid notice; alert | CMS resends notice | CMS publication ID | `integration-service:cms:write` | Standard / regulatory |
-| `itsm-student-context.v1` | F043 | Outbound | API | Student Identity | ITSM context lookup | RFC 7807; read audit where required | Current API lookup | Request ID | `integration-service:itsm:read` | Personal / sensitive |
-| `itsm-account-impact.v1` | F044 | Inbound | REST/event | Student Identity | ITSM account-impact update | Reject invalid update; alert | ITSM resends case outcome | ITSM ticket reference | `integration-service:itsm:write` | Sensitive |
-| `ucas-admissions-exchange.{cycle}` | F045, F046 | Bidirectional | File/API | Student Identity / Admissions | UCAS cycle exchange | Validation report; retry; manual reconciliation | UCAS file/API replay | UCAS transaction/reference | `integration-service:ucas` | Personal / regulatory |
-| `hesa-student-return.{year}` | F047, F048 | Bidirectional | File | Regulatory Compliance | HESA return lifecycle | Validation issue workflow; amendments | Regenerate return from source transaction time | HESA submission reference | `integration-service:hesa` | Regulatory |
-| `slc-enrolment-exchange.v1` | F049, F050 | Bidirectional | File/API | Regulatory / Finance | Enrolment/payment exchange | Retry; reconciliation workflow | SLC exchange replay/snapshot | SLC transaction reference | `integration-service:slc` | Sensitive / regulatory |
-| `ukvi-sponsor-compliance.v1` | F051, F052 | Bidirectional | API/file | Regulatory Compliance | CAS/attendance/visa event | Retry; compliance escalation | UKVI case/exchange replay | UKVI/CAS reference | `integration-service:ukvi` | Sensitive / regulatory |
-| `ofs-regulatory-extracts.v1` | F071 | Outbound | REST/file | Regulatory Compliance | Scheduled or on-demand extract generation | Retry; alert | Regenerate from source transaction time | Extract ID | `integration-service:ofs` | Regulatory |
-| `ofs-regulatory-extracts.v1` | F071 | Outbound | REST/file | Regulatory Compliance | Scheduled or on-demand extract | Retry; alert | Regenerate from source transaction time | Extract ID | `integration-service:ofs` | Regulatory |
+| `curriculum-catalogue-sync.v1` | F-CM-SIS-01 | Inbound | REST/file | Enrolment & Registration | CM update/scheduled poll | Reject invalid payload; alert; retain prior version | Full catalogue snapshot | CM version hash | `integration-service:curriculum:write` | Standard |
+| `curriculum-performance-metrics.v1` | F-SIS-CM-01 | Outbound | Event/file | Enrolment & Registration | Period close/on demand | Retry/DLQ; alert | Metrics snapshot API | Report period + programme | `integration-service:curriculum:read` | Sensitive aggregate |
+| `timetable-demand-feed.v1` | F-SIS-TTB-01 | Outbound | Event/file | Enrolment & Registration | Registration change/scheduled extract | Retry/DLQ; alert | Module-registration snapshot | Extract period + module offering | `integration-service:timetable:read` | Personal |
+| `timetable-publication.v1` | F-TTB-SIS-01 | Inbound | REST/file | Enrolment & Registration | TTB publication | Reject invalid publication; retain prior version | TTB resubmits publication | TTB publication version | `integration-service:timetable:write` | Personal |
+| `crm-admissions-feed.v1` | F-CRM-SIS-01 | Inbound | REST/file | Student Identity | CRM applicant/offer push | Validation error to CRM; alert | CRM resubmits application | CRM application reference | `integration-service:crm:write` | Personal |
+| `crm-student-lifecycle-updates.v1` | F-SIS-CRM-01 | Outbound | Event | Student Identity | Student lifecycle event | Retry/DLQ; alert | Student lifecycle snapshot | Event ID | `integration-service:crm:read` | Personal |
+| `library-obligations.v1` | F-LIB-SIS-01 | Inbound | REST | Student Standing / Enrolment | Library obligation notice | Reject invalid notice; alert | Library resends open obligations | Library item/fine reference | `integration-service:library:write` | Sensitive |
+| `library-access-entitlement.v1` | F-SIS-LIB-01 | Outbound | Event | Student Identity | Enrolment/status change | Retry/DLQ; alert | Student snapshot | Event ID | `integration-service:library:read` | Personal |
+| `finance-fee-liability.v1` | F-SIS-FIN-01 | Outbound | Event/file | Enrolment & Registration | Fee liability change | Retry/DLQ; alert | Fee-liability snapshot | Fee liability ID + version | `integration-service:finance:read` | Sensitive |
+| `finance-payment-and-hold.v1` | F-FIN-SIS-01 | Inbound | REST | Enrolment & Registration | Finance payment/hold update | Reject invalid payload; alert | Finance resends transaction | Finance payment/hold reference | `integration-service:finance:write` | Sensitive |
+| `portal-self-service-update.v1` | F-EWP-SIS-01 | Inbound | REST | Student Identity / Enrolment | User self-service action | RFC 7807; audit; workflow fallback | User retries operation | Portal operation reference | Human RBAC | Personal / special-category where declarations |
+| `portal-student-record-read.v1` | F-SIS-EWP-01 | Outbound/read | REST | All domain modules | User reads portal data | RFC 7807; read audit where required | Current/historical API query | Request ID | Human RBAC | Personal / sensitive / special-category |
+| `attendance-records-alerts.v1` | F-AM-SIS-01 | Inbound | REST/event | Engagement / Compliance | AM attendance event/alert | Reject invalid event; alert | AM resends from high-water mark | AM event ID | `integration-service:attendance:write` | Sensitive / regulatory |
+| `attendance-roster-feed.v1` | F-SIS-AM-01 | Outbound | Event/file | Enrolment & Registration | Registration/calendar change | Retry/DLQ; alert | Roster snapshot | Event/extract ID | `integration-service:attendance:read` | Personal |
+| `vle-course-provisioning.v1` | F-SIS-VLE-01 | Outbound | Event | Enrolment & Registration | Enrolment/module registration change | Retry/DLQ; alert | Course provisioning snapshot | Event ID | `integration-service:vle:read` | Personal |
+| `vle-assessment-results.v1` | F-VLE-SIS-01 | Inbound | REST | Assessment | VLE grade/completion push | Reject invalid result; reconciliation queue | VLE resends by submission reference | VLE submission/result reference | `integration-service:vle:write` | Sensitive |
+| `accommodation-eligibility.v1` | F-SIS-ACC-01 | Outbound | Event/file | Student Identity | Enrolment/profile change | Retry/DLQ; alert | Eligibility snapshot | Event/extract ID | `integration-service:accommodation:read` | Personal |
+| `accommodation-booking-status.v1` | F-ACC-SIS-01 | Inbound | REST/file | Student Standing / Enrolment | Accommodation booking update | Reject invalid update; alert | ACC resends booking state | ACC booking reference | `integration-service:accommodation:write` | Personal |
+| `estates-occupancy-forecast.v1` | F-SIS-EST-01 | Outbound | File/event | Reporting | Scheduled forecast | Retry; alert | Forecast extract | Forecast period | `integration-service:estates:read` | Aggregate |
+| `estates-room-availability.v1` | F-EST-SIS-01 | Inbound | REST/file | Timetable support | Estates availability update | Reject invalid update; alert | EST resends availability snapshot | EST publication reference | `integration-service:estates:write` | Standard |
+| `iam-account-provisioning.v1` | F-SIS-IAM-01 | Outbound | Event | Student Identity | Student status/access change | Retry/DLQ; alert | Account eligibility snapshot | Event ID | `integration-service:iam:read` | Personal |
+| `iam-account-state.v1` | F-IAM-SIS-01 | Inbound | REST/event | Student Identity | IAM account state event | Reject invalid update; reconciliation queue | IAM resends from high-water mark | IAM event ID | `integration-service:iam:write` | Sensitive |
+| `document-archive-submission.v1` | F-SIS-EDRMS-01 | Outbound | REST/file | Records / Governance | Document generated | Retry; alert; manual repair | Document resend by document ID | Student document ID + version | `integration-service:edrms:write` | Personal / sensitive |
+| `document-archive-confirmation.v1` | F-EDRMS-SIS-01 | Inbound | REST/event | Records / Governance | EDRMS archive confirmation | Reject invalid confirmation; alert | EDRMS resends confirmation | EDRMS document reference | `integration-service:edrms:write` | Personal / sensitive |
+| `identity-verification-request.v1` | F-SIS-OIV-01 | Outbound | REST | Student Identity | Verification requested | Retry; manual review on failure | Request resend by check ID | Verification check ID | `integration-service:oiv:write` | Sensitive |
+| `identity-verification-outcome.v1` | F-OIV-SIS-01 | Inbound | REST/webhook | Student Identity | OIV outcome callback | Reject invalid outcome; alert | OIV resends outcome | Provider verification reference | `integration-service:oiv:write` | Sensitive |
+| `bi-student-performance-feed.v1` | F-SIS-BI-01 | Outbound | Event/file | Reporting | Scheduled/on demand extract | Retry; alert | Extract by high-water mark | Extract ID | `integration-service:bi:read` | Sensitive |
+| `bi-risk-flags.v1` | F-BI-SIS-01 | Inbound | REST/event | Engagement / Student Support | BI risk flag | Reject invalid flag; audit lawful basis | BI resends by flag ID | BI flag ID | `integration-service:bi:write` | Sensitive |
+| `dw-student-extract.v1` | F-SIS-DW-01 | Outbound | File/event | Reporting | Scheduled extract | Retry; alert | Full or incremental extract | Extract ID/high-water mark | `integration-service:dw:read` | Sensitive |
+| `dw-data-quality-feedback.v1` | F-DW-SIS-01 | Inbound | REST/file | Data Administration | DW quality report | Reject invalid report; alert | DW resends issue list | DW issue/report reference | `integration-service:dw:write` | Sensitive |
+| `sets-survey-roster.v1` | F-SIS-SETS-01 | Outbound | File/API | Enrolment & Registration | Survey window opens | Retry; alert | Roster snapshot | Survey period + module | `integration-service:sets:read` | Personal |
+| `sets-survey-summary.v1` | F-SETS-SIS-01 | Inbound | REST/file | Reporting | Survey summary published | Reject invalid aggregate | SETS resends summary | Survey summary reference | `integration-service:sets:write` | Aggregate |
+| `hr-student-staff-roles.v1` | F-SIS-HR-01 | Outbound | Event/file | HR/Payroll support | Student-staff role change | Retry; alert | Role snapshot | Event/extract ID | `integration-service:hr:read` | Sensitive |
+| `hr-staff-assignments.v1` | F-HR-SIS-01 | Inbound | REST/event | Enrolment & Registration | HR assignment confirmation | Reject invalid assignment; alert | HR resends assignments | HR assignment reference | `integration-service:hr:write` | Personal |
+| `payroll-student-pay-authorisation.v1` | F-SIS-PAY-01 | Outbound | File/API | Finance support | Payment authorisation approved | Retry; alert | Authorisation snapshot | Authorisation ID | `integration-service:payroll:read` | Sensitive |
+| `payroll-payment-confirmation.v1` | F-PAY-SIS-01 | Inbound | REST/file | Finance support | Payroll payment confirmation | Reject invalid payment; alert | Payroll resends payment | Payroll payment reference | `integration-service:payroll:write` | Sensitive |
+| `cris-pgr-profile.v1` | F-SIS-CRIS-01 | Outbound | REST/event | Research / PGR | PGR enrolment/profile change | Retry; alert | PGR profile snapshot | Event ID | `integration-service:cris:read` | Personal |
+| `cris-pgr-milestones.v1` | F-CRIS-SIS-01 | Inbound | REST/event | Research / PGR | CRIS milestone update | Reject invalid milestone; alert | CRIS resends milestone | CRIS milestone reference | `integration-service:cris:write` | Sensitive |
+| `research-proposal-eligibility.v1` | F-SIS-RP-01 | Outbound | REST/API | Research / PGR | Eligibility request/change | Retry; alert | Eligibility snapshot | Request ID | `integration-service:research-proposals:read` | Personal |
+| `research-studentship-award.v1` | F-RP-SIS-01 | Inbound | REST/API | Research / Finance support | Studentship award notification | Reject invalid award; alert | RP resends award | RP award reference | `integration-service:research-proposals:write` | Sensitive |
+| `cms-cohort-personalisation.v1` | F-SIS-CMS-01 | Outbound | API/event | Student Identity / Reporting | Cohort/programme change | Retry; alert | Cohort snapshot | Event/extract ID | `integration-service:cms:read` | Personal |
+| `cms-policy-publication.v1` | F-CMS-SIS-01 | Inbound | REST/event | Records / Compliance | CMS policy publication | Reject invalid notice; alert | CMS resends notice | CMS publication ID | `integration-service:cms:write` | Standard / regulatory |
+| `itsm-student-context.v1` | F-SIS-ITSM-01 | Outbound | API | Student Identity | ITSM context lookup | RFC 7807; read audit where required | Current API lookup | Request ID | `integration-service:itsm:read` | Personal / sensitive |
+| `itsm-account-impact.v1` | F-ITSM-SIS-01 | Inbound | REST/event | Student Identity | ITSM account-impact update | Reject invalid update; alert | ITSM resends case outcome | ITSM ticket reference | `integration-service:itsm:write` | Sensitive |
+| `ucas-admissions-exchange.{cycle}` | F-UCAS-SIS-01, F-SIS-UCAS-01 | Bidirectional | File/API | Student Identity / Admissions | UCAS cycle exchange | Validation report; retry; manual reconciliation | UCAS file/API replay | UCAS transaction/reference | `integration-service:ucas` | Personal / regulatory |
+| `hesa-student-return.{year}` | F-SIS-HESA-01, F-HESA-SIS-01 | Bidirectional | File | Regulatory Compliance | HESA return lifecycle | Validation issue workflow; amendments | Regenerate return from source transaction time | HESA submission reference | `integration-service:hesa` | Regulatory |
+| `slc-enrolment-exchange.v1` | F-SIS-SLC-01, F-SLC-SIS-01 | Bidirectional | File/API | Regulatory / Finance | Enrolment/payment exchange | Retry; reconciliation workflow | SLC exchange replay/snapshot | SLC transaction reference | `integration-service:slc` | Sensitive / regulatory |
+| `ukvi-sponsor-compliance.v1` | F-SIS-UKVI-01, F-UKVI-SIS-01 | Bidirectional | API/file | Regulatory Compliance | CAS/attendance/visa event | Retry; compliance escalation | UKVI case/exchange replay | UKVI/CAS reference | `integration-service:ukvi` | Sensitive / regulatory |
+| `ofs-regulatory-extracts.v1` | F-SIS-OFS-01 | Outbound | REST/file | Regulatory Compliance | Scheduled or on-demand extract generation | Retry; alert | Regenerate from source transaction time | Extract ID | `integration-service:ofs` | Regulatory |
+| `ofs-regulatory-extracts.v1` | F-SIS-OFS-01 | Outbound | REST/file | Regulatory Compliance | Scheduled or on-demand extract | Retry; alert | Regenerate from source transaction time | Extract ID | `integration-service:ofs` | Regulatory |
 
 | Contract ID | Flows | Direction | Pattern | Notes |
 |---|---|---|---|---|
-| `ofs-regulatory-extracts.v1` | F071 | Outbound | REST/file | OfS B3 student data extract and widening participation / access and participation extract; versioned per academic year |
+| `ofs-regulatory-extracts.v1` | F-SIS-OFS-01 | Outbound | REST/file | OfS B3 student data extract and widening participation / access and participation extract; versioned per academic year |
 
 ---
 
@@ -90,7 +90,7 @@ Every contract below must be implemented with the full field set above. Where de
 | Field | Value |
 |---|---|
 | **Contract ID** | `ofs-regulatory-extracts.v1` |
-| **Flows** | F071 |
+| **Flows** | F-SIS-OFS-01 |
 | **Direction** | Outbound |
 | **Pattern** | REST API (JSON payload, downloadable as file) |
 | **Owner module** | Regulatory Compliance |
@@ -109,22 +109,22 @@ Every contract below must be implemented with the full field set above. Where de
 
 ---
 
-| `wellbeing-student-context.v1` | F053 | Outbound/read | REST | Wellbeing module / Core | Casework context read | RFC 7807; read audit | Bitemporal API query | Request ID | `wellbeing-advisor` / service account | Special-category |
-| `vle-learning-analytics.v1` | F055 | Context | External | Not SRS-owned | VLE to BI | Not implemented by SRS | Not implemented by SRS | External | External | Context |
-| `attendance-bi-feed.v1` | F056 | Context | External | Not SRS-owned | AM to BI | Not implemented by SRS | Not implemented by SRS | External | External | Context |
-| `dw-to-bi-context.v1` | F057 | Context | External | Not SRS-owned | DW to BI | Not implemented by SRS | Not implemented by SRS | External | External | Context |
-| `crm-portal-communications.v1` | F058 | Context | External | Not SRS-owned | CRM to EWP | Not implemented by SRS | Not implemented by SRS | External | External | Context |
-| `vle-adjustments.v1` | F059 | Outbound | Event | Assessment / Adjustments | Adjustment approved/distributed | Retry/DLQ; distribution failure event | Adjustment snapshot | Distribution ID/event ID | `integration-service:vle:write` | Special-category |
-| `attendance-adjustments.v1` | F060 | Outbound | Event | Assessment / Adjustments | Attendance adjustment approved | Retry/DLQ; distribution failure event | Adjustment snapshot | Distribution ID/event ID | `integration-service:attendance:write` | Special-category |
-| `exam-scheduling-entries.v1` | F061 | Outbound | Event/file | Exam Board & Governance | Exam entries/accommodations generated | Retry; alert | Exam-entry snapshot | Exam entry ID | `integration-service:exams:read` | Sensitive / special-category |
-| `exam-scheduling-publication.v1` | F062 | Inbound | REST/file | Exam Board & Governance | Exam timetable publication | Reject invalid publication; alert | EXAMS republishes timetable | Exam publication reference | `integration-service:exams:write` | Sensitive |
-| `wellbeing-adjustment-outcome.v1` | F063 | Inbound | Internal REST | Assessment / Adjustments | Approved adjustment outcome | Reject invalid outcome; audit | Wellbeing resends outcome | Wellbeing case/outcome reference | Wellbeing service account | Special-category |
-| `exam-board-data-pack.v1` | F064 | Human/UI | REST/UI | Exam Board & Governance | Board pack generated/read | RBAC denial/RFC 7807; read audit | Regenerate from source transaction time | Data pack ID/version | Exam board roles | Sensitive / special-category |
-| `exam-board-ratification.v1` | F065 | Human/UI | REST/Temporal | Exam Board & Governance | Chair ratifies board | Workflow retry/audit; manual correction | Workflow query/history | Workflow/task ID | Exam board chair | Sensitive |
-| `wellbeing-ec-outcome.v1` | F066 | Inbound | Internal REST | Exam Board & Governance | Approved EC outcome | Reject invalid outcome; audit | Wellbeing resends outcome | Wellbeing case/outcome reference | Wellbeing service account | Special-category |
-| `external-examiner-review.v1` | F067, F068 | Human/UI | REST/UI/Temporal | Exam Board & Governance | External review/signoff | RBAC denial/RFC 7807; read audit | Board pack query | Signoff task ID | External examiner role | Sensitive / special-category |
-| `academic-integrity-outcome.v1` | F069 | Inbound | REST/event | Assessment | AI confirmed outcome | Reject invalid outcome; audit | AI resends outcome | AI case/outcome reference | `integration-service:academic-integrity:write` | Sensitive |
-| `academic-integrity-context.v1` | F070 | Outbound | REST/event | Assessment | Misconduct case opened/context requested | RFC 7807; read audit | Current/bitemporal context API | Request/event ID | `integration-service:academic-integrity:read` | Sensitive |
+| `wellbeing-student-context.v1` | F-SIS-WELL-01 | Outbound/read | REST | Wellbeing module / Core | Casework context read | RFC 7807; read audit | Bitemporal API query | Request ID | `wellbeing-advisor` / service account | Special-category |
+| `vle-learning-analytics.v1` | F-VLE-BI-01 | Context | External | Not SRS-owned | VLE to BI | Not implemented by SRS | Not implemented by SRS | External | External | Context |
+| `attendance-bi-feed.v1` | F-AM-BI-01 | Context | External | Not SRS-owned | AM to BI | Not implemented by SRS | Not implemented by SRS | External | External | Context |
+| `dw-to-bi-context.v1` | F-DW-BI-01 | Context | External | Not SRS-owned | DW to BI | Not implemented by SRS | Not implemented by SRS | External | External | Context |
+| `crm-portal-communications.v1` | F-CRM-EWP-01 | Context | External | Not SRS-owned | CRM to EWP | Not implemented by SRS | Not implemented by SRS | External | External | Context |
+| `vle-adjustments.v1` | F-SIS-VLE-02 | Outbound | Event | Assessment / Adjustments | Adjustment approved/distributed | Retry/DLQ; distribution failure event | Adjustment snapshot | Distribution ID/event ID | `integration-service:vle:write` | Special-category |
+| `attendance-adjustments.v1` | F-SIS-AM-02 | Outbound | Event | Assessment / Adjustments | Attendance adjustment approved | Retry/DLQ; distribution failure event | Adjustment snapshot | Distribution ID/event ID | `integration-service:attendance:write` | Special-category |
+| `exam-scheduling-entries.v1` | F-SIS-EXAMS-01 | Outbound | Event/file | Exam Board & Governance | Exam entries/accommodations generated | Retry; alert | Exam-entry snapshot | Exam entry ID | `integration-service:exams:read` | Sensitive / special-category |
+| `exam-scheduling-publication.v1` | F-EXAMS-SIS-01 | Inbound | REST/file | Exam Board & Governance | Exam timetable publication | Reject invalid publication; alert | EXAMS republishes timetable | Exam publication reference | `integration-service:exams:write` | Sensitive |
+| `wellbeing-adjustment-outcome.v1` | F-WELL-SIS-01 | Inbound | Internal REST | Assessment / Adjustments | Approved adjustment outcome | Reject invalid outcome; audit | Wellbeing resends outcome | Wellbeing case/outcome reference | Wellbeing service account | Special-category |
+| `exam-board-data-pack.v1` | F-SIS-EXAMBOARD-01 | Human/UI | REST/UI | Exam Board & Governance | Board pack generated/read | RBAC denial/RFC 7807; read audit | Regenerate from source transaction time | Data pack ID/version | Exam board roles | Sensitive / special-category |
+| `exam-board-ratification.v1` | F-EXAMBOARD-SIS-01 | Human/UI | REST/Temporal | Exam Board & Governance | Chair ratifies board | Workflow retry/audit; manual correction | Workflow query/history | Workflow/task ID | Exam board chair | Sensitive |
+| `wellbeing-ec-outcome.v1` | F-WELL-SIS-02 | Inbound | Internal REST | Exam Board & Governance | Approved EC outcome | Reject invalid outcome; audit | Wellbeing resends outcome | Wellbeing case/outcome reference | Wellbeing service account | Special-category |
+| `external-examiner-review.v1` | F-SIS-EXTEX-01, F-EXTEX-EXAMBOARD-01 | Human/UI | REST/UI/Temporal | Exam Board & Governance | External review/signoff | RBAC denial/RFC 7807; read audit | Board pack query | Signoff task ID | External examiner role | Sensitive / special-category |
+| `academic-integrity-outcome.v1` | F-AI-SIS-01 | Inbound | REST/event | Assessment | AI confirmed outcome | Reject invalid outcome; audit | AI resends outcome | AI case/outcome reference | `integration-service:academic-integrity:write` | Sensitive |
+| `academic-integrity-context.v1` | F-SIS-AI-01 | Outbound | REST/event | Assessment | Misconduct case opened/context requested | RFC 7807; read audit | Current/bitemporal context API | Request/event ID | `integration-service:academic-integrity:read` | Sensitive |
 
 ---
 
@@ -133,7 +133,7 @@ Every contract below must be implemented with the full field set above. Where de
 | Field | Value |
 |---|---|
 | **Contract ID** | `curriculum-catalogue-sync.v1` |
-| **Flows** | F001 |
+| **Flows** | F-CM-SIS-01 |
 | **Direction** | Inbound |
 | **Pattern** | REST or file (institution choice) |
 | **Owner module** | Enrolment & Registration |
@@ -146,7 +146,7 @@ Every contract below must be implemented with the full field set above. Where de
 | Field | Value |
 |---|---|
 | **Contract ID** | `curriculum-performance-metrics.v1` |
-| **Flows** | F002 |
+| **Flows** | F-SIS-CM-01 |
 | **Direction** | Outbound |
 | **Pattern** | Event / scheduled file |
 | **Owner module** | Regulatory Compliance |
@@ -162,7 +162,7 @@ Every contract below must be implemented with the full field set above. Where de
 | Field | Value |
 |---|---|
 | **Contract ID** | `timetable-demand-feed.v1` |
-| **Flows** | F003 |
+| **Flows** | F-SIS-TTB-01 |
 | **Direction** | Outbound |
 | **Pattern** | Event (`srs.enrolment.module-registered`) + scheduled file |
 | **Owner module** | Enrolment & Registration |
@@ -173,7 +173,7 @@ Every contract below must be implemented with the full field set above. Where de
 | Field | Value |
 |---|---|
 | **Contract ID** | `timetable-publication.v1` |
-| **Flows** | F004 |
+| **Flows** | F-TTB-SIS-01 |
 | **Direction** | Inbound |
 | **Pattern** | REST POST or file |
 | **Owner module** | Enrolment & Registration |
@@ -189,7 +189,7 @@ Every contract below must be implemented with the full field set above. Where de
 | Field | Value |
 |---|---|
 | **Contract ID** | `crm-admissions-feed.v1` |
-| **Flows** | F005 |
+| **Flows** | F-CRM-SIS-01 |
 | **Direction** | Inbound |
 | **Pattern** | REST or file |
 | **Owner module** | Student Identity / Admissions workflow |
@@ -201,7 +201,7 @@ Every contract below must be implemented with the full field set above. Where de
 | Field | Value |
 |---|---|
 | **Contract ID** | `crm-student-lifecycle-updates.v1` |
-| **Flows** | F006 |
+| **Flows** | F-SIS-CRM-01 |
 | **Direction** | Outbound |
 | **Pattern** | Event (`srs.student.enrolled`, `srs.student.status-changed`, `srs.award.conferred`) |
 | **Owner module** | Student Identity |
@@ -216,7 +216,7 @@ Every contract below must be implemented with the full field set above. Where de
 | Field | Value |
 |---|---|
 | **Contract ID** | `finance-fee-liability.v1` |
-| **Flows** | F009 |
+| **Flows** | F-SIS-FIN-01 |
 | **Direction** | Outbound |
 | **Pattern** | Event (`srs.enrolment.fee-liability-generated`) |
 | **Owner module** | Enrolment & Registration |
@@ -227,7 +227,7 @@ Every contract below must be implemented with the full field set above. Where de
 | Field | Value |
 |---|---|
 | **Contract ID** | `finance-payment-and-hold.v1` |
-| **Flows** | F010 |
+| **Flows** | F-FIN-SIS-01 |
 | **Direction** | Inbound |
 | **Pattern** | REST POST |
 | **Owner module** | Enrolment & Registration |
@@ -242,7 +242,7 @@ Every contract below must be implemented with the full field set above. Where de
 | Field | Value |
 |---|---|
 | **Contract ID** | `library-access-entitlement.v1` |
-| **Flows** | F008 |
+| **Flows** | F-SIS-LIB-01 |
 | **Direction** | Outbound |
 | **Pattern** | Event (`srs.student.enrolled`, `srs.student.status-changed`) |
 | **Owner module** | Student Identity |
@@ -252,7 +252,7 @@ Every contract below must be implemented with the full field set above. Where de
 | Field | Value |
 |---|---|
 | **Contract ID** | `library-obligations.v1` |
-| **Flows** | F007 |
+| **Flows** | F-LIB-SIS-01 |
 | **Direction** | Inbound |
 | **Pattern** | REST POST |
 | **Owner module** | Student Identity |
@@ -267,7 +267,7 @@ Every contract below must be implemented with the full field set above. Where de
 | Field | Value |
 |---|---|
 | **Contract ID** | `portal-student-record-read.v1` |
-| **Flows** | F012 |
+| **Flows** | F-SIS-EWP-01 |
 | **Direction** | Outbound (read) |
 | **Pattern** | REST GET |
 | **Owner module** | All domain modules |
@@ -277,7 +277,7 @@ Every contract below must be implemented with the full field set above. Where de
 | Field | Value |
 |---|---|
 | **Contract ID** | `portal-self-service-update.v1` |
-| **Flows** | F011 |
+| **Flows** | F-EWP-SIS-01 |
 | **Direction** | Inbound |
 | **Pattern** | REST PATCH / POST |
 | **Owner module** | Student Identity / Enrolment & Registration |
@@ -291,9 +291,9 @@ Every contract below must be implemented with the full field set above. Where de
 
 | Contract ID | Flows | Direction | Pattern | Owner | Notes |
 |---|---|---|---|---|---|
-| `attendance-roster-feed.v1` | F014 | Outbound | Event + file | Enrolment | Module rosters, academic calendar, adjustment distribution |
-| `attendance-records-alerts.v1` | F013 | Inbound | REST / event | Student Identity | Attendance events and absence alerts; `ukviRelevant` flag required |
-| `attendance-adjustments.v1` | F060 | Outbound | Event (`srs.adjustment.distributed`) | Assessment | Approved attendance adjustments from SIS only |
+| `attendance-roster-feed.v1` | F-SIS-AM-01 | Outbound | Event + file | Enrolment | Module rosters, academic calendar, adjustment distribution |
+| `attendance-records-alerts.v1` | F-AM-SIS-01 | Inbound | REST / event | Student Identity | Attendance events and absence alerts; `ukviRelevant` flag required |
+| `attendance-adjustments.v1` | F-SIS-AM-02 | Outbound | Event (`srs.adjustment.distributed`) | Assessment | Approved attendance adjustments from SIS only |
 
 ---
 
@@ -301,9 +301,9 @@ Every contract below must be implemented with the full field set above. Where de
 
 | Contract ID | Flows | Direction | Pattern | Owner | Notes |
 |---|---|---|---|---|---|
-| `vle-course-provisioning.v1` | F015 | Outbound | Event | Enrolment | `srs.student.enrolled`, `srs.enrolment.module-registered`, `srs.student.status-changed` |
-| `vle-assessment-results.v1` | F016 | Inbound | REST POST | Assessment | Marks, completion status, academic alerts; idempotency key = VLE submission reference |
-| `vle-adjustments.v1` | F059 | Outbound | Event (`srs.adjustment.distributed`) | Assessment | Approved adjustments from SIS only; VLE must not receive directly from Wellbeing |
+| `vle-course-provisioning.v1` | F-SIS-VLE-01 | Outbound | Event | Enrolment | `srs.student.enrolled`, `srs.enrolment.module-registered`, `srs.student.status-changed` |
+| `vle-assessment-results.v1` | F-VLE-SIS-01 | Inbound | REST POST | Assessment | Marks, completion status, academic alerts; idempotency key = VLE submission reference |
+| `vle-adjustments.v1` | F-SIS-VLE-02 | Outbound | Event (`srs.adjustment.distributed`) | Assessment | Approved adjustments from SIS only; VLE must not receive directly from Wellbeing |
 
 ---
 
@@ -311,8 +311,8 @@ Every contract below must be implemented with the full field set above. Where de
 
 | Contract ID | Flows | Direction | Pattern | Owner | Notes |
 |---|---|---|---|---|---|
-| `iam-account-provisioning.v1` | F021 | Outbound | Event | Student Identity | `srs.student.enrolled`, `srs.student.status-changed`; triggers account create / update / deactivate |
-| `iam-account-state.v1` | F022 | Inbound | REST / event | Student Identity | Credential updates, account locks, role assignments; must not overwrite SRS-owned RBAC decisions |
+| `iam-account-provisioning.v1` | F-SIS-IAM-01 | Outbound | Event | Student Identity | `srs.student.enrolled`, `srs.student.status-changed`; triggers account create / update / deactivate |
+| `iam-account-state.v1` | F-IAM-SIS-01 | Inbound | REST / event | Student Identity | Credential updates, account locks, role assignments; must not overwrite SRS-owned RBAC decisions |
 
 ---
 
@@ -320,8 +320,8 @@ Every contract below must be implemented with the full field set above. Where de
 
 | Contract ID | Flows | Direction | Pattern | Owner | Notes |
 |---|---|---|---|---|---|
-| `exam-scheduling-entries.v1` | F061 | Outbound | Event / file | Exam Board | Exam entries, module registrations, approved physical accommodations |
-| `exam-scheduling-publication.v1` | F062 | Inbound | REST / file | Exam Board | Final timetable, seating plans, candidate numbers |
+| `exam-scheduling-entries.v1` | F-SIS-EXAMS-01 | Outbound | Event / file | Exam Board | Exam entries, module registrations, approved physical accommodations |
+| `exam-scheduling-publication.v1` | F-EXAMS-SIS-01 | Inbound | REST / file | Exam Board | Final timetable, seating plans, candidate numbers |
 
 ---
 
@@ -329,9 +329,9 @@ Every contract below must be implemented with the full field set above. Where de
 
 | Contract ID | Flows | Pattern | Notes |
 |---|---|---|---|
-| `exam-board-data-pack.v1` | F064 | REST + UI | Secure board pack served to authorised board members; not an external system adapter |
-| `exam-board-ratification.v1` | F065 | REST + Temporal signal | Ratified decisions submitted via UI; triggers record lock workflow |
-| `external-examiner-review.v1` | F067, F068 | REST + UI | Scoped read access to candidate profiles; confirmation returned via UI/signal |
+| `exam-board-data-pack.v1` | F-SIS-EXAMBOARD-01 | REST + UI | Secure board pack served to authorised board members; not an external system adapter |
+| `exam-board-ratification.v1` | F-EXAMBOARD-SIS-01 | REST + Temporal signal | Ratified decisions submitted via UI; triggers record lock workflow |
+| `external-examiner-review.v1` | F-SIS-EXTEX-01, F-EXTEX-EXAMBOARD-01 | REST + UI | Scoped read access to candidate profiles; confirmation returned via UI/signal |
 
 ---
 
@@ -339,8 +339,8 @@ Every contract below must be implemented with the full field set above. Where de
 
 | Contract ID | Flows | Direction | Pattern | Owner | Notes |
 |---|---|---|---|---|---|
-| `academic-integrity-context.v1` | F070 | Outbound | REST / event | Assessment | Student identity, module registrations, submission context for case management |
-| `academic-integrity-outcome.v1` | F069 | Inbound | REST POST | Assessment | Confirmed outcome and penalty; idempotency key = AI system case reference |
+| `academic-integrity-context.v1` | F-SIS-AI-01 | Outbound | REST / event | Assessment | Student identity, module registrations, submission context for case management |
+| `academic-integrity-outcome.v1` | F-AI-SIS-01 | Inbound | REST POST | Assessment | Confirmed outcome and penalty; idempotency key = AI system case reference |
 
 ---
 
@@ -348,9 +348,9 @@ Every contract below must be implemented with the full field set above. Where de
 
 | Contract ID | Flows | Direction | Pattern | Notes |
 |---|---|---|---|---|
-| `wellbeing-student-context.v1` | F053 | Outbound / read | REST (scoped) | Core provides student profiles, disability declarations, academic performance; RLS enforced |
-| `wellbeing-adjustment-outcome.v1` | F063 | Inbound | Internal REST | Approved adjustment outcomes only; Core distributes downstream; Wellbeing does not publish to downstream systems directly |
-| `wellbeing-ec-outcome.v1` | F066 | Inbound | Internal REST | Approved EC outcomes only; Core surfaces to board |
+| `wellbeing-student-context.v1` | F-SIS-WELL-01 | Outbound / read | REST (scoped) | Core provides student profiles, disability declarations, academic performance; RLS enforced |
+| `wellbeing-adjustment-outcome.v1` | F-WELL-SIS-01 | Inbound | Internal REST | Approved adjustment outcomes only; Core distributes downstream; Wellbeing does not publish to downstream systems directly |
+| `wellbeing-ec-outcome.v1` | F-WELL-SIS-02 | Inbound | Internal REST | Approved EC outcomes only; Core surfaces to board |
 
 ---
 
@@ -358,10 +358,10 @@ Every contract below must be implemented with the full field set above. Where de
 
 | Contract ID | Flows | Direction | Pattern | Notes |
 |---|---|---|---|---|
-| `ucas-admissions-exchange.{cycle}` | F045, F046 | Bidirectional | File / API | Applications, offers, clearing, enrolment confirmation, withdrawal / deferral / no-show; versioned per UCAS cycle |
-| `hesa-student-return.{year}` | F047, F048 | Bidirectional | File | Return generation, validation report, HESA IDs, amendments; versioned per HESA coding manual year |
-| `slc-enrolment-exchange.v1` | F049, F050 | Bidirectional | File / API | Enrolment confirmation, status changes, loan entitlement, payments, overpayments |
-| `ukvi-sponsor-compliance.v1` | F051, F052 | Bidirectional | API / file | CAS requests, attendance compliance data, visa status updates, sponsor alerts |
+| `ucas-admissions-exchange.{cycle}` | F-UCAS-SIS-01, F-SIS-UCAS-01 | Bidirectional | File / API | Applications, offers, clearing, enrolment confirmation, withdrawal / deferral / no-show; versioned per UCAS cycle |
+| `hesa-student-return.{year}` | F-SIS-HESA-01, F-HESA-SIS-01 | Bidirectional | File | Return generation, validation report, HESA IDs, amendments; versioned per HESA coding manual year |
+| `slc-enrolment-exchange.v1` | F-SIS-SLC-01, F-SLC-SIS-01 | Bidirectional | File / API | Enrolment confirmation, status changes, loan entitlement, payments, overpayments |
+| `ukvi-sponsor-compliance.v1` | F-SIS-UKVI-01, F-UKVI-SIS-01 | Bidirectional | API / file | CAS requests, attendance compliance data, visa status updates, sponsor alerts |
 
 ---
 
@@ -369,10 +369,10 @@ Every contract below must be implemented with the full field set above. Where de
 
 | Contract ID | Flows | Direction | Pattern | Notes |
 |---|---|---|---|---|
-| `bi-student-performance-feed.v1` | F027 | Outbound | Event / file | Structured performance, enrolment, progression extracts |
-| `bi-risk-flags.v1` | F028 | Inbound | REST / event | At-risk flags; SRS records as `student_risk_flag`; lawful basis required |
-| `dw-student-extract.v1` | F029 | Outbound | File / scheduled event | Full and incremental extracts; high-water mark approach for incremental |
-| `dw-data-quality-feedback.v1` | F030 | Inbound | REST / file | Reconciliation alerts; SRS records as `data_quality_issue` |
+| `bi-student-performance-feed.v1` | F-SIS-BI-01 | Outbound | Event / file | Structured performance, enrolment, progression extracts |
+| `bi-risk-flags.v1` | F-BI-SIS-01 | Inbound | REST / event | At-risk flags; SRS records as `student_risk_flag`; lawful basis required |
+| `dw-student-extract.v1` | F-SIS-DW-01 | Outbound | File / scheduled event | Full and incremental extracts; high-water mark approach for incremental |
+| `dw-data-quality-feedback.v1` | F-DW-SIS-01 | Inbound | REST / file | Reconciliation alerts; SRS records as `data_quality_issue` |
 
 ---
 
@@ -380,12 +380,12 @@ Every contract below must be implemented with the full field set above. Where de
 
 | Contract ID | Flows | Direction | Pattern | Notes |
 |---|---|---|---|---|
-| `hr-staff-assignments.v1` | F034 | Inbound | REST / event | Tutor / supervisor assignment confirmations |
-| `hr-student-staff-roles.v1` | F033 | Outbound | Event / file | GTA and student-staff role data |
-| `payroll-student-pay-authorisation.v1` | F035 | Outbound | File / API | Bursary and GTA payment authorisations |
-| `payroll-payment-confirmation.v1` | F036 | Inbound | REST / file | Bursary / stipend payment confirmations |
-| `cris-pgr-profile.v1` | F037 | Outbound | REST / event | PGR enrolment and researcher profile |
-| `cris-pgr-milestones.v1` | F038 | Inbound | REST / event | Research milestones and publications |
+| `hr-staff-assignments.v1` | F-HR-SIS-01 | Inbound | REST / event | Tutor / supervisor assignment confirmations |
+| `hr-student-staff-roles.v1` | F-SIS-HR-01 | Outbound | Event / file | GTA and student-staff role data |
+| `payroll-student-pay-authorisation.v1` | F-SIS-PAY-01 | Outbound | File / API | Bursary and GTA payment authorisations |
+| `payroll-payment-confirmation.v1` | F-PAY-SIS-01 | Inbound | REST / file | Bursary / stipend payment confirmations |
+| `cris-pgr-profile.v1` | F-SIS-CRIS-01 | Outbound | REST / event | PGR enrolment and researcher profile |
+| `cris-pgr-milestones.v1` | F-CRIS-SIS-01 | Inbound | REST / event | Research milestones and publications |
 
 ---
 
@@ -395,10 +395,10 @@ The following flows are present in the reference model but do not involve the SR
 
 | Flow | Direction | Status |
 |---|---|---|
-| F055 | VLE → BI | Reference context only |
-| F056 | AM → BI | Reference context only |
-| F057 | DW → BI | Reference context only |
-| F058 | CRM → EWP | Reference context only |
+| F-VLE-BI-01 | VLE → BI | Reference context only |
+| F-AM-BI-01 | AM → BI | Reference context only |
+| F-DW-BI-01 | DW → BI | Reference context only |
+| F-CRM-EWP-01 | CRM → EWP | Reference context only |
 
 ---
 

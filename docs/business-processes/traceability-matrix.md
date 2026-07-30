@@ -11,16 +11,18 @@ Data findings BPR-D01–BPR-D19 have a completed [logical/physical delta assessm
 
 ## Domain crosswalk
 
-| BP range | Domain | Existing workflows | Principal integration flows/contracts | Principal data areas | Initial finding |
+Principal integration flows are summarised by system pair below; see the [Enterprise Reference Model](../reference/revelation-student-records-reference-model.md) for the specific `F-<FROM>-<TO>-<nn>` identifiers each pair covers.
+
+| BP range | Domain | Existing workflows | Principal system pairs | Principal data areas | Initial finding |
 |---|---|---|---|---|---|
-| BP-01-001–BP-01-007 | Recruitment and admissions | W001, W012 | F005–F006, F025–F026, F045–F046, F051–F052 | `student_application`, `admissions_offer`, identity and CAS entities | W001 requires decomposition |
-| BP-02-001–BP-02-012 | Registration and status | W001, W007, W010, W012 | F007–F016, F021–F022, F045–F052 | identity, enrolment, fee, hold, re-registration and compliance entities | Transfer/return/closure coverage incomplete |
-| BP-03-001–BP-03-007 | Curriculum and modules | None complete | F001–F004, F014–F016, F031, F034, F037–F040 | programme, route, module, registration, staff and research entities | No durable module-registration or PGR setup workflow |
-| BP-04-001–BP-04-006 | Learning, engagement and support | W002, W003, W009 | F013–F014, F027–F028, F053, F059–F063, F066 | attendance, engagement, adjustment, EC and research milestones | PGR progress absent from workflow catalogue |
-| BP-05-001–BP-05-011 | Assessment and results | W004, W005, W006 | F016, F061–F070 | assessment, marks, results, boards, misconduct and amendment entities | W005 spans several business outcomes |
-| BP-06-001–BP-06-006 | Progression, awards and graduation | W005, W011 | F012, F023–F024, F029 | progression, award, document and research completion data | PGR completion only partially represented |
-| BP-07-001–BP-07-008 | Regulatory/statutory | W008, W009, W012 | F047–F052 and F071 | HESA, SLC, CAS/visa/compliance and extracts | Scotland/Wales/NI regulator/funder contracts absent |
-| BP-08-001–BP-08-006 | Record governance | W006 partial | F023–F024, F030, affected entity contracts | identity, bitemporal versions, audit, documents | DSAR, rights and retention workflows absent |
+| BP-01-001–BP-01-007 | Recruitment and admissions | W001, W012 | CRM↔SIS, OIV↔SIS, UCAS↔SIS, UKVI↔SIS | `student_application`, `admissions_offer`, identity and CAS entities | W001 requires decomposition |
+| BP-02-001–BP-02-012 | Registration and status | W001, W007, W010, W012 | LIB↔SIS, FIN↔SIS, EWP↔SIS, AM↔SIS, VLE↔SIS, IAM↔SIS, UCAS↔SIS, HESA↔SIS, SLC↔SIS, UKVI↔SIS | identity, enrolment, fee, hold, re-registration and compliance entities | Transfer/return/closure coverage incomplete |
+| BP-03-001–BP-03-007 | Curriculum and modules | None complete | CM↔SIS, TTB↔SIS, AM←SIS, VLE↔SIS, SETS←SIS, HR→SIS, CRIS↔SIS, RP↔SIS | programme, route, module, registration, staff and research entities | No durable module-registration or PGR setup workflow |
+| BP-04-001–BP-04-006 | Learning, engagement and support | W002, W003, W009 | AM↔SIS, BI↔SIS, WELL↔SIS, VLE←SIS, EXAMS↔SIS | attendance, engagement, adjustment, EC and research milestones | PGR progress absent from workflow catalogue |
+| BP-05-001–BP-05-011 | Assessment and results | W004, W005, W006 | VLE→SIS, EXAMS↔SIS, WELL→SIS, EXAMBOARD↔SIS, EXTEX↔SIS/EXAMBOARD, AI↔SIS | assessment, marks, results, boards, misconduct and amendment entities | W005 spans several business outcomes |
+| BP-06-001–BP-06-006 | Progression, awards and graduation | W005, W011 | EWP←SIS, EDRMS↔SIS, DW←SIS | progression, award, document and research completion data | PGR completion only partially represented |
+| BP-07-001–BP-07-008 | Regulatory/statutory | W008, W009, W012 | HESA↔SIS, SLC↔SIS, UKVI↔SIS, OfS←SIS | HESA, SLC, CAS/visa/compliance and extracts | Scotland/Wales/NI regulator/funder contracts absent |
+| BP-08-001–BP-08-006 | Record governance | W006 partial | EDRMS↔SIS, DW→SIS, affected entity contracts | identity, bitemporal versions, audit, documents | DSAR, rights and retention workflows absent |
 
 ## Pilot detailed crosswalk
 
@@ -72,7 +74,7 @@ Data findings BPR-D01–BPR-D19 have a completed [logical/physical delta assessm
 Before SME approval:
 
 - every W001–W012 workflow must map to at least one BP page;
-- every F001–F071 flow must map to at least one BP page or carry an exclusion rationale;
+- every reference-model flow (all 69, plus the locally added `F-SIS-OFS-01`) must map to at least one BP page or carry an exclusion rationale;
 - every core student entity must have creation, material change, correction and closure/retention coverage;
 - each national regulator/funder boundary must have an owned process or explicit out-of-scope decision; and
 - PGR lifecycle gaps must be resolved or explicitly deferred.

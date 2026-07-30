@@ -22,9 +22,9 @@ import {
   handleModuleUpdated,
   handleStudentEnrolled,
   handleStudentStatusChanged,
-} from './f015/handlers.js';
-import { handleModuleResultRatified } from './f016/handlers.js';
-import { handleAdjustmentDistributed } from './f059/handlers.js';
+} from './f-sis-vle-01/handlers.js';
+import { handleModuleResultRatified } from './f-vle-sis-01/handlers.js';
+import { handleAdjustmentDistributed } from './f-sis-vle-02/handlers.js';
 
 export const VLE_SUBSCRIBED_SUBJECTS = [
   'srs.catalogue.programme-updated',

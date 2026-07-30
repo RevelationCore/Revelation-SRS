@@ -1,5 +1,5 @@
 /**
- * F016 — Mark Submission Flow handlers.
+ * F-VLE-SIS-01 — Mark Submission Flow handlers.
  *
  * Handles the inbound direction: SRS ratified result events update the VLE
  * display state so students and staff see the authoritative grade.
@@ -29,20 +29,20 @@ export async function handleModuleResultRatified(
   const { vleClient, log } = ctx;
 
   if (!vleClient) {
-    log.debug({ moduleRegistrationId }, 'F016: module-result-ratified — vleClient unavailable, skipping');
+    log.debug({ moduleRegistrationId }, 'F-VLE-SIS-01: module-result-ratified — vleClient unavailable, skipping');
     return;
   }
 
   try {
     await vleClient.setRatifiedResult({ moduleRegistrationId, aggregateMark, resultCode, ratifiedAt });
-    log.debug({ moduleRegistrationId, resultCode, aggregateMark }, 'F016: ratified result updated in VLE');
+    log.debug({ moduleRegistrationId, resultCode, aggregateMark }, 'F-VLE-SIS-01: ratified result updated in VLE');
   } catch (err) {
     const status = (err as { status?: number }).status;
     if (status === 404) {
       // Module registration not in VLE (not enrolled or reconciliation gap) — warn and continue.
       log.warn(
         { moduleRegistrationId, resultCode },
-        'F016: module-result-ratified — enrolment not found in VLE, skipping result update',
+        'F-VLE-SIS-01: module-result-ratified — enrolment not found in VLE, skipping result update',
       );
       return;
     }

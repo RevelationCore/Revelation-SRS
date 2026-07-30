@@ -1,7 +1,7 @@
 # Exam Scheduling Exchange
 
 > Contract ID: `exam-scheduling.v1`
-> Flows: F061 (exam entries outbound), F062 (exam schedule inbound)
+> Flows: F-SIS-EXAMS-01 (exam entries outbound), F-EXAMS-SIS-01 (exam schedule inbound)
 > Direction: Bidirectional
 > Pattern: REST API (JSON)
 > Data classification: sensitive (contains candidate numbers and accommodations)

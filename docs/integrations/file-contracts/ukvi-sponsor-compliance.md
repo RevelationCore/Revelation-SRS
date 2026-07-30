@@ -1,7 +1,7 @@
 # UKVI Sponsor Compliance
 
 > Contract ID: `ukvi-sponsor-compliance.v1`
-> Flows: F051 (CAS management), F052 (attendance compliance and visa status)
+> Flows: F-SIS-UKVI-01 (CAS management), F-UKVI-SIS-01 (attendance compliance and visa status)
 > Direction: Bidirectional
 > Pattern: REST API (JSON)
 > Data classification: regulatory (personal and special-category where accommodations are included)

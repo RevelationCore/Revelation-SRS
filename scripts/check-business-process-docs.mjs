@@ -115,7 +115,7 @@ for (const file of processPages) {
     if (!contents.includes(nation)) errors.push(`${displayPath}: missing national section ${nation}`);
   }
 
-  if (/\bSIS\b/.test(contents)) {
+  if (/(?<!-)\bSIS\b(?!-)/.test(contents)) {
     errors.push(`${displayPath}: uses non-canonical unqualified system name SIS`);
   }
 

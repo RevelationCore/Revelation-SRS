@@ -59,7 +59,7 @@ The working inventory now has a draft page for every identifier from BP-01-001 t
 |---|---|---|
 | `BP-dd-nnn` | Business process page, domain-scoped | This library |
 | `Wnnn` | Durable Revelation workflow | [Workflow Catalogue](../requirements/workflow-catalogue.md) |
-| `Fnnn` | Enterprise reference-model integration flow | [Reference Model](../reference/revelation-student-records-reference-model.md) |
+| `F-<FROM>-<TO>-nn` | Enterprise reference-model integration flow, system-pair-scoped | [Reference Model](../reference/revelation-student-records-reference-model.md) |
 | `REQ-AREA-nnn` | Revelation functional requirement | [Functional Requirements](../requirements/functional-requirements.md) |
 
 These identifiers are related through traceability but are not interchangeable.
@@ -72,7 +72,7 @@ The initial audit found:
 
 - Revelation SRS reports v1.0.0 and all roadmap phases complete, while the actor catalogue, workflow catalogue, and workflow traceability matrix still carry draft phase labels.
 - W001 combines admissions and enrolment, and W007 combines withdrawal and intermission; detailed business documentation needs smaller outcome-oriented processes.
-- Existing documentation describes 69 interactions in the F001–F070 range (with no F054), while the integration catalogue also defines F071 for OfS extracts.
+- Existing documentation describes 69 reference-model interactions (identified as `F-<FROM>-<TO>-<nn>`), while the integration catalogue also defines `F-SIS-OFS-01` for OfS extracts, a local extension beyond the origin model.
 - PGR entities and integrations exist, but the durable workflow catalogue does not cover the full PGR lifecycle.
 - Actor names vary between catalogues, workflow prose, transition tables, RBAC roles, and demo personas.
 - Existing documents alternate between `SIS` and `SRS` for the core system.

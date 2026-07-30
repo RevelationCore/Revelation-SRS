@@ -4,7 +4,7 @@
  * Confirms Phase 9 exit criteria before Phase 10:
  * - Boundary: VLE connector imports no SRS internal packages.
  * - Event contract: subscribed subjects match the Stage 0 baseline; unapproved events absent.
- * - Golden-path: F015, F059, and F016 each produce the expected side-effects end-to-end.
+ * - Golden-path: F-SIS-VLE-01, F-SIS-VLE-02, and F-VLE-SIS-01 each produce the expected side-effects end-to-end.
  * - Combined scenario: all three flows work together in a single coherent sequence.
  * - Health: HealthService reflects real event counts after processing.
  * - Resilience: VLE outage records failure; reconciliation repairs drift on recovery.
@@ -234,7 +234,7 @@ describe('Stage 8 — golden-path scenarios', () => {
   afterAll(() => ctx.teardown());
   beforeEach(() => clearAllTables(ctx));
 
-  it('3.1 F015: module-updated + student-enrolled + module-registered provisions VLE course and enrolment', async () => {
+  it('3.1 F-SIS-VLE-01: module-updated + student-enrolled + module-registered provisions VLE course and enrolment', async () => {
     const consumer = makeFullConsumer(ctx);
 
     const moduleId             = crypto.randomUUID();
@@ -277,7 +277,7 @@ describe('Stage 8 — golden-path scenarios', () => {
     expect(rows).toHaveLength(3);
   });
 
-  it('3.2 F059: adjustment-distributed → VLE applied → SRS acknowledged', async () => {
+  it('3.2 F-SIS-VLE-02: adjustment-distributed → VLE applied → SRS acknowledged', async () => {
     const consumer = makeFullConsumer(ctx);
     const adjustmentId   = crypto.randomUUID();
     const distributionId = crypto.randomUUID();
@@ -312,7 +312,7 @@ describe('Stage 8 — golden-path scenarios', () => {
     expect(mapRow[0]?.statusCode).toBe('acknowledged');
   });
 
-  it('3.3 F016 outbound + inbound: mark submitted → SRS mark created; result ratified → VLE updated', async () => {
+  it('3.3 F-VLE-SIS-01 outbound + inbound: mark submitted → SRS mark created; result ratified → VLE updated', async () => {
     const moduleRegistrationId  = crypto.randomUUID();
     const assessmentComponentId = crypto.randomUUID();
     const sourceReference       = `vle-${crypto.randomUUID()}`;
@@ -362,7 +362,7 @@ describe('Stage 8 — golden-path scenarios', () => {
     const adjustmentId         = crypto.randomUUID();
     const distributionId       = crypto.randomUUID();
 
-    // F015 — provision
+    // F-SIS-VLE-01 — provision
     await consumer.dispatch(makeEnvelope('srs.catalogue.module-updated', {
       moduleId, code: 'LAW301', title: 'Contract Law', creditValue: 15, effectiveDate: '2026-09-01',
     } satisfies CatalogueModuleUpdatedV1Payload));
@@ -381,7 +381,7 @@ describe('Stage 8 — golden-path scenarios', () => {
     expect(ctx.stubVle.stubStore.courses.has(moduleId)).toBe(true);
     expect(ctx.stubVle.stubStore.enrolments.has(moduleRegistrationId)).toBe(true);
 
-    // F059 — adjustment
+    // F-SIS-VLE-02 — adjustment
     await consumer.dispatch(makeEnvelope('srs.adjustment.distributed', {
       adjustmentId, distributionId,
       targetSystem:       'vle',
@@ -395,7 +395,7 @@ describe('Stage 8 — golden-path scenarios', () => {
     expect(ctx.stubVle.stubStore.adjustments.has(distributionId)).toBe(true);
     expect(ctx.stubSrsAck.getAckCalls()).toHaveLength(1);
 
-    // F016 outbound — mark submission
+    // F-VLE-SIS-01 outbound — mark submission
     const srsMarkClient = new HttpSrsMarkClient(ctx.stubSrsMarksBaseUrl, 'test-token');
     const markService   = new MarkSubmissionService(ctx.db, TENANT, srsMarkClient);
     const { markId }    = await markService.submitMark({
@@ -405,7 +405,7 @@ describe('Stage 8 — golden-path scenarios', () => {
     });
     expect(markId).toBeTruthy();
 
-    // F016 inbound — ratified result
+    // F-VLE-SIS-01 inbound — ratified result
     await consumer.dispatch(makeEnvelope('srs.assessment.module-result-ratified', {
       moduleResultId:       crypto.randomUUID(),
       moduleRegistrationId, aggregateMark: 68, resultCode: 'PASS',
