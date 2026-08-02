@@ -32,6 +32,14 @@ export interface CreateModuleRegistrationInput {
   moduleOfferingId: string;
   registrationDate?: string;
   validFrom?: Date;
+  /**
+   * Skips the offering capacity check. Set only when an authorised decision
+   * has already accounted for capacity — e.g. a programme approver allocating
+   * a waitlisted module selection proposal beyond nominal capacity
+   * (BP-03-004 A5). All other checks (duplicate, prerequisite/co-requisite/
+   * exclusion, credit limit) still apply.
+   */
+  skipCapacityCheck?: boolean;
 }
 
 export interface ModuleRegistrationDto {
@@ -108,7 +116,9 @@ export class ModuleRegistrationService {
     }
 
     await this.#ensureNoDuplicateCurrentRegistration(input.enrolmentId, input.moduleOfferingId, tenantId);
-    await this.#ensureCapacityAvailable(input.moduleOfferingId, offering.capacity, tenantId);
+    if (!input.skipCapacityCheck) {
+      await this.#ensureCapacityAvailable(input.moduleOfferingId, offering.capacity, tenantId);
+    }
     await this.#ensureModuleRulesSatisfied(input.enrolmentId, offering, tenantId);
     await this.#ensureCreditLimitNotExceeded(enrolment, offering, tenantId);
 

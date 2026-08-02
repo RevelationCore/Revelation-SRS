@@ -3,7 +3,10 @@ import { Link } from 'react-router-dom';
 import { type CreateStudentInput, type StudentSummary, createStudent, listStudents } from '../api/students.js';
 import { Spinner } from '../components/Spinner.js';
 import { ApiError } from '../api/client.js';
-import { Dialog, DialogClose } from '@revelation-srs/ui';
+import {
+  Dialog, DialogClose, PageHeader, Card, Table, TableHead, TableHeaderCell,
+  TableBody, TableRow, TableCell, TableEmptyRow, Button, Input, Select,
+} from '@revelation-srs/ui';
 import { useValueSet } from '../hooks/useValueSet.js';
 import { useAuth } from '../auth/AuthContext.js';
 import { userHasAnyPermission } from '../auth/RequirePermission.js';
@@ -50,115 +53,103 @@ export function StudentsPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-xl font-semibold text-gray-900">Students</h1>
-        {canCreateStudent && (
-          <button
-            onClick={() => setShowCreate(true)}
-            className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded hover:bg-indigo-700"
-          >
-            New student
-          </button>
+      <PageHeader
+        title="Students"
+        actions={canCreateStudent && (
+          <Button onClick={() => setShowCreate(true)}>New student</Button>
         )}
-      </div>
+      />
 
       {/* Search / filter bar */}
       <form onSubmit={handleSearch} className="mb-4 flex items-center gap-3 flex-wrap">
-        <input
+        <Input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Name or student number…"
-          className="flex-1 min-w-48 rounded border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="flex-1 min-w-48"
         />
-        <select
+        <Select
           aria-label="Filter by status"
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="rounded border border-gray-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="w-auto"
         >
           <option value="">All statuses</option>
           {personStatuses.map(({ code, displayLabel }) => (
             <option key={code} value={code}>{displayLabel}</option>
           ))}
-        </select>
-        <button
-          type="submit"
-          className="rounded bg-indigo-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-indigo-700"
-        >
-          Search
-        </button>
+        </Select>
+        <Button type="submit">Search</Button>
         {(search || statusFilter) && (
-          <button
+          <Button
             type="button"
+            variant="secondary"
             onClick={() => { setSearch(''); setStatusFilter(''); void load(0); }}
-            className="rounded border border-gray-300 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50"
           >
             Clear
-          </button>
+          </Button>
         )}
       </form>
 
-      {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+      {error && <p className="mb-4 text-sm text-danger-600">{error}</p>}
 
       {loading ? (
         <div className="flex justify-center py-16"><Spinner /></div>
       ) : (
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+        <Card>
+          <Table>
+            <TableHead>
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Student #</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                <th className="px-4 py-3"><span className="sr-only">Actions</span></th>
+                <TableHeaderCell>Student #</TableHeaderCell>
+                <TableHeaderCell>Name</TableHeaderCell>
+                <TableHeaderCell><span className="sr-only">Actions</span></TableHeaderCell>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
+            </TableHead>
+            <TableBody>
               {students.length === 0 && (
-                <tr>
-                  <td colSpan={3} className="px-4 py-8 text-center text-sm text-gray-600">
-                    No students found.
-                  </td>
-                </tr>
+                <TableEmptyRow colSpan={3}>No students found.</TableEmptyRow>
               )}
               {students.map((s) => (
-                <tr key={s.personId} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-sm font-mono text-gray-700">{s.studentNumber}</td>
-                  <td className="px-4 py-3 text-sm text-gray-900">
+                <TableRow key={s.personId}>
+                  <TableCell className="font-mono text-neutral-700">{s.studentNumber}</TableCell>
+                  <TableCell className="text-neutral-900">
                     {s.legalFirstName} {s.legalFamilyName}
-                  </td>
-                  <td className="px-4 py-3 text-right">
+                  </TableCell>
+                  <TableCell className="text-right">
                     <Link
                       to={`/students/${s.personId}`}
-                      className="text-sm text-indigo-600 hover:text-indigo-800"
+                      className="text-sm text-primary-600 hover:text-primary-800"
                     >
                       View →
                     </Link>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
 
-          <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 flex items-center gap-3 text-sm text-gray-600">
-            <button
+          <div className="px-4 py-3 bg-neutral-50 border-t border-neutral-200 flex items-center gap-3 text-sm text-neutral-600">
+            <Button
+              variant="secondary"
+              size="sm"
               onClick={() => void load(Math.max(0, offset - PAGE_SIZE), search || undefined, statusFilter || undefined)}
               disabled={offset === 0}
-              className="px-3 py-1 rounded border border-gray-300 disabled:opacity-40 hover:bg-white"
             >
               Previous
-            </button>
+            </Button>
             {students.length > 0 && (
               <span>Showing {offset + 1}–{offset + students.length}</span>
             )}
-            <button
+            <Button
+              variant="secondary"
+              size="sm"
               onClick={() => void load(offset + PAGE_SIZE, search || undefined, statusFilter || undefined)}
               disabled={students.length < PAGE_SIZE}
-              className="px-3 py-1 rounded border border-gray-300 disabled:opacity-40 hover:bg-white"
             >
               Next
-            </button>
+            </Button>
           </div>
-        </div>
+        </Card>
       )}
 
       <Dialog
@@ -220,21 +211,15 @@ function CreateStudentForm({
       <Field name="preferredName"   label="Preferred name" />
       <Field name="emailPersonal"   label="Personal email" type="email" />
 
-      {error && <p className="text-sm text-red-600" role="alert">{error}</p>}
+      {error && <p className="text-sm text-danger-600" role="alert">{error}</p>}
 
       <div className="flex justify-end gap-3 pt-2">
         <DialogClose asChild>
-          <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">
-            Cancel
-          </button>
+          <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
         </DialogClose>
-        <button
-          type="submit"
-          disabled={submitting}
-          className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded hover:bg-indigo-700 disabled:opacity-50"
-        >
+        <Button type="submit" disabled={submitting}>
           {submitting ? 'Creating…' : 'Create'}
-        </button>
+        </Button>
       </div>
     </form>
   );
@@ -243,11 +228,11 @@ function CreateStudentForm({
 function Field({ name, label, type = 'text' }: { name: string; label: string; type?: string }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+      <label className="block text-sm font-medium text-neutral-700 mb-1">{label}</label>
       <input
         name={name}
         type={type}
-        className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        className="w-full rounded border border-neutral-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
       />
     </div>
   );

@@ -69,6 +69,13 @@ export const postRatificationCases = pgTable('post_ratification_case', {
   statusCode:     text('status_code').notNull().default('submitted'), // submitted | under-review | upheld | dismissed | not-eligible
   reference:      text('reference'),                   // optional external reference
   actorId:        text('actor_id').notNull(),
+  // BPR-D13 (Stage 5, migration 0004_business_process_foundations): additive columns explaining why a
+  // correction was needed and under what authority, independent of the
+  // generic case-status workflow above.
+  supersededVersionId: uuid('superseded_version_id'), // the exact version this case is correcting, if known up front
+  errorCategoryCode:   text('error_category_code'),   // data-entry | calculation | procedural | third-party
+  evidenceRef:         uuid('evidence_ref'),           // FK -> case_evidence_reference.id, nullable
+  authorisedBy:        text('authorised_by'),          // authority who approved raising the case, if distinct from actorId
 });
 
 export type PostRatificationCase    = typeof postRatificationCases.$inferSelect;
@@ -92,6 +99,12 @@ export const postRatificationAmendments = pgTable('post_ratification_amendment',
   afterValue:     jsonb('after_value').notNull(),
   authorisedBy:   text('authorised_by').notNull(),
   amendedAt:      timestamp('amended_at', { withTimezone: true }).notNull().defaultNow(),
+  // BPR-D13: exact before/after version references (kept alongside the jsonb
+  // values above for compat) so a correction can be reproduced exactly, plus
+  // the distribution item created to notify downstream consumers.
+  beforeVersionRef:    uuid('before_version_ref'), // FK -> source_version_reference.id, nullable
+  afterVersionRef:     uuid('after_version_ref'),  // FK -> source_version_reference.id, nullable
+  distributionItemId:  uuid('distribution_item_id'), // FK -> distribution_item.id, nullable
 });
 
 export type PostRatificationAmendment    = typeof postRatificationAmendments.$inferSelect;

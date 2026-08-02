@@ -1252,6 +1252,310 @@
         }
       }
     },
+    "/api/v1/enrolments/{enrolmentId}/support-outcomes": {
+      "post": {
+        "operationId": "createEnrolmentsByEnrolmentIdSupportOutcomes",
+        "tags": [
+          "adjustments"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "outcomeTypeCode",
+                  "minimumNecessaryText",
+                  "visibilityScopeCode"
+                ],
+                "properties": {
+                  "sourceCaseId": {
+                    "type": "string"
+                  },
+                  "sourceDecisionId": {
+                    "type": "string"
+                  },
+                  "outcomeTypeCode": {
+                    "type": "string"
+                  },
+                  "minimumNecessaryText": {
+                    "type": "string"
+                  },
+                  "visibilityScopeCode": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "enrolmentId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "integration",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "supportOutcomeId"
+                  ],
+                  "properties": {
+                    "supportOutcomeId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "getEnrolmentsByEnrolmentIdSupportOutcomes",
+        "tags": [
+          "adjustments"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "enrolmentId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "integration",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "supportOutcomeId",
+                      "enrolmentId",
+                      "sourceCaseId",
+                      "sourceDecisionId",
+                      "outcomeTypeCode",
+                      "minimumNecessaryText",
+                      "visibilityScopeCode",
+                      "actorId",
+                      "validFrom",
+                      "validTo",
+                      "recordedAt",
+                      "recordedUntil"
+                    ],
+                    "properties": {
+                      "supportOutcomeId": {
+                        "type": "string"
+                      },
+                      "enrolmentId": {
+                        "type": "string"
+                      },
+                      "sourceCaseId": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "sourceDecisionId": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "outcomeTypeCode": {
+                        "type": "string"
+                      },
+                      "minimumNecessaryText": {
+                        "type": "string"
+                      },
+                      "visibilityScopeCode": {
+                        "type": "string"
+                      },
+                      "actorId": {
+                        "type": "string"
+                      },
+                      "validFrom": {
+                        "type": "string"
+                      },
+                      "validTo": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "recordedAt": {
+                        "type": "string"
+                      },
+                      "recordedUntil": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/support-outcomes/{supportOutcomeId}/distribute": {
+      "post": {
+        "operationId": "createSupportOutcomesBySupportOutcomeIdDistribute",
+        "tags": [
+          "adjustments"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "targetSystemCodes"
+                ],
+                "properties": {
+                  "targetSystemCodes": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "supportOutcomeId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "integration",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "distributionItemIds"
+                  ],
+                  "properties": {
+                    "distributionItemIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/students/{personId}/engagement-outcomes": {
       "post": {
         "operationId": "createStudentsByPersonIdEngagementOutcomes",
@@ -1289,6 +1593,27 @@
                   },
                   "sourceAlertId": {
                     "type": "string"
+                  },
+                  "policyVersionId": {
+                    "type": "string"
+                  },
+                  "evidenceWindowFrom": {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  "evidenceWindowTo": {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  "evidenceSnapshot": {
+                    "type": "object",
+                    "additionalProperties": {}
+                  },
+                  "evidenceHash": {
+                    "type": "string"
+                  },
+                  "reevaluationRequired": {
+                    "type": "boolean"
                   }
                 }
               }
@@ -4442,6 +4767,477 @@
         }
       }
     },
+    "/api/v1/exam-boards/{examBoardId}/conflicts": {
+      "post": {
+        "operationId": "createExamBoardsByExamBoardIdConflicts",
+        "tags": [
+          "governance"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "conflictTypeCode"
+                ],
+                "properties": {
+                  "enrolmentId": {
+                    "type": "string"
+                  },
+                  "conflictTypeCode": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "examBoardId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "conflictId"
+                  ],
+                  "properties": {
+                    "conflictId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/board-conflicts/{conflictId}/recuse": {
+      "patch": {
+        "operationId": "updateBoardConflictsByConflictIdRecuse",
+        "tags": [
+          "governance"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "conflictId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "204": {
+            "description": "Default Response"
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/exam-boards/{examBoardId}/quorum-decision": {
+      "post": {
+        "operationId": "createExamBoardsByExamBoardIdQuorumDecision",
+        "tags": [
+          "governance"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "requiredCount",
+                  "attendingCount"
+                ],
+                "properties": {
+                  "requiredCount": {
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "attendingCount": {
+                    "minimum": 0,
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "examBoardId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "quorumDecisionId",
+                    "quorumMet"
+                  ],
+                  "properties": {
+                    "quorumDecisionId": {
+                      "type": "string"
+                    },
+                    "quorumMet": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/exam-boards/{examBoardId}/decisions": {
+      "post": {
+        "operationId": "createExamBoardsByExamBoardIdDecisions",
+        "tags": [
+          "governance"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "dataPackId",
+                  "decisionTypeCode"
+                ],
+                "properties": {
+                  "dataPackId": {
+                    "type": "string"
+                  },
+                  "decisionTypeCode": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "ratify"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "defer"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "refer-back"
+                        ]
+                      }
+                    ]
+                  },
+                  "rationale": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "examBoardId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "decisionId"
+                  ],
+                  "properties": {
+                    "decisionId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/board-decisions/{decisionId}/ratification": {
+      "post": {
+        "operationId": "createBoardDecisionsByDecisionIdRatification",
+        "tags": [
+          "governance"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "decisionId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "ratificationRecordId"
+                  ],
+                  "properties": {
+                    "ratificationRecordId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ratification-records/{ratificationRecordId}/publish": {
+      "patch": {
+        "operationId": "updateRatificationRecordsByRatificationRecordIdPublish",
+        "tags": [
+          "governance"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "ratificationRecordId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "204": {
+            "description": "Default Response"
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/enrolments/{enrolmentId}/progression": {
       "post": {
         "operationId": "createEnrolmentsByEnrolmentIdProgression",
@@ -5480,6 +6276,15 @@
                   },
                   "reference": {
                     "type": "string"
+                  },
+                  "errorCategoryCode": {
+                    "type": "string"
+                  },
+                  "evidenceRef": {
+                    "type": "string"
+                  },
+                  "authorisedBy": {
+                    "type": "string"
                   }
                 }
               }
@@ -5611,7 +6416,10 @@
                       "validFrom",
                       "validTo",
                       "recordedAt",
-                      "recordedUntil"
+                      "recordedUntil",
+                      "errorCategoryCode",
+                      "evidenceRef",
+                      "authorisedBy"
                     ],
                     "properties": {
                       "caseId": {
@@ -5656,6 +6464,36 @@
                         "type": "string"
                       },
                       "recordedUntil": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "errorCategoryCode": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "evidenceRef": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "authorisedBy": {
                         "anyOf": [
                           {
                             "type": "string"
@@ -5961,6 +6799,616 @@
                       "type": "number"
                     },
                     "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/correction-cases/amendments/{amendmentId}/distribute": {
+      "post": {
+        "operationId": "createCorrectionCasesAmendmentsByAmendmentIdDistribute",
+        "tags": [
+          "governance"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "targetSystemCodes"
+                ],
+                "properties": {
+                  "targetSystemCodes": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "amendmentId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "distributionItemIds"
+                  ],
+                  "properties": {
+                    "distributionItemIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/identity-resolution/cases": {
+      "get": {
+        "operationId": "getIdentityResolutionCases",
+        "tags": [
+          "governance"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "statusCode",
+            "required": false
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "identityResolutionCaseId",
+                      "subjectPersonId",
+                      "statusCode",
+                      "ownerId",
+                      "createdAt"
+                    ],
+                    "properties": {
+                      "identityResolutionCaseId": {
+                        "type": "string"
+                      },
+                      "subjectPersonId": {
+                        "type": "string"
+                      },
+                      "statusCode": {
+                        "type": "string"
+                      },
+                      "ownerId": {
+                        "type": "string"
+                      },
+                      "createdAt": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createIdentityResolutionCases",
+        "tags": [
+          "governance"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "subjectPersonId",
+                  "ownerId"
+                ],
+                "properties": {
+                  "subjectPersonId": {
+                    "type": "string"
+                  },
+                  "ownerId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-publication-class": "workflow",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "identityResolutionCaseId"
+                  ],
+                  "properties": {
+                    "identityResolutionCaseId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/identity-resolution/correction-cases": {
+      "get": {
+        "operationId": "getIdentityResolutionCorrectionCases",
+        "tags": [
+          "governance"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "statusCode",
+            "required": false
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "dataCorrectionCaseId",
+                      "personId",
+                      "correctedEntityType",
+                      "correctedFieldName",
+                      "statusCode",
+                      "ownerId",
+                      "createdAt"
+                    ],
+                    "properties": {
+                      "dataCorrectionCaseId": {
+                        "type": "string"
+                      },
+                      "personId": {
+                        "type": "string"
+                      },
+                      "correctedEntityType": {
+                        "type": "string"
+                      },
+                      "correctedFieldName": {
+                        "type": "string"
+                      },
+                      "statusCode": {
+                        "type": "string"
+                      },
+                      "ownerId": {
+                        "type": "string"
+                      },
+                      "createdAt": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createIdentityResolutionCorrectionCases",
+        "tags": [
+          "governance"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "personId",
+                  "correctedEntityType",
+                  "correctedFieldName",
+                  "ownerId"
+                ],
+                "properties": {
+                  "personId": {
+                    "type": "string"
+                  },
+                  "correctedEntityType": {
+                    "type": "string"
+                  },
+                  "correctedFieldName": {
+                    "type": "string"
+                  },
+                  "ownerId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-publication-class": "workflow",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "dataCorrectionCaseId"
+                  ],
+                  "properties": {
+                    "dataCorrectionCaseId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/identity-resolution/cases/{caseId}/candidates": {
+      "post": {
+        "operationId": "createIdentityResolutionCasesByCaseIdCandidates",
+        "tags": [
+          "governance"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "candidatePersonId",
+                  "matchScore",
+                  "matchReasonCode"
+                ],
+                "properties": {
+                  "candidatePersonId": {
+                    "type": "string"
+                  },
+                  "matchScore": {
+                    "minimum": 0,
+                    "maximum": 1,
+                    "type": "number"
+                  },
+                  "matchReasonCode": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "caseId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "candidateId"
+                  ],
+                  "properties": {
+                    "candidateId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/identity-resolution/cases/{caseId}/decision": {
+      "post": {
+        "operationId": "createIdentityResolutionCasesByCaseIdDecision",
+        "tags": [
+          "governance"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "decisionTypeCode"
+                ],
+                "properties": {
+                  "decisionTypeCode": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "merge"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "reject"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "link"
+                        ]
+                      }
+                    ]
+                  },
+                  "survivorPersonId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "caseId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "decisionId"
+                  ],
+                  "properties": {
+                    "decisionId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/identity-resolution/links": {
+      "post": {
+        "operationId": "createIdentityResolutionLinks",
+        "tags": [
+          "governance"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "sourcePersonId",
+                  "targetPersonId",
+                  "linkTypeCode"
+                ],
+                "properties": {
+                  "sourcePersonId": {
+                    "type": "string"
+                  },
+                  "targetPersonId": {
+                    "type": "string"
+                  },
+                  "linkTypeCode": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-publication-class": "workflow",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "linkId"
+                  ],
+                  "properties": {
+                    "linkId": {
                       "type": "string"
                     }
                   }
@@ -9449,6 +10897,1018 @@
         "responses": {
           "204": {
             "description": "Default Response"
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/regulatory/collections": {
+      "get": {
+        "operationId": "getRegulatoryCollections",
+        "tags": [
+          "regulatory"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "regulatorCode",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "academicYear",
+            "required": false
+          }
+        ],
+        "x-publication-class": "reporting",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "regulatoryCollectionId",
+                      "regulatorCode",
+                      "collectionTypeCode",
+                      "academicYear",
+                      "statusCode",
+                      "createdAt",
+                      "createdBy"
+                    ],
+                    "properties": {
+                      "regulatoryCollectionId": {
+                        "type": "string"
+                      },
+                      "regulatorCode": {
+                        "type": "string"
+                      },
+                      "collectionTypeCode": {
+                        "type": "string"
+                      },
+                      "academicYear": {
+                        "type": "string"
+                      },
+                      "statusCode": {
+                        "type": "string"
+                      },
+                      "createdAt": {
+                        "type": "string"
+                      },
+                      "createdBy": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createRegulatoryCollections",
+        "tags": [
+          "regulatory"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "regulatorCode",
+                  "collectionTypeCode",
+                  "academicYear"
+                ],
+                "properties": {
+                  "regulatorCode": {
+                    "type": "string"
+                  },
+                  "collectionTypeCode": {
+                    "type": "string"
+                  },
+                  "academicYear": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-publication-class": "reporting",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "regulatoryCollectionId"
+                  ],
+                  "properties": {
+                    "regulatoryCollectionId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/regulatory/collections/{collectionId}/snapshots": {
+      "post": {
+        "operationId": "createRegulatoryCollectionsByCollectionIdSnapshots",
+        "tags": [
+          "regulatory"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "sourceTransactionTime"
+                ],
+                "properties": {
+                  "sourceTransactionTime": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "collectionId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "reporting",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "collectionSnapshotId"
+                  ],
+                  "properties": {
+                    "collectionSnapshotId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/regulatory/snapshots/{snapshotId}/records": {
+      "post": {
+        "operationId": "createRegulatorySnapshotsBySnapshotIdRecords",
+        "tags": [
+          "regulatory"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "recordPayload"
+                ],
+                "properties": {
+                  "enrolmentId": {
+                    "type": "string"
+                  },
+                  "recordPayload": {
+                    "type": "object",
+                    "additionalProperties": {}
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "snapshotId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "reporting",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "regulatoryRecordId"
+                  ],
+                  "properties": {
+                    "regulatoryRecordId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/regulatory/collections/{collectionId}/validation-issues": {
+      "post": {
+        "operationId": "createRegulatoryCollectionsByCollectionIdValidationIssues",
+        "tags": [
+          "regulatory"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "severityCode",
+                  "message"
+                ],
+                "properties": {
+                  "regulatoryRecordId": {
+                    "type": "string"
+                  },
+                  "severityCode": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "blocking"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "warning"
+                        ]
+                      }
+                    ]
+                  },
+                  "fieldCode": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "collectionId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "reporting",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "issueId"
+                  ],
+                  "properties": {
+                    "issueId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/regulatory/collections/{collectionId}/signoff": {
+      "post": {
+        "operationId": "createRegulatoryCollectionsByCollectionIdSignoff",
+        "tags": [
+          "regulatory"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "commentary": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "collectionId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "signoffId"
+                  ],
+                  "properties": {
+                    "signoffId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/regulatory/collections/{collectionId}/submit": {
+      "post": {
+        "operationId": "createRegulatoryCollectionsByCollectionIdSubmit",
+        "tags": [
+          "regulatory"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "collectionSnapshotId"
+                ],
+                "properties": {
+                  "collectionSnapshotId": {
+                    "type": "string"
+                  },
+                  "submissionReference": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "collectionId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "submissionId"
+                  ],
+                  "properties": {
+                    "submissionId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/enrolments/{enrolmentId}/regulatory/cas-cases": {
+      "post": {
+        "operationId": "createEnrolmentsByEnrolmentIdRegulatoryCasCases",
+        "tags": [
+          "regulatory"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "casReference": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "enrolmentId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "casCaseId"
+                  ],
+                  "properties": {
+                    "casCaseId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "getEnrolmentsByEnrolmentIdRegulatoryCasCases",
+        "tags": [
+          "regulatory"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "enrolmentId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "reporting",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "casCaseId",
+                      "enrolmentId",
+                      "casReference",
+                      "statusCode",
+                      "actorId",
+                      "validFrom",
+                      "validTo",
+                      "recordedAt",
+                      "recordedUntil"
+                    ],
+                    "properties": {
+                      "casCaseId": {
+                        "type": "string"
+                      },
+                      "enrolmentId": {
+                        "type": "string"
+                      },
+                      "casReference": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "statusCode": {
+                        "type": "string"
+                      },
+                      "actorId": {
+                        "type": "string"
+                      },
+                      "validFrom": {
+                        "type": "string"
+                      },
+                      "validTo": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "recordedAt": {
+                        "type": "string"
+                      },
+                      "recordedUntil": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/regulatory/cas-cases/{casCaseId}/eligibility-checks": {
+      "post": {
+        "operationId": "createRegulatoryCasCasesByCasCaseIdEligibilityChecks",
+        "tags": [
+          "regulatory"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "guidanceVersion",
+                  "checkTypeCode",
+                  "resultCode"
+                ],
+                "properties": {
+                  "guidanceVersion": {
+                    "type": "string"
+                  },
+                  "checkTypeCode": {
+                    "type": "string"
+                  },
+                  "resultCode": {
+                    "type": "string"
+                  },
+                  "evidenceRef": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "casCaseId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "checkId"
+                  ],
+                  "properties": {
+                    "checkId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/regulatory/cas-cases/{casCaseId}/assignment-versions": {
+      "post": {
+        "operationId": "createRegulatoryCasCasesByCasCaseIdAssignmentVersions",
+        "tags": [
+          "regulatory"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "assignedPayloadHash"
+                ],
+                "properties": {
+                  "assignedPayloadHash": {
+                    "type": "string"
+                  },
+                  "casNumber": {
+                    "type": "string"
+                  },
+                  "smsRequestSentAt": {
+                    "type": "string"
+                  },
+                  "smsReceiptRef": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "casCaseId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "assignmentId"
+                  ],
+                  "properties": {
+                    "assignmentId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/regulatory/cas-cases/{casCaseId}/sponsor-report-versions": {
+      "post": {
+        "operationId": "createRegulatoryCasCasesByCasCaseIdSponsorReportVersions",
+        "tags": [
+          "regulatory"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "reportPayloadRef"
+                ],
+                "properties": {
+                  "reportPayloadRef": {
+                    "type": "string"
+                  },
+                  "distributionItemId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "casCaseId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "reportId"
+                  ],
+                  "properties": {
+                    "reportId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
           },
           "404": {
             "description": "Default Response",
@@ -16952,6 +19412,406 @@
         }
       }
     },
+    "/api/v1/moderation/reviews": {
+      "get": {
+        "operationId": "getModerationReviews",
+        "tags": [
+          "assessment"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "boolean"
+            },
+            "in": "query",
+            "name": "onlyOpen",
+            "required": false
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "moderationReviewId",
+                      "markSetId",
+                      "moderatorActorId",
+                      "ruleVersion",
+                      "startedAt",
+                      "completedAt",
+                      "outcomeCode"
+                    ],
+                    "properties": {
+                      "moderationReviewId": {
+                        "type": "string"
+                      },
+                      "markSetId": {
+                        "type": "string"
+                      },
+                      "moderatorActorId": {
+                        "type": "string"
+                      },
+                      "ruleVersion": {
+                        "type": "string"
+                      },
+                      "startedAt": {
+                        "type": "string"
+                      },
+                      "completedAt": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "outcomeCode": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createModerationReviews",
+        "tags": [
+          "assessment"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "markSetId",
+                  "ruleVersion"
+                ],
+                "properties": {
+                  "markSetId": {
+                    "type": "string"
+                  },
+                  "ruleVersion": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-publication-class": "workflow",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "reviewId"
+                  ],
+                  "properties": {
+                    "reviewId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/moderation/mark-sets": {
+      "post": {
+        "operationId": "createModerationMarkSets",
+        "tags": [
+          "assessment"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "assessmentComponentId",
+                  "markIds",
+                  "sourceQueryHash"
+                ],
+                "properties": {
+                  "assessmentComponentId": {
+                    "type": "string"
+                  },
+                  "markIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "sourceQueryHash": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-publication-class": "workflow",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "markSetId"
+                  ],
+                  "properties": {
+                    "markSetId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/moderation/reviews/{reviewId}/samples": {
+      "post": {
+        "operationId": "createModerationReviewsByReviewIdSamples",
+        "tags": [
+          "assessment"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "markId",
+                  "sampleReasonCode",
+                  "originalMark"
+                ],
+                "properties": {
+                  "markId": {
+                    "type": "string"
+                  },
+                  "sampleReasonCode": {
+                    "type": "string"
+                  },
+                  "originalMark": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "reviewId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "sampleId"
+                  ],
+                  "properties": {
+                    "sampleId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/moderation/reviews/{reviewId}/complete": {
+      "patch": {
+        "operationId": "updateModerationReviewsByReviewIdComplete",
+        "tags": [
+          "assessment"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "outcomeCode"
+                ],
+                "properties": {
+                  "outcomeCode": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "no-change"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "adjusted"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "escalated"
+                        ]
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "reviewId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "204": {
+            "description": "Default Response"
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/module-registrations/{moduleRegistrationId}/result": {
       "get": {
         "operationId": "getModuleRegistrationsByModuleRegistrationIdResult",
@@ -18074,6 +20934,2278 @@
                       "type": "number"
                     },
                     "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/module-selection-proposals": {
+      "get": {
+        "operationId": "getModuleSelectionProposals",
+        "tags": [
+          "module-selection"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "enrolmentId",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "statusCode",
+            "required": false
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "moduleSelectionProposalId",
+                      "enrolmentId",
+                      "academicPeriodId",
+                      "programmeRuleSetId",
+                      "statusCode",
+                      "submittedAt",
+                      "decidedAt",
+                      "decisionAuthorityCode",
+                      "decisionReason",
+                      "workflowInstanceId",
+                      "items"
+                    ],
+                    "properties": {
+                      "moduleSelectionProposalId": {
+                        "type": "string"
+                      },
+                      "enrolmentId": {
+                        "type": "string"
+                      },
+                      "academicPeriodId": {
+                        "type": "string"
+                      },
+                      "programmeRuleSetId": {
+                        "type": "string"
+                      },
+                      "statusCode": {
+                        "type": "string"
+                      },
+                      "submittedAt": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "decidedAt": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "decisionAuthorityCode": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "decisionReason": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "workflowInstanceId": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "items": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "required": [
+                            "proposalItemId",
+                            "moduleId",
+                            "moduleCode",
+                            "moduleTitle",
+                            "creditValue",
+                            "fheqLevel",
+                            "moduleOfferingId",
+                            "preferenceRank",
+                            "sourceCode",
+                            "validationStateCode",
+                            "validationMessages"
+                          ],
+                          "properties": {
+                            "proposalItemId": {
+                              "type": "string"
+                            },
+                            "moduleId": {
+                              "type": "string"
+                            },
+                            "moduleCode": {
+                              "type": "string"
+                            },
+                            "moduleTitle": {
+                              "type": "string"
+                            },
+                            "creditValue": {
+                              "anyOf": [
+                                {
+                                  "type": "number"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "fheqLevel": {
+                              "anyOf": [
+                                {
+                                  "type": "number"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "moduleOfferingId": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "preferenceRank": {
+                              "anyOf": [
+                                {
+                                  "type": "number"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "sourceCode": {
+                              "type": "string"
+                            },
+                            "validationStateCode": {
+                              "type": "string"
+                            },
+                            "validationMessages": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "required": [
+                                  "ruleTypeCode",
+                                  "message",
+                                  "severity"
+                                ],
+                                "properties": {
+                                  "ruleTypeCode": {
+                                    "type": "string"
+                                  },
+                                  "message": {
+                                    "type": "string"
+                                  },
+                                  "severity": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "enum": [
+                                          "error"
+                                        ]
+                                      },
+                                      {
+                                        "type": "string",
+                                        "enum": [
+                                          "warning"
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createModuleSelectionProposals",
+        "tags": [
+          "module-selection"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "enrolmentId",
+                  "academicPeriodId",
+                  "fheqLevel"
+                ],
+                "properties": {
+                  "enrolmentId": {
+                    "type": "string"
+                  },
+                  "academicPeriodId": {
+                    "type": "string"
+                  },
+                  "fheqLevel": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-publication-class": "public",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "moduleSelectionProposalId"
+                  ],
+                  "properties": {
+                    "moduleSelectionProposalId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/module-selection-proposals/{proposalId}": {
+      "get": {
+        "operationId": "getModuleSelectionProposalsByProposalId",
+        "tags": [
+          "module-selection"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "proposalId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "moduleSelectionProposalId",
+                    "enrolmentId",
+                    "academicPeriodId",
+                    "programmeRuleSetId",
+                    "statusCode",
+                    "submittedAt",
+                    "decidedAt",
+                    "decisionAuthorityCode",
+                    "decisionReason",
+                    "workflowInstanceId",
+                    "items"
+                  ],
+                  "properties": {
+                    "moduleSelectionProposalId": {
+                      "type": "string"
+                    },
+                    "enrolmentId": {
+                      "type": "string"
+                    },
+                    "academicPeriodId": {
+                      "type": "string"
+                    },
+                    "programmeRuleSetId": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "type": "string"
+                    },
+                    "submittedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "decidedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "decisionAuthorityCode": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "decisionReason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "workflowInstanceId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "proposalItemId",
+                          "moduleId",
+                          "moduleCode",
+                          "moduleTitle",
+                          "creditValue",
+                          "fheqLevel",
+                          "moduleOfferingId",
+                          "preferenceRank",
+                          "sourceCode",
+                          "validationStateCode",
+                          "validationMessages"
+                        ],
+                        "properties": {
+                          "proposalItemId": {
+                            "type": "string"
+                          },
+                          "moduleId": {
+                            "type": "string"
+                          },
+                          "moduleCode": {
+                            "type": "string"
+                          },
+                          "moduleTitle": {
+                            "type": "string"
+                          },
+                          "creditValue": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "fheqLevel": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "moduleOfferingId": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "preferenceRank": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "sourceCode": {
+                            "type": "string"
+                          },
+                          "validationStateCode": {
+                            "type": "string"
+                          },
+                          "validationMessages": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "required": [
+                                "ruleTypeCode",
+                                "message",
+                                "severity"
+                              ],
+                              "properties": {
+                                "ruleTypeCode": {
+                                  "type": "string"
+                                },
+                                "message": {
+                                  "type": "string"
+                                },
+                                "severity": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "enum": [
+                                        "error"
+                                      ]
+                                    },
+                                    {
+                                      "type": "string",
+                                      "enum": [
+                                        "warning"
+                                      ]
+                                    }
+                                  ]
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/module-selection-proposals/{proposalId}/items": {
+      "post": {
+        "operationId": "createModuleSelectionProposalsByProposalIdItems",
+        "tags": [
+          "module-selection"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "moduleId"
+                ],
+                "properties": {
+                  "moduleId": {
+                    "type": "string"
+                  },
+                  "moduleOfferingId": {
+                    "type": "string"
+                  },
+                  "preferenceRank": {
+                    "type": "number"
+                  },
+                  "sourceCode": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "student-choice"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "staff-assisted"
+                        ]
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "proposalId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "proposalItemId"
+                  ],
+                  "properties": {
+                    "proposalItemId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/module-selection-proposals/{proposalId}/items/{proposalItemId}": {
+      "delete": {
+        "operationId": "deleteModuleSelectionProposalsByProposalIdItemsByProposalItemId",
+        "tags": [
+          "module-selection"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "proposalId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "proposalItemId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "204": {
+            "description": "Default Response"
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/module-selection-proposals/{proposalId}/submission": {
+      "post": {
+        "operationId": "createModuleSelectionProposalsByProposalIdSubmission",
+        "tags": [
+          "module-selection"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "proposalId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "moduleSelectionProposalId",
+                    "enrolmentId",
+                    "academicPeriodId",
+                    "programmeRuleSetId",
+                    "statusCode",
+                    "submittedAt",
+                    "decidedAt",
+                    "decisionAuthorityCode",
+                    "decisionReason",
+                    "workflowInstanceId",
+                    "items"
+                  ],
+                  "properties": {
+                    "moduleSelectionProposalId": {
+                      "type": "string"
+                    },
+                    "enrolmentId": {
+                      "type": "string"
+                    },
+                    "academicPeriodId": {
+                      "type": "string"
+                    },
+                    "programmeRuleSetId": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "type": "string"
+                    },
+                    "submittedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "decidedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "decisionAuthorityCode": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "decisionReason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "workflowInstanceId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "proposalItemId",
+                          "moduleId",
+                          "moduleCode",
+                          "moduleTitle",
+                          "creditValue",
+                          "fheqLevel",
+                          "moduleOfferingId",
+                          "preferenceRank",
+                          "sourceCode",
+                          "validationStateCode",
+                          "validationMessages"
+                        ],
+                        "properties": {
+                          "proposalItemId": {
+                            "type": "string"
+                          },
+                          "moduleId": {
+                            "type": "string"
+                          },
+                          "moduleCode": {
+                            "type": "string"
+                          },
+                          "moduleTitle": {
+                            "type": "string"
+                          },
+                          "creditValue": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "fheqLevel": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "moduleOfferingId": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "preferenceRank": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "sourceCode": {
+                            "type": "string"
+                          },
+                          "validationStateCode": {
+                            "type": "string"
+                          },
+                          "validationMessages": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "required": [
+                                "ruleTypeCode",
+                                "message",
+                                "severity"
+                              ],
+                              "properties": {
+                                "ruleTypeCode": {
+                                  "type": "string"
+                                },
+                                "message": {
+                                  "type": "string"
+                                },
+                                "severity": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "enum": [
+                                        "error"
+                                      ]
+                                    },
+                                    {
+                                      "type": "string",
+                                      "enum": [
+                                        "warning"
+                                      ]
+                                    }
+                                  ]
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/module-selection-proposals/{proposalId}/decision": {
+      "post": {
+        "operationId": "createModuleSelectionProposalsByProposalIdDecision",
+        "tags": [
+          "module-selection"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "decisionCode",
+                  "reason"
+                ],
+                "properties": {
+                  "decisionCode": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "approved"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "rejected"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "returned"
+                        ]
+                      }
+                    ]
+                  },
+                  "reason": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "proposalId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "moduleSelectionProposalId",
+                    "enrolmentId",
+                    "academicPeriodId",
+                    "programmeRuleSetId",
+                    "statusCode",
+                    "submittedAt",
+                    "decidedAt",
+                    "decisionAuthorityCode",
+                    "decisionReason",
+                    "workflowInstanceId",
+                    "items"
+                  ],
+                  "properties": {
+                    "moduleSelectionProposalId": {
+                      "type": "string"
+                    },
+                    "enrolmentId": {
+                      "type": "string"
+                    },
+                    "academicPeriodId": {
+                      "type": "string"
+                    },
+                    "programmeRuleSetId": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "type": "string"
+                    },
+                    "submittedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "decidedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "decisionAuthorityCode": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "decisionReason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "workflowInstanceId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "proposalItemId",
+                          "moduleId",
+                          "moduleCode",
+                          "moduleTitle",
+                          "creditValue",
+                          "fheqLevel",
+                          "moduleOfferingId",
+                          "preferenceRank",
+                          "sourceCode",
+                          "validationStateCode",
+                          "validationMessages"
+                        ],
+                        "properties": {
+                          "proposalItemId": {
+                            "type": "string"
+                          },
+                          "moduleId": {
+                            "type": "string"
+                          },
+                          "moduleCode": {
+                            "type": "string"
+                          },
+                          "moduleTitle": {
+                            "type": "string"
+                          },
+                          "creditValue": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "fheqLevel": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "moduleOfferingId": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "preferenceRank": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "sourceCode": {
+                            "type": "string"
+                          },
+                          "validationStateCode": {
+                            "type": "string"
+                          },
+                          "validationMessages": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "required": [
+                                "ruleTypeCode",
+                                "message",
+                                "severity"
+                              ],
+                              "properties": {
+                                "ruleTypeCode": {
+                                  "type": "string"
+                                },
+                                "message": {
+                                  "type": "string"
+                                },
+                                "severity": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "enum": [
+                                        "error"
+                                      ]
+                                    },
+                                    {
+                                      "type": "string",
+                                      "enum": [
+                                        "warning"
+                                      ]
+                                    }
+                                  ]
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/enrolment-curriculum-bindings/{enrolmentId}": {
+      "get": {
+        "operationId": "getEnrolmentCurriculumBindingsByEnrolmentId",
+        "tags": [
+          "module-selection"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "enrolmentId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "enrolmentCurriculumBindingId",
+                    "enrolmentId",
+                    "programmeRouteId",
+                    "programmeRuleSetId",
+                    "decisionAuthorityCode",
+                    "decisionReason"
+                  ],
+                  "properties": {
+                    "enrolmentCurriculumBindingId": {
+                      "type": "string"
+                    },
+                    "enrolmentId": {
+                      "type": "string"
+                    },
+                    "programmeRouteId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "programmeRuleSetId": {
+                      "type": "string"
+                    },
+                    "decisionAuthorityCode": {
+                      "type": "string"
+                    },
+                    "decisionReason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createEnrolmentCurriculumBindingsByEnrolmentId",
+        "tags": [
+          "module-selection"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "programmeRuleSetId"
+                ],
+                "properties": {
+                  "programmeRouteId": {
+                    "type": "string"
+                  },
+                  "programmeRuleSetId": {
+                    "type": "string"
+                  },
+                  "decisionReason": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "enrolmentId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "enrolmentCurriculumBindingId"
+                  ],
+                  "properties": {
+                    "enrolmentCurriculumBindingId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/programme-rule-sets": {
+      "get": {
+        "operationId": "getProgrammeRuleSets",
+        "tags": [
+          "module-selection"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "programmeId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "programmeRuleSetId",
+                      "programmeId",
+                      "programmeRouteId",
+                      "entryAcademicYear",
+                      "ruleSetCode",
+                      "description"
+                    ],
+                    "properties": {
+                      "programmeRuleSetId": {
+                        "type": "string"
+                      },
+                      "programmeId": {
+                        "type": "string"
+                      },
+                      "programmeRouteId": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "entryAcademicYear": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "ruleSetCode": {
+                        "type": "string"
+                      },
+                      "description": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createProgrammeRuleSets",
+        "tags": [
+          "module-selection"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "programmeId",
+                  "ruleSetCode"
+                ],
+                "properties": {
+                  "programmeId": {
+                    "type": "string"
+                  },
+                  "programmeRouteId": {
+                    "type": "string"
+                  },
+                  "entryAcademicYear": {
+                    "type": "string"
+                  },
+                  "ruleSetCode": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-publication-class": "public",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "programmeRuleSetId"
+                  ],
+                  "properties": {
+                    "programmeRuleSetId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/module-groups": {
+      "get": {
+        "operationId": "getModuleGroups",
+        "tags": [
+          "module-selection"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "programmeRuleSetId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "moduleGroupId",
+                      "programmeRuleSetId",
+                      "fheqLevel",
+                      "groupCode",
+                      "title",
+                      "groupTypeCode",
+                      "minModules",
+                      "maxModules",
+                      "minCredits",
+                      "maxCredits",
+                      "minFheqLevel",
+                      "maxFheqLevel",
+                      "members"
+                    ],
+                    "properties": {
+                      "moduleGroupId": {
+                        "type": "string"
+                      },
+                      "programmeRuleSetId": {
+                        "type": "string"
+                      },
+                      "fheqLevel": {
+                        "anyOf": [
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "groupCode": {
+                        "type": "string"
+                      },
+                      "title": {
+                        "type": "string"
+                      },
+                      "groupTypeCode": {
+                        "type": "string"
+                      },
+                      "minModules": {
+                        "anyOf": [
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "maxModules": {
+                        "anyOf": [
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "minCredits": {
+                        "anyOf": [
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "maxCredits": {
+                        "anyOf": [
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "minFheqLevel": {
+                        "anyOf": [
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "maxFheqLevel": {
+                        "anyOf": [
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "members": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "required": [
+                            "moduleGroupMemberId",
+                            "moduleId",
+                            "moduleCode",
+                            "moduleTitle",
+                            "isDefault",
+                            "isNonCondonable"
+                          ],
+                          "properties": {
+                            "moduleGroupMemberId": {
+                              "type": "string"
+                            },
+                            "moduleId": {
+                              "type": "string"
+                            },
+                            "moduleCode": {
+                              "type": "string"
+                            },
+                            "moduleTitle": {
+                              "type": "string"
+                            },
+                            "isDefault": {
+                              "type": "boolean"
+                            },
+                            "isNonCondonable": {
+                              "type": "boolean"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createModuleGroups",
+        "tags": [
+          "module-selection"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "programmeRuleSetId",
+                  "groupCode",
+                  "title",
+                  "groupTypeCode"
+                ],
+                "properties": {
+                  "programmeRuleSetId": {
+                    "type": "string"
+                  },
+                  "fheqLevel": {
+                    "type": "number"
+                  },
+                  "groupCode": {
+                    "type": "string"
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "groupTypeCode": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "compulsory"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "optional-pool"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "elective-pool"
+                        ]
+                      }
+                    ]
+                  },
+                  "minModules": {
+                    "type": "number"
+                  },
+                  "maxModules": {
+                    "type": "number"
+                  },
+                  "minCredits": {
+                    "type": "number"
+                  },
+                  "maxCredits": {
+                    "type": "number"
+                  },
+                  "minFheqLevel": {
+                    "type": "number"
+                  },
+                  "maxFheqLevel": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-publication-class": "public",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "moduleGroupId"
+                  ],
+                  "properties": {
+                    "moduleGroupId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/module-groups/{moduleGroupId}/members": {
+      "post": {
+        "operationId": "createModuleGroupsByModuleGroupIdMembers",
+        "tags": [
+          "module-selection"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "moduleId"
+                ],
+                "properties": {
+                  "moduleId": {
+                    "type": "string"
+                  },
+                  "isDefault": {
+                    "type": "boolean"
+                  },
+                  "isNonCondonable": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "moduleGroupId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "moduleGroupMemberId"
+                  ],
+                  "properties": {
+                    "moduleGroupMemberId": {
                       "type": "string"
                     }
                   }
@@ -28574,9 +33706,1165 @@
         }
       }
     },
+    "/api/v1/audit-review/cases": {
+      "get": {
+        "operationId": "getAuditReviewCases",
+        "tags": [
+          "governance"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "statusCode",
+            "required": false
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "auditReviewCaseId",
+                      "statusCode",
+                      "ownerId",
+                      "createdAt"
+                    ],
+                    "properties": {
+                      "auditReviewCaseId": {
+                        "type": "string"
+                      },
+                      "statusCode": {
+                        "type": "string"
+                      },
+                      "ownerId": {
+                        "type": "string"
+                      },
+                      "createdAt": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createAuditReviewCases",
+        "tags": [
+          "governance"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "ownerId"
+                ],
+                "properties": {
+                  "ownerId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-publication-class": "workflow",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "auditReviewCaseId"
+                  ],
+                  "properties": {
+                    "auditReviewCaseId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/audit-review/cases/{caseId}/findings": {
+      "post": {
+        "operationId": "createAuditReviewCasesByCaseIdFindings",
+        "tags": [
+          "governance"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "auditRecordId",
+                  "findingTypeCode"
+                ],
+                "properties": {
+                  "auditRecordId": {
+                    "type": "string"
+                  },
+                  "findingTypeCode": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "no-concern"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "policy-breach"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "tamper-suspected"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "investigation-required"
+                        ]
+                      }
+                    ]
+                  },
+                  "description": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "caseId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "findingId"
+                  ],
+                  "properties": {
+                    "findingId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/audit-review/seal": {
+      "post": {
+        "operationId": "createAuditReviewSeal",
+        "tags": [
+          "governance"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "rangeStart",
+                  "rangeEnd"
+                ],
+                "properties": {
+                  "rangeStart": {
+                    "type": "string"
+                  },
+                  "rangeEnd": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-publication-class": "workflow",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "sealId"
+                  ],
+                  "properties": {
+                    "sealId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/rights-requests": {
+      "get": {
+        "operationId": "getRightsRequests",
+        "tags": [
+          "governance"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "statusCode",
+            "required": false
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "individualRightsRequestId",
+                      "personId",
+                      "requestTypeCode",
+                      "statusCode",
+                      "ownerId",
+                      "receivedAt",
+                      "statutoryDeadlineDate"
+                    ],
+                    "properties": {
+                      "individualRightsRequestId": {
+                        "type": "string"
+                      },
+                      "personId": {
+                        "type": "string"
+                      },
+                      "requestTypeCode": {
+                        "type": "string"
+                      },
+                      "statusCode": {
+                        "type": "string"
+                      },
+                      "ownerId": {
+                        "type": "string"
+                      },
+                      "receivedAt": {
+                        "type": "string"
+                      },
+                      "statutoryDeadlineDate": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createRightsRequests",
+        "tags": [
+          "governance"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "personId",
+                  "requestTypeCode",
+                  "statutoryDeadlineDate",
+                  "ownerId"
+                ],
+                "properties": {
+                  "personId": {
+                    "type": "string"
+                  },
+                  "requestTypeCode": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "access"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "rectification"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "erasure"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "restriction"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "portability"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "objection"
+                        ]
+                      }
+                    ]
+                  },
+                  "statutoryDeadlineDate": {
+                    "type": "string"
+                  },
+                  "ownerId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-publication-class": "workflow",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "requestId"
+                  ],
+                  "properties": {
+                    "requestId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/retention-schedules": {
+      "get": {
+        "operationId": "getRetentionSchedules",
+        "tags": [
+          "governance"
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "retentionScheduleId",
+                      "entityType",
+                      "retentionPeriodMonths",
+                      "triggerEventCode",
+                      "description"
+                    ],
+                    "properties": {
+                      "retentionScheduleId": {
+                        "type": "string"
+                      },
+                      "entityType": {
+                        "type": "string"
+                      },
+                      "retentionPeriodMonths": {
+                        "type": "string"
+                      },
+                      "triggerEventCode": {
+                        "type": "string"
+                      },
+                      "description": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createRetentionSchedules",
+        "tags": [
+          "governance"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "entityType",
+                  "retentionPeriodMonths",
+                  "triggerEventCode"
+                ],
+                "properties": {
+                  "entityType": {
+                    "type": "string"
+                  },
+                  "retentionPeriodMonths": {
+                    "type": "string"
+                  },
+                  "triggerEventCode": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-publication-class": "workflow",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "retentionScheduleId"
+                  ],
+                  "properties": {
+                    "retentionScheduleId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/retention-assignments": {
+      "get": {
+        "operationId": "getRetentionAssignments",
+        "tags": [
+          "governance"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "retentionScheduleId",
+            "required": false
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "retentionAssignmentId",
+                      "retentionScheduleId",
+                      "entityType",
+                      "entityId",
+                      "assignedAt",
+                      "scheduledDisposalDate",
+                      "hasActiveHold",
+                      "disposed"
+                    ],
+                    "properties": {
+                      "retentionAssignmentId": {
+                        "type": "string"
+                      },
+                      "retentionScheduleId": {
+                        "type": "string"
+                      },
+                      "entityType": {
+                        "type": "string"
+                      },
+                      "entityId": {
+                        "type": "string"
+                      },
+                      "assignedAt": {
+                        "type": "string"
+                      },
+                      "scheduledDisposalDate": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "hasActiveHold": {
+                        "type": "boolean"
+                      },
+                      "disposed": {
+                        "type": "boolean"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/rights-requests/{requestId}/scope": {
+      "post": {
+        "operationId": "createRightsRequestsByRequestIdScope",
+        "tags": [
+          "governance"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "scopeEntityType"
+                ],
+                "properties": {
+                  "scopeEntityType": {
+                    "type": "string"
+                  },
+                  "scopeDescription": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "requestId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "scopeId"
+                  ],
+                  "properties": {
+                    "scopeId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/rights-requests/{requestId}/search-manifest": {
+      "post": {
+        "operationId": "createRightsRequestsByRequestIdSearchManifest",
+        "tags": [
+          "governance"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "searchedSystem",
+                  "recordCount"
+                ],
+                "properties": {
+                  "searchedSystem": {
+                    "type": "string"
+                  },
+                  "recordCount": {
+                    "minimum": 0,
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "requestId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "manifestId"
+                  ],
+                  "properties": {
+                    "manifestId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/rights-requests/{requestId}/decision": {
+      "post": {
+        "operationId": "createRightsRequestsByRequestIdDecision",
+        "tags": [
+          "governance"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "decisionTypeCode"
+                ],
+                "properties": {
+                  "decisionTypeCode": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "granted"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "partially-granted"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "refused"
+                        ]
+                      }
+                    ]
+                  },
+                  "legalBasis": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "requestId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "decisionId"
+                  ],
+                  "properties": {
+                    "decisionId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/rights-restrictions": {
+      "post": {
+        "operationId": "createRightsRestrictions",
+        "tags": [
+          "governance"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "personId",
+                  "restrictionTypeCode"
+                ],
+                "properties": {
+                  "personId": {
+                    "type": "string"
+                  },
+                  "restrictionTypeCode": {
+                    "type": "string"
+                  },
+                  "rightsDecisionId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-publication-class": "workflow",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "restrictionId"
+                  ],
+                  "properties": {
+                    "restrictionId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/rights-restrictions/{restrictionId}/lift": {
+      "patch": {
+        "operationId": "updateRightsRestrictionsByRestrictionIdLift",
+        "tags": [
+          "governance"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "restrictionId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "204": {
+            "description": "Default Response"
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/retention-schedules/{scheduleId}/assignments": {
+      "post": {
+        "operationId": "createRetentionSchedulesByScheduleIdAssignments",
+        "tags": [
+          "governance"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "entityType",
+                  "entityId"
+                ],
+                "properties": {
+                  "entityType": {
+                    "type": "string"
+                  },
+                  "entityId": {
+                    "type": "string"
+                  },
+                  "scheduledDisposalDate": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "scheduleId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "retentionAssignmentId"
+                  ],
+                  "properties": {
+                    "retentionAssignmentId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/retention-assignments/{assignmentId}/holds": {
+      "post": {
+        "operationId": "createRetentionAssignmentsByAssignmentIdHolds",
+        "tags": [
+          "governance"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "holdReasonCode"
+                ],
+                "properties": {
+                  "holdReasonCode": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "assignmentId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "holdId"
+                  ],
+                  "properties": {
+                    "holdId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/retention-assignments/{assignmentId}/disposition": {
+      "post": {
+        "operationId": "createRetentionAssignmentsByAssignmentIdDisposition",
+        "tags": [
+          "governance"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "dispositionTypeCode"
+                ],
+                "properties": {
+                  "dispositionTypeCode": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "anonymised"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "deleted"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "transferred"
+                        ]
+                      }
+                    ]
+                  },
+                  "evidenceRef": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "assignmentId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "dispositionId"
+                  ],
+                  "properties": {
+                    "dispositionId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/notifications/stream": {
       "get": {
         "operationId": "getNotificationsStream",
+        "tags": [
+          "communications"
+        ],
         "description": "Open an SSE stream for real-time notifications",
         "security": [
           {
@@ -28594,6 +34882,9 @@
     "/api/v1/notifications": {
       "get": {
         "operationId": "getNotifications",
+        "tags": [
+          "communications"
+        ],
         "parameters": [
           {
             "schema": {
@@ -28694,6 +34985,9 @@
     "/api/v1/notifications/{id}/read": {
       "patch": {
         "operationId": "updateNotificationsByIdRead",
+        "tags": [
+          "communications"
+        ],
         "parameters": [
           {
             "schema": {
@@ -28842,6 +35136,9 @@
     "/api/v1/admin/notifications": {
       "post": {
         "operationId": "createAdminNotifications",
+        "tags": [
+          "communications"
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -29006,6 +35303,10 @@
     {
       "name": "integration-registry",
       "description": "Integration contracts, registrations, and exchange audit"
+    },
+    {
+      "name": "module-selection",
+      "description": "Module selection proposals, diet groups, and curriculum rule-set binding"
     }
   ]
 }

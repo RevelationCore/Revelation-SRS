@@ -8,6 +8,9 @@ import {
 import { ApiError } from '../api/client.js';
 import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
+import {
+  PageHeader, Button, Select, Card, CardBody, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
+} from '@revelation-srs/ui';
 
 const OFS_ACADEMIC_YEARS = ['2025-26', '2024-25', '2023-24', '2022-23'];
 
@@ -79,90 +82,83 @@ function B3Tab({
 
   return (
     <div className="space-y-5">
-      <p className="text-sm text-gray-500">
+      <p className="text-sm text-neutral-500">
         Generate the OfS B3 student data extract for a given academic year. The extract can be
         downloaded as JSON for submission to the OfS data portal.
       </p>
 
       <div className="flex items-center gap-3">
-        <label htmlFor="ofs-b3-academic-year" className="text-sm font-medium text-gray-700">Academic year</label>
-        <select
+        <label htmlFor="ofs-b3-academic-year" className="text-sm font-medium text-neutral-700">Academic year</label>
+        <Select
           id="ofs-b3-academic-year"
           value={academicYear}
           onChange={e => setAcademicYear(e.target.value)}
-          className="rounded border border-gray-300 px-2 py-1.5 text-sm"
+          className="w-auto"
         >
           {OFS_ACADEMIC_YEARS.map(y => <option key={y} value={y}>{y}</option>)}
-        </select>
-        <button
-          onClick={() => void handleGenerate()}
-          disabled={generating}
-          className="rounded bg-indigo-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50 focus:outline-none"
-        >
-          {generating ? <span className="flex items-center gap-2"><Spinner />Generating…</span> : 'Generate extract'}
-        </button>
+        </Select>
+        <Button onClick={() => void handleGenerate()} disabled={generating} icon={generating ? <Spinner /> : undefined}>
+          {generating ? 'Generating…' : 'Generate extract'}
+        </Button>
       </div>
 
-      {error      && <p className="text-sm text-red-600">{error}</p>}
-      {successMsg && <p className="text-sm text-green-600">{successMsg}</p>}
+      {error      && <p className="text-sm text-danger-600">{error}</p>}
+      {successMsg && <p className="text-sm text-success-600">{successMsg}</p>}
 
       {extracts.length === 0 && !generating ? (
-        <p className="text-sm text-gray-600">No extracts generated in this session.</p>
+        <p className="text-sm text-neutral-600">No extracts generated in this session.</p>
       ) : extracts.length > 0 && (
         <div className="space-y-4">
-          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-200 text-sm">
-              <thead className="bg-gray-50">
+          <Card>
+            <Table>
+              <TableHead>
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Extract ID</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Year</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Records</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Generated</th>
+                  <TableHeaderCell>Extract ID</TableHeaderCell>
+                  <TableHeaderCell>Year</TableHeaderCell>
+                  <TableHeaderCell>Records</TableHeaderCell>
+                  <TableHeaderCell>Status</TableHeaderCell>
+                  <TableHeaderCell>Generated</TableHeaderCell>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
+              </TableHead>
+              <TableBody>
                 {extracts.map(e => (
-                  <tr
+                  <TableRow
                     key={e.extractId}
                     onClick={() => setSelected(selected?.extractId === e.extractId ? null : e)}
-                    className={`cursor-pointer hover:bg-gray-50 ${selected?.extractId === e.extractId ? 'bg-indigo-50' : ''}`}
+                    className={`cursor-pointer ${selected?.extractId === e.extractId ? 'bg-primary-50' : ''}`}
                   >
-                    <td className="px-4 py-3 font-mono text-xs text-gray-700">{e.extractId}</td>
-                    <td className="px-4 py-3 text-xs text-gray-600">{e.academicYear ?? '—'}</td>
-                    <td className="px-4 py-3 text-xs text-gray-600">{e.recordCount ?? '—'}</td>
-                    <td className="px-4 py-3">
+                    <TableCell className="font-mono text-xs text-neutral-700">{e.extractId}</TableCell>
+                    <TableCell className="text-xs">{e.academicYear ?? '—'}</TableCell>
+                    <TableCell className="text-xs">{e.recordCount ?? '—'}</TableCell>
+                    <TableCell>
                       <span className="flex items-center gap-1.5">
                         <Badge value={e.statusCode} />
                         {polling === e.extractId && <Spinner />}
                       </span>
-                    </td>
-                    <td className="px-4 py-3 text-gray-500 text-xs">
+                    </TableCell>
+                    <TableCell className="text-xs">
                       {e.generatedAt ? new Date(e.generatedAt).toLocaleString('en-GB') : '—'}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
-          </div>
+              </TableBody>
+            </Table>
+          </Card>
 
           {selected && (
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-sm font-semibold text-gray-700">
-                  Payload — {selected.academicYear} ({selected.recordCount} records)
-                </h2>
-                <button
-                  onClick={handleDownload}
-                  className="rounded border border-gray-300 px-3 py-1 text-xs text-gray-600 hover:bg-gray-50 focus:outline-none"
-                >
-                  Download JSON
-                </button>
-              </div>
-              <pre className="bg-gray-50 rounded p-3 text-xs text-gray-700 overflow-auto max-h-96">
-                {JSON.stringify(selected.payload, null, 2)}
-              </pre>
-            </div>
+            <Card>
+              <CardBody>
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-sm font-semibold text-neutral-700">
+                    Payload — {selected.academicYear} ({selected.recordCount} records)
+                  </h2>
+                  <Button variant="secondary" size="sm" onClick={handleDownload}>Download JSON</Button>
+                </div>
+                <pre className="bg-neutral-50 rounded p-3 text-xs text-neutral-700 overflow-auto max-h-96">
+                  {JSON.stringify(selected.payload, null, 2)}
+                </pre>
+              </CardBody>
+            </Card>
           )}
         </div>
       )}
@@ -217,83 +213,76 @@ function ParticipationTab({
 
   return (
     <div className="space-y-5">
-      <p className="text-sm text-gray-500">
+      <p className="text-sm text-neutral-500">
         Generate the OfS participation report for a given academic year. This report covers
         widening participation metrics and equality of opportunity data.
       </p>
 
       <div className="flex items-center gap-3">
-        <label htmlFor="ofs-participation-academic-year" className="text-sm font-medium text-gray-700">Academic year</label>
-        <select
+        <label htmlFor="ofs-participation-academic-year" className="text-sm font-medium text-neutral-700">Academic year</label>
+        <Select
           id="ofs-participation-academic-year"
           value={academicYear}
           onChange={e => setAcademicYear(e.target.value)}
-          className="rounded border border-gray-300 px-2 py-1.5 text-sm"
+          className="w-auto"
         >
           {OFS_ACADEMIC_YEARS.map(y => <option key={y} value={y}>{y}</option>)}
-        </select>
-        <button
-          onClick={() => void handleGenerate()}
-          disabled={generating}
-          className="rounded bg-indigo-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50 focus:outline-none"
-        >
-          {generating ? <span className="flex items-center gap-2"><Spinner />Generating…</span> : 'Generate report'}
-        </button>
+        </Select>
+        <Button onClick={() => void handleGenerate()} disabled={generating} icon={generating ? <Spinner /> : undefined}>
+          {generating ? 'Generating…' : 'Generate report'}
+        </Button>
       </div>
 
-      {error      && <p className="text-sm text-red-600">{error}</p>}
-      {successMsg && <p className="text-sm text-green-600">{successMsg}</p>}
+      {error      && <p className="text-sm text-danger-600">{error}</p>}
+      {successMsg && <p className="text-sm text-success-600">{successMsg}</p>}
 
       {reports.length === 0 && !generating ? (
-        <p className="text-sm text-gray-600">No reports generated in this session.</p>
+        <p className="text-sm text-neutral-600">No reports generated in this session.</p>
       ) : reports.length > 0 && (
         <div className="space-y-4">
-          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-200 text-sm">
-              <thead className="bg-gray-50">
+          <Card>
+            <Table>
+              <TableHead>
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Report ID</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Year</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Records</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Generated</th>
+                  <TableHeaderCell>Report ID</TableHeaderCell>
+                  <TableHeaderCell>Year</TableHeaderCell>
+                  <TableHeaderCell>Records</TableHeaderCell>
+                  <TableHeaderCell>Generated</TableHeaderCell>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
+              </TableHead>
+              <TableBody>
                 {reports.map(r => (
-                  <tr
+                  <TableRow
                     key={r.extractId}
                     onClick={() => setSelected(selected?.extractId === r.extractId ? null : r)}
-                    className={`cursor-pointer hover:bg-gray-50 ${selected?.extractId === r.extractId ? 'bg-indigo-50' : ''}`}
+                    className={`cursor-pointer ${selected?.extractId === r.extractId ? 'bg-primary-50' : ''}`}
                   >
-                    <td className="px-4 py-3 font-mono text-xs text-gray-700">{r.extractId}</td>
-                    <td className="px-4 py-3 text-xs text-gray-600">{r.academicYear}</td>
-                    <td className="px-4 py-3 text-xs text-gray-600">{r.recordCount}</td>
-                    <td className="px-4 py-3 text-gray-500 text-xs">
+                    <TableCell className="font-mono text-xs text-neutral-700">{r.extractId}</TableCell>
+                    <TableCell className="text-xs">{r.academicYear}</TableCell>
+                    <TableCell className="text-xs">{r.recordCount}</TableCell>
+                    <TableCell className="text-xs">
                       {new Date(r.generatedAt).toLocaleString('en-GB')}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
-          </div>
+              </TableBody>
+            </Table>
+          </Card>
 
           {selected && (
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-sm font-semibold text-gray-700">
-                  Payload — {selected.academicYear} ({selected.recordCount} records)
-                </h2>
-                <button
-                  onClick={handleDownload}
-                  className="rounded border border-gray-300 px-3 py-1 text-xs text-gray-600 hover:bg-gray-50 focus:outline-none"
-                >
-                  Download JSON
-                </button>
-              </div>
-              <pre className="bg-gray-50 rounded p-3 text-xs text-gray-700 overflow-auto max-h-96">
-                {JSON.stringify(selected.payload, null, 2)}
-              </pre>
-            </div>
+            <Card>
+              <CardBody>
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-sm font-semibold text-neutral-700">
+                    Payload — {selected.academicYear} ({selected.recordCount} records)
+                  </h2>
+                  <Button variant="secondary" size="sm" onClick={handleDownload}>Download JSON</Button>
+                </div>
+                <pre className="bg-neutral-50 rounded p-3 text-xs text-neutral-700 overflow-auto max-h-96">
+                  {JSON.stringify(selected.payload, null, 2)}
+                </pre>
+              </CardBody>
+            </Card>
           )}
         </div>
       )}
@@ -310,9 +299,9 @@ export function OfsPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-semibold text-gray-900 mb-6">Office for Students (OfS)</h1>
+      <PageHeader title="Office for Students (OfS)" />
 
-      <div className="border-b border-gray-200 mb-6">
+      <div className="border-b border-neutral-200 mb-6">
         <nav className="-mb-px flex gap-6">
           {([
             { id: 'b3',            label: 'B3 Extract' },
@@ -323,8 +312,8 @@ export function OfsPage() {
               onClick={() => setTab(t.id)}
               className={`pb-3 text-sm font-medium border-b-2 focus:outline-none ${
                 tab === t.id
-                  ? 'border-indigo-600 text-indigo-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? 'border-primary-600 text-primary-600'
+                  : 'border-transparent text-neutral-500 hover:text-neutral-700 hover:border-neutral-300'
               }`}
             >
               {t.label}

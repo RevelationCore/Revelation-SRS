@@ -1,23 +1,26 @@
 import { Link } from 'react-router-dom';
+import type { ComponentType } from 'react';
+import { Server, Plug } from 'lucide-react';
 import type { Permission } from '@revelation-srs/domain';
 import { useAuth } from '../auth/AuthContext.js';
 import { userHasAnyPermission } from '../auth/RequirePermission.js';
+import { PageHeader } from '@revelation-srs/ui';
 
 const SECTIONS: Array<{
-  to: string; name: string; description: string; icon: string; permission: Permission;
+  to: string; name: string; description: string; icon: ComponentType<{ className?: string }>; permission: Permission;
 }> = [
   {
     to:          '/operations/environment',
     name:        'Environment runtime',
     description: 'Current release version, migration state, active workflow definitions, and feature flag status',
-    icon:        '🖥',
+    icon:        Server,
     permission:  'environment:read',
   },
   {
     to:          '/operations/integrations',
     name:        'Integration operations',
     description: 'Connector health summaries, failed exchange log, retry/replay controls, and VLE connector residual status',
-    icon:        '🔌',
+    icon:        Plug,
     permission:  'integration:read',
   },
 ];
@@ -27,21 +30,20 @@ export function OperationsPage() {
   const sections = SECTIONS.filter(({ permission }) => userHasAnyPermission(roles, [permission]));
   return (
     <div>
-      <h1 className="text-xl font-semibold text-gray-900 mb-2">Operations</h1>
-      <p className="text-sm text-gray-500 mb-6">
-        System health, environment state, and integration operational controls.
-      </p>
+      <PageHeader title="Operations" description="System health, environment state, and integration operational controls." />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {sections.map(({ to, name, description, icon }) => (
+        {sections.map(({ to, name, description, icon: Icon }) => (
           <Link
             key={to}
             to={to}
-            className="flex gap-4 items-start rounded-lg border border-gray-200 bg-white p-5 hover:border-indigo-300 hover:shadow-sm transition-shadow"
+            className="flex gap-4 items-start rounded-xl border border-neutral-200 bg-white p-5 shadow-card hover:border-primary-300 hover:shadow-card-hover transition-shadow"
           >
-            <span className="text-2xl leading-none mt-0.5">{icon}</span>
+            <span className="rounded-md bg-primary-50 p-1.5 text-primary-600">
+              <Icon className="h-5 w-5" />
+            </span>
             <div>
-              <h2 className="text-sm font-semibold text-indigo-700">{name}</h2>
-              <p className="text-xs text-gray-500 mt-0.5">{description}</p>
+              <h2 className="text-sm font-semibold text-primary-700">{name}</h2>
+              <p className="text-xs text-neutral-500 mt-0.5">{description}</p>
             </div>
           </Link>
         ))}

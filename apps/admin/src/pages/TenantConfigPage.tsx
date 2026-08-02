@@ -12,6 +12,10 @@ import { useAuth } from '../auth/AuthContext.js';
 import { userHasAnyPermission } from '../auth/RequirePermission.js';
 import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
+import {
+  PageHeader, Card, CardHeader, CardBody, Button, Input, LabelledField,
+  Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
+} from '@revelation-srs/ui';
 
 export function TenantConfigPage() {
   const { roles }         = useAuth();
@@ -19,7 +23,7 @@ export function TenantConfigPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-semibold text-gray-900 mb-6">Tenant configuration</h1>
+      <PageHeader title="Tenant configuration" />
       <div className="space-y-8">
         <TenantConfigForm />
         {isSysAdmin && <TenantsPanel />}
@@ -78,10 +82,11 @@ function TenantConfigForm() {
   if (loading) return <div className="flex justify-center py-8"><Spinner /></div>;
 
   return (
-    <section className="bg-white rounded-lg border border-gray-200 p-6">
-      <h2 className="text-sm font-semibold text-gray-700 mb-4">Institution settings</h2>
+    <Card>
+      <CardHeader title="Institution settings" />
+      <CardBody>
       {!canWrite && (
-        <p className="mb-4 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2">
+        <p className="mb-4 text-xs text-warning-700 bg-warning-50 border border-warning-200 rounded px-3 py-2">
           You have read-only access to this configuration.
         </p>
       )}
@@ -95,22 +100,17 @@ function TenantConfigForm() {
         <Field name="hesaSubscriberId"       label="HESA subscriber ID"             defaultValue={config?.hesaSubscriberId ?? ''}          disabled={!canWrite} />
         <Field name="ucasProviderCode"       label="UCAS provider code"             defaultValue={config?.ucasProviderCode ?? ''}          disabled={!canWrite} />
 
-        {error   && <p className="col-span-2 text-sm text-red-600">{error}</p>}
-        {success && <p className="col-span-2 text-sm text-green-600">{success}</p>}
+        {error   && <p className="col-span-2 text-sm text-danger-600">{error}</p>}
+        {success && <p className="col-span-2 text-sm text-success-600">{success}</p>}
 
         {canWrite && (
           <div className="col-span-2 flex justify-end pt-2">
-            <button
-              type="submit"
-              disabled={saving}
-              className="rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
-            >
-              {saving ? 'Saving…' : 'Save configuration'}
-            </button>
+            <Button type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save configuration'}</Button>
           </div>
         )}
       </form>
-    </section>
+      </CardBody>
+    </Card>
   );
 }
 
@@ -155,73 +155,61 @@ function TenantsPanel() {
   }
 
   return (
-    <section className="bg-white rounded-lg border border-gray-200 p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-sm font-semibold text-gray-700">All tenants (system admin)</h2>
-        <button
-          onClick={() => setShowCreate(s => !s)}
-          className="rounded bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700"
-        >
-          New tenant
-        </button>
-      </div>
-
+    <Card>
+      <CardHeader
+        title="All tenants (system admin)"
+        actions={<Button size="sm" onClick={() => setShowCreate(s => !s)}>New tenant</Button>}
+      />
+      <CardBody>
       {showCreate && (
-        <form onSubmit={(e) => void handleCreate(e)} className="flex items-center gap-3 mb-4 p-4 bg-indigo-50 rounded-lg">
-          <input
+        <form onSubmit={(e) => void handleCreate(e)} className="flex items-center gap-3 mb-4 p-4 bg-primary-50 rounded-lg">
+          <Input
             value={slug}
             onChange={(e) => setSlug(e.target.value)}
             placeholder="slug"
-            className="rounded border border-gray-300 px-3 py-1.5 text-sm w-32 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-32"
           />
-          <input
+          <Input
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
             placeholder="Display name"
-            className="flex-1 rounded border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="flex-1"
           />
-          <button
-            type="submit"
-            disabled={creating}
-            className="rounded bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
-          >
-            {creating ? 'Creating…' : 'Create'}
-          </button>
-          <button type="button" onClick={() => setShowCreate(false)} className="text-sm text-gray-500">Cancel</button>
+          <Button type="submit" disabled={creating}>{creating ? 'Creating…' : 'Create'}</Button>
+          <Button type="button" variant="ghost" onClick={() => setShowCreate(false)}>Cancel</Button>
         </form>
       )}
 
-      {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
+      {error && <p className="mb-3 text-sm text-danger-600">{error}</p>}
 
       {loading ? (
         <div className="flex justify-center py-4"><Spinner /></div>
       ) : tenants.length === 0 ? (
-        <p className="text-sm text-gray-600">No tenants found.</p>
+        <p className="text-sm text-neutral-600">No tenants found.</p>
       ) : (
-        <div className="overflow-hidden border border-gray-100 rounded-lg">
-          <table className="min-w-full divide-y divide-gray-100 text-sm">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Slug</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {tenants.map(t => (
-                <tr key={t.tenantId} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-mono text-xs text-gray-700">{t.slug}</td>
-                  <td className="px-4 py-3 text-gray-900">{t.displayName}</td>
-                  <td className="px-4 py-3"><Badge value={t.statusCode} /></td>
-                  <td className="px-4 py-3 text-gray-500 text-xs">{new Date(t.createdAt).toLocaleDateString('en-GB')}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <Table>
+          <TableHead>
+            <tr>
+              <TableHeaderCell>Slug</TableHeaderCell>
+              <TableHeaderCell>Name</TableHeaderCell>
+              <TableHeaderCell>Status</TableHeaderCell>
+              <TableHeaderCell>Created</TableHeaderCell>
+            </tr>
+          </TableHead>
+          <TableBody>
+            {tenants.map(t => (
+              <TableRow key={t.tenantId}>
+                <TableCell className="font-mono text-xs text-neutral-700">{t.slug}</TableCell>
+                <TableCell className="text-neutral-900">{t.displayName}</TableCell>
+                <TableCell><Badge value={t.statusCode} /></TableCell>
+                <TableCell className="text-xs">{new Date(t.createdAt).toLocaleDateString('en-GB')}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       )}
-    </section>
+      </CardBody>
+    </Card>
   );
 }
 
@@ -239,16 +227,8 @@ function Field({
   disabled?:     boolean;
 }) {
   return (
-    <div>
-      <label htmlFor={`tenant-config-${name}`} className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
-      <input
-        id={`tenant-config-${name}`}
-        name={name}
-        type={type}
-        defaultValue={defaultValue}
-        disabled={disabled}
-        className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-50 disabled:text-gray-700"
-      />
-    </div>
+    <LabelledField label={label} htmlFor={`tenant-config-${name}`}>
+      <Input id={`tenant-config-${name}`} name={name} type={type} defaultValue={defaultValue} disabled={disabled} />
+    </LabelledField>
   );
 }

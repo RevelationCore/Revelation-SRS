@@ -27,7 +27,7 @@ export const academicRules = pgTable('academic_rule', {
   recordedUntil:  timestamp('recorded_until',{ withTimezone: true }),
 });
 // UNIQUE INDEX (tenant_id, id, recorded_at) and partial UNIQUE on current version
-// plus RLS policy are all in migration 0000_initial_platform_schema.sql
+// plus RLS policy are all in migration 0000_platform_foundations.sql
 
 export type AcademicRule    = typeof academicRules.$inferSelect;
 export type NewAcademicRule = typeof academicRules.$inferInsert;

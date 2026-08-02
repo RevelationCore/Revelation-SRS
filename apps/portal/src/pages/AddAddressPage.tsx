@@ -8,7 +8,7 @@ import { useAuth } from '../auth/AuthContext.js';
 import { useApiData } from '../hooks/useApiData.js';
 import { useFormSubmit } from '../hooks/useFormSubmit.js';
 import { postAddress, getFieldValueSet, type StudentAddress } from '../api/me.js';
-import { Problem, Field, Spinner } from '@revelation-srs/ui';
+import { Problem, Field, Spinner, PageHeader, Card, CardBody, Button, Select } from '@revelation-srs/ui';
 
 const schema = z.object({
   addressTypeCode: z.string().min(1, 'Address type is required.'),
@@ -71,50 +71,47 @@ export function AddAddressPage() {
   const submitLabel = isEdit ? 'Update address' : t('portal.address.addButton');
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">{heading}</h1>
-        <p className="mt-1 text-sm text-gray-500">{subheading}</p>
-      </div>
+    <div>
+      <PageHeader title={heading} description={subheading} />
 
       {submitError && <Problem title={t('status.error')} detail={submitError} />}
 
       <form onSubmit={handleSubmit(onSubmit)} noValidate>
-        <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm space-y-4">
+        <Card>
+          <CardBody className="space-y-4">
           {/* Address type */}
           <div className="space-y-1">
-            <label htmlFor="addressTypeCode" className="block text-sm font-medium text-gray-700">
-              {t('portal.address.typeLabel')} <span className="text-red-500" aria-hidden="true">*</span>
+            <label htmlFor="addressTypeCode" className="block text-sm font-medium text-neutral-700">
+              {t('portal.address.typeLabel')} <span className="text-danger-500" aria-hidden="true">*</span>
             </label>
             {vsLoading ? (
-              <div className="flex items-center gap-2 py-2 text-sm text-gray-500">
+              <div className="flex items-center gap-2 py-2 text-sm text-neutral-500">
                 <Spinner size="sm" /> Loading address types…
               </div>
             ) : isEdit ? (
               /* Lock type when editing — service upserts by type */
               <>
                 <input type="hidden" {...register('addressTypeCode')} />
-                <p className="rounded border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
+                <p className="rounded border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm text-neutral-700">
                   {addressTypes.find(m => m.code === existing?.addressTypeCode)?.displayLabel
                     ?? existing?.addressTypeCode}
                 </p>
               </>
             ) : (
-              <select
+              <Select
                 id="addressTypeCode"
                 aria-required="true"
-                aria-invalid={errors.addressTypeCode ? 'true' : undefined}
-                className="block w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                invalid={!!errors.addressTypeCode}
                 {...register('addressTypeCode')}
               >
                 <option value="">Select address type…</option>
                 {addressTypes.map(({ code, displayLabel }) => (
                   <option key={code} value={code}>{displayLabel}</option>
                 ))}
-              </select>
+              </Select>
             )}
             {errors.addressTypeCode && (
-              <p role="alert" className="text-xs text-red-600">{errors.addressTypeCode.message}</p>
+              <p role="alert" className="text-xs text-danger-600">{errors.addressTypeCode.message}</p>
             )}
           </div>
 
@@ -146,23 +143,16 @@ export function AddAddressPage() {
             registration={register('countryCode')}
             error={errors.countryCode}
           />
-        </div>
+          </CardBody>
+        </Card>
 
         <div className="mt-5 flex items-center gap-3">
-          <button
-            type="submit"
-            disabled={submitting || vsLoading}
-            className="inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-          >
-            {submitting ? <><Spinner size="sm" />{t('status.saving')}</> : submitLabel}
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/profile')}
-            className="rounded-md px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          >
+          <Button type="submit" disabled={submitting || vsLoading} icon={submitting ? <Spinner size="sm" /> : undefined}>
+            {submitting ? t('status.saving') : submitLabel}
+          </Button>
+          <Button type="button" variant="ghost" onClick={() => navigate('/profile')}>
             {t('actions.cancel')}
-          </button>
+          </Button>
         </div>
       </form>
     </div>

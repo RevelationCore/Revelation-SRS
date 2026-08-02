@@ -20,6 +20,7 @@ export const ROLES = [
   'tenant-administrator',
   'system-administrator',
   'integration-service',
+  'programme-approver',
 ] as const;
 
 export type Role = (typeof ROLES)[number];
@@ -107,6 +108,14 @@ export const PERMISSION_ROLES = {
   'engagement-outcome:write':           ['integration-service', 'engagement-officer', 'registry-administrator'] as Role[],
   'engagement-outcome:read:own':        ['student'] as Role[],
   'engagement-outcome:read:all':        ['personal-tutor', 'engagement-officer', 'registry-administrator', 'integration-service'] as Role[],
+  'identity:manage':                    ['dpo', 'registry-administrator'] as Role[],
+  'module-selection:read:own':          ['student'] as Role[],
+  'module-selection:write:own':         ['student'] as Role[],
+  'module-selection:read:all':          ['registry-administrator', 'personal-tutor', 'programme-approver', 'integration-service'] as Role[],
+  'module-selection:decide':            ['registry-administrator', 'programme-approver'] as Role[],
+  'module-selection:configure':         ['registry-administrator', 'tenant-administrator'] as Role[],
+  'curriculum-binding:read':             ['registry-administrator', 'programme-approver'] as Role[],
+  'curriculum-binding:write':            ['registry-administrator'] as Role[],
 } as const;
 
 export type Permission = keyof typeof PERMISSION_ROLES;

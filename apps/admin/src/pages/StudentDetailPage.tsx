@@ -1,5 +1,6 @@
 import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import {
   type Adjustment,
   type DisabilityDeclaration,
@@ -19,9 +20,12 @@ import {
 } from '../api/students.js';
 import {
   type CorrectionCase,
+  type AmendableEntityType,
   listCorrectionCases,
   createCorrectionCase,
   updateCaseStatus,
+  addCaseAmendment,
+  distributeAmendment,
 } from '../api/corrections.js';
 import { getAuditLog, type AuditEntry } from '../api/auditLog.js';
 import {
@@ -52,14 +56,26 @@ import {
   getModuleResult,
   listComponents,
 } from '../api/marks.js';
+import {
+  type CasCase,
+  listCasCases,
+  openCasCase,
+  recordEligibilityCheck,
+  recordAssignmentVersion,
+  recordSponsorReportVersion,
+} from '../api/casCases.js';
 import { ApiError } from '../api/client.js';
 import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
 import { useValueSet } from '../hooks/useValueSet.js';
 import { useAuth } from '../auth/AuthContext.js';
 import { userHasAnyPermission } from '../auth/RequirePermission.js';
+import {
+  PageHeader, Card, CardHeader, CardBody, Button, Input, Select, Textarea, LabelledField,
+  Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, Dialog, DialogClose,
+} from '@revelation-srs/ui';
 
-type Tab = 'identity' | 'enrolments' | 'registrations' | 'assessment' | 'history' | 'wellbeing' | 'corrections' | 'communications';
+type Tab = 'identity' | 'enrolments' | 'registrations' | 'assessment' | 'history' | 'wellbeing' | 'corrections' | 'cas' | 'communications';
 
 export function StudentDetailPage() {
   const { roles } = useAuth();
@@ -85,7 +101,7 @@ export function StudentDetailPage() {
   useEffect(() => { void reload(); }, [reload]);
 
   if (loading) return <div className="flex justify-center py-16"><Spinner /></div>;
-  if (error)   return <p className="text-red-600">{error}</p>;
+  if (error)   return <p className="text-danger-600">{error}</p>;
   if (!student) return null;
 
   const displayName = student.identity
@@ -96,6 +112,9 @@ export function StudentDetailPage() {
   const canReadRegistrations = userHasAnyPermission(roles, ['module-registration:read:all']);
   const canReadAssessment = userHasAnyPermission(roles, ['mark:read:all']);
   const canReadCorrections = userHasAnyPermission(roles, ['exam-board:read']);
+  const canRatify = userHasAnyPermission(roles, ['exam-board:ratify']);
+  const canReadCas = userHasAnyPermission(roles, ['regulatory:read']);
+  const canWriteCas = userHasAnyPermission(roles, ['regulatory:write']);
   const canReadDisability = userHasAnyPermission(roles, ['disability:read']);
   const canReadAdjustments = userHasAnyPermission(roles, ['adjustment:read:all']);
   const canReadCircumstances = userHasAnyPermission(roles, ['circumstances:read']);
@@ -104,6 +123,7 @@ export function StudentDetailPage() {
     'identity',
     ...(canReadEnrolments ? ['enrolments', 'history'] as Tab[] : []),
     ...(canReadEnrolments && canReadCorrections ? ['corrections'] as Tab[] : []),
+    ...(canReadEnrolments && canReadCas ? ['cas'] as Tab[] : []),
     ...(canReadRegistrations ? ['registrations'] as Tab[] : []),
     ...(canReadAssessment ? ['assessment'] as Tab[] : []),
     ...(canReadDisability || canReadAdjustments || canReadCircumstances ? ['wellbeing'] as Tab[] : []),
@@ -112,35 +132,26 @@ export function StudentDetailPage() {
 
   return (
     <div>
-      {/* Breadcrumb */}
-      <div className="mb-4 text-sm text-gray-500">
-        <Link to="/students" className="hover:text-indigo-600">Students</Link>
-        <span className="mx-2">›</span>
-        <span className="text-gray-900">{displayName}</span>
-      </div>
-
-      {/* Header */}
-      <div className="flex items-start justify-between mb-6">
-        <div>
-          <h1 className="text-xl font-semibold text-gray-900">{displayName}</h1>
-          <p className="text-sm text-gray-500 mt-0.5 font-mono">{student.studentNumber}</p>
-        </div>
-        <Badge value={student.personStatusCode} />
-      </div>
+      <PageHeader
+        breadcrumbs={[{ label: 'Students', to: '/students' }]}
+        title={displayName}
+        description={<span className="font-mono">{student.studentNumber}</span>}
+        actions={<Badge value={student.personStatusCode} />}
+      />
 
       {/* Tabs */}
-      <div className="border-b border-gray-200 mb-6">
+      <div className="border-b border-neutral-200 mb-6">
         {tabs.map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
             className={`mr-6 pb-3 text-sm font-medium capitalize border-b-2 transition-colors ${
               tab === t
-                ? 'border-indigo-600 text-indigo-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
+                ? 'border-primary-600 text-primary-600'
+                : 'border-transparent text-neutral-500 hover:text-neutral-700'
             }`}
           >
-            {t}
+            {t === 'cas' ? 'CAS' : t}
           </button>
         ))}
       </div>
@@ -165,7 +176,10 @@ export function StudentDetailPage() {
           canReadAdjustments={canReadAdjustments} canReadCircumstances={canReadCircumstances} />
       )}
       {tab === 'corrections' && personId && (
-        <CorrectionsTab personId={personId} />
+        <CorrectionsTab personId={personId} canRatify={canRatify} />
+      )}
+      {tab === 'cas' && personId && (
+        <CasTab personId={personId} canWrite={canWriteCas} />
       )}
       {tab === 'communications' && personId && (
         <CommunicationsTab personId={personId} />
@@ -242,16 +256,16 @@ function IdentityTab({
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
       {/* Identity card */}
-      <section className="bg-white rounded-lg border border-gray-200 p-5">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold text-gray-700">Personal identity</h2>
-          {canWrite && !editing && (
-            <button onClick={() => setEditing(true)} className="text-xs text-indigo-600 hover:underline">
+      <Card>
+        <CardHeader
+          title="Personal identity"
+          actions={canWrite && !editing && (
+            <button onClick={() => setEditing(true)} className="text-xs text-primary-600 hover:underline">
               Edit
             </button>
           )}
-        </div>
-
+        />
+        <CardBody>
         {editing ? (
           <form onSubmit={(e) => void handleIdentitySave(e)} className="space-y-3">
             <IdentityField name="legalFirstName"    label="Legal first name"     defaultValue={id?.legalFirstName} />
@@ -261,14 +275,10 @@ function IdentityTab({
             <IdentityField name="emailInstitutional" label="Institutional email" defaultValue={id?.emailInstitutional ?? ''} type="email" />
             <IdentityField name="emailPersonal"     label="Personal email"       defaultValue={id?.emailPersonal ?? ''} type="email" />
             <IdentityField name="phoneMobile"       label="Mobile phone"         defaultValue={id?.phoneMobile ?? ''} />
-            {error && <p className="text-xs text-red-600">{error}</p>}
+            {error && <p className="text-xs text-danger-600">{error}</p>}
             <div className="flex gap-2 pt-1">
-              <button type="submit" disabled={saving} className="px-3 py-1 bg-indigo-600 text-white text-xs rounded hover:bg-indigo-700 disabled:opacity-50">
-                {saving ? 'Saving…' : 'Save'}
-              </button>
-              <button type="button" onClick={() => setEditing(false)} className="px-3 py-1 text-xs text-gray-600 hover:text-gray-900">
-                Cancel
-              </button>
+              <Button type="submit" size="sm" disabled={saving}>{saving ? 'Saving…' : 'Save'}</Button>
+              <Button type="button" variant="ghost" size="sm" onClick={() => setEditing(false)}>Cancel</Button>
             </div>
           </form>
         ) : (
@@ -288,48 +298,48 @@ function IdentityTab({
             <IdentityRow label="Email (pers.)" value={id?.emailPersonal} />
             <IdentityRow label="Mobile"        value={id?.phoneMobile} />
             {id && (
-              <p className="text-xs text-gray-600 pt-1">
+              <p className="text-xs text-neutral-600 pt-1">
                 Updated {new Date(id.recordedAt).toLocaleDateString()}
               </p>
             )}
           </dl>
         )}
-      </section>
+        </CardBody>
+      </Card>
 
       {/* Right column: HESA ID + status */}
       <div className="space-y-4">
         {/* HESA ID */}
-        <section className="bg-white rounded-lg border border-gray-200 p-5">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-gray-700">HESA identifier</h2>
-            {canWrite && !editHesa && (
-              <button onClick={() => setEditHesa(true)} className="text-xs text-indigo-600 hover:underline">
+        <Card>
+          <CardHeader
+            title="HESA identifier"
+            actions={canWrite && !editHesa && (
+              <button onClick={() => setEditHesa(true)} className="text-xs text-primary-600 hover:underline">
                 {student.hesaId ? 'Update' : 'Add'}
               </button>
             )}
-          </div>
+          />
+          <CardBody>
           {editHesa ? (
             <form onSubmit={(e) => void handleHesaSave(e)} className="flex gap-2">
-              <input
+              <Input
                 name="hesaId"
                 defaultValue={student.hesaId ?? ''}
-                className="flex-1 rounded border border-gray-300 px-3 py-1 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="flex-1 font-mono"
               />
-              <button type="submit" disabled={saving} className="px-3 py-1 bg-indigo-600 text-white text-xs rounded hover:bg-indigo-700 disabled:opacity-50">
-                Save
-              </button>
-              <button type="button" onClick={() => setEditHesa(false)} className="text-xs text-gray-500">
-                Cancel
-              </button>
+              <Button type="submit" size="sm" disabled={saving}>Save</Button>
+              <Button type="button" variant="ghost" size="sm" onClick={() => setEditHesa(false)}>Cancel</Button>
             </form>
           ) : (
-            <p className="text-sm font-mono text-gray-900">{student.hesaId ?? <span className="text-gray-600 font-sans">Not set</span>}</p>
+            <p className="text-sm font-mono text-neutral-900">{student.hesaId ?? <span className="text-neutral-600 font-sans">Not set</span>}</p>
           )}
-        </section>
+          </CardBody>
+        </Card>
 
         {/* Person status */}
-        <section className="bg-white rounded-lg border border-gray-200 p-5">
-          <h2 className="text-sm font-semibold text-gray-700 mb-3">Lifecycle status</h2>
+        <Card>
+          <CardHeader title="Lifecycle status" />
+          <CardBody>
           <div className="flex items-center gap-3 flex-wrap">
             <Badge value={student.personStatusCode} />
             {canWrite && (['prospective','student','alumnus','deceased','merged'] as PersonStatusCode[]).map((s) => (
@@ -338,15 +348,16 @@ function IdentityTab({
                   key={s}
                   disabled={saving}
                   onClick={() => void handleStatusChange(s)}
-                  className="text-xs text-gray-500 hover:text-indigo-600 hover:underline disabled:opacity-40"
+                  className="text-xs text-neutral-500 hover:text-primary-600 hover:underline disabled:opacity-40"
                 >
                   → {s}
                 </button>
               )
             ))}
           </div>
-          {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
-        </section>
+          {error && <p className="mt-2 text-xs text-danger-600">{error}</p>}
+          </CardBody>
+        </Card>
       </div>
     </div>
   );
@@ -356,23 +367,17 @@ function IdentityField({ name, label, defaultValue, type = 'text' }: {
   name: string; label: string; defaultValue?: string | null; type?: string;
 }) {
   return (
-    <div>
-      <label className="block text-xs font-medium text-gray-600 mb-0.5">{label}</label>
-      <input
-        name={name}
-        type={type}
-        defaultValue={defaultValue ?? ''}
-        className="w-full rounded border border-gray-300 px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
-      />
-    </div>
+    <LabelledField label={label} htmlFor={`id-${name}`}>
+      <Input id={`id-${name}`} name={name} type={type} defaultValue={defaultValue ?? ''} />
+    </LabelledField>
   );
 }
 
 function IdentityRow({ label, value }: { label: string; value?: string | null }) {
   return (
     <div className="flex gap-2">
-      <dt className="w-32 flex-shrink-0 text-gray-500">{label}</dt>
-      <dd className="text-gray-900">{value ?? <span className="text-gray-600">—</span>}</dd>
+      <dt className="w-32 flex-shrink-0 text-neutral-500">{label}</dt>
+      <dd className="text-neutral-900">{value ?? <span className="text-neutral-600">—</span>}</dd>
     </div>
   );
 }
@@ -422,19 +427,14 @@ function EnrolmentsTab({
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-sm font-semibold text-gray-700">Enrolments</h2>
-        <button
-          onClick={() => setShowCreate(true)}
-          className="px-3 py-1.5 bg-indigo-600 text-white text-xs font-medium rounded hover:bg-indigo-700"
-        >
-          New enrolment
-        </button>
+        <h2 className="text-sm font-semibold text-neutral-700">Enrolments</h2>
+        <Button size="sm" onClick={() => setShowCreate(true)}>New enrolment</Button>
       </div>
 
-      {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
+      {error && <p className="mb-3 text-sm text-danger-600">{error}</p>}
 
       {enrolments.length === 0 ? (
-        <p className="text-sm text-gray-600">No enrolments on record.</p>
+        <p className="text-sm text-neutral-600">No enrolments on record.</p>
       ) : (
         <div className="space-y-3">
           {enrolments.map((e) => (
@@ -449,13 +449,13 @@ function EnrolmentsTab({
         </div>
       )}
 
-      {showCreate && (
-        <CreateEnrolmentModal
+      <Dialog open={showCreate} onOpenChange={(open) => { if (!open) setShowCreate(false); }} title="New enrolment">
+        <CreateEnrolmentForm
           personId={personId}
           onClose={() => setShowCreate(false)}
           onCreated={handleCreated}
         />
-      )}
+      </Dialog>
     </div>
   );
 }
@@ -505,36 +505,38 @@ function EnrolmentCard({
   }
 
   const TRANSITION_STYLES: Record<TransitionAction, string> = {
-    intermit:  'bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100',
-    suspend:   'bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100',
-    withdraw:  'bg-red-50    text-red-700    border-red-200    hover:bg-red-100',
-    graduate:  'bg-green-50  text-green-700  border-green-200  hover:bg-green-100',
-    reinstate: 'bg-blue-50   text-blue-700   border-blue-200   hover:bg-blue-100',
+    intermit:  'bg-warning-50 text-warning-700 border-warning-200 hover:bg-warning-100',
+    suspend:   'bg-warning-50 text-warning-700 border-warning-200 hover:bg-warning-100',
+    withdraw:  'bg-danger-50    text-danger-700    border-danger-200    hover:bg-danger-100',
+    graduate:  'bg-success-50  text-success-700  border-success-200  hover:bg-success-100',
+    reinstate: 'bg-primary-50   text-primary-700   border-primary-200   hover:bg-primary-100',
   };
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+    <Card className="overflow-hidden">
       <div
-        className="flex items-center gap-4 px-4 py-3 cursor-pointer hover:bg-gray-50"
+        className="flex items-center gap-4 px-4 py-3 cursor-pointer hover:bg-neutral-50"
         onClick={onToggle}
       >
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-gray-900">
+          <p className="text-sm font-medium text-neutral-900">
             {enrolment.academicYearOfEntry} · {enrolment.modeOfStudyCode}
           </p>
-          <p className="text-xs text-gray-500 mt-0.5 truncate">
+          <p className="text-xs text-neutral-500 mt-0.5 truncate">
             {enrolment.programmeName
               ? <>{enrolment.programmeCode && <span className="font-mono mr-1">{enrolment.programmeCode}</span>}{enrolment.programmeName}</>
-              : <span className="text-gray-600 italic">No programme assigned</span>
+              : <span className="text-neutral-600 italic">No programme assigned</span>
             }
           </p>
         </div>
         <Badge value={enrolment.statusCode} />
-        <span className="text-gray-600 text-sm">{expanded ? '▲' : '▼'}</span>
+        {expanded
+          ? <ChevronUp className="h-4 w-4 text-neutral-500" aria-hidden="true" />
+          : <ChevronDown className="h-4 w-4 text-neutral-500" aria-hidden="true" />}
       </div>
 
       {expanded && (
-        <div className="border-t border-gray-100 px-4 py-4 space-y-4">
+        <div className="border-t border-neutral-100 px-4 py-4 space-y-4">
           {/* Details row */}
           <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
             <InfoRow label="Start date"     value={enrolment.startDate} />
@@ -547,7 +549,7 @@ function EnrolmentCard({
           {/* Transition actions */}
           {available.length > 0 && (
             <div>
-              <p className="text-xs text-gray-500 mb-2">Actions</p>
+              <p className="text-xs text-neutral-500 mb-2">Actions</p>
               <div className="flex gap-2 flex-wrap">
                 {available.map((action) => (
                   <button
@@ -560,7 +562,7 @@ function EnrolmentCard({
                   </button>
                 ))}
               </div>
-              {transitionError && <p className="mt-2 text-xs text-red-600">{transitionError}</p>}
+              {transitionError && <p className="mt-2 text-xs text-danger-600">{transitionError}</p>}
             </div>
           )}
 
@@ -569,54 +571,49 @@ function EnrolmentCard({
             <div className="flex justify-center py-4"><Spinner size="sm" /></div>
           ) : timetable && timetable.length > 0 ? (
             <div>
-              <p className="text-xs text-gray-500 mb-2">Active registrations</p>
-              <div className="divide-y divide-gray-100 rounded border border-gray-100 overflow-hidden">
+              <p className="text-xs text-neutral-500 mb-2">Active registrations</p>
+              <div className="divide-y divide-neutral-100 rounded border border-neutral-100 overflow-hidden">
                 {timetable.map((t) => (
-                  <div key={t.moduleRegistrationId} className="flex items-center gap-3 px-3 py-2 text-sm bg-gray-50">
-                    <span className="font-mono text-xs text-gray-600 w-20 flex-shrink-0">{t.moduleCode}</span>
-                    <span className="flex-1 text-gray-900 truncate">{t.moduleTitle}</span>
-                    <span className="text-xs text-gray-600">{t.periodCode}</span>
+                  <div key={t.moduleRegistrationId} className="flex items-center gap-3 px-3 py-2 text-sm bg-neutral-50">
+                    <span className="font-mono text-xs text-neutral-600 w-20 flex-shrink-0">{t.moduleCode}</span>
+                    <span className="flex-1 text-neutral-900 truncate">{t.moduleTitle}</span>
+                    <span className="text-xs text-neutral-600">{t.periodCode}</span>
                   </div>
                 ))}
               </div>
             </div>
           ) : registrations !== null && registrations.length === 0 ? (
-            <p className="text-xs text-gray-600">No active module registrations.</p>
+            <p className="text-xs text-neutral-600">No active module registrations.</p>
           ) : null}
         </div>
       )}
 
-      {showTransitionModal && (
-        <TransitionModal
-          action={showTransitionModal}
-          onClose={() => setShowTransitionModal(null)}
-          onConfirm={(opts) => void handleTransition(showTransitionModal, opts)}
-          saving={transitioning}
-        />
-      )}
-    </div>
+      <Dialog
+        open={showTransitionModal !== null}
+        onOpenChange={(open) => { if (!open) setShowTransitionModal(null); }}
+        title={showTransitionModal ? `${showTransitionModal} enrolment` : ''}
+      >
+        {showTransitionModal && (
+          <TransitionForm
+            action={showTransitionModal}
+            onConfirm={(opts) => void handleTransition(showTransitionModal, opts)}
+            saving={transitioning}
+          />
+        )}
+      </Dialog>
+    </Card>
   );
 }
 
-function TransitionModal({
+function TransitionForm({
   action,
-  onClose,
   onConfirm,
   saving,
 }: {
   action:    TransitionAction;
-  onClose:   () => void;
   onConfirm: (opts?: TransitionOptions) => void;
   saving:    boolean;
 }) {
-  useEffect(() => {
-    function handleKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose();
-    }
-    document.addEventListener('keydown', handleKey);
-    return () => document.removeEventListener('keydown', handleKey);
-  }, [onClose]);
-
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
@@ -626,35 +623,26 @@ function TransitionModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-white rounded-lg border border-gray-200 p-6 w-full max-w-sm shadow-xl" onClick={(e) => e.stopPropagation()}>
-        <h2 className="text-base font-semibold text-gray-900 mb-4 capitalize">{action} enrolment</h2>
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-0.5">Reason code</label>
-            <input name="reasonCode" className="w-full rounded border border-gray-300 px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500" />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-0.5">Reason (optional note)</label>
-            <textarea name="reasonText" rows={2} className="w-full rounded border border-gray-300 px-2 py-1 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-indigo-500" />
-          </div>
-          <div className="flex justify-end gap-2 pt-1">
-            <button type="button" onClick={onClose} className="px-3 py-1 text-sm text-gray-600 hover:text-gray-900">Cancel</button>
-            <button
-              type="submit"
-              disabled={saving}
-              className="px-4 py-1.5 bg-indigo-600 text-white text-sm font-medium rounded hover:bg-indigo-700 disabled:opacity-50 capitalize"
-            >
-              {saving ? 'Saving…' : action}
-            </button>
-          </div>
-        </form>
+    <form onSubmit={handleSubmit} className="space-y-3">
+      <LabelledField label="Reason code" htmlFor="tr-reason-code">
+        <Input id="tr-reason-code" name="reasonCode" />
+      </LabelledField>
+      <LabelledField label="Reason" htmlFor="tr-reason-text" hint="Optional note">
+        <Textarea id="tr-reason-text" name="reasonText" rows={2} />
+      </LabelledField>
+      <div className="flex justify-end gap-2 pt-1">
+        <DialogClose asChild>
+          <Button type="button" variant="ghost" size="sm">Cancel</Button>
+        </DialogClose>
+        <Button type="submit" size="sm" disabled={saving} className="capitalize">
+          {saving ? 'Saving…' : action}
+        </Button>
       </div>
-    </div>
+    </form>
   );
 }
 
-function CreateEnrolmentModal({
+function CreateEnrolmentForm({
   personId,
   onClose,
   onCreated,
@@ -665,14 +653,6 @@ function CreateEnrolmentModal({
 }) {
   const [saving, setSaving] = useState(false);
   const [error, setError]   = useState('');
-
-  useEffect(() => {
-    function handleKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose();
-    }
-    document.addEventListener('keydown', handleKey);
-    return () => document.removeEventListener('keydown', handleKey);
-  }, [onClose]);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -704,53 +684,37 @@ function CreateEnrolmentModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-white rounded-lg border border-gray-200 p-6 w-full max-w-md shadow-xl" onClick={(e) => e.stopPropagation()}>
-        <h2 className="text-base font-semibold text-gray-900 mb-4">New enrolment</h2>
-        <form onSubmit={(e) => void handleSubmit(e)} className="space-y-3">
-          <EnrolField name="modeOfStudyCode"     label="Mode of study *"    placeholder="full-time" />
-          <EnrolField name="academicYearOfEntry" label="Academic year *"    placeholder="2025-26" />
-          <EnrolField name="startDate"           label="Start date *"       placeholder="2025-09-22" />
-          <EnrolField name="expectedEndDate"     label="Expected end date"  placeholder="2028-06-30" />
-          <EnrolField name="fundingSourceCode"   label="Funding source"     placeholder="slc" />
-          <EnrolField name="feeBandCode"         label="Fee band"           placeholder="home-undergraduate" />
-          {error && <p className="text-xs text-red-600">{error}</p>}
-          <div className="flex justify-end gap-3 pt-2">
-            <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={saving}
-              className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded hover:bg-indigo-700 disabled:opacity-50"
-            >
-              {saving ? 'Creating…' : 'Create'}
-            </button>
-          </div>
-        </form>
+    <form onSubmit={(e) => void handleSubmit(e)} className="space-y-3">
+      <EnrolField name="modeOfStudyCode"     label="Mode of study"     required placeholder="full-time" />
+      <EnrolField name="academicYearOfEntry" label="Academic year"     required placeholder="2025-26" />
+      <EnrolField name="startDate"           label="Start date"        required placeholder="2025-09-22" />
+      <EnrolField name="expectedEndDate"     label="Expected end date" placeholder="2028-06-30" />
+      <EnrolField name="fundingSourceCode"   label="Funding source"    placeholder="slc" />
+      <EnrolField name="feeBandCode"         label="Fee band"          placeholder="home-undergraduate" />
+      {error && <p className="text-xs text-danger-600">{error}</p>}
+      <div className="flex justify-end gap-3 pt-2">
+        <DialogClose asChild>
+          <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
+        </DialogClose>
+        <Button type="submit" disabled={saving}>{saving ? 'Creating…' : 'Create'}</Button>
       </div>
-    </div>
+    </form>
   );
 }
 
-function EnrolField({ name, label, placeholder }: { name: string; label: string; placeholder?: string }) {
+function EnrolField({ name, label, placeholder, required }: { name: string; label: string; placeholder?: string; required?: boolean }) {
   return (
-    <div>
-      <label className="block text-xs font-medium text-gray-600 mb-0.5">{label}</label>
-      <input
-        name={name}
-        placeholder={placeholder}
-        className="w-full rounded border border-gray-300 px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
-      />
-    </div>
+    <LabelledField label={label} htmlFor={`enrol-${name}`} required={required}>
+      <Input id={`enrol-${name}`} name={name} placeholder={placeholder} />
+    </LabelledField>
   );
 }
 
 function InfoRow({ label, value }: { label: string; value?: string | null }) {
   return (
     <div className="flex gap-2">
-      <dt className="w-28 flex-shrink-0 text-gray-500 text-xs pt-0.5">{label}</dt>
-      <dd className="text-gray-900">{value ?? <span className="text-gray-600">—</span>}</dd>
+      <dt className="w-28 flex-shrink-0 text-neutral-500 text-xs pt-0.5">{label}</dt>
+      <dd className="text-neutral-900">{value ?? <span className="text-neutral-600">—</span>}</dd>
     </div>
   );
 }
@@ -807,93 +771,94 @@ function RegistrationsTab({ personId }: { personId: string }) {
     <div>
       {enrolments.length > 1 && (
         <div className="mb-4 flex items-center gap-3">
-          <label className="text-sm text-gray-500">Enrolment:</label>
-          <select
+          <label className="text-sm text-neutral-500" htmlFor="reg-enrol-select">Enrolment:</label>
+          <Select
+            id="reg-enrol-select"
             value={selectedEnrolmentId}
             onChange={(e) => { setSelectedEnrolmentId(e.target.value); void load(e.target.value); }}
-            className="rounded border border-gray-300 px-2 py-1 text-sm"
+            className="w-auto"
           >
             {enrolments.map(e => (
               <option key={e.enrolmentId} value={e.enrolmentId}>
                 {e.academicYearOfEntry} ({e.statusCode})
               </option>
             ))}
-          </select>
+          </Select>
         </div>
       )}
-      {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
+      {error && <p className="mb-3 text-sm text-danger-600">{error}</p>}
       {loading ? (
         <div className="flex justify-center py-8"><Spinner /></div>
       ) : registrations.length === 0 ? (
-        <p className="text-sm text-gray-600">No module registrations found.</p>
+        <p className="text-sm text-neutral-600">No module registrations found.</p>
       ) : (
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200 text-sm">
-            <thead className="bg-gray-50">
+        <Card>
+          <Table>
+            <TableHead>
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Module</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Period</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Registered</th>
-                <th className="px-4 py-3" />
+                <TableHeaderCell>Module</TableHeaderCell>
+                <TableHeaderCell>Period</TableHeaderCell>
+                <TableHeaderCell>Status</TableHeaderCell>
+                <TableHeaderCell>Registered</TableHeaderCell>
+                <TableHeaderCell><span className="sr-only">Actions</span></TableHeaderCell>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
+            </TableHead>
+            <TableBody>
               {registrations.map(r => (
-                <tr key={r.moduleRegistrationId} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-gray-900">
-                    <span className="font-mono text-xs text-gray-500 mr-1">{r.moduleCode}</span>
+                <TableRow key={r.moduleRegistrationId}>
+                  <TableCell className="text-neutral-900">
+                    <span className="font-mono text-xs text-neutral-500 mr-1">{r.moduleCode}</span>
                     {r.moduleTitle}
-                  </td>
-                  <td className="px-4 py-3 text-gray-600">{r.periodCode}</td>
-                  <td className="px-4 py-3"><Badge value={r.statusCode} /></td>
-                  <td className="px-4 py-3 text-gray-500 text-xs">{r.registrationDate}</td>
-                  <td className="px-4 py-3 text-right">
+                  </TableCell>
+                  <TableCell>{r.periodCode}</TableCell>
+                  <TableCell><Badge value={r.statusCode} /></TableCell>
+                  <TableCell className="text-xs">{r.registrationDate}</TableCell>
+                  <TableCell className="text-right">
                     {r.statusCode === 'registered' && (
                       confirmId === r.moduleRegistrationId ? (
                         <span className="inline-flex items-center gap-2">
-                          <span className="text-xs text-gray-600">
+                          <span className="text-xs text-neutral-600">
                             {confirmAction === 'complete' ? 'Mark complete?' : 'Withdraw?'}
                           </span>
-                          <button
+                          <Button
+                            size="sm"
                             disabled={acting}
+                            className={confirmAction === 'complete' ? 'bg-success-600 hover:bg-success-700' : 'bg-danger-600 hover:bg-danger-700'}
                             onClick={() => void handleAction(r.moduleRegistrationId, confirmAction!)}
-                            className={`rounded px-2.5 py-1 text-xs font-medium text-white disabled:opacity-50 ${
-                              confirmAction === 'complete' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'
-                            }`}
                           >
                             {acting ? 'Saving…' : 'Confirm'}
-                          </button>
-                          <button
-                            onClick={() => { setConfirmId(null); setConfirmAction(null); }}
-                            className="text-xs text-gray-500 hover:text-gray-800"
-                          >
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => { setConfirmId(null); setConfirmAction(null); }}>
                             Cancel
-                          </button>
+                          </Button>
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-2">
-                          <button
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            className="border-success-300 text-success-700 hover:bg-success-50"
                             onClick={() => { setConfirmId(r.moduleRegistrationId); setConfirmAction('complete'); }}
-                            className="rounded border border-green-300 px-2 py-0.5 text-xs text-green-700 hover:bg-green-50"
                           >
                             Complete
-                          </button>
-                          <button
+                          </Button>
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            className="border-danger-300 text-danger-600 hover:bg-danger-50"
                             onClick={() => { setConfirmId(r.moduleRegistrationId); setConfirmAction('withdraw'); }}
-                            className="rounded border border-red-300 px-2 py-0.5 text-xs text-red-600 hover:bg-red-50"
                           >
                             Withdraw
-                          </button>
+                          </Button>
                         </span>
                       )
                     )}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </TableBody>
+          </Table>
+        </Card>
       )}
     </div>
   );
@@ -961,45 +926,46 @@ function AssessmentTab({ personId }: { personId: string }) {
     <div>
       {enrolments.length > 1 && (
         <div className="mb-4 flex items-center gap-3">
-          <label className="text-sm text-gray-500">Enrolment:</label>
-          <select
+          <label className="text-sm text-neutral-500" htmlFor="assess-enrol-select">Enrolment:</label>
+          <Select
+            id="assess-enrol-select"
             value={selectedEnrolmentId}
             onChange={(e) => { setSelectedEnrolmentId(e.target.value); void loadAll(e.target.value); }}
-            className="rounded border border-gray-300 px-2 py-1 text-sm"
+            className="w-auto"
           >
             {enrolments.map(e => (
               <option key={e.enrolmentId} value={e.enrolmentId}>
                 {e.academicYearOfEntry} ({e.statusCode})
               </option>
             ))}
-          </select>
+          </Select>
         </div>
       )}
-      {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
+      {error && <p className="mb-3 text-sm text-danger-600">{error}</p>}
       {loading ? (
         <div className="flex justify-center py-8"><Spinner /></div>
       ) : rows.length === 0 ? (
-        <p className="text-sm text-gray-600">No module registrations found.</p>
+        <p className="text-sm text-neutral-600">No module registrations found.</p>
       ) : (
         <div className="space-y-4">
           {rows.map((row) => (
-            <div key={row.registration.moduleRegistrationId} className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-              <div className="flex items-center gap-4 px-4 py-3 bg-gray-50 border-b border-gray-100">
+            <Card key={row.registration.moduleRegistrationId} className="overflow-hidden">
+              <div className="flex items-center gap-4 px-4 py-3 bg-neutral-50 border-b border-neutral-100">
                 <div className="flex-1 min-w-0">
-                  <span className="font-mono text-xs text-gray-500 mr-2">{row.registration.moduleCode}</span>
-                  <span className="text-sm font-medium text-gray-900">{row.registration.moduleTitle}</span>
+                  <span className="font-mono text-xs text-neutral-500 mr-2">{row.registration.moduleCode}</span>
+                  <span className="text-sm font-medium text-neutral-900">{row.registration.moduleTitle}</span>
                 </div>
-                <span className="text-xs text-gray-600">{row.registration.periodCode}</span>
+                <span className="text-xs text-neutral-600">{row.registration.periodCode}</span>
                 <Badge value={row.registration.statusCode} />
                 {row.result && <Badge value={row.result.resultCode} />}
                 {row.result && (
-                  <span className="text-sm font-semibold text-gray-800">{row.result.aggregateMark}%</span>
+                  <span className="text-sm font-semibold text-neutral-800">{row.result.aggregateMark}%</span>
                 )}
                 {row.result && (
                   <span className={`text-xs font-medium px-2 py-0.5 rounded ${
                     row.result.locked
-                      ? 'bg-green-100 text-green-700'
-                      : 'bg-yellow-100 text-yellow-700'
+                      ? 'bg-success-100 text-success-700'
+                      : 'bg-warning-100 text-warning-700'
                   }`}>
                     {row.result.locked ? 'Locked' : 'Provisional'}
                   </span>
@@ -1007,42 +973,42 @@ function AssessmentTab({ personId }: { personId: string }) {
               </div>
               <div className="px-4 py-3">
                 {row.error ? (
-                  <p className="text-xs text-red-600">{row.error}</p>
+                  <p className="text-xs text-danger-600">{row.error}</p>
                 ) : row.marks.length === 0 ? (
-                  <p className="text-xs text-gray-600">No marks recorded.</p>
+                  <p className="text-xs text-neutral-600">No marks recorded.</p>
                 ) : (
-                  <table className="min-w-full text-sm">
-                    <thead>
-                      <tr className="text-xs font-medium text-gray-500 uppercase">
-                        <th className="pr-6 py-1 text-left">Component</th>
-                        <th className="pr-6 py-1 text-left">Attempt</th>
-                        <th className="pr-6 py-1 text-left">Raw</th>
-                        <th className="pr-6 py-1 text-left">Adjusted</th>
-                        <th className="pr-6 py-1 text-left">Penalty</th>
+                  <Table>
+                    <TableHead>
+                      <tr>
+                        <TableHeaderCell>Component</TableHeaderCell>
+                        <TableHeaderCell>Attempt</TableHeaderCell>
+                        <TableHeaderCell>Raw</TableHeaderCell>
+                        <TableHeaderCell>Adjusted</TableHeaderCell>
+                        <TableHeaderCell>Penalty</TableHeaderCell>
                       </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-50">
+                    </TableHead>
+                    <TableBody>
                       {row.marks.map((m) => {
                         const comp = row.components.get(m.assessmentComponentId);
                         return (
-                        <tr key={m.markId} className="hover:bg-gray-50">
-                          <td className="pr-6 py-1.5 text-gray-700">
-                            {comp ? comp.title : <span className="text-xs text-gray-600 font-mono">{m.assessmentComponentId.slice(0, 8)}</span>}
-                          </td>
-                          <td className="pr-6 py-1.5 text-gray-600">{m.attemptNumber}</td>
-                          <td className="pr-6 py-1.5 font-semibold text-gray-900">{m.rawMark}</td>
-                          <td className="pr-6 py-1.5 text-gray-700">{m.adjustedMark ?? '—'}</td>
-                          <td className="pr-6 py-1.5 text-gray-500">
+                        <TableRow key={m.markId}>
+                          <TableCell>
+                            {comp ? comp.title : <span className="text-xs text-neutral-600 font-mono">{m.assessmentComponentId.slice(0, 8)}</span>}
+                          </TableCell>
+                          <TableCell>{m.attemptNumber}</TableCell>
+                          <TableCell className="font-semibold text-neutral-900">{m.rawMark}</TableCell>
+                          <TableCell>{m.adjustedMark ?? '—'}</TableCell>
+                          <TableCell>
                             {m.penaltyApplied ? `${m.penaltyPercent ?? '?'}%` : '—'}
-                          </td>
-                        </tr>
+                          </TableCell>
+                        </TableRow>
                         );
                       })}
-                    </tbody>
-                  </table>
+                    </TableBody>
+                  </Table>
                 )}
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       )}
@@ -1085,53 +1051,54 @@ function HistoryTab({ personId }: { personId: string }) {
 
   return (
     <div>
-      <p className="mb-4 text-xs text-gray-500">
+      <p className="mb-4 text-xs text-neutral-500">
         Bitemporal history — all recorded versions of this enrolment.
       </p>
       {enrolments.length > 1 && (
         <div className="mb-4 flex items-center gap-3">
-          <label className="text-sm text-gray-500">Enrolment:</label>
-          <select
+          <label className="text-sm text-neutral-500" htmlFor="hist-enrol-select">Enrolment:</label>
+          <Select
+            id="hist-enrol-select"
             value={selectedEnrolId}
             onChange={(e) => { setSelectedEnrolId(e.target.value); void loadHistory(e.target.value); }}
-            className="rounded border border-gray-300 px-2 py-1 text-sm"
+            className="w-auto"
           >
             {enrolments.map(e => (
               <option key={e.enrolmentId} value={e.enrolmentId}>
                 {e.academicYearOfEntry} ({e.statusCode})
               </option>
             ))}
-          </select>
+          </Select>
         </div>
       )}
-      {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
+      {error && <p className="mb-3 text-sm text-danger-600">{error}</p>}
       {loading ? (
         <div className="flex justify-center py-8"><Spinner /></div>
       ) : history.length === 0 ? (
-        <p className="text-sm text-gray-600">No history records found.</p>
+        <p className="text-sm text-neutral-600">No history records found.</p>
       ) : (
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200 text-sm">
-            <thead className="bg-gray-50">
+        <Card>
+          <Table>
+            <TableHead>
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Valid from</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Recorded at</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Mode</th>
+                <TableHeaderCell>Status</TableHeaderCell>
+                <TableHeaderCell>Valid from</TableHeaderCell>
+                <TableHeaderCell>Recorded at</TableHeaderCell>
+                <TableHeaderCell>Mode</TableHeaderCell>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
+            </TableHead>
+            <TableBody>
               {history.map((h, i) => (
-                <tr key={i} className="hover:bg-gray-50">
-                  <td className="px-4 py-3"><Badge value={h.statusCode} /></td>
-                  <td className="px-4 py-3 text-gray-600 text-xs font-mono">{h.validFrom}</td>
-                  <td className="px-4 py-3 text-gray-600 text-xs font-mono">{h.recordedAt}</td>
-                  <td className="px-4 py-3 text-gray-600">{h.modeOfStudyCode}</td>
-                </tr>
+                <TableRow key={i}>
+                  <TableCell><Badge value={h.statusCode} /></TableCell>
+                  <TableCell className="text-xs font-mono">{h.validFrom}</TableCell>
+                  <TableCell className="text-xs font-mono">{h.recordedAt}</TableCell>
+                  <TableCell>{h.modeOfStudyCode}</TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </TableBody>
+          </Table>
+        </Card>
       )}
     </div>
   );
@@ -1148,9 +1115,10 @@ const CASE_FORWARD_TRANSITIONS: Record<string, string[]> = {
 
 // ── Corrections tab ───────────────────────────────────────────────────────────
 
-function CorrectionsTab({ personId }: { personId: string }) {
-  const { members: caseTypes }   = useValueSet('correction_case', 'case_type_code');
-  const { members: caseStatuses } = useValueSet('correction_case', 'case_status_code');
+function CorrectionsTab({ personId, canRatify }: { personId: string; canRatify: boolean }) {
+  const { members: caseTypes }   = useValueSet('post_ratification_case', 'case_type_code');
+  const { members: caseStatuses } = useValueSet('post_ratification_case', 'status_code');
+  const { members: errorCategories } = useValueSet('post_ratification_case', 'error_category_code');
   const [enrolments,   setEnrolments]   = useState<Enrolment[]>([]);
   const [cases,        setCases]        = useState<CorrectionCase[]>([]);
   const [selectedEnrolId, setSelectedEnrolId] = useState('');
@@ -1160,6 +1128,9 @@ function CorrectionsTab({ personId }: { personId: string }) {
   const [creating,     setCreating]     = useState(false);
   const [newCaseType,    setNewCaseType]    = useState<string>('');
   const [newCaseRef,     setNewCaseRef]     = useState<string>('');
+  const [newErrorCategory, setNewErrorCategory] = useState<string>('');
+  const [newEvidenceRef,   setNewEvidenceRef]   = useState<string>('');
+  const [newAuthorisedBy,  setNewAuthorisedBy]  = useState<string>('');
   const [updatingId,     setUpdatingId]     = useState<string | null>(null);
 
   useEffect(() => {
@@ -1197,9 +1168,16 @@ function CorrectionsTab({ personId }: { personId: string }) {
     if (!selectedEnrolId) return;
     setCreating(true); setError('');
     try {
-      await createCorrectionCase(selectedEnrolId, newCaseType, newCaseRef.trim() || undefined);
+      await createCorrectionCase(selectedEnrolId, newCaseType, newCaseRef.trim() || undefined, {
+        ...(newErrorCategory ? { errorCategoryCode: newErrorCategory } : {}),
+        ...(newEvidenceRef.trim() ? { evidenceRef: newEvidenceRef.trim() } : {}),
+        ...(newAuthorisedBy.trim() ? { authorisedBy: newAuthorisedBy.trim() } : {}),
+      });
       setShowCreate(false);
       setNewCaseRef('');
+      setNewErrorCategory('');
+      setNewEvidenceRef('');
+      setNewAuthorisedBy('');
       await loadCases(selectedEnrolId);
     } catch (err) {
       setError(err instanceof ApiError ? (err.detail ?? err.message) : 'Failed to create case');
@@ -1223,83 +1201,93 @@ function CorrectionsTab({ personId }: { personId: string }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-sm font-semibold text-gray-700">Correction &amp; appeal cases</h2>
-        <button
-          onClick={() => setShowCreate(s => !s)}
-          className="rounded bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700"
-        >
-          New case
-        </button>
+        <h2 className="text-sm font-semibold text-neutral-700">Correction &amp; appeal cases</h2>
+        <Button size="sm" onClick={() => setShowCreate(s => !s)}>New case</Button>
       </div>
 
       {showCreate && (
-        <form onSubmit={(e) => void handleCreateCase(e)} className="mb-4 bg-indigo-50 rounded-lg p-4 space-y-3">
-          <div className="flex items-center gap-3">
-            <label className="text-sm text-gray-700 w-24 flex-shrink-0">Type:</label>
-            <select
-              value={newCaseType}
-              onChange={(e) => setNewCaseType(e.target.value)}
-              className="rounded border border-gray-300 px-2 py-1 text-sm"
-            >
-              {caseTypes.map(({ code, displayLabel }) => <option key={code} value={code}>{displayLabel}</option>)}
-            </select>
-          </div>
-          <div className="flex items-start gap-3">
-            <label className="text-sm text-gray-700 w-24 flex-shrink-0 pt-1">Description:</label>
-            <textarea
-              value={newCaseRef}
-              onChange={(e) => setNewCaseRef(e.target.value)}
-              rows={3}
-              placeholder="Brief description of the issue…"
-              className="flex-1 rounded border border-gray-300 px-2 py-1 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-indigo-500"
-            />
-          </div>
-          <div className="flex gap-2 justify-end">
-            <button
-              type="submit"
-              disabled={creating}
-              className="rounded bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
-            >
-              {creating ? 'Creating…' : 'Create'}
-            </button>
-            <button type="button" onClick={() => setShowCreate(false)} className="text-sm text-gray-500">
-              Cancel
-            </button>
-          </div>
-        </form>
+        <Card className="mb-4 border-primary-200 bg-primary-50">
+          <CardBody>
+          <form onSubmit={(e) => void handleCreateCase(e)} className="space-y-3">
+            <LabelledField label="Type" htmlFor="cc-type">
+              <Select id="cc-type" value={newCaseType} onChange={(e) => setNewCaseType(e.target.value)}>
+                {caseTypes.map(({ code, displayLabel }) => <option key={code} value={code}>{displayLabel}</option>)}
+              </Select>
+            </LabelledField>
+            <LabelledField label="Description" htmlFor="cc-desc">
+              <Textarea
+                id="cc-desc"
+                value={newCaseRef}
+                onChange={(e) => setNewCaseRef(e.target.value)}
+                rows={3}
+                placeholder="Brief description of the issue…"
+              />
+            </LabelledField>
+            <LabelledField label="Error category" htmlFor="cc-error-category" hint="Optional — category of error this correction addresses">
+              <Select id="cc-error-category" value={newErrorCategory} onChange={(e) => setNewErrorCategory(e.target.value)}>
+                <option value="">Not specified</option>
+                {errorCategories.map(({ code, displayLabel }) => <option key={code} value={code}>{displayLabel}</option>)}
+              </Select>
+            </LabelledField>
+            <LabelledField label="Evidence reference" htmlFor="cc-evidence-ref" hint="Optional — evidence record ID supporting this case">
+              <Input id="cc-evidence-ref" value={newEvidenceRef} onChange={(e) => setNewEvidenceRef(e.target.value)} />
+            </LabelledField>
+            <LabelledField label="Authorised by" htmlFor="cc-authorised-by" hint="Optional — actor who authorised opening this case, if different from the submitter">
+              <Input id="cc-authorised-by" value={newAuthorisedBy} onChange={(e) => setNewAuthorisedBy(e.target.value)} />
+            </LabelledField>
+            <div className="flex gap-2 justify-end">
+              <Button type="submit" disabled={creating}>{creating ? 'Creating…' : 'Create'}</Button>
+              <Button type="button" variant="ghost" onClick={() => setShowCreate(false)}>Cancel</Button>
+            </div>
+          </form>
+          </CardBody>
+        </Card>
       )}
 
       {enrolments.length > 1 && (
         <div className="mb-4 flex items-center gap-3">
-          <label className="text-sm text-gray-500">Enrolment:</label>
-          <select
+          <label className="text-sm text-neutral-500" htmlFor="cc-enrol-select">Enrolment:</label>
+          <Select
+            id="cc-enrol-select"
             value={selectedEnrolId}
             onChange={(e) => { setSelectedEnrolId(e.target.value); void loadCases(e.target.value); }}
-            className="rounded border border-gray-300 px-2 py-1 text-sm"
+            className="w-auto"
           >
             {enrolments.map(e => (
               <option key={e.enrolmentId} value={e.enrolmentId}>
                 {e.academicYearOfEntry} ({e.statusCode})
               </option>
             ))}
-          </select>
+          </Select>
         </div>
       )}
 
-      {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
+      {error && <p className="mb-3 text-sm text-danger-600">{error}</p>}
 
       {loading ? (
         <div className="flex justify-center py-8"><Spinner /></div>
       ) : cases.length === 0 ? (
-        <p className="text-sm text-gray-600">No correction or appeal cases on record.</p>
+        <p className="text-sm text-neutral-600">No correction or appeal cases on record.</p>
       ) : (
         <div className="space-y-3">
           {cases.map(c => (
-            <div key={c.caseId} className="bg-white rounded-lg border border-gray-200 p-4">
+            <Card key={c.caseId}>
+              <CardBody>
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-sm font-medium text-gray-900">{caseTypes.find(s => s.code === c.caseTypeCode)?.displayLabel ?? c.caseTypeCode}</p>
-                  <p className="text-xs text-gray-500 font-mono mt-0.5">{c.reference}</p>
+                  <p className="text-sm font-medium text-neutral-900">{caseTypes.find(s => s.code === c.caseTypeCode)?.displayLabel ?? c.caseTypeCode}</p>
+                  <p className="text-xs text-neutral-500 font-mono mt-0.5">{c.reference}</p>
+                  {c.errorCategoryCode && (
+                    <p className="text-xs text-neutral-500 mt-1">
+                      Error category: {errorCategories.find(s => s.code === c.errorCategoryCode)?.displayLabel ?? c.errorCategoryCode}
+                    </p>
+                  )}
+                  {c.evidenceRef && (
+                    <p className="text-xs text-neutral-500 font-mono mt-0.5">Evidence: {c.evidenceRef}</p>
+                  )}
+                  {c.authorisedBy && (
+                    <p className="text-xs text-neutral-500 mt-0.5">Authorised by: {c.authorisedBy}</p>
+                  )}
                 </div>
                 <Badge value={c.statusCode} label={caseStatuses.find(s => s.code === c.statusCode)?.displayLabel} />
               </div>
@@ -1309,27 +1297,383 @@ function CorrectionsTab({ personId }: { personId: string }) {
                 if (targetButtons.length === 0) return null;
                 return (
                   <div className="mt-3 flex items-center gap-2 flex-wrap">
-                    <span className="text-xs text-gray-500">Move to:</span>
+                    <span className="text-xs text-neutral-500">Move to:</span>
                     {targetButtons.map(({ code, displayLabel }) => (
-                      <button
+                      <Button
                         key={code}
+                        variant="secondary"
+                        size="sm"
                         disabled={updatingId === c.caseId}
                         onClick={() => void handleStatusChange(c.caseId, code)}
-                        className="rounded border border-gray-300 px-2 py-0.5 text-xs text-gray-600 hover:bg-gray-50 disabled:opacity-40"
                       >
                         {displayLabel}
-                      </button>
+                      </Button>
                     ))}
                   </div>
                 );
               })()}
-            </div>
+              {canRatify && c.statusCode === 'upheld' && (
+                <AmendmentSection caseId={c.caseId} />
+              )}
+              </CardBody>
+            </Card>
           ))}
         </div>
       )}
 
       {selectedEnrolId && (
         <VleOverrideAuditSection enrolmentId={selectedEnrolId} />
+      )}
+    </div>
+  );
+}
+
+const AMENDABLE_ENTITY_TYPES: AmendableEntityType[] = ['mark', 'module_result', 'progression_decision'];
+
+// Post-ratification amendment + downstream distribution (BPR-D13). Only
+// reachable once a case is upheld — applyAmendment/distribute both require
+// exam-board:ratify, mirroring the backend's permission gate.
+function AmendmentSection({ caseId }: { caseId: string }) {
+  const [open, setOpen]           = useState(false);
+  const [entityType, setEntityType] = useState<AmendableEntityType>('mark');
+  const [entityId, setEntityId]   = useState('');
+  const [afterValueJson, setAfterValueJson] = useState('{}');
+  const [applying, setApplying]   = useState(false);
+  const [error, setError]         = useState('');
+  const [amendmentId, setAmendmentId] = useState<string | null>(null);
+
+  const [targetSystemCodes, setTargetSystemCodes] = useState('');
+  const [distributing, setDistributing] = useState(false);
+  const [distributedIds, setDistributedIds] = useState<string[] | null>(null);
+
+  async function handleApply(e: FormEvent) {
+    e.preventDefault();
+    let afterValue: Record<string, unknown>;
+    try {
+      afterValue = JSON.parse(afterValueJson) as Record<string, unknown>;
+    } catch {
+      setError('After-value must be valid JSON.');
+      return;
+    }
+    if (!entityId.trim()) {
+      setError('Entity ID is required.');
+      return;
+    }
+    setApplying(true); setError('');
+    try {
+      const { amendmentId: id } = await addCaseAmendment(caseId, { entityType, entityId: entityId.trim(), afterValue });
+      setAmendmentId(id);
+    } catch (err) {
+      setError(err instanceof ApiError ? (err.detail ?? err.message) : 'Failed to apply amendment');
+    } finally { setApplying(false); }
+  }
+
+  async function handleDistribute(e: FormEvent) {
+    e.preventDefault();
+    const codes = targetSystemCodes.split(',').map(s => s.trim()).filter(Boolean);
+    if (codes.length === 0 || !amendmentId) return;
+    setDistributing(true); setError('');
+    try {
+      const { distributionItemIds } = await distributeAmendment(amendmentId, codes);
+      setDistributedIds(distributionItemIds);
+    } catch (err) {
+      setError(err instanceof ApiError ? (err.detail ?? err.message) : 'Failed to distribute amendment');
+    } finally { setDistributing(false); }
+  }
+
+  if (!open) {
+    return (
+      <div className="mt-3">
+        <Button variant="secondary" size="sm" onClick={() => setOpen(true)}>Apply amendment</Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-3 rounded-md border border-neutral-200 bg-neutral-50 p-3 space-y-3">
+      {!amendmentId ? (
+        <form onSubmit={(e) => void handleApply(e)} className="space-y-2">
+          <p className="text-xs font-semibold text-neutral-700">Apply post-ratification amendment</p>
+          <LabelledField label="Entity type" htmlFor="am-entity-type">
+            <Select id="am-entity-type" value={entityType} onChange={(e) => setEntityType(e.target.value as AmendableEntityType)}>
+              {AMENDABLE_ENTITY_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+            </Select>
+          </LabelledField>
+          <LabelledField label="Entity ID" htmlFor="am-entity-id">
+            <Input id="am-entity-id" value={entityId} onChange={(e) => setEntityId(e.target.value)} className="font-mono" />
+          </LabelledField>
+          <LabelledField label="After value" htmlFor="am-after-value">
+            <Textarea
+              id="am-after-value"
+              value={afterValueJson}
+              onChange={(e) => setAfterValueJson(e.target.value)}
+              rows={3}
+              className="font-mono"
+              placeholder='{"rawMark": 62}'
+            />
+          </LabelledField>
+          {error && <p className="text-xs text-danger-600">{error}</p>}
+          <div className="flex gap-2 justify-end">
+            <Button type="button" variant="ghost" size="sm" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button type="submit" size="sm" disabled={applying}>{applying ? 'Applying…' : 'Apply amendment'}</Button>
+          </div>
+        </form>
+      ) : distributedIds ? (
+        <p className="text-xs text-success-700">
+          Distributed to {distributedIds.length} downstream {distributedIds.length === 1 ? 'system' : 'systems'}.
+        </p>
+      ) : (
+        <form onSubmit={(e) => void handleDistribute(e)} className="space-y-2">
+          <p className="text-xs font-semibold text-neutral-700">
+            Amendment applied. Distribute to downstream systems:
+          </p>
+          <Input
+            value={targetSystemCodes}
+            onChange={(e) => setTargetSystemCodes(e.target.value)}
+            placeholder="hesa, slc, ucas"
+          />
+          {error && <p className="text-xs text-danger-600">{error}</p>}
+          <div className="flex gap-2 justify-end">
+            <Button type="submit" size="sm" disabled={distributing}>{distributing ? 'Distributing…' : 'Distribute'}</Button>
+          </div>
+        </form>
+      )}
+    </div>
+  );
+}
+
+// ── CAS tab ────────────────────────────────────────────────────────────────────
+// cas_case is a separate governed aggregate from ukvi_cas_request (see
+// UkviPage's CAS tab), adding an eligibility-check/assignment-version/
+// sponsor-report-version evidence trail per enrolment.
+
+function CasTab({ personId, canWrite }: { personId: string; canWrite: boolean }) {
+  const [enrolments,     setEnrolments]     = useState<Enrolment[]>([]);
+  const [cases,          setCases]          = useState<CasCase[]>([]);
+  const [selectedEnrolId, setSelectedEnrolId] = useState('');
+  const [loading,        setLoading]        = useState(true);
+  const [error,          setError]          = useState('');
+  const [showCreate,     setShowCreate]     = useState(false);
+  const [creating,       setCreating]       = useState(false);
+  const [newCasReference, setNewCasReference] = useState('');
+
+  const loadCases = useCallback(async (enrolmentId: string) => {
+    if (!enrolmentId) return;
+    setLoading(true); setError('');
+    try {
+      setCases(await listCasCases(enrolmentId));
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : 'Failed to load CAS cases');
+    } finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const enrols = await listStudentEnrolments(personId);
+        setEnrolments(enrols);
+        const first = enrols[0];
+        if (first) {
+          setSelectedEnrolId(first.enrolmentId);
+          await loadCases(first.enrolmentId);
+        } else { setLoading(false); }
+      } catch { setLoading(false); }
+    })();
+  }, [personId, loadCases]);
+
+  async function handleOpenCase(e: FormEvent) {
+    e.preventDefault();
+    if (!selectedEnrolId) return;
+    setCreating(true); setError('');
+    try {
+      await openCasCase(selectedEnrolId, newCasReference.trim() || undefined);
+      setShowCreate(false);
+      setNewCasReference('');
+      await loadCases(selectedEnrolId);
+    } catch (err) {
+      setError(err instanceof ApiError ? (err.detail ?? err.message) : 'Failed to open CAS case');
+    } finally { setCreating(false); }
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-sm font-semibold text-neutral-700">CAS cases</h2>
+        {canWrite && <Button size="sm" onClick={() => setShowCreate(s => !s)}>New CAS case</Button>}
+      </div>
+
+      {showCreate && (
+        <Card className="mb-4 border-primary-200 bg-primary-50">
+          <CardBody>
+            <form onSubmit={(e) => void handleOpenCase(e)} className="space-y-3">
+              <LabelledField label="CAS reference" htmlFor="cas-ref" hint="Optional — leave blank if not yet assigned">
+                <Input id="cas-ref" value={newCasReference} onChange={(e) => setNewCasReference(e.target.value)} />
+              </LabelledField>
+              <div className="flex gap-2 justify-end">
+                <Button type="submit" disabled={creating}>{creating ? 'Opening…' : 'Open case'}</Button>
+                <Button type="button" variant="ghost" onClick={() => setShowCreate(false)}>Cancel</Button>
+              </div>
+            </form>
+          </CardBody>
+        </Card>
+      )}
+
+      {enrolments.length > 1 && (
+        <div className="mb-4 flex items-center gap-3">
+          <label className="text-sm text-neutral-500" htmlFor="cas-enrol-select">Enrolment:</label>
+          <Select
+            id="cas-enrol-select"
+            value={selectedEnrolId}
+            onChange={(e) => { setSelectedEnrolId(e.target.value); void loadCases(e.target.value); }}
+            className="w-auto"
+          >
+            {enrolments.map(e => (
+              <option key={e.enrolmentId} value={e.enrolmentId}>
+                {e.academicYearOfEntry} ({e.statusCode})
+              </option>
+            ))}
+          </Select>
+        </div>
+      )}
+
+      {error && <p className="mb-3 text-sm text-danger-600">{error}</p>}
+
+      {loading ? (
+        <div className="flex justify-center py-8"><Spinner /></div>
+      ) : cases.length === 0 ? (
+        <p className="text-sm text-neutral-600">No CAS cases on record for this enrolment.</p>
+      ) : (
+        <div className="space-y-3">
+          {cases.map(c => (
+            <Card key={c.casCaseId}>
+              <CardBody>
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-sm font-medium text-neutral-900">
+                      {c.casReference ?? <span className="text-neutral-400">No reference yet</span>}
+                    </p>
+                    <p className="text-xs text-neutral-500 font-mono mt-0.5">{c.casCaseId}</p>
+                  </div>
+                  <Badge value={c.statusCode} />
+                </div>
+                {canWrite && c.statusCode !== 'assigned' && (
+                  <CasCaseActions casCaseId={c.casCaseId} onChanged={() => void loadCases(selectedEnrolId)} />
+                )}
+              </CardBody>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Sequential eligibility-check → assignment-version → sponsor-report-version
+// actions for a single CAS case, mirroring the service's own status
+// progression (opened → eligibility-checked → assigned).
+function CasCaseActions({ casCaseId, onChanged }: { casCaseId: string; onChanged: () => void }) {
+  const [step, setStep] = useState<'eligibility' | 'assignment' | 'report' | 'done'>('eligibility');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  const [guidanceVersion, setGuidanceVersion] = useState('');
+  const [checkTypeCode, setCheckTypeCode]     = useState('');
+  const [resultCode, setResultCode]           = useState('');
+
+  const [assignedPayloadHash, setAssignedPayloadHash] = useState('');
+  const [casNumber, setCasNumber]                     = useState('');
+
+  const [reportPayloadRef, setReportPayloadRef] = useState('');
+
+  async function handleEligibility(e: FormEvent) {
+    e.preventDefault();
+    setSubmitting(true); setError('');
+    try {
+      await recordEligibilityCheck(casCaseId, { guidanceVersion, checkTypeCode, resultCode });
+      setStep('assignment');
+      onChanged();
+    } catch (err) {
+      setError(err instanceof ApiError ? (err.detail ?? err.message) : 'Failed to record eligibility check');
+    } finally { setSubmitting(false); }
+  }
+
+  async function handleAssignment(e: FormEvent) {
+    e.preventDefault();
+    setSubmitting(true); setError('');
+    try {
+      await recordAssignmentVersion(casCaseId, {
+        assignedPayloadHash,
+        ...(casNumber.trim() ? { casNumber: casNumber.trim() } : {}),
+      });
+      setStep('report');
+      onChanged();
+    } catch (err) {
+      setError(err instanceof ApiError ? (err.detail ?? err.message) : 'Failed to record assignment version');
+    } finally { setSubmitting(false); }
+  }
+
+  async function handleReport(e: FormEvent) {
+    e.preventDefault();
+    setSubmitting(true); setError('');
+    try {
+      await recordSponsorReportVersion(casCaseId, { reportPayloadRef });
+      setStep('done');
+    } catch (err) {
+      setError(err instanceof ApiError ? (err.detail ?? err.message) : 'Failed to record sponsor report version');
+    } finally { setSubmitting(false); }
+  }
+
+  if (step === 'done') {
+    return <p className="mt-3 text-xs text-success-700">Sponsor report version recorded.</p>;
+  }
+
+  return (
+    <div className="mt-3 border-t border-neutral-100 pt-3">
+      {error && <p className="mb-2 text-xs text-danger-600">{error}</p>}
+      {step === 'eligibility' && (
+        <form onSubmit={(e) => void handleEligibility(e)} className="grid grid-cols-3 gap-2 items-end">
+          <LabelledField label="Guidance version" htmlFor={`cas-guidance-${casCaseId}`} required>
+            <Input id={`cas-guidance-${casCaseId}`} value={guidanceVersion} onChange={(e) => setGuidanceVersion(e.target.value)} />
+          </LabelledField>
+          <LabelledField label="Check type" htmlFor={`cas-checktype-${casCaseId}`} required>
+            <Input id={`cas-checktype-${casCaseId}`} value={checkTypeCode} onChange={(e) => setCheckTypeCode(e.target.value)} placeholder="right-to-study" />
+          </LabelledField>
+          <LabelledField label="Result" htmlFor={`cas-result-${casCaseId}`} required>
+            <Input id={`cas-result-${casCaseId}`} value={resultCode} onChange={(e) => setResultCode(e.target.value)} placeholder="pass" />
+          </LabelledField>
+          <div className="col-span-3">
+            <Button type="submit" size="sm" variant="secondary" disabled={submitting}>
+              {submitting ? 'Recording…' : 'Record eligibility check'}
+            </Button>
+          </div>
+        </form>
+      )}
+      {step === 'assignment' && (
+        <form onSubmit={(e) => void handleAssignment(e)} className="grid grid-cols-2 gap-2 items-end">
+          <LabelledField label="Assigned payload hash" htmlFor={`cas-hash-${casCaseId}`} required>
+            <Input id={`cas-hash-${casCaseId}`} value={assignedPayloadHash} onChange={(e) => setAssignedPayloadHash(e.target.value)} />
+          </LabelledField>
+          <LabelledField label="CAS number" htmlFor={`cas-number-${casCaseId}`} hint="Optional">
+            <Input id={`cas-number-${casCaseId}`} value={casNumber} onChange={(e) => setCasNumber(e.target.value)} />
+          </LabelledField>
+          <div className="col-span-2">
+            <Button type="submit" size="sm" variant="secondary" disabled={submitting}>
+              {submitting ? 'Recording…' : 'Record assignment version'}
+            </Button>
+          </div>
+        </form>
+      )}
+      {step === 'report' && (
+        <form onSubmit={(e) => void handleReport(e)} className="grid grid-cols-1 gap-2 items-end">
+          <LabelledField label="Sponsor report payload reference" htmlFor={`cas-report-${casCaseId}`} required>
+            <Input id={`cas-report-${casCaseId}`} value={reportPayloadRef} onChange={(e) => setReportPayloadRef(e.target.value)} />
+          </LabelledField>
+          <div>
+            <Button type="submit" size="sm" variant="secondary" disabled={submitting}>
+              {submitting ? 'Recording…' : 'Record sponsor report version'}
+            </Button>
+          </div>
+        </form>
       )}
     </div>
   );
@@ -1354,39 +1698,39 @@ function CommunicationsTab({ personId }: { personId: string }) {
 
   return (
     <div>
-      <h2 className="text-sm font-semibold text-gray-700 mb-4">Communications</h2>
-      {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
+      <h2 className="text-sm font-semibold text-neutral-700 mb-4">Communications</h2>
+      {error && <p className="mb-3 text-sm text-danger-600">{error}</p>}
       {notifications.length === 0 ? (
-        <p className="text-sm text-gray-600">No communications on record for this student.</p>
+        <p className="text-sm text-neutral-600">No communications on record for this student.</p>
       ) : (
         <div className="space-y-3">
           {notifications.map((n) => (
-            <div key={n.id} className="bg-white rounded-lg border border-gray-200 p-4">
-              <div className="flex items-start justify-between gap-4">
+            <Card key={n.id}>
+              <CardBody className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900">{n.title}</p>
-                  <p className="text-sm text-gray-600 mt-0.5">{n.body}</p>
+                  <p className="text-sm font-medium text-neutral-900">{n.title}</p>
+                  <p className="text-sm text-neutral-600 mt-0.5">{n.body}</p>
                   {n.linkUrl && (
-                    <a href={n.linkUrl} className="text-xs text-indigo-600 hover:underline mt-1 inline-block">
+                    <a href={n.linkUrl} className="text-xs text-primary-600 hover:underline mt-1 inline-block">
                       {n.linkUrl}
                     </a>
                   )}
                 </div>
                 <div className="text-right flex-shrink-0">
-                  <span className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">
+                  <span className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-neutral-100 text-neutral-600">
                     {n.category}
                   </span>
-                  <p className="text-xs text-gray-600 mt-1">
+                  <p className="text-xs text-neutral-600 mt-1">
                     {new Date(n.createdAt).toLocaleString('en-GB')}
                   </p>
                   {n.readAt && (
-                    <p className="text-xs text-green-600 mt-0.5">
+                    <p className="text-xs text-success-600 mt-0.5">
                       Read {new Date(n.readAt).toLocaleString('en-GB')}
                     </p>
                   )}
                 </div>
-              </div>
-            </div>
+              </CardBody>
+            </Card>
           ))}
         </div>
       )}
@@ -1415,31 +1759,31 @@ function VleOverrideAuditSection({ enrolmentId }: { enrolmentId: string }) {
 
   return (
     <div className="mt-6">
-      <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
+      <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-3">
         VLE enrolment override history (R-VLE-002)
       </h3>
-      <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-100 text-xs">
-          <thead className="bg-gray-50">
+      <Card className="overflow-hidden">
+        <Table className="text-xs">
+          <TableHead>
             <tr>
-              <th className="px-3 py-2 text-left font-medium text-gray-500 uppercase">When</th>
-              <th className="px-3 py-2 text-left font-medium text-gray-500 uppercase">Event</th>
-              <th className="px-3 py-2 text-left font-medium text-gray-500 uppercase">Actor</th>
+              <TableHeaderCell>When</TableHeaderCell>
+              <TableHeaderCell>Event</TableHeaderCell>
+              <TableHeaderCell>Actor</TableHeaderCell>
             </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-50">
+          </TableHead>
+          <TableBody>
             {entries.map(e => (
-              <tr key={e.id}>
-                <td className="px-3 py-2 text-gray-500 whitespace-nowrap font-mono">
+              <TableRow key={e.id}>
+                <TableCell className="whitespace-nowrap font-mono">
                   {new Date(e.recordedAt).toLocaleString('en-GB')}
-                </td>
-                <td className="px-3 py-2 text-gray-700">{e.eventType}</td>
-                <td className="px-3 py-2 text-gray-500 font-mono">{e.actorId}</td>
-              </tr>
+                </TableCell>
+                <TableCell>{e.eventType}</TableCell>
+                <TableCell className="font-mono">{e.actorId}</TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
-      </div>
+          </TableBody>
+        </Table>
+      </Card>
     </div>
   );
 }
@@ -1482,7 +1826,7 @@ function WellbeingTab({
   }, [canReadAdjustments, canReadCircumstances, canReadDisability, personId]);
 
   if (loading) return <div className="flex justify-center py-10"><Spinner /></div>;
-  if (error)   return <p className="text-red-600 text-sm">{error}</p>;
+  if (error)   return <p className="text-danger-600 text-sm">{error}</p>;
 
   const label = (members: { code: string; displayLabel: string }[], code: string) =>
     members.find(m => m.code === code)?.displayLabel ?? code;
@@ -1492,100 +1836,100 @@ function WellbeingTab({
 
       {/* Disability declarations */}
       <section>
-        <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">Disability Declarations</h2>
+        <h2 className="text-sm font-semibold text-neutral-700 uppercase tracking-wide mb-3">Disability Declarations</h2>
         {declarations?.length === 0 ? (
-          <p className="text-sm text-gray-600">No disability declarations on record.</p>
+          <p className="text-sm text-neutral-600">No disability declarations on record.</p>
         ) : (
-          <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
-            <table className="min-w-full divide-y divide-gray-200 text-sm">
-              <thead className="bg-gray-50">
+          <Card>
+            <Table>
+              <TableHead>
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Category</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Status</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Declared</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Notes</th>
+                  <TableHeaderCell>Category</TableHeaderCell>
+                  <TableHeaderCell>Status</TableHeaderCell>
+                  <TableHeaderCell>Declared</TableHeaderCell>
+                  <TableHeaderCell>Notes</TableHeaderCell>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
+              </TableHead>
+              <TableBody>
                 {declarations?.map(d => (
-                  <tr key={d.declarationId} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-gray-800">{label(disabilityCategories, d.disabilityCategoryCode)}</td>
-                    <td className="px-4 py-3"><Badge value={d.declarationStatusCode} label={label(declarationStatuses, d.declarationStatusCode)} /></td>
-                    <td className="px-4 py-3 text-gray-600">{new Date(d.declaredAt).toLocaleDateString('en-GB')}</td>
-                    <td className="px-4 py-3 text-gray-500">{d.notes ?? '—'}</td>
-                  </tr>
+                  <TableRow key={d.declarationId}>
+                    <TableCell className="text-neutral-800">{label(disabilityCategories, d.disabilityCategoryCode)}</TableCell>
+                    <TableCell><Badge value={d.declarationStatusCode} label={label(declarationStatuses, d.declarationStatusCode)} /></TableCell>
+                    <TableCell>{new Date(d.declaredAt).toLocaleDateString('en-GB')}</TableCell>
+                    <TableCell className="text-neutral-500">{d.notes ?? '—'}</TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
-          </div>
+              </TableBody>
+            </Table>
+          </Card>
         )}
       </section>
 
       {/* Reasonable adjustments */}
       <section>
-        <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">Reasonable Adjustments</h2>
+        <h2 className="text-sm font-semibold text-neutral-700 uppercase tracking-wide mb-3">Reasonable Adjustments</h2>
         {adjustments?.length === 0 ? (
-          <p className="text-sm text-gray-600">No reasonable adjustments on record.</p>
+          <p className="text-sm text-neutral-600">No reasonable adjustments on record.</p>
         ) : (
-          <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
-            <table className="min-w-full divide-y divide-gray-200 text-sm">
-              <thead className="bg-gray-50">
+          <Card>
+            <Table>
+              <TableHead>
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Type</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Scope</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Valid From</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Valid To</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Notes</th>
+                  <TableHeaderCell>Type</TableHeaderCell>
+                  <TableHeaderCell>Scope</TableHeaderCell>
+                  <TableHeaderCell>Valid From</TableHeaderCell>
+                  <TableHeaderCell>Valid To</TableHeaderCell>
+                  <TableHeaderCell>Notes</TableHeaderCell>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
+              </TableHead>
+              <TableBody>
                 {adjustments?.filter(a => a.recordedUntil === null).map(a => (
-                  <tr key={a.adjustmentId} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-gray-800">{label(adjustmentTypes, a.adjustmentTypeCode)}</td>
-                    <td className="px-4 py-3 text-gray-600">{label(adjustmentScopes, a.scopeCode)}</td>
-                    <td className="px-4 py-3 text-gray-600">{new Date(a.validFrom).toLocaleDateString('en-GB')}</td>
-                    <td className="px-4 py-3 text-gray-600">{a.validTo ? new Date(a.validTo).toLocaleDateString('en-GB') : 'Open-ended'}</td>
-                    <td className="px-4 py-3 text-gray-500">{a.notes ?? '—'}</td>
-                  </tr>
+                  <TableRow key={a.adjustmentId}>
+                    <TableCell className="text-neutral-800">{label(adjustmentTypes, a.adjustmentTypeCode)}</TableCell>
+                    <TableCell>{label(adjustmentScopes, a.scopeCode)}</TableCell>
+                    <TableCell>{new Date(a.validFrom).toLocaleDateString('en-GB')}</TableCell>
+                    <TableCell>{a.validTo ? new Date(a.validTo).toLocaleDateString('en-GB') : 'Open-ended'}</TableCell>
+                    <TableCell className="text-neutral-500">{a.notes ?? '—'}</TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
-          </div>
+              </TableBody>
+            </Table>
+          </Card>
         )}
       </section>
 
       {/* Exceptional circumstances */}
       <section>
-        <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">Exceptional Circumstances</h2>
+        <h2 className="text-sm font-semibold text-neutral-700 uppercase tracking-wide mb-3">Exceptional Circumstances</h2>
         {ecs?.length === 0 ? (
-          <p className="text-sm text-gray-600">No exceptional circumstances on record.</p>
+          <p className="text-sm text-neutral-600">No exceptional circumstances on record.</p>
         ) : (
-          <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
-            <table className="min-w-full divide-y divide-gray-200 text-sm">
-              <thead className="bg-gray-50">
+          <Card>
+            <Table>
+              <TableHead>
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Module</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Outcome</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Determination Date</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Notes</th>
+                  <TableHeaderCell>Module</TableHeaderCell>
+                  <TableHeaderCell>Outcome</TableHeaderCell>
+                  <TableHeaderCell>Determination Date</TableHeaderCell>
+                  <TableHeaderCell>Notes</TableHeaderCell>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
+              </TableHead>
+              <TableBody>
                 {ecs?.filter(e => e.recordedUntil === null).map(e => (
-                  <tr key={e.exceptionalCircumstancesId} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-gray-800">
+                  <TableRow key={e.exceptionalCircumstancesId}>
+                    <TableCell className="text-neutral-800">
                       {e.moduleCode
-                        ? <><span className="font-mono text-xs text-gray-500 mr-1">{e.moduleCode}</span>{e.moduleTitle}</>
-                        : <span className="text-gray-600">—</span>}
-                    </td>
-                    <td className="px-4 py-3"><Badge value={e.outcomeCode} label={label(ecOutcomes, e.outcomeCode)} /></td>
-                    <td className="px-4 py-3 text-gray-600">{new Date(e.determinationDate).toLocaleDateString('en-GB')}</td>
-                    <td className="px-4 py-3 text-gray-500">{e.notes ?? '—'}</td>
-                  </tr>
+                        ? <><span className="font-mono text-xs text-neutral-500 mr-1">{e.moduleCode}</span>{e.moduleTitle}</>
+                        : <span className="text-neutral-600">—</span>}
+                    </TableCell>
+                    <TableCell><Badge value={e.outcomeCode} label={label(ecOutcomes, e.outcomeCode)} /></TableCell>
+                    <TableCell>{new Date(e.determinationDate).toLocaleDateString('en-GB')}</TableCell>
+                    <TableCell className="text-neutral-500">{e.notes ?? '—'}</TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
-          </div>
+              </TableBody>
+            </Table>
+          </Card>
         )}
       </section>
 

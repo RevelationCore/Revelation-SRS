@@ -56,7 +56,7 @@ export function CallbackPage() {
       <main className="flex min-h-screen items-center justify-center px-4">
         <div className="w-full max-w-sm space-y-4">
           <Problem title="Sign-in failed" detail={error} />
-          <a href="/login" className="block text-center text-sm text-indigo-600 hover:underline">
+          <a href="/login" className="block text-center text-sm text-primary-600 hover:underline">
             Return to sign-in
           </a>
         </div>

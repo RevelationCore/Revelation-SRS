@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "generated": "2026-07-28T08:18:52.214Z",
+  "generated": "2026-08-02T19:26:06.399Z",
   "description": "Machine-readable registry of all Revelation SRS domain events.",
   "schemaUriBase": "https://schemas.revelation-srs.io/events",
   "events": [
@@ -148,6 +148,31 @@
       "consumers": [
         "vle-adapter",
         "transcript-service"
+      ],
+      "status": "published"
+    },
+    {
+      "subject": "srs.enrolment.module-selection-proposal-submitted",
+      "version": "1.0.0",
+      "schemaRef": "https://schemas.revelation-srs.io/events/enrolment/module-selection-proposal-submitted/v1.json",
+      "schemaPath": "schemas/events/enrolment/module-selection-proposal-submitted/v1.json",
+      "dataClass": "standard",
+      "partitionKey": "enrolmentId",
+      "consumers": [
+        "registry-workflow"
+      ],
+      "status": "published"
+    },
+    {
+      "subject": "srs.enrolment.module-selection-proposal-decided",
+      "version": "1.0.0",
+      "schemaRef": "https://schemas.revelation-srs.io/events/enrolment/module-selection-proposal-decided/v1.json",
+      "schemaPath": "schemas/events/enrolment/module-selection-proposal-decided/v1.json",
+      "dataClass": "standard",
+      "partitionKey": "enrolmentId",
+      "consumers": [
+        "vle-adapter",
+        "timetabling-adapter"
       ],
       "status": "published"
     },

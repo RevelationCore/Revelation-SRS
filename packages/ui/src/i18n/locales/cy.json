@@ -129,6 +129,31 @@
         "pending":    "Yn aros"
       }
     },
+    "moduleSelection": {
+      "heading":           "Dewis modiwlau",
+      "noEnrolmentTitle":  "Dim cofrestriad gweithredol",
+      "noEnrolmentDetail": "Mae dewis modiwlau angen cofrestriad gweithredol.",
+      "startIntro":        "Dewiswch y cyfnod academaidd i ddechrau dewis eich modiwlau ar ei gyfer.",
+      "choosePeriod":      "Dewiswch gyfnod…",
+      "startButton":       "Dechrau dewis modiwlau",
+      "status":            "Statws",
+      "statusLabel": {
+        "draft":      "Drafft",
+        "submitted":  "Wedi cyflwyno",
+        "validated":  "Wedi dilysu",
+        "approved":   "Wedi cymeradwyo",
+        "returned":   "Wedi'i ddychwelyd — angen newidiadau",
+        "waitlisted": "Ar restr aros",
+        "rejected":   "Wedi'i wrthod",
+        "confirmed":  "Wedi cadarnhau"
+      },
+      "noItems":           "Dim modiwlau wedi'u dewis eto.",
+      "sourceCompulsory":  "Gorfodol",
+      "sourceChoice":      "Eich dewis",
+      "addModule":         "Ychwanegu modiwl",
+      "chooseModule":      "Dewiswch fodiwl…",
+      "submitButton":      "Cyflwyno'r dewis"
+    },
     "results": {
       "subheading":    "Canlyniadau cyhoeddedig yn unig. Dangosir canlyniadau unwaith y cânt eu cadarnhau gan eich bwrdd arholi.",
       "noResults":     "Nid oes canlyniadau cyhoeddedig ar gael eto.",

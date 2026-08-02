@@ -12,6 +12,11 @@ import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
 import { useAuth } from '../auth/AuthContext.js';
 import { userHasAnyPermission } from '../auth/RequirePermission.js';
+import { ChevronDown, ChevronUp, X } from 'lucide-react';
+import {
+  PageHeader, Card, Button, Input, LabelledField,
+  Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
+} from '@revelation-srs/ui';
 
 function memberStatus(m: ValueSetMember): 'active' | 'retired' | 'scheduled' {
   const now = new Date();
@@ -23,9 +28,9 @@ function memberStatus(m: ValueSetMember): 'active' | 'retired' | 'scheduled' {
 function StatusBadge({ member }: { member: ValueSetMember }) {
   const status = memberStatus(member);
   const cls =
-    status === 'active'    ? 'bg-green-100 text-green-700' :
-    status === 'retired'   ? 'bg-amber-100 text-amber-700' :
-                             'bg-blue-100 text-blue-700';
+    status === 'active'    ? 'bg-success-100 text-success-700' :
+    status === 'retired'   ? 'bg-warning-100 text-warning-700' :
+                             'bg-primary-100 text-primary-700';
   return (
     <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium ${cls}`}>
       {status}
@@ -54,50 +59,48 @@ export function ValueSetsPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-semibold text-gray-900 mb-2">Value sets</h1>
-      <p className="text-sm text-gray-500 mb-6">
-        Manage the valid values that appear in picklists. Platform-managed codes are read-only;
-        tenant extensions can be added, edited, or retired.
-      </p>
+      <PageHeader title="Value sets" description="Manage the valid values that appear in picklists. Platform-managed codes are read-only; tenant extensions can be added, edited, or retired." />
 
-      {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+      {error && <p className="mb-4 text-sm text-danger-600">{error}</p>}
 
       {loading ? (
         <div className="flex justify-center py-16"><Spinner /></div>
       ) : sets.length === 0 ? (
-        <p className="text-sm text-gray-600">No value sets found.</p>
+        <p className="text-sm text-neutral-600">No value sets found.</p>
       ) : (
         <div className="space-y-2">
           {sets.map(s => (
-            <div key={s.setCode} className="bg-white rounded-lg border border-gray-200">
+            <Card key={s.setCode}>
               <button
                 onClick={() => toggle(s.setCode)}
-                className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-50"
+                className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-neutral-50"
               >
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-medium text-sm text-gray-900">{s.displayName}</span>
-                    <span className="font-mono text-xs text-gray-600">{s.setCode}</span>
+                    <span className="font-medium text-sm text-neutral-900">{s.displayName}</span>
+                    <span className="font-mono text-xs text-neutral-600">{s.setCode}</span>
                     {s.isExtensible && (
-                      <span className="rounded bg-indigo-100 text-indigo-700 px-1.5 py-0.5 text-xs font-medium">
+                      <span className="rounded bg-primary-100 text-primary-700 px-1.5 py-0.5 text-xs font-medium">
                         extensible
                       </span>
                     )}
                   </div>
                   {s.description && (
-                    <p className="text-xs text-gray-500 mt-0.5">{s.description}</p>
+                    <p className="text-xs text-neutral-500 mt-0.5">{s.description}</p>
                   )}
                 </div>
                 <div className="flex items-center gap-3 ml-4 flex-shrink-0">
-                  <span className="text-xs text-gray-600">{s.source}</span>
-                  <span className="text-gray-600 text-sm">{expanded === s.setCode ? '▲' : '▼'}</span>
+                  <span className="text-xs text-neutral-600">{s.source}</span>
+                  {expanded === s.setCode
+                    ? <ChevronUp className="h-4 w-4 text-neutral-500" aria-hidden="true" />
+                    : <ChevronDown className="h-4 w-4 text-neutral-500" aria-hidden="true" />}
                 </div>
               </button>
 
               {expanded === s.setCode && (
                 <SetMembersPanel setCode={s.setCode} isExtensible={s.isExtensible} canWrite={canWrite} />
               )}
-            </div>
+            </Card>
           ))}
         </div>
       )}
@@ -133,29 +136,29 @@ function SetMembersPanel({ setCode, isExtensible, canWrite }: { setCode: string;
   }
 
   return (
-    <div className="border-t border-gray-100 px-4 py-4">
-      {error && <p className="mb-2 text-sm text-red-600">{error}</p>}
+    <div className="border-t border-neutral-100 px-4 py-4">
+      {error && <p className="mb-2 text-sm text-danger-600">{error}</p>}
 
       {loading ? (
         <div className="flex justify-center py-4"><Spinner /></div>
       ) : (
         <>
           {members.length > 0 ? (
-            <div className="overflow-x-auto mb-4">
-              <table className="min-w-full text-xs">
-                <thead>
-                  <tr className="text-gray-600 uppercase border-b border-gray-100">
-                    <th className="text-left pb-2 pr-4 font-medium">Code</th>
-                    <th className="text-left pb-2 pr-4 font-medium">Label</th>
-                    <th className="text-left pb-2 pr-4 font-medium">Description</th>
-                    <th className="text-left pb-2 pr-4 font-medium w-10">Sort</th>
-                    <th className="text-left pb-2 pr-4 font-medium">Active from</th>
-                    <th className="text-left pb-2 pr-4 font-medium">Active to</th>
-                    <th className="text-left pb-2 pr-4 font-medium">Status</th>
-                    <th className="pb-2" />
+            <div className="mb-4">
+              <Table className="text-xs">
+                <TableHead>
+                  <tr>
+                    <TableHeaderCell>Code</TableHeaderCell>
+                    <TableHeaderCell>Label</TableHeaderCell>
+                    <TableHeaderCell>Description</TableHeaderCell>
+                    <TableHeaderCell>Sort</TableHeaderCell>
+                    <TableHeaderCell>Active from</TableHeaderCell>
+                    <TableHeaderCell>Active to</TableHeaderCell>
+                    <TableHeaderCell>Status</TableHeaderCell>
+                    <TableHeaderCell><span className="sr-only">Actions</span></TableHeaderCell>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
+                </TableHead>
+                <TableBody>
                   {members.map(m =>
                     canWrite && editCode === m.code ? (
                       <EditMemberRow
@@ -178,11 +181,11 @@ function SetMembersPanel({ setCode, isExtensible, canWrite }: { setCode: string;
                       />
                     )
                   )}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           ) : (
-            <p className="text-xs text-gray-600 mb-4">No members yet.</p>
+            <p className="text-xs text-neutral-600 mb-4">No members yet.</p>
           )}
 
           {isExtensible && canWrite && (
@@ -194,12 +197,7 @@ function SetMembersPanel({ setCode, isExtensible, canWrite }: { setCode: string;
                 onError={setError}
               />
             ) : (
-              <button
-                onClick={() => setShowAdd(true)}
-                className="text-xs font-medium text-indigo-600 hover:text-indigo-800"
-              >
-                + Add member
-              </button>
+              <Button variant="ghost" size="sm" onClick={() => setShowAdd(true)}>+ Add member</Button>
             )
           )}
         </>
@@ -239,18 +237,18 @@ function MemberRow({
   }
 
   return (
-    <tr className={`hover:bg-gray-50 ${status === 'retired' ? 'opacity-60' : ''}`}>
-      <td className="py-2 pr-4 font-mono text-gray-700">{member.code}</td>
-      <td className="py-2 pr-4 text-gray-900">{member.displayLabel}</td>
-      <td className="py-2 pr-4 text-gray-500 max-w-xs truncate">{member.description ?? '—'}</td>
-      <td className="py-2 pr-4 text-gray-500">{member.sortOrder}</td>
-      <td className="py-2 pr-4 text-gray-500">{member.activeFrom ? member.activeFrom.slice(0, 10) : '—'}</td>
-      <td className="py-2 pr-4 text-gray-500">{member.activeTo ? member.activeTo.slice(0, 10) : '—'}</td>
-      <td className="py-2 pr-4"><StatusBadge member={member} /></td>
-      <td className="py-2 text-right whitespace-nowrap">
+    <TableRow className={status === 'retired' ? 'opacity-60' : ''}>
+      <TableCell className="font-mono">{member.code}</TableCell>
+      <TableCell className="text-neutral-900">{member.displayLabel}</TableCell>
+      <TableCell className="max-w-xs truncate">{member.description ?? '—'}</TableCell>
+      <TableCell>{member.sortOrder}</TableCell>
+      <TableCell>{member.activeFrom ? member.activeFrom.slice(0, 10) : '—'}</TableCell>
+      <TableCell>{member.activeTo ? member.activeTo.slice(0, 10) : '—'}</TableCell>
+      <TableCell><StatusBadge member={member} /></TableCell>
+      <TableCell className="text-right whitespace-nowrap">
         {member.isTenantOwned && canWrite ? (
           <span className="inline-flex items-center gap-3">
-            <button onClick={onEdit} className="text-indigo-600 hover:text-indigo-800 font-medium">
+            <button onClick={onEdit} className="text-primary-600 hover:text-primary-800 font-medium">
               Edit
             </button>
             {status !== 'retired' && (
@@ -259,26 +257,26 @@ function MemberRow({
                   <button
                     onClick={() => void handleRetire()}
                     disabled={retiring}
-                    className="text-red-600 hover:text-red-800 font-medium disabled:opacity-50"
+                    className="text-danger-600 hover:text-danger-800 font-medium disabled:opacity-50"
                   >
                     {retiring ? 'Retiring…' : 'Confirm'}
                   </button>
-                  <button onClick={() => setConfirm(false)} className="text-gray-600">
-                    ✕
+                  <button onClick={() => setConfirm(false)} className="text-neutral-600" aria-label="Cancel">
+                    <X className="h-3 w-3" />
                   </button>
                 </span>
               ) : (
-                <button onClick={() => setConfirm(true)} className="text-amber-600 hover:text-amber-800">
+                <button onClick={() => setConfirm(true)} className="text-warning-600 hover:text-warning-800">
                   Retire
                 </button>
               )
             )}
           </span>
         ) : (
-          <span className="text-gray-300 text-xs">Platform</span>
+          <span className="text-neutral-300 text-xs">Platform</span>
         )}
-      </td>
-    </tr>
+      </TableCell>
+    </TableRow>
   );
 }
 
@@ -319,11 +317,11 @@ function EditMemberRow({
     }
   }
 
-  const inputCls = 'rounded border border-gray-300 px-2 py-0.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 w-full';
+  const inputCls = 'rounded border border-neutral-300 px-2 py-0.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary-500 w-full';
 
   return (
-    <tr className="bg-indigo-50">
-      <td className="py-2 pr-4 font-mono text-gray-600">{member.code}</td>
+    <tr className="bg-primary-50">
+      <td className="py-2 pr-4 font-mono text-neutral-600">{member.code}</td>
       <td className="py-2 pr-4">
         <input
           value={displayLabel}
@@ -372,14 +370,14 @@ function EditMemberRow({
           <button
             type="submit"
             disabled={saving}
-            className="rounded bg-indigo-600 px-2.5 py-1 text-xs font-medium text-white disabled:opacity-50"
+            className="rounded bg-primary-600 px-2.5 py-1 text-xs font-medium text-white disabled:opacity-50"
           >
             {saving ? 'Saving…' : 'Save'}
           </button>
           <button
             type="button"
             onClick={onCancel}
-            className="text-xs text-gray-500 hover:text-gray-700"
+            className="text-xs text-neutral-500 hover:text-neutral-700"
           >
             Cancel
           </button>
@@ -430,53 +428,32 @@ function AddMemberForm({
     }
   }
 
-  const inputCls = 'rounded border border-gray-300 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 w-full';
-  const labelCls = 'block text-xs font-medium text-gray-600 mb-1';
-
   return (
-    <form onSubmit={(e) => void handleSubmit(e)} className="mt-3 rounded-lg border border-indigo-200 bg-indigo-50 p-4">
-      <h3 className="text-xs font-semibold text-gray-700 mb-3">Add member</h3>
+    <form onSubmit={(e) => void handleSubmit(e)} className="mt-3 rounded-lg border border-primary-200 bg-primary-50 p-4">
+      <h3 className="text-xs font-semibold text-neutral-700 mb-3">Add member</h3>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <div>
-          <label className={labelCls}>Code *</label>
-          <input name="code" required className={inputCls} placeholder="e.g. custom-status" />
-        </div>
-        <div>
-          <label className={labelCls}>Label *</label>
-          <input name="displayLabel" required className={inputCls} placeholder="Display label" />
-        </div>
-        <div>
-          <label className={labelCls}>Description</label>
-          <input name="description" className={inputCls} placeholder="Optional" />
-        </div>
-        <div>
-          <label className={labelCls}>Sort order</label>
-          <input name="sortOrder" type="number" min={0} defaultValue={0} className={inputCls} />
-        </div>
-        <div>
-          <label className={labelCls}>Active from <span className="font-normal text-gray-600">(blank = always)</span></label>
-          <input name="activeFrom" type="date" className={inputCls} />
-        </div>
-        <div>
-          <label className={labelCls}>Active to <span className="font-normal text-gray-600">(blank = never)</span></label>
-          <input name="activeTo" type="date" className={inputCls} />
-        </div>
+        <LabelledField label="Code" htmlFor="vs-add-code" required>
+          <Input id="vs-add-code" name="code" required placeholder="e.g. custom-status" />
+        </LabelledField>
+        <LabelledField label="Label" htmlFor="vs-add-label" required>
+          <Input id="vs-add-label" name="displayLabel" required placeholder="Display label" />
+        </LabelledField>
+        <LabelledField label="Description" htmlFor="vs-add-desc" hint="Optional">
+          <Input id="vs-add-desc" name="description" />
+        </LabelledField>
+        <LabelledField label="Sort order" htmlFor="vs-add-sort">
+          <Input id="vs-add-sort" name="sortOrder" type="number" min={0} defaultValue={0} />
+        </LabelledField>
+        <LabelledField label="Active from" htmlFor="vs-add-from" hint="Blank = always">
+          <Input id="vs-add-from" name="activeFrom" type="date" />
+        </LabelledField>
+        <LabelledField label="Active to" htmlFor="vs-add-to" hint="Blank = never">
+          <Input id="vs-add-to" name="activeTo" type="date" />
+        </LabelledField>
       </div>
       <div className="mt-3 flex items-center gap-3">
-        <button
-          type="submit"
-          disabled={adding}
-          className="rounded bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
-        >
-          {adding ? 'Adding…' : 'Add member'}
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="text-xs text-gray-500 hover:text-gray-700"
-        >
-          Cancel
-        </button>
+        <Button type="submit" size="sm" disabled={adding}>{adding ? 'Adding…' : 'Add member'}</Button>
+        <Button type="button" variant="ghost" size="sm" onClick={onCancel}>Cancel</Button>
       </div>
     </form>
   );

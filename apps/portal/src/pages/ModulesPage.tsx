@@ -1,11 +1,15 @@
 import { useCallback, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Plus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../auth/AuthContext.js';
 import { useApiData } from '../hooks/useApiData.js';
 import { useFormSubmit } from '../hooks/useFormSubmit.js';
 import { getEnrolments, getModuleRegistrations, getTimetable, postWithdrawal } from '../api/me.js';
-import { Spinner, Problem, EmptyState, formatDate } from '@revelation-srs/ui';
+import {
+  Spinner, Problem, EmptyState, formatDate, PageHeader, Button, Badge,
+  Card, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
+} from '@revelation-srs/ui';
 
 export function ModulesPage() {
   const { t }    = useTranslation();
@@ -63,23 +67,21 @@ export function ModulesPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">{t('portal.nav.modules')}</h1>
-          {currentEnrolment && (
-            <p className="mt-1 text-sm text-gray-500">
-              Academic year {currentEnrolment.academicYearOfEntry}
-            </p>
-          )}
-        </div>
-        <Link
-          to="/modules/add"
-          className="flex-none rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-        >
-          {t('portal.modules.registerButton')}
-        </Link>
-      </div>
+    <div>
+      <PageHeader
+        title={t('portal.nav.modules')}
+        description={currentEnrolment ? `Academic year ${currentEnrolment.academicYearOfEntry}` : undefined}
+        actions={
+          <div className="flex items-center gap-2">
+            <Link to="/modules/select">
+              <Button variant="secondary">{t('portal.moduleSelection.heading')}</Button>
+            </Link>
+            <Link to="/modules/add">
+              <Button icon={<Plus className="h-4 w-4" />}>{t('portal.modules.registerButton')}</Button>
+            </Link>
+          </div>
+        }
+      />
 
       {error      && <Problem title={t('status.error')} detail={error} />}
       {submitError && <Problem title={t('status.error')} detail={submitError} />}
@@ -89,81 +91,62 @@ export function ModulesPage() {
       )}
 
       {registrations && registrations.length > 0 && (
-        <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
-          <table className="min-w-full divide-y divide-gray-200 text-sm">
-            <thead className="bg-gray-50">
+        <Card>
+          <Table>
+            <TableHead>
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Module</th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Period</th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Credits</th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Status</th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Registered</th>
-                <th className="px-4 py-3" />
+                <TableHeaderCell>Module</TableHeaderCell>
+                <TableHeaderCell>Period</TableHeaderCell>
+                <TableHeaderCell>Credits</TableHeaderCell>
+                <TableHeaderCell>Status</TableHeaderCell>
+                <TableHeaderCell>Registered</TableHeaderCell>
+                <TableHeaderCell><span className="sr-only">Actions</span></TableHeaderCell>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
+            </TableHead>
+            <TableBody>
               {registrations.map(r => (
-                <tr key={r.moduleRegistrationId} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-gray-800">
-                    <span className="font-mono text-xs text-gray-500 mr-1">{r.moduleCode}</span>
+                <TableRow key={r.moduleRegistrationId}>
+                  <TableCell className="text-neutral-800">
+                    <span className="font-mono text-xs text-neutral-500 mr-1">{r.moduleCode}</span>
                     <span className="font-medium">{r.moduleTitle}</span>
-                  </td>
-                  <td className="px-4 py-3 text-gray-600">{r.periodCode}</td>
-                  <td className="px-4 py-3 text-gray-600">{r.creditValue ?? '—'}</td>
-                  <td className="px-4 py-3">
-                    <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${regStatusColour(r.statusCode)}`}>
-                      {t(`portal.modules.status.${r.statusCode}`, { defaultValue: r.statusCode })}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-gray-600">{formatDate(r.registrationDate)}</td>
-                  <td className="px-4 py-3 text-right">
+                  </TableCell>
+                  <TableCell>{r.periodCode}</TableCell>
+                  <TableCell>{r.creditValue ?? '—'}</TableCell>
+                  <TableCell>
+                    <Badge value={r.statusCode} label={t(`portal.modules.status.${r.statusCode}`, { defaultValue: r.statusCode })} />
+                  </TableCell>
+                  <TableCell>{formatDate(r.registrationDate)}</TableCell>
+                  <TableCell className="text-right">
                     {r.statusCode === 'registered' && (
                       withdrawing === r.moduleRegistrationId ? (
                         <span className="inline-flex items-center gap-2">
-                          <span className="text-xs text-gray-700">{t('portal.modules.confirmWithdraw')}</span>
-                          <button
-                            type="button"
+                          <span className="text-xs text-neutral-700">{t('portal.modules.confirmWithdraw')}</span>
+                          <Button
+                            variant="danger"
+                            size="sm"
                             disabled={submitting}
+                            icon={submitting ? <Spinner size="sm" /> : undefined}
                             onClick={() => handleWithdraw(r.moduleRegistrationId)}
-                            className="inline-flex items-center gap-1 rounded bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-red-500"
                           >
-                            {submitting ? <Spinner size="sm" /> : null}
                             {t('actions.confirm')}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setWithdrawing(null)}
-                            className="rounded px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-400"
-                          >
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => setWithdrawing(null)}>
                             {t('actions.cancel')}
-                          </button>
+                          </Button>
                         </span>
                       ) : (
-                        <button
-                          type="button"
-                          onClick={() => setWithdrawing(r.moduleRegistrationId)}
-                          className="rounded px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-400"
-                        >
+                        <Button variant="ghost" size="sm" className="text-danger-600 hover:bg-danger-50" onClick={() => setWithdrawing(r.moduleRegistrationId)}>
                           {t('portal.modules.withdrawButton')}
-                        </button>
+                        </Button>
                       )
                     )}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </TableBody>
+          </Table>
+        </Card>
       )}
     </div>
   );
-}
-
-function regStatusColour(code: string): string {
-  const map: Record<string, string> = {
-    registered: 'bg-green-100 text-green-700',
-    withdrawn:  'bg-red-100 text-red-700',
-    pending:    'bg-yellow-100 text-yellow-700',
-  };
-  return map[code] ?? 'bg-gray-100 text-gray-700';
 }

@@ -4,7 +4,7 @@ import { useAuth } from '../auth/AuthContext.js';
 import { useApiData } from '../hooks/useApiData.js';
 import { useFormSubmit } from '../hooks/useFormSubmit.js';
 import { getDisabilityDeclarations, postDisabilityDeclaration, getFieldValueSet } from '../api/me.js';
-import { Spinner, Problem, EmptyState, formatDate } from '@revelation-srs/ui';
+import { Spinner, Problem, EmptyState, formatDate, PageHeader, Button, Badge, Card, CardBody, LabelledField, Textarea } from '@revelation-srs/ui';
 
 export function DisabilityPage() {
   const { t }    = useTranslation();
@@ -91,35 +91,25 @@ export function DisabilityPage() {
     categories.find(m => m.code === code)?.description ?? null;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">{t('portal.nav.disability')}</h1>
-          <p className="mt-1 text-sm text-gray-500">{t('portal.disability.subheading')}</p>
-        </div>
-        {!showForm && (
-          <button
-            type="button"
-            onClick={() => setShowForm(true)}
-            className="flex-none rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          >
-            {t('portal.disability.addDeclaration')}
-          </button>
+    <div>
+      <PageHeader
+        title={t('portal.nav.disability')}
+        description={t('portal.disability.subheading')}
+        actions={!showForm && (
+          <Button onClick={() => setShowForm(true)}>{t('portal.disability.addDeclaration')}</Button>
         )}
-      </div>
+      />
 
       {error && <Problem title={t('status.error')} detail={error} />}
 
       {/* Add declaration form */}
       {showForm && (
-        <section
-          aria-labelledby="add-declaration-heading"
-          className="rounded-lg border border-indigo-200 bg-indigo-50 p-6"
-        >
-          <h2 id="add-declaration-heading" className="mb-1 text-base font-semibold text-gray-900">
+        <Card className="mb-6 border-primary-200 bg-primary-50" aria-labelledby="add-declaration-heading">
+          <CardBody>
+          <h2 id="add-declaration-heading" className="mb-1 text-base font-semibold text-neutral-900">
             {t('portal.disability.addDeclaration')}
           </h2>
-          <p className="mb-4 text-sm text-gray-500">
+          <p className="mb-4 text-sm text-neutral-500">
             Select all that apply. Categories you have already declared are disabled.
           </p>
           {submitError && <Problem title={t('status.error')} detail={submitError} />}
@@ -134,29 +124,29 @@ export function DisabilityPage() {
                     key={code}
                     className={`flex cursor-pointer items-start gap-3 rounded-lg border bg-white p-3 transition-colors ${
                       isDeclared
-                        ? 'cursor-not-allowed border-gray-100 opacity-50'
+                        ? 'cursor-not-allowed border-neutral-100 opacity-50'
                         : isChecked
-                          ? 'border-indigo-400 ring-1 ring-indigo-300'
-                          : 'border-gray-200 hover:border-indigo-200'
+                          ? 'border-primary-400 ring-1 ring-primary-300'
+                          : 'border-neutral-200 hover:border-primary-200'
                     }`}
                   >
                     <input
                       type="checkbox"
-                      className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                      className="mt-0.5 h-4 w-4 shrink-0 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
                       checked={isChecked}
                       disabled={isDeclared}
                       onChange={() => toggle(code)}
                       aria-label={displayLabel}
                     />
                     <span className="min-w-0">
-                      <span className="block text-sm font-medium text-gray-900">{displayLabel}</span>
+                      <span className="block text-sm font-medium text-neutral-900">{displayLabel}</span>
                       {description && (
-                        <span className="block text-xs text-gray-500">{description}</span>
+                        <span className="block text-xs text-neutral-500">{description}</span>
                       )}
                     </span>
-                    <span className="ml-auto shrink-0 font-mono text-xs text-gray-400">{code}</span>
+                    <span className="ml-auto shrink-0 font-mono text-xs text-neutral-400">{code}</span>
                     {isDeclared && (
-                      <span className="ml-1 shrink-0 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                      <span className="ml-1 shrink-0 rounded-full bg-success-100 px-2 py-0.5 text-xs font-medium text-success-700">
                         Declared
                       </span>
                     )}
@@ -166,41 +156,37 @@ export function DisabilityPage() {
             </fieldset>
 
             <div className="mt-4">
-              <label htmlFor="declaration-notes" className="block text-sm font-medium text-gray-700 mb-1">
-                Supporting notes <span className="font-normal text-gray-400">(optional)</span>
+              <label htmlFor="declaration-notes" className="block text-sm font-medium text-neutral-700 mb-1">
+                Supporting notes <span className="font-normal text-neutral-400">(optional)</span>
               </label>
-              <textarea
+              <Textarea
                 id="declaration-notes"
                 rows={3}
                 value={notes}
                 onChange={e => setNotes(e.target.value)}
                 placeholder="Any additional context or supporting information..."
-                className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
               />
             </div>
 
             <div className="mt-4 flex items-center gap-3">
-              <button
+              <Button
                 type="submit"
                 disabled={submitting || newSelections.length === 0}
-                className="inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                icon={submitting ? <Spinner size="sm" /> : undefined}
               >
                 {submitting
-                  ? <><Spinner size="sm" />{t('status.submitting')}</>
+                  ? t('status.submitting')
                   : newSelections.length > 0
                     ? `${t('actions.submit')} (${newSelections.length})`
                     : t('actions.submit')}
-              </button>
-              <button
-                type="button"
-                onClick={handleCancel}
-                className="rounded-md px-4 py-2 text-sm font-medium text-gray-700 hover:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
+              </Button>
+              <Button type="button" variant="ghost" onClick={handleCancel}>
                 {t('actions.cancel')}
-              </button>
+              </Button>
             </div>
           </form>
-        </section>
+          </CardBody>
+        </Card>
       )}
 
       {/* Declarations list */}
@@ -211,41 +197,29 @@ export function DisabilityPage() {
       {declarations && declarations.length > 0 && (
         <div className="space-y-3">
           {declarations.map(d => (
-            <div
-              key={d.declarationId}
-              className="flex items-center justify-between rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
-            >
+            <Card key={d.declarationId}>
+              <CardBody className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-900">
+                <p className="text-sm font-medium text-neutral-900">
                   {labelFor(d.disabilityCategoryCode)}
                 </p>
                 {hintFor(d.disabilityCategoryCode) && (
-                  <p className="mt-0.5 text-xs text-gray-500">{hintFor(d.disabilityCategoryCode)}</p>
+                  <p className="mt-0.5 text-xs text-neutral-500">{hintFor(d.disabilityCategoryCode)}</p>
                 )}
-                <p className="mt-0.5 text-xs text-gray-400">
+                <p className="mt-0.5 text-xs text-neutral-400">
                   {t('portal.disability.declaredOn')} {formatDate(d.declaredAt)}
                   <span className="ml-2 font-mono">({d.disabilityCategoryCode})</span>
                 </p>
                 {d.notes && (
-                  <p className="mt-1 text-xs text-gray-600 italic">{d.notes}</p>
+                  <p className="mt-1 text-xs text-neutral-600 italic">{d.notes}</p>
                 )}
               </div>
-              <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${declarationStatusColour(d.declarationStatusCode)}`}>
-                {d.declarationStatusCode}
-              </span>
-            </div>
+              <Badge value={d.declarationStatusCode} />
+              </CardBody>
+            </Card>
           ))}
         </div>
       )}
     </div>
   );
-}
-
-function declarationStatusColour(code: string): string {
-  const map: Record<string, string> = {
-    declared:  'bg-green-100 text-green-700',
-    withdrawn: 'bg-gray-100 text-gray-600',
-    pending:   'bg-yellow-100 text-yellow-700',
-  };
-  return map[code] ?? 'bg-gray-100 text-gray-700';
 }

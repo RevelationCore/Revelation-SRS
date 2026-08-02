@@ -26,8 +26,8 @@
 | Revelation workflows | W001 partial; no dedicated assignment workflow |
 | Reference-model flows | F-CM-SIS-01, F-CRM-SIS-01, F-UCAS-SIS-01 |
 | Functional requirements | CAT-001, CAT-007–CAT-009; ENR-001, ENR-009 |
-| Data entities | `enrolment`, `programme`, `programme_route`, `programme_rule_set`, `academic_rule` |
-| Domain events | Gap — no specific route/rule assignment event |
+| Data entities | `enrolment`, `programme`, `programme_route`, `programme_rule_set`, `academic_rule`, `enrolment_curriculum_binding` |
+| Domain events | No dedicated binding-created event yet — the binding is created synchronously as a side effect of the first module selection proposal (`ModuleSelectionService#resolveCurriculumBinding`) |
 | Integration contracts | Curriculum and admissions contracts |
 
 ## Purpose and outcome
@@ -119,7 +119,7 @@ Initial enrolment confirmation, future-dated transfer or authorised correction.
 | BR-1 | SECTOR | Programme structures define compulsory/optional study and award outcomes | UK | SRC-038–SRC-045 |
 | BR-2 | INSTITUTIONAL | Cohort, route and transition rules vary | UK | SRC-039–SRC-045 |
 | BR-3 | REVELATION | `programme_rule_set` supports route and entry-academic-year binding | Revelation | SRC-018 |
-| BR-4 | PROPOSED | Binding decision and source curriculum version must be explicit | Revelation target | Process analysis |
+| BR-4 | REVELATION | Binding decision and source curriculum version are explicit: `enrolment_curriculum_binding` is a bitemporal table recording `programme_route_id`, `programme_rule_set_id`, `decision_authority_code` (`automatic`\|`registry-administrator`\|`academic-approver`) and `decision_reason`. Created automatically (preferring the route/entry-year-agnostic default rule set) on first module selection proposal, or explicitly via `POST /api/v1/enrolment-curriculum-bindings/:enrolmentId` for a registry administrator override (main flow / A5) | Revelation | `apps/api/src/platform/module-selection/service.ts` |
 
 ## National and institutional variations
 
@@ -181,8 +181,8 @@ sequenceDiagram
 
 | ID | Question/decision | Owner | Status |
 |---|---|---|---|
-| OQ-1 | Enrolment currently has programme but no explicit route/rule-set FK; add a binding entity? | Data architect | Open |
-| OQ-2 | How are recognised-credit/diet exceptions represented? | Product/data owner | Open |
+| OQ-1 | Enrolment currently has programme but no explicit route/rule-set FK; add a binding entity? | Data architect | **Resolved** (2026-08-02) — `enrolment_curriculum_binding` added; see [docs/architecture/module-selection-rules.md](../../architecture/module-selection-rules.md) |
+| OQ-2 | How are recognised-credit/diet exceptions represented? | Product/data owner | Open — RPL/recognised-credit modelling is not yet implemented; the current design (`module_group.min_modules`/`min_credits`) covers diet composition and count/credit exceptions via approver decision (BR-4/A5b of BP-03-004) but not formal RPL credit transfer |
 
 ## Sources
 
@@ -207,4 +207,5 @@ sequenceDiagram
 | Version | Date | Author | Change |
 |---|---|---|---|
 | 0.1 | 2026-07-26 | Codex | Initial draft |
+| 0.2 | 2026-08-02 | Claude | Resolved OQ-1: implemented `enrolment_curriculum_binding` and the automatic/override binding flow. See [docs/architecture/module-selection-rules.md](../../architecture/module-selection-rules.md) |
 

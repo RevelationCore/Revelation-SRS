@@ -48,7 +48,7 @@ This inventory is broader than the existing durable workflow catalogue. A proces
 | [BP-03-001](03-curriculum-and-module-registration/bp-03-001-import-and-publish-curriculum-data.md) | Import and publish curriculum data to the SRS | P1 | Version programmes, modules and rules | None | Draft |
 | [BP-03-002](03-curriculum-and-module-registration/bp-03-002-assign-programme-route-and-rules.md) | Assign a programme route and rule set | P1 | Bind student/cohort to effective rules | W001 partial | Draft |
 | [BP-03-003](03-curriculum-and-module-registration/bp-03-003-select-modules.md) | Select modules | P1 | Create proposed module registrations | None | Draft |
-| [BP-03-004](03-curriculum-and-module-registration/bp-03-004-validate-and-approve-module-selection.md) | Validate and approve module selection | P1 | Confirm/hold/reject module registrations | None | Draft |
+| [BP-03-004](03-curriculum-and-module-registration/bp-03-004-validate-and-approve-module-selection.md) | Validate and approve module selection | P1 | Confirm/hold/reject module registrations | `module-selection-approval` (exception path only) | Draft |
 | [BP-03-005](03-curriculum-and-module-registration/bp-03-005-change-module-registration.md) | Change a module registration | P1 | Version module registration and liabilities | None | Draft |
 | [BP-03-006](03-curriculum-and-module-registration/bp-03-006-provision-confirmed-registrations.md) | Provision confirmed registrations downstream | P1 | Publish rosters/entitlements to VLE, timetable and attendance | None | Draft |
 | [BP-03-007](03-curriculum-and-module-registration/bp-03-007-establish-pgr-supervision.md) | Establish PGR supervision and research context | P2 | Create staff assignment/research profile | None | Draft |

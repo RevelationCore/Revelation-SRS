@@ -4,7 +4,10 @@ import { useAuth } from '../auth/AuthContext.js';
 import { useApiData } from '../hooks/useApiData.js';
 import { getEnrolments, getModuleRegistrations, getModuleResult } from '../api/me.js';
 import type { ModuleResult } from '../api/me.js';
-import { Spinner, Problem, EmptyState, ApiError } from '@revelation-srs/ui';
+import {
+  Spinner, Problem, EmptyState, ApiError, PageHeader,
+  Card, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
+} from '@revelation-srs/ui';
 
 interface ResultWithModule {
   moduleRegistrationId: string;
@@ -68,11 +71,8 @@ export function ResultsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">{t('portal.nav.results')}</h1>
-        <p className="mt-1 text-sm text-gray-500">{t('portal.results.subheading')}</p>
-      </div>
+    <div>
+      <PageHeader title={t('portal.nav.results')} description={t('portal.results.subheading')} />
 
       {error && <Problem title={t('status.error')} detail={error} />}
 
@@ -81,39 +81,33 @@ export function ResultsPage() {
       )}
 
       {results.length > 0 && (
-        <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
-          <table className="min-w-full divide-y divide-gray-200 text-sm">
-            <thead className="bg-gray-50">
+        <Card>
+          <Table>
+            <TableHead>
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
-                  Module
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
-                  {t('portal.results.aggregateMark')}
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
-                  {t('portal.results.resultCode')}
-                </th>
+                <TableHeaderCell>Module</TableHeaderCell>
+                <TableHeaderCell>{t('portal.results.aggregateMark')}</TableHeaderCell>
+                <TableHeaderCell>{t('portal.results.resultCode')}</TableHeaderCell>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
+            </TableHead>
+            <TableBody>
               {results.map(({ moduleCode, moduleTitle, moduleRegistrationId, result }) => (
-                <tr key={moduleRegistrationId} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-gray-900">
-                    <span className="font-mono text-xs text-gray-500 mr-1">{moduleCode}</span>
+                <TableRow key={moduleRegistrationId}>
+                  <TableCell className="text-neutral-900">
+                    <span className="font-mono text-xs text-neutral-500 mr-1">{moduleCode}</span>
                     {moduleTitle}
-                  </td>
-                  <td className="px-4 py-3 text-gray-900 tabular-nums">{result.aggregateMark}</td>
-                  <td className="px-4 py-3">
+                  </TableCell>
+                  <TableCell className="text-neutral-900 tabular-nums">{result.aggregateMark}</TableCell>
+                  <TableCell>
                     <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${resultColour(result.resultCode)}`}>
                       {t(`portal.results.code.${result.resultCode}`, { defaultValue: result.resultCode })}
                     </span>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </TableBody>
+          </Table>
+        </Card>
       )}
     </div>
   );
@@ -121,11 +115,11 @@ export function ResultsPage() {
 
 function resultColour(code: string): string {
   const map: Record<string, string> = {
-    pass:        'bg-green-100 text-green-700',
-    fail:        'bg-red-100 text-red-700',
-    defer:       'bg-yellow-100 text-yellow-700',
-    distinction: 'bg-blue-100 text-blue-700',
-    merit:       'bg-indigo-100 text-indigo-700',
+    pass:        'bg-success-100 text-success-700',
+    fail:        'bg-danger-100 text-danger-700',
+    defer:       'bg-warning-100 text-warning-700',
+    distinction: 'bg-primary-100 text-primary-700',
+    merit:       'bg-primary-100 text-primary-700',
   };
-  return map[code?.toLowerCase()] ?? 'bg-gray-100 text-gray-700';
+  return map[code?.toLowerCase()] ?? 'bg-neutral-100 text-neutral-700';
 }

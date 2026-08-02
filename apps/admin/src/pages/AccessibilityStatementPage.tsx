@@ -1,15 +1,15 @@
 export function AccessibilityStatementPage() {
   return (
     <main className="max-w-3xl mx-auto px-4 py-8">
-      <h1 className="text-2xl font-semibold text-gray-900 mb-6">Accessibility Statement</h1>
+      <h1 className="text-2xl font-semibold text-neutral-900 mb-6">Accessibility Statement</h1>
 
-      <p className="text-sm text-gray-500 mb-6">
+      <p className="text-sm text-neutral-500 mb-6">
         Last reviewed: June 2026. Next review due: June 2027.
       </p>
 
       <section className="mb-6">
-        <h2 className="text-lg font-medium text-gray-900 mb-2">Conformance status</h2>
-        <p className="text-sm text-gray-700">
+        <h2 className="text-lg font-medium text-neutral-900 mb-2">Conformance status</h2>
+        <p className="text-sm text-neutral-700">
           Revelation SRS Administration is designed to conform to{' '}
           <abbr title="Web Content Accessibility Guidelines">WCAG</abbr> 2.1 Level AA.
           We believe this application substantially conforms to WCAG 2.1 AA, with the
@@ -18,12 +18,12 @@ export function AccessibilityStatementPage() {
       </section>
 
       <section className="mb-6">
-        <h2 className="text-lg font-medium text-gray-900 mb-2">Technical information</h2>
-        <p className="text-sm text-gray-700 mb-2">
+        <h2 className="text-lg font-medium text-neutral-900 mb-2">Technical information</h2>
+        <p className="text-sm text-neutral-700 mb-2">
           Revelation SRS is committed to making this administration application accessible.
           This application relies on the following technologies for conformance:
         </p>
-        <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
+        <ul className="list-disc list-inside text-sm text-neutral-700 space-y-1">
           <li>HTML</li>
           <li>WAI-ARIA</li>
           <li>CSS</li>
@@ -32,13 +32,13 @@ export function AccessibilityStatementPage() {
       </section>
 
       <section className="mb-6">
-        <h2 className="text-lg font-medium text-gray-900 mb-2">Known limitations</h2>
+        <h2 className="text-lg font-medium text-neutral-900 mb-2">Known limitations</h2>
 
-        <div className="border border-yellow-200 bg-yellow-50 rounded p-4 mb-4">
-          <h3 className="text-sm font-medium text-yellow-900 mb-1">
+        <div className="border border-warning-200 bg-warning-50 rounded p-4 mb-4">
+          <h3 className="text-sm font-medium text-warning-900 mb-1">
             Mobile navigation overflow (R-A11Y-001) — Accepted exception
           </h3>
-          <p className="text-sm text-yellow-800">
+          <p className="text-sm text-warning-800">
             The left-hand navigation sidebar does not collapse to a mobile-friendly menu on
             narrow viewports. Revelation SRS Administration is a desktop-first application
             intended for use by registry staff, regulatory officers, and administrators on
@@ -51,11 +51,11 @@ export function AccessibilityStatementPage() {
       </section>
 
       <section className="mb-6">
-        <h2 className="text-lg font-medium text-gray-900 mb-2">Assessment approach</h2>
-        <p className="text-sm text-gray-700 mb-2">
+        <h2 className="text-lg font-medium text-neutral-900 mb-2">Assessment approach</h2>
+        <p className="text-sm text-neutral-700 mb-2">
           Accessibility was assessed using:
         </p>
-        <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
+        <ul className="list-disc list-inside text-sm text-neutral-700 space-y-1">
           <li>Automated axe-core scans via Playwright on all 26 authenticated routes</li>
           <li>Keyboard-only navigation testing (Tab, Enter, Escape, arrow keys)</li>
           <li>Screen reader testing with NVDA on Windows and VoiceOver on macOS</li>
@@ -65,13 +65,13 @@ export function AccessibilityStatementPage() {
       </section>
 
       <section className="mb-6">
-        <h2 className="text-lg font-medium text-gray-900 mb-2">Feedback and contact</h2>
-        <p className="text-sm text-gray-700">
+        <h2 className="text-lg font-medium text-neutral-900 mb-2">Feedback and contact</h2>
+        <p className="text-sm text-neutral-700">
           If you encounter an accessibility barrier in this application, please report it to
           your institution's system administrator or to{' '}
           <a
             href="mailto:accessibility@revelation-srs.org"
-            className="text-indigo-600 hover:text-indigo-800 underline"
+            className="text-primary-600 hover:text-primary-800 underline"
           >
             accessibility@revelation-srs.org
           </a>
@@ -80,14 +80,14 @@ export function AccessibilityStatementPage() {
       </section>
 
       <section>
-        <h2 className="text-lg font-medium text-gray-900 mb-2">Enforcement</h2>
-        <p className="text-sm text-gray-700">
+        <h2 className="text-lg font-medium text-neutral-900 mb-2">Enforcement</h2>
+        <p className="text-sm text-neutral-700">
           If you are not satisfied with our response, contact the{' '}
           <a
             href="https://www.equalityhumanrights.com/"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-indigo-600 hover:text-indigo-800 underline"
+            className="text-primary-600 hover:text-primary-800 underline"
           >
             Equality and Human Rights Commission
           </a>{' '}
@@ -96,7 +96,7 @@ export function AccessibilityStatementPage() {
             href="https://www.equalityni.org/"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-indigo-600 hover:text-indigo-800 underline"
+            className="text-primary-600 hover:text-primary-800 underline"
           >
             Equality Commission for Northern Ireland
           </a>{' '}

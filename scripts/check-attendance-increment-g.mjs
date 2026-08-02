@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 
 const root = resolve(import.meta.dirname, '..');
 const read = (path) => readFileSync(resolve(root, path), 'utf8');
-const migration = read('packages/db/migrations/0040_ukvi_engagement_decision_boundary.sql');
+const migration = read('packages/db/migrations/0003_engagement_and_attendance.sql');
 const service = read('apps/api/src/platform/regulatory/ukvi-service.ts');
 const routes = read('apps/api/src/routes/regulatory-ukvi.ts');
 const ui = read('apps/admin/src/pages/UkviPage.tsx');

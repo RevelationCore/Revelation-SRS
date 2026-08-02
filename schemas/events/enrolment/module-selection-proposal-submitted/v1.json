@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/EnrolmentModuleSelectionProposalSubmittedV1Payload",
+  "definitions": {
+    "EnrolmentModuleSelectionProposalSubmittedV1Payload": {
+      "type": "object",
+      "properties": {
+        "enrolmentId": {
+          "type": "string"
+        },
+        "moduleSelectionProposalId": {
+          "type": "string"
+        },
+        "academicPeriodId": {
+          "type": "string"
+        },
+        "statusCode": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "enrolmentId",
+        "moduleSelectionProposalId",
+        "academicPeriodId",
+        "statusCode"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$id": "https://schemas.revelation-srs.io/events/enrolment/module-selection-proposal-submitted/v1.json",
+  "title": "EnrolmentModuleSelectionProposalSubmittedV1Payload",
+  "description": "Payload schema for srs.enrolment.module-selection-proposal-submitted v1.0.0"
+}

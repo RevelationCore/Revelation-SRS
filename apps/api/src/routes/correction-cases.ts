@@ -28,11 +28,21 @@ const CorrectionCaseSchema = Type.Object({
   validTo:      Type.Union([Type.String(), Type.Null()]),
   recordedAt:   Type.String(),
   recordedUntil: Type.Union([Type.String(), Type.Null()]),
+  errorCategoryCode: Type.Union([Type.String(), Type.Null()]),
+  evidenceRef:       Type.Union([Type.String(), Type.Null()]),
+  authorisedBy:      Type.Union([Type.String(), Type.Null()]),
 });
 
 const OpenCaseBody = Type.Object({
   caseTypeCode: Type.Union([Type.Literal('appeal'), Type.Literal('administrative-correction')]),
   reference:    Type.Optional(Type.String()),
+  errorCategoryCode: Type.Optional(Type.String()),
+  evidenceRef:       Type.Optional(Type.String()),
+  authorisedBy:      Type.Optional(Type.String()),
+});
+
+const DistributeAmendmentBody = Type.Object({
+  targetSystemCodes: Type.Array(Type.String()),
 });
 
 const AdvanceStatusBody = Type.Object({
@@ -72,6 +82,9 @@ export function correctionCasesRoutes(fastify: FastifyInstance): void {
       const body = request.body as OpenCaseInput;
       const openInput: OpenCaseInput = { enrolmentId, caseTypeCode: body.caseTypeCode };
       if (body.reference) openInput.reference = body.reference;
+      if (body.errorCategoryCode) openInput.errorCategoryCode = body.errorCategoryCode;
+      if (body.evidenceRef) openInput.evidenceRef = body.evidenceRef;
+      if (body.authorisedBy) openInput.authorisedBy = body.authorisedBy;
       const caseId = await fastify.correctionService.openCase(request.tenantId, openInput, request.user.sub);
 
       await fastify.audit.record({
@@ -162,6 +175,26 @@ export function correctionCasesRoutes(fastify: FastifyInstance): void {
       });
 
       await reply.code(201).send({ amendmentId });
+    },
+  );
+
+  // ── Distribute amendment to downstream consumers ────────────────────────────────
+
+  fastify.post(
+    '/correction-cases/amendments/:amendmentId/distribute',
+    {
+      schema: {
+        params:   Type.Object({ amendmentId: Type.String() }),
+        body:     DistributeAmendmentBody,
+        response: { 201: Type.Object({ distributionItemIds: Type.Array(Type.String()) }), 422: ErrorSchema },
+      },
+      preHandler: [requirePermission('exam-board:ratify')],
+    },
+    async (request, reply) => {
+      const { amendmentId } = request.params as { amendmentId: string };
+      const { targetSystemCodes } = request.body as { targetSystemCodes: string[] };
+      const distributionItemIds = await fastify.correctionService.distributeAmendment(amendmentId, request.tenantId, targetSystemCodes);
+      await reply.code(201).send({ distributionItemIds });
     },
   );
 

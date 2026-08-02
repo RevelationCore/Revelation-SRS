@@ -1,0 +1,65 @@
+{
+  "title": "Revelation SRS Student Portal — Overview",
+  "scenes": [
+    {
+      "id": "scene-01",
+      "title": "Introduction",
+      "narration": "Welcome to Revelation SRS, an open source student records system for higher education. This is a quick tour of the student portal.",
+      "estimatedDurationSeconds": 10
+    },
+    {
+      "id": "scene-02",
+      "title": "What the app is for",
+      "narration": "The student portal is where you manage everything to do with your studies: your profile, your module choices, your results, and more. You sign in with the same account your institution gives you for everything else.",
+      "estimatedDurationSeconds": 20
+    },
+    {
+      "id": "scene-03",
+      "title": "Interface orientation",
+      "narration": "Once you're signed in, the dashboard gives you an at-a-glance summary: your current enrolment, key dates, and anything that needs your attention.",
+      "estimatedDurationSeconds": 25
+    },
+    {
+      "id": "scene-04",
+      "title": "Starting the main workflow",
+      "narration": "One of the most time-sensitive tasks for a student is choosing optional modules. Let's look at My Modules. Here's what Alice is currently registered for.",
+      "estimatedDurationSeconds": 20
+    },
+    {
+      "id": "scene-05",
+      "title": "Browsing and selecting a module",
+      "narration": "From here, Alice can browse every optional module available for this period, see how many credits each one carries, and add the ones she wants.",
+      "estimatedDurationSeconds": 35
+    },
+    {
+      "id": "scene-06",
+      "title": "Confirming before saving",
+      "narration": "Before anything is saved, the portal always asks you to confirm, so you can't register for a module by accident.",
+      "estimatedDurationSeconds": 25
+    },
+    {
+      "id": "scene-07",
+      "title": "Submitting the registration",
+      "narration": "Confirming sends the registration straight to Alice's record.",
+      "estimatedDurationSeconds": 15
+    },
+    {
+      "id": "scene-08",
+      "title": "Seeing the result",
+      "narration": "And back on My Modules, the new registration is right there: confirmed, dated, and ready for the module leader to see.",
+      "estimatedDurationSeconds": 25
+    },
+    {
+      "id": "scene-09",
+      "title": "A quick look at more of the portal",
+      "narration": "The portal covers a lot more than module choices. Notifications keep you posted on anything that needs attention, and your timetable is always up to date once your modules are confirmed.",
+      "estimatedDurationSeconds": 30
+    },
+    {
+      "id": "scene-10",
+      "title": "Summary",
+      "narration": "That's a quick look at the student portal: sign in, check your dashboard, manage your modules, and stay on top of everything else in one place.",
+      "estimatedDurationSeconds": 20
+    }
+  ]
+}

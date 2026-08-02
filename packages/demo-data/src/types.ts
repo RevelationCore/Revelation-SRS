@@ -6,6 +6,7 @@ export type LoadPhase =
   | 'admissions'
   | 'enrolments'
   | 'registrations'
+  | 'diet-groups'
   | 'assessment'
   | 'wellbeing'
   | 'regulatory'

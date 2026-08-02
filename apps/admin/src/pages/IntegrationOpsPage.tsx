@@ -13,6 +13,10 @@ import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
 import { useAuth } from '../auth/AuthContext.js';
 import { userHasAnyPermission } from '../auth/RequirePermission.js';
+import {
+  PageHeader, Card, CardBody, Button,
+  Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
+} from '@revelation-srs/ui';
 
 type Tab = 'health' | 'failed';
 
@@ -23,9 +27,9 @@ export function IntegrationOpsPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-semibold text-gray-900 mb-4">Integration operations</h1>
+      <PageHeader title="Integration operations" />
 
-      <div className="flex gap-1 mb-6 border-b border-gray-200">
+      <div className="flex gap-1 mb-6 border-b border-neutral-200">
         {([
           ['health', 'Connector health'],
           ['failed', 'Failed exchanges'],
@@ -35,8 +39,8 @@ export function IntegrationOpsPage() {
             onClick={() => setTab(t)}
             className={`px-4 py-2 text-sm font-medium border-b-2 ${
               tab === t
-                ? 'border-indigo-600 text-indigo-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
+                ? 'border-primary-600 text-primary-600'
+                : 'border-transparent text-neutral-500 hover:text-neutral-700'
             }`}
           >
             {label}
@@ -104,7 +108,7 @@ function ConnectorHealthTab({ canManage }: { canManage: boolean }) {
   }
 
   if (loading) return <div className="flex justify-center py-16"><Spinner /></div>;
-  if (error)   return <p className="text-sm text-red-600">{error}</p>;
+  if (error)   return <p className="text-sm text-danger-600">{error}</p>;
 
   const vleItems = items.filter(i =>
     i.registration.displayName.toLowerCase().includes('vle') ||
@@ -114,27 +118,20 @@ function ConnectorHealthTab({ canManage }: { canManage: boolean }) {
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-500">{items.length} registered connectors</p>
-        {canManage && <button
-          onClick={() => void checkAll()}
-          className="rounded border border-gray-300 px-4 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
-        >
-          Record all OK
-        </button>}
+        <p className="text-sm text-neutral-500">{items.length} registered connectors</p>
+        {canManage && <Button variant="secondary" onClick={() => void checkAll()}>Record all OK</Button>}
       </div>
 
       <div className="space-y-3">
         {items.map(({ registration: reg, updated, checking, error: itemError }) => {
           const display = updated ?? reg;
           return (
-            <div
-              key={reg.registrationId}
-              className="rounded-lg border border-gray-200 bg-white p-4"
-            >
+            <Card key={reg.registrationId}>
+              <CardBody>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-900">{reg.displayName}</p>
-                  <p className="text-xs text-gray-600 mt-0.5">
+                  <p className="text-sm font-medium text-neutral-900">{reg.displayName}</p>
+                  <p className="text-xs text-neutral-600 mt-0.5">
                     {reg.transportCode}
                     {reg.endpointUrl && (
                       <span className="font-mono ml-2">{reg.endpointUrl}</span>
@@ -145,37 +142,39 @@ function ConnectorHealthTab({ canManage }: { canManage: boolean }) {
                   <Badge value={display.healthStatusCode ?? (display.enabled ? 'enabled' : 'disabled')} />
                   {canManage && <div className="flex items-center gap-1">
                     {(['ok', 'degraded', 'down'] as const).map(s => (
-                      <button
+                      <Button
                         key={s}
+                        variant="secondary"
+                        size="sm"
                         onClick={() => void runHealthCheck(reg.registrationId, s)}
                         disabled={checking}
-                        className="rounded border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
                       >
                         {checking ? '…' : s}
-                      </button>
+                      </Button>
                     ))}
                   </div>}
                 </div>
               </div>
 
               {itemError && (
-                <p className="mt-2 text-xs text-red-600">{itemError}</p>
+                <p className="mt-2 text-xs text-danger-600">{itemError}</p>
               )}
 
               {updated && (
-                <div className="mt-2 text-xs text-green-700">
+                <div className="mt-2 text-xs text-success-700">
                   Status recorded at{' '}
                   {updated.lastHealthCheckAt
                     ? new Date(updated.lastHealthCheckAt).toLocaleTimeString('en-GB')
                     : '—'}
                 </div>
               )}
-            </div>
+              </CardBody>
+            </Card>
           );
         })}
 
         {items.length === 0 && (
-          <p className="text-sm text-gray-600">No integrations registered.</p>
+          <p className="text-sm text-neutral-600">No integrations registered.</p>
         )}
       </div>
 
@@ -219,18 +218,20 @@ function VleReconcilePanel({ vleItems }: { vleItems: RegistrationHealth[] }) {
   }
 
   return (
-    <div className="rounded-lg border border-blue-200 bg-blue-50 p-5">
+    <div className="rounded-lg border border-primary-200 bg-primary-50 p-5">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-blue-900">VLE connector — bulk reconciliation</h3>
-        <button
+        <h3 className="text-sm font-semibold text-primary-900">VLE connector — bulk reconciliation</h3>
+        <Button
+          variant="secondary"
+          size="sm"
+          className="border-primary-400 text-primary-800 hover:bg-primary-50"
           onClick={() => void triggerReconciliation()}
           disabled={running}
-          className="rounded border border-blue-400 bg-white px-3 py-1.5 text-xs font-medium text-blue-800 hover:bg-blue-50 disabled:opacity-50"
         >
           {running ? 'Triggering…' : 'Trigger 24h replay'}
-        </button>
+        </Button>
       </div>
-      <p className="text-xs text-blue-700 mb-3">
+      <p className="text-xs text-primary-700 mb-3">
         Triggers a replay of all integration events from the last 24 hours across all VLE connector
         registrations. The adapter will re-process grade submissions, roster changes, and
         adjustment distributions — resolving any unprocessed conflicts (R-VLE-003).
@@ -239,11 +240,11 @@ function VleReconcilePanel({ vleItems }: { vleItems: RegistrationHealth[] }) {
         <ul className="space-y-1 mt-3">
           {results.map(r => (
             <li key={r.registrationId} className="text-xs">
-              <span className="font-medium text-blue-900">{r.label}:</span>{' '}
+              <span className="font-medium text-primary-900">{r.label}:</span>{' '}
               {r.error ? (
-                <span className="text-red-700">{r.error}</span>
+                <span className="text-danger-700">{r.error}</span>
               ) : (
-                <span className="text-green-700">replay queued — job {r.replayJobId}</span>
+                <span className="text-success-700">replay queued — job {r.replayJobId}</span>
               )}
             </li>
           ))}
@@ -284,68 +285,51 @@ function FailedExchangesTab() {
   }
 
   if (loading) return <div className="flex justify-center py-16"><Spinner /></div>;
-  if (error)   return <p className="text-sm text-red-600">{error}</p>;
+  if (error)   return <p className="text-sm text-danger-600">{error}</p>;
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-500">Showing failed exchanges (page {page + 1})</p>
-        <button
-          onClick={() => void load(page * PAGE_SIZE)}
-          className="rounded border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
-        >
-          Refresh
-        </button>
+        <p className="text-sm text-neutral-500">Showing failed exchanges (page {page + 1})</p>
+        <Button variant="secondary" size="sm" onClick={() => void load(page * PAGE_SIZE)}>Refresh</Button>
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <Card>
         {exchanges.length === 0 ? (
-          <p className="px-5 py-8 text-sm text-gray-600 text-center">No failed exchanges.</p>
+          <p className="px-5 py-8 text-sm text-neutral-600 text-center">No failed exchanges.</p>
         ) : (
-          <table className="min-w-full divide-y divide-gray-100 text-sm">
-            <thead className="bg-gray-50">
+          <Table>
+            <TableHead>
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Occurred</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Direction</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Event type</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Error</th>
+                <TableHeaderCell>Occurred</TableHeaderCell>
+                <TableHeaderCell>Direction</TableHeaderCell>
+                <TableHeaderCell>Event type</TableHeaderCell>
+                <TableHeaderCell>Error</TableHeaderCell>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
+            </TableHead>
+            <TableBody>
               {exchanges.map(ex => (
-                <tr key={ex.exchangeId} className="hover:bg-gray-50">
-                  <td className="px-4 py-2 text-gray-500 whitespace-nowrap">
+                <TableRow key={ex.exchangeId}>
+                  <TableCell className="whitespace-nowrap">
                     {new Date(ex.createdAt).toLocaleString('en-GB')}
-                  </td>
-                  <td className="px-4 py-2">
+                  </TableCell>
+                  <TableCell>
                     <Badge value={ex.directionCode} />
-                  </td>
-                  <td className="px-4 py-2 font-mono text-xs text-gray-700">{ex.exchangeTypeCode}</td>
-                  <td className="px-4 py-2 text-xs text-red-700 max-w-xs truncate" title={ex.lastError ?? ''}>
-                    {ex.lastError ?? '—'}
-                  </td>
-                </tr>
+                  </TableCell>
+                  <TableCell className="font-mono text-xs text-neutral-700">{ex.exchangeTypeCode}</TableCell>
+                  <TableCell className="text-xs text-danger-700 max-w-xs truncate">
+                    <span title={ex.lastError ?? ''}>{ex.lastError ?? '—'}</span>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         )}
-      </div>
+      </Card>
 
       <div className="flex items-center justify-between">
-        <button
-          disabled={page === 0}
-          onClick={() => goPage(page - 1)}
-          className="rounded border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40"
-        >
-          ← Previous
-        </button>
-        <button
-          disabled={exchanges.length < PAGE_SIZE}
-          onClick={() => goPage(page + 1)}
-          className="rounded border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40"
-        >
-          Next →
-        </button>
+        <Button variant="secondary" size="sm" disabled={page === 0} onClick={() => goPage(page - 1)}>← Previous</Button>
+        <Button variant="secondary" size="sm" disabled={exchanges.length < PAGE_SIZE} onClick={() => goPage(page + 1)}>Next →</Button>
       </div>
     </div>
   );

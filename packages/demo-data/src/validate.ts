@@ -7,6 +7,7 @@ import {
   hesaStudentReturns,
   integrationRegistrations,
   marks,
+  moduleGroups,
   moduleRegistrations,
   personIdentities,
   persons,
@@ -330,6 +331,17 @@ async function checkS3ModuleRegistrations(db: Db, tenantId: string): Promise<str
     : null;
 }
 
+async function checkS3DietGroupsExist(db: Db, tenantId: string): Promise<string | null> {
+  const [row] = await db
+    .select({ n: count() })
+    .from(moduleGroups)
+    .where(eq(moduleGroups.tenantId, tenantId));
+
+  return (row?.n ?? 0) === 0
+    ? 'S3:diet-groups — no module_group rows found for the demo BSc Computer Science rule set'
+    : null;
+}
+
 async function checkS4EcAndAdjustmentPresent(db: Db, tenantId: string): Promise<string | null> {
   // EC claims submitted by students live in the wellbeing schema (wellbeing.ec_claim),
   // not the board-facing public.exceptional_circumstances table which is populated later.
@@ -401,6 +413,7 @@ const SCENARIO_CHECKS: Record<string, Check[]> = {
     atLeastNBoards(3),
     checkEnrolledStatePresent,
     checkS3ModuleRegistrations, // RR-009: Alice has module registrations
+    checkS3DietGroupsExist,
   ],
   'assessment-marks': [
     atLeastNPersons(1_000),

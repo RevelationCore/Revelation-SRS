@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { PageHeader } from '@revelation-srs/ui';
 
 const BODIES = [
   {
@@ -31,16 +32,16 @@ const BODIES = [
 export function RegulatoryPage() {
   return (
     <div>
-      <h1 className="text-xl font-semibold text-gray-900 mb-6">Regulatory returns</h1>
+      <PageHeader title="Regulatory returns" />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {BODIES.map(({ to, name, description }) => (
           <Link
             key={to}
             to={to}
-            className="block rounded-lg border border-gray-200 bg-white p-5 hover:border-indigo-300 hover:shadow-sm transition-shadow"
+            className="block rounded-xl border border-neutral-200 bg-white p-5 shadow-card hover:border-primary-300 hover:shadow-card-hover transition-shadow"
           >
-            <h2 className="text-base font-semibold text-indigo-700 mb-1">{name}</h2>
-            <p className="text-sm text-gray-600">{description}</p>
+            <h2 className="text-base font-semibold text-primary-700 mb-1">{name}</h2>
+            <p className="text-sm text-neutral-600">{description}</p>
           </Link>
         ))}
       </div>

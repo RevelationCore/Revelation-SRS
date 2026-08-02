@@ -33,7 +33,7 @@ test('shows the governed sponsor-decision and operational boundary', async ({ pa
   await page.getByRole('button', { name: 'Sponsor decisions' }).click();
   await expect(page.getByText(/never automatically changes academic status/i)).toBeVisible();
   await expect(page.getByText('sustained-non-engagement')).toBeVisible();
-  await expect(page.getByText('Evidence reconciliation').locator('..')).toContainText('1');
+  await expect(page.getByText('Evidence reconciliation').locator('../..')).toContainText('1');
   await expect(page.getByRole('button', { name: 'Authorise decision' })).toBeVisible();
 });
 

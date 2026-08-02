@@ -1,10 +1,14 @@
 import { useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import { ArrowRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../auth/AuthContext.js';
 import { useApiData } from '../hooks/useApiData.js';
 import { getProfile, getEnrolments } from '../api/me.js';
-import { Spinner, Problem, formatDate, getDisplayName } from '@revelation-srs/ui';
+import {
+  Spinner, Problem, formatDate, getDisplayName,
+  PageHeader, StatCard, Card, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, Badge,
+} from '@revelation-srs/ui';
 
 export function DashboardPage() {
   const { t }  = useTranslation();
@@ -33,41 +37,27 @@ export function DashboardPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">
-          {t('nav.home')}, {displayName}
-        </h1>
-        <p className="mt-1 text-sm text-gray-500">{formatDate(new Date())}</p>
-      </div>
+    <div>
+      <PageHeader title={`${t('nav.home')}, ${displayName}`} description={formatDate(new Date())} />
 
       {error && <Problem title={t('status.error')} detail={error} />}
 
       {/* Summary cards */}
-      <div className="grid gap-4 sm:grid-cols-3">
-        <SummaryCard
-          label="Student number"
-          value={profile?.studentNumber ?? '—'}
-        />
-        <SummaryCard
-          label="Programme"
-          value={currentEnrol?.programmeName ?? currentEnrol?.programmeCode ?? '—'}
-        />
-        <SummaryCard
+      <div className="grid gap-4 sm:grid-cols-3 mb-6">
+        <StatCard label="Student number" value={profile?.studentNumber ?? '—'} />
+        <StatCard label="Programme" value={currentEnrol?.programmeName ?? currentEnrol?.programmeCode ?? '—'} />
+        <StatCard
           label="Enrolment status"
           value={currentEnrol
             ? t(`portal.enrolment.status.${currentEnrol.statusCode}`, { defaultValue: currentEnrol.statusCode })
             : '—'}
         />
-        <SummaryCard
-          label="Academic year"
-          value={currentEnrol?.academicYearOfEntry ?? '—'}
-        />
+        <StatCard label="Academic year" value={currentEnrol?.academicYearOfEntry ?? '—'} />
       </div>
 
       {/* Quick links */}
-      <section aria-labelledby="quick-links-heading">
-        <h2 id="quick-links-heading" className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500">
+      <section aria-labelledby="quick-links-heading" className="mb-6">
+        <h2 id="quick-links-heading" className="mb-3 text-sm font-semibold uppercase tracking-wide text-neutral-500">
           Quick links
         </h2>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -83,53 +73,42 @@ export function DashboardPage() {
       {/* Enrolments summary */}
       {enrolments && enrolments.length > 0 && (
         <section aria-labelledby="enrolments-heading">
-          <h2 id="enrolments-heading" className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500">
+          <h2 id="enrolments-heading" className="mb-3 text-sm font-semibold uppercase tracking-wide text-neutral-500">
             Enrolments
           </h2>
-          <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
-            <table className="min-w-full divide-y divide-gray-200 text-sm">
-              <thead className="bg-gray-50">
+          <Card>
+            <Table>
+              <TableHead>
                 <tr>
-                  <th className="px-4 py-2.5 text-left font-medium text-gray-500 uppercase text-xs tracking-wide">Programme</th>
-                  <th className="px-4 py-2.5 text-left font-medium text-gray-500 uppercase text-xs tracking-wide">Academic year</th>
-                  <th className="px-4 py-2.5 text-left font-medium text-gray-500 uppercase text-xs tracking-wide">Status</th>
-                  <th className="px-4 py-2.5 text-left font-medium text-gray-500 uppercase text-xs tracking-wide">Mode</th>
-                  <th className="px-4 py-2.5 text-left font-medium text-gray-500 uppercase text-xs tracking-wide">Start</th>
+                  <TableHeaderCell>Programme</TableHeaderCell>
+                  <TableHeaderCell>Academic year</TableHeaderCell>
+                  <TableHeaderCell>Status</TableHeaderCell>
+                  <TableHeaderCell>Mode</TableHeaderCell>
+                  <TableHeaderCell>Start</TableHeaderCell>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
+              </TableHead>
+              <TableBody>
                 {enrolments.map(e => (
-                  <tr key={e.enrolmentId} className="hover:bg-gray-50">
-                    <td className="px-4 py-2.5 text-gray-900">
-                      {e.programmeName ?? e.programmeCode ?? <span className="text-gray-400">—</span>}
-                    </td>
-                    <td className="px-4 py-2.5 text-gray-900">{e.academicYearOfEntry}</td>
-                    <td className="px-4 py-2.5">
-                      <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColour(e.statusCode)}`}>
-                        {t(`portal.enrolment.status.${e.statusCode}`, { defaultValue: e.statusCode })}
-                      </span>
-                    </td>
-                    <td className="px-4 py-2.5 text-gray-600">{e.modeOfStudyCode}</td>
-                    <td className="px-4 py-2.5 text-gray-600">{formatDate(e.startDate)}</td>
-                  </tr>
+                  <TableRow key={e.enrolmentId}>
+                    <TableCell className="text-neutral-900">
+                      {e.programmeName ?? e.programmeCode ?? <span className="text-neutral-400">—</span>}
+                    </TableCell>
+                    <TableCell className="text-neutral-900">{e.academicYearOfEntry}</TableCell>
+                    <TableCell>
+                      <Badge value={e.statusCode} label={t(`portal.enrolment.status.${e.statusCode}`, { defaultValue: e.statusCode })} />
+                    </TableCell>
+                    <TableCell>{e.modeOfStudyCode}</TableCell>
+                    <TableCell>{formatDate(e.startDate)}</TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
-          </div>
-          <Link to="/enrolments" className="mt-2 block text-sm text-indigo-600 hover:underline">
-            View all enrolments →
+              </TableBody>
+            </Table>
+          </Card>
+          <Link to="/enrolments" className="mt-2 inline-flex items-center gap-1 text-sm text-primary-600 hover:underline">
+            View all enrolments <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
           </Link>
         </section>
       )}
-    </div>
-  );
-}
-
-function SummaryCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-lg border border-gray-200 bg-white px-5 py-4 shadow-sm">
-      <p className="text-xs font-medium uppercase tracking-wide text-gray-500">{label}</p>
-      <p className="mt-1 text-lg font-semibold text-gray-900">{value}</p>
     </div>
   );
 }
@@ -138,24 +117,13 @@ function QuickLink({ to, label, desc }: { to: string; label: string; desc: strin
   return (
     <Link
       to={to}
-      className="group flex items-start gap-3 rounded-lg border border-gray-200 bg-white p-4 shadow-sm hover:border-indigo-300 hover:shadow"
+      className="group flex items-start gap-3 rounded-xl border border-neutral-200 bg-white p-4 shadow-card hover:border-primary-300 hover:shadow-card-hover"
     >
       <div>
-        <p className="text-sm font-medium text-gray-900 group-hover:text-indigo-700">{label}</p>
-        <p className="mt-0.5 text-xs text-gray-500">{desc}</p>
+        <p className="text-sm font-medium text-neutral-900 group-hover:text-primary-700">{label}</p>
+        <p className="mt-0.5 text-xs text-neutral-500">{desc}</p>
       </div>
-      <span className="ml-auto text-gray-300 group-hover:text-indigo-400" aria-hidden>→</span>
+      <ArrowRight className="ml-auto h-4 w-4 text-neutral-300 group-hover:text-primary-400" aria-hidden="true" />
     </Link>
   );
-}
-
-function statusColour(code: string): string {
-  const map: Record<string, string> = {
-    enrolled:     'bg-green-100 text-green-700',
-    intermitting: 'bg-yellow-100 text-yellow-700',
-    suspended:    'bg-orange-100 text-orange-700',
-    withdrawn:    'bg-red-100 text-red-700',
-    graduated:    'bg-blue-100 text-blue-700',
-  };
-  return map[code] ?? 'bg-gray-100 text-gray-700';
 }

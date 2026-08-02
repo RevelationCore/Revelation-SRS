@@ -11,6 +11,7 @@ import { AddAddressPage } from './pages/AddAddressPage.js';
 import { EnrolmentsPage } from './pages/EnrolmentsPage.js';
 import { ModulesPage } from './pages/ModulesPage.js';
 import { ModuleAddPage } from './pages/ModuleAddPage.js';
+import { ModuleSelectionPage } from './pages/ModuleSelectionPage.js';
 import { ResultsPage } from './pages/ResultsPage.js';
 import { TimetablePage } from './pages/TimetablePage.js';
 import { ExamPage } from './pages/ExamPage.js';
@@ -46,6 +47,7 @@ export function App() {
           <Route path="/enrolments"            element={<EnrolmentsPage />} />
           <Route path="/modules"               element={<ModulesPage />} />
           <Route path="/modules/add"           element={<ModuleAddPage />} />
+          <Route path="/modules/select"        element={<ModuleSelectionPage />} />
           <Route path="/results"               element={<ResultsPage />} />
           <Route path="/timetable"             element={<TimetablePage />} />
           <Route path="/exams"                 element={<ExamPage />} />

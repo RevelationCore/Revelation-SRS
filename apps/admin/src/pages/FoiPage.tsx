@@ -11,6 +11,10 @@ import { ApiError } from '../api/client.js';
 import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
 import { useValueSet } from '../hooks/useValueSet.js';
+import {
+  PageHeader, Card, CardHeader, CardBody, Button, Input, Select, Textarea, LabelledField,
+  Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
+} from '@revelation-srs/ui';
 
 type StatusMember = { code: string; displayLabel: string };
 
@@ -38,17 +42,9 @@ export function FoiPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-semibold text-gray-900">Freedom of Information / SAR</h1>
-        <button
-          onClick={() => setShowForm(true)}
-          className="rounded bg-indigo-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-indigo-700"
-        >
-          New request
-        </button>
-      </div>
+      <PageHeader title="Freedom of Information / SAR" actions={<Button onClick={() => setShowForm(true)}>New request</Button>} />
 
-      {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+      {error && <p className="mb-4 text-sm text-danger-600">{error}</p>}
 
       {showForm && (
         <CreateFoiForm
@@ -64,7 +60,7 @@ export function FoiPage() {
           {/* Request list */}
           <div className="w-80 flex-shrink-0">
             {requests.length === 0 ? (
-              <p className="text-sm text-gray-600">No requests recorded.</p>
+              <p className="text-sm text-neutral-600">No requests recorded.</p>
             ) : (
               <ul className="space-y-1.5">
                 {requests.map(r => (
@@ -73,14 +69,14 @@ export function FoiPage() {
                       onClick={() => setSelected(r)}
                       className={`w-full text-left rounded-lg border px-4 py-3 transition-colors ${
                         selected?.requestId === r.requestId
-                          ? 'border-indigo-300 bg-indigo-50'
-                          : 'border-gray-200 bg-white hover:border-indigo-200'
+                          ? 'border-primary-300 bg-primary-50'
+                          : 'border-neutral-200 bg-white hover:border-primary-200'
                       }`}
                     >
-                      <p className="text-sm font-medium text-gray-900">{r.requestReference}</p>
-                      <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{r.description}</p>
+                      <p className="text-sm font-medium text-neutral-900">{r.requestReference}</p>
+                      <p className="text-xs text-neutral-500 mt-0.5 line-clamp-1">{r.description}</p>
                       <div className="mt-1.5 flex items-center justify-between">
-                        <span className="text-xs text-gray-600">
+                        <span className="text-xs text-neutral-600">
                           {new Date(r.receivedDate).toLocaleDateString('en-GB')}
                         </span>
                         <Badge value={r.statusCode} />
@@ -104,8 +100,8 @@ export function FoiPage() {
                 }}
               />
             ) : (
-              <div className="rounded-lg border border-dashed border-gray-200 p-8 text-center">
-                <p className="text-sm text-gray-600">Select a request to view details</p>
+              <div className="rounded-lg border border-dashed border-neutral-200 p-8 text-center">
+                <p className="text-sm text-neutral-600">Select a request to view details</p>
               </div>
             )}
           </div>
@@ -141,67 +137,34 @@ function CreateFoiForm({ onCreated, onCancel }: { onCreated: () => void; onCance
   }
 
   return (
-    <form onSubmit={(e) => void handleSubmit(e)} className="mb-6 rounded-lg border border-gray-200 bg-white p-5">
-      <h2 className="text-sm font-semibold text-gray-700 mb-4">New FOI / SAR request</h2>
-      {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Reference *</label>
-          <input
-            value={reference}
-            onChange={e => setReference(e.target.value)}
-            required
-            placeholder="e.g. FOI-2026-001"
-            className="w-full rounded border border-gray-300 px-3 py-1.5 text-sm"
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Received date *</label>
-          <input
-            type="date"
-            value={received}
-            onChange={e => setReceived(e.target.value)}
-            required
-            className="w-full rounded border border-gray-300 px-3 py-1.5 text-sm"
-          />
-        </div>
-        <div className="sm:col-span-2">
-          <label className="block text-xs font-medium text-gray-600 mb-1">Description *</label>
-          <textarea
-            value={desc}
-            onChange={e => setDesc(e.target.value)}
-            required
-            rows={3}
-            className="w-full rounded border border-gray-300 px-3 py-1.5 text-sm"
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Legal basis</label>
-          <input
-            value={basis}
-            onChange={e => setBasis(e.target.value)}
-            placeholder="e.g. FOIA 2000, GDPR Art. 15"
-            className="w-full rounded border border-gray-300 px-3 py-1.5 text-sm"
-          />
-        </div>
-      </div>
-      <div className="mt-4 flex gap-3">
-        <button
-          type="submit"
-          disabled={saving}
-          className="rounded bg-indigo-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
-        >
-          {saving ? 'Creating…' : 'Create'}
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="rounded border border-gray-300 px-4 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
-        >
-          Cancel
-        </button>
-      </div>
-    </form>
+    <Card className="mb-6">
+      <CardHeader title="New FOI / SAR request" />
+      <CardBody>
+        <form onSubmit={(e) => void handleSubmit(e)}>
+          {error && <p className="mb-3 text-sm text-danger-600">{error}</p>}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <LabelledField label="Reference" htmlFor="foi-ref" required>
+              <Input id="foi-ref" value={reference} onChange={e => setReference(e.target.value)} required placeholder="e.g. FOI-2026-001" />
+            </LabelledField>
+            <LabelledField label="Received date" htmlFor="foi-received" required>
+              <Input id="foi-received" type="date" value={received} onChange={e => setReceived(e.target.value)} required />
+            </LabelledField>
+            <div className="sm:col-span-2">
+              <LabelledField label="Description" htmlFor="foi-desc" required>
+                <Textarea id="foi-desc" value={desc} onChange={e => setDesc(e.target.value)} required rows={3} />
+              </LabelledField>
+            </div>
+            <LabelledField label="Legal basis" htmlFor="foi-basis" hint="Optional">
+              <Input id="foi-basis" value={basis} onChange={e => setBasis(e.target.value)} placeholder="e.g. FOIA 2000, GDPR Art. 15" />
+            </LabelledField>
+          </div>
+          <div className="mt-4 flex gap-3">
+            <Button type="submit" disabled={saving}>{saving ? 'Creating…' : 'Create'}</Button>
+            <Button type="button" variant="secondary" onClick={onCancel}>Cancel</Button>
+          </div>
+        </form>
+      </CardBody>
+    </Card>
   );
 }
 
@@ -253,100 +216,98 @@ function RequestDetail({
 
   return (
     <div className="space-y-5">
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-danger-600">{error}</p>}
 
       {/* Request summary */}
-      <div className="rounded-lg border border-gray-200 bg-white p-5">
+      <Card>
+        <CardBody>
         <div className="flex items-start justify-between mb-3">
           <div>
-            <h2 className="text-base font-semibold text-gray-900">{request.requestReference}</h2>
-            <p className="text-xs text-gray-500">Received {new Date(request.receivedDate).toLocaleDateString('en-GB')}</p>
+            <h2 className="text-base font-semibold text-neutral-900">{request.requestReference}</h2>
+            <p className="text-xs text-neutral-500">Received {new Date(request.receivedDate).toLocaleDateString('en-GB')}</p>
           </div>
           <Badge value={request.statusCode} />
         </div>
-        <p className="text-sm text-gray-700 mb-3">{request.description}</p>
-        <div className="text-xs text-gray-500 space-y-0.5">
+        <p className="text-sm text-neutral-700 mb-3">{request.description}</p>
+        <div className="text-xs text-neutral-500 space-y-0.5">
           {request.legalBasis && <p>Legal basis: {request.legalBasis}</p>}
           {request.dueDate && (
-            <p className={new Date(request.dueDate) < new Date() ? 'text-red-600 font-medium' : ''}>
+            <p className={new Date(request.dueDate) < new Date() ? 'text-danger-600 font-medium' : ''}>
               Due: {new Date(request.dueDate).toLocaleDateString('en-GB')}
               {new Date(request.dueDate) < new Date() ? ' (overdue)' : ''}
             </p>
           )}
           {request.closedAt && <p>Closed: {new Date(request.closedAt).toLocaleDateString('en-GB')}</p>}
         </div>
-      </div>
+        </CardBody>
+      </Card>
 
       {/* Status update */}
-      <div className="rounded-lg border border-gray-200 bg-white p-5">
-        <h3 className="text-sm font-semibold text-gray-700 mb-3">Update status</h3>
+      <Card>
+        <CardHeader title="Update status" />
+        <CardBody>
         <form onSubmit={(e) => void handleStatusUpdate(e)} className="flex gap-3">
-          <select
+          <Select
             value={newStatus}
             onChange={e => setNewStatus(e.target.value)}
             required
-            className="rounded border border-gray-300 px-2 py-1.5 text-sm flex-1"
+            className="flex-1"
           >
             <option value="">Select new status</option>
             {statuses.filter(({ code }) => code !== request.statusCode).map(({ code, displayLabel }) => (
               <option key={code} value={code}>{displayLabel}</option>
             ))}
-          </select>
-          <button
-            type="submit"
-            disabled={updatingStatus || !newStatus}
-            className="rounded bg-indigo-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
-          >
+          </Select>
+          <Button type="submit" disabled={updatingStatus || !newStatus}>
             {updatingStatus ? 'Saving…' : 'Update'}
-          </button>
+          </Button>
         </form>
-      </div>
+        </CardBody>
+      </Card>
 
       {/* Data extract */}
-      <div className="rounded-lg border border-gray-200 bg-white p-5">
-        <h3 className="text-sm font-semibold text-gray-700 mb-3">Trigger data extract</h3>
+      <Card>
+        <CardHeader title="Trigger data extract" />
+        <CardBody>
         <form onSubmit={(e) => void handleExtract(e)} className="flex gap-3 mb-4">
-          <input
+          <Input
             value={query}
             onChange={e => setQuery(e.target.value)}
             required
             placeholder="Query summary / data description"
-            className="flex-1 rounded border border-gray-300 px-3 py-1.5 text-sm"
+            className="flex-1"
           />
-          <button
-            type="submit"
-            disabled={extracting || !query.trim()}
-            className="rounded bg-indigo-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
-          >
+          <Button type="submit" disabled={extracting || !query.trim()}>
             {extracting ? 'Extracting…' : 'Extract'}
-          </button>
+          </Button>
         </form>
 
         {extracts.length > 0 && (
-          <table className="min-w-full text-sm divide-y divide-gray-100">
-            <thead>
+          <Table>
+            <TableHead>
               <tr>
-                <th className="py-2 text-left text-xs font-medium text-gray-500 uppercase">Query</th>
-                <th className="py-2 text-left text-xs font-medium text-gray-500 uppercase">Records</th>
-                <th className="py-2 text-left text-xs font-medium text-gray-500 uppercase">Extracted</th>
-                <th className="py-2 text-left text-xs font-medium text-gray-500 uppercase">By</th>
+                <TableHeaderCell>Query</TableHeaderCell>
+                <TableHeaderCell>Records</TableHeaderCell>
+                <TableHeaderCell>Extracted</TableHeaderCell>
+                <TableHeaderCell>By</TableHeaderCell>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
+            </TableHead>
+            <TableBody>
               {extracts.map(ex => (
-                <tr key={ex.extractId}>
-                  <td className="py-1.5 text-gray-700">{ex.querySummary}</td>
-                  <td className="py-1.5 text-gray-500">{ex.recordCount}</td>
-                  <td className="py-1.5 text-gray-500">
+                <TableRow key={ex.extractId}>
+                  <TableCell>{ex.querySummary}</TableCell>
+                  <TableCell>{ex.recordCount}</TableCell>
+                  <TableCell>
                     {new Date(ex.extractedAt).toLocaleString('en-GB')}
-                  </td>
-                  <td className="py-1.5 text-gray-500">{ex.extractedBy}</td>
-                </tr>
+                  </TableCell>
+                  <TableCell>{ex.extractedBy}</TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         )}
-      </div>
+        </CardBody>
+      </Card>
     </div>
   );
 }

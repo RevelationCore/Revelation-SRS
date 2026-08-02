@@ -20,7 +20,13 @@ export type RuleTypeCode =
   | 'classification-discretion-zone'
   | 'award-credit-requirement'
   | 'max-credits-per-period'
-  | 'ukvi-attendance-threshold';
+  | 'ukvi-attendance-threshold'
+  | 'credit-load-requirement'
+  | 'level-credit-requirement'
+  | 'adjacent-level-credit-limit'
+  | 'joint-honours-balance'
+  | 'repeat-module-requirement'
+  | 'timetable-clash-policy';
 
 export interface RuleContext {
   tenantId:    string;
@@ -129,6 +135,66 @@ export class RulesEngine {
       return rule.maxCredits;
     } catch (err) {
       if (err instanceof RuleNotConfiguredError) return null;
+      throw err;
+    }
+  }
+
+  /**
+   * Minimum/maximum total credits a student must select for a period, keyed
+   * by mode of study (falls back to 'default' if no mode-specific rule is
+   * configured). Returns null if no rule is configured for either key.
+   */
+  async getCreditLoadRequirement(
+    ctx: RuleContext,
+    modeOfStudyCode: string,
+  ): Promise<{ minCredits: number | null; maxCredits: number | null } | null> {
+    for (const ruleKey of [modeOfStudyCode, 'default']) {
+      try {
+        return await this.getRule<{ minCredits: number | null; maxCredits: number | null }>(
+          ctx, 'credit-load-requirement', ruleKey,
+        );
+      } catch (err) {
+        if (!(err instanceof RuleNotConfiguredError)) throw err;
+      }
+    }
+    return null;
+  }
+
+  /** Minimum credits that must sit at a given FHEQ level for the period. Null if unconfigured. */
+  async getLevelCreditRequirement(ctx: RuleContext, fheqLevel: number): Promise<number | null> {
+    try {
+      const rule = await this.getRule<{ minCreditsAtLevel: number }>(
+        ctx, 'level-credit-requirement', `level-${fheqLevel}`,
+      );
+      return rule.minCreditsAtLevel;
+    } catch (err) {
+      if (err instanceof RuleNotConfiguredError) return null;
+      throw err;
+    }
+  }
+
+  /** Maximum credits permitted from a level adjacent to the student's current level ("trailing"). Null if unconfigured. */
+  async getAdjacentLevelCreditLimit(ctx: RuleContext): Promise<number | null> {
+    try {
+      const rule = await this.getRule<{ maxCredits: number }>(ctx, 'adjacent-level-credit-limit', 'default');
+      return rule.maxCredits;
+    } catch (err) {
+      if (err instanceof RuleNotConfiguredError) return null;
+      throw err;
+    }
+  }
+
+  /**
+   * Whether a timetable clash between two chosen module offerings blocks
+   * confirmation outright or is only surfaced as an advisory warning.
+   * Defaults to 'advisory' if unconfigured.
+   */
+  async getTimetableClashPolicy(ctx: RuleContext): Promise<'advisory' | 'blocking'> {
+    try {
+      const rule = await this.getRule<{ policy: 'advisory' | 'blocking' }>(ctx, 'timetable-clash-policy', 'default');
+      return rule.policy;
+    } catch (err) {
+      if (err instanceof RuleNotConfiguredError) return 'advisory';
       throw err;
     }
   }

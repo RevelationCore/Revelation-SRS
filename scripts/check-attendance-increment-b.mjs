@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const root = resolve(import.meta.dirname, '..');
-const migration = readFileSync(resolve(root, 'packages/db/migrations/0037_engagement_intervention.sql'), 'utf8');
+const migration = readFileSync(resolve(root, 'packages/db/migrations/0003_engagement_and_attendance.sql'), 'utf8');
 const schema = readFileSync(resolve(root, 'packages/db/src/schema/engagement.ts'), 'utf8');
 const exportsFile = readFileSync(resolve(root, 'packages/db/src/schema/index.ts'), 'utf8');
 const journal = JSON.parse(readFileSync(resolve(root, 'packages/db/migrations/meta/_journal.json'), 'utf8'));
@@ -58,8 +58,8 @@ for (const table of tables) {
 }
 if (!exportsFile.includes("export * from './engagement.js';")) errors.push('Engagement schema is not exported');
 
-const journalEntries = journal.entries.filter((entry) => entry.tag === '0037_engagement_intervention');
-if (journalEntries.length !== 1) errors.push(`Expected one migration journal entry for 0037, found ${journalEntries.length}`);
+const journalEntries = journal.entries.filter((entry) => entry.tag === '0003_engagement_and_attendance');
+if (journalEntries.length !== 1) errors.push(`Expected one migration journal entry for 0003_engagement_and_attendance, found ${journalEntries.length}`);
 
 for (const phrase of [
   'tenant-isolated aggregate tables',

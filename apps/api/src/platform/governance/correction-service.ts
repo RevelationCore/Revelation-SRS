@@ -21,6 +21,7 @@ import type { GovernanceRecordAmendedPostRatificationV1Payload } from '@revelati
 
 import type { MarkService } from '../assessment/mark-service.js';
 import type { ModuleResultService } from '../assessment/module-result-service.js';
+import type { BusinessCaseService } from '../cases/business-case-service.js';
 import type { IntegrationBusPublisher } from '../integration-bus/publisher.js';
 import type { ProgressionService } from '../progression/progression-service.js';
 import type { ValueSetService } from '../value-sets/service.js';
@@ -42,6 +43,11 @@ export interface OpenCaseInput {
   enrolmentId: string;
   caseTypeCode: 'appeal' | 'administrative-correction';
   reference?:   string;
+  // BPR-D13: optional at open time — an error category and evidence
+  // reference are often only known once the case has been investigated.
+  errorCategoryCode?: string;
+  evidenceRef?:       string;
+  authorisedBy?:      string;
 }
 
 export interface ApplyAmendmentInput {
@@ -61,6 +67,9 @@ export interface CorrectionCaseDto {
   validTo:      Date | null;
   recordedAt:   Date;
   recordedUntil: Date | null;
+  errorCategoryCode: string | null;
+  evidenceRef:       string | null;
+  authorisedBy:      string | null;
 }
 
 export interface AmendmentDto {
@@ -96,6 +105,7 @@ export class CorrectionService {
     private readonly moduleResultService: ModuleResultService,
     private readonly progressionService:  ProgressionService,
     valueSets: ValueSetService,
+    private readonly businessCases?: BusinessCaseService,
   ) {
     this.transitionValidator = new TransitionValidator(valueSets);
   }
@@ -120,10 +130,35 @@ export class CorrectionService {
         validTo:      null,
         recordedAt:   now,
         recordedUntil: null,
+        supersededVersionId: null,
+        errorCategoryCode:   input.errorCategoryCode ?? null,
+        evidenceRef:         input.evidenceRef ? (input.evidenceRef as `${string}-${string}-${string}-${string}-${string}`) : null,
+        authorisedBy:        input.authorisedBy ?? null,
       });
     });
 
     return caseId;
+  }
+
+  /**
+   * Creates a distribution_item per downstream consumer for an already
+   * -recorded amendment (BPR-D13), so each consumer's application/
+   * acknowledgement can be tracked individually rather than assuming the
+   * amendment record alone notifies anyone.
+   */
+  async distributeAmendment(amendmentId: string, tenantId: string, targetSystemCodes: string[]): Promise<string[]> {
+    if (!this.businessCases) {
+      throw new ValidationError('Distribution is not configured for this correction service instance');
+    }
+    const itemIds: string[] = [];
+    for (const targetSystemCode of targetSystemCodes) {
+      const itemId = await this.businessCases.createDistributionItem(tenantId, {
+        targetSystemCode,
+        contentRef: amendmentId,
+      });
+      itemIds.push(itemId);
+    }
+    return itemIds;
   }
 
   async advanceCaseStatus(
@@ -169,6 +204,10 @@ export class CorrectionService {
         validTo:      null,
         recordedAt:   now,
         recordedUntil: null,
+        supersededVersionId: null,
+        errorCategoryCode:   current.errorCategoryCode,
+        evidenceRef:         current.evidenceRef ? (current.evidenceRef as `${string}-${string}-${string}-${string}-${string}`) : null,
+        authorisedBy:        current.authorisedBy,
       });
     });
 
@@ -539,5 +578,8 @@ function caseToDto(row: typeof postRatificationCases.$inferSelect): CorrectionCa
     validTo:      row.validTo,
     recordedAt:   row.recordedAt,
     recordedUntil: row.recordedUntil,
+    errorCategoryCode: row.errorCategoryCode,
+    evidenceRef:       row.evidenceRef,
+    authorisedBy:      row.authorisedBy,
   };
 }

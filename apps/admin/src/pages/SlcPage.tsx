@@ -3,6 +3,9 @@ import { type SlcConfirmationRecord, generateSlcConfirmations } from '../api/reg
 import { ApiError } from '../api/client.js';
 import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
+import {
+  PageHeader, Button, Card, CardBody, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
+} from '@revelation-srs/ui';
 
 type Step = 'idle' | 'previewing' | 'preview' | 'submitting' | 'submitted';
 
@@ -43,7 +46,7 @@ export function SlcPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-semibold text-gray-900 mb-6">SLC loan data &amp; triggers</h1>
+      <PageHeader title="SLC loan data & triggers" />
 
       <div className="max-w-4xl space-y-6">
 
@@ -58,128 +61,111 @@ export function SlcPage() {
             return (
               <span key={label} className="flex items-center gap-2">
                 <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                  done    ? 'bg-green-500 text-white' :
-                  active  ? 'bg-indigo-600 text-white' :
-                            'bg-gray-200 text-gray-500'
+                  done    ? 'bg-success-500 text-white' :
+                  active  ? 'bg-primary-600 text-white' :
+                            'bg-neutral-200 text-neutral-500'
                 }`}>
                   {done ? '✓' : i + 1}
                 </span>
-                <span className={`text-sm ${active || done ? 'text-gray-900 font-medium' : 'text-gray-600'}`}>
+                <span className={`text-sm ${active || done ? 'text-neutral-900 font-medium' : 'text-neutral-600'}`}>
                   {label === 'preview' ? 'Preview' : label === 'review' ? 'Review records' : 'Submit to SLC'}
                 </span>
-                {i < 2 && <span className="text-gray-300 mx-1">›</span>}
+                {i < 2 && <span className="text-neutral-300 mx-1">›</span>}
               </span>
             );
           })}
         </div>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-danger-600">{error}</p>}
 
         {/* Step 1 — idle */}
         {step === 'idle' && (
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <h2 className="text-sm font-semibold text-gray-700 mb-2">Enrolment confirmations</h2>
-            <p className="text-sm text-gray-600 mb-4">
-              This process collects all pending SLC triggers (new enrolments, withdrawals, and
-              intermissions) and generates confirmation records for transmission to the Student
-              Loans Company. Preview the records before submitting to ensure accuracy.
-            </p>
-            <button
-              onClick={() => void handlePreview()}
-              className="rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none"
-            >
-              Preview confirmations
-            </button>
-          </div>
+          <Card>
+            <CardBody>
+              <h2 className="text-sm font-semibold text-neutral-700 mb-2">Enrolment confirmations</h2>
+              <p className="text-sm text-neutral-600 mb-4">
+                This process collects all pending SLC triggers (new enrolments, withdrawals, and
+                intermissions) and generates confirmation records for transmission to the Student
+                Loans Company. Preview the records before submitting to ensure accuracy.
+              </p>
+              <Button onClick={() => void handlePreview()}>Preview confirmations</Button>
+            </CardBody>
+          </Card>
         )}
 
         {/* Step 1 — loading preview */}
         {step === 'previewing' && (
-          <div className="flex items-center gap-3 py-8 text-sm text-gray-500">
+          <div className="flex items-center gap-3 py-8 text-sm text-neutral-500">
             <Spinner /> Loading pending triggers…
           </div>
         )}
 
         {/* Step 2 — review */}
         {(step === 'preview' || step === 'submitting' || step === 'submitted') && (
-          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-200">
-              <span className="text-sm font-medium text-gray-700">
+          <Card className="overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3 bg-neutral-50 border-b border-neutral-200">
+              <span className="text-sm font-medium text-neutral-700">
                 {records.length} confirmation{records.length !== 1 ? 's' : ''} pending
                 {step === 'submitted' && ' — submitted'}
               </span>
               {step === 'submitted' && (
-                <span className="text-xs text-green-600 font-medium">Transmitted to SLC</span>
+                <span className="text-xs text-success-600 font-medium">Transmitted to SLC</span>
               )}
             </div>
 
             {records.length === 0 ? (
-              <p className="px-4 py-6 text-sm text-gray-600">No pending SLC triggers found.</p>
+              <p className="px-4 py-6 text-sm text-neutral-600">No pending SLC triggers found.</p>
             ) : (
-              <table className="min-w-full divide-y divide-gray-200 text-sm">
-                <thead className="bg-gray-50">
+              <Table>
+                <TableHead>
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">SLC Reference</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Mode</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fee</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Start date</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Expected end</th>
+                    <TableHeaderCell>SLC Reference</TableHeaderCell>
+                    <TableHeaderCell>Type</TableHeaderCell>
+                    <TableHeaderCell>Mode</TableHeaderCell>
+                    <TableHeaderCell>Fee</TableHeaderCell>
+                    <TableHeaderCell>Start date</TableHeaderCell>
+                    <TableHeaderCell>Expected end</TableHeaderCell>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
+                </TableHead>
+                <TableBody>
                   {records.map(r => (
-                    <tr key={r.triggerId} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 font-mono text-xs text-gray-700">{r.slcReference}</td>
-                      <td className="px-4 py-3"><Badge value={r.confirmationType} /></td>
-                      <td className="px-4 py-3 text-xs text-gray-600">{r.modeOfStudyCode}</td>
-                      <td className="px-4 py-3 text-xs text-gray-600">{r.feeAmount ?? '—'}</td>
-                      <td className="px-4 py-3 text-xs text-gray-600">{r.startDate}</td>
-                      <td className="px-4 py-3 text-xs text-gray-600">{r.expectedEndDate ?? '—'}</td>
-                    </tr>
+                    <TableRow key={r.triggerId}>
+                      <TableCell className="font-mono text-xs text-neutral-700">{r.slcReference}</TableCell>
+                      <TableCell><Badge value={r.confirmationType} /></TableCell>
+                      <TableCell className="text-xs">{r.modeOfStudyCode}</TableCell>
+                      <TableCell className="text-xs">{r.feeAmount ?? '—'}</TableCell>
+                      <TableCell className="text-xs">{r.startDate}</TableCell>
+                      <TableCell className="text-xs">{r.expectedEndDate ?? '—'}</TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             )}
-          </div>
+          </Card>
         )}
 
         {/* Step 3 — actions */}
         {step === 'preview' && (
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => void handleSubmit()}
-              disabled={records.length === 0}
-              className="rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50 focus:outline-none"
-            >
+            <Button onClick={() => void handleSubmit()} disabled={records.length === 0}>
               Submit {records.length} confirmation{records.length !== 1 ? 's' : ''} to SLC
-            </button>
-            <button
-              onClick={handleReset}
-              className="text-sm text-gray-500 hover:text-gray-700"
-            >
-              Cancel
-            </button>
+            </Button>
+            <Button variant="ghost" onClick={handleReset}>Cancel</Button>
           </div>
         )}
 
         {step === 'submitting' && (
-          <div className="flex items-center gap-3 text-sm text-gray-500">
+          <div className="flex items-center gap-3 text-sm text-neutral-500">
             <Spinner /> Transmitting to SLC…
           </div>
         )}
 
         {step === 'submitted' && (
           <div className="flex items-center gap-3">
-            <p className="text-sm text-green-600">
+            <p className="text-sm text-success-600">
               {records.length} confirmation{records.length !== 1 ? 's' : ''} successfully transmitted to SLC.
             </p>
-            <button
-              onClick={handleReset}
-              className="text-sm text-indigo-600 hover:text-indigo-800"
-            >
-              Start new batch
-            </button>
+            <Button variant="ghost" onClick={handleReset}>Start new batch</Button>
           </div>
         )}
 

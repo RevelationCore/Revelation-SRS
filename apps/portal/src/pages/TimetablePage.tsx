@@ -3,7 +3,10 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../auth/AuthContext.js';
 import { useApiData } from '../hooks/useApiData.js';
 import { getEnrolments, getTimetable } from '../api/me.js';
-import { Spinner, Problem, EmptyState, formatDate } from '@revelation-srs/ui';
+import {
+  Spinner, Problem, EmptyState, formatDate, PageHeader,
+  Card, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
+} from '@revelation-srs/ui';
 
 export function TimetablePage() {
   const { t }    = useTranslation();
@@ -40,15 +43,11 @@ export function TimetablePage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">{t('portal.nav.timetable')}</h1>
-        {currentEnrolment && (
-          <p className="mt-1 text-sm text-gray-500">
-            Academic year {currentEnrolment.academicYearOfEntry}
-          </p>
-        )}
-      </div>
+    <div>
+      <PageHeader
+        title={t('portal.nav.timetable')}
+        description={currentEnrolment ? `Academic year ${currentEnrolment.academicYearOfEntry}` : undefined}
+      />
 
       {error && <Problem title={t('status.error')} detail={error} />}
 
@@ -56,37 +55,39 @@ export function TimetablePage() {
         <EmptyState title="No timetable entries found for the current enrolment." />
       )}
 
-      {Object.entries(byPeriod).map(([period, periodEntries]) => (
-        <section key={period} aria-labelledby={`period-${period}`}>
-          <h2 id={`period-${period}`} className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500">
-            {period}
-          </h2>
-          <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
-            <table className="min-w-full divide-y divide-gray-200 text-sm">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Module</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Title</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Start</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">End</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Delivery</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {(periodEntries ?? []).map(e => (
-                  <tr key={e.moduleRegistrationId} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 font-mono text-xs text-gray-800">{e.moduleCode}</td>
-                    <td className="px-4 py-3 text-gray-900">{e.moduleTitle}</td>
-                    <td className="px-4 py-3 text-gray-600">{formatDate(e.startDate)}</td>
-                    <td className="px-4 py-3 text-gray-600">{formatDate(e.endDate)}</td>
-                    <td className="px-4 py-3 text-gray-600">{e.deliveryModeCode}</td>
+      <div className="space-y-6">
+        {Object.entries(byPeriod).map(([period, periodEntries]) => (
+          <section key={period} aria-labelledby={`period-${period}`}>
+            <h2 id={`period-${period}`} className="mb-3 text-sm font-semibold uppercase tracking-wide text-neutral-500">
+              {period}
+            </h2>
+            <Card>
+              <Table>
+                <TableHead>
+                  <tr>
+                    <TableHeaderCell>Module</TableHeaderCell>
+                    <TableHeaderCell>Title</TableHeaderCell>
+                    <TableHeaderCell>Start</TableHeaderCell>
+                    <TableHeaderCell>End</TableHeaderCell>
+                    <TableHeaderCell>Delivery</TableHeaderCell>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      ))}
+                </TableHead>
+                <TableBody>
+                  {(periodEntries ?? []).map(e => (
+                    <TableRow key={e.moduleRegistrationId}>
+                      <TableCell className="font-mono text-xs text-neutral-800">{e.moduleCode}</TableCell>
+                      <TableCell className="text-neutral-900">{e.moduleTitle}</TableCell>
+                      <TableCell>{formatDate(e.startDate)}</TableCell>
+                      <TableCell>{formatDate(e.endDate)}</TableCell>
+                      <TableCell>{e.deliveryModeCode}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Card>
+          </section>
+        ))}
+      </div>
     </div>
   );
 }

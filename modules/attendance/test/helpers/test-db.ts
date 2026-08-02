@@ -41,7 +41,7 @@ export async function startTestApp(appOpts: AppOptions = {}): Promise<TestAttend
   // Apply the core platform migration first (creates the tenant table which
   // attendance tables reference via FOREIGN KEY).
   const coreMigrationsDir = join(__dirname, '../../../../packages/db/migrations');
-  await applySql(db, join(coreMigrationsDir, '0000_initial_platform_schema.sql'));
+  await applySql(db, join(coreMigrationsDir, '0000_platform_foundations.sql'));
 
   // Apply attendance module migrations in order
   const attendanceMigrationsDir = join(__dirname, '../../migrations');

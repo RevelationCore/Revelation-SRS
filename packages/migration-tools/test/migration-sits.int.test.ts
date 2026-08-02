@@ -26,33 +26,9 @@ beforeAll(async () => {
     .start();
   db = createDb(container.getConnectionUri());
 
-  await applyMigration(db, '0000_initial_platform_schema.sql');
-  await applyMigration(db, '0001_seed_value_sets.sql');
-  await applyMigration(db, '0002_phase4_domain_schema.sql');
-  await applyMigration(db, '0003_seed_phase4_field_mappings.sql');
-  await applyMigration(db, '0004_phase5_assessment_schema.sql');
-  await applyMigration(db, '0005_seed_phase5_field_mappings.sql');
-  await applyMigration(db, '0006_phase6_regulatory_schema.sql');
-  await applyMigration(db, '0007_seed_phase6_field_mappings.sql');
-  await applyMigration(db, '0008_phase6_remediation.sql');
-  await applyMigration(db, '0009_platform_workflow_feature_flags.sql');
-  await applyMigration(db, '0010_relax_extensible_code_checks.sql');
-  await applyMigration(db, '0011_environment_promotion_hardening.sql');
-  await applyMigration(db, '0012_globalisation_foundation.sql');
-  await applyMigration(db, '0013_workflow_coverage_matrix.sql');
-  await applyMigration(db, '0014_stage3_assessment_grade_progression.sql');
-  await applyMigration(db, '0015_stage4_exam_board_governance.sql');
-  await applyMigration(db, '0016_stage5_admissions_communications.sql');
-  await applyMigration(db, '0017_stage6_flag_governance.sql');
-  await applyMigration(db, '0018_stage7_legacy_removal.sql');
-  await applyMigration(db, '0019_phase7_integration_registry.sql');
-  await applyMigration(db, '0020_phase7_contract_deprecation.sql');
-  await applyMigration(db, '0021_phase9_vle_contracts.sql');
-  await applyMigration(db, '0022_demo_tenant_mode.sql');
-  await applyMigration(db, '0023_demo_status_checkpoint.sql');
-  await applyMigration(db, '0024_phase11_performance_indexes.sql');
-  await applyMigration(db, '0025_phase11_retention_anonymisation.sql');
-  await applyMigration(db, '0026_phase11_notifications.sql');
+  await applyMigration(db, '0000_platform_foundations.sql');
+  await applyMigration(db, '0001_platform_hardening_and_refinements.sql');
+  await applyMigration(db, '0002_demo_performance_and_seed_data.sql');
 
   await db.execute(sql`
     INSERT INTO tenant (id, code, name, active)

@@ -16,6 +16,9 @@ import {
 import { ApiError } from '../api/client.js';
 import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
+import {
+  PageHeader, Button, Card, CardBody, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, StatCard,
+} from '@revelation-srs/ui';
 
 type Tab = 'cas' | 'compliance' | 'decisions';
 
@@ -24,17 +27,17 @@ export function UkviPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-semibold text-gray-900 mb-4">UKVI</h1>
+      <PageHeader title="UKVI" />
 
-      <div className="flex gap-1 mb-6 border-b border-gray-200">
+      <div className="flex gap-1 mb-6 border-b border-neutral-200">
         {(['cas', 'compliance', 'decisions'] as Tab[]).map(t => (
           <button
             key={t}
             onClick={() => setTab(t)}
             className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
               tab === t
-                ? 'border-indigo-600 text-indigo-600'
-                : 'border-transparent text-gray-500 hover:text-gray-800'
+                ? 'border-primary-600 text-primary-600'
+                : 'border-transparent text-neutral-500 hover:text-neutral-800'
             }`}
           >
             {t === 'cas' ? 'CAS requests' : t === 'compliance' ? 'Compliance alerts' : 'Sponsor decisions'}
@@ -92,63 +95,53 @@ function SponsorDecisionsTab() {
 
   return (
     <div>
-      <div className="rounded border border-blue-200 bg-blue-50 p-4 mb-5 text-sm text-blue-900">
+      <div className="rounded border border-primary-200 bg-primary-50 p-4 mb-5 text-sm text-primary-900">
         Engagement evidence supports a human sponsor decision. It never automatically changes academic
         status or submits a UKVI report. A different authorised officer must approve each decision.
       </div>
       {status && (
         <div className="grid gap-3 sm:grid-cols-3 mb-5">
-          <StatusCard label="Pending authorisation" value={status.pendingAuthorisation} />
-          <StatusCard label="Evidence reconciliation" value={status.reconciliationRequired} />
-          <StatusCard label="Failed/dead-letter exchanges" value={status.failedExchanges} />
+          <StatCard label="Pending authorisation" value={status.pendingAuthorisation} />
+          <StatCard label="Evidence reconciliation" value={status.reconciliationRequired} />
+          <StatCard label="Failed/dead-letter exchanges" value={status.failedExchanges} />
         </div>
       )}
-      {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+      {error && <p className="mb-4 text-sm text-danger-600">{error}</p>}
       {decisions.length === 0 ? (
-        <p className="text-sm text-gray-600">No sponsor decisions have been recorded.</p>
+        <p className="text-sm text-neutral-600">No sponsor decisions have been recorded.</p>
       ) : (
         <div className="space-y-3">
           {decisions.map(decision => (
-            <div key={decision.decisionId} className="rounded-lg border border-gray-200 bg-white p-4">
-              <div className="flex items-start justify-between gap-4">
+            <Card key={decision.decisionId}>
+              <CardBody className="flex items-start justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-2">
                     <Badge value={decision.outcomeCode} />
                     <Badge value={decision.statusCode} />
                   </div>
-                  <p className="mt-2 text-sm text-gray-700">{decision.rationaleCode}</p>
-                  <p className="mt-1 text-xs text-gray-500">
+                  <p className="mt-2 text-sm text-neutral-700">{decision.rationaleCode}</p>
+                  <p className="mt-1 text-xs text-neutral-500">
                     Guidance: {decision.guidanceVersion} · Decision maker: {decision.decidedBy}
                   </p>
                   {decision.externalReportId && (
-                    <p className="mt-1 font-mono text-xs text-green-700">
+                    <p className="mt-1 font-mono text-xs text-success-700">
                       Outbound report: {decision.externalReportId}
                     </p>
                   )}
                 </div>
                 {decision.statusCode === 'pending-authorisation' && (
-                  <button
+                  <Button
                     onClick={() => void handleAuthorise(decision.decisionId)}
                     disabled={authorising === decision.decisionId}
-                    className="rounded bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
                   >
                     {authorising === decision.decisionId ? 'Authorising…' : 'Authorise decision'}
-                  </button>
+                  </Button>
                 )}
-              </div>
-            </div>
+              </CardBody>
+            </Card>
           ))}
         </div>
       )}
-    </div>
-  );
-}
-
-function StatusCard({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="rounded-lg border border-gray-200 bg-white p-4">
-      <p className="text-xs font-medium uppercase tracking-wide text-gray-500">{label}</p>
-      <p className="mt-1 text-2xl font-semibold text-gray-900">{value}</p>
     </div>
   );
 }
@@ -192,50 +185,46 @@ function CasTab() {
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <p className="text-sm text-gray-600">Confirmation of Acceptance for Studies (CAS) requests for international students.</p>
-        <button
-          onClick={() => void handleGenerate()}
-          disabled={generating}
-          className="rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
-        >
+        <p className="text-sm text-neutral-600">Confirmation of Acceptance for Studies (CAS) requests for international students.</p>
+        <Button onClick={() => void handleGenerate()} disabled={generating}>
           {generating ? 'Generating…' : 'Generate CAS requests'}
-        </button>
+        </Button>
       </div>
 
-      {error      && <p className="mb-4 text-sm text-red-600">{error}</p>}
-      {successMsg && <p className="mb-4 text-sm text-green-600">{successMsg}</p>}
+      {error      && <p className="mb-4 text-sm text-danger-600">{error}</p>}
+      {successMsg && <p className="mb-4 text-sm text-success-600">{successMsg}</p>}
 
       {loading ? (
         <div className="flex justify-center py-8"><Spinner /></div>
       ) : requests.length === 0 ? (
-        <p className="text-sm text-gray-600">No CAS requests found.</p>
+        <p className="text-sm text-neutral-600">No CAS requests found.</p>
       ) : (
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200 text-sm">
-            <thead className="bg-gray-50">
+        <Card>
+          <Table>
+            <TableHead>
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Enrolment</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">CAS reference</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Requested</th>
+                <TableHeaderCell>Enrolment</TableHeaderCell>
+                <TableHeaderCell>CAS reference</TableHeaderCell>
+                <TableHeaderCell>Status</TableHeaderCell>
+                <TableHeaderCell>Requested</TableHeaderCell>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
+            </TableHead>
+            <TableBody>
               {requests.map(r => (
-                <tr key={r.casRequestId} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-mono text-xs text-gray-700">{r.enrolmentId}</td>
-                  <td className="px-4 py-3 font-mono text-xs text-gray-600">
-                    {r.casReference ?? <span className="text-gray-600">pending</span>}
-                  </td>
-                  <td className="px-4 py-3"><Badge value={r.statusCode} /></td>
-                  <td className="px-4 py-3 text-gray-500 text-xs">
+                <TableRow key={r.casRequestId}>
+                  <TableCell className="font-mono text-xs text-neutral-700">{r.enrolmentId}</TableCell>
+                  <TableCell className="font-mono text-xs">
+                    {r.casReference ?? <span className="text-neutral-600">pending</span>}
+                  </TableCell>
+                  <TableCell><Badge value={r.statusCode} /></TableCell>
+                  <TableCell className="text-xs">
                     {new Date(r.requestedAt).toLocaleDateString('en-GB')}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </TableBody>
+          </Table>
+        </Card>
       )}
     </div>
   );
@@ -294,52 +283,52 @@ function ComplianceTab() {
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <p className="text-sm text-gray-600">Attendance and compliance alerts for Tier 4 / Student visa holders.</p>
-        <button
-          onClick={() => void handleEvaluate()}
-          disabled={evaluating}
-          className="rounded border border-indigo-300 px-4 py-2 text-sm font-medium text-indigo-700 hover:bg-indigo-50 disabled:opacity-50"
-        >
+        <p className="text-sm text-neutral-600">Attendance and compliance alerts for Tier 4 / Student visa holders.</p>
+        <Button variant="secondary" onClick={() => void handleEvaluate()} disabled={evaluating}>
           {evaluating ? 'Evaluating…' : 'Re-evaluate alerts'}
-        </button>
+        </Button>
       </div>
 
-      {error      && <p className="mb-4 text-sm text-red-600">{error}</p>}
-      {successMsg && <p className="mb-4 text-sm text-green-600">{successMsg}</p>}
+      {error      && <p className="mb-4 text-sm text-danger-600">{error}</p>}
+      {successMsg && <p className="mb-4 text-sm text-success-600">{successMsg}</p>}
 
       {loading ? (
         <div className="flex justify-center py-8"><Spinner /></div>
       ) : alerts.length === 0 ? (
-        <p className="text-sm text-gray-600">No compliance alerts.</p>
+        <p className="text-sm text-neutral-600">No compliance alerts.</p>
       ) : (
         <div className="space-y-3">
           {alerts.map(a => (
-            <div key={a.alertId} className={`bg-white rounded-lg border p-4 ${a.resolvedAt ? 'border-gray-200' : 'border-amber-300'}`}>
+            <Card key={a.alertId} className={a.resolvedAt ? '' : 'border-warning-300'}>
+              <CardBody>
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-sm font-medium text-gray-900 capitalize">{a.alertTypeCode}</p>
-                  <p className="text-xs text-gray-500 font-mono mt-0.5">{a.enrolmentId}</p>
+                  <p className="text-sm font-medium text-neutral-900 capitalize">{a.alertTypeCode}</p>
+                  <p className="text-xs text-neutral-500 font-mono mt-0.5">{a.enrolmentId}</p>
                   {a.casReference && (
-                    <p className="text-xs text-gray-500 mt-0.5">CAS: {a.casReference}</p>
+                    <p className="text-xs text-neutral-500 mt-0.5">CAS: {a.casReference}</p>
                   )}
                 </div>
-                <div className="text-right text-xs text-gray-500">
+                <div className="text-right text-xs text-neutral-500">
                   <p>Triggered: {new Date(a.triggeredAt).toLocaleDateString('en-GB')}</p>
-                  {a.resolvedAt && <p className="text-green-600">Resolved: {new Date(a.resolvedAt).toLocaleDateString('en-GB')}</p>}
+                  {a.resolvedAt && <p className="text-success-600">Resolved: {new Date(a.resolvedAt).toLocaleDateString('en-GB')}</p>}
                 </div>
               </div>
               {!a.resolvedAt && (
                 <div className="mt-3">
-                  <button
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="border-success-300 text-success-700 hover:bg-success-50"
                     onClick={() => void handleResolve(a.alertId)}
                     disabled={resolvingId === a.alertId}
-                    className="rounded border border-green-300 px-2.5 py-1 text-xs font-medium text-green-700 hover:bg-green-50 disabled:opacity-50"
                   >
                     {resolvingId === a.alertId ? 'Resolving…' : 'Mark resolved'}
-                  </button>
+                  </Button>
                 </div>
               )}
-            </div>
+              </CardBody>
+            </Card>
           ))}
         </div>
       )}

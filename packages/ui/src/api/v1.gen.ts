@@ -164,23 +164,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/engagement/events": {
+    "/api/v1/enrolments/{enrolmentId}/support-outcomes": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["getEngagementEvents"];
+        get: operations["getEnrolmentsByEnrolmentIdSupportOutcomes"];
         put?: never;
-        post: operations["createEngagementEvents"];
+        post: operations["createEnrolmentsByEnrolmentIdSupportOutcomes"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/engagement/events/{eventId}/observations": {
+    "/api/v1/support-outcomes/{supportOutcomeId}/distribute": {
         parameters: {
             query?: never;
             header?: never;
@@ -189,167 +189,23 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["createEngagementEventsByEventIdObservations"];
+        post: operations["createSupportOutcomesBySupportOutcomeIdDistribute"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/engagement/observations/{observationId}/corrections": {
+    "/api/v1/students/{personId}/engagement-outcomes": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        get: operations["getStudentsByPersonIdEngagementOutcomes"];
         put?: never;
-        post: operations["createEngagementObservationsByObservationIdCorrections"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/engagement/students/{personId}/timeline": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getEngagementStudentsByPersonIdTimeline"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/engagement/policies": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getEngagementPolicies"];
-        put?: never;
-        post: operations["createEngagementPolicies"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/engagement/evaluations": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["createEngagementEvaluations"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/engagement/alerts": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getEngagementAlerts"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/engagement/alerts/{alertId}/triage": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["createEngagementAlertsByAlertIdTriage"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/engagement/cases/{caseId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getEngagementCasesByCaseId"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/engagement/cases/{caseId}/contacts": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["createEngagementCasesByCaseIdContacts"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/engagement/cases/{caseId}/actions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["createEngagementCasesByCaseIdActions"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/engagement/cases/{caseId}/review": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["createEngagementCasesByCaseIdReview"];
+        post: operations["createStudentsByPersonIdEngagementOutcomes"];
         delete?: never;
         options?: never;
         head?: never;
@@ -661,6 +517,102 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/exam-boards/{examBoardId}/conflicts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createExamBoardsByExamBoardIdConflicts"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/board-conflicts/{conflictId}/recuse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["updateBoardConflictsByConflictIdRecuse"];
+        trace?: never;
+    };
+    "/api/v1/exam-boards/{examBoardId}/quorum-decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createExamBoardsByExamBoardIdQuorumDecision"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/exam-boards/{examBoardId}/decisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createExamBoardsByExamBoardIdDecisions"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/board-decisions/{decisionId}/ratification": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createBoardDecisionsByDecisionIdRatification"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ratification-records/{ratificationRecordId}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["updateRatificationRecordsByRatificationRecordIdPublish"];
+        trace?: never;
+    };
     "/api/v1/enrolments/{enrolmentId}/progression": {
         parameters: {
             query?: never;
@@ -783,6 +735,102 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["createCorrectionCasesByCaseIdAmendments"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/correction-cases/amendments/{amendmentId}/distribute": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createCorrectionCasesAmendmentsByAmendmentIdDistribute"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/identity-resolution/cases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createIdentityResolutionCases"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/identity-resolution/cases/{caseId}/candidates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createIdentityResolutionCasesByCaseIdCandidates"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/identity-resolution/cases/{caseId}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createIdentityResolutionCasesByCaseIdDecision"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/identity-resolution/links": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createIdentityResolutionLinks"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/identity-resolution/correction-cases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createIdentityResolutionCorrectionCases"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1199,6 +1247,166 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["createRegulatoryUkviComplianceAlertsByAlertIdResolve"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/regulatory/collections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createRegulatoryCollections"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/regulatory/collections/{collectionId}/snapshots": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createRegulatoryCollectionsByCollectionIdSnapshots"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/regulatory/snapshots/{snapshotId}/records": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createRegulatorySnapshotsBySnapshotIdRecords"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/regulatory/collections/{collectionId}/validation-issues": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createRegulatoryCollectionsByCollectionIdValidationIssues"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/regulatory/collections/{collectionId}/signoff": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createRegulatoryCollectionsByCollectionIdSignoff"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/regulatory/collections/{collectionId}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createRegulatoryCollectionsByCollectionIdSubmit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/enrolments/{enrolmentId}/regulatory/cas-cases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getEnrolmentsByEnrolmentIdRegulatoryCasCases"];
+        put?: never;
+        post: operations["createEnrolmentsByEnrolmentIdRegulatoryCasCases"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/regulatory/cas-cases/{casCaseId}/eligibility-checks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createRegulatoryCasCasesByCasCaseIdEligibilityChecks"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/regulatory/cas-cases/{casCaseId}/assignment-versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createRegulatoryCasCasesByCasCaseIdAssignmentVersions"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/regulatory/cas-cases/{casCaseId}/sponsor-report-versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createRegulatoryCasCasesByCasCaseIdSponsorReportVersions"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1955,6 +2163,70 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["updateMarksByMarkId"];
+        trace?: never;
+    };
+    "/api/v1/moderation/mark-sets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createModerationMarkSets"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/moderation/reviews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createModerationReviews"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/moderation/reviews/{reviewId}/samples": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createModerationReviewsByReviewIdSamples"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/moderation/reviews/{reviewId}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["updateModerationReviewsByReviewIdComplete"];
         trace?: never;
     };
     "/api/v1/module-registrations/{moduleRegistrationId}/result": {
@@ -2909,6 +3181,214 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/audit-review/cases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createAuditReviewCases"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/audit-review/cases/{caseId}/findings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createAuditReviewCasesByCaseIdFindings"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/audit-review/seal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createAuditReviewSeal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/rights-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createRightsRequests"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/rights-requests/{requestId}/scope": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createRightsRequestsByRequestIdScope"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/rights-requests/{requestId}/search-manifest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createRightsRequestsByRequestIdSearchManifest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/rights-requests/{requestId}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createRightsRequestsByRequestIdDecision"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/rights-restrictions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createRightsRestrictions"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/rights-restrictions/{restrictionId}/lift": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["updateRightsRestrictionsByRestrictionIdLift"];
+        trace?: never;
+    };
+    "/api/v1/retention-schedules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createRetentionSchedules"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/retention-schedules/{scheduleId}/assignments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createRetentionSchedulesByScheduleIdAssignments"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/retention-assignments/{assignmentId}/holds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createRetentionAssignmentsByAssignmentIdHolds"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/retention-assignments/{assignmentId}/disposition": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createRetentionAssignmentsByAssignmentIdDisposition"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/notifications/stream": {
         parameters: {
             query?: never;
@@ -3512,17 +3992,13 @@ export interface operations {
             };
         };
     };
-    getEngagementEvents: {
+    getEnrolmentsByEnrolmentIdSupportOutcomes: {
         parameters: {
-            query?: {
-                personId?: string;
-                enrolmentId?: string;
-                statusCode?: string;
-                scheduledFrom?: string;
-                scheduledTo?: string;
-            };
+            query?: never;
             header?: never;
-            path?: never;
+            path: {
+                enrolmentId: string;
+            };
             cookie?: never;
         };
         requestBody?: never;
@@ -3534,84 +4010,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        expectedEventId: string;
-                        personId: string;
+                        supportOutcomeId: string;
                         enrolmentId: string;
-                        activityTypeCode: string;
-                        activityReference: string | null;
-                        eventModeCode: string;
-                        scheduledFrom: string;
-                        scheduledTo: string | null;
-                        locationReference: string | null;
-                        sourceSystemCode: string;
-                        sourceEventId: string;
-                        sourceVersion: string;
-                        statusCode: string;
+                        sourceCaseId: string | null;
+                        sourceDecisionId: string | null;
+                        outcomeTypeCode: string;
+                        minimumNecessaryText: string;
+                        visibilityScopeCode: string;
+                        actorId: string;
                         validFrom: string;
                         validTo: string | null;
                         recordedAt: string;
+                        recordedUntil: string | null;
                     }[];
                 };
             };
-            /** @description Default Response */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        type: string;
-                        title: string;
-                        status: number;
-                        detail?: string;
-                        correlationId?: string;
-                    };
-                };
-            };
         };
     };
-    createEngagementEvents: {
+    createEnrolmentsByEnrolmentIdSupportOutcomes: {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                enrolmentId: string;
+            };
             cookie?: never;
         };
         requestBody: {
             content: {
                 "application/json": {
-                    /** Format: uuid */
-                    personId: string;
-                    /** Format: uuid */
-                    enrolmentId: string;
-                    activityTypeCode: string;
-                    activityReference?: string;
-                    eventModeCode: string;
-                    /** Format: date-time */
-                    scheduledFrom: string;
-                    /** Format: date-time */
-                    scheduledTo?: string;
-                    locationReference?: string;
-                    sourceSystemCode: string;
-                    sourceEventId: string;
-                    sourceVersion: string;
+                    sourceCaseId?: string;
+                    sourceDecisionId?: string;
+                    outcomeTypeCode: string;
+                    minimumNecessaryText: string;
+                    visibilityScopeCode: string;
                 };
             };
         };
         responses: {
-            /** @description Default Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        expectedEventId: string;
-                        /** @enum {boolean} */
-                        created: false;
-                    };
-                };
-            };
             /** @description Default Response */
             201: {
                 headers: {
@@ -3619,39 +4055,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        expectedEventId: string;
-                        /** @enum {boolean} */
-                        created: true;
-                    };
-                };
-            };
-            /** @description Default Response */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        type: string;
-                        title: string;
-                        status: number;
-                        detail?: string;
-                        correlationId?: string;
-                    };
-                };
-            };
-            /** @description Default Response */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        type: string;
-                        title: string;
-                        status: number;
-                        detail?: string;
-                        correlationId?: string;
+                        supportOutcomeId: string;
                     };
                 };
             };
@@ -3666,55 +4070,28 @@ export interface operations {
                         title: string;
                         status: number;
                         detail?: string;
-                        correlationId?: string;
                     };
                 };
             };
         };
     };
-    createEngagementEventsByEventIdObservations: {
+    createSupportOutcomesBySupportOutcomeIdDistribute: {
         parameters: {
             query?: never;
-            header: {
-                "idempotency-key": string;
-            };
+            header?: never;
             path: {
-                eventId: string;
+                supportOutcomeId: string;
             };
             cookie?: never;
         };
         requestBody: {
             content: {
                 "application/json": {
-                    sourceSystemCode: string;
-                    sourceEventId: string;
-                    sourceVersion: string;
-                    captureMethodCode: string;
-                    outcomeCode: string;
-                    dataQualityCode?: string;
-                    /** Format: date-time */
-                    eventTime: string;
-                    /** Format: date-time */
-                    receivedAt?: string;
-                    deviceReference?: string;
-                    operationalReference?: string;
+                    targetSystemCodes: string[];
                 };
             };
         };
         responses: {
-            /** @description Default Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        observationId: string;
-                        /** @enum {boolean} */
-                        created: false;
-                    };
-                };
-            };
             /** @description Default Response */
             201: {
                 headers: {
@@ -3722,9 +4099,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        observationId: string;
-                        /** @enum {boolean} */
-                        created: true;
+                        distributionItemIds: string[];
                     };
                 };
             };
@@ -3739,148 +4114,15 @@ export interface operations {
                         title: string;
                         status: number;
                         detail?: string;
-                        correlationId?: string;
-                    };
-                };
-            };
-            /** @description Default Response */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        type: string;
-                        title: string;
-                        status: number;
-                        detail?: string;
-                        correlationId?: string;
-                    };
-                };
-            };
-            /** @description Default Response */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        type: string;
-                        title: string;
-                        status: number;
-                        detail?: string;
-                        correlationId?: string;
                     };
                 };
             };
         };
     };
-    createEngagementObservationsByObservationIdCorrections: {
-        parameters: {
-            query?: never;
-            header: {
-                "idempotency-key": string;
-            };
-            path: {
-                observationId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    sourceVersion: string;
-                    outcomeCode: string;
-                    dataQualityCode: string;
-                    /** Format: date-time */
-                    eventTime?: string;
-                    correctionReasonCode: string;
-                    correctionReason?: string;
-                    disputed?: boolean;
-                };
-            };
-        };
-        responses: {
-            /** @description Default Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        observationId: string;
-                        observationVersionId: string;
-                        /** @enum {boolean} */
-                        created: false;
-                    };
-                };
-            };
-            /** @description Default Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        observationId: string;
-                        observationVersionId: string;
-                        /** @enum {boolean} */
-                        created: true;
-                    };
-                };
-            };
-            /** @description Default Response */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        type: string;
-                        title: string;
-                        status: number;
-                        detail?: string;
-                        correlationId?: string;
-                    };
-                };
-            };
-            /** @description Default Response */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        type: string;
-                        title: string;
-                        status: number;
-                        detail?: string;
-                        correlationId?: string;
-                    };
-                };
-            };
-            /** @description Default Response */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        type: string;
-                        title: string;
-                        status: number;
-                        detail?: string;
-                        correlationId?: string;
-                    };
-                };
-            };
-        };
-    };
-    getEngagementStudentsByPersonIdTimeline: {
+    getStudentsByPersonIdEngagementOutcomes: {
         parameters: {
             query?: {
-                from?: string;
-                to?: string;
+                enrolmentId?: string;
             };
             header?: never;
             path: {
@@ -3897,444 +4139,21 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        events: {
-                            expectedEventId: string;
-                            personId: string;
-                            enrolmentId: string;
-                            activityTypeCode: string;
-                            activityReference: string | null;
-                            eventModeCode: string;
-                            scheduledFrom: string;
-                            scheduledTo: string | null;
-                            locationReference: string | null;
-                            sourceSystemCode: string;
-                            sourceEventId: string;
-                            sourceVersion: string;
-                            statusCode: string;
-                            validFrom: string;
-                            validTo: string | null;
-                            recordedAt: string;
-                        }[];
-                        observations: {
-                            observationId: string;
-                            observationVersionId: string;
-                            expectedEventId: string | null;
-                            personId: string;
-                            enrolmentId: string;
-                            sourceSystemCode: string;
-                            sourceEventId: string;
-                            sourceVersion: string;
-                            captureMethodCode: string;
-                            outcomeCode: string;
-                            dataQualityCode: string;
-                            eventTime: string;
-                            receivedAt: string;
-                            deviceReference: string | null;
-                            operationalReference: string | null;
-                            actorId: string;
-                            recordedAt: string;
-                        }[];
-                    };
-                };
-            };
-            /** @description Default Response */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        type: string;
-                        title: string;
-                        status: number;
-                        detail?: string;
-                        correlationId?: string;
-                    };
-                };
-            };
-            /** @description Default Response */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        type: string;
-                        title: string;
-                        status: number;
-                        detail?: string;
-                        correlationId?: string;
-                    };
-                };
-            };
-        };
-    };
-    getEngagementPolicies: {
-        parameters: {
-            query?: {
-                policyCode?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Default Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        policyVersionId: string;
-                        policyId: string;
-                        policyCode: string;
-                        versionNumber: number;
-                        displayName: string;
-                        statusCode: string;
-                        validFrom: string;
-                        validTo: string | null;
-                        applicability: {
-                            [key: string]: unknown;
-                        };
-                        evidenceWindow: {
-                            [key: string]: unknown;
-                        };
-                        alertRules: {
-                            [key: string]: unknown;
-                        };
-                        reviewDeadline: {
-                            [key: string]: unknown;
-                        };
-                        approvedBy: string | null;
-                        approvedAt: string | null;
-                    }[];
-                };
-            };
-        };
-    };
-    createEngagementPolicies: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    policyCode: string;
-                    versionNumber: number;
-                    displayName: string;
-                    statusCode: "draft" | "approved";
-                    /** Format: date-time */
-                    validFrom: string;
-                    /** Format: date-time */
-                    validTo?: string;
-                    applicability?: {
-                        [key: string]: unknown;
-                    };
-                    evidenceWindowDays: number;
-                    minimumExpectedEvents: number;
-                    minimumAbsenceCount: number;
-                    minimumAbsenceRate: number;
-                    severityCode: "low" | "medium" | "high";
-                    reviewDeadlineDays: number;
-                };
-            };
-        };
-        responses: {
-            /** @description Default Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        policyVersionId: string;
-                        policyId: string;
-                        policyCode: string;
-                        versionNumber: number;
-                        displayName: string;
-                        statusCode: string;
-                        validFrom: string;
-                        validTo: string | null;
-                        applicability: {
-                            [key: string]: unknown;
-                        };
-                        evidenceWindow: {
-                            [key: string]: unknown;
-                        };
-                        alertRules: {
-                            [key: string]: unknown;
-                        };
-                        reviewDeadline: {
-                            [key: string]: unknown;
-                        };
-                        approvedBy: string | null;
-                        approvedAt: string | null;
-                    };
-                };
-            };
-            /** @description Default Response */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        type: string;
-                        title: string;
-                        status: number;
-                        detail?: string;
-                        correlationId?: string;
-                    };
-                };
-            };
-            /** @description Default Response */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        type: string;
-                        title: string;
-                        status: number;
-                        detail?: string;
-                        correlationId?: string;
-                    };
-                };
-            };
-        };
-    };
-    createEngagementEvaluations: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /** Format: uuid */
-                    policyVersionId: string;
-                    /** Format: uuid */
-                    personId: string;
-                    /** Format: uuid */
-                    enrolmentId: string;
-                    /** Format: date-time */
-                    evidenceWindowFrom: string;
-                    /** Format: date-time */
-                    evidenceWindowTo: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Default Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        matched: boolean;
-                        alertCreated: boolean;
-                        alert: {
-                            alertId: string;
-                            personId: string;
-                            enrolmentId: string;
-                            policyVersionId: string;
-                            evidenceWindowFrom: string;
-                            evidenceWindowTo: string;
-                            evidenceSnapshot: {
-                                [key: string]: unknown;
-                            };
-                            evidenceHash: string;
-                            explanation: {
-                                [key: string]: unknown;
-                            };
-                            severityCode: string;
-                            statusCode: string;
-                            reevaluationRequired: boolean;
-                            recordedAt: string;
-                        } | null;
-                    };
-                };
-            };
-            /** @description Default Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @enum {boolean} */
-                        matched: true;
-                        /** @enum {boolean} */
-                        alertCreated: true;
-                        alert: {
-                            alertId: string;
-                            personId: string;
-                            enrolmentId: string;
-                            policyVersionId: string;
-                            evidenceWindowFrom: string;
-                            evidenceWindowTo: string;
-                            evidenceSnapshot: {
-                                [key: string]: unknown;
-                            };
-                            evidenceHash: string;
-                            explanation: {
-                                [key: string]: unknown;
-                            };
-                            severityCode: string;
-                            statusCode: string;
-                            reevaluationRequired: boolean;
-                            recordedAt: string;
-                        };
-                    };
-                };
-            };
-            /** @description Default Response */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        type: string;
-                        title: string;
-                        status: number;
-                        detail?: string;
-                        correlationId?: string;
-                    };
-                };
-            };
-            /** @description Default Response */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        type: string;
-                        title: string;
-                        status: number;
-                        detail?: string;
-                        correlationId?: string;
-                    };
-                };
-            };
-            /** @description Default Response */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        type: string;
-                        title: string;
-                        status: number;
-                        detail?: string;
-                        correlationId?: string;
-                    };
-                };
-            };
-        };
-    };
-    getEngagementAlerts: {
-        parameters: {
-            query?: {
-                personId?: string;
-                statusCode?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Default Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        alertId: string;
+                        engagementOutcomeId: string;
                         personId: string;
                         enrolmentId: string;
-                        policyVersionId: string;
-                        evidenceWindowFrom: string;
-                        evidenceWindowTo: string;
-                        evidenceSnapshot: {
-                            [key: string]: unknown;
-                        };
-                        evidenceHash: string;
-                        explanation: {
-                            [key: string]: unknown;
-                        };
-                        severityCode: string;
-                        statusCode: string;
-                        reevaluationRequired: boolean;
+                        moduleRegistrationId: string | null;
+                        outcomeCode: string;
+                        severityCode: string | null;
+                        sourceAlertId: string | null;
+                        sourceModule: string;
+                        actorId: string;
+                        validFrom: string;
+                        validTo: string | null;
                         recordedAt: string;
                     }[];
                 };
             };
-        };
-    };
-    createEngagementAlertsByAlertIdTriage: {
-        parameters: {
-            query?: never;
-            header: {
-                "idempotency-key": string;
-            };
-            path: {
-                alertId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    decision: "no-action" | "open-intervention";
-                    assignedRoleCode?: string;
-                    assignedActorId?: string;
-                    /** Format: date-time */
-                    dueAt?: string;
-                    reasonCode: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Default Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        created: boolean;
-                    } & {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Default Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        created: boolean;
-                    } & {
-                        [key: string]: unknown;
-                    };
-                };
-            };
             /** @description Default Response */
             404: {
                 headers: {
@@ -4346,129 +4165,44 @@ export interface operations {
                         title: string;
                         status: number;
                         detail?: string;
-                        correlationId?: string;
-                    };
-                };
-            };
-            /** @description Default Response */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        type: string;
-                        title: string;
-                        status: number;
-                        detail?: string;
-                        correlationId?: string;
-                    };
-                };
-            };
-            /** @description Default Response */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        type: string;
-                        title: string;
-                        status: number;
-                        detail?: string;
-                        correlationId?: string;
                     };
                 };
             };
         };
     };
-    getEngagementCasesByCaseId: {
+    createStudentsByPersonIdEngagementOutcomes: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                caseId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Default Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        intervention: {
-                            [key: string]: unknown;
-                        };
-                        contacts: {
-                            [key: string]: unknown;
-                        }[];
-                        actions: {
-                            [key: string]: unknown;
-                        }[];
-                        referrals: {
-                            [key: string]: unknown;
-                        }[];
-                    };
-                };
-            };
-            /** @description Default Response */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        type: string;
-                        title: string;
-                        status: number;
-                        detail?: string;
-                        correlationId?: string;
-                    };
-                };
-            };
-        };
-    };
-    createEngagementCasesByCaseIdContacts: {
-        parameters: {
-            query?: never;
-            header: {
-                "idempotency-key": string;
-            };
-            path: {
-                caseId: string;
+                personId: string;
             };
             cookie?: never;
         };
         requestBody: {
             content: {
                 "application/json": {
-                    channelCode: "email" | "telephone" | "sms" | "portal" | "in-person" | "letter";
+                    enrolmentId: string;
+                    moduleRegistrationId?: string;
+                    outcomeCode: string;
+                    severityCode?: string;
                     /** Format: date-time */
-                    attemptedAt: string;
-                    outcomeCode: "no-response" | "contacted" | "response-received" | "wrong-contact-details";
-                    communicationLocale?: string;
-                    operationalNote?: string;
+                    effectiveFrom: string;
+                    sourceAlertId?: string;
+                    policyVersionId?: string;
+                    /** Format: date-time */
+                    evidenceWindowFrom?: string;
+                    /** Format: date-time */
+                    evidenceWindowTo?: string;
+                    evidenceSnapshot?: {
+                        [key: string]: unknown;
+                    };
+                    evidenceHash?: string;
+                    reevaluationRequired?: boolean;
                 };
             };
         };
         responses: {
-            /** @description Default Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        created: boolean;
-                    } & {
-                        [key: string]: unknown;
-                    };
-                };
-            };
             /** @description Default Response */
             201: {
                 headers: {
@@ -4476,9 +4210,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        created: boolean;
-                    } & {
-                        [key: string]: unknown;
+                        engagementOutcomeId: string;
                     };
                 };
             };
@@ -4493,22 +4225,6 @@ export interface operations {
                         title: string;
                         status: number;
                         detail?: string;
-                        correlationId?: string;
-                    };
-                };
-            };
-            /** @description Default Response */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        type: string;
-                        title: string;
-                        status: number;
-                        detail?: string;
-                        correlationId?: string;
                     };
                 };
             };
@@ -4523,208 +4239,6 @@ export interface operations {
                         title: string;
                         status: number;
                         detail?: string;
-                        correlationId?: string;
-                    };
-                };
-            };
-        };
-    };
-    createEngagementCasesByCaseIdActions: {
-        parameters: {
-            query?: never;
-            header: {
-                "idempotency-key": string;
-            };
-            path: {
-                caseId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    actionTypeCode: string;
-                    operationalInstruction?: string;
-                    ownerRoleCode?: string;
-                    ownerActorId?: string;
-                    /** Format: date-time */
-                    dueAt?: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Default Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        created: boolean;
-                    } & {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Default Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        created: boolean;
-                    } & {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Default Response */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        type: string;
-                        title: string;
-                        status: number;
-                        detail?: string;
-                        correlationId?: string;
-                    };
-                };
-            };
-            /** @description Default Response */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        type: string;
-                        title: string;
-                        status: number;
-                        detail?: string;
-                        correlationId?: string;
-                    };
-                };
-            };
-            /** @description Default Response */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        type: string;
-                        title: string;
-                        status: number;
-                        detail?: string;
-                        correlationId?: string;
-                    };
-                };
-            };
-        };
-    };
-    createEngagementCasesByCaseIdReview: {
-        parameters: {
-            query?: never;
-            header: {
-                "idempotency-key": string;
-            };
-            path: {
-                caseId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /** Format: uuid */
-                    expectedVersionId: string;
-                    decision: "continue" | "close" | "refer";
-                    outcomeCode?: string;
-                    /** Format: date-time */
-                    reviewAt: string;
-                    /** Format: date-time */
-                    nextDueAt?: string;
-                    referral?: {
-                        targetServiceCode: "wellbeing" | "safeguarding" | "academic-status-review" | "sponsor-compliance-review";
-                        referralTypeCode: "support-request" | "immediate-risk" | "status-review" | "compliance-review";
-                        externalReference?: string;
-                    };
-                };
-            };
-        };
-        responses: {
-            /** @description Default Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        created: boolean;
-                    } & {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Default Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        created: boolean;
-                    } & {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Default Response */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        type: string;
-                        title: string;
-                        status: number;
-                        detail?: string;
-                        correlationId?: string;
-                    };
-                };
-            };
-            /** @description Default Response */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        type: string;
-                        title: string;
-                        status: number;
-                        detail?: string;
-                        correlationId?: string;
-                    };
-                };
-            };
-            /** @description Default Response */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        type: string;
-                        title: string;
-                        status: number;
-                        detail?: string;
-                        correlationId?: string;
                     };
                 };
             };
@@ -5959,6 +5473,249 @@ export interface operations {
             };
         };
     };
+    createExamBoardsByExamBoardIdConflicts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                examBoardId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    enrolmentId?: string;
+                    conflictTypeCode: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        conflictId: string;
+                    };
+                };
+            };
+        };
+    };
+    updateBoardConflictsByConflictIdRecuse: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conflictId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createExamBoardsByExamBoardIdQuorumDecision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                examBoardId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    requiredCount: number;
+                    attendingCount: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        quorumDecisionId: string;
+                        quorumMet: boolean;
+                    };
+                };
+            };
+        };
+    };
+    createExamBoardsByExamBoardIdDecisions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                examBoardId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    dataPackId: string;
+                    decisionTypeCode: "ratify" | "defer" | "refer-back";
+                    rationale?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        decisionId: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createBoardDecisionsByDecisionIdRatification: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                decisionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        ratificationRecordId: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    updateRatificationRecordsByRatificationRecordIdPublish: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ratificationRecordId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
     getEnrolmentsByEnrolmentIdProgression: {
         parameters: {
             query: {
@@ -6425,6 +6182,9 @@ export interface operations {
                         validTo: string | null;
                         recordedAt: string;
                         recordedUntil: string | null;
+                        errorCategoryCode: string | null;
+                        evidenceRef: string | null;
+                        authorisedBy: string | null;
                     }[];
                 };
             };
@@ -6458,6 +6218,9 @@ export interface operations {
                 "application/json": {
                     caseTypeCode: "appeal" | "administrative-correction";
                     reference?: string;
+                    errorCategoryCode?: string;
+                    evidenceRef?: string;
+                    authorisedBy?: string;
                 };
             };
         };
@@ -6614,6 +6377,245 @@ export interface operations {
                         title: string;
                         status: number;
                         detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createCorrectionCasesAmendmentsByAmendmentIdDistribute: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                amendmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    targetSystemCodes: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        distributionItemIds: string[];
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createIdentityResolutionCases: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    subjectPersonId: string;
+                    ownerId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        identityResolutionCaseId: string;
+                    };
+                };
+            };
+        };
+    };
+    createIdentityResolutionCasesByCaseIdCandidates: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                caseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    candidatePersonId: string;
+                    matchScore: number;
+                    matchReasonCode: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        candidateId: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createIdentityResolutionCasesByCaseIdDecision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                caseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    decisionTypeCode: "merge" | "reject" | "link";
+                    survivorPersonId?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        decisionId: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createIdentityResolutionLinks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    sourcePersonId: string;
+                    targetPersonId: string;
+                    linkTypeCode: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        linkId: string;
+                    };
+                };
+            };
+        };
+    };
+    createIdentityResolutionCorrectionCases: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    personId: string;
+                    correctedEntityType: string;
+                    correctedFieldName: string;
+                    ownerId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        dataCorrectionCaseId: string;
                     };
                 };
             };
@@ -7981,6 +7983,464 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createRegulatoryCollections: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    regulatorCode: string;
+                    collectionTypeCode: string;
+                    academicYear: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        regulatoryCollectionId: string;
+                    };
+                };
+            };
+        };
+    };
+    createRegulatoryCollectionsByCollectionIdSnapshots: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                collectionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    sourceTransactionTime: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        collectionSnapshotId: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createRegulatorySnapshotsBySnapshotIdRecords: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                snapshotId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    enrolmentId?: string;
+                    recordPayload: {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        regulatoryRecordId: string;
+                    };
+                };
+            };
+        };
+    };
+    createRegulatoryCollectionsByCollectionIdValidationIssues: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                collectionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    regulatoryRecordId?: string;
+                    severityCode: "blocking" | "warning";
+                    fieldCode?: string;
+                    message: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        issueId: string;
+                    };
+                };
+            };
+        };
+    };
+    createRegulatoryCollectionsByCollectionIdSignoff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                collectionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    commentary?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        signoffId: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createRegulatoryCollectionsByCollectionIdSubmit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                collectionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    collectionSnapshotId: string;
+                    submissionReference?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        submissionId: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getEnrolmentsByEnrolmentIdRegulatoryCasCases: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrolmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        casCaseId: string;
+                        enrolmentId: string;
+                        casReference: string | null;
+                        statusCode: string;
+                        actorId: string;
+                        validFrom: string;
+                        validTo: string | null;
+                        recordedAt: string;
+                        recordedUntil: string | null;
+                    }[];
+                };
+            };
+        };
+    };
+    createEnrolmentsByEnrolmentIdRegulatoryCasCases: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrolmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    casReference?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        casCaseId: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createRegulatoryCasCasesByCasCaseIdEligibilityChecks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                casCaseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    guidanceVersion: string;
+                    checkTypeCode: string;
+                    resultCode: string;
+                    evidenceRef?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        checkId: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createRegulatoryCasCasesByCasCaseIdAssignmentVersions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                casCaseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    assignedPayloadHash: string;
+                    casNumber?: string;
+                    smsRequestSentAt?: string;
+                    smsReceiptRef?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        assignmentId: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createRegulatoryCasCasesByCasCaseIdSponsorReportVersions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                casCaseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    reportPayloadRef: string;
+                    distributionItemId?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        reportId: string;
+                    };
+                };
             };
             /** @description Default Response */
             404: {
@@ -10902,6 +11362,165 @@ export interface operations {
             };
             /** @description Default Response */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createModerationMarkSets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    assessmentComponentId: string;
+                    markIds: string[];
+                    sourceQueryHash: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        markSetId: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createModerationReviews: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    markSetId: string;
+                    ruleVersion: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        reviewId: string;
+                    };
+                };
+            };
+        };
+    };
+    createModerationReviewsByReviewIdSamples: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reviewId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    markId: string;
+                    sampleReasonCode: string;
+                    originalMark: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        sampleId: string;
+                    };
+                };
+            };
+        };
+    };
+    updateModerationReviewsByReviewIdComplete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reviewId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    outcomeCode: "no-change" | "adjusted" | "escalated";
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Default Response */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -15346,6 +15965,435 @@ export interface operations {
                             action: "anonymised" | "flagged-for-dpo" | "skipped-award-hold";
                             reason?: string;
                         }[];
+                    };
+                };
+            };
+        };
+    };
+    createAuditReviewCases: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    ownerId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        auditReviewCaseId: string;
+                    };
+                };
+            };
+        };
+    };
+    createAuditReviewCasesByCaseIdFindings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                caseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    auditRecordId: string;
+                    findingTypeCode: "no-concern" | "policy-breach" | "tamper-suspected" | "investigation-required";
+                    description?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        findingId: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createAuditReviewSeal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    rangeStart: string;
+                    rangeEnd: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        sealId: string;
+                    };
+                };
+            };
+        };
+    };
+    createRightsRequests: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    personId: string;
+                    requestTypeCode: "access" | "rectification" | "erasure" | "restriction" | "portability" | "objection";
+                    statutoryDeadlineDate: string;
+                    ownerId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        requestId: string;
+                    };
+                };
+            };
+        };
+    };
+    createRightsRequestsByRequestIdScope: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                requestId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    scopeEntityType: string;
+                    scopeDescription?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        scopeId: string;
+                    };
+                };
+            };
+        };
+    };
+    createRightsRequestsByRequestIdSearchManifest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                requestId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    searchedSystem: string;
+                    recordCount: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        manifestId: string;
+                    };
+                };
+            };
+        };
+    };
+    createRightsRequestsByRequestIdDecision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                requestId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    decisionTypeCode: "granted" | "partially-granted" | "refused";
+                    legalBasis?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        decisionId: string;
+                    };
+                };
+            };
+        };
+    };
+    createRightsRestrictions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    personId: string;
+                    restrictionTypeCode: string;
+                    rightsDecisionId?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        restrictionId: string;
+                    };
+                };
+            };
+        };
+    };
+    updateRightsRestrictionsByRestrictionIdLift: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                restrictionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createRetentionSchedules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    entityType: string;
+                    retentionPeriodMonths: string;
+                    triggerEventCode: string;
+                    description?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        retentionScheduleId: string;
+                    };
+                };
+            };
+        };
+    };
+    createRetentionSchedulesByScheduleIdAssignments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                scheduleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    entityType: string;
+                    entityId: string;
+                    scheduledDisposalDate?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        retentionAssignmentId: string;
+                    };
+                };
+            };
+        };
+    };
+    createRetentionAssignmentsByAssignmentIdHolds: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                assignmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    holdReasonCode: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        holdId: string;
+                    };
+                };
+            };
+        };
+    };
+    createRetentionAssignmentsByAssignmentIdDisposition: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                assignmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    dispositionTypeCode: "anonymised" | "deleted" | "transferred";
+                    evidenceRef?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        dispositionId: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
                     };
                 };
             };

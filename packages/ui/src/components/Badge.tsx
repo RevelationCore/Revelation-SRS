@@ -1,26 +1,11 @@
-const STATUS_COLOURS: Record<string, string> = {
-  // Enrolment statuses
-  enrolled:     'bg-green-100  text-green-800',
-  intermitting: 'bg-yellow-100 text-yellow-800',
-  suspended:    'bg-orange-100 text-orange-800',
-  withdrawn:    'bg-red-100    text-red-800',
-  graduated:    'bg-blue-100   text-blue-800',
-  // Person statuses
-  prospective:  'bg-gray-100   text-gray-700',
-  student:      'bg-green-100  text-green-800',
-  alumnus:      'bg-purple-100 text-purple-800',
-  deceased:     'bg-red-100    text-red-800',
-  merged:       'bg-gray-100   text-gray-600',
-  // Registration statuses
-  registered:   'bg-green-100  text-green-800',
-  completed:    'bg-blue-100   text-blue-800',
-  // Generic
-  active:       'bg-green-100  text-green-800',
-  inactive:     'bg-gray-100   text-gray-700',
-  pending:      'bg-yellow-100 text-yellow-800',
-  failed:       'bg-red-100    text-red-800',
-  skipped:      'bg-gray-100   text-gray-600',
-  processed:    'bg-green-100  text-green-800',
+import { statusTone } from '../theme/tokens.js';
+
+const TONE_CLASSES: Record<string, string> = {
+  success: 'bg-success-100 text-success-800',
+  warning: 'bg-warning-100 text-warning-800',
+  danger:  'bg-danger-100 text-danger-800',
+  primary: 'bg-primary-100 text-primary-800',
+  neutral: 'bg-neutral-100 text-neutral-700',
 };
 
 interface BadgeProps {
@@ -29,10 +14,10 @@ interface BadgeProps {
 }
 
 export function Badge({ value, label }: BadgeProps) {
-  const colour      = STATUS_COLOURS[value] ?? 'bg-gray-100 text-gray-700';
+  const tone        = statusTone[value] ?? 'neutral';
   const displayText = label ?? value;
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${colour}`}>
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${TONE_CLASSES[tone]}`}>
       {displayText}
     </span>
   );

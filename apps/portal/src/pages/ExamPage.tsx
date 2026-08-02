@@ -4,7 +4,7 @@ import { useAuth } from '../auth/AuthContext.js';
 import { useApiData } from '../hooks/useApiData.js';
 import { getEnrolments, getModuleRegistrations, getExamEntries } from '../api/me.js';
 import type { ExamEntry } from '../api/me.js';
-import { Spinner, Problem, EmptyState, formatDate, formatDateTime } from '@revelation-srs/ui';
+import { Spinner, Problem, EmptyState, formatDate, formatDateTime, PageHeader, Card, CardBody, Badge } from '@revelation-srs/ui';
 
 export function ExamPage() {
   const { t }    = useTranslation();
@@ -54,15 +54,11 @@ export function ExamPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">{t('portal.nav.exams')}</h1>
-        {currentEnrolment && (
-          <p className="mt-1 text-sm text-gray-500">
-            Academic year {currentEnrolment.academicYearOfEntry}
-          </p>
-        )}
-      </div>
+    <div>
+      <PageHeader
+        title={t('portal.nav.exams')}
+        description={currentEnrolment ? `Academic year ${currentEnrolment.academicYearOfEntry}` : undefined}
+      />
 
       {error && <Problem title={t('status.error')} detail={error} />}
 
@@ -73,47 +69,43 @@ export function ExamPage() {
       {examEntries.length > 0 && (
         <div className="space-y-4">
           {examEntries.map(entry => (
-            <section
-              key={entry.examEntryId}
-              aria-labelledby={`exam-${entry.examEntryId}`}
-              className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm"
-            >
+            <Card key={entry.examEntryId} aria-labelledby={`exam-${entry.examEntryId}`}>
+              <CardBody>
               <div className="flex items-start justify-between gap-4">
-                <h2 id={`exam-${entry.examEntryId}`} className="text-base font-semibold text-gray-900">
+                <h2 id={`exam-${entry.examEntryId}`} className="text-base font-semibold text-neutral-900">
                   {t('portal.exam.candidateNumber')}: {entry.candidateNumber}
                 </h2>
-                <span className="flex-none rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-medium text-indigo-700">
-                  {t(`portal.exam.status.${entry.statusCode}`, { defaultValue: entry.statusCode })}
-                </span>
+                <Badge value={entry.statusCode} label={t(`portal.exam.status.${entry.statusCode}`, { defaultValue: entry.statusCode })} />
               </div>
 
               <dl className="mt-4 grid gap-3 sm:grid-cols-2 text-sm">
                 {entry.scheduledDate && (
                   <div>
-                    <dt className="text-xs font-medium text-gray-500">{t('portal.exam.scheduledDate')}</dt>
-                    <dd className="mt-0.5 text-gray-900">{formatDateTime(entry.scheduledDate)}</dd>
+                    <dt className="text-xs font-medium text-neutral-500">{t('portal.exam.scheduledDate')}</dt>
+                    <dd className="mt-0.5 text-neutral-900">{formatDateTime(entry.scheduledDate)}</dd>
                   </div>
                 )}
                 {entry.roomReference && (
                   <div>
-                    <dt className="text-xs font-medium text-gray-500">{t('portal.exam.room')}</dt>
-                    <dd className="mt-0.5 text-gray-900">{entry.roomReference}</dd>
+                    <dt className="text-xs font-medium text-neutral-500">{t('portal.exam.room')}</dt>
+                    <dd className="mt-0.5 text-neutral-900">{entry.roomReference}</dd>
                   </div>
                 )}
                 <div className="sm:col-span-2">
-                  <dt className="text-xs font-medium text-gray-500">{t('portal.exam.accommodations')}</dt>
-                  <dd className="mt-0.5 text-gray-900">
+                  <dt className="text-xs font-medium text-neutral-500">{t('portal.exam.accommodations')}</dt>
+                  <dd className="mt-0.5 text-neutral-900">
                     {entry.accommodations.length > 0
                       ? entry.accommodations.join(', ')
                       : t('portal.exam.noAccommodations')}
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-xs font-medium text-gray-500">Valid from</dt>
-                  <dd className="mt-0.5 text-gray-600">{formatDate(entry.validFrom)}</dd>
+                  <dt className="text-xs font-medium text-neutral-500">Valid from</dt>
+                  <dd className="mt-0.5 text-neutral-600">{formatDate(entry.validFrom)}</dd>
                 </div>
               </dl>
-            </section>
+              </CardBody>
+            </Card>
           ))}
         </div>
       )}

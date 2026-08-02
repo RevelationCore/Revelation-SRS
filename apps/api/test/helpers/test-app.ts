@@ -41,48 +41,13 @@ export async function startTestApp(opts: StartTestAppOptions = {}): Promise<Test
   const connectionString = container.getConnectionUri();
   const db = createDb(connectionString);
 
-  // Apply all migrations in order
-  await applyMigration(db, '0000_initial_platform_schema.sql');
-  await applyMigration(db, '0001_seed_value_sets.sql');
-  await applyMigration(db, '0002_phase4_domain_schema.sql');
-  await applyMigration(db, '0003_seed_phase4_field_mappings.sql');
-  await applyMigration(db, '0004_phase5_assessment_schema.sql');
-  await applyMigration(db, '0005_seed_phase5_field_mappings.sql');
-  await applyMigration(db, '0006_phase6_regulatory_schema.sql');
-  await applyMigration(db, '0007_seed_phase6_field_mappings.sql');
-  await applyMigration(db, '0008_phase6_remediation.sql');
-  await applyMigration(db, '0009_platform_workflow_feature_flags.sql');
-  await applyMigration(db, '0010_relax_extensible_code_checks.sql');
-  await applyMigration(db, '0011_environment_promotion_hardening.sql');
-  await applyMigration(db, '0012_globalisation_foundation.sql');
-  await applyMigration(db, '0013_workflow_coverage_matrix.sql');
-  await applyMigration(db, '0014_stage3_assessment_grade_progression.sql');
-  await applyMigration(db, '0015_stage4_exam_board_governance.sql');
-  await applyMigration(db, '0016_stage5_admissions_communications.sql');
-  await applyMigration(db, '0017_stage6_flag_governance.sql');
-  await applyMigration(db, '0018_stage7_legacy_removal.sql');
-  await applyMigration(db, '0019_phase7_integration_registry.sql');
-  await applyMigration(db, '0020_phase7_contract_deprecation.sql');
-  await applyMigration(db, '0021_phase9_vle_contracts.sql');
-  await applyMigration(db, '0022_demo_tenant_mode.sql');
-  await applyMigration(db, '0023_demo_status_checkpoint.sql');
-  await applyMigration(db, '0024_phase11_performance_indexes.sql');
-  await applyMigration(db, '0025_phase11_retention_anonymisation.sql');
-  await applyMigration(db, '0026_phase11_notifications.sql');
-  await applyMigration(db, '0027_valueset_picklists.sql');
-  await applyMigration(db, '0028_valueset_correction_status.sql');
-  await applyMigration(db, '0029_valueset_activefrom_nullable.sql');
-  await applyMigration(db, '0030_seed_nationality_domicile.sql');
-  await applyMigration(db, '0031_person_identity_pronouns.sql');
-  await applyMigration(db, '0032_seed_fee_band_code.sql');
-  await applyMigration(db, '0033_disability_declaration_notes.sql');
-  await applyMigration(db, '0037_engagement_intervention.sql');
-  await applyMigration(db, '0038_engagement_policy_alert_immutability.sql');
-  await applyMigration(db, '0039_engagement_intervention_idempotency.sql');
-  await applyMigration(db, '0040_ukvi_engagement_decision_boundary.sql');
-  await applyMigration(db, '0041_engagement_outcome.sql');
-  await applyMigration(db, '0042_engagement_extraction_cutover.sql');
-  await applyMigration(db, '0043_engagement_outcome_sponsor_evidence.sql');
+  // Apply the clean-build migration set in order
+  await applyMigration(db, '0000_platform_foundations.sql');
+  await applyMigration(db, '0001_platform_hardening_and_refinements.sql');
+  await applyMigration(db, '0002_demo_performance_and_seed_data.sql');
+  await applyMigration(db, '0003_engagement_and_attendance.sql');
+  await applyMigration(db, '0004_business_process_foundations.sql');
+  await applyMigration(db, '0005_module_selection_rules.sql');
 
   // Seed a tenant for tests
   const tenantId = '00000000-0000-0000-0000-000000000001';
@@ -106,7 +71,7 @@ export async function startTestApp(opts: StartTestAppOptions = {}): Promise<Test
     deploymentEnvironmentCode: 'test',
     releaseVersion:   '0.0.0-test',
     imageDigest:      undefined,
-    migrationVersion: '0041_engagement_outcome',
+    migrationVersion: '0005_module_selection_rules',
     jwtSecret:        JWT_SECRET,
     keycloakJwksUrl:  undefined,
     corsOrigins:      ['http://localhost:5173'],

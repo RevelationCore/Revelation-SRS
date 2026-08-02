@@ -12,6 +12,7 @@
     "adapters/**/*.ts",
     "modules/**/*.ts",
     "e2e/**/*.ts",
+    "tutorials/**/*.ts",
     "playwright.config.ts",
     "playwright.golden.config.ts"
   ],

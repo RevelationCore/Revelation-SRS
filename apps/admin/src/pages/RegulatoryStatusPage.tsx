@@ -3,6 +3,7 @@ import { listHesaReturns, listUcasApplications, listCasRequests, listComplianceA
 import { ApiError } from '../api/client.js';
 import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
+import { PageHeader, Card, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell } from '@revelation-srs/ui';
 
 const CURRENT_YEAR = new Date().getFullYear().toString();
 
@@ -57,9 +58,9 @@ export function RegulatoryStatusPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-semibold text-gray-900 mb-6">Regulatory submission status</h1>
+      <PageHeader title="Regulatory submission status" />
 
-      {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+      {error && <p className="mb-4 text-sm text-danger-600">{error}</p>}
 
       {loading ? (
         <div className="flex justify-center py-16"><Spinner /></div>
@@ -96,45 +97,45 @@ export function RegulatoryStatusPage() {
           </div>
 
           {/* HESA returns detail */}
-          <section className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-            <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-gray-700">HESA returns</h2>
-              <a href="/regulatory/hesa" className="text-xs text-indigo-600 hover:underline">
+          <Card className="overflow-hidden">
+            <div className="px-5 py-3 border-b border-neutral-100 flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-neutral-700">HESA returns</h2>
+              <a href="/regulatory/hesa" className="text-xs text-primary-600 hover:underline">
                 Manage →
               </a>
             </div>
             {hesa.length === 0 ? (
-              <p className="px-5 py-4 text-sm text-gray-600">No HESA returns recorded.</p>
+              <p className="px-5 py-4 text-sm text-neutral-600">No HESA returns recorded.</p>
             ) : (
-              <table className="min-w-full divide-y divide-gray-100 text-sm">
-                <thead className="bg-gray-50">
+              <Table>
+                <TableHead>
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Academic year</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Submitted</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Reference</th>
+                    <TableHeaderCell>Academic year</TableHeaderCell>
+                    <TableHeaderCell>Status</TableHeaderCell>
+                    <TableHeaderCell>Submitted</TableHeaderCell>
+                    <TableHeaderCell>Reference</TableHeaderCell>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
+                </TableHead>
+                <TableBody>
                   {hesa.map(r => (
-                    <tr key={r.returnId} className="hover:bg-gray-50">
-                      <td className="px-4 py-2 font-medium text-gray-900">{r.academicYear}</td>
-                      <td className="px-4 py-2"><Badge value={r.statusCode} /></td>
-                      <td className="px-4 py-2 text-gray-500">
+                    <TableRow key={r.returnId}>
+                      <TableCell className="font-medium text-neutral-900">{r.academicYear}</TableCell>
+                      <TableCell><Badge value={r.statusCode} /></TableCell>
+                      <TableCell>
                         {r.submittedAt ? new Date(r.submittedAt).toLocaleDateString('en-GB') : '—'}
-                      </td>
-                      <td className="px-4 py-2 text-gray-500">{r.submissionReference ?? '—'}</td>
-                    </tr>
+                      </TableCell>
+                      <TableCell>{r.submissionReference ?? '—'}</TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             )}
-          </section>
+          </Card>
 
           {/* Note on SLC and OfS */}
-          <p className="text-xs text-gray-600">
+          <p className="text-xs text-neutral-600">
             SLC confirmations and OfS extracts are generated on demand — see the{' '}
-            <a href="/regulatory" className="text-indigo-700 underline hover:no-underline">Regulatory hub</a>.
+            <a href="/regulatory" className="text-primary-700 underline hover:no-underline">Regulatory hub</a>.
           </p>
         </div>
       ) : null}
@@ -153,12 +154,12 @@ function SummaryCard({
   alert?:   boolean;
 }) {
   return (
-    <div className={`rounded-lg border p-4 bg-white ${alert ? 'border-red-200' : 'border-gray-200'}`}>
-      <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">{title}</p>
-      <p className="text-2xl font-bold text-gray-900 mt-1">{primary}</p>
-      <p className="text-xs text-gray-600">{detail}</p>
+    <div className={`rounded-lg border p-4 bg-white ${alert ? 'border-danger-200' : 'border-neutral-200'}`}>
+      <p className="text-xs text-neutral-500 font-medium uppercase tracking-wide">{title}</p>
+      <p className="text-2xl font-bold text-neutral-900 mt-1">{primary}</p>
+      <p className="text-xs text-neutral-600">{detail}</p>
       <div className="mt-2 flex items-center justify-between">
-        <span className="text-xs text-gray-600">{subtitle}</span>
+        <span className="text-xs text-neutral-600">{subtitle}</span>
         {status && <Badge value={status} />}
       </div>
     </div>

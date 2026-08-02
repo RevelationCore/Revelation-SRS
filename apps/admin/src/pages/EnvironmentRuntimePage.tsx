@@ -11,6 +11,10 @@ import {
 import { ApiError } from '../api/client.js';
 import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
+import {
+  PageHeader, Card, CardHeader, CardBody, Button, Select, LabelledField, Textarea,
+  Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
+} from '@revelation-srs/ui';
 
 type Tab = 'runtime' | 'environments' | 'promotions';
 
@@ -19,17 +23,17 @@ export function EnvironmentRuntimePage() {
 
   return (
     <div>
-      <h1 className="text-xl font-semibold text-gray-900 mb-4">Environment runtime</h1>
+      <PageHeader title="Environment runtime" />
 
-      <div className="flex gap-1 mb-6 border-b border-gray-200">
+      <div className="flex gap-1 mb-6 border-b border-neutral-200">
         {(['runtime', 'environments', 'promotions'] as Tab[]).map(t => (
           <button
             key={t}
             onClick={() => setTab(t)}
             className={`px-4 py-2 text-sm font-medium border-b-2 capitalize ${
               tab === t
-                ? 'border-indigo-600 text-indigo-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
+                ? 'border-primary-600 text-primary-600'
+                : 'border-transparent text-neutral-500 hover:text-neutral-700'
             }`}
           >
             {t}
@@ -62,14 +66,15 @@ function RuntimeTab() {
   }, []);
 
   if (loading) return <div className="flex justify-center py-16"><Spinner /></div>;
-  if (error)   return <p className="text-sm text-red-600">{error}</p>;
+  if (error)   return <p className="text-sm text-danger-600">{error}</p>;
   if (!data)   return null;
 
   return (
     <div className="space-y-6">
       {/* Overview */}
-      <section className="bg-white rounded-lg border border-gray-200 p-5">
-        <h2 className="text-sm font-semibold text-gray-700 mb-4">Current environment</h2>
+      <Card>
+        <CardHeader title="Current environment" />
+        <CardBody>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 text-sm">
           <KV label="Environment" value={data.environment.displayName} />
           <KV label="Type" value={data.environment.environmentTypeCode} />
@@ -87,69 +92,62 @@ function RuntimeTab() {
             value={data.environment.liveIntegrationsAllowed ? 'Allowed' : 'Disabled'}
           />
         </div>
-      </section>
+        </CardBody>
+      </Card>
 
       {/* Workflow definitions */}
-      <section className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div className="px-5 py-3 border-b border-gray-100">
-          <h2 className="text-sm font-semibold text-gray-700">
-            Workflow definitions ({data.workflowDefinitions.length})
-          </h2>
-        </div>
+      <Card className="overflow-hidden">
+        <CardHeader title={`Workflow definitions (${data.workflowDefinitions.length})`} />
         {data.workflowDefinitions.length === 0 ? (
-          <p className="px-5 py-4 text-sm text-gray-600">No workflow definitions registered.</p>
+          <p className="px-5 py-4 text-sm text-neutral-600">No workflow definitions registered.</p>
         ) : (
-          <table className="min-w-full divide-y divide-gray-100 text-sm">
-            <thead className="bg-gray-50">
+          <Table>
+            <TableHead>
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Definition code</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Current version</th>
+                <TableHeaderCell>Definition code</TableHeaderCell>
+                <TableHeaderCell>Current version</TableHeaderCell>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
+            </TableHead>
+            <TableBody>
               {data.workflowDefinitions.map(w => (
-                <tr key={w.definitionCode} className="hover:bg-gray-50">
-                  <td className="px-4 py-2 font-mono text-gray-900">{w.definitionCode}</td>
-                  <td className="px-4 py-2 text-gray-500">
-                    {w.currentVersionNumber != null ? `v${w.currentVersionNumber}` : <span className="text-amber-600">none</span>}
-                  </td>
-                </tr>
+                <TableRow key={w.definitionCode}>
+                  <TableCell className="font-mono text-neutral-900">{w.definitionCode}</TableCell>
+                  <TableCell>
+                    {w.currentVersionNumber != null ? `v${w.currentVersionNumber}` : <span className="text-warning-600">none</span>}
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         )}
-      </section>
+      </Card>
 
       {/* Feature flags */}
-      <section className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div className="px-5 py-3 border-b border-gray-100">
-          <h2 className="text-sm font-semibold text-gray-700">
-            Feature flags ({data.featureFlags.length})
-          </h2>
-        </div>
+      <Card className="overflow-hidden">
+        <CardHeader title={`Feature flags (${data.featureFlags.length})`} />
         {data.featureFlags.length === 0 ? (
-          <p className="px-5 py-4 text-sm text-gray-600">No feature flags registered.</p>
+          <p className="px-5 py-4 text-sm text-neutral-600">No feature flags registered.</p>
         ) : (
-          <table className="min-w-full divide-y divide-gray-100 text-sm">
-            <thead className="bg-gray-50">
+          <Table>
+            <TableHead>
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Flag key</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Default variant</th>
+                <TableHeaderCell>Flag key</TableHeaderCell>
+                <TableHeaderCell>Status</TableHeaderCell>
+                <TableHeaderCell>Default variant</TableHeaderCell>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
+            </TableHead>
+            <TableBody>
               {data.featureFlags.map(f => (
-                <tr key={f.flagKey} className="hover:bg-gray-50">
-                  <td className="px-4 py-2 font-mono text-gray-900">{f.flagKey}</td>
-                  <td className="px-4 py-2"><Badge value={f.statusCode} /></td>
-                  <td className="px-4 py-2 text-gray-500 font-mono">{f.defaultVariantKey}</td>
-                </tr>
+                <TableRow key={f.flagKey}>
+                  <TableCell className="font-mono text-neutral-900">{f.flagKey}</TableCell>
+                  <TableCell><Badge value={f.statusCode} /></TableCell>
+                  <TableCell className="font-mono">{f.defaultVariantKey}</TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         )}
-      </section>
+      </Card>
     </div>
   );
 }
@@ -167,39 +165,39 @@ function EnvironmentsTab() {
   }, []);
 
   if (loading) return <div className="flex justify-center py-16"><Spinner /></div>;
-  if (error)   return <p className="text-sm text-red-600">{error}</p>;
+  if (error)   return <p className="text-sm text-danger-600">{error}</p>;
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+    <Card className="overflow-hidden">
       {envs.length === 0 ? (
-        <p className="px-5 py-4 text-sm text-gray-600">No environments registered.</p>
+        <p className="px-5 py-4 text-sm text-neutral-600">No environments registered.</p>
       ) : (
-        <table className="min-w-full divide-y divide-gray-100 text-sm">
-          <thead className="bg-gray-50">
+        <Table>
+          <TableHead>
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Code</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Prod-like</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Live integrations</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Active</th>
+              <TableHeaderCell>Code</TableHeaderCell>
+              <TableHeaderCell>Name</TableHeaderCell>
+              <TableHeaderCell>Type</TableHeaderCell>
+              <TableHeaderCell>Prod-like</TableHeaderCell>
+              <TableHeaderCell>Live integrations</TableHeaderCell>
+              <TableHeaderCell>Active</TableHeaderCell>
             </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-50">
+          </TableHead>
+          <TableBody>
             {envs.map(env => (
-              <tr key={env.deploymentEnvironmentId} className="hover:bg-gray-50">
-                <td className="px-4 py-2 font-mono text-gray-900">{env.environmentCode}</td>
-                <td className="px-4 py-2 font-medium text-gray-900">{env.displayName}</td>
-                <td className="px-4 py-2 text-gray-500">{env.environmentTypeCode}</td>
-                <td className="px-4 py-2"><Badge value={env.productionLike ? 'yes' : 'no'} /></td>
-                <td className="px-4 py-2"><Badge value={env.liveIntegrationsAllowed ? 'allowed' : 'disabled'} /></td>
-                <td className="px-4 py-2"><Badge value={env.active ? 'active' : 'inactive'} /></td>
-              </tr>
+              <TableRow key={env.deploymentEnvironmentId}>
+                <TableCell className="font-mono text-neutral-900">{env.environmentCode}</TableCell>
+                <TableCell className="font-medium text-neutral-900">{env.displayName}</TableCell>
+                <TableCell>{env.environmentTypeCode}</TableCell>
+                <TableCell><Badge value={env.productionLike ? 'yes' : 'no'} /></TableCell>
+                <TableCell><Badge value={env.liveIntegrationsAllowed ? 'allowed' : 'disabled'} /></TableCell>
+                <TableCell><Badge value={env.active ? 'active' : 'inactive'} /></TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       )}
-    </div>
+    </Card>
   );
 }
 
@@ -227,12 +225,7 @@ function PromotionsTab() {
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
-        <button
-          onClick={() => setShowForm(true)}
-          className="rounded bg-indigo-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-indigo-700"
-        >
-          Create promotion
-        </button>
+        <Button onClick={() => setShowForm(true)}>Create promotion</Button>
       </div>
 
       {showForm && (
@@ -243,49 +236,49 @@ function PromotionsTab() {
         />
       )}
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-danger-600">{error}</p>}
 
       {loading ? (
         <div className="flex justify-center py-16"><Spinner /></div>
       ) : (
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <Card className="overflow-hidden">
           {promotions.length === 0 ? (
-            <p className="px-5 py-4 text-sm text-gray-600">No promotions recorded.</p>
+            <p className="px-5 py-4 text-sm text-neutral-600">No promotions recorded.</p>
           ) : (
-            <table className="min-w-full divide-y divide-gray-100 text-sm">
-              <thead className="bg-gray-50">
+            <Table>
+              <TableHead>
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Source → Target</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Promoted by</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Promoted at</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Completed</th>
+                  <TableHeaderCell>Source → Target</TableHeaderCell>
+                  <TableHeaderCell>Status</TableHeaderCell>
+                  <TableHeaderCell>Promoted by</TableHeaderCell>
+                  <TableHeaderCell>Promoted at</TableHeaderCell>
+                  <TableHeaderCell>Completed</TableHeaderCell>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
+              </TableHead>
+              <TableBody>
                 {promotions.map(p => {
                   const src = envs.find(e => e.deploymentEnvironmentId === p.sourceEnvId);
                   const tgt = envs.find(e => e.deploymentEnvironmentId === p.targetEnvId);
                   return (
-                    <tr key={p.promotionId} className="hover:bg-gray-50">
-                      <td className="px-4 py-2 text-gray-700">
+                    <TableRow key={p.promotionId}>
+                      <TableCell>
                         {src?.displayName ?? p.sourceEnvId} → {tgt?.displayName ?? p.targetEnvId}
-                      </td>
-                      <td className="px-4 py-2"><Badge value={p.statusCode} /></td>
-                      <td className="px-4 py-2 text-gray-500">{p.promotedBy}</td>
-                      <td className="px-4 py-2 text-gray-500">
+                      </TableCell>
+                      <TableCell><Badge value={p.statusCode} /></TableCell>
+                      <TableCell>{p.promotedBy}</TableCell>
+                      <TableCell>
                         {new Date(p.promotedAt).toLocaleString('en-GB')}
-                      </td>
-                      <td className="px-4 py-2 text-gray-500">
+                      </TableCell>
+                      <TableCell>
                         {p.completedAt ? new Date(p.completedAt).toLocaleString('en-GB') : '—'}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   );
                 })}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           )}
-        </div>
+        </Card>
       )}
     </div>
   );
@@ -317,72 +310,47 @@ function CreatePromotionForm({
   }
 
   return (
-    <form onSubmit={(e) => void handleSubmit(e)} className="rounded-lg border border-gray-200 bg-white p-5">
-      <h2 className="text-sm font-semibold text-gray-700 mb-4">New environment promotion</h2>
-      {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Source environment *</label>
-          <select
-            value={srcId}
-            onChange={e => setSrcId(e.target.value)}
-            required
-            className="w-full rounded border border-gray-300 px-2 py-1.5 text-sm"
-          >
-            <option value="">Select…</option>
-            {envs.map(e => <option key={e.deploymentEnvironmentId} value={e.deploymentEnvironmentId}>{e.displayName}</option>)}
-          </select>
+    <Card>
+      <CardHeader title="New environment promotion" />
+      <CardBody>
+      <form onSubmit={(e) => void handleSubmit(e)}>
+        {error && <p className="mb-3 text-sm text-danger-600">{error}</p>}
+        <div className="grid gap-3 sm:grid-cols-2">
+          <LabelledField label="Source environment" htmlFor="env-src" required>
+            <Select id="env-src" value={srcId} onChange={e => setSrcId(e.target.value)} required>
+              <option value="">Select…</option>
+              {envs.map(e => <option key={e.deploymentEnvironmentId} value={e.deploymentEnvironmentId}>{e.displayName}</option>)}
+            </Select>
+          </LabelledField>
+          <LabelledField label="Target environment" htmlFor="env-tgt" required>
+            <Select id="env-tgt" value={tgtId} onChange={e => setTgtId(e.target.value)} required>
+              <option value="">Select…</option>
+              {envs.filter(e => e.deploymentEnvironmentId !== srcId).map(e => (
+                <option key={e.deploymentEnvironmentId} value={e.deploymentEnvironmentId}>{e.displayName}</option>
+              ))}
+            </Select>
+          </LabelledField>
+          <div className="sm:col-span-2">
+            <LabelledField label="Notes" htmlFor="env-notes" hint="Optional">
+              <Textarea id="env-notes" value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder="Optional notes" />
+            </LabelledField>
+          </div>
         </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Target environment *</label>
-          <select
-            value={tgtId}
-            onChange={e => setTgtId(e.target.value)}
-            required
-            className="w-full rounded border border-gray-300 px-2 py-1.5 text-sm"
-          >
-            <option value="">Select…</option>
-            {envs.filter(e => e.deploymentEnvironmentId !== srcId).map(e => (
-              <option key={e.deploymentEnvironmentId} value={e.deploymentEnvironmentId}>{e.displayName}</option>
-            ))}
-          </select>
+        <div className="mt-4 flex gap-3">
+          <Button type="submit" disabled={saving}>{saving ? 'Creating…' : 'Create'}</Button>
+          <Button type="button" variant="secondary" onClick={onCancel}>Cancel</Button>
         </div>
-        <div className="sm:col-span-2">
-          <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
-          <textarea
-            value={notes}
-            onChange={e => setNotes(e.target.value)}
-            rows={2}
-            placeholder="Optional notes"
-            className="w-full rounded border border-gray-300 px-3 py-1.5 text-sm"
-          />
-        </div>
-      </div>
-      <div className="mt-4 flex gap-3">
-        <button
-          type="submit"
-          disabled={saving}
-          className="rounded bg-indigo-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
-        >
-          {saving ? 'Creating…' : 'Create'}
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="rounded border border-gray-300 px-4 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
-        >
-          Cancel
-        </button>
-      </div>
-    </form>
+      </form>
+      </CardBody>
+    </Card>
   );
 }
 
 function KV({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
     <div>
-      <p className="text-xs text-gray-600 font-medium uppercase tracking-wide">{label}</p>
-      <p className={`mt-0.5 text-gray-900 ${mono ? 'font-mono text-xs' : 'text-sm'}`}>{value}</p>
+      <p className="text-xs text-neutral-600 font-medium uppercase tracking-wide">{label}</p>
+      <p className={`mt-0.5 text-neutral-900 ${mono ? 'font-mono text-xs' : 'text-sm'}`}>{value}</p>
     </div>
   );
 }

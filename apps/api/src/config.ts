@@ -45,7 +45,7 @@ export function loadConfig(): Config {
     deploymentEnvironmentCode: process.env['SRS_ENVIRONMENT_CODE'] ?? process.env['NODE_ENV'] ?? 'local',
     releaseVersion: process.env['SRS_RELEASE_VERSION'] ?? process.env['npm_package_version'] ?? '0.0.0',
     imageDigest: optional('SRS_IMAGE_DIGEST'),
-    migrationVersion: process.env['SRS_MIGRATION_VERSION'] ?? '0011_environment_promotion_hardening',
+    migrationVersion: process.env['SRS_MIGRATION_VERSION'] ?? '0004_business_process_foundations',
     jwtSecret:       process.env['JWT_SECRET'] ?? 'dev-secret-replace-in-production',
     keycloakJwksUrl: optional('KEYCLOAK_JWKS_URL'),
     corsOrigins:     (process.env['CORS_ORIGINS'] ?? 'http://localhost:5173').split(','),

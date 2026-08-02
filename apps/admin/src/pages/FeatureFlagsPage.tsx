@@ -15,6 +15,7 @@ import { ApiError } from '../api/client.js';
 import { useAuth } from '../auth/AuthContext.js';
 import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
+import { PageHeader, Card, Button, Dialog, DialogClose, LabelledField, Input, Select } from '@revelation-srs/ui';
 
 type DetailTab = 'assignments' | 'governance' | 'impact';
 
@@ -45,26 +46,18 @@ export function FeatureFlagsPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-semibold text-gray-900 mb-4">Feature flags</h1>
+      <PageHeader
+        title="Feature flags"
+        actions={canWrite && <Button onClick={() => setShowCreate(true)}>New flag</Button>}
+      />
 
       {!canWrite && (
-        <p className="mb-4 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2">
+        <p className="mb-4 text-xs text-warning-700 bg-warning-50 border border-warning-200 rounded px-3 py-2">
           You have read-only access to feature flags.
         </p>
       )}
 
-      {canWrite && (
-        <div className="flex justify-end mb-4">
-          <button
-            onClick={() => setShowCreate(true)}
-            className="rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
-          >
-            New flag
-          </button>
-        </div>
-      )}
-
-      {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+      {error && <p className="mb-4 text-sm text-danger-600">{error}</p>}
 
       <div className="grid grid-cols-3 gap-6 items-start">
         {/* Flags list */}
@@ -72,28 +65,28 @@ export function FeatureFlagsPage() {
           {loading ? (
             <div className="flex justify-center py-8"><Spinner /></div>
           ) : flags.length === 0 ? (
-            <p className="text-sm text-gray-600">No feature flags.</p>
+            <p className="text-sm text-neutral-600">No feature flags.</p>
           ) : (
-            <div className="bg-white rounded-lg border border-gray-200 overflow-x-hidden overflow-y-auto max-h-[calc(100vh-14rem)]">
-              <ul className="divide-y divide-gray-100">
+            <Card className="overflow-x-hidden overflow-y-auto max-h-[calc(100vh-14rem)]">
+              <ul className="divide-y divide-neutral-100">
                 {flags.map(f => (
                   <li key={f.featureFlagId}>
                     <button
                       onClick={() => setSelected(f)}
-                      className={`w-full text-left px-4 py-3 hover:bg-gray-50 ${
-                        selected?.featureFlagId === f.featureFlagId ? 'bg-indigo-50' : ''
+                      className={`w-full text-left px-4 py-3 hover:bg-neutral-50 ${
+                        selected?.featureFlagId === f.featureFlagId ? 'bg-primary-50' : ''
                       }`}
                     >
-                      <p className="text-xs font-mono font-medium text-gray-900">{f.flagKey}</p>
+                      <p className="text-xs font-mono font-medium text-neutral-900">{f.flagKey}</p>
                       <div className="mt-0.5 flex items-center gap-2">
                         <Badge value={f.statusCode} />
-                        <span className="text-xs text-gray-500">default: {f.defaultVariantKey}</span>
+                        <span className="text-xs text-neutral-500">default: {f.defaultVariantKey}</span>
                       </div>
                     </button>
                   </li>
                 ))}
               </ul>
-            </div>
+            </Card>
           )}
         </div>
 
@@ -111,12 +104,16 @@ export function FeatureFlagsPage() {
               }}
             />
           ) : (
-            <p className="text-sm text-gray-600 py-8 text-center">Select a flag to view details.</p>
+            <p className="text-sm text-neutral-600 py-8 text-center">Select a flag to view details.</p>
           )}
         </div>
       </div>
 
-      {canWrite && showCreate && <CreateFlagModal onClose={() => setShowCreate(false)} onCreated={handleCreated} />}
+      {canWrite && (
+        <Dialog open={showCreate} onOpenChange={(open) => { if (!open) setShowCreate(false); }} title="New feature flag">
+          <CreateFlagForm onClose={() => setShowCreate(false)} onCreated={handleCreated} />
+        </Dialog>
+      )}
     </div>
   );
 }
@@ -217,60 +214,56 @@ function FlagDetail({
   const isDefaultOn = flag.defaultVariantKey === 'on';
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-5">
+    <Card>
+      <div className="p-5">
       <div className="flex items-start justify-between mb-4">
         <div>
-          <p className="text-base font-mono font-semibold text-gray-900">{flag.flagKey}</p>
-          <p className="text-xs text-gray-600 mt-0.5">{flag.displayName}</p>
-          {flag.description && <p className="text-xs text-gray-500 mt-0.5">{flag.description}</p>}
+          <p className="text-base font-mono font-semibold text-neutral-900">{flag.flagKey}</p>
+          <p className="text-xs text-neutral-600 mt-0.5">{flag.displayName}</p>
+          {flag.description && <p className="text-xs text-neutral-500 mt-0.5">{flag.description}</p>}
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           {canWrite && (
-            <button
+            <Button
+              variant="secondary"
+              size="sm"
+              className={isDefaultOn ? 'border-danger-300 text-danger-600 hover:bg-danger-50' : 'border-success-300 text-success-700 hover:bg-success-50'}
               onClick={() => void handleToggleDefault()}
               disabled={toggling || flag.statusCode === 'retired'}
-              className={`rounded border px-2.5 py-1 text-xs font-medium disabled:opacity-50 ${
-                isDefaultOn
-                  ? 'border-red-300 text-red-600 hover:bg-red-50'
-                  : 'border-green-300 text-green-700 hover:bg-green-50'
-              }`}
             >
               {toggling ? '…' : isDefaultOn ? 'Default: ON' : 'Default: OFF'}
-            </button>
+            </Button>
           )}
           {isSysAdmin && flag.statusCode !== 'retired' && (
             confirmRetire ? (
               <span className="inline-flex items-center gap-1">
-                <button
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="border-danger-300 text-danger-600 hover:bg-danger-50"
                   onClick={() => void handleRetire()}
                   disabled={retiring}
-                  className="rounded border border-red-300 px-2.5 py-1 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
                 >
                   {retiring ? '…' : 'Confirm retire'}
-                </button>
-                <button onClick={() => setConfirmRetire(false)} className="text-xs text-gray-500">Cancel</button>
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => setConfirmRetire(false)}>Cancel</Button>
               </span>
             ) : (
-              <button
-                onClick={() => setConfirmRetire(true)}
-                className="rounded border border-gray-300 px-2.5 py-1 text-xs text-gray-600 hover:bg-gray-50"
-              >
-                Retire
-              </button>
+              <Button variant="secondary" size="sm" onClick={() => setConfirmRetire(true)}>Retire</Button>
             )
           )}
         </div>
       </div>
 
-      {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
+      {error && <p className="mb-3 text-sm text-danger-600">{error}</p>}
 
-      <div className="flex gap-1 mb-4 border-b border-gray-200">
+      <div className="flex gap-1 mb-4 border-b border-neutral-200">
         {TABS.map(({ id, label }) => (
           <button
             key={id}
             onClick={() => setTab(id)}
             className={`px-3 py-1.5 text-xs font-medium border-b-2 -mb-px ${
-              tab === id ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-800'
+              tab === id ? 'border-primary-600 text-primary-600' : 'border-transparent text-neutral-500 hover:text-neutral-800'
             }`}
           >
             {label}
@@ -289,8 +282,8 @@ function FlagDetail({
           <InfoRow label="Non-bypassable"      value={flag.nonBypassable ? 'Yes' : 'No'} />
           {flag.allowedScopeCodes.length > 0 && (
             <div className="col-span-2">
-              <dt className="text-gray-500 mb-0.5">Allowed scopes</dt>
-              <dd className="text-gray-900 font-mono">{flag.allowedScopeCodes.join(', ')}</dd>
+              <dt className="text-neutral-500 mb-0.5">Allowed scopes</dt>
+              <dd className="text-neutral-900 font-mono">{flag.allowedScopeCodes.join(', ')}</dd>
             </div>
           )}
         </dl>
@@ -302,11 +295,11 @@ function FlagDetail({
             {tab === 'assignments' && (
               <div>
                 {assignments.length === 0 ? (
-                  <p className="text-xs text-gray-600 mb-3">No overrides — default applies everywhere.</p>
+                  <p className="text-xs text-neutral-600 mb-3">No overrides — default applies everywhere.</p>
                 ) : (
                   <table className="min-w-full text-xs mb-3">
                     <thead>
-                      <tr className="text-gray-600 uppercase text-xs">
+                      <tr className="text-neutral-600 uppercase text-xs">
                         <th className="text-left pb-1 pr-4">Scope</th>
                         <th className="text-left pb-1 pr-4">Variant</th>
                         <th className="text-left pb-1 pr-4">Active from</th>
@@ -320,10 +313,10 @@ function FlagDetail({
                         const scopeStr = a.roleCode ?? a.cohortCode ?? a.programmeId ?? a.sourceSystemCode ?? '(global)';
                         return (
                           <tr key={a.featureFlagAssignmentId}>
-                            <td className="py-1 pr-4 font-mono text-gray-700">{scopeStr}</td>
-                            <td className="py-1 pr-4 text-gray-600">{variant ? variant.variantKey : '—'}</td>
-                            <td className="py-1 pr-4 text-gray-500">{new Date(a.activeFrom).toLocaleDateString('en-GB')}</td>
-                            <td className="py-1 pr-4 text-gray-500">{a.activeTo ? new Date(a.activeTo).toLocaleDateString('en-GB') : '—'}</td>
+                            <td className="py-1 pr-4 font-mono text-neutral-700">{scopeStr}</td>
+                            <td className="py-1 pr-4 text-neutral-600">{variant ? variant.variantKey : '—'}</td>
+                            <td className="py-1 pr-4 text-neutral-500">{new Date(a.activeFrom).toLocaleDateString('en-GB')}</td>
+                            <td className="py-1 pr-4 text-neutral-500">{a.activeTo ? new Date(a.activeTo).toLocaleDateString('en-GB') : '—'}</td>
                             <td className="py-1"><Badge value={a.statusCode} /></td>
                           </tr>
                         );
@@ -333,26 +326,26 @@ function FlagDetail({
                 )}
                 {canWrite && (
                   showAddAssignment ? (
-                    <form onSubmit={(e) => void handleAddAssignment(e)} className="flex items-end gap-2 mt-2 bg-indigo-50 rounded p-3 flex-wrap">
+                    <form onSubmit={(e) => void handleAddAssignment(e)} className="flex items-end gap-2 mt-2 bg-primary-50 rounded p-3 flex-wrap">
                       <div>
-                        <label className="block text-xs text-gray-600 mb-0.5">Variant</label>
-                        <select name="variantKey" className="rounded border border-gray-300 px-2 py-1 text-xs">
+                        <label className="block text-xs text-neutral-600 mb-0.5">Variant</label>
+                        <select name="variantKey" className="rounded border border-neutral-300 px-2 py-1 text-xs">
                           {flag.variants.map(v => (
                             <option key={v.featureFlagVariantId} value={v.variantKey}>{v.variantKey}</option>
                           ))}
                         </select>
                       </div>
                       <div>
-                        <label className="block text-xs text-gray-600 mb-0.5">Role code (optional)</label>
-                        <input name="roleCode" className="rounded border border-gray-300 px-2 py-1 text-xs w-36" />
+                        <label className="block text-xs text-neutral-600 mb-0.5">Role code (optional)</label>
+                        <input name="roleCode" className="rounded border border-neutral-300 px-2 py-1 text-xs w-36" />
                       </div>
-                      <button type="submit" disabled={addingAssignment} className="rounded bg-indigo-600 px-2.5 py-1 text-xs text-white disabled:opacity-50">
+                      <button type="submit" disabled={addingAssignment} className="rounded bg-primary-600 px-2.5 py-1 text-xs text-white disabled:opacity-50">
                         {addingAssignment ? '…' : 'Add'}
                       </button>
-                      <button type="button" onClick={() => setShowAddAssignment(false)} className="text-xs text-gray-500">Cancel</button>
+                      <button type="button" onClick={() => setShowAddAssignment(false)} className="text-xs text-neutral-500">Cancel</button>
                     </form>
                   ) : (
-                    <button onClick={() => setShowAddAssignment(true)} className="text-xs text-indigo-600 hover:text-indigo-800">
+                    <button onClick={() => setShowAddAssignment(true)} className="text-xs text-primary-600 hover:text-primary-800">
                       + Add assignment
                     </button>
                   )
@@ -365,29 +358,29 @@ function FlagDetail({
                 {impact ? (
                   <>
                     <div className="grid grid-cols-2 gap-3">
-                      <div className="rounded bg-gray-50 border border-gray-200 p-3">
-                        <p className="text-gray-500 mb-0.5">Active assignments</p>
-                        <p className="text-lg font-semibold text-gray-900">{impact.activeAssignmentCount}</p>
+                      <div className="rounded bg-neutral-50 border border-neutral-200 p-3">
+                        <p className="text-neutral-500 mb-0.5">Active assignments</p>
+                        <p className="text-lg font-semibold text-neutral-900">{impact.activeAssignmentCount}</p>
                       </div>
-                      <div className="rounded bg-gray-50 border border-gray-200 p-3">
-                        <p className="text-gray-500 mb-0.5">Tenants affected</p>
-                        <p className="text-lg font-semibold text-gray-900">{impact.activeTenantsCount}</p>
+                      <div className="rounded bg-neutral-50 border border-neutral-200 p-3">
+                        <p className="text-neutral-500 mb-0.5">Tenants affected</p>
+                        <p className="text-lg font-semibold text-neutral-900">{impact.activeTenantsCount}</p>
                       </div>
                     </div>
 
                     <div>
-                      <p className="font-medium text-gray-700 mb-1">Current default variant</p>
-                      <p className="font-mono text-gray-600">{impact.currentDefaultVariantKey}
+                      <p className="font-medium text-neutral-700 mb-1">Current default variant</p>
+                      <p className="font-mono text-neutral-600">{impact.currentDefaultVariantKey}
                         {impact.currentDefaultValue !== undefined && (
-                          <span className="ml-2 text-gray-600">({String(impact.currentDefaultValue)})</span>
+                          <span className="ml-2 text-neutral-600">({String(impact.currentDefaultValue)})</span>
                         )}
                       </p>
                     </div>
 
                     {impact.activeTenantIds.length > 0 && (
                       <div>
-                        <p className="font-medium text-gray-700 mb-1">Tenants ({impact.activeTenantIds.length})</p>
-                        <ul className="list-disc list-inside text-gray-500 font-mono space-y-0.5">
+                        <p className="font-medium text-neutral-700 mb-1">Tenants ({impact.activeTenantIds.length})</p>
+                        <ul className="list-disc list-inside text-neutral-500 font-mono space-y-0.5">
                           {impact.activeTenantIds.map(id => <li key={id}>{id}</li>)}
                         </ul>
                       </div>
@@ -395,28 +388,29 @@ function FlagDetail({
 
                     {impact.referencingTriggerRuleKeys.length > 0 && (
                       <div>
-                        <p className="font-medium text-gray-700 mb-1">Referencing trigger rules ({impact.referencingTriggerRuleKeys.length})</p>
-                        <ul className="list-disc list-inside text-gray-500 font-mono space-y-0.5">
+                        <p className="font-medium text-neutral-700 mb-1">Referencing trigger rules ({impact.referencingTriggerRuleKeys.length})</p>
+                        <ul className="list-disc list-inside text-neutral-500 font-mono space-y-0.5">
                           {impact.referencingTriggerRuleKeys.map(k => <li key={k}>{k}</li>)}
                         </ul>
                       </div>
                     )}
                   </>
                 ) : (
-                  <p className="text-gray-600">No impact data available.</p>
+                  <p className="text-neutral-600">No impact data available.</p>
                 )}
               </div>
             )}
           </>
         )
       )}
-    </div>
+      </div>
+    </Card>
   );
 }
 
 // ── Create modal ──────────────────────────────────────────────────────────────
 
-function CreateFlagModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+function CreateFlagForm({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
   const [submitting, setSubmitting] = useState(false);
   const [error,      setError]      = useState('');
 
@@ -441,48 +435,43 @@ function CreateFlagModal({ onClose, onCreated }: { onClose: () => void; onCreate
   }
 
   return (
-    <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-white rounded-lg border border-gray-200 p-6 w-full max-w-md shadow-xl" onClick={(e) => e.stopPropagation()}>
-        <h2 className="text-base font-semibold text-gray-900 mb-4">New feature flag</h2>
-        <form onSubmit={(e) => void handleSubmit(e)} className="space-y-3">
-          <MField name="flagKey"         label="Flag key * (kebab-case)" />
-          <MField name="displayName"     label="Display name *" />
-          <MField name="ownerModuleCode" label="Owner module *" />
-          <MField name="description"     label="Description" />
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Default variant</label>
-            <select name="defaultVariantKey" className="w-full rounded border border-gray-300 px-3 py-2 text-sm">
-              <option value="off">off</option>
-              <option value="on">on</option>
-            </select>
-          </div>
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          <div className="flex justify-end gap-3 pt-2">
-            <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-gray-600">Cancel</button>
-            <button type="submit" disabled={submitting} className="rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50">
-              {submitting ? 'Creating…' : 'Create'}
-            </button>
-          </div>
-        </form>
+    <form onSubmit={(e) => void handleSubmit(e)} className="space-y-3">
+      <LabelledField label="Flag key (kebab-case)" htmlFor="ff-key" required>
+        <Input id="ff-key" name="flagKey" />
+      </LabelledField>
+      <LabelledField label="Display name" htmlFor="ff-name" required>
+        <Input id="ff-name" name="displayName" />
+      </LabelledField>
+      <LabelledField label="Owner module" htmlFor="ff-module" required>
+        <Input id="ff-module" name="ownerModuleCode" />
+      </LabelledField>
+      <LabelledField label="Description" htmlFor="ff-desc" hint="Optional">
+        <Input id="ff-desc" name="description" />
+      </LabelledField>
+      <LabelledField label="Default variant" htmlFor="ff-variant">
+        <Select id="ff-variant" name="defaultVariantKey">
+          <option value="off">off</option>
+          <option value="on">on</option>
+        </Select>
+      </LabelledField>
+      {error && <p className="text-sm text-danger-600">{error}</p>}
+      <div className="flex justify-end gap-3 pt-2">
+        <DialogClose asChild>
+          <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
+        </DialogClose>
+        <Button type="submit" disabled={submitting}>
+          {submitting ? 'Creating…' : 'Create'}
+        </Button>
       </div>
-    </div>
-  );
-}
-
-function MField({ name, label }: { name: string; label: string }) {
-  return (
-    <div>
-      <label className="block text-xs font-medium text-gray-700 mb-1">{label}</label>
-      <input name={name} className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-    </div>
+    </form>
   );
 }
 
 function InfoRow({ label, value }: { label: string; value?: string | null }) {
   return (
     <div className="flex gap-2">
-      <dt className="w-36 flex-shrink-0 text-gray-500">{label}</dt>
-      <dd className="text-gray-900">{value ?? <span className="text-gray-600">—</span>}</dd>
+      <dt className="w-36 flex-shrink-0 text-neutral-500">{label}</dt>
+      <dd className="text-neutral-900">{value ?? <span className="text-neutral-600">—</span>}</dd>
     </div>
   );
 }

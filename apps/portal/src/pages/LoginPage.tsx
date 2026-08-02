@@ -78,16 +78,16 @@ export function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-gray-50 px-4 py-12">
+    <main className="flex min-h-screen flex-col items-center justify-center bg-neutral-50 px-4 py-12">
 
       {/* Sign-in card */}
-      <div className="w-full max-w-sm rounded-lg border border-gray-200 bg-white p-8 shadow-sm">
+      <div className="w-full max-w-sm rounded-lg border border-neutral-200 bg-white p-8 shadow-sm">
         <div className="mb-8 text-center">
-          <h1 className="text-2xl font-bold text-gray-900">Revelation SRS</h1>
-          <p className="mt-1 text-sm text-gray-500">Student Portal</p>
+          <h1 className="text-2xl font-bold text-neutral-900">Revelation SRS</h1>
+          <p className="mt-1 text-sm text-neutral-500">Student Portal</p>
         </div>
 
-        <h2 className="mb-6 text-center text-lg font-semibold text-gray-800">
+        <h2 className="mb-6 text-center text-lg font-semibold text-neutral-800">
           {t('auth.signInHeading')}
         </h2>
 
@@ -97,36 +97,36 @@ export function LoginPage() {
               type="button"
               onClick={() => void handleSignIn()}
               disabled={starting}
-              className="w-full rounded-md bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-60"
+              className="w-full rounded-md bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 disabled:opacity-60"
             >
               {starting ? t('auth.signingIn') : t('auth.signInWithKeycloak')}
             </button>
-            {error && <p className="text-sm text-center text-red-600">{error}</p>}
+            {error && <p className="text-sm text-center text-danger-600">{error}</p>}
           </div>
         ) : DEV_AUTH ? (
           <form onSubmit={handlePasteSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-neutral-700 mb-1">
                 {t('auth.devTokenLabel')}
               </label>
               <textarea
                 rows={5}
-                className="w-full rounded border border-gray-300 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                className="w-full rounded border border-neutral-300 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
                 placeholder={t('auth.devTokenPlaceholder')}
                 value={rawToken}
                 onChange={(e) => { setRawToken(e.target.value); setError(''); }}
               />
             </div>
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            {error && <p className="text-sm text-danger-600">{error}</p>}
             <button
               type="submit"
-              className="w-full rounded-md bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600"
+              className="w-full rounded-md bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-600"
             >
               {t('actions.submit')}
             </button>
           </form>
         ) : (
-          <p className="text-sm text-center text-gray-500">
+          <p className="text-sm text-center text-neutral-500">
             Keycloak is not configured. Set <code className="font-mono">VITE_KEYCLOAK_URL</code> to enable sign-in.
           </p>
         )}
@@ -146,9 +146,9 @@ export function LoginPage() {
         <div className="grid gap-4 sm:grid-cols-3">
           {DEMO_USERS.map(u => (
             <div key={u.username} className="flex flex-col rounded-md border border-amber-100 bg-white p-4">
-              <p className="font-mono text-sm font-semibold text-gray-900 select-all">{u.username}</p>
-              <p className="mt-1 text-xs font-medium text-indigo-700">{u.name}</p>
-              <p className="mt-1.5 text-xs text-gray-500 flex-1">{u.description}</p>
+              <p className="font-mono text-sm font-semibold text-neutral-900 select-all">{u.username}</p>
+              <p className="mt-1 text-xs font-medium text-primary-700">{u.name}</p>
+              <p className="mt-1.5 text-xs text-neutral-500 flex-1">{u.description}</p>
               <div className="mt-3 flex flex-wrap gap-1">
                 {u.stories.map(s => (
                   <span key={s} className="rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-800">

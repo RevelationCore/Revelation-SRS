@@ -5,288 +5,43 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1748995200000,
-      "tag": "0000_initial_platform_schema",
+      "when": 1785000000000,
+      "tag": "0000_platform_foundations",
       "breakpoints": true
     },
     {
       "idx": 1,
       "version": "7",
-      "when": 1748995201000,
-      "tag": "0001_seed_value_sets",
+      "when": 1785000001000,
+      "tag": "0001_platform_hardening_and_refinements",
       "breakpoints": true
     },
     {
       "idx": 2,
       "version": "7",
-      "when": 1748995202000,
-      "tag": "0002_phase4_domain_schema",
+      "when": 1785000002000,
+      "tag": "0002_demo_performance_and_seed_data",
       "breakpoints": true
     },
     {
       "idx": 3,
       "version": "7",
-      "when": 1748995203000,
-      "tag": "0003_seed_phase4_field_mappings",
+      "when": 1785000003000,
+      "tag": "0003_engagement_and_attendance",
       "breakpoints": true
     },
     {
       "idx": 4,
       "version": "7",
-      "when": 1748995204000,
-      "tag": "0004_phase5_assessment_schema",
+      "when": 1785000004000,
+      "tag": "0004_business_process_foundations",
       "breakpoints": true
     },
     {
       "idx": 5,
       "version": "7",
-      "when": 1748995205000,
-      "tag": "0005_seed_phase5_field_mappings",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1748995206000,
-      "tag": "0006_phase6_regulatory_schema",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "7",
-      "when": 1748995207000,
-      "tag": "0007_seed_phase6_field_mappings",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "7",
-      "when": 1748995208000,
-      "tag": "0008_phase6_remediation",
-      "breakpoints": true
-    },
-    {
-      "idx": 9,
-      "version": "7",
-      "when": 1748995209000,
-      "tag": "0009_platform_workflow_feature_flags",
-      "breakpoints": true
-    },
-    {
-      "idx": 10,
-      "version": "7",
-      "when": 1748995210000,
-      "tag": "0010_relax_extensible_code_checks",
-      "breakpoints": true
-    },
-    {
-      "idx": 11,
-      "version": "7",
-      "when": 1748995211000,
-      "tag": "0011_environment_promotion_hardening",
-      "breakpoints": true
-    },
-    {
-      "idx": 12,
-      "version": "7",
-      "when": 1748995212000,
-      "tag": "0022_demo_tenant_mode",
-      "breakpoints": true
-    },
-    {
-      "idx": 13,
-      "version": "7",
-      "when": 1748995213000,
-      "tag": "0023_demo_status_checkpoint",
-      "breakpoints": true
-    },
-    {
-      "idx": 14,
-      "version": "7",
-      "when": 1748995214000,
-      "tag": "0012_globalisation_foundation",
-      "breakpoints": true
-    },
-    {
-      "idx": 15,
-      "version": "7",
-      "when": 1748995215000,
-      "tag": "0013_workflow_coverage_matrix",
-      "breakpoints": true
-    },
-    {
-      "idx": 16,
-      "version": "7",
-      "when": 1748995216000,
-      "tag": "0014_stage3_assessment_grade_progression",
-      "breakpoints": true
-    },
-    {
-      "idx": 17,
-      "version": "7",
-      "when": 1748995217000,
-      "tag": "0015_stage4_exam_board_governance",
-      "breakpoints": true
-    },
-    {
-      "idx": 18,
-      "version": "7",
-      "when": 1748995218000,
-      "tag": "0016_stage5_admissions_communications",
-      "breakpoints": true
-    },
-    {
-      "idx": 19,
-      "version": "7",
-      "when": 1748995219000,
-      "tag": "0017_stage6_flag_governance",
-      "breakpoints": true
-    },
-    {
-      "idx": 20,
-      "version": "7",
-      "when": 1748995220000,
-      "tag": "0018_stage7_legacy_removal",
-      "breakpoints": true
-    },
-    {
-      "idx": 21,
-      "version": "7",
-      "when": 1748995221000,
-      "tag": "0019_phase7_integration_registry",
-      "breakpoints": true
-    },
-    {
-      "idx": 22,
-      "version": "7",
-      "when": 1748995222000,
-      "tag": "0020_phase7_contract_deprecation",
-      "breakpoints": true
-    },
-    {
-      "idx": 23,
-      "version": "7",
-      "when": 1748995223000,
-      "tag": "0021_phase9_vle_contracts",
-      "breakpoints": true
-    },
-    {
-      "idx": 24,
-      "version": "7",
-      "when": 1748995224000,
-      "tag": "0024_phase11_performance_indexes",
-      "breakpoints": true
-    },
-    {
-      "idx": 25,
-      "version": "7",
-      "when": 1748995225000,
-      "tag": "0025_phase11_retention_anonymisation",
-      "breakpoints": true
-    },
-    {
-      "idx": 26,
-      "version": "7",
-      "when": 1748995226000,
-      "tag": "0026_phase11_notifications",
-      "breakpoints": true
-    },
-    {
-      "idx": 27,
-      "version": "7",
-      "when": 1750291200000,
-      "tag": "0027_valueset_picklists",
-      "breakpoints": true
-    },
-    {
-      "idx": 28,
-      "version": "7",
-      "when": 1750377600000,
-      "tag": "0028_valueset_correction_status",
-      "breakpoints": true
-    },
-    {
-      "idx": 29,
-      "version": "7",
-      "when": 1750464000000,
-      "tag": "0029_valueset_activefrom_nullable",
-      "breakpoints": true
-    },
-    {
-      "idx": 30,
-      "version": "7",
-      "when": 1750550400000,
-      "tag": "0030_seed_nationality_domicile",
-      "breakpoints": true
-    },
-    {
-      "idx": 31,
-      "version": "7",
-      "when": 1750636800000,
-      "tag": "0031_person_identity_pronouns",
-      "breakpoints": true
-    },
-    {
-      "idx": 32,
-      "version": "7",
-      "when": 1750723200000,
-      "tag": "0032_seed_fee_band_code",
-      "breakpoints": true
-    },
-    {
-      "idx": 33,
-      "version": "7",
-      "when": 1750809600000,
-      "tag": "0033_disability_declaration_notes",
-      "breakpoints": true
-    },
-    {
-      "idx": 34,
-      "version": "7",
-      "when": 1785106800000,
-      "tag": "0037_engagement_intervention",
-      "breakpoints": true
-    },
-    {
-      "idx": 35,
-      "version": "7",
-      "when": 1785193200000,
-      "tag": "0038_engagement_policy_alert_immutability",
-      "breakpoints": true
-    },
-    {
-      "idx": 36,
-      "version": "7",
-      "when": 1785279600000,
-      "tag": "0039_engagement_intervention_idempotency",
-      "breakpoints": true
-    },
-    {
-      "idx": 37,
-      "version": "7",
-      "when": 1785366000000,
-      "tag": "0040_ukvi_engagement_decision_boundary",
-      "breakpoints": true
-    },
-    {
-      "idx": 38,
-      "version": "7",
-      "when": 1785452400000,
-      "tag": "0041_engagement_outcome",
-      "breakpoints": true
-    },
-    {
-      "idx": 39,
-      "version": "7",
-      "when": 1785538800000,
-      "tag": "0042_engagement_extraction_cutover",
-      "breakpoints": true
-    },
-    {
-      "idx": 40,
-      "version": "7",
-      "when": 1785625200000,
-      "tag": "0043_engagement_outcome_sponsor_evidence",
+      "when": 1785000005000,
+      "tag": "0005_module_selection_rules",
       "breakpoints": true
     }
   ]

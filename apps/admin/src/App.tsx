@@ -28,6 +28,7 @@ import { SlcPage } from './pages/SlcPage.js';
 import { StudentDetailPage } from './pages/StudentDetailPage.js';
 import { StudentsPage } from './pages/StudentsPage.js';
 import { TaskInboxPage } from './pages/TaskInboxPage.js';
+import { ModuleSelectionProposalsPage } from './pages/ModuleSelectionProposalsPage.js';
 import { TenantAdminPage } from './pages/TenantAdminPage.js';
 import { TenantConfigPage } from './pages/TenantConfigPage.js';
 import { UcasPage } from './pages/UcasPage.js';
@@ -38,6 +39,11 @@ import { AccessibilityStatementPage } from './pages/AccessibilityStatementPage.j
 import { NotFoundPage } from './pages/NotFoundPage.js';
 import { EngagementPage } from './pages/EngagementPage.js';
 import { EngagementCasePage } from './pages/EngagementCasePage.js';
+import { ModerationPage } from './pages/ModerationPage.js';
+import { RegulatoryCollectionsPage } from './pages/RegulatoryCollectionsPage.js';
+import { IdentityResolutionPage } from './pages/IdentityResolutionPage.js';
+import { RightsRequestsPage } from './pages/RightsRequestsPage.js';
+import { AuditReviewPage } from './pages/AuditReviewPage.js';
 
 const ENGAGEMENT_ROLES = ['module-tutor', 'personal-tutor', 'engagement-officer', 'registry-administrator', 'tenant-administrator'];
 const ADMIN_PERMISSIONS = [
@@ -76,6 +82,7 @@ export function App() {
                 <Route index                              element={<Navigate to="/dashboard" replace />} />
                 <Route path="dashboard"                  element={<DashboardPage />} />
                 <Route path="tasks" element={<RequirePermission permissions={['workflow-task:complete']}><TaskInboxPage /></RequirePermission>} />
+                <Route path="module-selection-proposals" element={<RequirePermission permissions={['module-selection:decide', 'module-selection:read:all']}><ModuleSelectionProposalsPage /></RequirePermission>} />
                 <Route path="students" element={<RequirePermission permissions={['student:read:all']}><StudentsPage /></RequirePermission>} />
                 <Route path="students/:personId" element={<RequirePermission permissions={['student:read:all']}><StudentDetailPage /></RequirePermission>} />
                 <Route path="exam-boards" element={<RequirePermission permissions={['exam-board:read']}><ExamBoardsPage /></RequirePermission>} />
@@ -130,6 +137,13 @@ export function App() {
                 <Route path="reporting/enrolments" element={<RequirePermission permissions={['enrolment:read:all']}><EnrolmentReportPage /></RequirePermission>} />
                 <Route path="reporting/regulatory-status" element={<RequirePermission permissions={['regulatory:read']}><RegulatoryStatusPage /></RequirePermission>} />
                 <Route path="reporting/foi" element={<RequirePermission permissions={['regulatory:read']}><FoiPage /></RequirePermission>} />
+
+                {/* Governance — write-only workflow consoles (no list endpoints) */}
+                <Route path="governance/moderation" element={<RequirePermission permissions={['mark:write']}><ModerationPage /></RequirePermission>} />
+                <Route path="governance/regulatory-collections" element={<RequirePermission permissions={['regulatory:write']}><RegulatoryCollectionsPage /></RequirePermission>} />
+                <Route path="governance/identity-resolution" element={<RequirePermission permissions={['identity:manage']}><IdentityResolutionPage /></RequirePermission>} />
+                <Route path="governance/rights-requests" element={<RequirePermission permissions={['identity:manage', 'retention:enforce']}><RightsRequestsPage /></RequirePermission>} />
+                <Route path="governance/audit-review" element={<RequirePermission permissions={['audit-log:read']}><AuditReviewPage /></RequirePermission>} />
 
                 {/* Operations */}
                 <Route path="operations" element={<RequirePermission permissions={['environment:read', 'integration:read']}><OperationsPage /></RequirePermission>} />

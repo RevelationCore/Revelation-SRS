@@ -15,7 +15,7 @@ async function main(): Promise<void> {
   const db     = createVleDb(config.databaseUrl);
 
   const migrationsDir = join(__dirname, '../../migrations');
-  const migrationSql  = await readFile(join(migrationsDir, '0001_vle_connector_scaffold.sql'), 'utf8');
+  const migrationSql  = await readFile(join(migrationsDir, '0000_vle_foundations.sql'), 'utf8');
   await db.execute(sql.raw(migrationSql));
 
   console.log('VLE connector migration complete');

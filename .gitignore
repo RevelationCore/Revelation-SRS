@@ -45,3 +45,8 @@ packages/db/migrations/meta/_snapshot.json
 
 # pnpm
 .pnpm-store/
+test-results/
+
+# Tutorial video pipeline — generated media artifacts, not source
+tutorials/generated/
+tutorials/output/

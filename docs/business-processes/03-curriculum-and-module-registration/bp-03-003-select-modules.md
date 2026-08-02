@@ -23,11 +23,11 @@
 
 | Type | References |
 |---|---|
-| Revelation workflows | Gap — no durable selection workflow |
+| Revelation workflows | `module-selection-approval` (workflow_definition), used only for the exception path in BP-03-004 — the proposal-capture step itself has no workflow instance |
 | Reference-model flows | F-EWP-SIS-01 |
 | Functional requirements | REG-001–REG-003; EWP-002 |
-| Data entities | `enrolment`, `programme_rule_set`, `module`, `module_offering`, `module_relationship`, `module_registration` |
-| Domain events | No event until confirmation; proposed-selection event is a gap |
+| Data entities | `enrolment`, `programme_rule_set`, `module`, `module_offering`, `module_relationship`, `module_registration`, `module_group`, `module_group_member`, `module_selection_proposal`, `module_selection_proposal_item` |
+| Domain events | `srs.enrolment.module-selection-proposal-submitted` fires on submission (BP-03-004 picks up from there); no event on draft creation/edit |
 | Integration contracts | `portal-self-service-update.v1` |
 
 ## Purpose and outcome
@@ -123,7 +123,9 @@ Selection window opens or an authorised actor invites/resets selection.
 | BR-1 | SECTOR | Programme diets distinguish compulsory, optional and elective study | UK | SRC-043–SRC-046 |
 | BR-2 | SECTOR | Normal full-time taught load is commonly 120 UK credits annually, but programme/mode rules govern | UK | SRC-043–SRC-046 |
 | BR-3 | INSTITUTIONAL | Windows, ranking, cross-school choice and pre-selection vary | UK | SRC-043–SRC-046 |
-| BR-4 | PROPOSED | Proposed choices must be distinct from confirmed `module_registration` | Revelation target | Gap analysis |
+| BR-4 | REVELATION | Proposed choices are distinct from confirmed `module_registration`: `module_selection_proposal`/`module_selection_proposal_item` hold the draft/submitted/validated/returned/waitlisted state; `module_registration` rows are only created once BP-03-004 confirms the proposal | Revelation | `apps/api/src/platform/module-selection/service.ts` |
+| BR-5 | GAP | Selection windows (open/close dates per period/cohort) are not yet enforced — a proposal can be created at any time | Revelation gap | Process analysis |
+| BR-6 | GAP | Ranked/oversubscribed preference ordering (A3) is not yet modelled — `preference_rank` exists on `module_selection_proposal_item` but allocation logic does not yet consume it; oversubscription is currently all-or-nothing per module (BP-03-004 A5 waitlist) | Revelation gap | Process analysis |
 
 ## National and institutional variations
 
@@ -182,7 +184,7 @@ sequenceDiagram
 
 | ID | Question/decision | Owner | Status |
 |---|---|---|---|
-| OQ-1 | Add selection proposal/preference entities and draft/pending statuses? | Data/product owner | Open |
+| OQ-1 | Add selection proposal/preference entities and draft/pending statuses? | Data/product owner | **Resolved** (2026-08-02) — `module_selection_proposal`/`module_selection_proposal_item` implemented with the full status lifecycle (`draft`→`submitted`→`validated`/`returned`/`waitlisted`→`approved`/`rejected`→`confirmed`); see [docs/architecture/module-selection-rules.md](../../architecture/module-selection-rules.md) |
 
 ## Sources
 
@@ -207,3 +209,4 @@ sequenceDiagram
 | Version | Date | Author | Change |
 |---|---|---|---|
 | 0.1 | 2026-07-26 | Codex | Initial draft |
+| 0.2 | 2026-08-02 | Claude | Resolved OQ-1: implemented proposal/item entities, portal selection UI, and diet-group presentation. Flagged BR-5 (selection windows) and BR-6 (ranked preference allocation) as remaining gaps. See [docs/architecture/module-selection-rules.md](../../architecture/module-selection-rules.md) |

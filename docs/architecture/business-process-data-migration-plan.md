@@ -1,53 +1,11 @@
 # Business Process Data-Model Migration Plan
 
-> Status: Active — migration `0037` implemented for generic development; production deployment not authorised
-> Date: 2026-07-27
-> Starting physical baseline: migration `0033`
+> Status: Historical — superseded 2026-08-01 by a clean-build migration squash
+> Date: 2026-07-27; squash note added 2026-08-01
 
 [Delta assessment](business-process-data-model-delta.md) · [Target model](business-process-target-data-model.md) · [P0 requirements](../requirements/business-process-p0-functional-requirements.md)
 
-## Strategy
-
-Use expand–backfill–dual-read/write–cutover–contract. Schema migrations must be deployable independently from workflow activation. New behaviour remains disabled by tenant/environment feature flags until backfill and reconciliation pass.
-
-Do not combine all BPR-D work into one migration. The sequence below is a planning allocation; final migration numbers are assigned when ADRs and entity names are approved.
-
-## Stage 0 — Decision and baseline freeze
-
-**Entry:** Current production schema and services remain authoritative.
-
-1. Approve or supersede the ADRs relevant to the aggregate being implemented.
-2. Confirm entity names, aggregate ownership and sensitive-data classifications.
-3. Add characterization tests for existing admissions, CAS, assessment, HESA, adjustment, integration and retention behaviour.
-4. Capture per-tenant row counts, null rates, code distributions and orphan checks.
-5. Record current migration checksum and rollback/recovery test.
-
-**Exit:** Approved target schema and repeatable baseline evidence.
-
-## Proposed migration sequence
-
-| Planned migration | Capability | Principal action | Initial priority |
-|---|---|---|---:|
-| 0034 | Shared cases/evidence/source versions | Create shared primitives, RLS, indexes and FK rules | P0 foundation |
-| 0035 | Distribution item/attempt/acknowledgement | Create durable target ledger; retain `integration_exchange` compatibility | P0 foundation |
-| 0036 | CAS and sponsor compliance | Extend/bridge `ukvi_cas_request`; create checks, assignment/report versions | P0 |
-| 0037 | Engagement/intervention | **Implemented** — expected event, observation/correction, alert, intervention, contact, action and referral tables with RLS/value sets | P0 |
-| 0038 | Support outcome distribution | Extend adjustment/outcome and backfill distribution items | P0 |
-| 0039 | Assessment attempts/moderation | Create attempt, mark-set, moderation and exact-rule references | P0 |
-| 0040 | Board authority/ratification | Extend pack/board; create decisions, ratification and publication | P0 |
-| 0041 | Academic correction distribution | Extend post-ratification records and correction target work | P0 |
-| 0042 | Regulatory collection/lineage | Create generic regulatory aggregate and HESA/OfS bridges | P0 |
-| 0043 | Identity/correction cases | Create identity-resolution, links, redirects and correction cases | P0 |
-| 0044 | Rights/retention/disposal | Create rights, restriction, schedules, assignments, holds and disposition | P0 |
-| 0045 | Audit hardening/review | Add audit metadata/seals and review entities | P0 |
-| 0046 | Admissions/offer | Create channel-neutral application, assessment, offers and conditions | P1 |
-| 0047 | Status/curriculum binding | Create status cases, publication and enrolment rule binding | P1 |
-| 0048 | Module selection | Create proposals, validation, approval, waits/holds and change sets | P1 |
-| 0049 | PGR supervision/progress | Create assignments and review/milestone aggregates | P1 |
-| 0050 | PGR examination | Create thesis/examiner/viva/outcome/deposit aggregates | P1 |
-| 0051 | Progression/award | Add reassessment, evidence, recommendation and conferment | P1 |
-| 0052 | Documents/graduation | Create document and ceremony aggregates | P1 |
-| 0053 | Contract migration cleanup | Remove compatibility columns/views only after adoption gates pass | Contract |
+> **Clean-build note (2026-08-01):** this document originally planned an expand–backfill–dual-read/write–cutover–contract migration sequence (numbered `0034`–`0053`+) to protect existing production data while the P0 business-process schema landed. Revelation SRS has never had a first production user, so that data-protection discipline no longer serves a purpose and added onboarding complexity for no benefit. All migration history (`packages/db/migrations/`, plus `modules/wellbeing`, `adapters/vle`) has been squashed into a small, clean set of migrations representing the current schema directly — see `packages/db/migrations/0000_platform_foundations.sql` onward. The numbered migration-sequence table that used to appear below has been removed; the sections after it are kept as a historical record of the P0 domain-by-domain design considerations (still relevant reading for anyone extending these aggregates), not as a live migration plan. Once the application has real production tenants, a fresh expand-backfill-cutover discipline should be reinstated for any further schema evolution.
 
 ## Stage 1 — Shared foundations
 

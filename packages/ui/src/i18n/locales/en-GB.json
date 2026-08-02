@@ -129,6 +129,31 @@
         "pending":    "Pending"
       }
     },
+    "moduleSelection": {
+      "heading":           "Module selection",
+      "noEnrolmentTitle":  "No active enrolment",
+      "noEnrolmentDetail": "Module selection requires an active enrolment.",
+      "startIntro":        "Choose the academic period to start selecting your modules for.",
+      "choosePeriod":      "Choose a period…",
+      "startButton":       "Start module selection",
+      "status":            "Status",
+      "statusLabel": {
+        "draft":      "Draft",
+        "submitted":  "Submitted",
+        "validated":  "Validated",
+        "approved":   "Approved",
+        "returned":   "Returned — needs changes",
+        "waitlisted": "Waitlisted",
+        "rejected":   "Rejected",
+        "confirmed":  "Confirmed"
+      },
+      "noItems":           "No modules selected yet.",
+      "sourceCompulsory":  "Compulsory",
+      "sourceChoice":      "Your choice",
+      "addModule":         "Add a module",
+      "chooseModule":      "Choose a module…",
+      "submitButton":      "Submit selection"
+    },
     "results": {
       "subheading":    "Published results only. Results are shown once ratified by your exam board.",
       "noResults":     "No published results are available yet.",

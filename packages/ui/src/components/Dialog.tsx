@@ -34,7 +34,7 @@ export function DialogContent({ children, className = '', ...rest }: DialogConte
   return (
     <RadixDialog.Content
       className={`fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2
-        rounded-lg bg-white shadow-xl border border-gray-200 p-6 focus:outline-none ${className}`}
+        rounded-xl bg-white shadow-popover border border-neutral-200 p-6 focus:outline-none ${className}`}
       {...rest}
     >
       {children}
@@ -63,11 +63,11 @@ export function Dialog({ open, onOpenChange, title, description, children }: Dia
       <DialogPortal>
         <DialogOverlay />
         <DialogContent aria-describedby={description ? 'dialog-description' : undefined}>
-          <DialogTitle className="text-base font-semibold text-gray-900 mb-4">
+          <DialogTitle className="text-base font-semibold text-neutral-900 mb-4">
             {title}
           </DialogTitle>
           {description && (
-            <DialogDescription id="dialog-description" className="text-sm text-gray-600 mb-4">
+            <DialogDescription id="dialog-description" className="text-sm text-neutral-600 mb-4">
               {description}
             </DialogDescription>
           )}

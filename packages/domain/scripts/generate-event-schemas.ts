@@ -139,6 +139,24 @@ export const PUBLISHED_EVENTS: EventDef[] = [
     partitionKey: 'enrolmentId',
     consumers: ['vle-adapter', 'transcript-service'],
   },
+  {
+    typeName: 'EnrolmentModuleSelectionProposalSubmittedV1Payload',
+    file: 'enrolment/module-selection-proposal-submitted.v1.ts',
+    subject: 'srs.enrolment.module-selection-proposal-submitted',
+    schemaPath: 'enrolment/module-selection-proposal-submitted',
+    dataClass: 'standard',
+    partitionKey: 'enrolmentId',
+    consumers: ['registry-workflow'],
+  },
+  {
+    typeName: 'EnrolmentModuleSelectionProposalDecidedV1Payload',
+    file: 'enrolment/module-selection-proposal-decided.v1.ts',
+    subject: 'srs.enrolment.module-selection-proposal-decided',
+    schemaPath: 'enrolment/module-selection-proposal-decided',
+    dataClass: 'standard',
+    partitionKey: 'enrolmentId',
+    consumers: ['vle-adapter', 'timetabling-adapter'],
+  },
   // ── Catalogue ────────────────────────────────────────────────────────────
   {
     typeName: 'CatalogueProgrammeUpdatedV1Payload',

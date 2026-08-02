@@ -15,6 +15,7 @@ import { ApiError } from '../api/client.js';
 import { Spinner } from '../components/Spinner.js';
 import { useAuth } from '../auth/AuthContext.js';
 import { userHasAnyPermission } from '../auth/RequirePermission.js';
+import { PageHeader, Card, CardBody, Button, Input, LabelledField } from '@revelation-srs/ui';
 
 type Tab = 'locale' | 'currency' | 'labels';
 
@@ -25,23 +26,23 @@ export function GlobalisationPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-semibold text-gray-900 mb-4">Globalisation</h1>
+      <PageHeader title="Globalisation" />
 
       {!canWrite && (
-        <p className="mb-4 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2">
+        <p className="mb-4 text-xs text-warning-700 bg-warning-50 border border-warning-200 rounded px-3 py-2">
           You have read-only access to globalisation settings.
         </p>
       )}
 
-      <div className="flex gap-1 mb-6 border-b border-gray-200">
+      <div className="flex gap-1 mb-6 border-b border-neutral-200">
         {(['locale', 'currency', 'labels'] as Tab[]).map(t => (
           <button
             key={t}
             onClick={() => setTab(t)}
             className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
               tab === t
-                ? 'border-indigo-600 text-indigo-600'
-                : 'border-transparent text-gray-500 hover:text-gray-800'
+                ? 'border-primary-600 text-primary-600'
+                : 'border-transparent text-neutral-500 hover:text-neutral-800'
             }`}
           >
             {t === 'locale' ? 'Locale & timezone' : t === 'currency' ? 'Currency' : 'Value-set labels'}
@@ -95,32 +96,28 @@ function LocaleTab({ canWrite }: { canWrite: boolean }) {
   if (loading) return <div className="flex justify-center py-8"><Spinner /></div>;
 
   return (
-    <section className="bg-white rounded-lg border border-gray-200 p-6 max-w-lg">
+    <Card className="max-w-lg">
+      <CardBody>
       <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
         <ConfigField name="defaultLocale"   label="Default locale"   defaultValue={config?.defaultLocale ?? ''}   placeholder="en-GB"          disabled={!canWrite} />
         <ConfigField name="defaultTimeZone" label="Default timezone" defaultValue={config?.defaultTimeZone ?? ''} placeholder="Europe/London" disabled={!canWrite} />
 
         <div>
-          <p className="text-xs font-medium text-gray-600 mb-1">Supported locales</p>
-          <p className="text-xs text-gray-500 font-mono">{config?.supportedLocales.join(', ') || '—'}</p>
+          <p className="text-xs font-medium text-neutral-600 mb-1">Supported locales</p>
+          <p className="text-xs text-neutral-500 font-mono">{config?.supportedLocales.join(', ') || '—'}</p>
         </div>
 
-        {error   && <p className="text-sm text-red-600">{error}</p>}
-        {success && <p className="text-sm text-green-600">{success}</p>}
+        {error   && <p className="text-sm text-danger-600">{error}</p>}
+        {success && <p className="text-sm text-success-600">{success}</p>}
 
         {canWrite && (
           <div className="flex justify-end">
-            <button
-              type="submit"
-              disabled={saving}
-              className="rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
-            >
-              {saving ? 'Saving…' : 'Save'}
-            </button>
+            <Button type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save'}</Button>
           </div>
         )}
       </form>
-    </section>
+      </CardBody>
+    </Card>
   );
 }
 
@@ -162,31 +159,27 @@ function CurrencyTab({ canWrite }: { canWrite: boolean }) {
   if (loading) return <div className="flex justify-center py-8"><Spinner /></div>;
 
   return (
-    <section className="bg-white rounded-lg border border-gray-200 p-6 max-w-lg">
+    <Card className="max-w-lg">
+      <CardBody>
       <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
         <ConfigField name="defaultCurrencyCode" label="Default currency code" defaultValue={config?.defaultCurrencyCode ?? ''} placeholder="GBP" disabled={!canWrite} />
 
         <div>
-          <p className="text-xs font-medium text-gray-600 mb-1">Accepted currencies</p>
-          <p className="text-xs text-gray-500 font-mono">{config?.acceptedCurrencies?.join(', ') || '—'}</p>
+          <p className="text-xs font-medium text-neutral-600 mb-1">Accepted currencies</p>
+          <p className="text-xs text-neutral-500 font-mono">{config?.acceptedCurrencies?.join(', ') || '—'}</p>
         </div>
 
-        {error   && <p className="text-sm text-red-600">{error}</p>}
-        {success && <p className="text-sm text-green-600">{success}</p>}
+        {error   && <p className="text-sm text-danger-600">{error}</p>}
+        {success && <p className="text-sm text-success-600">{success}</p>}
 
         {canWrite && (
           <div className="flex justify-end">
-            <button
-              type="submit"
-              disabled={saving}
-              className="rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
-            >
-              {saving ? 'Saving…' : 'Save'}
-            </button>
+            <Button type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save'}</Button>
           </div>
         )}
       </form>
-    </section>
+      </CardBody>
+    </Card>
   );
 }
 
@@ -249,58 +242,54 @@ function LabelsTab({ canWrite }: { canWrite: boolean }) {
   return (
     <div className="grid grid-cols-3 gap-6 items-start">
       <div className="col-span-1">
-        <div className="bg-white rounded-lg border border-gray-200 overflow-x-hidden overflow-y-auto max-h-[calc(100vh-16rem)]">
-          <ul className="divide-y divide-gray-100">
+        <Card className="overflow-x-hidden overflow-y-auto max-h-[calc(100vh-16rem)]">
+          <ul className="divide-y divide-neutral-100">
             {labelSets.map(ls => (
               <li key={ls.setCode}>
                 <button
                   onClick={() => void handleSelectSet(ls.setCode)}
-                  className={`w-full text-left px-4 py-3 text-sm hover:bg-gray-50 ${
-                    selected === ls.setCode ? 'bg-indigo-50' : ''
+                  className={`w-full text-left px-4 py-3 text-sm hover:bg-neutral-50 ${
+                    selected === ls.setCode ? 'bg-primary-50' : ''
                   }`}
                 >
-                  <span className="font-mono text-xs text-gray-700">{ls.setCode}</span>
+                  <span className="font-mono text-xs text-neutral-700">{ls.setCode}</span>
                 </button>
               </li>
             ))}
           </ul>
-        </div>
+        </Card>
       </div>
 
       <div className="col-span-2 overflow-y-auto max-h-[calc(100vh-16rem)]">
-        {error   && <p className="mb-3 text-sm text-red-600">{error}</p>}
-        {success && <p className="mb-3 text-sm text-green-600">{success}</p>}
+        {error   && <p className="mb-3 text-sm text-danger-600">{error}</p>}
+        {success && <p className="mb-3 text-sm text-success-600">{success}</p>}
 
         {editing ? (
-          <div className="bg-white rounded-lg border border-gray-200 p-5">
-            <h2 className="text-sm font-semibold text-gray-700 mb-4 font-mono">{editing.setCode}</h2>
+          <Card>
+            <CardBody>
+            <h2 className="text-sm font-semibold text-neutral-700 mb-4 font-mono">{editing.setCode}</h2>
             <form onSubmit={(e) => void handleSave(e)} className="space-y-3">
               {Object.entries(editing.labels).map(([code, label]) => (
                 <div key={code} className="flex items-center gap-3">
-                  <span className="text-xs font-mono text-gray-500 w-32 flex-shrink-0">{code}</span>
-                  <input
+                  <span className="text-xs font-mono text-neutral-500 w-32 flex-shrink-0">{code}</span>
+                  <Input
                     name={code}
                     defaultValue={label}
                     disabled={!canWrite}
-                    className="flex-1 rounded border border-gray-300 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-50 disabled:text-gray-700"
+                    className="flex-1"
                   />
                 </div>
               ))}
               {canWrite && (
                 <div className="flex justify-end pt-2">
-                  <button
-                    type="submit"
-                    disabled={saving}
-                    className="rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
-                  >
-                    {saving ? 'Saving…' : 'Save labels'}
-                  </button>
+                  <Button type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save labels'}</Button>
                 </div>
               )}
             </form>
-          </div>
+            </CardBody>
+          </Card>
         ) : (
-          <p className="text-sm text-gray-600 py-8 text-center">Select a value set to edit its labels.</p>
+          <p className="text-sm text-neutral-600 py-8 text-center">Select a value set to edit its labels.</p>
         )}
       </div>
     </div>
@@ -323,15 +312,8 @@ function ConfigField({
   disabled?:     boolean;
 }) {
   return (
-    <div>
-      <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
-      <input
-        name={name}
-        defaultValue={defaultValue}
-        placeholder={placeholder}
-        disabled={disabled}
-        className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-50 disabled:text-gray-700"
-      />
-    </div>
+    <LabelledField label={label} htmlFor={`glob-${name}`}>
+      <Input id={`glob-${name}`} name={name} defaultValue={defaultValue} placeholder={placeholder} disabled={disabled} />
+    </LabelledField>
   );
 }

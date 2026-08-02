@@ -11,7 +11,11 @@ import {
   postModuleRegistration,
 } from '../api/me.js';
 import type { ModuleOffering } from '../api/me.js';
-import { Spinner, Problem, EmptyState } from '@revelation-srs/ui';
+import { ArrowLeft } from 'lucide-react';
+import {
+  Spinner, Problem, EmptyState, PageHeader, Button,
+  Card, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
+} from '@revelation-srs/ui';
 
 export function ModuleAddPage() {
   const { t }    = useTranslation();
@@ -81,32 +85,26 @@ export function ModuleAddPage() {
 
   if (!currentEnrolment) {
     return (
-      <div className="space-y-4">
-        <h1 className="text-2xl font-bold text-gray-900">{t('portal.modules.addHeading')}</h1>
+      <div>
+        <PageHeader title={t('portal.modules.addHeading')} />
         <Problem title="No active enrolment" detail="Module registration requires an active enrolment." />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">{t('portal.modules.addHeading')}</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            {currentPeriodCode
-              ? `${t('portal.modules.period')}: ${currentPeriodCode}`
-              : t('portal.modules.allPeriods')}
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => navigate('/modules')}
-          className="flex-none rounded-md px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-        >
-          ← {t('portal.nav.modules')}
-        </button>
-      </div>
+    <div>
+      <PageHeader
+        title={t('portal.modules.addHeading')}
+        description={currentPeriodCode
+          ? `${t('portal.modules.period')}: ${currentPeriodCode}`
+          : t('portal.modules.allPeriods')}
+        actions={
+          <Button variant="ghost" icon={<ArrowLeft className="h-4 w-4" />} onClick={() => navigate('/modules')}>
+            {t('portal.nav.modules')}
+          </Button>
+        }
+      />
 
       {error      && <Problem title={t('status.error')} detail={error} />}
       {submitError && <Problem title={t('status.error')} detail={submitError} />}
@@ -116,75 +114,56 @@ export function ModuleAddPage() {
       )}
 
       {available.length > 0 && (
-        <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
-          <table className="min-w-full divide-y divide-gray-200 text-sm">
-            <thead className="bg-gray-50">
+        <Card>
+          <Table>
+            <TableHead>
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
-                  Module
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
-                  Period
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
-                  Delivery
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
-                  Credits
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
-                  Capacity
-                </th>
-                <th className="px-4 py-3" />
+                <TableHeaderCell>Module</TableHeaderCell>
+                <TableHeaderCell>Period</TableHeaderCell>
+                <TableHeaderCell>Delivery</TableHeaderCell>
+                <TableHeaderCell>Credits</TableHeaderCell>
+                <TableHeaderCell>Capacity</TableHeaderCell>
+                <TableHeaderCell><span className="sr-only">Actions</span></TableHeaderCell>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
+            </TableHead>
+            <TableBody>
               {available.map(offering => (
-                <tr key={offering.moduleOfferingId} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-gray-800">
+                <TableRow key={offering.moduleOfferingId}>
+                  <TableCell className="text-neutral-800">
                     <span className="font-medium">{offering.moduleCode}</span>
-                    <span className="ml-2 text-xs text-gray-500">{offering.moduleTitle}</span>
-                  </td>
-                  <td className="px-4 py-3 text-gray-600">{offering.periodCode}</td>
-                  <td className="px-4 py-3 text-gray-600">{offering.deliveryModeCode ?? '—'}</td>
-                  <td className="px-4 py-3 text-gray-600">{offering.creditValue ?? '—'}</td>
-                  <td className="px-4 py-3 text-gray-600">{offering.capacity ?? '—'}</td>
-                  <td className="px-4 py-3 text-right">
+                    <span className="ml-2 text-xs text-neutral-500">{offering.moduleTitle}</span>
+                  </TableCell>
+                  <TableCell>{offering.periodCode}</TableCell>
+                  <TableCell>{offering.deliveryModeCode ?? '—'}</TableCell>
+                  <TableCell>{offering.creditValue ?? '—'}</TableCell>
+                  <TableCell>{offering.capacity ?? '—'}</TableCell>
+                  <TableCell className="text-right">
                     {confirming === offering.moduleOfferingId ? (
                       <span className="inline-flex items-center gap-2">
-                        <span className="text-xs text-gray-700">{t('portal.modules.confirmRegister')}</span>
-                        <button
-                          type="button"
+                        <span className="text-xs text-neutral-700">{t('portal.modules.confirmRegister')}</span>
+                        <Button
+                          size="sm"
                           disabled={submitting}
+                          icon={submitting ? <Spinner size="sm" /> : undefined}
                           onClick={() => handleRegister(offering)}
-                          className="inline-flex items-center gap-1 rounded bg-indigo-600 px-3 py-1 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         >
-                          {submitting ? <Spinner size="sm" /> : null}
                           {t('actions.confirm')}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setConfirming(null)}
-                          className="rounded px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-400"
-                        >
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => setConfirming(null)}>
                           {t('actions.cancel')}
-                        </button>
+                        </Button>
                       </span>
                     ) : (
-                      <button
-                        type="button"
-                        onClick={() => setConfirming(offering.moduleOfferingId)}
-                        className="rounded-md bg-white px-3 py-1.5 text-xs font-medium text-indigo-600 ring-1 ring-inset ring-indigo-300 hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      >
+                      <Button variant="secondary" size="sm" onClick={() => setConfirming(offering.moduleOfferingId)}>
                         {t('portal.modules.registerButton')}
-                      </button>
+                      </Button>
                     )}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </TableBody>
+          </Table>
+        </Card>
       )}
     </div>
   );

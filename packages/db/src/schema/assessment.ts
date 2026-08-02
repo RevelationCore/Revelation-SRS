@@ -103,3 +103,76 @@ export const moduleResults = pgTable('module_result', {
 
 export type ModuleResult    = typeof moduleResults.$inferSelect;
 export type NewModuleResult = typeof moduleResults.$inferInsert;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BPR-D10 — assessment candidate attempt & moderation (Stage 3, migration 0004_business_process_foundations).
+//
+// mark.attempt_number stays as the legacy source column. A candidate attempt
+// row is created from it (createdFromMarkId bridges to the mark that
+// produced it) so moderation can operate over a stable attempt identity
+// rather than the mark row itself, which may be superseded.
+
+export const assessmentCandidateAttempts = pgTable('assessment_candidate_attempt', {
+  ...bitemporalColumns,
+  tenantId:              uuid('tenant_id').notNull().references(() => tenants.id),
+  moduleRegistrationId:  uuid('module_registration_id').notNull(),
+  assessmentComponentId: uuid('assessment_component_id').notNull(),
+  attemptNumber:         integer('attempt_number').notNull(),
+  attemptTypeCode:       text('attempt_type_code').notNull(), // first-sit | resit | repeat
+  createdFromMarkId:     uuid('created_from_mark_id'),         // legacy bridge -> mark.id, nullable
+  actorId:               text('actor_id').notNull(),
+});
+
+export type AssessmentCandidateAttempt    = typeof assessmentCandidateAttempts.$inferSelect;
+export type NewAssessmentCandidateAttempt = typeof assessmentCandidateAttempts.$inferInsert;
+
+export const markSets = pgTable('mark_set', {
+  id:                    uuid('id').primaryKey().defaultRandom(),
+  tenantId:              uuid('tenant_id').notNull().references(() => tenants.id),
+  assessmentComponentId: uuid('assessment_component_id').notNull(),
+  generatedAt:           timestamp('generated_at', { withTimezone: true }).notNull().defaultNow(),
+  generatedBy:           text('generated_by').notNull(),
+  sourceQueryHash:       text('source_query_hash').notNull(),
+});
+
+export type MarkSet    = typeof markSets.$inferSelect;
+export type NewMarkSet = typeof markSets.$inferInsert;
+
+export const markSetMembers = pgTable('mark_set_member', {
+  id:                 uuid('id').primaryKey().defaultRandom(),
+  tenantId:           uuid('tenant_id').notNull().references(() => tenants.id),
+  markSetId:          uuid('mark_set_id').notNull(),
+  markId:             uuid('mark_id').notNull(),             // legacy bridge -> mark.id
+  candidateAttemptId: uuid('candidate_attempt_id').notNull(), // FK -> assessment_candidate_attempt.id
+});
+
+export type MarkSetMember    = typeof markSetMembers.$inferSelect;
+export type NewMarkSetMember = typeof markSetMembers.$inferInsert;
+
+export const moderationReviews = pgTable('moderation_review', {
+  id:               uuid('id').primaryKey().defaultRandom(),
+  tenantId:         uuid('tenant_id').notNull().references(() => tenants.id),
+  markSetId:        uuid('mark_set_id').notNull(),
+  moderatorActorId: text('moderator_actor_id').notNull(),
+  ruleVersion:      text('rule_version').notNull(),
+  startedAt:        timestamp('started_at', { withTimezone: true }).notNull().defaultNow(),
+  completedAt:      timestamp('completed_at', { withTimezone: true }),
+  outcomeCode:      text('outcome_code'), // no-change | adjusted | escalated
+});
+
+export type ModerationReview    = typeof moderationReviews.$inferSelect;
+export type NewModerationReview = typeof moderationReviews.$inferInsert;
+
+export const moderationSamples = pgTable('moderation_sample', {
+  id:                  uuid('id').primaryKey().defaultRandom(),
+  tenantId:            uuid('tenant_id').notNull().references(() => tenants.id),
+  moderationReviewId:  uuid('moderation_review_id').notNull(),
+  markId:              uuid('mark_id').notNull(), // legacy bridge -> mark.id
+  sampleReasonCode:    text('sample_reason_code').notNull(), // random | boundary | first-marker-flag | outlier
+  originalMark:        numeric('original_mark', { precision: 5, scale: 2 }).notNull(),
+  moderatedMark:       numeric('moderated_mark', { precision: 5, scale: 2 }),
+  changeReasonCode:    text('change_reason_code'),
+});
+
+export type ModerationSample    = typeof moderationSamples.$inferSelect;
+export type NewModerationSample = typeof moderationSamples.$inferInsert;

@@ -10,6 +10,10 @@ import { useAuth } from '../auth/AuthContext.js';
 import { userHasAnyPermission } from '../auth/RequirePermission.js';
 import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
+import {
+  PageHeader, Button, Card, CardBody, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
+  LabelledField, Input,
+} from '@revelation-srs/ui';
 
 type Tab = 'events' | 'alerts' | 'policies';
 
@@ -57,19 +61,17 @@ export function EngagementPage() {
 
   return (
     <section aria-labelledby="engagement-heading">
-      <div className="mb-5 flex items-start justify-between gap-4">
-        <div>
-          <h1 id="engagement-heading" className="text-xl font-semibold text-gray-900">Academic engagement</h1>
-          <p className="mt-1 text-sm text-gray-600">Evidence supports human review; it never determines academic status or sponsor reporting.</p>
-        </div>
-        <button onClick={() => void load()} className="rounded border border-gray-300 px-3 py-2 text-sm hover:bg-white">Refresh</button>
-      </div>
-      <div className="mb-5 flex gap-1 border-b border-gray-200" role="tablist" aria-label="Engagement workspace">
+      <PageHeader
+        title={<span id="engagement-heading">Academic engagement</span>}
+        description="Evidence supports human review; it never determines academic status or sponsor reporting."
+        actions={<Button variant="secondary" onClick={() => void load()}>Refresh</Button>}
+      />
+      <div className="mb-5 flex gap-1 border-b border-neutral-200" role="tablist" aria-label="Engagement workspace">
         {canReadAlerts && <TabButton active={tab === 'alerts'} onClick={() => setTab('alerts')}>Alert queue ({alerts.length})</TabButton>}
         {canReadEvents && <TabButton active={tab === 'events'} onClick={() => setTab('events')}>Evidence worklist ({events.length})</TabButton>}
         {canReadPolicies && <TabButton active={tab === 'policies'} onClick={() => setTab('policies')}>Policies ({policies.length})</TabButton>}
       </div>
-      {error && <div role="alert" className="mb-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
+      {error && <div role="alert" className="mb-4 rounded border border-danger-200 bg-danger-50 p-3 text-sm text-danger-700">{error}</div>}
       {loading ? <div className="flex justify-center py-16"><Spinner /></div> : (
         <>
           {tab === 'alerts' && <AlertQueue alerts={alerts} canManage={canManageCases} onOpen={openCase} />}
@@ -83,7 +85,7 @@ export function EngagementPage() {
 
 function TabButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return <button role="tab" aria-selected={active} onClick={onClick}
-    className={`px-4 py-2 text-sm font-medium ${active ? 'border-b-2 border-indigo-600 text-indigo-700' : 'text-gray-500 hover:text-gray-800'}`}>{children}</button>;
+    className={`px-4 py-2 text-sm font-medium ${active ? 'border-b-2 border-primary-600 text-primary-700' : 'text-neutral-500 hover:text-neutral-800'}`}>{children}</button>;
 }
 
 function AlertQueue({ alerts, canManage, onOpen }: {
@@ -92,15 +94,14 @@ function AlertQueue({ alerts, canManage, onOpen }: {
   if (!alerts.length) return <Empty text="No engagement alerts require review." />;
   return <div className="space-y-3">{alerts.map((alert) => {
     const unsafe = alert.statusCode === 'suspended-reconciliation' || alert.reevaluationRequired;
-    return <article key={alert.alertId} className="rounded-lg border border-gray-200 bg-white p-4">
+    return <Card key={alert.alertId}><CardBody>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2"><Badge value={alert.statusCode} /><Badge value={alert.severityCode} /></div>
-          <p className="mt-2 text-sm font-medium text-gray-900">Student {alert.personId.slice(0, 8)}</p>
-          <p className="text-xs text-gray-500">Policy {alert.explanation.policyCode} v{alert.explanation.policyVersion}</p>
+          <p className="mt-2 text-sm font-medium text-neutral-900">Student {alert.personId.slice(0, 8)}</p>
+          <p className="text-xs text-neutral-500">Policy {alert.explanation.policyCode} v{alert.explanation.policyVersion}</p>
         </div>
-        {canManage && alert.statusCode === 'open' && <button onClick={() => void onOpen(alert)}
-          className="rounded bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700">Open intervention</button>}
+        {canManage && alert.statusCode === 'open' && <Button onClick={() => void onOpen(alert)}>Open intervention</Button>}
       </div>
       <dl className="mt-3 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
         <Metric label="Expected" value={alert.evidenceSnapshot.expectedEventCount} />
@@ -108,23 +109,27 @@ function AlertQueue({ alerts, canManage, onOpen }: {
         <Metric label="Absence rate" value={alert.evidenceSnapshot.absenceRate === undefined ? '—' : `${Math.round(alert.evidenceSnapshot.absenceRate * 100)}%`} />
         <Metric label="Unsafe evidence" value={alert.evidenceSnapshot.unsafeEvidenceCount} />
       </dl>
-      {unsafe && <p className="mt-3 rounded bg-amber-50 p-2 text-sm text-amber-800">Evidence needs reconciliation. Intervention escalation is suspended.</p>}
-    </article>;
+      {unsafe && <p className="mt-3 rounded bg-warning-50 p-2 text-sm text-warning-800">Evidence needs reconciliation. Intervention escalation is suspended.</p>}
+    </CardBody></Card>;
   })}</div>;
 }
 
 function EventWorklist({ events }: { events: EngagementEvent[] }) {
   if (!events.length) return <Empty text="No expected engagement events found." />;
-  return <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white"><table className="min-w-full text-sm">
-    <thead className="bg-gray-50 text-left text-xs uppercase text-gray-500"><tr>
-      <th className="px-4 py-3">Scheduled</th><th className="px-4 py-3">Student</th>
-      <th className="px-4 py-3">Activity</th><th className="px-4 py-3">Mode</th><th className="px-4 py-3">Source</th>
-    </tr></thead><tbody className="divide-y divide-gray-100">{events.map((event) => <tr key={event.expectedEventId}>
-      <td className="px-4 py-3">{new Date(event.scheduledFrom).toLocaleString('en-GB')}</td>
-      <td className="px-4 py-3"><Link className="text-indigo-600" to={`/students/${event.personId}`}>{event.personId.slice(0, 8)}</Link></td>
-      <td className="px-4 py-3">{event.activityReference ?? event.activityTypeCode}</td>
-      <td className="px-4 py-3">{event.eventModeCode}</td><td className="px-4 py-3">{event.sourceSystemCode}</td>
-    </tr>)}</tbody></table></div>;
+  return <Card>
+    <Table>
+      <TableHead><tr>
+        <TableHeaderCell>Scheduled</TableHeaderCell><TableHeaderCell>Student</TableHeaderCell>
+        <TableHeaderCell>Activity</TableHeaderCell><TableHeaderCell>Mode</TableHeaderCell><TableHeaderCell>Source</TableHeaderCell>
+      </tr></TableHead>
+      <TableBody>{events.map((event) => <TableRow key={event.expectedEventId}>
+        <TableCell>{new Date(event.scheduledFrom).toLocaleString('en-GB')}</TableCell>
+        <TableCell><Link className="text-primary-600" to={`/students/${event.personId}`}>{event.personId.slice(0, 8)}</Link></TableCell>
+        <TableCell>{event.activityReference ?? event.activityTypeCode}</TableCell>
+        <TableCell>{event.eventModeCode}</TableCell><TableCell>{event.sourceSystemCode}</TableCell>
+      </TableRow>)}</TableBody>
+    </Table>
+  </Card>;
 }
 
 function PolicyPanel({ policies, canManage, onCreated }: {
@@ -143,22 +148,30 @@ function PolicyPanel({ policies, canManage, onCreated }: {
     setShowForm(false); await onCreated();
   }
   return <div>
-    {canManage && <button onClick={() => setShowForm(!showForm)} className="mb-4 rounded bg-indigo-600 px-3 py-2 text-sm text-white">New policy version</button>}
-    {showForm && <form onSubmit={(event) => void submit(event)} className="mb-5 grid gap-3 rounded border bg-white p-4 sm:grid-cols-2">
-      <label className="text-sm">Policy code<input required name="policyCode" className="mt-1 w-full rounded border px-3 py-2" /></label>
-      <label className="text-sm">Display name<input required name="displayName" className="mt-1 w-full rounded border px-3 py-2" /></label>
-      <label className="text-sm">Version<input required name="versionNumber" type="number" min="1" defaultValue="1" className="mt-1 w-full rounded border px-3 py-2" /></label>
-      <label className="text-sm">Effective from<input required name="validFrom" type="date" className="mt-1 w-full rounded border px-3 py-2" /></label>
-      <button className="rounded bg-indigo-600 px-3 py-2 text-sm text-white sm:col-span-2">Create approved version</button>
-    </form>}
-    <div className="space-y-2">{policies.map((policy) => <div key={policy.policyVersionId} className="rounded border bg-white p-4">
-      <div className="flex justify-between"><strong>{policy.displayName}</strong><Badge value={policy.statusCode} /></div>
-      <p className="mt-1 text-sm text-gray-600">{policy.policyCode} · version {policy.versionNumber} · from {new Date(policy.validFrom).toLocaleDateString('en-GB')}</p>
-    </div>)}</div>
+    {canManage && <Button onClick={() => setShowForm(!showForm)} className="mb-4">New policy version</Button>}
+    {showForm && (
+      <Card className="mb-5">
+        <CardBody>
+          <form onSubmit={(event) => void submit(event)} className="grid gap-3 sm:grid-cols-2">
+            <LabelledField label="Policy code" htmlFor="ep-code" required><Input id="ep-code" required name="policyCode" /></LabelledField>
+            <LabelledField label="Display name" htmlFor="ep-name" required><Input id="ep-name" required name="displayName" /></LabelledField>
+            <LabelledField label="Version" htmlFor="ep-version" required><Input id="ep-version" required name="versionNumber" type="number" min="1" defaultValue="1" /></LabelledField>
+            <LabelledField label="Effective from" htmlFor="ep-from" required><Input id="ep-from" required name="validFrom" type="date" /></LabelledField>
+            <Button type="submit" className="sm:col-span-2">Create approved version</Button>
+          </form>
+        </CardBody>
+      </Card>
+    )}
+    <div className="space-y-2">{policies.map((policy) => (
+      <Card key={policy.policyVersionId}><CardBody>
+        <div className="flex justify-between"><strong>{policy.displayName}</strong><Badge value={policy.statusCode} /></div>
+        <p className="mt-1 text-sm text-neutral-600">{policy.policyCode} · version {policy.versionNumber} · from {new Date(policy.validFrom).toLocaleDateString('en-GB')}</p>
+      </CardBody></Card>
+    ))}</div>
   </div>;
 }
 
 function Metric({ label, value }: { label: string; value: string | number | undefined }) {
-  return <div><dt className="text-xs text-gray-500">{label}</dt><dd className="font-semibold text-gray-900">{value ?? '—'}</dd></div>;
+  return <div><dt className="text-xs text-neutral-500">{label}</dt><dd className="font-semibold text-neutral-900">{value ?? '—'}</dd></div>;
 }
-function Empty({ text }: { text: string }) { return <p className="rounded border border-dashed bg-white py-12 text-center text-sm text-gray-500">{text}</p>; }
+function Empty({ text }: { text: string }) { return <p className="rounded border border-dashed bg-white py-12 text-center text-sm text-neutral-500">{text}</p>; }

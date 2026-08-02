@@ -27,7 +27,7 @@ const config: Config = {
   deploymentEnvironmentCode: 'local',
   releaseVersion:            '1.0.0',
   imageDigest:               undefined,
-  migrationVersion:          '0018_stage7_legacy_removal',
+  migrationVersion:          '0004_business_process_foundations',
   jwtSecret:                 'generation-only',
   keycloakJwksUrl:           undefined,
   corsOrigins:               ['*'],

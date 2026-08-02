@@ -9,6 +9,10 @@ import { ApiError } from '../api/client.js';
 import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
 import { useValueSet } from '../hooks/useValueSet.js';
+import {
+  PageHeader, Card, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
+  Button, Input, Select, Dialog, DialogClose, LabelledField,
+} from '@revelation-srs/ui';
 
 export function ExamBoardsPage() {
   const { members: boardTypes } = useValueSet('exam_board', 'board_type_code');
@@ -44,100 +48,83 @@ export function ExamBoardsPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-xl font-semibold text-gray-900">Exam boards</h1>
-        <button
-          onClick={() => setShowCreate(true)}
-          className="rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
-        >
-          New board
-        </button>
-      </div>
+      <PageHeader title="Exam boards" actions={<Button onClick={() => setShowCreate(true)}>New board</Button>} />
 
       <form onSubmit={handleFilter} className="mb-4 flex items-center gap-3">
-        <input
+        <Input
           value={yearFilter}
           onChange={(e) => setYearFilter(e.target.value)}
           placeholder="Academic year (e.g. 2025/26)"
-          className="min-w-52 rounded border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="min-w-52 w-auto"
         />
-        <button
-          type="submit"
-          className="rounded bg-indigo-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-indigo-700"
-        >
-          Filter
-        </button>
+        <Button type="submit">Filter</Button>
         {yearFilter && (
-          <button
-            type="button"
-            onClick={() => { setYearFilter(''); void load(); }}
-            className="rounded border border-gray-300 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50"
-          >
+          <Button type="button" variant="secondary" onClick={() => { setYearFilter(''); void load(); }}>
             Clear
-          </button>
+          </Button>
         )}
       </form>
 
-      {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+      {error && <p className="mb-4 text-sm text-danger-600">{error}</p>}
 
       {loading ? (
         <div className="flex justify-center py-16"><Spinner /></div>
       ) : boards.length === 0 ? (
-        <p className="py-8 text-center text-sm text-gray-600">No exam boards found.</p>
+        <p className="py-8 text-center text-sm text-neutral-600">No exam boards found.</p>
       ) : (
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200 text-sm">
-            <thead className="bg-gray-50">
+        <Card>
+          <Table>
+            <TableHead>
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Year</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Meeting date</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ratified</th>
-                <th className="px-4 py-3"><span className="sr-only">Actions</span></th>
+                <TableHeaderCell>Type</TableHeaderCell>
+                <TableHeaderCell>Year</TableHeaderCell>
+                <TableHeaderCell>Meeting date</TableHeaderCell>
+                <TableHeaderCell>Ratified</TableHeaderCell>
+                <TableHeaderCell><span className="sr-only">Actions</span></TableHeaderCell>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
+            </TableHead>
+            <TableBody>
               {boards.map(b => (
-                <tr key={b.examBoardId} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-medium text-gray-900 capitalize">{b.boardTypeCode}</td>
-                  <td className="px-4 py-3 text-gray-600">{b.academicYear}</td>
-                  <td className="px-4 py-3 text-gray-600">
+                <TableRow key={b.examBoardId}>
+                  <TableCell className="font-medium text-neutral-900 capitalize">{b.boardTypeCode}</TableCell>
+                  <TableCell>{b.academicYear}</TableCell>
+                  <TableCell>
                     {b.meetingDate
                       ? new Date(b.meetingDate).toLocaleDateString('en-GB')
-                      : <span className="text-gray-600">—</span>}
-                  </td>
-                  <td className="px-4 py-3">
+                      : <span className="text-neutral-600">—</span>}
+                  </TableCell>
+                  <TableCell>
                     {b.ratifiedAt
                       ? <Badge value="ratified" />
                       : <Badge value="pending" />}
-                  </td>
-                  <td className="px-4 py-3 text-right">
+                  </TableCell>
+                  <TableCell className="text-right">
                     <Link
                       to={`/exam-boards/${b.examBoardId}`}
-                      className="text-sm text-indigo-600 hover:text-indigo-800"
+                      className="text-sm text-primary-600 hover:text-primary-800"
                     >
                       Open →
                     </Link>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </TableBody>
+          </Table>
+        </Card>
       )}
 
-      {showCreate && (
-        <CreateBoardModal
+      <Dialog open={showCreate} onOpenChange={(open) => { if (!open) setShowCreate(false); }} title="New exam board">
+        <CreateBoardForm
           onClose={() => setShowCreate(false)}
           onCreated={handleCreated}
           boardTypes={boardTypes}
         />
-      )}
+      </Dialog>
     </div>
   );
 }
 
-function CreateBoardModal({
+function CreateBoardForm({
   onClose,
   onCreated,
   boardTypes,
@@ -180,52 +167,32 @@ function CreateBoardModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-white rounded-lg border border-gray-200 p-6 w-full max-w-md shadow-xl" onClick={(e) => e.stopPropagation()}>
-        <h2 className="text-base font-semibold text-gray-900 mb-4">New exam board</h2>
-        <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Board type *</label>
-            <select
-              name="boardTypeCode"
-              className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              {boardTypes.map(({ code, displayLabel }) => <option key={code} value={code}>{displayLabel}</option>)}
-            </select>
-          </div>
-          <FormField name="academicYear"     label="Academic year * (e.g. 2025/26)" />
-          <FormField name="academicPeriodId" label="Academic period ID (optional)" />
-          <FormField name="meetingDate"      label="Meeting date (optional)" type="date" />
+    <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
+      <LabelledField label="Board type" htmlFor="new-board-type" required>
+        <Select id="new-board-type" name="boardTypeCode">
+          {boardTypes.map(({ code, displayLabel }) => <option key={code} value={code}>{displayLabel}</option>)}
+        </Select>
+      </LabelledField>
+      <LabelledField label="Academic year (e.g. 2025/26)" htmlFor="new-board-year" required>
+        <Input id="new-board-year" name="academicYear" />
+      </LabelledField>
+      <LabelledField label="Academic period ID" htmlFor="new-board-period" hint="Optional">
+        <Input id="new-board-period" name="academicPeriodId" />
+      </LabelledField>
+      <LabelledField label="Meeting date" htmlFor="new-board-date" hint="Optional">
+        <Input id="new-board-date" name="meetingDate" type="date" />
+      </LabelledField>
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-danger-600">{error}</p>}
 
-          <div className="flex justify-end gap-3 pt-2">
-            <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={submitting}
-              className="rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
-            >
-              {submitting ? 'Creating…' : 'Create'}
-            </button>
-          </div>
-        </form>
+      <div className="flex justify-end gap-3 pt-2">
+        <DialogClose asChild>
+          <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
+        </DialogClose>
+        <Button type="submit" disabled={submitting}>
+          {submitting ? 'Creating…' : 'Create'}
+        </Button>
       </div>
-    </div>
-  );
-}
-
-function FormField({ name, label, type = 'text' }: { name: string; label: string; type?: string }) {
-  return (
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-      <input
-        name={name}
-        type={type}
-        className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-      />
-    </div>
+    </form>
   );
 }

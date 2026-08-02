@@ -5,7 +5,7 @@ const root = resolve(import.meta.dirname, '..');
 const read = (path) => readFileSync(resolve(root, path), 'utf8');
 const service = read('apps/api/src/platform/engagement/engagement-intervention-service.ts');
 const routes = read('apps/api/src/routes/engagement-interventions.ts');
-const migration = read('packages/db/migrations/0039_engagement_intervention_idempotency.sql');
+const migration = read('packages/db/migrations/0003_engagement_and_attendance.sql');
 const permissions = read('packages/domain/src/permissions.ts');
 const events = read('packages/domain/src/events/index.ts');
 const test = read('apps/api/test/engagement.int.test.ts');

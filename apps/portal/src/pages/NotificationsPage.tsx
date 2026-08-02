@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Spinner, Problem, EmptyState, formatDate } from '@revelation-srs/ui';
+import { Spinner, Problem, EmptyState, formatDate, PageHeader, Button } from '@revelation-srs/ui';
 import { useAuth } from '../auth/AuthContext.js';
 import { getNotifications, markNotificationRead, type NotificationItem } from '../api/notifications.js';
 
@@ -99,18 +99,16 @@ export function NotificationsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">{t('portal.nav.notifications')}</h1>
-          <p className="mt-1 text-sm text-gray-500">Alerts and messages from the university</p>
-        </div>
-        {unreadCount > 0 && (
-          <span className="rounded-full bg-indigo-600 px-2.5 py-0.5 text-xs font-semibold text-white">
+    <div>
+      <PageHeader
+        title={t('portal.nav.notifications')}
+        description="Alerts and messages from the university"
+        actions={unreadCount > 0 && (
+          <span className="rounded-full bg-primary-600 px-2.5 py-0.5 text-xs font-semibold text-white">
             {unreadCount} unread
           </span>
         )}
-      </div>
+      />
 
       {error && <Problem title={t('status.error')} detail={error} />}
 
@@ -125,34 +123,36 @@ export function NotificationsPage() {
               key={item.id}
               className={`rounded-lg border p-4 ${
                 item.readAt === null
-                  ? 'border-indigo-200 bg-indigo-50'
-                  : 'border-gray-200 bg-white'
+                  ? 'border-primary-200 bg-primary-50'
+                  : 'border-neutral-200 bg-white'
               }`}
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
-                  <p className={`text-sm font-medium ${item.readAt === null ? 'text-indigo-900' : 'text-gray-900'}`}>
+                  <p className={`text-sm font-medium ${item.readAt === null ? 'text-primary-900' : 'text-neutral-900'}`}>
                     {item.title}
                   </p>
-                  <p className="mt-0.5 text-sm text-gray-600">{item.body}</p>
+                  <p className="mt-0.5 text-sm text-neutral-600">{item.body}</p>
                   {item.linkUrl && (
                     <a
                       href={item.linkUrl}
-                      className="mt-1 inline-block text-xs text-indigo-600 hover:underline"
+                      className="mt-1 inline-block text-xs text-primary-600 hover:underline"
                     >
                       View details →
                     </a>
                   )}
-                  <p className="mt-1 text-xs text-gray-400">{formatDate(item.createdAt)}</p>
+                  <p className="mt-1 text-xs text-neutral-400">{formatDate(item.createdAt)}</p>
                 </div>
                 {item.readAt === null && (
-                  <button
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="flex-none whitespace-nowrap"
                     onClick={() => void handleMarkRead(item.id)}
-                    className="flex-none rounded border border-gray-300 px-2.5 py-1 text-xs font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap"
                     aria-label={`Mark "${item.title}" as read`}
                   >
                     Mark read
-                  </button>
+                  </Button>
                 )}
               </div>
             </li>

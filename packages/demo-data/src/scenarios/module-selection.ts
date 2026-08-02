@@ -4,11 +4,14 @@ import {
   enrolments,
   examBoards,
   examEntries,
+  moduleGroupMembers,
+  moduleGroups,
   moduleOfferings,
   moduleRegistrations,
   modules,
   personIdentities,
   persons,
+  programmeRuleSets,
   programmes,
   studentAddresses,
   studentContactMethods,
@@ -28,7 +31,7 @@ import {
 } from '../generators/index.js';
 import { provisionPersonas } from '../generators/keycloak.js';
 import { BASELINE_PROGRAMMES } from '../generators/curriculum.js';
-import { programmeId } from '../generators/curriculum.js';
+import { programmeId, moduleId } from '../generators/curriculum.js';
 import { examBoardIdForPeriod } from '../generators/registrations.js';
 import { PERSONA_IDS } from '../persona-ids.js';
 import { STORY_MARKERS } from '../story-markers.js';
@@ -55,7 +58,7 @@ export const manifest: ScenarioManifest = {
     STORY_MARKERS.S3_BOB_WAITLISTED,
     STORY_MARKERS.S3_CAROL_OVERRIDE,
   ],
-  phases: ['reference-data', 'personas', 'persons', 'enrolments', 'registrations', 'boards'],
+  phases: ['reference-data', 'personas', 'persons', 'enrolments', 'registrations', 'diet-groups', 'boards'],
 };
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -101,6 +104,7 @@ export async function load(
     case 'persons':        return loadPersons(db, tenantId);
     case 'enrolments':     return loadEnrolments(db, tenantId);
     case 'registrations':  return loadRegistrations(db, tenantId);
+    case 'diet-groups':    return loadDietGroups(db, tenantId);
     case 'boards':         return loadBoards(db, tenantId);
     default: return;
   }
@@ -211,6 +215,118 @@ async function loadRegistrations(db: Db, tenantId: string): Promise<void> {
   }
 
   await batchInsert(db, moduleRegistrations, regRows);
+}
+
+/**
+ * Demonstrates the module-selection-rules feature (docs/architecture/
+ * module-selection-rules.md) on the BSc Computer Science programme: a
+ * default programme rule set with a compulsory level-4 core group
+ * (CS101, CS103) and an optional-pool group (CS102, CS104; 20-40 credits).
+ *
+ * Additive and small by design — this does not attempt to reproduce diet
+ * groups for all 1,000 synthetic students; it seeds one representative,
+ * inspectable example rather than scaling proposal generation to the same
+ * volume as module_registration.
+ */
+async function loadDietGroups(db: Db, tenantId: string): Promise<void> {
+  const bscsId  = programmeId(tenantId, 'BSCS');
+  const ruleSetId = deterministicId('programme-rule-set', tenantId, bscsId, 'default');
+  const now = VALID_FROM;
+
+  await batchInsert(db, programmeRuleSets, [{
+    id:                ruleSetId,
+    tenantId,
+    programmeId:       bscsId,
+    programmeRouteId:  null,
+    entryAcademicYear: null,
+    ruleSetCode:       'default',
+    description:       'Default BSc Computer Science rule set (demo data)',
+    validFrom:         now,
+    recordedAt:        now,
+  }]);
+
+  const coreGroupId     = deterministicId('module-group', tenantId, ruleSetId, 'level4-core');
+  const optionalGroupId = deterministicId('module-group', tenantId, ruleSetId, 'level4-optional');
+
+  await batchInsert(db, moduleGroups, [
+    {
+      id:                 coreGroupId,
+      tenantId,
+      programmeRuleSetId: ruleSetId,
+      fheqLevel:          4,
+      groupCode:          'L4-CORE',
+      title:              'Level 4 core modules',
+      groupTypeCode:      'compulsory',
+      minModules:         2,
+      maxModules:         null,
+      minCredits:         null,
+      maxCredits:         null,
+      minFheqLevel:       null,
+      maxFheqLevel:       null,
+      validFrom:          now,
+      recordedAt:         now,
+    },
+    {
+      id:                 optionalGroupId,
+      tenantId,
+      programmeRuleSetId: ruleSetId,
+      fheqLevel:          4,
+      groupCode:          'L4-OPTIONAL',
+      title:              'Level 4 optional modules',
+      groupTypeCode:      'optional-pool',
+      minModules:         null,
+      maxModules:         null,
+      minCredits:         20,
+      maxCredits:         40,
+      minFheqLevel:       null,
+      maxFheqLevel:       null,
+      validFrom:          now,
+      recordedAt:         now,
+    },
+  ]);
+
+  await batchInsert(db, moduleGroupMembers, [
+    {
+      id:              deterministicId('module-group-member', tenantId, coreGroupId, 'CS101'),
+      tenantId,
+      moduleGroupId:   coreGroupId,
+      moduleId:        moduleId(tenantId, 'CS101'),
+      isDefault:       true,
+      isNonCondonable: false,
+      validFrom:       now,
+      recordedAt:      now,
+    },
+    {
+      id:              deterministicId('module-group-member', tenantId, coreGroupId, 'CS103'),
+      tenantId,
+      moduleGroupId:   coreGroupId,
+      moduleId:        moduleId(tenantId, 'CS103'),
+      isDefault:       true,
+      isNonCondonable: false,
+      validFrom:       now,
+      recordedAt:      now,
+    },
+    {
+      id:              deterministicId('module-group-member', tenantId, optionalGroupId, 'CS102'),
+      tenantId,
+      moduleGroupId:   optionalGroupId,
+      moduleId:        moduleId(tenantId, 'CS102'),
+      isDefault:       false,
+      isNonCondonable: false,
+      validFrom:       now,
+      recordedAt:      now,
+    },
+    {
+      id:              deterministicId('module-group-member', tenantId, optionalGroupId, 'CS104'),
+      tenantId,
+      moduleGroupId:   optionalGroupId,
+      moduleId:        moduleId(tenantId, 'CS104'),
+      isDefault:       false,
+      isNonCondonable: false,
+      validFrom:       now,
+      recordedAt:      now,
+    },
+  ]);
 }
 
 async function loadBoards(db: Db, tenantId: string): Promise<void> {

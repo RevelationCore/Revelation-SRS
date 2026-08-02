@@ -19,6 +19,10 @@ import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
 import { useAuth } from '../auth/AuthContext.js';
 import { userHasAnyPermission } from '../auth/RequirePermission.js';
+import {
+  PageHeader, Card, CardBody, Button, Input, Select, LabelledField, Dialog, DialogClose,
+  Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
+} from '@revelation-srs/ui';
 
 type Tab = 'contracts' | 'registrations' | 'exchanges';
 
@@ -31,17 +35,17 @@ export function IntegrationsPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-semibold text-gray-900 mb-4">Integrations</h1>
+      <PageHeader title="Integrations" />
 
-      <div className="flex gap-1 mb-6 border-b border-gray-200">
+      <div className="flex gap-1 mb-6 border-b border-neutral-200">
         {(['registrations', 'contracts', 'exchanges'] as Tab[]).map(t => (
           <button
             key={t}
             onClick={() => setTab(t)}
             className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
               tab === t
-                ? 'border-indigo-600 text-indigo-600'
-                : 'border-transparent text-gray-500 hover:text-gray-800'
+                ? 'border-primary-600 text-primary-600'
+                : 'border-transparent text-neutral-500 hover:text-neutral-800'
             }`}
           >
             {t === 'registrations' ? 'Registrations' : t === 'contracts' ? 'Contracts' : 'Exchange log'}
@@ -104,43 +108,38 @@ function RegistrationsTab({ canManage }: { canManage: boolean }) {
   return (
     <div>
       {canManage && <div className="flex justify-end mb-4">
-        <button
-          onClick={() => setShowCreate(true)}
-          className="rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
-        >
-          New registration
-        </button>
+        <Button onClick={() => setShowCreate(true)}>New registration</Button>
       </div>}
 
-      {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+      {error && <p className="mb-4 text-sm text-danger-600">{error}</p>}
 
       {loading ? (
         <div className="flex justify-center py-16"><Spinner /></div>
       ) : regs.length === 0 ? (
-        <p className="text-sm text-gray-600">No integration registrations.</p>
+        <p className="text-sm text-neutral-600">No integration registrations.</p>
       ) : (
         <div className="space-y-3">
           {regs.map(reg => {
             const health = healthResults[reg.registrationId];
             return (
-              <div key={reg.registrationId} className={`bg-white rounded-lg border p-4 ${reg.enabled ? 'border-gray-200' : 'border-gray-100 opacity-70'}`}>
-                <div className="flex items-start justify-between gap-4">
+              <Card key={reg.registrationId} className={reg.enabled ? '' : 'opacity-70'}>
+                <CardBody className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-sm font-medium text-gray-900">{reg.displayName}</p>
-                    {reg.endpointUrl && <p className="text-xs text-gray-600 font-mono mt-0.5 truncate max-w-xs">{reg.endpointUrl}</p>}
+                    <p className="text-sm font-medium text-neutral-900">{reg.displayName}</p>
+                    {reg.endpointUrl && <p className="text-xs text-neutral-600 font-mono mt-0.5 truncate max-w-xs">{reg.endpointUrl}</p>}
                     <div className="mt-1 flex items-center gap-2">
                       <Badge value={reg.healthStatusCode ?? (reg.enabled ? 'enabled' : 'disabled')} />
                       {reg.enabled
-                        ? <span className="text-xs text-green-600">enabled</span>
-                        : <span className="text-xs text-gray-600">disabled</span>}
+                        ? <span className="text-xs text-success-600">enabled</span>
+                        : <span className="text-xs text-neutral-600">disabled</span>}
                       {reg.lastHealthCheckAt && (
-                        <span className="text-xs text-gray-600">
+                        <span className="text-xs text-neutral-600">
                           Last check: {new Date(reg.lastHealthCheckAt).toLocaleString('en-GB')}
                         </span>
                       )}
                     </div>
                     {health && (
-                      <div className="mt-1 text-xs rounded px-2 py-0.5 inline-block bg-green-50 text-green-700">
+                      <div className="mt-1 text-xs rounded px-2 py-0.5 inline-block bg-success-50 text-success-700">
                         Health recorded — {health.healthStatusCode ?? '—'}
                         {health.lastHealthCheckAt
                           ? ` at ${new Date(health.lastHealthCheckAt).toLocaleTimeString('en-GB')}`
@@ -149,56 +148,58 @@ function RegistrationsTab({ canManage }: { canManage: boolean }) {
                     )}
                   </div>
                   {canManage && <div className="flex items-center gap-2 flex-shrink-0">
-                    <button
+                    <Button
+                      variant="secondary"
+                      size="sm"
                       onClick={() => void handleHealthCheck(reg)}
                       disabled={actingId === reg.registrationId}
-                      className="rounded border border-gray-300 px-2.5 py-1 text-xs text-gray-600 hover:bg-gray-50 disabled:opacity-50"
                     >
                       {actingId === reg.registrationId ? '…' : 'Record OK'}
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="border-primary-300 text-primary-700 hover:bg-primary-50"
                       onClick={() => setReplayFor(reg)}
-                      className="rounded border border-indigo-300 px-2.5 py-1 text-xs text-indigo-700 hover:bg-indigo-50"
                     >
                       Replay
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className={reg.enabled ? 'border-danger-300 text-danger-600 hover:bg-danger-50' : 'border-success-300 text-success-700 hover:bg-success-50'}
                       onClick={() => void handleToggle(reg)}
                       disabled={actingId === reg.registrationId}
-                      className={`rounded border px-2.5 py-1 text-xs disabled:opacity-50 ${
-                        reg.enabled
-                          ? 'border-red-300 text-red-600 hover:bg-red-50'
-                          : 'border-green-300 text-green-700 hover:bg-green-50'
-                      }`}
                     >
                       {reg.enabled ? 'Disable' : 'Enable'}
-                    </button>
+                    </Button>
                   </div>}
-                </div>
-              </div>
+                </CardBody>
+              </Card>
             );
           })}
         </div>
       )}
 
-      {canManage && showCreate && (
-        <CreateRegModal
-          onClose={() => setShowCreate(false)}
-          onCreated={() => { setShowCreate(false); void load(); }}
-        />
+      {canManage && (
+        <Dialog open={showCreate} onOpenChange={(open) => { if (!open) setShowCreate(false); }} title="New integration registration">
+          <CreateRegForm
+            onClose={() => setShowCreate(false)}
+            onCreated={() => { setShowCreate(false); void load(); }}
+          />
+        </Dialog>
       )}
 
-      {canManage && replayFor && (
-        <ReplayModal
-          reg={replayFor}
-          onClose={() => setReplayFor(null)}
-        />
+      {canManage && (
+        <Dialog open={replayFor !== null} onOpenChange={(open) => { if (!open) setReplayFor(null); }} title={replayFor ? `Replay — ${replayFor.displayName}` : ''}>
+          {replayFor && <ReplayForm reg={replayFor} onClose={() => setReplayFor(null)} />}
+        </Dialog>
       )}
     </div>
   );
 }
 
-function CreateRegModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+function CreateRegForm({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
   const [submitting, setSubmitting] = useState(false);
   const [error,      setError]      = useState('');
 
@@ -226,28 +227,23 @@ function CreateRegModal({ onClose, onCreated }: { onClose: () => void; onCreated
   }
 
   return (
-    <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-white rounded-lg border border-gray-200 p-6 w-full max-w-md shadow-xl" onClick={(e) => e.stopPropagation()}>
-        <h2 className="text-base font-semibold text-gray-900 mb-4">New integration registration</h2>
-        <form onSubmit={(e) => void handleSubmit(e)} className="space-y-3">
-          <MField name="contractId"    label="Contract ID *" />
-          <MField name="transportCode" label="Transport code * (e.g. http, nats)" />
-          <MField name="displayName"   label="Display name (optional)" />
-          <MField name="endpointUrl"   label="Endpoint URL (optional)" />
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          <div className="flex justify-end gap-3 pt-2">
-            <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-gray-600">Cancel</button>
-            <button type="submit" disabled={submitting} className="rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50">
-              {submitting ? 'Creating…' : 'Create'}
-            </button>
-          </div>
-        </form>
+    <form onSubmit={(e) => void handleSubmit(e)} className="space-y-3">
+      <LabelledField label="Contract ID" htmlFor="ir-contract" required><Input id="ir-contract" name="contractId" /></LabelledField>
+      <LabelledField label="Transport code" htmlFor="ir-transport" required hint="e.g. http, nats"><Input id="ir-transport" name="transportCode" /></LabelledField>
+      <LabelledField label="Display name" htmlFor="ir-name" hint="Optional"><Input id="ir-name" name="displayName" /></LabelledField>
+      <LabelledField label="Endpoint URL" htmlFor="ir-url" hint="Optional"><Input id="ir-url" name="endpointUrl" /></LabelledField>
+      {error && <p className="text-sm text-danger-600">{error}</p>}
+      <div className="flex justify-end gap-3 pt-2">
+        <DialogClose asChild>
+          <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
+        </DialogClose>
+        <Button type="submit" disabled={submitting}>{submitting ? 'Creating…' : 'Create'}</Button>
       </div>
-    </div>
+    </form>
   );
 }
 
-function ReplayModal({
+function ReplayForm({
   reg,
   onClose,
 }: {
@@ -276,33 +272,34 @@ function ReplayModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-white rounded-lg border border-gray-200 p-6 w-full max-w-md shadow-xl" onClick={(e) => e.stopPropagation()}>
-        <h2 className="text-base font-semibold text-gray-900 mb-1">Replay — {reg.displayName}</h2>
-        <p className="text-xs text-gray-500 mb-4">
-          Re-process integration exchanges in a date range. This is a destructive operation that
-          may produce duplicate events — confirm with your integration team before proceeding.
-        </p>
-        <form onSubmit={(e) => void handleSubmit(e)} className="space-y-3">
-          <MField name="fromDate" label="From date (ISO 8601)" />
-          <MField name="toDate"   label="To date (ISO 8601)" />
-          {error   && <p className="text-sm text-red-600">{error}</p>}
-          {success && <p className="text-sm text-green-600">{success}</p>}
-          {!success && (
-            <div className="flex justify-end gap-3 pt-2">
-              <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-gray-600">Cancel</button>
-              <button type="submit" disabled={replaying} className="rounded bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-50">
-                {replaying ? 'Starting…' : 'Start replay'}
-              </button>
-            </div>
-          )}
-          {success && (
-            <div className="flex justify-end pt-2">
-              <button type="button" onClick={onClose} className="rounded bg-gray-600 px-4 py-2 text-sm font-medium text-white">Close</button>
-            </div>
-          )}
-        </form>
-      </div>
+    <div>
+      <p className="text-xs text-neutral-500 mb-4">
+        Re-process integration exchanges in a date range. This is a destructive operation that
+        may produce duplicate events — confirm with your integration team before proceeding.
+      </p>
+      <form onSubmit={(e) => void handleSubmit(e)} className="space-y-3">
+        <LabelledField label="From date" htmlFor="rp-from" hint="ISO 8601"><Input id="rp-from" name="fromDate" /></LabelledField>
+        <LabelledField label="To date" htmlFor="rp-to" hint="ISO 8601"><Input id="rp-to" name="toDate" /></LabelledField>
+        {error   && <p className="text-sm text-danger-600">{error}</p>}
+        {success && <p className="text-sm text-success-600">{success}</p>}
+        {!success && (
+          <div className="flex justify-end gap-3 pt-2">
+            <DialogClose asChild>
+              <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
+            </DialogClose>
+            <Button type="submit" disabled={replaying} className="bg-warning-600 hover:bg-warning-700">
+              {replaying ? 'Starting…' : 'Start replay'}
+            </Button>
+          </div>
+        )}
+        {success && (
+          <div className="flex justify-end pt-2">
+            <DialogClose asChild>
+              <Button type="button" variant="secondary" onClick={onClose}>Close</Button>
+            </DialogClose>
+          </div>
+        )}
+      </form>
     </div>
   );
 }
@@ -344,64 +341,61 @@ function ContractsTab({ canManage }: { canManage: boolean }) {
   return (
     <div>
       <div className="flex justify-end mb-4">
-        {canManage && <button onClick={() => setShowCreate(s => !s)} className="rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
-          New contract
-        </button>}
+        {canManage && <Button onClick={() => setShowCreate(s => !s)}>New contract</Button>}
       </div>
 
       {canManage && showCreate && (
-        <form onSubmit={(e) => void handleCreate(e)} className="flex items-end gap-3 mb-4 bg-indigo-50 rounded-lg p-4">
+        <form onSubmit={(e) => void handleCreate(e)} className="flex items-end gap-3 mb-4 bg-primary-50 rounded-lg p-4">
           <MiniField name="name"         label="Name" />
           <MiniField name="version"      label="Version" />
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Direction</label>
-            <select name="direction" className="rounded border border-gray-300 px-2 py-1.5 text-sm">
+          <LabelledField label="Direction" htmlFor="ic-direction">
+            <Select id="ic-direction" name="direction">
               <option value="inbound">Inbound</option>
               <option value="outbound">Outbound</option>
               <option value="bidirectional">Bidirectional</option>
-            </select>
-          </div>
+            </Select>
+          </LabelledField>
           <MiniField name="protocolCode" label="Protocol" />
-          <button type="submit" className="rounded bg-indigo-600 px-3 py-2 text-sm font-medium text-white">Save</button>
-          <button type="button" onClick={() => setShowCreate(false)} className="text-sm text-gray-500">Cancel</button>
+          <Button type="submit">Save</Button>
+          <Button type="button" variant="ghost" onClick={() => setShowCreate(false)}>Cancel</Button>
         </form>
       )}
 
-      {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+      {error && <p className="mb-4 text-sm text-danger-600">{error}</p>}
 
       {loading ? (
         <div className="flex justify-center py-8"><Spinner /></div>
       ) : contracts.length === 0 ? (
-        <p className="text-sm text-gray-600">No contracts.</p>
+        <p className="text-sm text-neutral-600">No contracts.</p>
       ) : (
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200 text-sm">
-            <thead className="bg-gray-50">
+        <Card>
+          <Table>
+            <TableHead>
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Version</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Direction</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Protocol</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Active</th>
+                <TableHeaderCell>Name</TableHeaderCell>
+                <TableHeaderCell>Version</TableHeaderCell>
+                <TableHeaderCell>Direction</TableHeaderCell>
+                <TableHeaderCell>Protocol</TableHeaderCell>
+                <TableHeaderCell>Active</TableHeaderCell>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
+            </TableHead>
+            <TableBody>
               {contracts.map(c => (
-                <tr key={c.contractId} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-medium text-gray-900">{c.displayName}</td>
-                  <td className="px-4 py-3 font-mono text-xs text-gray-600">{c.currentContractVersion}</td>
-                  <td className="px-4 py-3"><Badge value={c.directionCode} /></td>
-                  <td className="px-4 py-3 text-gray-600">{c.patternType}</td>
-                  <td className="px-4 py-3">
+                <TableRow key={c.contractId}>
+                  <TableCell className="font-medium text-neutral-900">{c.displayName}</TableCell>
+                  <TableCell className="font-mono text-xs">{c.currentContractVersion}</TableCell>
+                  <TableCell><Badge value={c.directionCode} /></TableCell>
+                  <TableCell>{c.patternType}</TableCell>
+                  <TableCell>
                     {c.deprecatedAt == null
-                      ? <span className="text-xs text-green-600">Yes</span>
-                      : <span className="text-xs text-gray-600">Deprecated</span>}
-                  </td>
-                </tr>
+                      ? <span className="text-xs text-success-600">Yes</span>
+                      : <span className="text-xs text-neutral-600">Deprecated</span>}
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </TableBody>
+          </Table>
+        </Card>
       )}
     </div>
   );
@@ -444,88 +438,80 @@ function ExchangesTab() {
   return (
     <div>
       <form onSubmit={handleFilter} className="flex items-center gap-3 mb-4">
-        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="rounded border border-gray-300 px-2 py-1.5 text-sm">
+        <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="w-auto">
           <option value="">All statuses</option>
           {['pending', 'processed', 'failed', 'retried'].map(s => <option key={s} value={s}>{s}</option>)}
-        </select>
-        <select value={dirFilter} onChange={(e) => setDirFilter(e.target.value)} className="rounded border border-gray-300 px-2 py-1.5 text-sm">
+        </Select>
+        <Select value={dirFilter} onChange={(e) => setDirFilter(e.target.value)} className="w-auto">
           <option value="">All directions</option>
           <option value="inbound">Inbound</option>
           <option value="outbound">Outbound</option>
-        </select>
-        <button type="submit" className="rounded bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700">Filter</button>
+        </Select>
+        <Button type="submit">Filter</Button>
         {(statusFilter || dirFilter) && (
-          <button type="button" onClick={() => { setStatusFilter(''); setDirFilter(''); void load(0); }} className="text-sm text-gray-500">Clear</button>
+          <Button type="button" variant="ghost" onClick={() => { setStatusFilter(''); setDirFilter(''); void load(0); }}>Clear</Button>
         )}
       </form>
 
-      {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+      {error && <p className="mb-4 text-sm text-danger-600">{error}</p>}
 
       {loading ? (
         <div className="flex justify-center py-8"><Spinner /></div>
       ) : exchanges.length === 0 ? (
-        <p className="text-sm text-gray-600">No exchanges found.</p>
+        <p className="text-sm text-neutral-600">No exchanges found.</p>
       ) : (
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200 text-sm">
-            <thead className="bg-gray-50">
+        <Card>
+          <Table>
+            <TableHead>
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Event type</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Direction</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Occurred</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Error</th>
+                <TableHeaderCell>Event type</TableHeaderCell>
+                <TableHeaderCell>Direction</TableHeaderCell>
+                <TableHeaderCell>Status</TableHeaderCell>
+                <TableHeaderCell>Occurred</TableHeaderCell>
+                <TableHeaderCell>Error</TableHeaderCell>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
+            </TableHead>
+            <TableBody>
               {exchanges.map(ex => (
-                <tr key={ex.exchangeId} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-mono text-xs text-gray-700">{ex.exchangeTypeCode}</td>
-                  <td className="px-4 py-3 text-gray-600 text-xs capitalize">{ex.directionCode}</td>
-                  <td className="px-4 py-3"><Badge value={ex.statusCode} /></td>
-                  <td className="px-4 py-3 text-gray-500 text-xs">{new Date(ex.createdAt).toLocaleString('en-GB')}</td>
-                  <td className="px-4 py-3 text-red-500 text-xs truncate max-w-xs">{ex.lastError ?? '—'}</td>
-                </tr>
+                <TableRow key={ex.exchangeId}>
+                  <TableCell className="font-mono text-xs text-neutral-700">{ex.exchangeTypeCode}</TableCell>
+                  <TableCell className="text-xs capitalize">{ex.directionCode}</TableCell>
+                  <TableCell><Badge value={ex.statusCode} /></TableCell>
+                  <TableCell className="text-xs">{new Date(ex.createdAt).toLocaleString('en-GB')}</TableCell>
+                  <TableCell className="text-danger-500 text-xs truncate max-w-xs">{ex.lastError ?? '—'}</TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
-          <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 flex items-center gap-3 text-sm text-gray-600">
-            <button
+            </TableBody>
+          </Table>
+          <div className="px-4 py-3 bg-neutral-50 border-t border-neutral-200 flex items-center gap-3 text-sm text-neutral-600">
+            <Button
+              variant="secondary"
+              size="sm"
               onClick={() => void load(Math.max(0, offset - PAGE_SIZE), statusFilter || undefined, dirFilter || undefined)}
               disabled={offset === 0}
-              className="px-3 py-1 rounded border border-gray-300 disabled:opacity-40 hover:bg-white"
             >
               Previous
-            </button>
+            </Button>
             {exchanges.length > 0 && <span>{offset + 1}–{offset + exchanges.length}</span>}
-            <button
+            <Button
+              variant="secondary"
+              size="sm"
               onClick={() => void load(offset + PAGE_SIZE, statusFilter || undefined, dirFilter || undefined)}
               disabled={exchanges.length < PAGE_SIZE}
-              className="px-3 py-1 rounded border border-gray-300 disabled:opacity-40 hover:bg-white"
             >
               Next
-            </button>
+            </Button>
           </div>
-        </div>
+        </Card>
       )}
-    </div>
-  );
-}
-
-function MField({ name, label }: { name: string; label: string }) {
-  return (
-    <div>
-      <label className="block text-xs font-medium text-gray-700 mb-1">{label}</label>
-      <input name={name} className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
     </div>
   );
 }
 
 function MiniField({ name, label }: { name: string; label: string }) {
   return (
-    <div>
-      <label className="block text-xs font-medium text-gray-700 mb-1">{label}</label>
-      <input name={name} className="rounded border border-gray-300 px-2 py-1.5 text-sm" />
-    </div>
+    <LabelledField label={label} htmlFor={`ic-${name}`}>
+      <Input id={`ic-${name}`} name={name} />
+    </LabelledField>
   );
 }

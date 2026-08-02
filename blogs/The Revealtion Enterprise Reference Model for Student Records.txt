@@ -1,0 +1,2119 @@
+<main>
+  <section class="blog-article">
+    <h1>The Revelation Student Records Enterprise Reference Model</h1>
+    <p>This article presents an updated version of our Student Records Enterprise Reference Model, building on our
+      earlier blog, <a href='https://revelationcore.com/blogs/a-student-records-enterprise-reference-model.html'>A
+        Higher Education Enterprise Reference Model for Student Records</a>.</p>
+    <p>The updated model is intended as a working reference for architects and analysts operating around the Student
+      Information System (SIS). It extends the original scope beyond core SIS integrations to provide a fuller UK higher
+      education view spanning operational systems, statutory bodies, student support processes, examination operations,
+      and academic governance.</p>
+    <p>You can explore the interactive model here: <a
+        href='https://www.revelationcore.com/app/index.html?model=/app/reference/models/revelation-student-records-enterprise-reference-model-3.0.json'><strong>View
+          the model in the Revelation EA tool</strong></a>.</p><img class='hero-image'
+      src='https://revelationcore.com/assets/svg/revelation-student-records-enterprise-reference-model-2.1.svg'
+      alt='Higher Education Student Records Enterprise Reference Model'>
+  </section>
+  <section class="blog-article">
+    <h2>What’s Changed in This Version</h2>
+    <p>Version 3.0 keeps the same 33 systems and actors and 69 flows introduced in 2.1, and makes two changes: a new
+      flow identifier scheme, and a direct link to the open-source implementation this model has since informed.</p>
+    <ul>
+      <li><strong>New flow identifier scheme:</strong> flows were previously numbered <code>F-CM-SIS-01</code>–<code>F-SIS-AI-01</code>
+        in a single flat sequence with no gap tolerance (version 2.1 has no <code>F054</code>, an artefact of the flat
+        numbering) and no information content — nothing about <code>F-SIS-HESA-01</code> tells you it concerns HESA. Flows are
+        now identified as <code>F-&lt;FROM&gt;-&lt;TO&gt;-&lt;nn&gt;</code>, for example <code>F-SIS-HESA-01</code>: the
+        source and target system codes plus a two-digit sequence local to that ordered pair. A new flow between an
+        existing pair of systems simply gets the next local sequence number; a new flow between a pair that has never
+        exchanged data starts its own sequence at <code>01</code>. No flow's identifier ever needs to change because a
+        flow was added elsewhere in the model, and the identifier itself now tells you what the flow connects.</li>
+      <li><strong>Reference implementation:</strong> this model has since informed <a
+          href='https://github.com/RevelationCore/Revelation-SRS'><strong>Revelation SRS</strong></a>, an open-source
+        student records system. See <a href="#reference-implementation">Reference implementation</a> below and the
+        <strong>SRS status</strong> column in the systems portfolio for how each system in this model maps to the
+        current open-source build.</li>
+    </ul>
+    <p>Everything else — the 33 systems, the 69 flows, their descriptions and typical data exchanged — is unchanged
+      from version 2.1. The remainder of this section describes what changed in <em>2.1</em> relative to the original
+      accelerator, for readers arriving at this article for the first time.</p>
+    <p>The original accelerator described <strong>24 systems</strong> and <strong>26 core SIS flows</strong>. Version
+      2.1 expanded that scope to <strong>33 systems and actors</strong> and <strong>69
+        flows</strong>, turning the original integration-focused view into a broader enterprise reference for UK higher
+      education architecture.</p>
+    <ul>
+      <li><strong>Broader scope:</strong> the model now extends beyond core SIS integrations into analytics, research,
+        digital services, statutory reporting, student support, examinations, and academic governance.</li>
+      <li><strong>New systems and actors:</strong> additions include Student Wellbeing &amp; Disability, Exam
+        Scheduling, Academic Integrity, Exam Board, External Examiner, and UK sector bodies such as UCAS, HESA, the
+        Student Loans Company, and UK Visas &amp; Immigration.</li>
+      <li><strong>Expanded flow coverage:</strong> the original model covered 26 core SIS flows. The 2.1 update added
+        flows for analytics and warehousing, student evaluation, HR and payroll, research administration, content and
+        service management, statutory returns, wellbeing and adjustments, examinations, board ratification, external
+        examining, and academic misconduct.</li>
+      <li><strong>Clearer system-of-record boundaries:</strong> Student Records is now described explicitly as the
+        authoritative student record and outcome system, while source systems such as Finance, Wellbeing, Research
+        Proposals, and Academic Integrity retain ownership of their own business processes.</li>
+      <li><strong>UK-specific architecture:</strong> statutory and regulatory obligations are now modelled directly,
+        rather than assumed, including HESA returns, SLC confirmations, UKVI sponsor-compliance data, and UCAS
+        admissions exchange.</li>
+      <li><strong>Academic governance made explicit:</strong> the model now distinguishes between systems that process
+        and present data and actors that make formal academic decisions, supported by Exam Board and External Examiner
+        flows.</li>
+    </ul>
+  </section>
+  <section id="reference-implementation" class="blog-article anchor-scroll">
+    <h2>Reference Implementation</h2>
+    <p>This reference model has since informed <a href='https://github.com/RevelationCore/Revelation-SRS'><strong>Revelation
+          SRS</strong></a>, an AGPL-licensed, open-source student records system for UK higher education. Revelation SRS
+      is a separate project under a separate licence from this model (see Licence, below) — it is a working
+      implementation that the model's authors have used to test the model against real build decisions, not a
+      certification that the model is complete or that any given institution's landscape matches it.</p>
+    <p>Building a real system surfaced places where the model's logical flows and an actual implementation diverge.
+      Two are architectural choices worth calling out explicitly:</p>
+    <ul>
+      <li><strong>Curriculum, exam scheduling, and academic misconduct are consolidated natively in the SIS core</strong>
+        rather than modelled as separate systems synced via a flow. Revelation SRS builds programme/module authoring,
+        exam-entry logistics, and misconduct casework directly into the core platform. The corresponding flows
+        (<code>F-CM-SIS-01</code>/<code>F-SIS-CM-01</code>, <code>F-SIS-EXAMS-01</code>/<code>F-EXAMS-SIS-01</code>,
+        <code>F-AI-SIS-01</code>/<code>F-SIS-AI-01</code>) describe a valid integration pattern for institutions that
+        run separate products for these capabilities, but they are not how Revelation SRS itself is built.</li>
+      <li><strong>Attendance is a native pluggable module, not an external feed</strong> — matching the outcome-ownership
+        pattern this model uses for Wellbeing. Revelation SRS's attendance and engagement capability
+        (<code>modules/attendance</code>) owns its own casework and hands the SIS only the confirmed engagement
+        outcome, exactly as Wellbeing hands the SIS an approved-adjustment outcome. The raw-attendance-feed flow this
+        model assumes (<code>F-AM-SIS-01</code>) — a third-party Attendance Monitoring product pushing raw records
+        into the SIS — is not implemented and is not currently planned; Revelation SRS's attendance module is a
+        first-party capability of the same product, not an adapter for an external system.</li>
+    </ul>
+    <p>Beyond these two deviations, most systems in this model fall into one of two states in the current Revelation
+      SRS build: implemented substantially as modelled (as a separate system or module exchanging the outcome data
+      this model describes), or not yet built. Some of the latter are on the product roadmap (Finance, Timetabling,
+      EDRMS, Business Intelligence, Data Warehouse, HR, CRIS); others — CRM, Library, Accommodation &amp; Conferencing,
+      Estates, Online ID Verification, Student Evaluation of Teaching, Payroll, Research Proposals, Content Management,
+      and IT Service Management — have no code and no scheduled work in Revelation SRS today. The systems portfolio
+      table below records this per system as <strong>SRS status</strong>; treat it as a snapshot taken at the
+      version noted at the top of this article, not a permanent commitment.</p>
+  </section>
+  <section class="blog-article">
+    <h2>Model Overview</h2>
+    <p>Student Records sits at the centre of the model as the institutional system of record for the student academic
+      lifecycle. Around it are domain systems that originate or consume data: teaching and learning platforms,
+      operational services, analytics tooling, research systems, digital workplace services, and external statutory
+      bodies.</p>
+    <p>The updated model distinguishes three architectural roles:</p>
+    <ul>
+      <li><strong>Source and operational systems</strong>, such as the VLE, Timetabling, Finance, Attendance Monitoring,
+        Wellbeing, and Exam Scheduling.</li>
+      <li><strong>Core record systems</strong>, with Student Records consolidating the student’s authoritative
+        institutional record and ratified academic outcomes.</li>
+      <li><strong>Governance actors</strong>, such as the Exam Board and External Examiner, who review and ratify
+        outcomes rather than own operational processing.</li>
+    </ul>
+    <div class='callout callout-uk'>
+      <p><strong>UK architecture note:</strong> the model now embeds sector-specific obligations directly in the
+        reference architecture. That includes UCAS admissions exchange, HESA data returns and identifiers, Student Loans
+        Company confirmations, and UKVI sponsor-compliance flows. These are not optional embellishments in a UK context;
+        they are core integration considerations for an SIS landscape.</p>
+    </div>
+    <p>For architects, the main value of the model is not simply the application inventory. It is the assignment of
+      responsibility: which system originates data, which system owns the lasting institutional record, and which actors
+      apply judgement or assurance before outcomes are confirmed.</p>
+  </section>
+  <section class="blog-article">
+    <h2>Model Principles</h2>
+    <p>This model has been developed around a set of governing principles that reflect common practice in UK higher education. Understanding these principles helps architects apply the model appropriately and identify where local deviation may be justified.</p>
+    <h3>Student Records as system of record</h3>
+    <p>The SIS is the institutional system of record for the student academic lifecycle. It holds the authoritative data about who is enrolled, what they are studying, how they are progressing, and what outcomes have been confirmed. All other systems that generate or affect student data are expected to pass the relevant outcome to Student Records.</p>
+    <h3>Process ownership versus outcome ownership</h3>
+    <p>Other systems manage their domain processes and pass the confirmed outcome to Student Records. Finance manages billing; the fee liability and hold status sit in the SIS. Wellbeing manages adjustment cases; the approved outcome sits in the SIS. The Exam Board ratifies results; the ratified decision is written to and locked in the SIS. This principle prevents data fragmentation and ensures a single, auditable record for each student.</p>
+    <h3>SIS as distribution hub</h3>
+    <p>Because the SIS holds the authoritative record, it is also responsible for distributing confirmed outcomes to downstream operational systems. Attendance Monitoring receives approved adjustment thresholds from SIS rather than directly from Wellbeing. The VLE receives adjustment delivery requirements from SIS. This pattern reduces integration complexity and prevents divergent states across systems.</p>
+    <h3>Governance actors are not systems of record</h3>
+    <p>The Exam Board and External Examiner are modelled as actors rather than systems. They receive data, apply judgement, and return decisions — but they do not own records. This distinction preserves the integrity of the student record and reflects the governance reality that formal academic decisions are made by people, not systems.</p>
+    <h3>UK regulatory compliance as a first-class concern</h3>
+    <p>Statutory and regulatory obligations are treated as core integration requirements. HESA data returns, Student Loans Company confirmations, UKVI sponsor compliance data, and UCAS admissions exchange are first-class flows in this model because in a UK HE context they carry legal and financial consequences and must be planned for from the outset of any SIS programme.</p>
+    <h3>Local variation</h3>
+    <p>This model represents a generalised UK higher education architecture. Individual institutions will vary from this pattern. Some operate more lateral data flows between systems, with less centralisation through the SIS. Some have fewer or more systems, or use product suites that consolidate multiple capabilities. Some have integration middleware that alters the physical routing of data. The model is a reference for mapping, gap analysis, and programme planning — not a normative prescription. Institutions should adapt it to reflect their specific systems, history, and governance practice.</p>
+    <h3>Nature of information flows</h3>
+    <p>Flows in this model are logical rather than technical. The physical implementation of any flow may be a real-time API integration, a scheduled batch extract, a portal-based self-service action, a manual process carried out by registry or administrative staff, or an electronic file transfer. The model does not prescribe integration technology; it establishes what data should flow between which systems and who owns each element of the student record.</p>
+  </section>
+  <section class="blog-article">
+    <h2>Applying the Model Locally</h2>
+    <p>The reference model is a starting point, not a deliverable. Its value is realised when institutions use it as a lens against their own landscape — comparing what is modelled here against what they actually have, identifying gaps, and scoping the work needed to close them.</p>
+    <p>A typical application follows a progression from orientation to execution:</p>
+    <h3>Domain and system identification</h3>
+    <p>Begin by mapping the reference model against your institution's actual application inventory. Identify which systems in the reference model you operate, which capabilities are served by different products, and where there are genuine gaps — domains present in the reference model but not yet covered locally. This gives you a scoped, institution-specific version of the model as a baseline.</p>
+    <h3>Business analysis and requirements</h3>
+    <p>For each domain or integration gap identified, use the flow descriptions in this reference as a starting point for business analysis. The flow type classifications — SOR intake, SIS distribution, outcome confirmation, statutory — help orient conversations about data ownership and process boundaries. Work with domain leads to confirm what data is exchanged, who owns it, and what business rules govern it in your local context.</p>
+    <h3>Functional flows</h3>
+    <p>Translate the logical flows in the reference model into institution-specific functional flows. These describe what happens in your processes, using your system names, your data structures, and your business rules. Functional flows are the bridge between the reference model and your detailed design — they confirm the scope of each integration and surface dependencies before implementation begins.</p>
+    <h3>Detailed as-is and to-be modelling</h3>
+    <p>Where significant change is planned — a SIS replacement, an integration remediation, or a new domain capability — develop detailed as-is and to-be models for the affected scope. This may include process models, data flow diagrams, and sequence diagrams that describe the precise message exchange, trigger conditions, error handling, and data transformation for each integration. Revelation supports this progression from logical reference model through to detailed design artefacts.</p>
+    <h3>Transition roadmap and work packages</h3>
+    <p>Use the scoped system inventory and detailed models to build a transition roadmap. Group related integrations and domain changes into work packages that can be sequenced, resourced, and governed independently. Statutory flows such as HESA, SLC, and UKVI typically carry fixed delivery deadlines and should be identified early. Core SIS integrations — VLE, Finance, IAM — are usually foundational and will unblock other work packages downstream. The reference model's flow groupings provide a natural starting point for work package boundaries.</p>
+  </section>
+  <section class="blog-article">
+    <h2>The Enterprise Reference Model</h2>
+  </section>
+
+
+    <div class='toc'>
+      <h2>Contents</h2>
+      <div class='toc-section'>
+        <div class='toc-section-label'>Sections</div>
+        <div class='toc-grid'><a href='#systems'>Systems portfolio</a><a href='#flows'>Flow register</a><a
+            href='#detail'>Detailed flow reference</a></div>
+      </div>
+      <div class='toc-section'>
+        <div class='toc-section-label'>Core SIS Integrations (26 flows)</div>
+        <div class='toc-grid'><a href='#F-CM-SIS-01'>F-CM-SIS-01 CM → SIS</a><a href='#F-SIS-CM-01'>F-SIS-CM-01 SIS → CM</a><a href='#F-SIS-TTB-01'>F-SIS-TTB-01 SIS
+            → TTB</a><a href='#F-TTB-SIS-01'>F-TTB-SIS-01 TTB → SIS</a><a href='#F-CRM-SIS-01'>F-CRM-SIS-01 CRM → SIS</a><a href='#F-SIS-CRM-01'>F-SIS-CRM-01 SIS →
+            CRM</a><a href='#F-LIB-SIS-01'>F-LIB-SIS-01 LIB → SIS</a><a href='#F-SIS-LIB-01'>F-SIS-LIB-01 SIS → LIB</a><a href='#F-SIS-FIN-01'>F-SIS-FIN-01 SIS →
+            FIN</a><a href='#F-FIN-SIS-01'>F-FIN-SIS-01 FIN → SIS</a><a href='#F-EWP-SIS-01'>F-EWP-SIS-01 EWP → SIS</a><a href='#F-SIS-EWP-01'>F-SIS-EWP-01 SIS →
+            EWP</a><a href='#F-AM-SIS-01'>F-AM-SIS-01 AM → SIS</a><a href='#F-SIS-AM-01'>F-SIS-AM-01 SIS → AM</a><a href='#F-SIS-VLE-01'>F-SIS-VLE-01 SIS →
+            VLE</a><a href='#F-VLE-SIS-01'>F-VLE-SIS-01 VLE → SIS</a><a href='#F-SIS-ACC-01'>F-SIS-ACC-01 SIS → ACC</a><a href='#F-ACC-SIS-01'>F-ACC-SIS-01 ACC →
+            SIS</a><a href='#F-SIS-EST-01'>F-SIS-EST-01 SIS → EST</a><a href='#F-EST-SIS-01'>F-EST-SIS-01 EST → SIS</a><a href='#F-SIS-IAM-01'>F-SIS-IAM-01 SIS →
+            IAM</a><a href='#F-IAM-SIS-01'>F-IAM-SIS-01 IAM → SIS</a><a href='#F-SIS-EDRMS-01'>F-SIS-EDRMS-01 SIS → EDRMS</a><a href='#F-EDRMS-SIS-01'>F-EDRMS-SIS-01 EDRMS →
+            SIS</a><a href='#F-SIS-OIV-01'>F-SIS-OIV-01 SIS → OIV</a><a href='#F-OIV-SIS-01'>F-OIV-SIS-01 OIV → SIS</a></div>
+      </div>
+      <div class='toc-section'>
+        <div class='toc-section-label'>Analytics, Administration &amp; Research (18 flows)</div>
+        <div class='toc-grid'><a href='#F-SIS-BI-01'>F-SIS-BI-01 SIS → BI</a><a href='#F-BI-SIS-01'>F-BI-SIS-01 BI → SIS</a><a href='#F-SIS-DW-01'>F-SIS-DW-01 SIS
+            → DW</a><a href='#F-DW-SIS-01'>F-DW-SIS-01 DW → SIS</a><a href='#F-SIS-SETS-01'>F-SIS-SETS-01 SIS → SETS</a><a href='#F-SETS-SIS-01'>F-SETS-SIS-01 SETS →
+            SIS</a><a href='#F-SIS-HR-01'>F-SIS-HR-01 SIS → HR</a><a href='#F-HR-SIS-01'>F-HR-SIS-01 HR → SIS</a><a href='#F-SIS-PAY-01'>F-SIS-PAY-01 SIS →
+            PAY</a><a href='#F-PAY-SIS-01'>F-PAY-SIS-01 PAY → SIS</a><a href='#F-SIS-CRIS-01'>F-SIS-CRIS-01 SIS → CRIS</a><a href='#F-CRIS-SIS-01'>F-CRIS-SIS-01 CRIS →
+            SIS</a><a href='#F-SIS-RP-01'>F-SIS-RP-01 SIS → RP</a><a href='#F-RP-SIS-01'>F-RP-SIS-01 RP → SIS</a><a href='#F-SIS-CMS-01'>F-SIS-CMS-01 SIS →
+            CMS</a><a href='#F-CMS-SIS-01'>F-CMS-SIS-01 CMS → SIS</a><a href='#F-SIS-ITSM-01'>F-SIS-ITSM-01 SIS → ITSM</a><a href='#F-ITSM-SIS-01'>F-ITSM-SIS-01 ITSM →
+            SIS</a></div>
+      </div>
+      <div class='toc-section'>
+        <div class='toc-section-label'>UK Statutory &amp; Regulatory Flows (8 flows)</div>
+        <div class='toc-grid'><a href='#F-UCAS-SIS-01'>F-UCAS-SIS-01 UCAS → SIS</a><a href='#F-SIS-UCAS-01'>F-SIS-UCAS-01 SIS → UCAS</a><a href='#F-SIS-HESA-01'>F-SIS-HESA-01
+            SIS → HESA</a><a href='#F-HESA-SIS-01'>F-HESA-SIS-01 HESA → SIS</a><a href='#F-SIS-SLC-01'>F-SIS-SLC-01 SIS → SLC</a><a href='#F-SLC-SIS-01'>F-SLC-SIS-01 SLC
+            → SIS</a><a href='#F-SIS-UKVI-01'>F-SIS-UKVI-01 SIS → UKVI</a><a href='#F-UKVI-SIS-01'>F-UKVI-SIS-01 UKVI → SIS</a></div>
+      </div>
+      <div class='toc-section'>
+        <div class='toc-section-label'>Wellbeing, Adjustments &amp; Student Context (7 flows)</div>
+        <div class='toc-grid'><a href='#F-SIS-WELL-01'>F-SIS-WELL-01 SIS → WELL</a><a href='#F-VLE-BI-01'>F-VLE-BI-01 VLE → BI</a><a href='#F-AM-BI-01'>F-AM-BI-01 AM → BI</a><a href='#F-DW-BI-01'>F-DW-BI-01 DW → BI</a><a href='#F-CRM-EWP-01'>F-CRM-EWP-01 CRM → EWP</a><a href='#F-SIS-VLE-02'>F-SIS-VLE-02 SIS → VLE</a><a href='#F-SIS-AM-02'>F-SIS-AM-02 SIS → AM</a></div>
+      </div>
+      <div class='toc-section'>
+        <div class='toc-section-label'>Examinations, Governance, Assurance &amp; Academic Integrity (10 flows)</div>
+        <div class='toc-grid'><a href='#F-SIS-EXAMS-01'>F-SIS-EXAMS-01 SIS → EXAMS</a><a href='#F-EXAMS-SIS-01'>F-EXAMS-SIS-01 EXAMS → SIS</a><a href='#F-WELL-SIS-01'>F-WELL-SIS-01 WELL → SIS</a><a href='#F-SIS-EXAMBOARD-01'>F-SIS-EXAMBOARD-01 SIS → EXAMBOARD</a><a href='#F-EXAMBOARD-SIS-01'>F-EXAMBOARD-SIS-01 EXAMBOARD → SIS</a><a href='#F-WELL-SIS-02'>F-WELL-SIS-02 WELL → SIS</a><a href='#F-SIS-EXTEX-01'>F-SIS-EXTEX-01 SIS → EXTEX</a><a href='#F-EXTEX-EXAMBOARD-01'>F-EXTEX-EXAMBOARD-01 EXTEX → EXAMBOARD</a><a href='#F-AI-SIS-01'>F-AI-SIS-01 AI → SIS</a><a href='#F-SIS-AI-01'>F-SIS-AI-01 SIS → AI</a></div>
+      </div>
+    </div>
+  </section>
+  <section id="systems" class="blog-article anchor-scroll">
+    <h2>Systems Portfolio</h2>
+      <table class="data-entity-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Type</th>
+            <th>Name</th>
+            <th>Description</th>
+            <th>Domain</th>
+            <th>Key capabilities</th>
+            <th>SRS status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>ACC</strong></td>
+            <td>System</td>
+            <td>Accomm &amp; Conf Sys</td>
+            <td>Manage on-campus accommodation and external event bookings.</td>
+            <td><span class="domain d-campus">Campus &amp; Facilities</span></td>
+            <td>Room allocation; Conference/venue scheduling; Booking/payment processing; Resource allocation</td>
+            <td>Not implemented; not tracked</td>
+          </tr>
+          <tr>
+            <td><strong>AM</strong></td>
+            <td>System</td>
+            <td>Attendance Monitoring</td>
+            <td>Track student attendance and engagement indicators and analyse learning activities.</td>
+            <td><span class="domain d-student">Student Lifecycle &amp; Experience</span></td>
+            <td>Attendance tracking; Engagement analytics; Early-warning alerts; Reporting/dashboards</td>
+            <td>Implemented — modules/attendance (native module, outcome-ownership pattern)</td>
+          </tr>
+          <tr>
+            <td><strong>AI</strong></td>
+            <td>System</td>
+            <td>Academic Integrity</td>
+            <td>Manage academic misconduct allegations, investigation workflows, panel decisions, and penalties arising
+              from plagiarism, collusion, cheating, or other breaches of academic integrity regulations.</td>
+            <td><span class="domain d-teaching">Teaching &amp; Learning</span></td>
+            <td>Misconduct case management; Evidence handling; Investigation workflow; Panel decision recording; Penalty
+              determination; Outcome notification</td>
+            <td>Implemented, natively in SIS core (not a separate synced system)</td>
+          </tr>
+          <tr>
+            <td><strong>BI</strong></td>
+            <td>System</td>
+            <td>Business Intelligence</td>
+            <td>Provide data analysis, dashboards, and reporting across institution-wide data sets.</td>
+            <td><span class="domain d-analytics">Institutional Analytics &amp; Reporting</span></td>
+            <td>Data aggregation; Analytics &amp; dashboards; Predictive insights; Performance reporting</td>
+            <td>Planned — named in the backlog; no code yet</td>
+          </tr>
+          <tr>
+            <td><strong>CMS</strong></td>
+            <td>System</td>
+            <td>Content Mgmt Systems</td>
+            <td>Manage and publish digital content for websites, intranets, and portals.</td>
+            <td><span class="domain d-it">IT &amp; Digital Infrastructure</span></td>
+            <td>Web content creation; Content workflow; Version control; Publishing &amp; archiving</td>
+            <td>Not implemented; not tracked</td>
+          </tr>
+          <tr>
+            <td><strong>CRIS</strong></td>
+            <td>System</td>
+            <td>CRIS</td>
+            <td>Centralise and track research outputs, publications, and researcher profiles.</td>
+            <td><span class="domain d-research">Research &amp; Innovation</span></td>
+            <td>Publications management; Researcher profiles; Compliance reporting; Collaboration tracking</td>
+            <td>Planned — named in the backlog; no code yet</td>
+          </tr>
+          <tr>
+            <td><strong>CRM</strong></td>
+            <td>System</td>
+            <td>CRM</td>
+            <td>Manage interactions and relationships with prospects, students, alumni, and partners.</td>
+            <td><span class="domain d-student">Student Lifecycle &amp; Experience</span></td>
+            <td>Lead management; Communication tracking; Recruitment &amp; marketing automation; Stakeholder engagement
+            </td>
+            <td>Not implemented; not tracked</td>
+          </tr>
+          <tr>
+            <td><strong>CM</strong></td>
+            <td>System</td>
+            <td>Curriculum Mgmt</td>
+            <td>Define and maintain programmes, modules, and learning outcomes.</td>
+            <td><span class="domain d-academic">Academic &amp; Programme Management</span></td>
+            <td>Programme/module design; Curriculum change tracking; Learning outcome mapping; Approval workflows</td>
+            <td>Implemented, natively in SIS core (not a separate synced system)</td>
+          </tr>
+          <tr>
+            <td><strong>DW</strong></td>
+            <td>System</td>
+            <td>Data Warehouse</td>
+            <td>Consolidate institutional data from multiple sources for analysis and reporting.</td>
+            <td><span class="domain d-analytics">Institutional Analytics &amp; Reporting</span></td>
+            <td>Data extraction/ETL; Historical data storage; Centralised reporting; Integration with BI tools</td>
+            <td>Planned — named in the backlog; no code yet</td>
+          </tr>
+          <tr>
+            <td><strong>EDRMS</strong></td>
+            <td>System</td>
+            <td>EDRMS</td>
+            <td>Store, manage, and track electronic documents and records throughout their lifecycle.</td>
+            <td><span class="domain d-admin">Enterprise Administration</span></td>
+            <td>Document version control; Record retention policies; Secure access; Compliance &amp; auditing</td>
+            <td>Planned — named in the backlog; no code yet</td>
+          </tr>
+          <tr>
+            <td><strong>ESB</strong></td>
+            <td>System</td>
+            <td>Enterprise Service Bus</td>
+            <td>Facilitate system-to-system integration and message brokering between applications.</td>
+            <td><span class="domain d-it">IT &amp; Digital Infrastructure</span></td>
+            <td>Message routing; Data transformation; Enterprise integration patterns; Event-driven architecture</td>
+            <td>Not applicable — optional institutional pattern; fulfilled internally</td>
+          </tr>
+          <tr>
+            <td><strong>EWP</strong></td>
+            <td>System</td>
+            <td>Enterprise Web Portal</td>
+            <td>Provide unified, role-based web access to institutional services and information.</td>
+            <td><span class="domain d-it">IT &amp; Digital Infrastructure</span></td>
+            <td>Single sign-on; Personalised dashboards; Self-service functionality; Communication tools</td>
+            <td>Implemented — apps/portal</td>
+          </tr>
+          <tr>
+            <td><strong>EST</strong></td>
+            <td>System</td>
+            <td>Estates</td>
+            <td>Manage property portfolios, maintenance, space allocation, and campus infrastructure.</td>
+            <td><span class="domain d-campus">Campus &amp; Facilities</span></td>
+            <td>Facilities management; Room allocation; Maintenance scheduling; Capital project management</td>
+            <td>Not implemented; not tracked</td>
+          </tr>
+          <tr>
+            <td><strong>EXAMS</strong></td>
+            <td>System</td>
+            <td>Exam Scheduling</td>
+            <td>Plan and manage the operational logistics of formal examinations, including timetabling, room
+              allocation, invigilation scheduling, seating plans, and candidate entry management.</td>
+            <td><span class="domain d-teaching">Teaching &amp; Learning</span></td>
+            <td>Exam timetabling; Room and invigilation allocation; Seating plan generation; Candidate entry management;
+              Accommodation logistics</td>
+            <td>Implemented, natively in SIS core (not a separate synced system)</td>
+          </tr>
+          <tr>
+            <td><strong>EXAMBOARD</strong></td>
+            <td>Actor</td>
+            <td>Exam Board</td>
+            <td>Formal academic decision-making body responsible for reviewing, confirming, and ratifying student
+              results in accordance with institutional regulations and sector expectations.</td>
+            <td><span class="domain d-teaching">Teaching &amp; Learning</span></td>
+            <td>Module result confirmation; Classification and award decisions; Progression and resit determinations;
+              Exceptional circumstances consideration; Outcome sign-off</td>
+            <td>Implemented — governance workflow in core</td>
+          </tr>
+          <tr>
+            <td><strong>EXTEX</strong></td>
+            <td>Actor</td>
+            <td>External Examiner</td>
+            <td>Independent academic appointed from another UK higher education institution to assure standards
+              comparability and fairness of marking across cohorts.</td>
+            <td><span class="domain d-teaching">Teaching &amp; Learning</span></td>
+            <td>Sample review; Standards assurance; Pre-board scrutiny; Exam Board attendance; Annual reporting</td>
+            <td>Implemented — governance workflow in core</td>
+          </tr>
+          <tr>
+            <td><strong>FIN</strong></td>
+            <td>System</td>
+            <td>Finance</td>
+            <td>Handle financial transactions, budgeting, accounting, and procurement.</td>
+            <td><span class="domain d-admin">Enterprise Administration</span></td>
+            <td>Accounts payable/receivable; Budgeting &amp; forecasting; Procurement; Financial reporting</td>
+            <td>Planned — named in the backlog; no code yet</td>
+          </tr>
+          <tr>
+            <td><strong>HESA</strong></td>
+            <td>Actor</td>
+            <td>HESA</td>
+            <td>Higher Education Statistics Agency — statutory body responsible for collecting and publishing data about
+              UK higher education.</td>
+            <td><span class="domain d-compliance">Compliance &amp; Regulatory Reporting</span></td>
+            <td>Statutory student data collection; HESA ID assignment; Data quality validation; Sector benchmarking</td>
+            <td>Implemented — regulatory route in core</td>
+          </tr>
+          <tr>
+            <td><strong>HR</strong></td>
+            <td>System</td>
+            <td>HR</td>
+            <td>Support human resource processes including recruitment, performance, and payroll setup.</td>
+            <td><span class="domain d-admin">Enterprise Administration</span></td>
+            <td>Staff recruitment &amp; onboarding; Performance reviews; Training &amp; development; Leave management
+            </td>
+            <td>Planned — named in the backlog; no code yet</td>
+          </tr>
+          <tr>
+            <td><strong>IAM</strong></td>
+            <td>System</td>
+            <td>Identity &amp; Access Mgmt</td>
+            <td>Provision and manage user identities and access rights across enterprise systems.</td>
+            <td><span class="domain d-it">IT &amp; Digital Infrastructure</span></td>
+            <td>User provisioning; Authentication; Role-based access; Single sign-on</td>
+            <td>Implemented (outbound); inbound account events are backlog</td>
+          </tr>
+          <tr>
+            <td><strong>ITSM</strong></td>
+            <td>System</td>
+            <td>IT Service Mgmt</td>
+            <td>Coordinate and track IT support, incidents, requests, and assets.</td>
+            <td><span class="domain d-it">IT &amp; Digital Infrastructure</span></td>
+            <td>Incident management; Service request tracking; Configuration &amp; asset management; Knowledge base</td>
+            <td>Not implemented; not tracked</td>
+          </tr>
+          <tr>
+            <td><strong>LIB</strong></td>
+            <td>System</td>
+            <td>Library</td>
+            <td>Manage library resources, loans, and digital/electronic materials.</td>
+            <td><span class="domain d-teaching">Teaching &amp; Learning</span></td>
+            <td>Cataloguing; Circulation/loans; E-resource management; Discovery &amp; search services</td>
+            <td>Not implemented; not tracked</td>
+          </tr>
+          <tr>
+            <td><strong>OIV</strong></td>
+            <td>System</td>
+            <td>Online ID Verification</td>
+            <td>Electronic identity verification service for student personal data and documents.</td>
+            <td><span class="domain d-student">Student Lifecycle &amp; Experience</span></td>
+            <td>Document scanning; ID matching; Fraud detection; Verification status updates</td>
+            <td>Not implemented; not tracked</td>
+          </tr>
+          <tr>
+            <td><strong>PAY</strong></td>
+            <td>System</td>
+            <td>Payroll</td>
+            <td>Execute payroll runs, deductions, tax, and pension management for institutional employees and student
+              bursaries.</td>
+            <td><span class="domain d-admin">Enterprise Administration</span></td>
+            <td>Payroll calculation; Tax &amp; pension contributions; Bursary &amp; stipend processing; Compliance
+              reporting</td>
+            <td>Not implemented; not tracked</td>
+          </tr>
+          <tr>
+            <td><strong>RP</strong></td>
+            <td>System</td>
+            <td>Research Proposals</td>
+            <td>Support the submission, management, and tracking of research funding and contracts.</td>
+            <td><span class="domain d-research">Research &amp; Innovation</span></td>
+            <td>Grant application workflow; Compliance checks; Award management; Contract tracking</td>
+            <td>Not implemented; not tracked</td>
+          </tr>
+          <tr>
+            <td><strong>SETS</strong></td>
+            <td>System</td>
+            <td>Stud Eval Teach Soft</td>
+            <td>Collect and analyse student feedback on modules, lecturers, and teaching effectiveness.</td>
+            <td><span class="domain d-teaching">Teaching &amp; Learning</span></td>
+            <td>Feedback surveys; Data analysis &amp; reporting; Action tracking; Quality enhancement</td>
+            <td>Not implemented; not tracked</td>
+          </tr>
+          <tr>
+            <td><strong>SIS</strong></td>
+            <td>System</td>
+            <td>Student Records</td>
+            <td>Core student records and academic administration platform managing student identity, enrolment, module
+              registration, academic record, assessment result aggregation, progression, and awards.</td>
+            <td><span class="domain d-student">Student Lifecycle &amp; Experience</span></td>
+            <td>Enrolment &amp; registration; Academic records &amp; result aggregation; Assessment processing and
+              validation; Moderation workflow support; Grades &amp; progression; Graduation &amp; award management;
+              Board data generation; Adjustment and exceptional circumstances outcome management; Post-ratification
+              record locking</td>
+            <td>Implemented — core platform (this repository)</td>
+          </tr>
+          <tr>
+            <td><strong>SLC</strong></td>
+            <td>Actor</td>
+            <td>Student Loans Company</td>
+            <td>Government-owned company administering student loans and grants on behalf of the UK government.</td>
+            <td><span class="domain d-compliance">Compliance &amp; Regulatory Reporting</span></td>
+            <td>Tuition fee loan processing; Maintenance loan administration; Enrolment confirmation; Overpayment
+              recovery</td>
+            <td>Implemented — regulatory route in core</td>
+          </tr>
+          <tr>
+            <td><strong>TTB</strong></td>
+            <td>System</td>
+            <td>Timetabling</td>
+            <td>Create and manage academic timetables for classes, rooms, and other resources.</td>
+            <td><span class="domain d-teaching">Teaching &amp; Learning</span></td>
+            <td>Schedule generation; Room allocation; Conflict resolution; Calendar integration</td>
+            <td>Planned — named in the backlog; no code yet</td>
+          </tr>
+          <tr>
+            <td><strong>UCAS</strong></td>
+            <td>Actor</td>
+            <td>UCAS</td>
+            <td>Universities and Colleges Admissions Service — the national admissions processing body for UK higher
+              education.</td>
+            <td><span class="domain d-student">Student Lifecycle &amp; Experience</span></td>
+            <td>Application processing; Offer and acceptance management; Clearing coordination; Qualification
+              verification</td>
+            <td>Implemented — regulatory route in core</td>
+          </tr>
+          <tr>
+            <td><strong>UKVI</strong></td>
+            <td>Actor</td>
+            <td>UK Visas &amp; Immigration</td>
+            <td>Home Office agency responsible for student visa compliance; institutions hold a Student sponsor licence.
+            </td>
+            <td><span class="domain d-compliance">Compliance &amp; Regulatory Reporting</span></td>
+            <td>CAS management; Attendance monitoring compliance; Visa status tracking; Sponsor compliance reporting
+            </td>
+            <td>Implemented — regulatory route in core</td>
+          </tr>
+          <tr>
+            <td><strong>VLE</strong></td>
+            <td>System</td>
+            <td>Virtual Learning Env</td>
+            <td>Deliver and manage online learning content, assessments, and collaboration tools.</td>
+            <td><span class="domain d-teaching">Teaching &amp; Learning</span></td>
+            <td>Course content hosting; Online assessments; Discussion forums; Gradebook</td>
+            <td>Implemented — adapters/vle</td>
+          </tr>
+          <tr>
+            <td><strong>WELL</strong></td>
+            <td>System</td>
+            <td>Student Wellbeing &amp; Disability</td>
+            <td>Manage student wellbeing, disability declarations, mental health support, reasonable adjustments, and
+              exceptional circumstances casework.</td>
+            <td><span class="domain d-student">Student Lifecycle &amp; Experience</span></td>
+            <td>Disability assessment &amp; DSA; Reasonable adjustments management; Exceptional circumstances case
+              management; Mental health case management; Early intervention alerts</td>
+            <td>Implemented — modules/wellbeing (outcome-ownership reference pattern)</td>
+          </tr>
+        </tbody>
+      </table>
+  </section>
+  <section id="flows" class="blog-article anchor-scroll">
+    <h2>Flow Register</h2>
+      <table class="data-entity-table">
+        <thead>
+          <tr>
+            <th>Flow ID</th>
+            <th>From</th>
+            <th>To</th>
+            <th>Flow name</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><a href='#F-CM-SIS-01'><strong>F-CM-SIS-01</strong></a></td>
+            <td>Curriculum Mgmt</td>
+            <td>Student Records</td>
+            <td><a href='#F-CM-SIS-01'>Programme and module catalogue updates</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-SIS-CM-01'><strong>F-SIS-CM-01</strong></a></td>
+            <td>Student Records</td>
+            <td>Curriculum Mgmt</td>
+            <td><a href='#F-SIS-CM-01'>Enrolment, completion, and performance metrics</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-SIS-TTB-01'><strong>F-SIS-TTB-01</strong></a></td>
+            <td>Student Records</td>
+            <td>Timetabling</td>
+            <td><a href='#F-SIS-TTB-01'>Student enrolment and module registration data</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-TTB-SIS-01'><strong>F-TTB-SIS-01</strong></a></td>
+            <td>Timetabling</td>
+            <td>Student Records</td>
+            <td><a href='#F-TTB-SIS-01'>Finalised timetable and room allocation data</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-CRM-SIS-01'><strong>F-CRM-SIS-01</strong></a></td>
+            <td>CRM</td>
+            <td>Student Records</td>
+            <td><a href='#F-CRM-SIS-01'>Applicant, offer, and admissions decision data</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-SIS-CRM-01'><strong>F-SIS-CRM-01</strong></a></td>
+            <td>Student Records</td>
+            <td>CRM</td>
+            <td><a href='#F-SIS-CRM-01'>Student enrolment status and progression updates</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-LIB-SIS-01'><strong>F-LIB-SIS-01</strong></a></td>
+            <td>Library</td>
+            <td>Student Records</td>
+            <td><a href='#F-LIB-SIS-01'>Library loans, fines, and overdue notifications</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-SIS-LIB-01'><strong>F-SIS-LIB-01</strong></a></td>
+            <td>Student Records</td>
+            <td>Library</td>
+            <td><a href='#F-SIS-LIB-01'>Student enrolment status and access rights</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-SIS-FIN-01'><strong>F-SIS-FIN-01</strong></a></td>
+            <td>Student Records</td>
+            <td>Finance</td>
+            <td><a href='#F-SIS-FIN-01'>Enrolment and tuition fee liability data</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-FIN-SIS-01'><strong>F-FIN-SIS-01</strong></a></td>
+            <td>Finance</td>
+            <td>Student Records</td>
+            <td><a href='#F-FIN-SIS-01'>Payment confirmations and financial hold status</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-EWP-SIS-01'><strong>F-EWP-SIS-01</strong></a></td>
+            <td>Enterprise Web Portal</td>
+            <td>Student Records</td>
+            <td><a href='#F-EWP-SIS-01'>Student self-service updates and module selections</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-SIS-EWP-01'><strong>F-SIS-EWP-01</strong></a></td>
+            <td>Student Records</td>
+            <td>Enterprise Web Portal</td>
+            <td><a href='#F-SIS-EWP-01'>Enrolment status, timetables, grades, and notifications</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-AM-SIS-01'><strong>F-AM-SIS-01</strong></a></td>
+            <td>Attendance Monitoring</td>
+            <td>Student Records</td>
+            <td><a href='#F-AM-SIS-01'>Attendance records and absence alerts</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-SIS-AM-01'><strong>F-SIS-AM-01</strong></a></td>
+            <td>Student Records</td>
+            <td>Attendance Monitoring</td>
+            <td><a href='#F-SIS-AM-01'>Student roster and academic calendar data</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-SIS-VLE-01'><strong>F-SIS-VLE-01</strong></a></td>
+            <td>Student Records</td>
+            <td>Virtual Learning Env</td>
+            <td><a href='#F-SIS-VLE-01'>Student enrolment, course assignments, and term dates</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-VLE-SIS-01'><strong>F-VLE-SIS-01</strong></a></td>
+            <td>Virtual Learning Env</td>
+            <td>Student Records</td>
+            <td><a href='#F-VLE-SIS-01'>Assessment grades, completion status, and academic alerts</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-SIS-ACC-01'><strong>F-SIS-ACC-01</strong></a></td>
+            <td>Student Records</td>
+            <td>Accomm &amp; Conf Sys</td>
+            <td><a href='#F-SIS-ACC-01'>Student profiles, enrolment status, and programme details</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-ACC-SIS-01'><strong>F-ACC-SIS-01</strong></a></td>
+            <td>Accomm &amp; Conf Sys</td>
+            <td>Student Records</td>
+            <td><a href='#F-ACC-SIS-01'>Room allocation, booking status, and check-in/out records</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-SIS-EST-01'><strong>F-SIS-EST-01</strong></a></td>
+            <td>Student Records</td>
+            <td>Estates</td>
+            <td><a href='#F-SIS-EST-01'>Enrolment volumes, timetable data, and occupancy forecasts</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-EST-SIS-01'><strong>F-EST-SIS-01</strong></a></td>
+            <td>Estates</td>
+            <td>Student Records</td>
+            <td><a href='#F-EST-SIS-01'>Room allocation confirmations and availability updates</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-SIS-IAM-01'><strong>F-SIS-IAM-01</strong></a></td>
+            <td>Student Records</td>
+            <td>Identity &amp; Access Mgmt</td>
+            <td><a href='#F-SIS-IAM-01'>Student identity, enrolment status, and access eligibility</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-IAM-SIS-01'><strong>F-IAM-SIS-01</strong></a></td>
+            <td>Identity &amp; Access Mgmt</td>
+            <td>Student Records</td>
+            <td><a href='#F-IAM-SIS-01'>Credential updates, account locks, and role assignments</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-SIS-EDRMS-01'><strong>F-SIS-EDRMS-01</strong></a></td>
+            <td>Student Records</td>
+            <td>EDRMS</td>
+            <td><a href='#F-SIS-EDRMS-01'>Enrolment forms, transcripts, and graduation certificates</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-EDRMS-SIS-01'><strong>F-EDRMS-SIS-01</strong></a></td>
+            <td>EDRMS</td>
+            <td>Student Records</td>
+            <td><a href='#F-EDRMS-SIS-01'>Archived record confirmations, document links, and access logs</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-SIS-OIV-01'><strong>F-SIS-OIV-01</strong></a></td>
+            <td>Student Records</td>
+            <td>Online ID Verification</td>
+            <td><a href='#F-SIS-OIV-01'>Student identity data and verification request</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-OIV-SIS-01'><strong>F-OIV-SIS-01</strong></a></td>
+            <td>Online ID Verification</td>
+            <td>Student Records</td>
+            <td><a href='#F-OIV-SIS-01'>Verification outcome, confidence scores, and fraud flags</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-SIS-BI-01'><strong>F-SIS-BI-01</strong></a></td>
+            <td>Student Records</td>
+            <td>Business Intelligence</td>
+            <td><a href='#F-SIS-BI-01'>Student performance, enrolment, and progression data</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-BI-SIS-01'><strong>F-BI-SIS-01</strong></a></td>
+            <td>Business Intelligence</td>
+            <td>Student Records</td>
+            <td><a href='#F-BI-SIS-01'>At-risk flags and predictive intervention alerts</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-SIS-DW-01'><strong>F-SIS-DW-01</strong></a></td>
+            <td>Student Records</td>
+            <td>Data Warehouse</td>
+            <td><a href='#F-SIS-DW-01'>Bulk student data extracts for longitudinal warehousing</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-DW-SIS-01'><strong>F-DW-SIS-01</strong></a></td>
+            <td>Data Warehouse</td>
+            <td>Student Records</td>
+            <td><a href='#F-DW-SIS-01'>Data quality reports and reconciliation alerts</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-SIS-SETS-01'><strong>F-SIS-SETS-01</strong></a></td>
+            <td>Student Records</td>
+            <td>Stud Eval Teach Soft</td>
+            <td><a href='#F-SIS-SETS-01'>Module roster and student registration data for survey distribution</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-SETS-SIS-01'><strong>F-SETS-SIS-01</strong></a></td>
+            <td>Stud Eval Teach Soft</td>
+            <td>Student Records</td>
+            <td><a href='#F-SETS-SIS-01'>Survey completion rates and aggregated feedback scores</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-SIS-HR-01'><strong>F-SIS-HR-01</strong></a></td>
+            <td>Student Records</td>
+            <td>HR</td>
+            <td><a href='#F-SIS-HR-01'>Graduate Teaching Assistant records and student-staff roles</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-HR-SIS-01'><strong>F-HR-SIS-01</strong></a></td>
+            <td>HR</td>
+            <td>Student Records</td>
+            <td><a href='#F-HR-SIS-01'>Academic supervisor and personal tutor assignments</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-SIS-PAY-01'><strong>F-SIS-PAY-01</strong></a></td>
+            <td>Student Records</td>
+            <td>Payroll</td>
+            <td><a href='#F-SIS-PAY-01'>Bursary-eligible student records and GTA payment authorisations</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-PAY-SIS-01'><strong>F-PAY-SIS-01</strong></a></td>
+            <td>Payroll</td>
+            <td>Student Records</td>
+            <td><a href='#F-PAY-SIS-01'>Bursary and stipend payment confirmations</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-SIS-CRIS-01'><strong>F-SIS-CRIS-01</strong></a></td>
+            <td>Student Records</td>
+            <td>CRIS</td>
+            <td><a href='#F-SIS-CRIS-01'>Research student enrolment and researcher profile data</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-CRIS-SIS-01'><strong>F-CRIS-SIS-01</strong></a></td>
+            <td>CRIS</td>
+            <td>Student Records</td>
+            <td><a href='#F-CRIS-SIS-01'>Research degree milestones and publication records</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-SIS-RP-01'><strong>F-SIS-RP-01</strong></a></td>
+            <td>Student Records</td>
+            <td>Research Proposals</td>
+            <td><a href='#F-SIS-RP-01'>Student researcher eligibility and supervisor assignment data</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-RP-SIS-01'><strong>F-RP-SIS-01</strong></a></td>
+            <td>Research Proposals</td>
+            <td>Student Records</td>
+            <td><a href='#F-RP-SIS-01'>Funded research studentship award records</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-SIS-CMS-01'><strong>F-SIS-CMS-01</strong></a></td>
+            <td>Student Records</td>
+            <td>Content Mgmt Systems</td>
+            <td><a href='#F-SIS-CMS-01'>Student cohort and programme data for content personalisation</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-CMS-SIS-01'><strong>F-CMS-SIS-01</strong></a></td>
+            <td>Content Mgmt Systems</td>
+            <td>Student Records</td>
+            <td><a href='#F-CMS-SIS-01'>Published regulatory and policy notifications</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-SIS-ITSM-01'><strong>F-SIS-ITSM-01</strong></a></td>
+            <td>Student Records</td>
+            <td>IT Service Mgmt</td>
+            <td><a href='#F-SIS-ITSM-01'>Student identity and account data for incident context</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-ITSM-SIS-01'><strong>F-ITSM-SIS-01</strong></a></td>
+            <td>IT Service Mgmt</td>
+            <td>Student Records</td>
+            <td><a href='#F-ITSM-SIS-01'>Service request outcomes affecting student account status</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-UCAS-SIS-01'><strong>F-UCAS-SIS-01</strong></a></td>
+            <td>UCAS</td>
+            <td>Student Records</td>
+            <td><a href='#F-UCAS-SIS-01'>Application data, offer decisions, and clearing records</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-SIS-UCAS-01'><strong>F-SIS-UCAS-01</strong></a></td>
+            <td>Student Records</td>
+            <td>UCAS</td>
+            <td><a href='#F-SIS-UCAS-01'>Enrolment confirmation and withdrawal notifications</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-SIS-HESA-01'><strong>F-SIS-HESA-01</strong></a></td>
+            <td>Student Records</td>
+            <td>HESA</td>
+            <td><a href='#F-SIS-HESA-01'>Statutory student data return</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-HESA-SIS-01'><strong>F-HESA-SIS-01</strong></a></td>
+            <td>HESA</td>
+            <td>Student Records</td>
+            <td><a href='#F-HESA-SIS-01'>Validation reports and HESA student identifiers</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-SIS-SLC-01'><strong>F-SIS-SLC-01</strong></a></td>
+            <td>Student Records</td>
+            <td>Student Loans Company</td>
+            <td><a href='#F-SIS-SLC-01'>Enrolment confirmation for tuition fee and maintenance loan release</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-SLC-SIS-01'><strong>F-SLC-SIS-01</strong></a></td>
+            <td>Student Loans Company</td>
+            <td>Student Records</td>
+            <td><a href='#F-SLC-SIS-01'>Loan entitlement, payment status, and overpayment notifications</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-SIS-UKVI-01'><strong>F-SIS-UKVI-01</strong></a></td>
+            <td>Student Records</td>
+            <td>UK Visas &amp; Immigration</td>
+            <td><a href='#F-SIS-UKVI-01'>CAS creation requests and attendance compliance data</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-UKVI-SIS-01'><strong>F-UKVI-SIS-01</strong></a></td>
+            <td>UK Visas &amp; Immigration</td>
+            <td>Student Records</td>
+            <td><a href='#F-UKVI-SIS-01'>Visa status updates and sponsor compliance alerts</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-SIS-WELL-01'><strong>F-SIS-WELL-01</strong></a></td>
+            <td>Student Records</td>
+            <td>Student Wellbeing &amp; Disability</td>
+            <td><a href='#F-SIS-WELL-01'>Student profiles, disability declarations, and academic records</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-VLE-BI-01'><strong>F-VLE-BI-01</strong></a></td>
+            <td>Virtual Learning Env</td>
+            <td>Business Intelligence</td>
+            <td><a href='#F-VLE-BI-01'>Learning analytics and digital engagement data</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-AM-BI-01'><strong>F-AM-BI-01</strong></a></td>
+            <td>Attendance Monitoring</td>
+            <td>Business Intelligence</td>
+            <td><a href='#F-AM-BI-01'>Attendance trends and engagement analytics</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-DW-BI-01'><strong>F-DW-BI-01</strong></a></td>
+            <td>Data Warehouse</td>
+            <td>Business Intelligence</td>
+            <td><a href='#F-DW-BI-01'>Consolidated multi-system data feeds for analytics</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-CRM-EWP-01'><strong>F-CRM-EWP-01</strong></a></td>
+            <td>CRM</td>
+            <td>Enterprise Web Portal</td>
+            <td><a href='#F-CRM-EWP-01'>Personalised communications and targeted content</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-SIS-VLE-02'><strong>F-SIS-VLE-02</strong></a></td>
+            <td>Student Records</td>
+            <td>Virtual Learning Env</td>
+            <td><a href='#F-SIS-VLE-02'>Approved adjustment outcomes for course content and assessment delivery</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-SIS-AM-02'><strong>F-SIS-AM-02</strong></a></td>
+            <td>Student Records</td>
+            <td>Attendance Monitoring</td>
+            <td><a href='#F-SIS-AM-02'>Approved attendance adjustment outcomes</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-SIS-EXAMS-01'><strong>F-SIS-EXAMS-01</strong></a></td>
+            <td>Student Records</td>
+            <td>Exam Scheduling</td>
+            <td><a href='#F-SIS-EXAMS-01'>Student exam entries, module registrations, and approved examination accommodations</a>
+            </td>
+          </tr>
+          <tr>
+            <td><a href='#F-EXAMS-SIS-01'><strong>F-EXAMS-SIS-01</strong></a></td>
+            <td>Exam Scheduling</td>
+            <td>Student Records</td>
+            <td><a href='#F-EXAMS-SIS-01'>Finalised exam timetables, seating plans, and candidate numbers</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-WELL-SIS-01'><strong>F-WELL-SIS-01</strong></a></td>
+            <td>Student Wellbeing &amp; Disability</td>
+            <td>Student Records</td>
+            <td><a href='#F-WELL-SIS-01'>Approved reasonable adjustment outcomes</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-SIS-EXAMBOARD-01'><strong>F-SIS-EXAMBOARD-01</strong></a></td>
+            <td>Student Records</td>
+            <td>Exam Board</td>
+            <td><a href='#F-SIS-EXAMBOARD-01'>Board data, candidate result profiles, exceptional circumstances outcomes, approved
+                adjustment indicators, misconduct outcomes, and calculated recommendations</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-EXAMBOARD-SIS-01'><strong>F-EXAMBOARD-SIS-01</strong></a></td>
+            <td>Exam Board</td>
+            <td>Student Records</td>
+            <td><a href='#F-EXAMBOARD-SIS-01'>Ratified academic decisions and board outcomes</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-WELL-SIS-02'><strong>F-WELL-SIS-02</strong></a></td>
+            <td>Student Wellbeing &amp; Disability</td>
+            <td>Student Records</td>
+            <td><a href='#F-WELL-SIS-02'>Approved exceptional circumstances outcomes</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-SIS-EXTEX-01'><strong>F-SIS-EXTEX-01</strong></a></td>
+            <td>Student Records</td>
+            <td>External Examiner</td>
+            <td><a href='#F-SIS-EXTEX-01'>Assessment sample access, candidate profiles, and pre-board calculations for external
+                review</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-EXTEX-EXAMBOARD-01'><strong>F-EXTEX-EXAMBOARD-01</strong></a></td>
+            <td>External Examiner</td>
+            <td>Exam Board</td>
+            <td><a href='#F-EXTEX-EXAMBOARD-01'>Standards assurance confirmation and ratification input</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-AI-SIS-01'><strong>F-AI-SIS-01</strong></a></td>
+            <td>Academic Integrity</td>
+            <td>Student Records</td>
+            <td><a href='#F-AI-SIS-01'>Academic misconduct outcomes and penalties</a></td>
+          </tr>
+          <tr>
+            <td><a href='#F-SIS-AI-01'><strong>F-SIS-AI-01</strong></a></td>
+            <td>Student Records</td>
+            <td>Academic Integrity</td>
+            <td><a href='#F-SIS-AI-01'>Student identity, module registrations, and submission context for misconduct case management</a></td>
+          </tr>
+        </tbody>
+      </table>
+  </section>
+  <section class="blog-article">
+    <h2>Detailed Flow Reference</h2>
+    <p class='small'>Each section below is intended as a practical architecture reference. The “Typical data exchanged”
+      list is illustrative rather than exhaustive, but reflects the principal data classes implied by the model and its
+      underlying process boundaries.</p>
+  <section id="F-CM-SIS-01" class="blog-article anchor-scroll">
+      <h3>F-CM-SIS-01: Curriculum Mgmt to Student Records</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Programme and module catalogue updates &nbsp;|&nbsp;
+        <strong>From:</strong> Curriculum Mgmt &nbsp;|&nbsp; <strong>To:</strong> Student Records</div>
+      <p><strong>Description:</strong> Curriculum Management is the official source of programmes, modules, and
+        prerequisites. This flow updates the Student Records catalogue with current academic structures, ensuring
+        consistent enrolment, registration, and progression records.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Programme details</li>
+        <li>Module details</li>
+        <li>Prerequisite and co-requisite rules</li>
+        <li>Retired structures</li>
+        <li>Progression structures</li>
+      </ul>
+      <p><strong>Flow type:</strong> SOR intake — CM is the system of record for programme and module design; SIS consumes this catalogue to govern what students can register for.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-SIS-CM-01" class="blog-article anchor-scroll">
+      <h3>F-SIS-CM-01: Student Records to Curriculum Mgmt</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Enrolment, completion, and performance metrics &nbsp;|&nbsp;
+        <strong>From:</strong> Student Records &nbsp;|&nbsp; <strong>To:</strong> Curriculum Mgmt</div>
+      <p><strong>Description:</strong> Student Records provides enrolment, completion, and performance metrics to
+        Curriculum Management. These analytics inform data-driven updates to programmes, modules, and prerequisites.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Enrolment counts</li>
+        <li>Completion and outcome data</li>
+        <li>Grade distributions</li>
+        <li>Retention insights</li>
+        <li>Curriculum review metrics</li>
+      </ul>
+      <p><strong>Flow type:</strong> SIS distribution — Analytics derived from SIS are read-only inputs to curriculum review; CM should not modify or override this data independently.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-SIS-TTB-01" class="blog-article anchor-scroll">
+      <h3>F-SIS-TTB-01: Student Records to Timetabling</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Student enrolment and module registration data &nbsp;|&nbsp;
+        <strong>From:</strong> Student Records &nbsp;|&nbsp; <strong>To:</strong> Timetabling</div>
+      <p><strong>Description:</strong> Student Records provides key enrolment information needed by the Timetabling
+        system to create accurate class schedules.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Student roster</li>
+        <li>Programme and module registrations</li>
+        <li>Enrolment volumes</li>
+        <li>Timetabling constraints</li>
+      </ul>
+      <p><strong>Flow type:</strong> SIS distribution — Timetabling must consume enrolment data from SIS; independently maintained student lists in the timetabling system create divergence risk and inaccurate room and resource allocation.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-TTB-SIS-01" class="blog-article anchor-scroll">
+      <h3>F-TTB-SIS-01: Timetabling to Student Records</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Finalised timetable and room allocation data &nbsp;|&nbsp;
+        <strong>From:</strong> Timetabling &nbsp;|&nbsp; <strong>To:</strong> Student Records</div>
+      <p><strong>Description:</strong> The Timetabling system sends finalised scheduling information and related updates
+        back to Student Records so students and administrative staff have consistent data.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Class schedules</li>
+        <li>Room allocations</li>
+        <li>Time slots</li>
+        <li>Instructor availability</li>
+      </ul>
+      <p><strong>Flow type:</strong> Outcome confirmation — Students access their timetable via the portal (F-SIS-EWP-01); that publication depends on this flow completing successfully first.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-CRM-SIS-01" class="blog-article anchor-scroll">
+      <h3>F-CRM-SIS-01: CRM to Student Records</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Applicant, offer, and admissions decision data &nbsp;|&nbsp;
+        <strong>From:</strong> CRM &nbsp;|&nbsp; <strong>To:</strong> Student Records</div>
+      <p><strong>Description:</strong> The CRM system manages prospective student enquiries, applications, and
+        admissions decisions before individuals become enrolled students. This data flows to Student Records so that the
+        institution can officially register admitted individuals.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Prospect data</li>
+        <li>Applications</li>
+        <li>Offers</li>
+        <li>Admissions decisions</li>
+      </ul>
+      <p><strong>Flow type:</strong> SOR intake — This is the handover point from the admissions process to the student lifecycle record; CRM owns the prospect, SIS owns the enrolled student.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-SIS-CRM-01" class="blog-article anchor-scroll">
+      <h3>F-SIS-CRM-01: Student Records to CRM</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Student enrolment status and progression updates &nbsp;|&nbsp;
+        <strong>From:</strong> Student Records &nbsp;|&nbsp; <strong>To:</strong> CRM</div>
+      <p><strong>Description:</strong> Once a prospect becomes an enrolled student, Student Records manages their
+        academic progress. Relevant updates flow back to the CRM so the institution can maintain accurate engagement
+        information and communications.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Student record status</li>
+        <li>Enrolment history</li>
+        <li>Progression outcomes</li>
+        <li>Qualification records</li>
+      </ul>
+      <p><strong>Flow type:</strong> SIS distribution — CRM should not independently maintain academic status; updates here ensure engagement, retention, and alumni workflows operate from the authoritative record.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-LIB-SIS-01" class="blog-article anchor-scroll">
+      <h3>F-LIB-SIS-01: Library to Student Records</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Library loans, fines, and overdue notifications &nbsp;|&nbsp;
+        <strong>From:</strong> Library &nbsp;|&nbsp; <strong>To:</strong> Student Records</div>
+      <p><strong>Description:</strong> The Library system sends circulation updates and overdue notifications to Student
+        Records so that the student record accurately reflects any outstanding obligations or statuses.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Loans</li>
+        <li>Overdues</li>
+        <li>Fines</li>
+        <li>Holds</li>
+        <li>Return status</li>
+      </ul>
+      <p><strong>Flow type:</strong> Outcome confirmation — Outstanding fines or unreturned items may trigger an academic hold in SIS, which can block progression or graduation until resolved.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-SIS-LIB-01" class="blog-article anchor-scroll">
+      <h3>F-SIS-LIB-01: Student Records to Library</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Student enrolment status and access rights &nbsp;|&nbsp;
+        <strong>From:</strong> Student Records &nbsp;|&nbsp; <strong>To:</strong> Library</div>
+      <p><strong>Description:</strong> Student Records provides the Library with up-to-date student status and
+        registration data so library privileges can be granted or restricted appropriately.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Student IDs</li>
+        <li>Registration status</li>
+        <li>Programme affiliation</li>
+        <li>Access rights</li>
+        <li>Holds</li>
+      </ul>
+      <p><strong>Flow type:</strong> SIS distribution — Library access eligibility is derived entirely from SIS enrolment status; withdrawal or suspension events in SIS should drive immediate access restriction.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-SIS-FIN-01" class="blog-article anchor-scroll">
+      <h3>F-SIS-FIN-01: Student Records to Finance</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Enrolment and tuition fee liability data &nbsp;|&nbsp;
+        <strong>From:</strong> Student Records &nbsp;|&nbsp; <strong>To:</strong> Finance</div>
+      <p><strong>Description:</strong> Student Records provides Finance with key enrolment and fee-related data so the
+        institution can accurately bill students and set up payment plans.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Enrolments</li>
+        <li>Tuition charges</li>
+        <li>Payment plans</li>
+        <li>Scholarships and bursaries</li>
+      </ul>
+      <p><strong>Flow type:</strong> SIS distribution — Fee liability is calculated from enrolment data; errors or delays in this flow directly affect billing accuracy and institutional income.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-FIN-SIS-01" class="blog-article anchor-scroll">
+      <h3>F-FIN-SIS-01: Finance to Student Records</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Payment confirmations and financial hold status &nbsp;|&nbsp;
+        <strong>From:</strong> Finance &nbsp;|&nbsp; <strong>To:</strong> Student Records</div>
+      <p><strong>Description:</strong> Finance is the system of record for financial transactions, invoices, and payment
+        processing. Once a financial event occurs, Finance transmits the outcome to Student Records, which becomes the
+        system of record for the effect on the student&#x27;s standing.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Payments</li>
+        <li>Refunds</li>
+        <li>Outstanding balances</li>
+        <li>Financial holds</li>
+      </ul>
+      <p><strong>Flow type:</strong> Outcome confirmation — Finance owns the transaction process; SIS holds the student-facing hold or clearance. An unresolved financial hold can block enrolment confirmation, module registration, or graduation.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-EWP-SIS-01" class="blog-article anchor-scroll">
+      <h3>F-EWP-SIS-01: Enterprise Web Portal to Student Records</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Student self-service updates and module selections
+        &nbsp;|&nbsp; <strong>From:</strong> Enterprise Web Portal &nbsp;|&nbsp; <strong>To:</strong> Student Records
+      </div>
+      <p><strong>Description:</strong> The Enterprise Web Portal serves as a central access point for students to submit
+        or update personal information, application details, and module selections.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Profile updates</li>
+        <li>Application data</li>
+        <li>Module selections</li>
+        <li>Self-service requests</li>
+      </ul>
+      <p><strong>Flow type:</strong> SOR intake — Self-service changes must be validated and committed in SIS before they are treated as part of the authoritative record; the portal is a submission channel, not a system of record.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-SIS-EWP-01" class="blog-article anchor-scroll">
+      <h3>F-SIS-EWP-01: Student Records to Enterprise Web Portal</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Enrolment status, timetables, grades, and notifications
+        &nbsp;|&nbsp; <strong>From:</strong> Student Records &nbsp;|&nbsp; <strong>To:</strong> Enterprise Web Portal
+      </div>
+      <p><strong>Description:</strong> Student Records holds the authoritative information on each student&#x27;s
+        enrolment, schedule, and academic progress, which is surfaced in the Enterprise Web Portal.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Enrolment status</li>
+        <li>Timetables</li>
+        <li>Grades</li>
+        <li>Notifications</li>
+      </ul>
+      <p><strong>Flow type:</strong> SIS distribution — The portal is a read surface only; all data displayed must originate from SIS to ensure students see their authoritative record, including ratified grades and confirmed timetables.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-AM-SIS-01" class="blog-article anchor-scroll">
+      <h3>F-AM-SIS-01: Attendance Monitoring to Student Records</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Attendance records and absence alerts &nbsp;|&nbsp;
+        <strong>From:</strong> Attendance Monitoring &nbsp;|&nbsp; <strong>To:</strong> Student Records</div>
+      <p><strong>Description:</strong> Attendance Monitoring captures data about student presence in lectures, seminars,
+        labs, or other learning activities. This data is forwarded to Student Records to keep a consolidated record of
+        student engagement.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Attendance records</li>
+        <li>Engagement indicators</li>
+        <li>Absence alerts</li>
+      </ul>
+      <p><strong>Flow type:</strong> Outcome confirmation — Attendance data held in SIS feeds UKVI sponsor compliance reporting (F-SIS-UKVI-01); inaccuracies here carry direct sponsor licence risk for institutions with international students.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-SIS-AM-01" class="blog-article anchor-scroll">
+      <h3>F-SIS-AM-01: Student Records to Attendance Monitoring</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Student roster and academic calendar data &nbsp;|&nbsp;
+        <strong>From:</strong> Student Records &nbsp;|&nbsp; <strong>To:</strong> Attendance Monitoring</div>
+      <p><strong>Description:</strong> Student Records is the main repository of enrolment and course information. This
+        data flows to Attendance Monitoring so the system knows which students are associated with each class or
+        activity.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Student rosters</li>
+        <li>Module details</li>
+        <li>Academic calendar</li>
+      </ul>
+      <p><strong>Flow type:</strong> SIS distribution — Attendance Monitoring must not maintain its own student lists; roster divergence between AM and SIS creates compliance risk, particularly for UKVI reporting obligations.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-SIS-VLE-01" class="blog-article anchor-scroll">
+      <h3>F-SIS-VLE-01: Student Records to Virtual Learning Env</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Student enrolment, course assignments, and term dates
+        &nbsp;|&nbsp; <strong>From:</strong> Student Records &nbsp;|&nbsp; <strong>To:</strong> Virtual Learning Env
+      </div>
+      <p><strong>Description:</strong> Student Records is the authoritative source of enrolment and course information.
+        This data is pushed to the VLE so that the correct students and instructors have access to the right course
+        materials at the right times.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Student and instructor assignments</li>
+        <li>Course enrolments</li>
+        <li>Term dates</li>
+      </ul>
+      <p><strong>Flow type:</strong> SIS distribution — VLE course membership must be driven by SIS enrolment; students not recorded as enrolled in SIS should not have active course access in the VLE.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-VLE-SIS-01" class="blog-article anchor-scroll">
+      <h3>F-VLE-SIS-01: Virtual Learning Env to Student Records</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Assessment grades, completion status, and academic alerts
+        &nbsp;|&nbsp; <strong>From:</strong> Virtual Learning Env &nbsp;|&nbsp; <strong>To:</strong> Student Records
+      </div>
+      <p><strong>Description:</strong> Once assessments are completed within the VLE, key results flow back into Student
+        Records to support the official academic record and downstream assessment processing.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Grades</li>
+        <li>Feedback</li>
+        <li>Completion status</li>
+        <li>Academic alerts</li>
+      </ul>
+      <p><strong>Flow type:</strong> Outcome confirmation — Marks received here are pre-ratification; they contribute to board preparation (F-SIS-EXAMBOARD-01) but are not the confirmed academic record until the Exam Board ratifies and F-EXAMBOARD-SIS-01 completes.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-SIS-ACC-01" class="blog-article anchor-scroll">
+      <h3>F-SIS-ACC-01: Student Records to Accomm &amp; Conf Sys</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Student profiles, enrolment status, and programme details
+        &nbsp;|&nbsp; <strong>From:</strong> Student Records &nbsp;|&nbsp; <strong>To:</strong> Accomm &amp; Conf Sys
+      </div>
+      <p><strong>Description:</strong> Student Records is the authoritative source of official student information. It
+        sends necessary details to the Accommodation system to facilitate housing allocations and ensure eligibility.
+      </p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Student profiles</li>
+        <li>Contact details</li>
+        <li>Enrolment status</li>
+        <li>Programme details</li>
+      </ul>
+      <p><strong>Flow type:</strong> SIS distribution — Accommodation eligibility should be driven by SIS enrolment status; withdrawal or suspension in SIS should automatically flag any associated accommodation booking for review.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-ACC-SIS-01" class="blog-article anchor-scroll">
+      <h3>F-ACC-SIS-01: Accomm &amp; Conf Sys to Student Records</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Room allocation, booking status, and check-in/out records
+        &nbsp;|&nbsp; <strong>From:</strong> Accomm &amp; Conf Sys &nbsp;|&nbsp; <strong>To:</strong> Student Records
+      </div>
+      <p><strong>Description:</strong> The Accommodation system tracks booking and occupancy details. These updates flow
+        back into Student Records for record-keeping, financial planning, and student support tracking.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Room allocations</li>
+        <li>Booking status</li>
+        <li>Check-in and check-out records</li>
+      </ul>
+      <p><strong>Flow type:</strong> Outcome confirmation — Accommodation records in SIS support pastoral care coordination and, where institution-managed housing is charged, feed fee liability calculations in Finance.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-SIS-EST-01" class="blog-article anchor-scroll">
+      <h3>F-SIS-EST-01: Student Records to Estates</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Enrolment volumes, timetable data, and occupancy forecasts
+        &nbsp;|&nbsp; <strong>From:</strong> Student Records &nbsp;|&nbsp; <strong>To:</strong> Estates</div>
+      <p><strong>Description:</strong> Student Records holds the authoritative enrolment information and academic
+        timetables. The Estates system relies on this data to plan and manage campus facilities effectively.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Enrolment volumes</li>
+        <li>Programme data</li>
+        <li>Timetable demand</li>
+        <li>Occupancy forecasts</li>
+      </ul>
+      <p><strong>Flow type:</strong> SIS distribution — Estates planning accuracy depends on reliable enrolment forecasts; significant variance between planned and actual occupancy indicates a data quality issue in SIS.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-EST-SIS-01" class="blog-article anchor-scroll">
+      <h3>F-EST-SIS-01: Estates to Student Records</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Room allocation confirmations and availability updates
+        &nbsp;|&nbsp; <strong>From:</strong> Estates &nbsp;|&nbsp; <strong>To:</strong> Student Records</div>
+      <p><strong>Description:</strong> Estates captures building usage, room allocations, and event schedules. This
+        information is sent back to Student Records for accurate record-keeping and to inform academic scheduling.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Room allocations</li>
+        <li>Event bookings</li>
+        <li>Availability updates</li>
+        <li>Maintenance notices</li>
+      </ul>
+      <p><strong>Flow type:</strong> Outcome confirmation — This is a logistics feedback loop; it does not affect the student academic record directly but maintains scheduling consistency between Estates and academic systems.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-SIS-IAM-01" class="blog-article anchor-scroll">
+      <h3>F-SIS-IAM-01: Student Records to Identity &amp; Access Mgmt</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Student identity, enrolment status, and access eligibility
+        &nbsp;|&nbsp; <strong>From:</strong> Student Records &nbsp;|&nbsp; <strong>To:</strong> Identity &amp; Access
+        Mgmt</div>
+      <p><strong>Description:</strong> Student Records is the authoritative source of student data. This system sends
+        key information to IAM so users can be provisioned with appropriate access rights.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Student identity</li>
+        <li>Enrolment status</li>
+        <li>Contact details</li>
+        <li>Access eligibility</li>
+      </ul>
+      <p><strong>Flow type:</strong> SIS distribution — IAM provisioning should be event-driven from SIS; enrolment, withdrawal, and graduation events should trigger immediate and automated access changes without manual intervention.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-IAM-SIS-01" class="blog-article anchor-scroll">
+      <h3>F-IAM-SIS-01: Identity &amp; Access Mgmt to Student Records</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Credential updates, account locks, and role assignments
+        &nbsp;|&nbsp; <strong>From:</strong> Identity &amp; Access Mgmt &nbsp;|&nbsp; <strong>To:</strong> Student
+        Records</div>
+      <p><strong>Description:</strong> IAM manages the authentication and authorisation layers for institutional
+        applications. This data flows back to Student Records to keep records consistent with login activity and
+        security status.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Credentials</li>
+        <li>Account locks</li>
+        <li>Role assignments</li>
+        <li>Security logs</li>
+      </ul>
+      <p><strong>Flow type:</strong> Outcome confirmation — Security events that affect a student's institutional account should be reflected in SIS to ensure consistent visibility for registry and support staff across all systems.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-SIS-EDRMS-01" class="blog-article anchor-scroll">
+      <h3>F-SIS-EDRMS-01: Student Records to EDRMS</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Enrolment forms, transcripts, and graduation certificates
+        &nbsp;|&nbsp; <strong>From:</strong> Student Records &nbsp;|&nbsp; <strong>To:</strong> EDRMS</div>
+      <p><strong>Description:</strong> Student Records is the main source of official student data. Relevant documents
+        are transmitted to the EDRMS for secure storage, version control, and compliance with archival policies.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Enrolment forms</li>
+        <li>Transcripts</li>
+        <li>Graduation certificates</li>
+        <li>Student document references</li>
+      </ul>
+      <p><strong>Flow type:</strong> SIS distribution — Documents transmitted to EDRMS become the institutional archival copy; version control and retention policies in EDRMS govern the lifecycle of these records independently of SIS.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-EDRMS-SIS-01" class="blog-article anchor-scroll">
+      <h3>F-EDRMS-SIS-01: EDRMS to Student Records</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Archived record confirmations, document links, and access logs
+        &nbsp;|&nbsp; <strong>From:</strong> EDRMS &nbsp;|&nbsp; <strong>To:</strong> Student Records</div>
+      <p><strong>Description:</strong> After documents are archived or updated in the EDRMS, it sends relevant status
+        information or version links back to Student Records.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Archived records</li>
+        <li>Retention policies</li>
+        <li>Document links</li>
+        <li>Access logs</li>
+      </ul>
+      <p><strong>Flow type:</strong> Outcome confirmation — Document links returned here allow registry staff and students to access archived records from within SIS without duplicating the stored copy.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-SIS-OIV-01" class="blog-article anchor-scroll">
+      <h3>F-SIS-OIV-01: Student Records to Online ID Verification</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Student identity data and verification request &nbsp;|&nbsp;
+        <strong>From:</strong> Student Records &nbsp;|&nbsp; <strong>To:</strong> Online ID Verification</div>
+      <p><strong>Description:</strong> Student Records initiates ID verification checks by sending essential student
+        data and relevant documentation to the Online ID Verification service.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Student profiles</li>
+        <li>Enrolment records</li>
+        <li>Identity documents</li>
+        <li>Verification metadata</li>
+      </ul>
+      <p><strong>Flow type:</strong> SIS distribution — ID verification is typically required at enrolment; the outcome (F-OIV-SIS-01) must be received and recorded in SIS before the student record can be fully activated.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-OIV-SIS-01" class="blog-article anchor-scroll">
+      <h3>F-OIV-SIS-01: Online ID Verification to Student Records</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Verification outcome, confidence scores, and fraud flags
+        &nbsp;|&nbsp; <strong>From:</strong> Online ID Verification &nbsp;|&nbsp; <strong>To:</strong> Student Records
+      </div>
+      <p><strong>Description:</strong> Once the verification process is completed, the Online ID Verification service
+        sends the outcome, along with supporting details, back to Student Records.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Verification status</li>
+        <li>Confidence scores</li>
+        <li>Document links</li>
+        <li>Pending flags</li>
+      </ul>
+      <p><strong>Flow type:</strong> Outcome confirmation — A failed or fraudulent verification result should trigger a hold in SIS; institutions must not activate a student record where identity cannot be confirmed.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-SIS-BI-01" class="blog-article anchor-scroll">
+      <h3>F-SIS-BI-01: Student Records to Business Intelligence</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Student performance, enrolment, and progression data
+        &nbsp;|&nbsp; <strong>From:</strong> Student Records &nbsp;|&nbsp; <strong>To:</strong> Business Intelligence
+      </div>
+      <p><strong>Description:</strong> Student Records provides the Business Intelligence platform with structured
+        extracts of student performance, enrolment volumes, module outcomes, and retention data.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Performance extracts</li>
+        <li>Enrolment volumes</li>
+        <li>Module outcomes</li>
+        <li>Retention indicators</li>
+      </ul>
+      <p><strong>Flow type:</strong> SIS distribution — BI analytics are only as reliable as the underlying SIS data; quality issues in SIS propagate directly into institutional reporting and statutory benchmarking outputs.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-BI-SIS-01" class="blog-article anchor-scroll">
+      <h3>F-BI-SIS-01: Business Intelligence to Student Records</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> At-risk flags and predictive intervention alerts &nbsp;|&nbsp;
+        <strong>From:</strong> Business Intelligence &nbsp;|&nbsp; <strong>To:</strong> Student Records</div>
+      <p><strong>Description:</strong> Business Intelligence is the system of record for the analytical process. Once a
+        flag is written to Student Records, SIS becomes the system of record for the intervention record.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>At-risk flags</li>
+        <li>Predictive alerts</li>
+        <li>Intervention indicators</li>
+      </ul>
+      <p><strong>Flow type:</strong> Outcome confirmation — BI generates the at-risk flag analytically; SIS becomes the system of record for the intervention, tracking whether pastoral action has been taken and by whom.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-SIS-DW-01" class="blog-article anchor-scroll">
+      <h3>F-SIS-DW-01: Student Records to Data Warehouse</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Bulk student data extracts for longitudinal warehousing
+        &nbsp;|&nbsp; <strong>From:</strong> Student Records &nbsp;|&nbsp; <strong>To:</strong> Data Warehouse</div>
+      <p><strong>Description:</strong> Student Records provides the Data Warehouse with full and incremental extracts of
+        student data, including enrolment history, academic outcomes, module registrations, and demographic records.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Historical enrolment extracts</li>
+        <li>Academic outcomes</li>
+        <li>Module registrations</li>
+        <li>Demographic data</li>
+      </ul>
+      <p><strong>Flow type:</strong> SIS distribution — For HESA and statutory returns, completeness of historical SIS data in the warehouse is a compliance dependency; extract frequency should align with reporting cycles.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-DW-SIS-01" class="blog-article anchor-scroll">
+      <h3>F-DW-SIS-01: Data Warehouse to Student Records</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Data quality reports and reconciliation alerts &nbsp;|&nbsp;
+        <strong>From:</strong> Data Warehouse &nbsp;|&nbsp; <strong>To:</strong> Student Records</div>
+      <p><strong>Description:</strong> The Data Warehouse performs cross-system reconciliation and data quality checks.
+        Discrepancy reports and data quality alerts are returned to Student Records to support record accuracy and audit
+        readiness.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Data quality reports</li>
+        <li>Reconciliation exceptions</li>
+        <li>Stewardship actions</li>
+      </ul>
+      <p><strong>Flow type:</strong> Outcome confirmation — Quality alerts from the warehouse are diagnostic, not authoritative corrections; discrepancies should be investigated and resolved at source in SIS.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-SIS-SETS-01" class="blog-article anchor-scroll">
+      <h3>F-SIS-SETS-01: Student Records to Stud Eval Teach Soft</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Module roster and student registration data for survey
+        distribution &nbsp;|&nbsp; <strong>From:</strong> Student Records &nbsp;|&nbsp; <strong>To:</strong> Stud Eval
+        Teach Soft</div>
+      <p><strong>Description:</strong> Student Records provides the Student Evaluation of Teaching system with the
+        authoritative list of students registered on each module, enabling targeted and timely survey distribution.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Module rosters</li>
+        <li>Survey cohorts</li>
+        <li>Registration status</li>
+        <li>Distribution windows</li>
+      </ul>
+      <p><strong>Flow type:</strong> SIS distribution — Survey distribution must be based on current SIS registration data; students no longer registered on a module should not receive feedback requests.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-SETS-SIS-01" class="blog-article anchor-scroll">
+      <h3>F-SETS-SIS-01: Stud Eval Teach Soft to Student Records</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Survey completion rates and aggregated feedback scores
+        &nbsp;|&nbsp; <strong>From:</strong> Stud Eval Teach Soft &nbsp;|&nbsp; <strong>To:</strong> Student Records
+      </div>
+      <p><strong>Description:</strong> Once surveys close, the Student Evaluation system returns completion statistics
+        and aggregated module-level feedback scores to Student Records.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Response rates</li>
+        <li>Aggregated feedback</li>
+        <li>Action tracking indicators</li>
+      </ul>
+      <p><strong>Flow type:</strong> Outcome confirmation — Individual responses are not attributed to student records and remain anonymised; aggregated scores returned to SIS support quality assurance reporting cycles.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-SIS-HR-01" class="blog-article anchor-scroll">
+      <h3>F-SIS-HR-01: Student Records to HR</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Graduate Teaching Assistant records and student-staff roles
+        &nbsp;|&nbsp; <strong>From:</strong> Student Records &nbsp;|&nbsp; <strong>To:</strong> HR</div>
+      <p><strong>Description:</strong> Student Records provides HR with the details of students holding dual roles, such
+        as Graduate Teaching Assistants, research assistants, or student ambassadors.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Dual-role student records</li>
+        <li>GTA details</li>
+        <li>Student-staff relationships</li>
+      </ul>
+      <p><strong>Flow type:</strong> SIS distribution — Students in dual roles require both a student record and an employment record; this flow initiates the HR process including right-to-work checks that must complete before payment can be processed.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-HR-SIS-01" class="blog-article anchor-scroll">
+      <h3>F-HR-SIS-01: HR to Student Records</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Academic supervisor and personal tutor assignments
+        &nbsp;|&nbsp; <strong>From:</strong> HR &nbsp;|&nbsp; <strong>To:</strong> Student Records</div>
+      <p><strong>Description:</strong> HR is the system of record for the staff assignment process. Once an assignment
+        is confirmed, the outcome flows to Student Records, which becomes the system of record for the academic
+        relationship as it affects the student.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Supervisor assignments</li>
+        <li>Personal tutor mappings</li>
+        <li>Academic adviser relationships</li>
+      </ul>
+      <p><strong>Flow type:</strong> Outcome confirmation — HR owns the staff assignment process; SIS holds the student-facing academic relationship. Gaps in supervisor or tutor assignment in SIS affect pastoral support tracking and research degree milestone management.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-SIS-PAY-01" class="blog-article anchor-scroll">
+      <h3>F-SIS-PAY-01: Student Records to Payroll</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Bursary-eligible student records and GTA payment authorisations
+        &nbsp;|&nbsp; <strong>From:</strong> Student Records &nbsp;|&nbsp; <strong>To:</strong> Payroll</div>
+      <p><strong>Description:</strong> Student Records provides Payroll with authorised lists of students eligible for
+        bursaries, hardship funds, or stipend payments, along with GTA hours approved for payment.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Bursary eligibility</li>
+        <li>Hardship payments</li>
+        <li>Stipend/GTA payment authorisations</li>
+      </ul>
+      <p><strong>Flow type:</strong> SIS distribution — Payroll must verify current enrolment status from this flow before processing bursary or GTA payments; payment to a student who has withdrawn creates an overpayment liability.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-PAY-SIS-01" class="blog-article anchor-scroll">
+      <h3>F-PAY-SIS-01: Payroll to Student Records</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Bursary and stipend payment confirmations &nbsp;|&nbsp;
+        <strong>From:</strong> Payroll &nbsp;|&nbsp; <strong>To:</strong> Student Records</div>
+      <p><strong>Description:</strong> Payroll confirms to Student Records when bursary, stipend, or hardship payments
+        have been processed.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Payment confirmations</li>
+        <li>Bursary and stipend history</li>
+      </ul>
+      <p><strong>Flow type:</strong> Outcome confirmation — Payment confirmations in SIS support financial aid audit trails and are required evidence for compliance with the conditions attached to bursary funding agreements.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-SIS-CRIS-01" class="blog-article anchor-scroll">
+      <h3>F-SIS-CRIS-01: Student Records to CRIS</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Research student enrolment and researcher profile data
+        &nbsp;|&nbsp; <strong>From:</strong> Student Records &nbsp;|&nbsp; <strong>To:</strong> CRIS</div>
+      <p><strong>Description:</strong> Student Records provides the Current Research Information System with enrolment
+        data for postgraduate research students.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Research student enrolments</li>
+        <li>Researcher profile seed data</li>
+        <li>Supervisor links</li>
+      </ul>
+      <p><strong>Flow type:</strong> SIS distribution — CRIS researcher profiles must reflect confirmed SIS enrolment; students who have withdrawn should not appear as active researchers in REF compliance outputs.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-CRIS-SIS-01" class="blog-article anchor-scroll">
+      <h3>F-CRIS-SIS-01: CRIS to Student Records</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Research degree milestones and publication records
+        &nbsp;|&nbsp; <strong>From:</strong> CRIS &nbsp;|&nbsp; <strong>To:</strong> Student Records</div>
+      <p><strong>Description:</strong> CRIS returns research progression milestones — such as confirmation of
+        registration, thesis submission, and viva outcomes — along with publication records to Student Records.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Research milestones</li>
+        <li>Thesis submission and viva outcomes</li>
+        <li>Publication records</li>
+      </ul>
+      <p><strong>Flow type:</strong> Outcome confirmation — Research milestones returned here are part of the academic record; thesis submission and viva outcomes feed progression monitoring and appear in HESA statutory data returns.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-SIS-RP-01" class="blog-article anchor-scroll">
+      <h3>F-SIS-RP-01: Student Records to Research Proposals</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Student researcher eligibility and supervisor assignment data
+        &nbsp;|&nbsp; <strong>From:</strong> Student Records &nbsp;|&nbsp; <strong>To:</strong> Research Proposals</div>
+      <p><strong>Description:</strong> Student Records provides Research Proposals with verified details of students
+        named on grant applications, their enrolment status, programme of study, and assigned supervisors.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Eligibility checks</li>
+        <li>Research student status</li>
+        <li>Supervisor assignment data</li>
+      </ul>
+      <p><strong>Flow type:</strong> SIS distribution — Funder eligibility checks require confirmed enrolment status; grant applications must not include students whose SIS status is unconfirmed, suspended, or lapsed.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-RP-SIS-01" class="blog-article anchor-scroll">
+      <h3>F-RP-SIS-01: Research Proposals to Student Records</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Funded research studentship award records &nbsp;|&nbsp;
+        <strong>From:</strong> Research Proposals &nbsp;|&nbsp; <strong>To:</strong> Student Records</div>
+      <p><strong>Description:</strong> Research Proposals is the system of record for the funding process. Once a
+        studentship is confirmed, the award outcome flows to Student Records, which becomes the system of record for
+        what that funding means for the student academically and financially.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Studentship awards</li>
+        <li>Funder details</li>
+        <li>Award conditions</li>
+        <li>Fee-liability implications</li>
+      </ul>
+      <p><strong>Flow type:</strong> Outcome confirmation — Studentship funding records in SIS affect fee liability; a fully funded studentship should suppress or offset the fee charge in Finance and must be reflected before billing is processed.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-SIS-CMS-01" class="blog-article anchor-scroll">
+      <h3>F-SIS-CMS-01: Student Records to Content Mgmt Systems</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Student cohort and programme data for content personalisation
+        &nbsp;|&nbsp; <strong>From:</strong> Student Records &nbsp;|&nbsp; <strong>To:</strong> Content Mgmt Systems
+      </div>
+      <p><strong>Description:</strong> Student Records provides the Content Management System with cohort, programme,
+        and faculty data to enable targeted and personalised content delivery.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Cohort data</li>
+        <li>Programme and faculty segmentation</li>
+        <li>Personalisation attributes</li>
+      </ul>
+      <p><strong>Flow type:</strong> SIS distribution — Content personalisation depends on accurate cohort segmentation from SIS; stale or incorrect data here results in students receiving irrelevant or misdirected institutional communications.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-CMS-SIS-01" class="blog-article anchor-scroll">
+      <h3>F-CMS-SIS-01: Content Mgmt Systems to Student Records</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Published regulatory and policy notifications &nbsp;|&nbsp;
+        <strong>From:</strong> Content Mgmt Systems &nbsp;|&nbsp; <strong>To:</strong> Student Records</div>
+      <p><strong>Description:</strong> The CMS notifies Student Records when significant regulatory, policy, or
+        procedural documents are published that require annotation against student records.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Policy publication notices</li>
+        <li>Regulatory change notifications</li>
+        <li>Acknowledgement triggers</li>
+      </ul>
+      <p><strong>Flow type:</strong> SOR intake — SIS acquires a compliance record that a policy or regulatory document has been published; this enables institutions to demonstrate students have been notified of changes relevant to their student contract obligations.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-SIS-ITSM-01" class="blog-article anchor-scroll">
+      <h3>F-SIS-ITSM-01: Student Records to IT Service Mgmt</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Student identity and account data for incident context
+        &nbsp;|&nbsp; <strong>From:</strong> Student Records &nbsp;|&nbsp; <strong>To:</strong> IT Service Mgmt</div>
+      <p><strong>Description:</strong> Student Records provides the IT Service Management platform with student
+        identity, enrolment status, and system access details.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Student identity</li>
+        <li>Service entitlement context</li>
+        <li>Account status indicators</li>
+      </ul>
+      <p><strong>Flow type:</strong> SIS distribution — Service desk staff should access student context from SIS rather than maintaining local records, ensuring incident management is based on the authoritative record.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-ITSM-SIS-01" class="blog-article anchor-scroll">
+      <h3>F-ITSM-SIS-01: IT Service Mgmt to Student Records</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Service request outcomes affecting student account status
+        &nbsp;|&nbsp; <strong>From:</strong> IT Service Mgmt &nbsp;|&nbsp; <strong>To:</strong> Student Records</div>
+      <p><strong>Description:</strong> ITSM notifies Student Records of resolved service requests or incidents that
+        result in changes to a student&#x27;s account status.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Service request outcomes</li>
+        <li>Account status changes</li>
+        <li>Data correction outcomes</li>
+      </ul>
+      <p><strong>Flow type:</strong> Outcome confirmation — Account changes completed via ITSM must be reflected in SIS to ensure student-facing systems display the correct access and account state.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-UCAS-SIS-01" class="blog-article anchor-scroll">
+      <h3>F-UCAS-SIS-01: UCAS to Student Records</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Application data, offer decisions, and clearing records
+        &nbsp;|&nbsp; <strong>From:</strong> UCAS &nbsp;|&nbsp; <strong>To:</strong> Student Records</div>
+      <p><strong>Description:</strong> UCAS transmits applicant data, including personal details, qualification records,
+        programme preferences, and offer/acceptance decisions to Student Records.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Applicant demographics</li>
+        <li>Programme preferences</li>
+        <li>Qualification records</li>
+        <li>Offer and acceptance decisions</li>
+      </ul>
+      <p><strong>Flow type:</strong> Statutory / SOR intake — UCAS is the statutory admissions body for UK undergraduate entry; data quality at this intake point determines the accuracy of the SIS record from the point of enrolment.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-SIS-UCAS-01" class="blog-article anchor-scroll">
+      <h3>F-SIS-UCAS-01: Student Records to UCAS</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Enrolment confirmation and withdrawal notifications
+        &nbsp;|&nbsp; <strong>From:</strong> Student Records &nbsp;|&nbsp; <strong>To:</strong> UCAS</div>
+      <p><strong>Description:</strong> Student Records confirms successful enrolment back to UCAS once an applicant has
+        registered, and notifies UCAS of withdrawals, deferrals, or no-shows.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Enrolment confirmations</li>
+        <li>Withdrawals</li>
+        <li>Deferrals</li>
+        <li>No-show notifications</li>
+      </ul>
+      <p><strong>Flow type:</strong> Statutory — Failure to notify UCAS of withdrawals or no-shows in a timely manner may prevent other applicants from taking the place through Clearing, with operational and reputational consequences.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-SIS-HESA-01" class="blog-article anchor-scroll">
+      <h3>F-SIS-HESA-01: Student Records to HESA</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Statutory student data return &nbsp;|&nbsp;
+        <strong>From:</strong> Student Records &nbsp;|&nbsp; <strong>To:</strong> HESA</div>
+      <p><strong>Description:</strong> Student Records submits the annual statutory HESA Student record return, covering
+        enrolled students, programme details, module registrations, qualifications awarded, and demographic data.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Student return data</li>
+        <li>Programme and module records</li>
+        <li>Qualifications awarded</li>
+        <li>Demographic fields</li>
+      </ul>
+      <p><strong>Flow type:</strong> Statutory — Annual submission is a legal requirement; late or inaccurate data affects institutional funding allocation, sector benchmarking, and may trigger scrutiny from the Office for Students.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-HESA-SIS-01" class="blog-article anchor-scroll">
+      <h3>F-HESA-SIS-01: HESA to Student Records</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Validation reports and HESA student identifiers &nbsp;|&nbsp;
+        <strong>From:</strong> HESA &nbsp;|&nbsp; <strong>To:</strong> Student Records</div>
+      <p><strong>Description:</strong> HESA is the authority for assigning student identifiers and validating statutory
+        submission data. Once identifiers are assigned and validation outcomes are returned, Student Records becomes the
+        system of record for storing and propagating the HESA student identifier.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Validation results</li>
+        <li>HESA identifiers</li>
+        <li>Error notifications</li>
+      </ul>
+      <p><strong>Flow type:</strong> Statutory / SOR intake — The HESA student identifier must be written back to SIS and used in all subsequent statutory submissions and inter-institutional exchanges; a missing identifier creates compliance risk across multiple downstream processes.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-SIS-SLC-01" class="blog-article anchor-scroll">
+      <h3>F-SIS-SLC-01: Student Records to Student Loans Company</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Enrolment confirmation for tuition fee and maintenance loan
+        release &nbsp;|&nbsp; <strong>From:</strong> Student Records &nbsp;|&nbsp; <strong>To:</strong> Student Loans
+        Company</div>
+      <p><strong>Description:</strong> Student Records confirms to the Student Loans Company that an eligible student is
+        enrolled and attending, triggering the release of tuition fee loans to the institution and maintenance loan
+        payments to the student.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Enrolment confirmation</li>
+        <li>Attendance confirmation</li>
+        <li>Fee details</li>
+      </ul>
+      <p><strong>Flow type:</strong> Statutory — Failure to confirm enrolment will suspend tuition fee loan release to the institution and maintenance loan payments to the student; accuracy and timeliness are critical to institutional cash flow and student financial welfare.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-SLC-SIS-01" class="blog-article anchor-scroll">
+      <h3>F-SLC-SIS-01: Student Loans Company to Student Records</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Loan entitlement, payment status, and overpayment notifications
+        &nbsp;|&nbsp; <strong>From:</strong> Student Loans Company &nbsp;|&nbsp; <strong>To:</strong> Student Records
+      </div>
+      <p><strong>Description:</strong> The Student Loans Company is the system of record for the loan process. Once a
+        loan decision or payment event occurs, Student Records becomes the system of record for the fee liability and
+        financial standing implications for the student.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Loan entitlement</li>
+        <li>Payment status</li>
+        <li>Overpayment notifications</li>
+        <li>Status changes</li>
+      </ul>
+      <p><strong>Flow type:</strong> Statutory / Outcome confirmation — Overpayment notifications require prompt action in both SIS and Finance; unrecovered overpayments become a liability and can affect the student's future loan entitlement.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-SIS-UKVI-01" class="blog-article anchor-scroll">
+      <h3>F-SIS-UKVI-01: Student Records to UK Visas &amp; Immigration</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> CAS creation requests and attendance compliance data
+        &nbsp;|&nbsp; <strong>From:</strong> Student Records &nbsp;|&nbsp; <strong>To:</strong> UK Visas &amp;
+        Immigration</div>
+      <p><strong>Description:</strong> Student Records provides UKVI with Confirmation of Acceptance for Studies
+        creation requests for international students requiring a Student visa, along with ongoing attendance monitoring
+        data required under the institution&#x27;s sponsor licence obligations.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>CAS requests</li>
+        <li>Attendance compliance data</li>
+        <li>Change-of-circumstance triggers</li>
+      </ul>
+      <p><strong>Flow type:</strong> Statutory — Inaccurate or untimely attendance reporting under the Student visa route can result in suspension of the institution's sponsor licence, affecting all sponsored international students.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-UKVI-SIS-01" class="blog-article anchor-scroll">
+      <h3>F-UKVI-SIS-01: UK Visas &amp; Immigration to Student Records</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Visa status updates and sponsor compliance alerts &nbsp;|&nbsp;
+        <strong>From:</strong> UK Visas &amp; Immigration &nbsp;|&nbsp; <strong>To:</strong> Student Records</div>
+      <p><strong>Description:</strong> UKVI notifies the institution of changes to a student&#x27;s visa status,
+        including grants, refusals, curtailments, and compliance alerts.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Visa status changes</li>
+        <li>Compliance alerts</li>
+        <li>Sponsor notifications</li>
+      </ul>
+      <p><strong>Flow type:</strong> Statutory / SOR intake — Visa status changes must be acted upon promptly; failure to follow up on curtailment or compliance alerts is a sponsor licence breach with potential consequences for the entire international student cohort.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-SIS-WELL-01" class="blog-article anchor-scroll">
+      <h3>F-SIS-WELL-01: Student Records to Student Wellbeing &amp; Disability</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Student profiles, disability declarations, and academic records
+        &nbsp;|&nbsp; <strong>From:</strong> Student Records &nbsp;|&nbsp; <strong>To:</strong> Student Wellbeing &amp;
+        Disability</div>
+      <p><strong>Description:</strong> Student Records provides the Student Wellbeing and Disability system with core
+        student data, including declared disabilities, programme details, academic performance indicators, and any
+        existing flags or holds.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Student profiles</li>
+        <li>Disability declarations</li>
+        <li>Academic context</li>
+        <li>Existing flags and holds</li>
+      </ul>
+      <p><strong>Flow type:</strong> SIS distribution — Wellbeing must work from SIS data to ensure casework is grounded in the authoritative academic record; independently maintained student data in Wellbeing creates inconsistency risk and support gaps.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-VLE-BI-01" class="blog-article anchor-scroll">
+      <h3>F-VLE-BI-01: Virtual Learning Env to Business Intelligence</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Learning analytics and digital engagement data &nbsp;|&nbsp;
+        <strong>From:</strong> Virtual Learning Env &nbsp;|&nbsp; <strong>To:</strong> Business Intelligence</div>
+      <p><strong>Description:</strong> The VLE provides the Business Intelligence platform with detailed learning
+        analytics, including login frequency, content access patterns, assessment submission behaviours, and discussion
+        forum engagement.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Login analytics</li>
+        <li>Content access</li>
+        <li>Assessment behaviour</li>
+        <li>Forum engagement</li>
+      </ul>
+      <p><strong>Flow type:</strong> Lateral — Does not affect the student record; its value is in enriching retention and engagement analysis beyond what attendance and grades alone reveal.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-AM-BI-01" class="blog-article anchor-scroll">
+      <h3>F-AM-BI-01: Attendance Monitoring to Business Intelligence</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Attendance trends and engagement analytics &nbsp;|&nbsp;
+        <strong>From:</strong> Attendance Monitoring &nbsp;|&nbsp; <strong>To:</strong> Business Intelligence</div>
+      <p><strong>Description:</strong> Attendance Monitoring provides the BI platform with aggregated and individual
+        attendance trend data, absence patterns, and engagement scores.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Attendance trends</li>
+        <li>Absence patterns</li>
+        <li>Engagement scores</li>
+      </ul>
+      <p><strong>Flow type:</strong> Lateral — Combined with VLE engagement data (F-VLE-BI-01) and SIS academic outcomes (F-SIS-BI-01), this feed enables multi-dimensional early-warning analysis supporting student retention strategy.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-DW-BI-01" class="blog-article anchor-scroll">
+      <h3>F-DW-BI-01: Data Warehouse to Business Intelligence</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Consolidated multi-system data feeds for analytics
+        &nbsp;|&nbsp; <strong>From:</strong> Data Warehouse &nbsp;|&nbsp; <strong>To:</strong> Business Intelligence
+      </div>
+      <p><strong>Description:</strong> The Data Warehouse provides the BI platform with consolidated, cleansed, and
+        historicised data drawn from multiple source systems including Student Records, Finance, HR, and the VLE.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Historicised cross-system data</li>
+        <li>Finance and HR metrics</li>
+        <li>Analytics-ready datasets</li>
+      </ul>
+      <p><strong>Flow type:</strong> Lateral — The warehouse is the primary source for strategic and regulatory reporting; BI tools should draw from DW rather than directly from transactional systems to avoid load and consistency issues.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-CRM-EWP-01" class="blog-article anchor-scroll">
+      <h3>F-CRM-EWP-01: CRM to Enterprise Web Portal</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Personalised communications and targeted content &nbsp;|&nbsp;
+        <strong>From:</strong> CRM &nbsp;|&nbsp; <strong>To:</strong> Enterprise Web Portal</div>
+      <p><strong>Description:</strong> The CRM system pushes personalised communications, targeted notifications, and
+        campaign content to the Enterprise Web Portal based on student segment, lifecycle stage, or engagement profile.
+      </p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Personalised messages</li>
+        <li>Campaign content</li>
+        <li>Audience segmentation</li>
+      </ul>
+      <p><strong>Flow type:</strong> Lateral — Portal content driven by CRM must not contradict data sourced from SIS; content governance should ensure the two channels are coordinated, particularly for enrolment status and academic information.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-SIS-VLE-02" class="blog-article anchor-scroll">
+      <h3>F-SIS-VLE-02: Student Records to Virtual Learning Env</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Approved adjustment outcomes for course content and assessment
+        delivery &nbsp;|&nbsp; <strong>From:</strong> Student Records &nbsp;|&nbsp; <strong>To:</strong> Virtual
+        Learning Env</div>
+      <p><strong>Description:</strong> Student Records distributes approved reasonable adjustment outcomes to the VLE.
+        The VLE must consume adjustment data from Student Records, not directly from the Wellbeing system, to ensure a
+        single consistent and auditable record. Adjustments distributed include extended submission deadlines,
+        alternative assessment formats, accessible content requirements, and assessment accommodations.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Extended deadlines</li>
+        <li>Alternative assessment formats</li>
+        <li>Accessibility requirements</li>
+        <li>Assessment accommodations</li>
+      </ul>
+      <p><strong>Flow type:</strong> SIS distribution — VLE must not receive adjustment data directly from Wellbeing; SIS is the sole distribution point to preserve a single consistent and auditable record across all downstream systems.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-SIS-AM-02" class="blog-article anchor-scroll">
+      <h3>F-SIS-AM-02: Student Records to Attendance Monitoring</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Approved attendance adjustment outcomes &nbsp;|&nbsp;
+        <strong>From:</strong> Student Records &nbsp;|&nbsp; <strong>To:</strong> Attendance Monitoring</div>
+      <p><strong>Description:</strong> Student Records distributes approved attendance adjustment outcomes to Attendance
+        Monitoring. Attendance Monitoring must consume adjustment data from Student Records, not directly from the
+        Wellbeing system.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Adjusted thresholds</li>
+        <li>Exemptions</li>
+        <li>Alert suspension dates</li>
+        <li>Return-to-study markers</li>
+      </ul>
+      <p><strong>Flow type:</strong> SIS distribution — Attendance Monitoring must not receive adjustment data directly from Wellbeing; threshold adjustments not sourced from SIS create inconsistency risk, particularly for UKVI attendance compliance monitoring.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-SIS-EXAMS-01" class="blog-article anchor-scroll">
+      <h3>F-SIS-EXAMS-01: Student Records to Exam Scheduling</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Student exam entries, module registrations, and approved
+        examination accommodations &nbsp;|&nbsp; <strong>From:</strong> Student Records &nbsp;|&nbsp;
+        <strong>To:</strong> Exam Scheduling</div>
+      <p><strong>Description:</strong> Student Records provides the Exam Scheduling system with the data required for
+        operational examination delivery: the authoritative list of students entered for each assessment, their
+        programme and level details, and approved physical examination accommodations held in Student Records.
+        Exceptional circumstances flags and academic governance data are surfaced to the Exam Board via Student Records
+        board preparation, not via Exam Scheduling.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Exam entries</li>
+        <li>Module registrations</li>
+        <li>Accommodation requirements</li>
+        <li>Candidate data</li>
+      </ul>
+      <p><strong>Flow type:</strong> SIS distribution — Physical examination accommodations must be sourced from SIS, which holds the approved outcome from Wellbeing; Exam Scheduling does not determine accommodation eligibility and must not maintain its own adjustment records.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-EXAMS-SIS-01" class="blog-article anchor-scroll">
+      <h3>F-EXAMS-SIS-01: Exam Scheduling to Student Records</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Finalised exam timetables, seating plans, and candidate numbers
+        &nbsp;|&nbsp; <strong>From:</strong> Exam Scheduling &nbsp;|&nbsp; <strong>To:</strong> Student Records</div>
+      <p><strong>Description:</strong> The Exam Scheduling system returns finalised examination timetables, candidate
+        seating assignments, and candidate numbers to Student Records for publication via the student portal. Academic
+        outcomes are returned to Student Records by the Exam Board following ratification, not by Exam Scheduling.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Exam timetables</li>
+        <li>Seating plans</li>
+        <li>Candidate numbers</li>
+      </ul>
+      <p><strong>Flow type:</strong> Outcome confirmation — Academic outcomes are returned by the Exam Board (F-EXAMBOARD-SIS-01), not by Exam Scheduling; this flow covers logistics only and does not affect the student academic record.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-WELL-SIS-01" class="blog-article anchor-scroll">
+      <h3>F-WELL-SIS-01: Student Wellbeing &amp; Disability to Student Records</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Approved reasonable adjustment outcomes &nbsp;|&nbsp;
+        <strong>From:</strong> Student Wellbeing &amp; Disability &nbsp;|&nbsp; <strong>To:</strong> Student Records
+      </div>
+      <p><strong>Description:</strong> The Student Wellbeing and Disability system is the system of record for the
+        reasonable adjustment process. Reasonable adjustments cover ongoing accommodations for disability or long-term
+        health conditions, including DSA entitlements, examination accommodations, and, where applicable,
+        system-enforced operational rule treatments such as late penalty suppression or extended submission windows.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Adjustment categories</li>
+        <li>DSA entitlements</li>
+        <li>Examination accommodations</li>
+        <li>Rule-treatment indicators</li>
+      </ul>
+      <p><strong>Flow type:</strong> Outcome confirmation — WELL owns the adjustment case process; SIS owns the academic-operational effect. No downstream system should receive adjustment data directly from Wellbeing.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-SIS-EXAMBOARD-01" class="blog-article anchor-scroll">
+      <h3>F-SIS-EXAMBOARD-01: Student Records to Exam Board</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Board data, candidate result profiles, exceptional
+        circumstances outcomes, approved adjustment indicators, misconduct outcomes, and calculated recommendations
+        &nbsp;|&nbsp; <strong>From:</strong> Student Records &nbsp;|&nbsp; <strong>To:</strong> Exam Board</div>
+      <p><strong>Description:</strong> Student Records prepares and presents the complete dataset required for formal
+        Exam Board consideration. This includes module marks aggregated from all assessment sources, pre-board
+        calculated profiles and degree classification recommendations, approved exceptional circumstances outcomes,
+        approved reasonable adjustment indicators where relevant to board visibility, and academic misconduct outcomes.
+      </p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Board data pack</li>
+        <li>Candidate profiles</li>
+        <li>Classification recommendations</li>
+        <li>Exceptional circumstances and misconduct indicators</li>
+      </ul>
+      <p><strong>Flow type:</strong> Governance prerequisite — All data presented to the Exam Board must originate from SIS; board decisions made on data not sourced from the authoritative record are procedurally vulnerable under institutional regulations.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-EXAMBOARD-SIS-01" class="blog-article anchor-scroll">
+      <h3>F-EXAMBOARD-SIS-01: Exam Board to Student Records</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Ratified academic decisions and board outcomes &nbsp;|&nbsp;
+        <strong>From:</strong> Exam Board &nbsp;|&nbsp; <strong>To:</strong> Student Records</div>
+      <p><strong>Description:</strong> The Exam Board returns formally approved academic decisions to Student Records,
+        which becomes the authoritative and locked record of all ratified outcomes.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Ratified marks</li>
+        <li>Progression decisions</li>
+        <li>Award classifications</li>
+        <li>Resit and condonement outcomes</li>
+      </ul>
+      <p><strong>Flow type:</strong> Governance prerequisite / SOR intake — Record is locked on receipt; no amendment is possible without a formal academic appeal. SIS then propagates confirmed outcomes to Finance, HESA, and SLC as required.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-WELL-SIS-02" class="blog-article anchor-scroll">
+      <h3>F-WELL-SIS-02: Student Wellbeing &amp; Disability to Student Records</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Approved exceptional circumstances outcomes &nbsp;|&nbsp;
+        <strong>From:</strong> Student Wellbeing &amp; Disability &nbsp;|&nbsp; <strong>To:</strong> Student Records
+      </div>
+      <p><strong>Description:</strong> The Student Wellbeing and Disability system is the system of record for the
+        exceptional circumstances process — managing student submissions of personal, medical, or compassionate
+        circumstances, reviewing evidence, and determining whether a claim is upheld.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Exceptional circumstances claims</li>
+        <li>Evidence outcomes</li>
+        <li>Board-facing flags</li>
+      </ul>
+      <p><strong>Flow type:</strong> Outcome confirmation — Exceptional circumstances outcomes must reach SIS before board papers are prepared (F-SIS-EXAMBOARD-01); a claim not recorded in SIS at board paper generation cannot be retrospectively considered without a formal process.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-SIS-EXTEX-01" class="blog-article anchor-scroll">
+      <h3>F-SIS-EXTEX-01: Student Records to External Examiner</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Assessment sample access, candidate profiles, and pre-board
+        calculations for external review &nbsp;|&nbsp; <strong>From:</strong> Student Records &nbsp;|&nbsp;
+        <strong>To:</strong> External Examiner</div>
+      <p><strong>Description:</strong> Student Records provides or coordinates access for the External Examiner to the
+        data required to carry out their standards assurance role prior to and during the Exam Board.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Sample scripts access</li>
+        <li>Candidate profiles</li>
+        <li>Pre-board calculations</li>
+        <li>Borderline case indicators</li>
+      </ul>
+      <p><strong>Flow type:</strong> Governance prerequisite — The External Examiner must receive data with sufficient lead time for meaningful scrutiny; this flow must complete before the board meets to satisfy external examining obligations.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-EXTEX-EXAMBOARD-01" class="blog-article anchor-scroll">
+      <h3>F-EXTEX-EXAMBOARD-01: External Examiner to Exam Board</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Standards assurance confirmation and ratification input
+        &nbsp;|&nbsp; <strong>From:</strong> External Examiner &nbsp;|&nbsp; <strong>To:</strong> Exam Board</div>
+      <p><strong>Description:</strong> The External Examiner provides the Exam Board with independent standards
+        assurance commentary, including scrutiny of marking standards, commentary on borderline or contentious cases,
+        and confirmation that outcomes are fair and comparable with sector expectations.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Standards assurance commentary</li>
+        <li>Sign-off status</li>
+        <li>Ratification input</li>
+      </ul>
+      <p><strong>Flow type:</strong> Governance prerequisite — External Examiner confirmation is a prerequisite for formal ratification; this flow must complete before the Exam Board can return ratified outcomes to Student Records via F-EXAMBOARD-SIS-01.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-AI-SIS-01" class="blog-article anchor-scroll">
+      <h3>F-AI-SIS-01: Academic Integrity to Student Records</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Academic misconduct outcomes and penalties &nbsp;|&nbsp;
+        <strong>From:</strong> Academic Integrity &nbsp;|&nbsp; <strong>To:</strong> Student Records</div>
+      <p><strong>Description:</strong> The Academic Integrity system is the system of record for academic misconduct
+        investigations and decisions. Once a case is concluded, the confirmed outcome and any associated penalty are
+        transmitted to Student Records.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Misconduct outcomes</li>
+        <li>Penalties</li>
+        <li>Case closure references</li>
+      </ul>
+      <p><strong>Flow type:</strong> Outcome confirmation — Misconduct outcomes must be recorded in SIS before board papers are prepared (F-SIS-EXAMBOARD-01); a penalty not yet in SIS cannot be surfaced to the Exam Board for classification consideration.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section id="F-SIS-AI-01" class="blog-article anchor-scroll">
+      <h3>F-SIS-AI-01: Student Records to Academic Integrity</h3>
+      <div class='flow-meta'><strong>Flow name:</strong> Student identity, module registrations, and submission context for misconduct case management &nbsp;|&nbsp; <strong>From:</strong> Student Records &nbsp;|&nbsp; <strong>To:</strong> Academic Integrity</div>
+      <p><strong>Description:</strong> Student Records provides the Academic Integrity system with the student identity data, module and assessment registrations, and submission records required to initiate and manage misconduct cases. Academic Integrity is the system of record for the investigation and decision process; Student Records is the system of record for the outcome.</p>
+      <p><strong>Typical data exchanged:</strong></p>
+      <ul class='data-list'>
+        <li>Student identity</li>
+        <li>Module and assessment registrations</li>
+        <li>Submission records and timestamps</li>
+        <li>Enrolment status</li>
+      </ul>
+      <p><strong>Flow type:</strong> SIS distribution — Case management in Academic Integrity must be grounded in the authoritative SIS record of enrolment and submission; independently maintained student data in AI creates inconsistency and audit trail risk.</p>
+      <a href="#flows">Back to Flows</a>
+  </section>
+  <section class="blog-article">
+<p>© 2026 RevelationCore. Licensed under <a href='https://creativecommons.org/licenses/by-nc/4.0/' target='_blank'>CC BY-NC 4.0</a> — free to use, share, and adapt for non-commercial purposes with attribution. Commercial use prohibited. | <a href='https://revelationcore.com'>revelationcore.com</a></p>
+    <p>This reference is a generalised architecture model for UK higher education institutions and should be adapted to
+      local systems, regulations, and governance practice before implementation use.</p>
+  </section>
+</main>

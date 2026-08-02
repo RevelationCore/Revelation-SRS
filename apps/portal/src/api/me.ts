@@ -278,3 +278,94 @@ export interface ValueSetDto {
 export function getFieldValueSet(entity: string, field: string): Promise<ValueSetDto> {
   return api.get(`/api/v1/fields/${entity}/${field}/value-set`);
 }
+
+// ── Module selection proposals ─────────────────────────────────────────────────
+
+export interface AcademicPeriod {
+  academicPeriodId: string;
+  academicYear:     string;
+  periodCode:       string;
+  periodTypeCode:   string;
+  startDate:        string;
+  endDate:          string;
+}
+
+export function getAcademicPeriods(): Promise<AcademicPeriod[]> {
+  return api.get('/api/v1/academic-periods');
+}
+
+export interface Programme {
+  programmeId: string;
+  code:        string;
+  title:       string;
+  fheqLevel:   number | null;
+}
+
+export function getProgramme(programmeId: string): Promise<Programme> {
+  return api.get(`/api/v1/programmes/${programmeId}`);
+}
+
+export interface ProposalValidationMessage {
+  ruleTypeCode: string;
+  message:      string;
+  severity:     'error' | 'warning';
+}
+
+export interface ProposalItem {
+  proposalItemId:       string;
+  moduleId:             string;
+  moduleCode:           string;
+  moduleTitle:          string;
+  creditValue:          number | null;
+  fheqLevel:            number | null;
+  moduleOfferingId:     string | null;
+  preferenceRank:       number | null;
+  sourceCode:           string;
+  validationStateCode:  string;
+  validationMessages:   ProposalValidationMessage[];
+}
+
+export interface ModuleSelectionProposal {
+  moduleSelectionProposalId: string;
+  enrolmentId:               string;
+  academicPeriodId:          string;
+  programmeRuleSetId:        string;
+  statusCode:                string;
+  submittedAt:               string | null;
+  decidedAt:                 string | null;
+  decisionAuthorityCode:     string | null;
+  decisionReason:            string | null;
+  workflowInstanceId:        string | null;
+  items:                     ProposalItem[];
+}
+
+export function getModuleSelectionProposals(enrolmentId: string): Promise<ModuleSelectionProposal[]> {
+  return api.get(`/api/v1/module-selection-proposals?enrolmentId=${enrolmentId}`);
+}
+
+export function getModuleSelectionProposal(proposalId: string): Promise<ModuleSelectionProposal> {
+  return api.get(`/api/v1/module-selection-proposals/${proposalId}`);
+}
+
+export function postModuleSelectionProposal(body: {
+  enrolmentId:      string;
+  academicPeriodId: string;
+  fheqLevel:        number;
+}): Promise<{ moduleSelectionProposalId: string }> {
+  return api.post('/api/v1/module-selection-proposals', body);
+}
+
+export function postProposalItem(
+  proposalId: string,
+  body: { moduleId: string; moduleOfferingId?: string },
+): Promise<{ proposalItemId: string }> {
+  return api.post(`/api/v1/module-selection-proposals/${proposalId}/items`, body);
+}
+
+export function deleteProposalItem(proposalId: string, proposalItemId: string): Promise<void> {
+  return api.delete(`/api/v1/module-selection-proposals/${proposalId}/items/${proposalItemId}`);
+}
+
+export function postProposalSubmission(proposalId: string): Promise<ModuleSelectionProposal> {
+  return api.post(`/api/v1/module-selection-proposals/${proposalId}/submission`, {});
+}

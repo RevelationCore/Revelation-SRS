@@ -12,11 +12,16 @@ import type { FastifyInstance } from 'fastify';
 
 import type { Config } from './config.js';
 import { AdjustmentService } from './platform/adjustments/adjustment-service.js';
+import { SupportOutcomeService } from './platform/adjustments/support-outcome-service.js';
+import { BusinessCaseService } from './platform/cases/business-case-service.js';
+import { IdentityResolutionService } from './platform/identity/identity-resolution-service.js';
 import { EngagementOutcomeService } from './platform/engagement-outcomes/service.js';
 import { AssessmentComponentService } from './platform/assessment/component-service.js';
 import { MarkService } from './platform/assessment/mark-service.js';
+import { ModerationService } from './platform/assessment/moderation-service.js';
 import { ModuleResultService } from './platform/assessment/module-result-service.js';
 import { AuditService } from './platform/audit/service.js';
+import { AuditReviewService } from './platform/audit/review-service.js';
 import { CalendarService } from './platform/calendar/service.js';
 import { CatalogueService } from './platform/catalogue/service.js';
 import { ExceptionalCircumstancesService } from './platform/circumstances/ec-service.js';
@@ -24,6 +29,7 @@ import { MisconductService } from './platform/circumstances/misconduct-service.j
 import { EnrolmentService } from './platform/enrolment/service.js';
 import { ExamEntryService } from './platform/assessment/exam-entry-service.js';
 import { BoardService } from './platform/governance/board-service.js';
+import { BoardAuthorityService } from './platform/governance/board-authority-service.js';
 import { AdmissionsService } from './platform/admissions/admissions-service.js';
 import { CommunicationService } from './platform/communications/communication-service.js';
 import { LocaleService } from './platform/globalisation/locale-service.js';
@@ -34,6 +40,7 @@ import { HearService } from './platform/progression/hear-service.js';
 import { ProgressionService } from './platform/progression/progression-service.js';
 import { CorrectionService } from './platform/governance/correction-service.js';
 import { ModuleRegistrationService } from './platform/registration/service.js';
+import { ModuleSelectionService } from './platform/module-selection/service.js';
 import { IntegrationRegistryService } from './platform/integration/registry-service.js';
 import { RegulatoryExchangeService } from './platform/regulatory/exchange-service.js';
 import { EnvironmentService } from './platform/platform-controls/environment-service.js';
@@ -44,13 +51,16 @@ import { WorkflowResponsibilityService } from './platform/platform-controls/work
 import { WorkflowInstanceService, WorkflowTaskService } from './platform/platform-controls/workflow-runtime-service.js';
 import { DemoService } from './platform/demo/service.js';
 import { RetentionEnforcementService } from './platform/privacy/retention-service.js';
+import { RightsRequestService } from './platform/privacy/rights-request-service.js';
 import { NotificationService } from './platform/notifications/notification-service.js';
 import { FoiService } from './platform/regulatory/foi-service.js';
 import { HesaService } from './platform/regulatory/hesa-service.js';
 import { OfsService } from './platform/regulatory/ofs-service.js';
+import { RegulatoryCollectionService } from './platform/regulatory/regulatory-collection-service.js';
 import { SlcService } from './platform/regulatory/slc-service.js';
 import { UcasService } from './platform/regulatory/ucas-service.js';
 import { UkviService } from './platform/regulatory/ukvi-service.js';
+import { CasCaseService } from './platform/regulatory/cas-case-service.js';
 import { RulesEngine } from './platform/rules-engine/engine.js';
 import { StudentService } from './platform/students/service.js';
 import { TenantAdminService } from './platform/tenant-admin/service.js';
@@ -61,10 +71,13 @@ import { academicPeriodsRoutes } from './routes/academic-periods.js';
 import { circumstancesRoutes } from './routes/circumstances.js';
 import { enrolmentRoutes } from './routes/enrolments.js';
 import { examBoardRoutes } from './routes/exam-boards.js';
+import { boardAuthorityRoutes } from './routes/board-authority.js';
 import { healthRoutes } from './routes/health.js';
 import { markRoutes } from './routes/marks.js';
+import { moderationRoutes } from './routes/moderation.js';
 import { moduleResultRoutes } from './routes/module-results.js';
 import { moduleRegistrationsRoutes } from './routes/module-registrations.js';
+import { moduleSelectionProposalsRoutes } from './routes/module-selection-proposals.js';
 import { programmesRoutes } from './routes/programmes.js';
 import { progressionRoutes } from './routes/progression.js';
 import { regulatoryFoiRoutes } from './routes/regulatory-foi.js';
@@ -73,21 +86,27 @@ import { regulatoryOfsRoutes } from './routes/regulatory-ofs.js';
 import { regulatorySlcRoutes } from './routes/regulatory-slc.js';
 import { regulatoryUcasRoutes } from './routes/regulatory-ucas.js';
 import { regulatoryUkviRoutes } from './routes/regulatory-ukvi.js';
+import { regulatoryCollectionsRoutes } from './routes/regulatory-collections.js';
+import { casCasesRoutes } from './routes/cas-cases.js';
 import { studentRoutes } from './routes/students.js';
 import { tenantAdminRoutes } from './routes/tenant-admin.js';
 import { valueSetsRoutes } from './routes/value-sets.js';
 import { globalisationRoutes } from './routes/globalisation.js';
 import { adjustmentRoutes } from './routes/adjustments.js';
+import { supportOutcomesRoutes } from './routes/support-outcomes.js';
 import { engagementOutcomeRoutes } from './routes/engagement-outcomes.js';
 import { engagementProxyRoutes } from './routes/engagement-proxy.js';
 import { communicationRoutes } from './routes/communications.js';
 import { correctionCasesRoutes } from './routes/correction-cases.js';
+import { identityResolutionRoutes } from './routes/identity-resolution.js';
 import { demoRoutes } from './routes/demo.js';
 import { integrationRegistryRoutes } from './routes/integration-registry.js';
 import { platformControlRoutes } from './routes/platform-controls.js';
 import { reportingRoutes } from './routes/reporting.js';
 import { auditLogRoutes } from './routes/audit-log.js';
 import { adminRetentionRoutes } from './routes/admin-retention.js';
+import { auditReviewRoutes } from './routes/audit-review.js';
+import { rightsRequestsRoutes } from './routes/rights-requests.js';
 import { notificationRoutes } from './routes/notifications.js';
 
 // ---------------------------------------------------------------------------
@@ -162,7 +181,20 @@ function classifyOperation(method: string, url: string): string {
   if ((m === 'POST' || m === 'PATCH') && path.includes('/correction-cases')) return 'workflow';
   if (m === 'PATCH' && path.includes('/status') && path.includes('/regulatory')) return 'workflow';
   if (m === 'PATCH' && path.includes('/assignment') && path.includes('/cas-requests')) return 'workflow';
+  if (m === 'POST' && path.includes('/cas-cases')) return 'workflow';
   if (m === 'POST' && path.includes('/exam-entries')) return 'workflow';
+  if ((m === 'POST' || m === 'PATCH') && path.includes('/moderation')) return 'workflow';
+  if (m === 'POST' && path.includes('/conflicts')) return 'workflow';
+  if (m === 'POST' && path.includes('/decisions')) return 'workflow';
+  if (m === 'PATCH' && path.includes('/recuse')) return 'workflow';
+  if (m === 'PATCH' && path.includes('/publish')) return 'workflow';
+  if (m === 'POST' && path.includes('/signoff')) return 'workflow';
+  if (m === 'POST' && path.includes('/identity-resolution')) return 'workflow';
+  if ((m === 'POST' || m === 'PATCH') && path.includes('/rights-requests')) return 'workflow';
+  if ((m === 'POST' || m === 'PATCH') && path.includes('/rights-restrictions')) return 'workflow';
+  if (m === 'POST' && path.includes('/retention-schedules')) return 'workflow';
+  if (m === 'POST' && path.includes('/retention-assignments')) return 'workflow';
+  if (m === 'POST' && path.includes('/audit-review')) return 'workflow';
   if (m === 'POST' && path.includes('/data-pack')) return 'workflow';
 
   // Reporting — regulatory submission data and read-only compliance extracts
@@ -170,6 +202,7 @@ function classifyOperation(method: string, url: string): string {
 
   // Integration — surfaces for adjacent system connectivity
   if (path.includes('/adjustments')) return 'integration';
+  if (path.includes('/support-outcomes')) return 'integration';
   if (path.includes('/engagement-outcomes')) return 'integration';
   if (path.includes('/communication-templates') || path.includes('/communication-dispatch-log')) return 'integration';
 
@@ -240,15 +273,21 @@ export async function buildApp(
   const assessmentComponents = new AssessmentComponentService(db, valueSets);
   const moduleResults = new ModuleResultService(db, eventBus, rules);
   const marks = new MarkService(db, eventBus, rules, moduleResults, featureFlags);
+  const moderation = new ModerationService(db);
   const adjustments = new AdjustmentService(db, eventBus, valueSets);
+  const businessCases = new BusinessCaseService(db);
+  const auditReview = new AuditReviewService(db, businessCases);
+  const identityResolution = new IdentityResolutionService(db, businessCases);
+  const supportOutcomes = new SupportOutcomeService(db, businessCases);
   const engagementOutcomes = new EngagementOutcomeService(db, eventBus);
   const exceptionalCircumstances = new ExceptionalCircumstancesService(db, eventBus);
   const misconduct = new MisconductService(db, valueSets, eventBus);
   const progression = new ProgressionService(db, eventBus, rules);
   const awards      = new AwardService(db, eventBus, rules, enrolments);
   const boards = new BoardService(db, eventBus, valueSets, awards, featureFlags);
+  const boardAuthority = new BoardAuthorityService(db);
   const hear        = new HearService(db);
-  const corrections = new CorrectionService(db, eventBus, marks, moduleResults, progression, valueSets);
+  const corrections = new CorrectionService(db, eventBus, marks, moduleResults, progression, valueSets, businessCases);
   const runtimeDeployment = {
     environmentCode: config.deploymentEnvironmentCode,
     releaseVersion: config.releaseVersion,
@@ -265,6 +304,7 @@ export async function buildApp(
   const workflowInstances = new WorkflowInstanceService(db);
   const workflowTasks = new WorkflowTaskService(db);
   const workflowBridge = new WorkflowBridgeService(db, audit, eventBus);
+  const moduleSelection = new ModuleSelectionService(db, eventBus, rules, workflowBridge, registrations);
   const workflowResponsibilities = new WorkflowResponsibilityService(db);
   const environments = new EnvironmentService(db, runtimeDeployment);
   const admissions    = new AdmissionsService(db, workflowBridge);
@@ -275,7 +315,9 @@ export async function buildApp(
   const hesa = new HesaService(db, eventBus, students, regulatoryExchanges);
   const slc = new SlcService(db, eventBus, valueSets, enrolments, regulatoryExchanges);
   const ukvi = new UkviService(db, eventBus, valueSets, rules, regulatoryExchanges);
+  const casCases = new CasCaseService(db);
   const ofs = new OfsService(db, eventBus);
+  const regulatoryCollectionService = new RegulatoryCollectionService(db);
   const foi = new FoiService(db, valueSets);
   const examEntries = new ExamEntryService(db, eventBus, regulatoryExchanges);
 
@@ -283,6 +325,7 @@ export async function buildApp(
   fastify.decorate('config',          config);
   fastify.decorate('db',              db);
   fastify.decorate('audit',           audit);
+  fastify.decorate('auditReviewService', auditReview);
   fastify.decorate('rules',           rules);
   fastify.decorate('valueSetService', valueSets);
   fastify.decorate('eventBus',        eventBus);
@@ -291,15 +334,21 @@ export async function buildApp(
   fastify.decorate('catalogueService', catalogue);
   fastify.decorate('calendarService',  calendar);
   fastify.decorate('moduleRegistrationService', registrations);
+  fastify.decorate('moduleSelectionService', moduleSelection);
   fastify.decorate('tenantAdminService', tenantAdmin);
   fastify.decorate('assessmentComponentService', assessmentComponents);
   fastify.decorate('moduleResultService', moduleResults);
   fastify.decorate('markService', marks);
+  fastify.decorate('moderationService', moderation);
   fastify.decorate('adjustmentService', adjustments);
+  fastify.decorate('businessCaseService', businessCases);
+  fastify.decorate('identityResolutionService', identityResolution);
+  fastify.decorate('supportOutcomeService', supportOutcomes);
   fastify.decorate('engagementOutcomeService', engagementOutcomes);
   fastify.decorate('exceptionalCircumstancesService', exceptionalCircumstances);
   fastify.decorate('misconductService', misconduct);
   fastify.decorate('boardService', boards);
+  fastify.decorate('boardAuthorityService', boardAuthority);
   fastify.decorate('progressionService', progression);
   fastify.decorate('awardService',       awards);
   fastify.decorate('hearService',        hear);
@@ -317,7 +366,9 @@ export async function buildApp(
   fastify.decorate('hesaService',        hesa);
   fastify.decorate('slcService',         slc);
   fastify.decorate('ukviService',        ukvi);
+  fastify.decorate('casCaseService',     casCases);
   fastify.decorate('ofsService',         ofs);
+  fastify.decorate('regulatoryCollectionService', regulatoryCollectionService);
   fastify.decorate('foiService',         foi);
   fastify.decorate('examEntryService',   examEntries);
   fastify.decorate('localeService',       localeService);
@@ -328,7 +379,9 @@ export async function buildApp(
   fastify.decorate('demoService', demo);
 
   const retentionService = new RetentionEnforcementService(db, audit);
+  const rightsRequestService = new RightsRequestService(db, businessCases);
   fastify.decorate('retentionService', retentionService);
+  fastify.decorate('rightsRequestService', rightsRequestService);
 
   const notificationService = new NotificationService(db);
   fastify.decorate('notificationService', notificationService);
@@ -418,6 +471,7 @@ export async function buildApp(
         { name: 'globalisation',        description: 'Locale, time zone, currency, and multilingual label administration' },
         { name: 'communications',       description: 'Communication templates, channel dispatch, and audit log' },
         { name: 'integration-registry', description: 'Integration contracts, registrations, and exchange audit' },
+        { name: 'module-selection',     description: 'Module selection proposals, diet groups, and curriculum rule-set binding' },
       ],
     },
   });
@@ -436,14 +490,23 @@ export async function buildApp(
     const tagMap: Array<[string, string]> = [
       // More-specific patterns must precede their containing segments
       ['/adjustments',               'adjustments'],
+      ['/support-outcomes',          'adjustments'],
       ['/engagement-outcomes',       'engagement-outcomes'],
       ['/exceptional-circumstances', 'circumstances'],
       ['/misconduct-outcomes',       'circumstances'],
       ['/correction-cases',          'governance'],
+      ['/identity-resolution',       'governance'],
+      ['/rights-requests',           'governance'],
+      ['/rights-restrictions',       'governance'],
+      ['/retention-schedules',       'governance'],
+      ['/retention-assignments',     'governance'],
+      ['/audit-review',              'governance'],
       ['/exam-boards',               'governance'],
       ['/exam-entry',                'governance'],
       ['/exam-timetable',            'governance'],
       ['/ratification',              'governance'],
+      ['/board-conflicts',           'governance'],
+      ['/board-decisions',           'governance'],
       ['/hear',                      'progression'],
       ['/award',                     'progression'],
       ['/classification',            'progression'],
@@ -452,8 +515,13 @@ export async function buildApp(
       ['/students',                  'students'],
       ['/enrolments',                'enrolments'],
       ['/marks',                     'assessment'],
+      ['/moderation',                'assessment'],
       ['/result',                    'assessment'],
       ['/module-registrations',      'module-registrations'],
+      ['/module-selection-proposals', 'module-selection'],
+      ['/enrolment-curriculum-bindings', 'module-selection'],
+      ['/programme-rule-sets',       'module-selection'],
+      ['/module-groups',             'module-selection'],
       ['/programmes',                'catalogue'],
       ['/modules',                   'catalogue'],
       ['/module-relationships',      'catalogue'],
@@ -473,6 +541,7 @@ export async function buildApp(
       ['/tenant/',                   'tenant-admin'],
       ['/globalisation',             'globalisation'],
       ['/communication',             'communications'],
+      ['/notifications',             'communications'],
       ['/integration-contracts',     'integration-registry'],
       ['/integration-registrations', 'integration-registry'],
       ['/integration-exchanges',     'integration-registry'],
@@ -502,16 +571,21 @@ export async function buildApp(
   await fastify.register(healthRoutes);
   await fastify.register(valueSetsRoutes,           { prefix: '/api/v1' });
   await fastify.register(adjustmentRoutes,          { prefix: '/api/v1' });
+  await fastify.register(supportOutcomesRoutes,     { prefix: '/api/v1' });
   await fastify.register(engagementOutcomeRoutes,   { prefix: '/api/v1' });
   await fastify.register(engagementProxyRoutes,     { prefix: '/api/v1' });
   await fastify.register(circumstancesRoutes,       { prefix: '/api/v1' });
   await fastify.register(examBoardRoutes,           { prefix: '/api/v1' });
+  await fastify.register(boardAuthorityRoutes,      { prefix: '/api/v1' });
   await fastify.register(progressionRoutes,         { prefix: '/api/v1' });
   await fastify.register(correctionCasesRoutes,     { prefix: '/api/v1' });
+  await fastify.register(identityResolutionRoutes,  { prefix: '/api/v1' });
   await fastify.register(regulatoryHesaRoutes,      { prefix: '/api/v1' });
   await fastify.register(regulatorySlcRoutes,       { prefix: '/api/v1' });
   await fastify.register(regulatoryUcasRoutes,      { prefix: '/api/v1' });
   await fastify.register(regulatoryUkviRoutes,      { prefix: '/api/v1' });
+  await fastify.register(regulatoryCollectionsRoutes, { prefix: '/api/v1' });
+  await fastify.register(casCasesRoutes,            { prefix: '/api/v1' });
   await fastify.register(regulatoryOfsRoutes,       { prefix: '/api/v1' });
   await fastify.register(regulatoryFoiRoutes,       { prefix: '/api/v1' });
   await fastify.register(studentRoutes,             { prefix: '/api/v1' });
@@ -520,8 +594,10 @@ export async function buildApp(
   await fastify.register(academicPeriodsRoutes,     { prefix: '/api/v1' });
   await fastify.register(assessmentComponentRoutes, { prefix: '/api/v1' });
   await fastify.register(markRoutes,                { prefix: '/api/v1' });
+  await fastify.register(moderationRoutes,          { prefix: '/api/v1' });
   await fastify.register(moduleResultRoutes,        { prefix: '/api/v1' });
   await fastify.register(moduleRegistrationsRoutes, { prefix: '/api/v1' });
+  await fastify.register(moduleSelectionProposalsRoutes, { prefix: '/api/v1' });
   await fastify.register(tenantAdminRoutes,         { prefix: '/api/v1' });
   await fastify.register(platformControlRoutes,         { prefix: '/api/v1' });
   await fastify.register(integrationRegistryRoutes,     { prefix: '/api/v1' });
@@ -530,6 +606,8 @@ export async function buildApp(
   await fastify.register(reportingRoutes,            { prefix: '/api/v1' });
   await fastify.register(auditLogRoutes,             { prefix: '/api/v1' });
   await fastify.register(adminRetentionRoutes,       { prefix: '/api/v1' });
+  await fastify.register(auditReviewRoutes,          { prefix: '/api/v1' });
+  await fastify.register(rightsRequestsRoutes,       { prefix: '/api/v1' });
   await fastify.register(notificationRoutes,         { prefix: '/api/v1' });
   await fastify.register(demoRoutes);
 
@@ -549,6 +627,7 @@ declare module 'fastify' {
     db:               ReturnType<typeof createDb>;
     config:           Config;
     audit:            AuditService;
+    auditReviewService: AuditReviewService;
     rules:            RulesEngine;
     valueSetService:  ValueSetService;
     eventBus:         IntegrationBusPublisher;
@@ -557,15 +636,21 @@ declare module 'fastify' {
     catalogueService: CatalogueService;
     calendarService:  CalendarService;
     moduleRegistrationService: ModuleRegistrationService;
+    moduleSelectionService: ModuleSelectionService;
     tenantAdminService: TenantAdminService;
     assessmentComponentService: AssessmentComponentService;
     moduleResultService: ModuleResultService;
     markService: MarkService;
+    moderationService: ModerationService;
     adjustmentService: AdjustmentService;
+    businessCaseService: BusinessCaseService;
+    identityResolutionService: IdentityResolutionService;
+    supportOutcomeService: SupportOutcomeService;
     engagementOutcomeService: EngagementOutcomeService;
     exceptionalCircumstancesService: ExceptionalCircumstancesService;
     misconductService: MisconductService;
     boardService: BoardService;
+    boardAuthorityService: BoardAuthorityService;
     progressionService: ProgressionService;
     awardService:       AwardService;
     hearService:        HearService;
@@ -583,7 +668,9 @@ declare module 'fastify' {
     hesaService:        HesaService;
     slcService:         SlcService;
     ukviService:        UkviService;
+    casCaseService:     CasCaseService;
     ofsService:         OfsService;
+    regulatoryCollectionService: RegulatoryCollectionService;
     foiService:         FoiService;
     examEntryService:   ExamEntryService;
     localeService:        LocaleService;
@@ -591,6 +678,7 @@ declare module 'fastify' {
     communicationService: CommunicationService;
     demoService:          DemoService;
     retentionService:     RetentionEnforcementService;
+    rightsRequestService: RightsRequestService;
     notificationService:  NotificationService;
   }
   interface FastifyContextConfig {

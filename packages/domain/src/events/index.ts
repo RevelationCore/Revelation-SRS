@@ -10,6 +10,8 @@ export * from './enrolment/downstream-trigger-created.v1.js';
 export * from './enrolment/module-registered.v1.js';
 export * from './enrolment/module-registration-withdrawn.v1.js';
 export * from './enrolment/module-registration-completed.v1.js';
+export * from './enrolment/module-selection-proposal-submitted.v1.js';
+export * from './enrolment/module-selection-proposal-decided.v1.js';
 export * from './catalogue/programme-updated.v1.js';
 export * from './catalogue/module-updated.v1.js';
 export * from './catalogue/module-relationship-updated.v1.js';
@@ -71,6 +73,8 @@ export const EVENT_TYPES = {
   ENROLMENT_MODULE_REGISTERED:              'srs.enrolment.module-registered',
   ENROLMENT_MODULE_REGISTRATION_WITHDRAWN:  'srs.enrolment.module-registration-withdrawn',
   ENROLMENT_MODULE_REGISTRATION_COMPLETED:  'srs.enrolment.module-registration-completed',
+  ENROLMENT_MODULE_SELECTION_PROPOSAL_SUBMITTED: 'srs.enrolment.module-selection-proposal-submitted',
+  ENROLMENT_MODULE_SELECTION_PROPOSAL_DECIDED:   'srs.enrolment.module-selection-proposal-decided',
   CATALOGUE_PROGRAMME_UPDATED:              'srs.catalogue.programme-updated',
   CATALOGUE_MODULE_UPDATED:                 'srs.catalogue.module-updated',
   CATALOGUE_MODULE_RELATIONSHIP_UPDATED:    'srs.catalogue.module-relationship-updated',

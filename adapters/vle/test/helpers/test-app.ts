@@ -51,9 +51,7 @@ export async function startTestApp(): Promise<TestVleApp> {
   const db               = createVleDb(connectionString);
 
   const migrationsDir = join(__dirname, '../../migrations');
-  await applySql(db, join(migrationsDir, '0001_vle_connector_scaffold.sql'));
-  await applySql(db, join(migrationsDir, '0002_vle_event_ledger_v2.sql'));
-  await applySql(db, join(migrationsDir, '0003_vle_student_enrolment_map.sql'));
+  await applySql(db, join(migrationsDir, '0000_vle_foundations.sql'));
 
   const tenantId       = '00000000-0000-0000-0000-000000000001';
   const registrationId = '00000000-0000-0000-0000-000000000099';

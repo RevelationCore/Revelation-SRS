@@ -3,6 +3,9 @@ import { type EnrolmentVolumes, getEnrolmentVolumes } from '../api/reporting.js'
 import { ApiError } from '../api/client.js';
 import { Spinner } from '../components/Spinner.js';
 import { useValueSet } from '../hooks/useValueSet.js';
+import {
+  PageHeader, Button, Card, CardHeader, CardBody, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
+} from '@revelation-srs/ui';
 
 export function EnrolmentReportPage() {
   const [data,    setData]    = useState<EnrolmentVolumes | null>(null);
@@ -27,124 +30,116 @@ export function EnrolmentReportPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-semibold text-gray-900 mb-4">Enrolment volumes</h1>
+      <PageHeader
+        title="Enrolment volumes"
+        actions={<Button onClick={() => { void load(); }} disabled={loading}>{loading ? 'Loading…' : 'Refresh'}</Button>}
+        description={data ? `Generated ${new Date(data.generatedAt).toLocaleString('en-GB')} · ${data.total} enrolments` : undefined}
+      />
 
-      <div className="flex items-center gap-3 mb-6">
-        <button
-          type="button"
-          onClick={() => { void load(); }}
-          disabled={loading}
-          className="rounded bg-indigo-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
-        >
-          {loading ? 'Loading…' : 'Refresh'}
-        </button>
-        {data && (
-          <span className="text-xs text-gray-600">
-            Generated {new Date(data.generatedAt).toLocaleString('en-GB')} · {data.total} enrolments
-          </span>
-        )}
-      </div>
-
-      {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+      {error && <p className="mb-4 text-sm text-danger-600">{error}</p>}
 
       {loading ? (
         <div className="flex justify-center py-16"><Spinner /></div>
       ) : data ? (
         <div className="space-y-6">
           {/* Status summary */}
-          <section className="bg-white rounded-lg border border-gray-200 p-5">
-            <h2 className="text-sm font-semibold text-gray-700 mb-4">By status</h2>
+          <Card>
+            <CardHeader title="By status" />
+            <CardBody>
             <div className="grid grid-cols-3 gap-4 sm:grid-cols-6">
               {statusCodes.map(({ code, displayLabel }) => (
-                <div key={code} className="rounded-lg border border-gray-100 bg-gray-50 p-3 text-center">
-                  <p className="text-2xl font-bold text-gray-900">{data.byStatus[code] ?? 0}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">{displayLabel}</p>
+                <div key={code} className="rounded-lg border border-neutral-100 bg-neutral-50 p-3 text-center">
+                  <p className="text-2xl font-bold text-neutral-900">{data.byStatus[code] ?? 0}</p>
+                  <p className="text-xs text-neutral-500 mt-0.5">{displayLabel}</p>
                 </div>
               ))}
-              <div className="rounded-lg border border-indigo-100 bg-indigo-50 p-3 text-center">
-                <p className="text-2xl font-bold text-indigo-700">{data.total}</p>
-                <p className="text-xs text-gray-500 mt-0.5">Total</p>
+              <div className="rounded-lg border border-primary-100 bg-primary-50 p-3 text-center">
+                <p className="text-2xl font-bold text-primary-700">{data.total}</p>
+                <p className="text-xs text-neutral-500 mt-0.5">Total</p>
               </div>
             </div>
-          </section>
+            </CardBody>
+          </Card>
 
           {/* Mode of study */}
-          <section className="bg-white rounded-lg border border-gray-200 p-5">
-            <h2 className="text-sm font-semibold text-gray-700 mb-4">By mode of study</h2>
+          <Card>
+            <CardHeader title="By mode of study" />
+            <CardBody>
             <div className="flex gap-6">
               {Object.entries(data.byMode).map(([mode, count]) => (
                 <div key={mode} className="text-center">
-                  <p className="text-xl font-bold text-gray-900">{count}</p>
-                  <p className="text-xs text-gray-500 capitalize">{mode}</p>
+                  <p className="text-xl font-bold text-neutral-900">{count}</p>
+                  <p className="text-xs text-neutral-500 capitalize">{mode}</p>
                 </div>
               ))}
               {Object.keys(data.byMode).length === 0 && (
-                <p className="text-sm text-gray-600">No data</p>
+                <p className="text-sm text-neutral-600">No data</p>
               )}
             </div>
-          </section>
+            </CardBody>
+          </Card>
 
           {/* By academic year */}
           {years.length > 0 && (
-            <section className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-              <div className="px-5 py-3 border-b border-gray-100">
-                <h2 className="text-sm font-semibold text-gray-700">By academic year of entry</h2>
+            <Card className="overflow-hidden">
+              <div className="px-5 py-3 border-b border-neutral-100">
+                <h2 className="text-sm font-semibold text-neutral-700">By academic year of entry</h2>
               </div>
-              <table className="min-w-full divide-y divide-gray-100 text-sm">
-                <thead className="bg-gray-50">
+              <Table>
+                <TableHead>
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Year</th>
+                    <TableHeaderCell>Year</TableHeaderCell>
                     {statusCodes.map(({ code, displayLabel }) => (
-                      <th key={code} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{displayLabel}</th>
+                      <TableHeaderCell key={code}>{displayLabel}</TableHeaderCell>
                     ))}
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
+                    <TableHeaderCell>Total</TableHeaderCell>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
+                </TableHead>
+                <TableBody>
                   {years.map(year => {
                     const row = data.byYearOfEntry[year] ?? {};
                     const rowTotal = Object.values(row).reduce((a, b) => a + b, 0);
                     return (
-                      <tr key={year} className="hover:bg-gray-50">
-                        <td className="px-4 py-2 font-medium text-gray-900">{year}</td>
+                      <TableRow key={year}>
+                        <TableCell className="font-medium text-neutral-900">{year}</TableCell>
                         {statusCodes.map(({ code }) => (
-                          <td key={code} className="px-4 py-2 text-gray-600">{row[code] ?? 0}</td>
+                          <TableCell key={code}>{row[code] ?? 0}</TableCell>
                         ))}
-                        <td className="px-4 py-2 font-medium text-gray-700">{rowTotal}</td>
-                      </tr>
+                        <TableCell className="font-medium text-neutral-700">{rowTotal}</TableCell>
+                      </TableRow>
                     );
                   })}
-                </tbody>
-              </table>
-            </section>
+                </TableBody>
+              </Table>
+            </Card>
           )}
 
           {/* Top programmes */}
           {data.byProgramme.length > 0 && (
-            <section className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-              <div className="px-5 py-3 border-b border-gray-100">
-                <h2 className="text-sm font-semibold text-gray-700">Top programmes by enrolment</h2>
+            <Card className="overflow-hidden">
+              <div className="px-5 py-3 border-b border-neutral-100">
+                <h2 className="text-sm font-semibold text-neutral-700">Top programmes by enrolment</h2>
               </div>
-              <table className="min-w-full divide-y divide-gray-100 text-sm">
-                <thead className="bg-gray-50">
+              <Table>
+                <TableHead>
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Programme</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Enrolments</th>
+                    <TableHeaderCell>Programme</TableHeaderCell>
+                    <TableHeaderCell>Enrolments</TableHeaderCell>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
+                </TableHead>
+                <TableBody>
                   {data.byProgramme.slice(0, 10).map(p => (
-                    <tr key={p.programmeId} className="hover:bg-gray-50">
-                      <td className="px-4 py-2 text-gray-900">
-                        {p.programmeCode && <span className="font-mono text-xs text-gray-500 mr-1">{p.programmeCode}</span>}
-                        {p.programmeName ?? <span className="text-gray-600 italic">Unknown</span>}
-                      </td>
-                      <td className="px-4 py-2 font-medium text-gray-900">{p.count}</td>
-                    </tr>
+                    <TableRow key={p.programmeId}>
+                      <TableCell className="text-neutral-900">
+                        {p.programmeCode && <span className="font-mono text-xs text-neutral-500 mr-1">{p.programmeCode}</span>}
+                        {p.programmeName ?? <span className="text-neutral-600 italic">Unknown</span>}
+                      </TableCell>
+                      <TableCell className="font-medium text-neutral-900">{p.count}</TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
-            </section>
+                </TableBody>
+              </Table>
+            </Card>
           )}
         </div>
       ) : null}

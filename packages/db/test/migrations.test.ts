@@ -22,18 +22,8 @@ beforeAll(async () => {
 
   db = createDb(container.getConnectionUri());
 
-  await applyMigration('0000_initial_platform_schema.sql');
-  await applyMigration('0001_seed_value_sets.sql');
-  await applyMigration('0002_phase4_domain_schema.sql');
-  await applyMigration('0003_seed_phase4_field_mappings.sql');
-  await applyMigration('0004_phase5_assessment_schema.sql');
-  await applyMigration('0005_seed_phase5_field_mappings.sql');
-  await applyMigration('0006_phase6_regulatory_schema.sql');
-  await applyMigration('0007_seed_phase6_field_mappings.sql');
-  await applyMigration('0008_phase6_remediation.sql');
-  await applyMigration('0009_platform_workflow_feature_flags.sql');
-  await applyMigration('0010_relax_extensible_code_checks.sql');
-  await applyMigration('0011_environment_promotion_hardening.sql');
+  await applyMigration('0000_platform_foundations.sql');
+  await applyMigration('0001_platform_hardening_and_refinements.sql');
 });
 
 afterAll(async () => {
@@ -99,16 +89,17 @@ describe('Phase 3 migrations', () => {
         AND indexname IN (
           'academic_rule_unique_logical_transaction',
           'academic_rule_current_version_unique',
-          'integration_registration_tenant_code_unique',
           'integration_exchange_idempotency_unique'
         )
     `) as Array<{ indexname: string }>;
 
+    // integration_registration_tenant_code_unique is deliberately dropped
+    // later in the same clean-build file (originally migration 0020):
+    // tenants legitimately need multiple registrations for one contract type.
     expect(rows.map((r) => r.indexname).sort()).toEqual([
       'academic_rule_current_version_unique',
       'academic_rule_unique_logical_transaction',
       'integration_exchange_idempotency_unique',
-      'integration_registration_tenant_code_unique',
     ]);
   });
 

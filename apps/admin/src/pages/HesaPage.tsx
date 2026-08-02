@@ -13,6 +13,7 @@ import { ApiError } from '../api/client.js';
 import { useAuth } from '../auth/AuthContext.js';
 import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
+import { PageHeader, Card, CardBody, Button, Input } from '@revelation-srs/ui';
 
 export function HesaPage() {
   const { token }          = useAuth();
@@ -106,41 +107,27 @@ export function HesaPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-xl font-semibold text-gray-900">HESA returns</h1>
-        </div>
-        <button
-          onClick={() => setShowCreate(s => !s)}
-          className="rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
-        >
-          New return
-        </button>
-      </div>
+      <PageHeader title="HESA returns" actions={<Button onClick={() => setShowCreate(s => !s)}>New return</Button>} />
 
       {showCreate && (
-        <form onSubmit={(e) => void handleCreate(e)} className="mb-4 flex items-center gap-3 bg-indigo-50 rounded-lg p-4">
-          <label className="text-sm text-gray-700">Academic year:</label>
-          <input
+        <form onSubmit={(e) => void handleCreate(e)} className="mb-4 flex items-center gap-3 bg-primary-50 rounded-lg p-4">
+          <label className="text-sm text-neutral-700">Academic year:</label>
+          <Input
             value={yearInput}
             onChange={(e) => setYearInput(e.target.value)}
             placeholder="e.g. 2025/26"
-            className="rounded border border-gray-300 px-3 py-1.5 text-sm w-36 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-36"
           />
-          <button
-            type="submit"
-            disabled={creating}
-            className="rounded bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
-          >
+          <Button type="submit" size="sm" disabled={creating}>
             {creating ? 'Creating…' : 'Create'}
-          </button>
-          <button type="button" onClick={() => setShowCreate(false)} className="text-sm text-gray-500">
+          </Button>
+          <Button type="button" variant="ghost" size="sm" onClick={() => setShowCreate(false)}>
             Cancel
-          </button>
+          </Button>
         </form>
       )}
 
-      {actionError && <p className="mb-4 text-sm text-red-600">{actionError}</p>}
+      {actionError && <p className="mb-4 text-sm text-danger-600">{actionError}</p>}
 
       <div className="grid grid-cols-3 gap-6">
         {/* Returns list */}
@@ -148,30 +135,30 @@ export function HesaPage() {
           {loading ? (
             <div className="flex justify-center py-8"><Spinner /></div>
           ) : error ? (
-            <p className="text-sm text-red-600">{error}</p>
+            <p className="text-sm text-danger-600">{error}</p>
           ) : returns.length === 0 ? (
-            <p className="text-sm text-gray-600">No returns yet.</p>
+            <p className="text-sm text-neutral-600">No returns yet.</p>
           ) : (
-            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-              <ul className="divide-y divide-gray-100">
+            <Card className="overflow-hidden">
+              <ul className="divide-y divide-neutral-100">
                 {returns.map(r => (
                   <li key={r.returnId}>
                     <button
                       onClick={() => { setSelected(r); setValidation(null); setActionError(''); }}
-                      className={`w-full text-left px-4 py-3 text-sm hover:bg-gray-50 ${
-                        selected?.returnId === r.returnId ? 'bg-indigo-50' : ''
+                      className={`w-full text-left px-4 py-3 text-sm hover:bg-neutral-50 ${
+                        selected?.returnId === r.returnId ? 'bg-primary-50' : ''
                       }`}
                     >
-                      <div className="font-medium text-gray-900">{r.academicYear}</div>
+                      <div className="font-medium text-neutral-900">{r.academicYear}</div>
                       <div className="mt-0.5 flex items-center gap-2">
                         <Badge value={r.statusCode} />
-                        <span className="text-xs text-gray-600">{r.recordCount} records</span>
+                        <span className="text-xs text-neutral-600">{r.recordCount} records</span>
                       </div>
                     </button>
                   </li>
                 ))}
               </ul>
-            </div>
+            </Card>
           )}
         </div>
 
@@ -179,9 +166,10 @@ export function HesaPage() {
         <div className="col-span-2">
           {selected ? (
             <div className="space-y-4">
-              <div className="bg-white rounded-lg border border-gray-200 p-5">
+              <Card>
+                <CardBody>
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-sm font-semibold text-gray-700">
+                  <h2 className="text-sm font-semibold text-neutral-700">
                     Return {selected.academicYear}
                   </h2>
                   <Badge value={selected.statusCode} />
@@ -199,41 +187,45 @@ export function HesaPage() {
                 </dl>
 
                 <div className="mt-4 flex flex-wrap gap-2">
-                  <button
+                  <Button
+                    variant="secondary"
+                    size="sm"
                     onClick={() => void handleValidate(selected.returnId)}
                     disabled={validating}
-                    className="rounded border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
                   >
                     {validating ? 'Validating…' : 'Validate'}
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
                     onClick={() => void handleDownload(selected.returnId)}
                     disabled={downloading}
-                    className="rounded border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
                   >
                     {downloading ? 'Downloading…' : 'Download XML'}
-                  </button>
+                  </Button>
                   {selected.statusCode !== 'submitted' && (
-                    <button
+                    <Button
+                      size="sm"
+                      className="bg-success-600 hover:bg-success-700"
                       onClick={() => void handleSubmit(selected.returnId)}
                       disabled={submitting}
-                      className="rounded bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700 disabled:opacity-50"
                     >
                       {submitting ? 'Submitting…' : 'Submit to HESA'}
-                    </button>
+                    </Button>
                   )}
                 </div>
-              </div>
+                </CardBody>
+              </Card>
 
               {validation && (
-                <div className={`rounded-lg border p-4 ${validation.isValid ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}`}>
-                  <p className={`text-sm font-semibold mb-2 ${validation.isValid ? 'text-green-800' : 'text-red-800'}`}>
+                <div className={`rounded-lg border p-4 ${validation.isValid ? 'border-success-200 bg-success-50' : 'border-danger-200 bg-danger-50'}`}>
+                  <p className={`text-sm font-semibold mb-2 ${validation.isValid ? 'text-success-800' : 'text-danger-800'}`}>
                     {validation.isValid ? 'Validation passed' : `${validation.errors.length} error(s), ${validation.warnings.length} warning(s)`}
                   </p>
                   {validation.errors.map((e, i) => (
-                    <p key={i} className="text-xs text-red-700">
+                    <p key={i} className="text-xs text-danger-700">
                       <strong>{e.field}:</strong> {e.message}
-                      {e.enrolmentId && <span className="text-red-500"> ({e.enrolmentId})</span>}
+                      {e.enrolmentId && <span className="text-danger-500"> ({e.enrolmentId})</span>}
                     </p>
                   ))}
                   {validation.warnings.map((w, i) => (
@@ -245,7 +237,7 @@ export function HesaPage() {
               )}
             </div>
           ) : (
-            <p className="text-sm text-gray-600 py-8 text-center">Select a return to view details.</p>
+            <p className="text-sm text-neutral-600 py-8 text-center">Select a return to view details.</p>
           )}
         </div>
       </div>
@@ -256,8 +248,8 @@ export function HesaPage() {
 function InfoRow({ label, value }: { label: string; value?: string | null }) {
   return (
     <div className="flex gap-2">
-      <dt className="w-24 flex-shrink-0 text-gray-500 text-xs pt-0.5">{label}</dt>
-      <dd className="text-gray-900 text-xs">{value ?? <span className="text-gray-600">—</span>}</dd>
+      <dt className="w-24 flex-shrink-0 text-neutral-500 text-xs pt-0.5">{label}</dt>
+      <dd className="text-neutral-900 text-xs">{value ?? <span className="text-neutral-600">—</span>}</dd>
     </div>
   );
 }

@@ -45,17 +45,11 @@ for (const [name, text] of Object.entries(contents)) {
   if (fences % 2 !== 0) errors.push(`${paths[name]}: unclosed code fence`);
 }
 
-const migrationNumbers = [
-  ...contents.migration.matchAll(/^\| (00(?:3[4-9]|4\d|5[0-3])) \|/gm),
-].map((match) => Number(match[1]));
-if (migrationNumbers.length !== 20) {
-  errors.push(`Expected 20 planned migrations (0034–0053), found ${migrationNumbers.length}`);
-} else if (migrationNumbers.some((number, index) => number !== 34 + index)) {
-  errors.push('Planned migration sequence is not continuous from 0034 to 0053');
+if (!contents.migration.includes('Clean-build note')) {
+  errors.push('Migration plan is missing the clean-build supersession note');
 }
 
 for (const heading of [
-  '## Stage 0 — Decision and baseline freeze',
   '## Stage 1 — Shared foundations',
   '## Stage 2 — P0 domain migrations',
   '## Stage 3 — P1 lifecycle migrations',
@@ -65,10 +59,15 @@ for (const heading of [
   if (!contents.migration.includes(heading)) errors.push(`Migration plan is missing ${heading}`);
 }
 
+const coreMigrationCount = (readFileSync(resolve(root, 'packages/db/migrations/meta/_journal.json'), 'utf8').match(/"tag"/g) ?? []).length;
+if (coreMigrationCount > 10) {
+  errors.push(`Expected a small, squashed core migration set, found ${coreMigrationCount} files — has the clean-build squash regressed?`);
+}
+
 if (errors.length > 0) {
   console.error(`Business process data-model checks failed (${errors.length}):`);
   for (const error of errors) console.error(`- ${error}`);
   process.exitCode = 1;
 } else {
-  console.log('Business process data-model checks passed: 19 capabilities, 10 new aggregates, 8 extensions, 1 partial implementation and 20 planned migrations.');
+  console.log(`Business process data-model checks passed: 19 capabilities, 10 new aggregates, 8 extensions, 1 partial implementation, migration plan marked historical, ${coreMigrationCount} core migrations.`);
 }

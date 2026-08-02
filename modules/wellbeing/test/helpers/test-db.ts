@@ -41,17 +41,11 @@ export async function startTestApp(appOpts: AppOptions = {}): Promise<TestWellbe
   // Apply the core platform migration first (creates the tenant table which
   // wellbeing tables reference via FOREIGN KEY).
   const coreMigrationsDir = join(__dirname, '../../../../packages/db/migrations');
-  await applySql(db, join(coreMigrationsDir, '0000_initial_platform_schema.sql'));
+  await applySql(db, join(coreMigrationsDir, '0000_platform_foundations.sql'));
 
-  // Apply wellbeing module migrations in order
+  // Apply wellbeing module migrations
   const wellbeingMigrationsDir = join(__dirname, '../../migrations');
-  await applySql(db, join(wellbeingMigrationsDir, '0001_wellbeing_initial.sql'));
-  await applySql(db, join(wellbeingMigrationsDir, '0002_wellbeing_event_log.sql'));
-  await applySql(db, join(wellbeingMigrationsDir, '0003_wellbeing_audit_log.sql'));
-  await applySql(db, join(wellbeingMigrationsDir, '0004_wellbeing_adjustment_workflow.sql'));
-  await applySql(db, join(wellbeingMigrationsDir, '0005_wellbeing_ec_workflow.sql'));
-  await applySql(db, join(wellbeingMigrationsDir, '0006_wellbeing_mh_session_notes.sql'));
-  await applySql(db, join(wellbeingMigrationsDir, '0007_wellbeing_retention_sar.sql'));
+  await applySql(db, join(wellbeingMigrationsDir, '0000_wellbeing_foundations.sql'));
 
   // Seed test tenants
   const tenantId       = '00000000-0000-0000-0000-000000000001';

@@ -7,6 +7,9 @@ import {
 import { ApiError } from '../api/client.js';
 import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
+import {
+  PageHeader, Button, Card, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
+} from '@revelation-srs/ui';
 
 export function UcasPage() {
   const [applications, setApplications] = useState<UcasApplication[]>([]);
@@ -45,55 +48,51 @@ export function UcasPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-xl font-semibold text-gray-900">UCAS applications</h1>
-        </div>
-        <button
-          onClick={() => void handleGenerateConfirmations()}
-          disabled={generating}
-          className="rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
-        >
-          {generating ? 'Generating…' : 'Generate confirmations'}
-        </button>
-      </div>
+      <PageHeader
+        title="UCAS applications"
+        actions={
+          <Button onClick={() => void handleGenerateConfirmations()} disabled={generating}>
+            {generating ? 'Generating…' : 'Generate confirmations'}
+          </Button>
+        }
+      />
 
-      {error      && <p className="mb-4 text-sm text-red-600">{error}</p>}
-      {successMsg && <p className="mb-4 text-sm text-green-600">{successMsg}</p>}
+      {error      && <p className="mb-4 text-sm text-danger-600">{error}</p>}
+      {successMsg && <p className="mb-4 text-sm text-success-600">{successMsg}</p>}
 
       {loading ? (
         <div className="flex justify-center py-16"><Spinner /></div>
       ) : applications.length === 0 ? (
-        <p className="py-8 text-center text-sm text-gray-600">No UCAS applications on record.</p>
+        <p className="py-8 text-center text-sm text-neutral-600">No UCAS applications on record.</p>
       ) : (
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200 text-sm">
-            <thead className="bg-gray-50">
+        <Card>
+          <Table>
+            <TableHead>
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">UCAS personal ID</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cycle</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Received</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Linked enrolment</th>
+                <TableHeaderCell>UCAS personal ID</TableHeaderCell>
+                <TableHeaderCell>Cycle</TableHeaderCell>
+                <TableHeaderCell>Status</TableHeaderCell>
+                <TableHeaderCell>Received</TableHeaderCell>
+                <TableHeaderCell>Linked enrolment</TableHeaderCell>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
+            </TableHead>
+            <TableBody>
               {applications.map(a => (
-                <tr key={a.applicationId} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-mono text-xs text-gray-700">{a.ucasPersonalId}</td>
-                  <td className="px-4 py-3 text-gray-600">{a.cycle}</td>
-                  <td className="px-4 py-3"><Badge value={a.statusCode} /></td>
-                  <td className="px-4 py-3 text-gray-500 text-xs">
+                <TableRow key={a.applicationId}>
+                  <TableCell className="font-mono text-xs text-neutral-700">{a.ucasPersonalId}</TableCell>
+                  <TableCell>{a.cycle}</TableCell>
+                  <TableCell><Badge value={a.statusCode} /></TableCell>
+                  <TableCell className="text-xs">
                     {new Date(a.receivedAt).toLocaleDateString('en-GB')}
-                  </td>
-                  <td className="px-4 py-3 font-mono text-xs text-gray-500">
-                    {a.linkedEnrolmentId ?? <span className="text-gray-600">—</span>}
-                  </td>
-                </tr>
+                  </TableCell>
+                  <TableCell className="font-mono text-xs text-neutral-500">
+                    {a.linkedEnrolmentId ?? <span className="text-neutral-600">—</span>}
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </TableBody>
+          </Table>
+        </Card>
       )}
     </div>
   );
