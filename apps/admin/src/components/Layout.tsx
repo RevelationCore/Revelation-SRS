@@ -87,6 +87,7 @@ function Sidebar({ onLogout, displayName, roles }: { onLogout: () => void; displ
   const canViewTasks = can('workflow-task:complete');
   const canViewModuleSelectionProposals = can('module-selection:decide', 'module-selection:read:all');
   const canViewModuleRegistrationRequests = can('module-registration:decide');
+  const canViewIdentityChangeRequests = can('student:decide');
   const canViewExamBoards = can('exam-board:read');
   const canViewEngagement = can(
     'engagement:event:read',
@@ -130,6 +131,7 @@ function Sidebar({ onLogout, displayName, roles }: { onLogout: () => void; displ
         {canViewTasks && <NavItem to="/tasks" label="Tasks" end icon={ListChecks} />}
         {canViewModuleSelectionProposals && <NavItem to="/module-selection-proposals" label="Module selection" end icon={ListChecks} />}
         {canViewModuleRegistrationRequests && <NavItem to="/module-registration-requests" label="Registration requests" end icon={ListChecks} />}
+        {canViewIdentityChangeRequests && <NavItem to="/identity-change-requests" label="Identity change requests" end icon={ListChecks} />}
         {canViewExamBoards && <NavItem to="/exam-boards" label="Exam boards" icon={GraduationCap} />}
         {canViewEngagement && <NavItem to="/engagement" label="Engagement" icon={Activity} />}
 

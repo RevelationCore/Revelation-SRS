@@ -266,12 +266,12 @@ export async function buildApp(
   const eventBus   = overrides.eventBus ?? new IntegrationBusPublisher(config.natsUrl);
   const featureFlags = new FeatureFlagService(db);
   const triggerRules = new TriggerRuleEvaluator(db, featureFlags);
-  const students   = new StudentService(db, valueSets);
+  const workflowBridge = new WorkflowBridgeService(db, audit, eventBus);
+  const students   = new StudentService(db, valueSets, workflowBridge);
   const enrolments = new EnrolmentService(db, eventBus, valueSets, triggerRules);
   const catalogue  = new CatalogueService(db, eventBus, valueSets);
   const calendar   = new CalendarService(db);
   const registrationWindows = new RegistrationWindowService(db);
-  const workflowBridge = new WorkflowBridgeService(db, audit, eventBus);
   const registrations = new ModuleRegistrationService(db, eventBus, rules, registrationWindows, workflowBridge);
   const tenantAdmin = new TenantAdminService(db);
   const assessmentComponents = new AssessmentComponentService(db, valueSets);
@@ -516,6 +516,7 @@ export async function buildApp(
       ['/classification',            'progression'],
       ['/progression',               'progression'],
       ['/regulatory',                'regulatory'],
+      ['/identity-change-requests',  'students'],
       ['/students',                  'students'],
       ['/enrolments',                'enrolments'],
       ['/marks',                     'assessment'],

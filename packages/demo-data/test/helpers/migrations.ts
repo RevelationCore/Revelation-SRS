@@ -25,6 +25,7 @@ export async function applyAllMigrations(db: Db): Promise<void> {
   await applyMigration(db, '0006_registration_window.sql');
   await applyMigration(db, '0007_module_registration_change_workflow.sql');
   await applyMigration(db, '0008_slc_submission_approval_workflow.sql');
+  await applyMigration(db, '0009_legal_identity_change_workflow.sql');
 
   // Wellbeing module schema (separate pgSchema 'wellbeing' in same database)
   await applyMigration(db, '0000_wellbeing_foundations.sql', WELLBEING_MIGRATIONS_DIR);

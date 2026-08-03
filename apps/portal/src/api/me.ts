@@ -220,6 +220,26 @@ export function patchIdentity(personId: string, body: PatchIdentityBody): Promis
   return api.patch(`/api/v1/students/${personId}/identity`, body);
 }
 
+export interface IdentityChangeRequest {
+  workflowInstanceId: string;
+  workflowTaskId:      string;
+  statusCode:          string;
+  context:             Record<string, unknown>;
+  startedAt:           string;
+}
+
+/** Requests a change to gender/nationality — requires personal-tutor/registry approval before it takes effect. */
+export function requestIdentityChange(
+  personId: string,
+  body: { genderCode?: string; nationalityCode?: string; reason?: string },
+): Promise<IdentityChangeRequest> {
+  return api.post(`/api/v1/students/${personId}/identity-change-requests`, body);
+}
+
+export function getMyIdentityChangeRequests(personId: string): Promise<IdentityChangeRequest[]> {
+  return api.get(`/api/v1/students/${personId}/identity-change-requests`);
+}
+
 export interface PostAddressBody {
   addressTypeCode: string;
   line1:           string;

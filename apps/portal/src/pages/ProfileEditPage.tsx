@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -7,9 +7,14 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../auth/AuthContext.js';
 import { useApiData } from '../hooks/useApiData.js';
 import { useFormSubmit } from '../hooks/useFormSubmit.js';
-import { getProfile, getAddresses, patchIdentity, getFieldValueSet, type ValueSetDto } from '../api/me.js';
+import {
+  getProfile, getAddresses, patchIdentity, getFieldValueSet,
+  requestIdentityChange, getMyIdentityChangeRequests,
+  type ValueSetDto, type ValueSetMember, type IdentityChangeRequest,
+} from '../api/me.js';
+import { ApiError } from '../api/client.js';
 import { Plus } from 'lucide-react';
-import { Spinner, Problem, Field, PageHeader, Card, CardHeader, CardBody, Button } from '@revelation-srs/ui';
+import { Spinner, Problem, Field, PageHeader, Card, CardHeader, CardBody, Button, Select } from '@revelation-srs/ui';
 
 function codeLabel(vs: ValueSetDto | null | undefined, code: string | null | undefined): string {
   if (!code) return '—';
@@ -46,6 +51,15 @@ export function ProfileEditPage() {
   const { data: addresses                  } = useApiData(personId ? fetchAddresses : null);
   const { data: genderVS } = useApiData(fetchGenderVS);
   const { data: natVS    } = useApiData(fetchNatVS);
+
+  const [identityRequestRefreshKey, setIdentityRequestRefreshKey] = useState(0);
+  const fetchIdentityChangeRequests = useCallback(
+    () => personId ? getMyIdentityChangeRequests(personId) : Promise.reject(new Error('')),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [personId, identityRequestRefreshKey],
+  );
+  const { data: identityChangeRequests } = useApiData(personId ? fetchIdentityChangeRequests : null);
+  const pendingIdentityRequest = identityChangeRequests?.find(r => r.statusCode === 'running');
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -121,6 +135,18 @@ export function ProfileEditPage() {
               </dl>
             </CardBody>
           </Card>
+        )}
+
+        {profile?.identity && (
+          <IdentityChangeRequestCard
+            personId={personId!}
+            currentGenderCode={profile.identity.genderCode}
+            currentNationalityCode={profile.identity.nationalityCode}
+            genderOptions={genderVS?.members ?? []}
+            nationalityOptions={natVS?.members ?? []}
+            pendingRequest={pendingIdentityRequest}
+            onRequested={() => setIdentityRequestRefreshKey(k => k + 1)}
+          />
         )}
 
         <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-5">
@@ -211,5 +237,100 @@ export function ProfileEditPage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+// Gender/nationality require a personal-tutor/registry-administrator
+// approval, not direct self-service — the API rejects a direct PATCH of
+// these fields from a student. This requests a change instead.
+function IdentityChangeRequestCard({
+  personId,
+  currentGenderCode,
+  currentNationalityCode,
+  genderOptions,
+  nationalityOptions,
+  pendingRequest,
+  onRequested,
+}: {
+  personId:               string;
+  currentGenderCode:      string | null;
+  currentNationalityCode: string | null;
+  genderOptions:          ValueSetMember[];
+  nationalityOptions:     ValueSetMember[];
+  pendingRequest:         IdentityChangeRequest | undefined;
+  onRequested:            () => void;
+}) {
+  const [open, setOpen]           = useState(false);
+  const [genderCode, setGenderCode]         = useState(currentGenderCode ?? '');
+  const [nationalityCode, setNationalityCode] = useState(currentNationalityCode ?? '');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError]         = useState('');
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const body: { genderCode?: string; nationalityCode?: string } = {};
+    if (genderCode && genderCode !== currentGenderCode) body.genderCode = genderCode;
+    if (nationalityCode && nationalityCode !== currentNationalityCode) body.nationalityCode = nationalityCode;
+    if (Object.keys(body).length === 0) {
+      setError('Select a different gender or nationality to request a change.');
+      return;
+    }
+    setSubmitting(true); setError('');
+    try {
+      await requestIdentityChange(personId, body);
+      setOpen(false);
+      onRequested();
+    } catch (err) {
+      setError(err instanceof ApiError ? (err.detail ?? err.message) : 'Failed to submit request');
+    } finally { setSubmitting(false); }
+  }
+
+  return (
+    <Card aria-labelledby="identity-change-heading">
+      <CardHeader
+        title="Request a legal identity change"
+        actions={!open && !pendingRequest && (
+          <Button variant="ghost" size="sm" onClick={() => setOpen(true)}>Request change</Button>
+        )}
+      />
+      <CardBody>
+        <p className="mb-3 text-xs text-neutral-500">
+          Changes to gender or nationality require a personal tutor or registry administrator to review
+          and approve before they take effect.
+        </p>
+
+        {pendingRequest && (
+          <p className="rounded border border-warning-200 bg-warning-50 px-3 py-2 text-xs text-warning-700">
+            A request is awaiting approval, submitted {new Date(pendingRequest.startedAt).toLocaleDateString('en-GB')}.
+          </p>
+        )}
+
+        {open && !pendingRequest && (
+          <form onSubmit={(e) => void handleSubmit(e)} className="space-y-3">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1">
+                <label htmlFor="identity-gender" className="block text-sm font-medium text-neutral-700">Gender</label>
+                <Select id="identity-gender" value={genderCode} onChange={(e) => setGenderCode(e.target.value)}>
+                  <option value="">Select…</option>
+                  {genderOptions.map(m => <option key={m.code} value={m.code}>{m.displayLabel}</option>)}
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <label htmlFor="identity-nationality" className="block text-sm font-medium text-neutral-700">Nationality</label>
+                <Select id="identity-nationality" value={nationalityCode} onChange={(e) => setNationalityCode(e.target.value)}>
+                  <option value="">Select…</option>
+                  {nationalityOptions.map(m => <option key={m.code} value={m.code}>{m.displayLabel}</option>)}
+                </Select>
+              </div>
+            </div>
+            {error && <p className="text-xs text-danger-600">{error}</p>}
+            <div className="flex gap-2 justify-end">
+              <Button type="button" variant="ghost" size="sm" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button type="submit" size="sm" disabled={submitting}>{submitting ? 'Submitting…' : 'Submit request'}</Button>
+            </div>
+          </form>
+        )}
+      </CardBody>
+    </Card>
   );
 }

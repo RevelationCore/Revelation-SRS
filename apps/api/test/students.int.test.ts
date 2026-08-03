@@ -219,6 +219,121 @@ describe('PATCH /api/v1/students/:id/identity', () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Legal identity change (gender/nationality) — PATCH /identity has no
+// field-level restriction, so a student calling it directly on themselves
+// with genderCode/nationalityCode must now be blocked (403); the governed
+// path is request -> personal-tutor/registry-administrator decides.
+
+describe('Legal identity change requests', () => {
+  let personId: string;
+  let studentJwt: string;
+  let tutorJwt: string;
+  let adminJwt: string;
+
+  beforeAll(async () => {
+    adminJwt = await ctx.makeJwt();
+    const student = await ctx.app.inject({
+      method: 'POST', url: '/api/v1/students', headers: { authorization: `Bearer ${adminJwt}` },
+      payload: { legalFirstName: 'Iris', legalFamilyName: 'Identity' },
+    });
+    personId = student.json<{ personId: string }>().personId;
+    studentJwt = await ctx.makeJwt({ roles: ['student'], srsPersonId: personId });
+    tutorJwt = await ctx.makeJwt({ roles: ['personal-tutor'] });
+  });
+
+  it('blocks a student from directly PATCHing genderCode on themselves', async () => {
+    const res = await ctx.app.inject({
+      method: 'PATCH', url: `/api/v1/students/${personId}/identity`,
+      headers: { authorization: `Bearer ${studentJwt}` },
+      payload: { genderCode: '1' },
+    });
+    expect(res.statusCode).toBe(403);
+  });
+
+  it('still allows a student to directly PATCH unrestricted fields (e.g. preferredName)', async () => {
+    const res = await ctx.app.inject({
+      method: 'PATCH', url: `/api/v1/students/${personId}/identity`,
+      headers: { authorization: `Bearer ${studentJwt}` },
+      payload: { preferredName: 'Iz' },
+    });
+    expect(res.statusCode).toBe(204);
+  });
+
+  it('approving a request updates the identity; rejecting does not', async () => {
+    const request = await ctx.app.inject({
+      method: 'POST', url: `/api/v1/students/${personId}/identity-change-requests`,
+      headers: { authorization: `Bearer ${studentJwt}` },
+      payload: { nationalityCode: 'FRA', reason: 'Naturalised' },
+    });
+    expect(request.statusCode).toBe(202);
+    const { workflowInstanceId } = request.json<{ workflowInstanceId: string }>();
+
+    const pending = await ctx.app.inject({
+      method: 'GET', url: '/api/v1/identity-change-requests',
+      headers: { authorization: `Bearer ${tutorJwt}` },
+    });
+    expect(pending.statusCode).toBe(200);
+    expect(pending.json<Array<{ workflowInstanceId: string }>>().some(r => r.workflowInstanceId === workflowInstanceId)).toBe(true);
+
+    const myRequests = await ctx.app.inject({
+      method: 'GET', url: `/api/v1/students/${personId}/identity-change-requests`,
+      headers: { authorization: `Bearer ${studentJwt}` },
+    });
+    expect(myRequests.statusCode).toBe(200);
+    expect(myRequests.json<Array<{ workflowInstanceId: string }>>().some(r => r.workflowInstanceId === workflowInstanceId)).toBe(true);
+
+    const decide = await ctx.app.inject({
+      method: 'POST', url: `/api/v1/identity-change-requests/${workflowInstanceId}/decision`,
+      headers: { authorization: `Bearer ${tutorJwt}` },
+      payload: { decisionCode: 'approved' },
+    });
+    expect(decide.statusCode).toBe(204);
+
+    const student = await ctx.app.inject({
+      method: 'GET', url: `/api/v1/students/${personId}`,
+      headers: { authorization: `Bearer ${adminJwt}` },
+    });
+    expect(student.json<{ identity: { nationalityCode: string | null } }>().identity?.nationalityCode).toBe('FRA');
+
+    // A rejected request must not change the identity.
+    const request2 = await ctx.app.inject({
+      method: 'POST', url: `/api/v1/students/${personId}/identity-change-requests`,
+      headers: { authorization: `Bearer ${studentJwt}` },
+      payload: { nationalityCode: 'DEU' },
+    });
+    const { workflowInstanceId: workflowInstanceId2 } = request2.json<{ workflowInstanceId: string }>();
+    const decide2 = await ctx.app.inject({
+      method: 'POST', url: `/api/v1/identity-change-requests/${workflowInstanceId2}/decision`,
+      headers: { authorization: `Bearer ${tutorJwt}` },
+      payload: { decisionCode: 'rejected', reason: 'Insufficient evidence' },
+    });
+    expect(decide2.statusCode).toBe(204);
+
+    const studentAfterReject = await ctx.app.inject({
+      method: 'GET', url: `/api/v1/students/${personId}`,
+      headers: { authorization: `Bearer ${adminJwt}` },
+    });
+    expect(studentAfterReject.json<{ identity: { nationalityCode: string | null } }>().identity?.nationalityCode).toBe('FRA');
+  });
+
+  it('a student cannot decide their own request', async () => {
+    const request = await ctx.app.inject({
+      method: 'POST', url: `/api/v1/students/${personId}/identity-change-requests`,
+      headers: { authorization: `Bearer ${studentJwt}` },
+      payload: { nationalityCode: 'ESP' },
+    });
+    const { workflowInstanceId } = request.json<{ workflowInstanceId: string }>();
+
+    const decide = await ctx.app.inject({
+      method: 'POST', url: `/api/v1/identity-change-requests/${workflowInstanceId}/decision`,
+      headers: { authorization: `Bearer ${studentJwt}` },
+      payload: { decisionCode: 'approved' },
+    });
+    expect(decide.statusCode).toBe(403);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 describe('Identity verification checks', () => {
   let personId: string;

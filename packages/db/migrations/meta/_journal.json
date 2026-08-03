@@ -64,6 +64,13 @@
       "when": 1785000008000,
       "tag": "0008_slc_submission_approval_workflow",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1785000009000,
+      "tag": "0009_legal_identity_change_workflow",
+      "breakpoints": true
     }
   ]
 }

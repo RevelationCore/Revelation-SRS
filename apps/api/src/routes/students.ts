@@ -1,5 +1,6 @@
 import { Type } from '@sinclair/typebox';
 import { requirePermission, requireSelfOrPermission } from '@revelation-srs/auth';
+import { hasPermission } from '@revelation-srs/domain';
 import type { FastifyInstance } from 'fastify';
 
 import { clockNow } from '../platform/clock.js';
@@ -7,6 +8,7 @@ import type {
   AddressInput,
   CreatePersonInput,
   DisabilityDeclarationInput,
+  IdentityChangeRequestDto,
   IdentityVerificationCompletionInput,
   IdentityVerificationCheckDto,
   IdentityVerificationRequestInput,
@@ -493,6 +495,7 @@ export function studentRoutes(fastify: FastifyInstance): void {
         }),
         response: {
           204: Type.Null(),
+          403: ErrorSchema,
           404: ErrorSchema,
         },
       },
@@ -502,6 +505,20 @@ export function studentRoutes(fastify: FastifyInstance): void {
       const { personId } = request.params as { personId: string };
       const body = request.body as PersonIdentityPatch & { validFrom?: string };
       const { validFrom: vfStr, ...patch } = body;
+
+      // Legal identity change (gender/nationality) requires a governed
+      // approval, not direct self-service — staff (student:write) can still
+      // correct these directly; a self-service caller must use
+      // POST /students/:personId/identity-change-requests instead.
+      if (!hasPermission(request.user.roles, 'student:write') && (patch.genderCode !== undefined || patch.nationalityCode !== undefined)) {
+        return reply.code(403).send({
+          type:   'https://srs.example.com/errors/forbidden',
+          title:  'Forbidden',
+          status: 403,
+          detail: 'Gender and nationality changes require an approval request — use POST /students/:personId/identity-change-requests',
+          instance: request.url,
+        });
+      }
 
       await fastify.studentService.updatePersonIdentity(
         personId,
@@ -565,6 +582,122 @@ export function studentRoutes(fastify: FastifyInstance): void {
           recordedAt: v.recordedAt.toISOString(),
         })),
       );
+    },
+  );
+
+  // ── Legal identity change requests (workflow-gated) ─────────────────────────
+  const IdentityChangeRequestSchema = Type.Object({
+    workflowInstanceId: Type.String(),
+    workflowTaskId:      Type.String(),
+    statusCode:          Type.String(),
+    context:             Type.Record(Type.String(), Type.Unknown()),
+    startedAt:           Type.String(),
+  });
+
+  fastify.post(
+    '/students/:personId/identity-change-requests',
+    {
+      schema: {
+        params: Type.Object({ personId: Type.String() }),
+        body: Type.Object({
+          genderCode:      Type.Optional(Type.String()),
+          nationalityCode: Type.Optional(Type.String()),
+          reason:          Type.Optional(Type.String()),
+        }),
+        response: {
+          202: IdentityChangeRequestSchema,
+          404: ErrorSchema, 422: ErrorSchema,
+        },
+      },
+      preHandler: [requireSelfOrPermission('student:read:own', 'student:write')],
+    },
+    async (request, reply) => {
+      const { personId } = request.params as { personId: string };
+      const body = request.body as { genderCode?: string; nationalityCode?: string; reason?: string };
+      const { reason, ...patch } = body;
+
+      const changeRequest = await fastify.studentService.requestIdentityChange(
+        request.tenantId, personId, patch, request.user.sub, reason,
+      );
+
+      await fastify.audit.record({
+        tenantId:         request.tenantId,
+        entityType:       'person_identity_change_request',
+        entityId:         changeRequest.workflowInstanceId,
+        actionType:       'create',
+        actorType:        'user',
+        actorId:          request.user.sub,
+        actorDisplayName: request.user.displayName,
+        correlationId:    request.id,
+      });
+
+      await reply.code(202).send(identityChangeRequestToWire(changeRequest));
+    },
+  );
+
+  fastify.get(
+    '/students/:personId/identity-change-requests',
+    {
+      schema: {
+        params:   Type.Object({ personId: Type.String() }),
+        response: { 200: Type.Array(IdentityChangeRequestSchema) },
+      },
+      preHandler: [requireSelfOrPermission('student:read:own', 'student:read:all')],
+    },
+    async (request, reply) => {
+      const { personId } = request.params as { personId: string };
+      const requests = await fastify.studentService.listIdentityChangeRequestsForPerson(request.tenantId, personId);
+      await reply.send(requests.map(identityChangeRequestToWire));
+    },
+  );
+
+  fastify.get(
+    '/identity-change-requests',
+    {
+      schema: { response: { 200: Type.Array(IdentityChangeRequestSchema) } },
+      preHandler: [requirePermission('student:decide')],
+    },
+    async (request, reply) => {
+      const requests = await fastify.studentService.listPendingIdentityChangeRequests(request.tenantId);
+      await reply.send(requests.map(identityChangeRequestToWire));
+    },
+  );
+
+  fastify.post(
+    '/identity-change-requests/:workflowInstanceId/decision',
+    {
+      schema: {
+        params: Type.Object({ workflowInstanceId: Type.String() }),
+        body: Type.Object({
+          decisionCode: Type.Union([Type.Literal('approved'), Type.Literal('rejected')]),
+          reason:       Type.Optional(Type.String()),
+        }),
+        response: { 204: Type.Null(), 404: ErrorSchema, 422: ErrorSchema },
+      },
+      preHandler: [requirePermission('student:decide')],
+    },
+    async (request, reply) => {
+      const { workflowInstanceId } = request.params as { workflowInstanceId: string };
+      const { decisionCode, reason } = request.body as { decisionCode: 'approved' | 'rejected'; reason?: string };
+
+      await fastify.studentService.decideIdentityChangeRequest(
+        request.tenantId, workflowInstanceId, decisionCode, request.user.sub, reason,
+      );
+
+      await fastify.audit.record({
+        tenantId:         request.tenantId,
+        entityType:       'person_identity_change_request',
+        entityId:         workflowInstanceId,
+        actionType:       'update',
+        fieldName:        'decision_code',
+        afterValue:       { decisionCode },
+        actorType:        'user',
+        actorId:          request.user.sub,
+        actorDisplayName: request.user.displayName,
+        correlationId:    request.id,
+      });
+
+      await reply.code(204).send();
     },
   );
 
@@ -1121,5 +1254,12 @@ function identityVerificationToWire(check: IdentityVerificationCheckDto) {
     completedAt: check.completedAt?.toISOString() ?? null,
     validFrom:   check.validFrom.toISOString(),
     recordedAt:  check.recordedAt.toISOString(),
+  };
+}
+
+function identityChangeRequestToWire(changeRequest: IdentityChangeRequestDto) {
+  return {
+    ...changeRequest,
+    startedAt: changeRequest.startedAt.toISOString(),
   };
 }

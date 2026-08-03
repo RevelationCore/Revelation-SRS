@@ -1,19 +1,30 @@
 import { randomUUID } from 'node:crypto';
 
-import { and, eq, ilike, isNull, or, sql } from 'drizzle-orm';
+import { and, desc, eq, ilike, isNull, or, sql } from 'drizzle-orm';
 import {
   disabilityDeclarations,
   identityVerificationChecks,
   personIdentities,
   persons,
   studentAddresses,
+  workflowDefinitions,
+  workflowDefinitionVersions,
+  workflowInstances,
+  workflowTasks,
   type Db,
   withTenantContext,
 } from '@revelation-srs/db';
 import { NotFoundError, ValidationError } from '@revelation-srs/domain';
 
+import type { WorkflowBridgeService } from '../platform-controls/workflow-bridge-service.js';
 import type { ValueSetService } from '../value-sets/service.js';
 import { clockNow } from '../clock.js';
+
+type Uuid = `${string}-${string}-${string}-${string}-${string}`;
+
+const IDENTITY_CHANGE_WORKFLOW_CODE = 'legal-identity-change-approval';
+const IDENTITY_CHANGE_DECISION_STEP_KEY = 'approve-or-reject-identity-change';
+const IDENTITY_CHANGE_GATEWAY_KEY = 'G01';
 
 // ── Input / output types ─────────────────────────────────────────────────────
 
@@ -129,12 +140,26 @@ export interface IdentityVerificationCheckDto {
   recordedAt:          Date;
 }
 
+export interface IdentityChangeRequestInput {
+  genderCode?:      string;
+  nationalityCode?: string;
+}
+
+export interface IdentityChangeRequestDto {
+  workflowInstanceId: string;
+  workflowTaskId:      string;
+  statusCode:          string;
+  context:             Record<string, unknown>;
+  startedAt:           Date;
+}
+
 // ── Service ──────────────────────────────────────────────────────────────────
 
 export class StudentService {
   constructor(
     private readonly db: Db,
     private readonly valueSets: ValueSetService,
+    private readonly workflowBridge?: WorkflowBridgeService,
   ) {}
 
   async #validateFieldValue(
@@ -402,6 +427,190 @@ export class StudentService {
         recordedUntil:  null,
       });
     });
+  }
+
+  // ── Legal identity change requests (workflow-gated) ─────────────────────────
+  // PATCH /students/:personId/identity has no field-level restriction — it
+  // accepts genderCode/nationalityCode from anyone who can call it, including
+  // a student acting on themselves. The portal UI simply never exposed those
+  // fields, but the API never enforced that. These methods, plus the route-
+  // level block on genderCode/nationalityCode from self-service callers (see
+  // routes/students.ts), are the actual gate: a student's request goes
+  // through a personal-tutor/registry-administrator approval step before
+  // updatePersonIdentity is ever called for these two fields.
+
+  async requestIdentityChange(
+    tenantId: string,
+    personId: string,
+    input: IdentityChangeRequestInput,
+    requesterId: string,
+    reason?: string,
+  ): Promise<IdentityChangeRequestDto> {
+    if (!this.workflowBridge) throw new ValidationError('Legal identity change workflow is not configured');
+    if (!input.genderCode && !input.nationalityCode) {
+      throw new ValidationError('At least one of genderCode or nationalityCode is required');
+    }
+    await this.#validateFieldValue(tenantId, 'person_identity', 'gender_code', input.genderCode);
+    await this.#validateFieldValue(tenantId, 'person_identity', 'nationality_code', input.nationalityCode);
+    await this.#ensurePersonExists(personId, tenantId);
+
+    const context: Record<string, unknown> = {
+      personId,
+      patch: { ...(input.genderCode ? { genderCode: input.genderCode } : {}), ...(input.nationalityCode ? { nationalityCode: input.nationalityCode } : {}) },
+      ...(reason ? { reason } : {}),
+    };
+
+    const workflowDefinitionVersionId = await this.#getActiveIdentityChangeWorkflowVersionId(tenantId);
+    const instance = await this.workflowBridge.startWorkflowInstance({
+      tenantId,
+      workflowDefinitionVersionId,
+      workflowCode: IDENTITY_CHANGE_WORKFLOW_CODE,
+      subjectEntityType: 'person_identity',
+      subjectEntityId: personId,
+      startedBy: requesterId,
+      context,
+    });
+
+    const task = await this.workflowBridge.assignWorkflowTask({
+      tenantId,
+      workflowInstanceId: instance.workflowInstanceId,
+      stepKey: IDENTITY_CHANGE_DECISION_STEP_KEY,
+      assigneeRoleCode: 'personal-tutor',
+      payload: context,
+    });
+
+    return {
+      workflowInstanceId: instance.workflowInstanceId,
+      workflowTaskId: task.workflowTaskId,
+      statusCode: 'running',
+      context,
+      startedAt: clockNow(),
+    };
+  }
+
+  async listPendingIdentityChangeRequests(tenantId: string): Promise<IdentityChangeRequestDto[]> {
+    const rows = await withTenantContext(this.db, tenantId, async (tx) =>
+      tx.select({ instance: workflowInstances, task: workflowTasks })
+        .from(workflowInstances)
+        .innerJoin(workflowTasks, and(
+          eq(workflowTasks.workflowInstanceId, workflowInstances.id),
+          eq(workflowTasks.stepKey, IDENTITY_CHANGE_DECISION_STEP_KEY),
+        ))
+        .where(and(
+          eq(workflowInstances.tenantId, tenantId as Uuid),
+          eq(workflowInstances.workflowCode, IDENTITY_CHANGE_WORKFLOW_CODE),
+          eq(workflowInstances.statusCode, 'running'),
+        ))
+        .orderBy(desc(workflowInstances.startedAt)),
+    );
+    return rows.map((r) => identityChangeRequestToDto(r.instance, r.task));
+  }
+
+  /** Self-service "my requests" list — any status, scoped to one person. */
+  async listIdentityChangeRequestsForPerson(tenantId: string, personId: string): Promise<IdentityChangeRequestDto[]> {
+    const rows = await withTenantContext(this.db, tenantId, async (tx) =>
+      tx.select({ instance: workflowInstances, task: workflowTasks })
+        .from(workflowInstances)
+        .innerJoin(workflowTasks, and(
+          eq(workflowTasks.workflowInstanceId, workflowInstances.id),
+          eq(workflowTasks.stepKey, IDENTITY_CHANGE_DECISION_STEP_KEY),
+        ))
+        .where(and(
+          eq(workflowInstances.tenantId, tenantId as Uuid),
+          eq(workflowInstances.workflowCode, IDENTITY_CHANGE_WORKFLOW_CODE),
+          eq(workflowInstances.subjectEntityId, personId as Uuid),
+        ))
+        .orderBy(desc(workflowInstances.startedAt)),
+    );
+    return rows.map((r) => identityChangeRequestToDto(r.instance, r.task));
+  }
+
+  async decideIdentityChangeRequest(
+    tenantId: string,
+    workflowInstanceId: string,
+    decisionCode: 'approved' | 'rejected',
+    actorId: string,
+    reason?: string,
+  ): Promise<void> {
+    if (!this.workflowBridge) throw new ValidationError('Legal identity change workflow is not configured');
+
+    const instance = await this.#getIdentityChangeInstance(tenantId, workflowInstanceId);
+    if (instance.statusCode !== 'running') {
+      throw new ValidationError(`Cannot decide an identity change request in status '${instance.statusCode}'`);
+    }
+
+    const task = await this.#findIdentityChangeDecisionTask(tenantId, workflowInstanceId);
+
+    await this.workflowBridge.recordWorkflowDecision({
+      tenantId,
+      workflowInstanceId,
+      gatewayKey: IDENTITY_CHANGE_GATEWAY_KEY,
+      decisionCode,
+      ...(reason ? { conditionSummary: reason } : {}),
+      outcomeStepKey: 'request-closed',
+      actorId,
+      metadata: { context: instance.context },
+    });
+    if (task) {
+      await this.workflowBridge.completeWorkflowTask({
+        tenantId, workflowTaskId: task.id, completedBy: actorId,
+        payload: { decisionCode, ...(reason ? { reason } : {}) },
+      });
+    }
+    await this.workflowBridge.completeWorkflowInstance({
+      tenantId, workflowInstanceId, actorId,
+      statusCode: 'completed', metadata: { decisionCode },
+    });
+
+    if (decisionCode !== 'approved') return;
+
+    const context = instance.context as { personId: string; patch: PersonIdentityPatch };
+    await this.updatePersonIdentity(context.personId, tenantId, context.patch);
+  }
+
+  async #getActiveIdentityChangeWorkflowVersionId(tenantId: string): Promise<string> {
+    const rows = await withTenantContext(this.db, tenantId, async (tx) =>
+      tx.select({ versionId: workflowDefinitionVersions.id })
+        .from(workflowDefinitions)
+        .innerJoin(
+          workflowDefinitionVersions,
+          and(
+            eq(workflowDefinitionVersions.workflowDefinitionId, workflowDefinitions.id),
+            eq(workflowDefinitionVersions.versionNumber, workflowDefinitions.currentVersionNumber),
+          ),
+        )
+        .where(and(
+          eq(workflowDefinitions.definitionCode, IDENTITY_CHANGE_WORKFLOW_CODE),
+          eq(workflowDefinitions.statusCode, 'active'),
+          eq(workflowDefinitionVersions.statusCode, 'active'),
+        ))
+        .limit(1),
+    );
+    if (!rows[0]) throw new NotFoundError('WorkflowDefinition', IDENTITY_CHANGE_WORKFLOW_CODE);
+    return rows[0].versionId;
+  }
+
+  async #getIdentityChangeInstance(tenantId: string, workflowInstanceId: string) {
+    const rows = await withTenantContext(this.db, tenantId, async (tx) =>
+      tx.select().from(workflowInstances).where(and(
+        eq(workflowInstances.id, workflowInstanceId as Uuid),
+        eq(workflowInstances.tenantId, tenantId as Uuid),
+        eq(workflowInstances.workflowCode, IDENTITY_CHANGE_WORKFLOW_CODE),
+      )).limit(1),
+    );
+    if (!rows[0]) throw new NotFoundError('WorkflowInstance', workflowInstanceId);
+    return rows[0];
+  }
+
+  async #findIdentityChangeDecisionTask(tenantId: string, workflowInstanceId: string) {
+    const rows = await withTenantContext(this.db, tenantId, async (tx) =>
+      tx.select().from(workflowTasks).where(and(
+        eq(workflowTasks.workflowInstanceId, workflowInstanceId as Uuid),
+        eq(workflowTasks.tenantId, tenantId as Uuid),
+        eq(workflowTasks.stepKey, IDENTITY_CHANGE_DECISION_STEP_KEY),
+      )).limit(1),
+    );
+    return rows[0] ?? null;
   }
 
   /**
@@ -856,4 +1065,17 @@ export class StudentService {
       recordedAt:          r.recordedAt,
     }));
   }
+}
+
+function identityChangeRequestToDto(
+  instance: typeof workflowInstances.$inferSelect,
+  task: typeof workflowTasks.$inferSelect,
+): IdentityChangeRequestDto {
+  return {
+    workflowInstanceId: instance.id,
+    workflowTaskId:      task.id,
+    statusCode:          instance.statusCode,
+    context:             instance.context,
+    startedAt:           instance.startedAt,
+  };
 }

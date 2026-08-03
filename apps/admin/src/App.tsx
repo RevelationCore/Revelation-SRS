@@ -31,6 +31,7 @@ import { StudentsPage } from './pages/StudentsPage.js';
 import { TaskInboxPage } from './pages/TaskInboxPage.js';
 import { ModuleSelectionProposalsPage } from './pages/ModuleSelectionProposalsPage.js';
 import { ModuleRegistrationRequestsPage } from './pages/ModuleRegistrationRequestsPage.js';
+import { IdentityChangeRequestsPage } from './pages/IdentityChangeRequestsPage.js';
 import { TenantAdminPage } from './pages/TenantAdminPage.js';
 import { TenantConfigPage } from './pages/TenantConfigPage.js';
 import { UcasPage } from './pages/UcasPage.js';
@@ -86,6 +87,7 @@ export function App() {
                 <Route path="tasks" element={<RequirePermission permissions={['workflow-task:complete']}><TaskInboxPage /></RequirePermission>} />
                 <Route path="module-selection-proposals" element={<RequirePermission permissions={['module-selection:decide', 'module-selection:read:all']}><ModuleSelectionProposalsPage /></RequirePermission>} />
                 <Route path="module-registration-requests" element={<RequirePermission permissions={['module-registration:decide']}><ModuleRegistrationRequestsPage /></RequirePermission>} />
+                <Route path="identity-change-requests" element={<RequirePermission permissions={['student:decide']}><IdentityChangeRequestsPage /></RequirePermission>} />
                 <Route path="students" element={<RequirePermission permissions={['student:read:all']}><StudentsPage /></RequirePermission>} />
                 <Route path="students/:personId" element={<RequirePermission permissions={['student:read:all']}><StudentDetailPage /></RequirePermission>} />
                 <Route path="exam-boards" element={<RequirePermission permissions={['exam-board:read']}><ExamBoardsPage /></RequirePermission>} />
