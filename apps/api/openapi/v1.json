@@ -8787,6 +8787,282 @@
         }
       }
     },
+    "/api/v1/regulatory/slc/confirmations/requests": {
+      "post": {
+        "operationId": "createRegulatorySlcConfirmationsRequests",
+        "tags": [
+          "regulatory"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-publication-class": "reporting",
+        "responses": {
+          "202": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "workflowInstanceId",
+                    "workflowTaskId",
+                    "statusCode",
+                    "recordCount",
+                    "context",
+                    "startedAt"
+                  ],
+                  "properties": {
+                    "workflowInstanceId": {
+                      "type": "string"
+                    },
+                    "workflowTaskId": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "type": "string"
+                    },
+                    "recordCount": {
+                      "type": "number"
+                    },
+                    "context": {
+                      "type": "object",
+                      "additionalProperties": {}
+                    },
+                    "startedAt": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "getRegulatorySlcConfirmationsRequests",
+        "tags": [
+          "regulatory"
+        ],
+        "x-publication-class": "reporting",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "workflowInstanceId",
+                      "workflowTaskId",
+                      "statusCode",
+                      "recordCount",
+                      "context",
+                      "startedAt"
+                    ],
+                    "properties": {
+                      "workflowInstanceId": {
+                        "type": "string"
+                      },
+                      "workflowTaskId": {
+                        "type": "string"
+                      },
+                      "statusCode": {
+                        "type": "string"
+                      },
+                      "recordCount": {
+                        "type": "number"
+                      },
+                      "context": {
+                        "type": "object",
+                        "additionalProperties": {}
+                      },
+                      "startedAt": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/regulatory/slc/confirmations/requests/{workflowInstanceId}/decision": {
+      "post": {
+        "operationId": "createRegulatorySlcConfirmationsRequestsByWorkflowInstanceIdDecision",
+        "tags": [
+          "regulatory"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "decisionCode"
+                ],
+                "properties": {
+                  "decisionCode": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "approved"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "rejected"
+                        ]
+                      }
+                    ]
+                  },
+                  "reason": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "workflowInstanceId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "reporting",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "processedCount"
+                  ],
+                  "properties": {
+                    "processedCount": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/regulatory/ucas/applications": {
       "post": {
         "operationId": "createRegulatoryUcasApplications",
@@ -14146,6 +14422,197 @@
         }
       }
     },
+    "/api/v1/students/{personId}/addresses/{addressId}": {
+      "get": {
+        "operationId": "getStudentsByPersonIdAddressesByAddressId",
+        "tags": [
+          "students"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "personId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "addressId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "addressTypeCode",
+                    "line1",
+                    "line2",
+                    "city",
+                    "postcode",
+                    "countryCode",
+                    "validFrom"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "addressTypeCode": {
+                      "type": "string"
+                    },
+                    "line1": {
+                      "type": "string"
+                    },
+                    "line2": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "city": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "postcode": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "countryCode": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "validFrom": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteStudentsByPersonIdAddressesByAddressId",
+        "tags": [
+          "students"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "personId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "addressId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "204": {
+            "description": "Default Response"
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/students/{personId}/disability-declarations": {
       "post": {
         "operationId": "createStudentsByPersonIdDisabilityDeclarations",
@@ -14275,6 +14742,211 @@
                           }
                         ]
                       }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/students/{personId}/disability-declarations/{declarationId}": {
+      "patch": {
+        "operationId": "updateStudentsByPersonIdDisabilityDeclarationsByDeclarationId",
+        "tags": [
+          "students"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "notes"
+                ],
+                "properties": {
+                  "notes": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "personId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "declarationId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "204": {
+            "description": "Default Response"
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/students/{personId}/disability-declarations/{declarationId}/withdrawal": {
+      "post": {
+        "operationId": "createStudentsByPersonIdDisabilityDeclarationsByDeclarationIdWithdrawal",
+        "tags": [
+          "students"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "personId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "declarationId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "204": {
+            "description": "Default Response"
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
                     }
                   }
                 }
@@ -14460,6 +15132,790 @@
                         "type": "string"
                       },
                       "recordedAt": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/students/{personId}/enrolments/{enrolmentId}": {
+      "get": {
+        "operationId": "getStudentsByPersonIdEnrolmentsByEnrolmentId",
+        "tags": [
+          "students"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "personId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "enrolmentId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "enrolmentId",
+                    "personId",
+                    "programmeId",
+                    "programmeCode",
+                    "programmeName",
+                    "statusCode",
+                    "modeOfStudyCode",
+                    "attendanceTypeCode",
+                    "academicYearOfEntry",
+                    "startDate",
+                    "expectedEndDate",
+                    "actualEndDate",
+                    "feeBandCode",
+                    "fundingSourceCode",
+                    "slcReference",
+                    "ucasPersonalId",
+                    "validFrom",
+                    "recordedAt"
+                  ],
+                  "properties": {
+                    "enrolmentId": {
+                      "type": "string"
+                    },
+                    "personId": {
+                      "type": "string"
+                    },
+                    "programmeId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "programmeCode": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "programmeName": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "statusCode": {
+                      "type": "string"
+                    },
+                    "modeOfStudyCode": {
+                      "type": "string"
+                    },
+                    "attendanceTypeCode": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "academicYearOfEntry": {
+                      "type": "string"
+                    },
+                    "startDate": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "expectedEndDate": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "actualEndDate": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "feeBandCode": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "fundingSourceCode": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "slcReference": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "ucasPersonalId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "validFrom": {
+                      "type": "string"
+                    },
+                    "recordedAt": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/students/{personId}/enrolments/{enrolmentId}/history": {
+      "get": {
+        "operationId": "getStudentsByPersonIdEnrolmentsByEnrolmentIdHistory",
+        "tags": [
+          "students"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "personId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "enrolmentId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "allOf": [
+                      {
+                        "type": "object",
+                        "required": [
+                          "enrolmentId",
+                          "personId",
+                          "programmeId",
+                          "programmeCode",
+                          "programmeName",
+                          "statusCode",
+                          "modeOfStudyCode",
+                          "attendanceTypeCode",
+                          "academicYearOfEntry",
+                          "startDate",
+                          "expectedEndDate",
+                          "actualEndDate",
+                          "feeBandCode",
+                          "fundingSourceCode",
+                          "slcReference",
+                          "ucasPersonalId",
+                          "validFrom",
+                          "recordedAt"
+                        ],
+                        "properties": {
+                          "enrolmentId": {
+                            "type": "string"
+                          },
+                          "personId": {
+                            "type": "string"
+                          },
+                          "programmeId": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "programmeCode": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "programmeName": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "statusCode": {
+                            "type": "string"
+                          },
+                          "modeOfStudyCode": {
+                            "type": "string"
+                          },
+                          "attendanceTypeCode": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "academicYearOfEntry": {
+                            "type": "string"
+                          },
+                          "startDate": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "expectedEndDate": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "actualEndDate": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "feeBandCode": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "fundingSourceCode": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "slcReference": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "ucasPersonalId": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "validFrom": {
+                            "type": "string"
+                          },
+                          "recordedAt": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      {
+                        "type": "object",
+                        "required": [
+                          "validTo",
+                          "recordedUntil"
+                        ],
+                        "properties": {
+                          "validTo": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "recordedUntil": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/students/{personId}/enrolments/{enrolmentId}/transitions": {
+      "get": {
+        "operationId": "getStudentsByPersonIdEnrolmentsByEnrolmentIdTransitions",
+        "tags": [
+          "students"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "personId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "enrolmentId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "transitionId",
+                      "enrolmentId",
+                      "fromStatusCode",
+                      "toStatusCode",
+                      "reasonCode",
+                      "reasonText",
+                      "effectiveAt",
+                      "actorId",
+                      "createdAt"
+                    ],
+                    "properties": {
+                      "transitionId": {
+                        "type": "string"
+                      },
+                      "enrolmentId": {
+                        "type": "string"
+                      },
+                      "fromStatusCode": {
+                        "type": "string"
+                      },
+                      "toStatusCode": {
+                        "type": "string"
+                      },
+                      "reasonCode": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "reasonText": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "effectiveAt": {
+                        "type": "string"
+                      },
+                      "actorId": {
+                        "type": "string"
+                      },
+                      "createdAt": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/students/{personId}/enrolments/{enrolmentId}/fee-liabilities": {
+      "get": {
+        "operationId": "getStudentsByPersonIdEnrolmentsByEnrolmentIdFeeLiabilities",
+        "tags": [
+          "students"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "personId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "enrolmentId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "feeLiabilityId",
+                      "enrolmentId",
+                      "personId",
+                      "academicYear",
+                      "feeBandCode",
+                      "fundingSourceCode",
+                      "statusCode",
+                      "generatedAt"
+                    ],
+                    "properties": {
+                      "feeLiabilityId": {
+                        "type": "string"
+                      },
+                      "enrolmentId": {
+                        "type": "string"
+                      },
+                      "personId": {
+                        "type": "string"
+                      },
+                      "academicYear": {
+                        "type": "string"
+                      },
+                      "feeBandCode": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "fundingSourceCode": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "statusCode": {
+                        "type": "string"
+                      },
+                      "generatedAt": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/students/{personId}/module-registration-requests": {
+      "get": {
+        "operationId": "getStudentsByPersonIdModuleRegistrationRequests",
+        "tags": [
+          "students"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "personId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "workflowInstanceId",
+                      "workflowTaskId",
+                      "statusCode",
+                      "context",
+                      "startedAt"
+                    ],
+                    "properties": {
+                      "workflowInstanceId": {
+                        "type": "string"
+                      },
+                      "workflowTaskId": {
+                        "type": "string"
+                      },
+                      "statusCode": {
+                        "type": "string"
+                      },
+                      "context": {
+                        "type": "object",
+                        "additionalProperties": {}
+                      },
+                      "startedAt": {
                         "type": "string"
                       }
                     }
@@ -20879,6 +22335,754 @@
           }
         ],
         "x-publication-class": "workflow",
+        "responses": {
+          "204": {
+            "description": "Default Response"
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/module-registrations/requests": {
+      "post": {
+        "operationId": "createModuleRegistrationsRequests",
+        "tags": [
+          "module-registrations"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "enrolmentId",
+                  "moduleOfferingId"
+                ],
+                "properties": {
+                  "enrolmentId": {
+                    "type": "string"
+                  },
+                  "moduleOfferingId": {
+                    "type": "string"
+                  },
+                  "registrationDate": {
+                    "type": "string"
+                  },
+                  "reason": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-publication-class": "public",
+        "responses": {
+          "202": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "workflowInstanceId",
+                    "workflowTaskId",
+                    "statusCode",
+                    "context",
+                    "startedAt"
+                  ],
+                  "properties": {
+                    "workflowInstanceId": {
+                      "type": "string"
+                    },
+                    "workflowTaskId": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "type": "string"
+                    },
+                    "context": {
+                      "type": "object",
+                      "additionalProperties": {}
+                    },
+                    "startedAt": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/module-registrations/{moduleRegistrationId}/withdrawal-requests": {
+      "post": {
+        "operationId": "createModuleRegistrationsByModuleRegistrationIdWithdrawalRequests",
+        "tags": [
+          "module-registrations"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "moduleRegistrationId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "202": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "workflowInstanceId",
+                    "workflowTaskId",
+                    "statusCode",
+                    "context",
+                    "startedAt"
+                  ],
+                  "properties": {
+                    "workflowInstanceId": {
+                      "type": "string"
+                    },
+                    "workflowTaskId": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "type": "string"
+                    },
+                    "context": {
+                      "type": "object",
+                      "additionalProperties": {}
+                    },
+                    "startedAt": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/module-registration-requests": {
+      "get": {
+        "operationId": "getModuleRegistrationRequests",
+        "tags": [
+          "module-registrations"
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "workflowInstanceId",
+                      "workflowTaskId",
+                      "statusCode",
+                      "context",
+                      "startedAt"
+                    ],
+                    "properties": {
+                      "workflowInstanceId": {
+                        "type": "string"
+                      },
+                      "workflowTaskId": {
+                        "type": "string"
+                      },
+                      "statusCode": {
+                        "type": "string"
+                      },
+                      "context": {
+                        "type": "object",
+                        "additionalProperties": {}
+                      },
+                      "startedAt": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/module-registration-requests/{workflowInstanceId}/decision": {
+      "post": {
+        "operationId": "createModuleRegistrationRequestsByWorkflowInstanceIdDecision",
+        "tags": [
+          "module-registrations"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "decisionCode"
+                ],
+                "properties": {
+                  "decisionCode": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "approved"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "rejected"
+                        ]
+                      }
+                    ]
+                  },
+                  "reason": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "workflowInstanceId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "moduleRegistrationId"
+                  ],
+                  "properties": {
+                    "moduleRegistrationId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/registration-windows": {
+      "get": {
+        "operationId": "getRegistrationWindows",
+        "tags": [
+          "calendar"
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "registrationWindowId",
+                      "academicPeriodId",
+                      "academicYear",
+                      "periodCode",
+                      "opensAt",
+                      "closesAt"
+                    ],
+                    "properties": {
+                      "registrationWindowId": {
+                        "type": "string"
+                      },
+                      "academicPeriodId": {
+                        "type": "string"
+                      },
+                      "academicYear": {
+                        "type": "string"
+                      },
+                      "periodCode": {
+                        "type": "string"
+                      },
+                      "opensAt": {
+                        "type": "string"
+                      },
+                      "closesAt": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createRegistrationWindows",
+        "tags": [
+          "calendar"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "academicPeriodId",
+                  "opensAt",
+                  "closesAt"
+                ],
+                "properties": {
+                  "academicPeriodId": {
+                    "type": "string"
+                  },
+                  "opensAt": {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  "closesAt": {
+                    "format": "date-time",
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-publication-class": "public",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "registrationWindowId"
+                  ],
+                  "properties": {
+                    "registrationWindowId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/registration-windows/{registrationWindowId}": {
+      "patch": {
+        "operationId": "updateRegistrationWindowsByRegistrationWindowId",
+        "tags": [
+          "calendar"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "opensAt",
+                  "closesAt"
+                ],
+                "properties": {
+                  "opensAt": {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  "closesAt": {
+                    "format": "date-time",
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "registrationWindowId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
         "responses": {
           "204": {
             "description": "Default Response"

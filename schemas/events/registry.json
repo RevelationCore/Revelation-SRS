@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "generated": "2026-08-02T19:26:06.399Z",
+  "generated": "2026-08-03T10:26:24.326Z",
   "description": "Machine-readable registry of all Revelation SRS domain events.",
   "schemaUriBase": "https://schemas.revelation-srs.io/events",
   "events": [
