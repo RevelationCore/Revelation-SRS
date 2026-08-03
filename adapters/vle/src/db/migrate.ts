@@ -4,15 +4,14 @@ import { fileURLToPath } from 'node:url';
 
 import { sql } from 'drizzle-orm';
 
-import { loadConfig } from '../config.js';
-
 import { createVleDb } from './client.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 async function main(): Promise<void> {
-  const config = loadConfig();
-  const db     = createVleDb(config.databaseUrl);
+  const databaseUrl = process.env['DATABASE_URL'];
+  if (!databaseUrl) throw new Error('DATABASE_URL is not set');
+  const db = createVleDb(databaseUrl);
 
   const migrationsDir = join(__dirname, '../../migrations');
   const migrationSql  = await readFile(join(migrationsDir, '0000_vle_foundations.sql'), 'utf8');

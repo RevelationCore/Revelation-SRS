@@ -7,12 +7,12 @@
   "scripts": {
     "build":       "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "dev":         "tsx watch src/main.ts",
+    "dev":         "tsx watch --env-file=../../.env src/main.ts",
     "start":       "node dist/main.js",
     "test":        "vitest run --reporter=verbose",
     "test:int":    "vitest run --reporter=verbose --config vitest.int.config.ts --passWithNoTests",
     "test:watch":  "vitest --reporter=verbose",
-    "migrate":     "tsx src/db/migrate.ts"
+    "migrate":     "tsx --env-file-if-exists=../../.env src/db/migrate.ts"
   },
   "dependencies": {
     "@opentelemetry/auto-instrumentations-node": "^0.46.0",

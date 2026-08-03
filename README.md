@@ -187,6 +187,8 @@ pnpm demo:status
 pnpm demo:validate assessment-marks
 ```
 
+On a fresh database, `demo:reset` automatically creates a default demo tenant (code `DEMO`) if none exists yet — no manual tenant setup step is required.
+
 **Option B — Historical data migration (for institutions moving from an existing SRS)**
 
 The `migration-tools` package imports student records from SITS or Banner exports into Revelation SRS:

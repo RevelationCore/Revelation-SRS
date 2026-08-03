@@ -19,10 +19,21 @@ function requireDatabaseUrl(): string {
   return url;
 }
 
+const DEFAULT_DEMO_TENANT_CODE = 'DEMO';
+const DEFAULT_DEMO_TENANT_NAME = 'Demo Institution';
+
+/**
+ * Resolves the demo tenant to operate on. When `allowCreate` is set (the
+ * `reset` command only — a fresh clone has no tenant at all yet) and no
+ * explicit --tenant-code was given, a default demo tenant is created rather
+ * than failing, so `pnpm demo:reset <slug>` is a genuine one-command
+ * bootstrap on an empty database.
+ */
 async function resolveTenantId(
   databaseUrl: string,
   tenantId: string | undefined,
   tenantCode: string | undefined,
+  allowCreate = false,
 ): Promise<string> {
   if (tenantId) return tenantId;
 
@@ -38,15 +49,24 @@ async function resolveTenantId(
     .limit(1);
 
   const row = rows[0];
-  if (!row) {
-    const msg = tenantCode
-      ? `No demo tenant found with code "${tenantCode}". Ensure the tenant exists and has demo_mode = true.`
-      : 'No demo tenant found. Ensure a tenant exists with demo_mode = true, or supply --tenant-code.';
-    console.error(`Error: ${msg}`);
-    process.exit(1);
+  if (row) return row.id;
+
+  if (allowCreate && !tenantCode) {
+    const [created] = await db.insert(tenants).values({
+      code:     DEFAULT_DEMO_TENANT_CODE,
+      name:     DEFAULT_DEMO_TENANT_NAME,
+      active:   true,
+      demoMode: true,
+    }).returning({ id: tenants.id });
+    console.log(`No demo tenant found — created "${DEFAULT_DEMO_TENANT_CODE}" (${created!.id}).`);
+    return created!.id;
   }
 
-  return row.id;
+  const msg = tenantCode
+    ? `No demo tenant found with code "${tenantCode}". Ensure the tenant exists and has demo_mode = true.`
+    : 'No demo tenant found. Ensure a tenant exists with demo_mode = true, or supply --tenant-code.';
+  console.error(`Error: ${msg}`);
+  process.exit(1);
 }
 
 function formatDuration(ms: number): string {
@@ -93,6 +113,7 @@ async function cmdReset(args: Record<string, string | boolean | string[] | undef
     databaseUrl,
     typeof args['tenant-id'] === 'string' ? args['tenant-id'] : undefined,
     typeof args['tenant-code'] === 'string' ? args['tenant-code'] : undefined,
+    true,
   );
 
   await resetScenario({ databaseUrl, tenantId, scenarioSlug: scenario, dryRun });

@@ -3775,18 +3775,24 @@ ON CONFLICT ("flag_id", "variant_key") DO UPDATE SET
 
 -- ── Seed Platform Environments ──────────────────────────────────────────────
 
+-- uat/preprod/prod are seeded inactive: a fresh install has not been promoted
+-- to any of these environments yet. An operator activates the corresponding
+-- row via the environment/promotion admin tooling as part of that real
+-- deployment — only then does demo-data's production-like safety gate
+-- (packages/demo-data/src/safety.ts assertResetAllowed Gate 5) correctly block it.
 INSERT INTO "deployment_environment" (
   "environment_code",
   "display_name",
   "environment_type_code",
   "production_like",
-  "live_integrations_allowed"
+  "live_integrations_allowed",
+  "active"
 ) VALUES
-  ('local', 'Local Development', 'local', false, false),
-  ('test', 'Test', 'test', false, false),
-  ('uat', 'User Acceptance Testing', 'uat', true, false),
-  ('preprod', 'Pre-production', 'pre-production', true, false),
-  ('prod', 'Production', 'production', true, true)
+  ('local', 'Local Development', 'local', false, false, true),
+  ('test', 'Test', 'test', false, false, true),
+  ('uat', 'User Acceptance Testing', 'uat', true, false, false),
+  ('preprod', 'Pre-production', 'pre-production', true, false, false),
+  ('prod', 'Production', 'production', true, true, false)
 ON CONFLICT ("environment_code") DO NOTHING;
 
 -- ── Seed Value Sets ─────────────────────────────────────────────────────────

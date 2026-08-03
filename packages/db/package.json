@@ -17,8 +17,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "dev": "tsc -p tsconfig.json --watch",
     "generate": "drizzle-kit generate",
-    "migrate":   "node --import tsx/esm src/migrate.ts",
-    "seed:dev":  "node --import tsx/esm src/seed-dev.ts",
+    "migrate":   "node --env-file-if-exists=../../.env --import tsx/esm src/migrate.ts",
+    "seed:dev":  "node --env-file-if-exists=../../.env --import tsx/esm src/seed-dev.ts",
     "test": "vitest run --reporter=verbose",
     "test:int": "vitest run --reporter=verbose --config vitest.int.config.ts"
   },

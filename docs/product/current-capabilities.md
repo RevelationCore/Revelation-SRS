@@ -1,7 +1,7 @@
 # Current Capability Matrix
 
 > Status: Authoritative working baseline
-> Evidence date: 2026-08-02
+> Evidence date: 2026-08-03
 > Application maturity: Alpha — analysis and implementation convergence
 
 [Product documentation](README.md) · [Business process inventory](../business-processes/process-inventory.md) · [Target data-model delta](../architecture/business-process-data-model-delta.md)
@@ -41,7 +41,7 @@
 | Integration registry and exchange operations | **Partial** | Contract/registration/exchange schemas, registry service, VLE adapter and operations UI | Attempt rows do not yet form the proposed durable target/application-acknowledgement model |
 | Individual rights, retention and audit | **Partial** | Append-only audit, audit UI/service, FOI records and retention anonymisation worker; `individual_rights_request`/`rights_decision`/`processing_restriction`/`retention_schedule`/`retention_assignment`/`record_hold`/`record_disposition` (migration `0052`) add DSAR, restriction and hold-gated disposal via API, extending `business_case`; migration `0053` adds a SHA-256 hash chain computed in `AuditService.record()` (every call site unchanged) plus `audit_partition_seal`/`audit_review_case`/`audit_review_finding`; admin UI (`RightsRequestsPage`, `AuditReviewPage`) covers the DSAR/restriction/retention chain and audit-review case/finding/partition-seal actions, each now with a browsable list (`GET /rights-requests`, `GET /retention-schedules`, `GET /retention-assignments` with derived hold/disposed status, `GET /audit-review/cases`) | The retention-anonymisation worker is untouched (no historical backfill); pre-migration audit rows have `record_hash = NULL` and are not retroactively covered by tamper evidence, matching the migration plan's rule against claiming pre-seal integrity |
 | Student portal and administration UI | **Partial** | Profile, enrolment, modules, results, exams, adjustments, circumstances and regulatory/admin pages | Pages expose existing capabilities but do not prove all documented end-to-end process variants |
-| Demo and migration tooling | **Partial** | Demo scenarios, data loaders and SITS/Banner migration tools | Clean-clone bootstrap and full verification are not currently demonstrated by one passing command |
+| Demo and migration tooling | **Partial** | Demo scenarios, data loaders and SITS/Banner migration tools | Clean-clone bootstrap, migration and demo load are now demonstrated end-to-end (see Verification snapshot) via the documented multi-step README sequence, not a single command; SITS/Banner migration tools were not re-verified in this pass |
 
 ## Approved-target position
 
@@ -56,13 +56,14 @@ ADR-016, ADR-017, ADR-019 and ADR-022 are accepted for generic product implement
 | Data-model delta coverage | Pass — 19 capabilities | Target design complete; migrations not implemented |
 | Repository typecheck | Pass | `pnpm typecheck` passes across all 13 checked workspace projects; PostgreSQL telemetry uses the supported typed request hook |
 | Repository unit-test command | Pass under OrbStack | `pnpm test` completes across the workspace; focused attendance runtime evidence also includes 5 database invariant tests, 13 API integration scenarios and 18 CI-golden integration tests |
-| Clean-clone application bootstrap | **Not verified in this review** | Must pass before collaborator preview |
+| Test prerequisite separation | Pass (2026-08-03) | `packages/db` previously had no default Vitest config, so its container-dependent tests ran under the plain `pnpm test` script — the sole exception to the repo-wide convention. Fixed by adding `packages/db/vitest.config.ts` and moving those 4 files to `*.int.test.ts`. `pnpm -r test` (unit, no Docker) now passes cleanly across all 15 workspace projects; `pnpm --filter @revelation-srs/db test:int` separately passes 37/37 |
+| Clean-clone application bootstrap | Pass (2026-08-03) | Fresh `git clone` → `pnpm install` → `pnpm -r migrate` → `pnpm demo:reset ci-golden` → `pnpm demo:validate ci-golden` (10 passed, 0 failed) → `apps/api` boot → authenticated REST query against demo-loaded data, verified end to end in an isolated container. Required fixing 5 latent bugs: missing `--env-file` loading on `migrate`/`dev` scripts (`packages/db`, `modules/wellbeing`, `modules/attendance`, `adapters/vle`, `packages/demo-data`); a spurious full-config dependency in the VLE connector's migrate script; no first-run demo-tenant bootstrap; and `deployment_environment` seed data incorrectly marking `uat`/`preprod`/`prod` as `active=true` on a fresh install, which tripped the demo-data safety gate. Pre-existing, unrelated: demo-data's `test:golden` integration suite has 9 failing tests (person/case status-code mismatches) confirmed present on `main` before this work (verified via stash-and-rerun baseline) — tracked as a separate follow-up, not a launch blocker |
 
 ## Current launch blockers
 
-1. Make test prerequisites explicit and ensure `pnpm test` does not ambiguously mix unit and container-dependent suites.
-2. Demonstrate clean-clone bootstrap, migration, demo load and selected UI journeys.
-3. Approve or revise the remaining target ADRs before implementing their proposed P0 schema.
+1. Approve or revise the remaining target ADRs before implementing their proposed P0 schema.
+
+Resolved 2026-08-03 (see Verification snapshot): test prerequisites are now explicit (`pnpm test` no longer mixes unit and container-dependent suites), and clean-clone bootstrap, migration, demo load and an authenticated API journey are demonstrated end to end.
 
 ## Status governance
 

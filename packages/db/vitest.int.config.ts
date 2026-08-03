@@ -5,7 +5,7 @@ export default defineConfig({
     globals:    true,
     testTimeout: 60_000,
     hookTimeout: 60_000,
-    include:    ['test/**/*.test.ts'],
+    include:    ['test/**/*.int.test.ts'],
     reporters:  ['verbose'],
   },
 });
