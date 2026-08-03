@@ -1,4 +1,4 @@
-import { date, smallint, text, uuid } from 'drizzle-orm/pg-core';
+import { date, smallint, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { pgTable } from 'drizzle-orm/pg-core';
 
 import { tenants } from './tenant.js';
@@ -42,3 +42,25 @@ export const moduleOfferings = pgTable('module_offering', {
 
 export type ModuleOffering    = typeof moduleOfferings.$inferSelect;
 export type NewModuleOffering = typeof moduleOfferings.$inferInsert;
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Module-registration open/closed window for an academic period. Enforced by
+ * ModuleRegistrationService only when the owning tenant's configuration sets
+ * registrationWindowMode to 'academic-period' — tenants that leave the mode
+ * unset keep the previous unrestricted behaviour.
+ *
+ * Non-bitemporal, one row per (tenant, academic period): corrections are made
+ * by updating opensAt/closesAt in place (captured in audit_record).
+ */
+export const registrationWindows = pgTable('registration_window', {
+  id:               uuid('id').primaryKey().defaultRandom(),
+  tenantId:         uuid('tenant_id').notNull().references(() => tenants.id),
+  academicPeriodId: uuid('academic_period_id').notNull().references(() => academicPeriods.id),
+  opensAt:          timestamp('opens_at', { withTimezone: true }).notNull(),
+  closesAt:         timestamp('closes_at', { withTimezone: true }).notNull(),
+});
+
+export type RegistrationWindow    = typeof registrationWindows.$inferSelect;
+export type NewRegistrationWindow = typeof registrationWindows.$inferInsert;

@@ -86,6 +86,7 @@ function Sidebar({ onLogout, displayName, roles }: { onLogout: () => void; displ
   const canViewStudents = can('student:read:all');
   const canViewTasks = can('workflow-task:complete');
   const canViewModuleSelectionProposals = can('module-selection:decide', 'module-selection:read:all');
+  const canViewModuleRegistrationRequests = can('module-registration:decide');
   const canViewExamBoards = can('exam-board:read');
   const canViewEngagement = can(
     'engagement:event:read',
@@ -128,6 +129,7 @@ function Sidebar({ onLogout, displayName, roles }: { onLogout: () => void; displ
         {canViewStudents && <NavItem to="/students" label="Students" icon={Users} />}
         {canViewTasks && <NavItem to="/tasks" label="Tasks" end icon={ListChecks} />}
         {canViewModuleSelectionProposals && <NavItem to="/module-selection-proposals" label="Module selection" end icon={ListChecks} />}
+        {canViewModuleRegistrationRequests && <NavItem to="/module-registration-requests" label="Registration requests" end icon={ListChecks} />}
         {canViewExamBoards && <NavItem to="/exam-boards" label="Exam boards" icon={GraduationCap} />}
         {canViewEngagement && <NavItem to="/engagement" label="Engagement" icon={Activity} />}
 
@@ -166,6 +168,7 @@ function Sidebar({ onLogout, displayName, roles }: { onLogout: () => void; displ
           {can('config:read') && <SubItem to="/tenant-admin/value-sets" label="Value sets" />}
           {can('globalisation:read') && <SubItem to="/tenant-admin/globalisation" label="Globalisation" />}
           {can('rule:read') && <SubItem to="/tenant-admin/rules" label="Academic rules" />}
+          {can('calendar:read') && <SubItem to="/tenant-admin/registration-windows" label="Registration windows" />}
           {can('workflow:read') && <SubItem to="/tenant-admin/workflows" label="Workflows" />}
           {can('feature-flag:read') && <SubItem to="/tenant-admin/flags" label="Feature flags" />}
           {can('integration:read') && <SubItem to="/tenant-admin/integrations" label="Integrations" />}

@@ -9,6 +9,7 @@ import { ProfilePage } from './pages/ProfilePage.js';
 import { ProfileEditPage } from './pages/ProfileEditPage.js';
 import { AddAddressPage } from './pages/AddAddressPage.js';
 import { EnrolmentsPage } from './pages/EnrolmentsPage.js';
+import { EnrolmentDetailPage } from './pages/EnrolmentDetailPage.js';
 import { ModulesPage } from './pages/ModulesPage.js';
 import { ModuleAddPage } from './pages/ModuleAddPage.js';
 import { ModuleSelectionPage } from './pages/ModuleSelectionPage.js';
@@ -44,7 +45,9 @@ export function App() {
           <Route path="/profile"               element={<ProfilePage />} />
           <Route path="/profile/edit"          element={<ProfileEditPage />} />
           <Route path="/profile/addresses/new" element={<AddAddressPage />} />
+          <Route path="/profile/addresses/:addressId/edit" element={<AddAddressPage />} />
           <Route path="/enrolments"            element={<EnrolmentsPage />} />
+          <Route path="/enrolments/:enrolmentId" element={<EnrolmentDetailPage />} />
           <Route path="/modules"               element={<ModulesPage />} />
           <Route path="/modules/add"           element={<ModuleAddPage />} />
           <Route path="/modules/select"        element={<ModuleSelectionPage />} />

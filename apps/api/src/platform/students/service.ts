@@ -510,6 +510,51 @@ export class StudentService {
   }
 
   /**
+   * Fetch a single current address by id, for pre-populating the edit form.
+   */
+  async getAddress(personId: string, addressId: string, tenantId: string) {
+    const rows = await withTenantContext(this.db, tenantId, async (tx) =>
+      tx
+        .select()
+        .from(studentAddresses)
+        .where(
+          and(
+            eq(studentAddresses.id,       addressId as `${string}-${string}-${string}-${string}-${string}`),
+            eq(studentAddresses.personId, personId  as `${string}-${string}-${string}-${string}-${string}`),
+            eq(studentAddresses.tenantId, tenantId   as `${string}-${string}-${string}-${string}-${string}`),
+            isNull(studentAddresses.recordedUntil),
+          ),
+        )
+        .limit(1),
+    );
+    return rows[0] ?? null;
+  }
+
+  /**
+   * Remove an address. Closes the current bitemporal record without
+   * inserting a replacement — unlike addAddress's upsert-by-type behaviour,
+   * this is a genuine removal (history is preserved via recordedUntil/validTo).
+   */
+  async deleteAddress(personId: string, addressId: string, tenantId: string): Promise<void> {
+    const now = clockNow();
+    const result = await withTenantContext(this.db, tenantId, async (tx) =>
+      tx
+        .update(studentAddresses)
+        .set({ recordedUntil: now, validTo: now })
+        .where(
+          and(
+            eq(studentAddresses.id,       addressId as `${string}-${string}-${string}-${string}-${string}`),
+            eq(studentAddresses.personId, personId  as `${string}-${string}-${string}-${string}-${string}`),
+            eq(studentAddresses.tenantId, tenantId   as `${string}-${string}-${string}-${string}-${string}`),
+            isNull(studentAddresses.recordedUntil),
+          ),
+        )
+        .returning({ id: studentAddresses.id }),
+    );
+    if (result.length === 0) throw new NotFoundError('StudentAddress', addressId);
+  }
+
+  /**
    * Add a disability declaration.  Each declaration is a new bitemporal record.
    * Returns the logical declaration id.
    */
@@ -573,6 +618,86 @@ export class StudentService {
       validFrom:              r.validFrom,
       notes:                  r.notes ?? null,
     }));
+  }
+
+  /**
+   * Update the notes on a declaration. Inserts a new bitemporal version with
+   * declarationStatusCode 'updated' (distinct from the original 'declared'
+   * state, per the declaration-status-code value set), closing the current one.
+   */
+  async updateDisabilityDeclaration(
+    personId: string,
+    declarationId: string,
+    tenantId: string,
+    notes: string | null,
+  ): Promise<void> {
+    await this.#transitionDisabilityDeclaration(personId, declarationId, tenantId, 'updated', notes);
+  }
+
+  /** Withdraws (retracts) a declaration by inserting a 'withdrawn' version. */
+  async withdrawDisabilityDeclaration(
+    personId: string,
+    declarationId: string,
+    tenantId: string,
+  ): Promise<void> {
+    await this.#transitionDisabilityDeclaration(personId, declarationId, tenantId, 'withdrawn', undefined);
+  }
+
+  async #transitionDisabilityDeclaration(
+    personId: string,
+    declarationId: string,
+    tenantId: string,
+    declarationStatusCode: 'updated' | 'withdrawn',
+    notes: string | null | undefined,
+  ): Promise<void> {
+    await withTenantContext(this.db, tenantId, async (tx) => {
+      const current = await tx
+        .select()
+        .from(disabilityDeclarations)
+        .where(
+          and(
+            eq(disabilityDeclarations.id,       declarationId as `${string}-${string}-${string}-${string}-${string}`),
+            eq(disabilityDeclarations.personId, personId       as `${string}-${string}-${string}-${string}-${string}`),
+            eq(disabilityDeclarations.tenantId, tenantId       as `${string}-${string}-${string}-${string}-${string}`),
+            isNull(disabilityDeclarations.recordedUntil),
+          ),
+        )
+        .limit(1);
+
+      const existing = current[0];
+      if (!existing) throw new NotFoundError('DisabilityDeclaration', declarationId);
+      if (existing.declarationStatusCode === 'withdrawn') {
+        throw new ValidationError('Cannot modify a withdrawn declaration');
+      }
+
+      const now = clockNow();
+
+      await tx
+        .update(disabilityDeclarations)
+        .set({ recordedUntil: now, validTo: now })
+        .where(
+          and(
+            eq(disabilityDeclarations.id, declarationId as `${string}-${string}-${string}-${string}-${string}`),
+            eq(disabilityDeclarations.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
+            isNull(disabilityDeclarations.recordedUntil),
+          ),
+        );
+
+      await tx.insert(disabilityDeclarations).values({
+        versionId:              randomUUID(),
+        id:                     declarationId as `${string}-${string}-${string}-${string}-${string}`,
+        tenantId:               tenantId as `${string}-${string}-${string}-${string}-${string}`,
+        personId:               personId as `${string}-${string}-${string}-${string}-${string}`,
+        disabilityCategoryCode: existing.disabilityCategoryCode,
+        declarationStatusCode,
+        declaredAt:             existing.declaredAt,
+        notes:                  notes !== undefined ? notes : existing.notes,
+        validFrom:              now,
+        validTo:                null,
+        recordedAt:             now,
+        recordedUntil:          null,
+      });
+    });
   }
 
   async updateHesaId(personId: string, tenantId: string, hesaId: string): Promise<void> {

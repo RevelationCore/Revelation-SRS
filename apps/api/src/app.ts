@@ -40,6 +40,7 @@ import { HearService } from './platform/progression/hear-service.js';
 import { ProgressionService } from './platform/progression/progression-service.js';
 import { CorrectionService } from './platform/governance/correction-service.js';
 import { ModuleRegistrationService } from './platform/registration/service.js';
+import { RegistrationWindowService } from './platform/registration/window-service.js';
 import { ModuleSelectionService } from './platform/module-selection/service.js';
 import { IntegrationRegistryService } from './platform/integration/registry-service.js';
 import { RegulatoryExchangeService } from './platform/regulatory/exchange-service.js';
@@ -77,6 +78,7 @@ import { markRoutes } from './routes/marks.js';
 import { moderationRoutes } from './routes/moderation.js';
 import { moduleResultRoutes } from './routes/module-results.js';
 import { moduleRegistrationsRoutes } from './routes/module-registrations.js';
+import { registrationWindowsRoutes } from './routes/registration-windows.js';
 import { moduleSelectionProposalsRoutes } from './routes/module-selection-proposals.js';
 import { programmesRoutes } from './routes/programmes.js';
 import { progressionRoutes } from './routes/progression.js';
@@ -268,7 +270,9 @@ export async function buildApp(
   const enrolments = new EnrolmentService(db, eventBus, valueSets, triggerRules);
   const catalogue  = new CatalogueService(db, eventBus, valueSets);
   const calendar   = new CalendarService(db);
-  const registrations = new ModuleRegistrationService(db, eventBus, rules);
+  const registrationWindows = new RegistrationWindowService(db);
+  const workflowBridge = new WorkflowBridgeService(db, audit, eventBus);
+  const registrations = new ModuleRegistrationService(db, eventBus, rules, registrationWindows, workflowBridge);
   const tenantAdmin = new TenantAdminService(db);
   const assessmentComponents = new AssessmentComponentService(db, valueSets);
   const moduleResults = new ModuleResultService(db, eventBus, rules);
@@ -303,7 +307,6 @@ export async function buildApp(
   const workflowDefinitions = new WorkflowDefinitionService(db);
   const workflowInstances = new WorkflowInstanceService(db);
   const workflowTasks = new WorkflowTaskService(db);
-  const workflowBridge = new WorkflowBridgeService(db, audit, eventBus);
   const moduleSelection = new ModuleSelectionService(db, eventBus, rules, workflowBridge, registrations);
   const workflowResponsibilities = new WorkflowResponsibilityService(db);
   const environments = new EnvironmentService(db, runtimeDeployment);
@@ -334,6 +337,7 @@ export async function buildApp(
   fastify.decorate('catalogueService', catalogue);
   fastify.decorate('calendarService',  calendar);
   fastify.decorate('moduleRegistrationService', registrations);
+  fastify.decorate('registrationWindowService', registrationWindows);
   fastify.decorate('moduleSelectionService', moduleSelection);
   fastify.decorate('tenantAdminService', tenantAdmin);
   fastify.decorate('assessmentComponentService', assessmentComponents);
@@ -517,6 +521,7 @@ export async function buildApp(
       ['/marks',                     'assessment'],
       ['/moderation',                'assessment'],
       ['/result',                    'assessment'],
+      ['/module-registration-requests', 'module-registrations'],
       ['/module-registrations',      'module-registrations'],
       ['/module-selection-proposals', 'module-selection'],
       ['/enrolment-curriculum-bindings', 'module-selection'],
@@ -527,6 +532,7 @@ export async function buildApp(
       ['/module-relationships',      'catalogue'],
       ['/learning-outcomes',         'catalogue'],
       ['/academic-periods',          'calendar'],
+      ['/registration-windows',      'calendar'],
       ['/components',                'assessment'],
       ['/module-offerings',          'calendar'],
       ['/value-sets',                'value-sets'],
@@ -597,6 +603,7 @@ export async function buildApp(
   await fastify.register(moderationRoutes,          { prefix: '/api/v1' });
   await fastify.register(moduleResultRoutes,        { prefix: '/api/v1' });
   await fastify.register(moduleRegistrationsRoutes, { prefix: '/api/v1' });
+  await fastify.register(registrationWindowsRoutes, { prefix: '/api/v1' });
   await fastify.register(moduleSelectionProposalsRoutes, { prefix: '/api/v1' });
   await fastify.register(tenantAdminRoutes,         { prefix: '/api/v1' });
   await fastify.register(platformControlRoutes,         { prefix: '/api/v1' });
@@ -636,6 +643,7 @@ declare module 'fastify' {
     catalogueService: CatalogueService;
     calendarService:  CalendarService;
     moduleRegistrationService: ModuleRegistrationService;
+    registrationWindowService: RegistrationWindowService;
     moduleSelectionService: ModuleSelectionService;
     tenantAdminService: TenantAdminService;
     assessmentComponentService: AssessmentComponentService;

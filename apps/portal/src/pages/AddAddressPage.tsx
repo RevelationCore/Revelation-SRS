@@ -1,5 +1,5 @@
-import { useCallback } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useCallback, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../auth/AuthContext.js';
 import { useApiData } from '../hooks/useApiData.js';
 import { useFormSubmit } from '../hooks/useFormSubmit.js';
-import { postAddress, getFieldValueSet, type StudentAddress } from '../api/me.js';
+import { postAddress, getAddress, getFieldValueSet } from '../api/me.js';
 import { Problem, Field, Spinner, PageHeader, Card, CardBody, Button, Select } from '@revelation-srs/ui';
 
 const schema = z.object({
@@ -25,10 +25,15 @@ export function AddAddressPage() {
   const { t }    = useTranslation();
   const navigate = useNavigate();
   const { personId } = useAuth();
+  const { addressId } = useParams<{ addressId?: string }>();
+  const isEdit = addressId !== undefined;
 
-  const location = useLocation();
-  const existing = (location.state as { existing?: StudentAddress } | null)?.existing ?? null;
-  const isEdit   = existing !== null;
+  const fetchExisting = useCallback(
+    () => (personId && addressId) ? getAddress(personId, addressId) : Promise.reject(new Error('')),
+    [personId, addressId],
+  );
+  const { data: existing, loading: existingLoading, error: existingError } =
+    useApiData(isEdit && personId && addressId ? fetchExisting : null);
 
   const fetchAddressTypes = useCallback(
     () => getFieldValueSet('student_address', 'address_type_code'),
@@ -37,17 +42,21 @@ export function AddAddressPage() {
   const { data: addressTypeSet, loading: vsLoading } = useApiData(fetchAddressTypes);
   const addressTypes = addressTypeSet?.members ?? [];
 
-  const { register, handleSubmit, formState: { errors } } = useForm<FormValues>({
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: {
-      addressTypeCode: existing?.addressTypeCode ?? '',
-      line1:           existing?.line1           ?? '',
-      line2:           existing?.line2           ?? '',
-      city:            existing?.city            ?? '',
-      postcode:        existing?.postcode        ?? '',
-      countryCode:     existing?.countryCode     ?? '',
-    },
   });
+
+  useEffect(() => {
+    if (!existing) return;
+    reset({
+      addressTypeCode: existing.addressTypeCode,
+      line1:           existing.line1,
+      line2:           existing.line2    ?? '',
+      city:            existing.city     ?? '',
+      postcode:        existing.postcode ?? '',
+      countryCode:     existing.countryCode ?? '',
+    });
+  }, [existing, reset]);
 
   const { submitting, submitError, submit } = useFormSubmit<{ addressId: string }>();
 
@@ -65,6 +74,13 @@ export function AddAddressPage() {
     );
     if (result !== undefined) navigate('/profile');
   };
+
+  if (isEdit && existingLoading) {
+    return <div className="flex justify-center py-16"><Spinner size="lg" /></div>;
+  }
+  if (isEdit && existingError) {
+    return <Problem title={t('status.error')} detail={existingError} />;
+  }
 
   const heading    = isEdit ? 'Update address'     : t('portal.address.addHeading');
   const subheading = isEdit ? 'Change the details below and save to update this address.' : t('portal.address.addSubheading');

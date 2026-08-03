@@ -4,6 +4,7 @@ import type { FastifyInstance, FastifyRequest } from 'fastify';
 
 import { clockNow } from '../platform/clock.js';
 import type {
+  ChangeRequestDto,
   CreateModuleRegistrationInput,
   ModuleRegistrationDto,
   TimetableRegistrationDto,
@@ -284,6 +285,186 @@ export function moduleRegistrationsRoutes(fastify: FastifyInstance): void {
       await reply.code(204).send();
     },
   );
+
+  // ── Registration/withdrawal change requests (workflow-gated) ────────────────
+  const ChangeRequestSchema = Type.Object({
+    workflowInstanceId: Type.String(),
+    workflowTaskId:      Type.String(),
+    statusCode:          Type.String(),
+    context:             Type.Record(Type.String(), Type.Unknown()),
+    startedAt:           Type.String(),
+  });
+
+  const DecisionBody = Type.Object({
+    decisionCode: Type.Union([Type.Literal('approved'), Type.Literal('rejected')]),
+    reason:       Type.Optional(Type.String()),
+  });
+
+  fastify.post(
+    '/module-registrations/requests',
+    {
+      schema: {
+        body: Type.Object({
+          enrolmentId:      Type.String(),
+          moduleOfferingId: Type.String(),
+          registrationDate: Type.Optional(Type.String()),
+          reason:           Type.Optional(Type.String()),
+        }),
+        response: {
+          202: ChangeRequestSchema,
+          403: ErrorSchema, 404: ErrorSchema, 422: ErrorSchema,
+        },
+      },
+      preHandler: [requireAnyPermission('module-registration:write:own', 'module-registration:write')],
+    },
+    async (request, reply) => {
+      const body = request.body as {
+        enrolmentId: string; moduleOfferingId: string; registrationDate?: string; reason?: string;
+      };
+
+      if (request.user.srsPersonId && !request.user.roles.includes('registry-administrator')) {
+        const enrolment = await fastify.enrolmentService.getEnrolment(body.enrolmentId, request.tenantId);
+        if (!enrolment || enrolment.personId !== request.user.srsPersonId) {
+          return reply.code(403).send({
+            type: 'https://srs.example.com/errors/forbidden', title: 'Forbidden', status: 403,
+            detail: 'You may only request registration within your own enrolment', instance: request.url,
+          });
+        }
+      }
+
+      const input: CreateModuleRegistrationInput = {
+        enrolmentId: body.enrolmentId,
+        moduleOfferingId: body.moduleOfferingId,
+        ...(body.registrationDate ? { registrationDate: body.registrationDate } : {}),
+      };
+      const changeRequest = await fastify.moduleRegistrationService.requestRegistration(
+        request.tenantId, input, request.user.sub, body.reason,
+      );
+
+      await fastify.audit.record({
+        tenantId: request.tenantId,
+        entityType: 'module_registration_change_request',
+        entityId: changeRequest.workflowInstanceId,
+        actionType: 'create',
+        actorType: 'user',
+        actorId: request.user.sub,
+        actorDisplayName: request.user.displayName,
+        correlationId: request.id,
+      });
+
+      await reply.code(202).send(changeRequestToWire(changeRequest));
+    },
+  );
+
+  fastify.post(
+    '/module-registrations/:moduleRegistrationId/withdrawal-requests',
+    {
+      schema: {
+        params: Type.Object({ moduleRegistrationId: Type.String() }),
+        body:   Type.Object({ reason: Type.Optional(Type.String()) }),
+        response: {
+          202: ChangeRequestSchema,
+          403: ErrorSchema, 404: ErrorSchema, 422: ErrorSchema,
+        },
+      },
+      preHandler: [requireAnyPermission('module-registration:write:own', 'module-registration:write')],
+    },
+    async (request, reply) => {
+      const { moduleRegistrationId } = request.params as { moduleRegistrationId: string };
+      const { reason } = request.body as { reason?: string };
+
+      if (request.user.srsPersonId && !request.user.roles.includes('registry-administrator')) {
+        const reg = await fastify.moduleRegistrationService.getRegistration(moduleRegistrationId, request.tenantId);
+        if (!reg) {
+          return reply.code(404).send({
+            type: 'https://srs.example.com/errors/not-found', title: 'Not Found', status: 404,
+            detail: `ModuleRegistration ${moduleRegistrationId} not found`, instance: request.url,
+          });
+        }
+        const enrolment = await fastify.enrolmentService.getEnrolment(reg.enrolmentId, request.tenantId);
+        if (!enrolment || enrolment.personId !== request.user.srsPersonId) {
+          return reply.code(403).send({
+            type: 'https://srs.example.com/errors/forbidden', title: 'Forbidden', status: 403,
+            detail: 'You may only request withdrawal of your own module registrations', instance: request.url,
+          });
+        }
+      }
+
+      const changeRequest = await fastify.moduleRegistrationService.requestWithdrawal(
+        request.tenantId, moduleRegistrationId, request.user.sub, reason,
+      );
+
+      await fastify.audit.record({
+        tenantId: request.tenantId,
+        entityType: 'module_registration_change_request',
+        entityId: changeRequest.workflowInstanceId,
+        actionType: 'create',
+        actorType: 'user',
+        actorId: request.user.sub,
+        actorDisplayName: request.user.displayName,
+        correlationId: request.id,
+      });
+
+      await reply.code(202).send(changeRequestToWire(changeRequest));
+    },
+  );
+
+  fastify.get(
+    '/module-registration-requests',
+    {
+      schema: { response: { 200: Type.Array(ChangeRequestSchema) } },
+      preHandler: [requirePermission('module-registration:decide')],
+    },
+    async (request, reply) => {
+      const requests = await fastify.moduleRegistrationService.listPendingChangeRequests(request.tenantId);
+      await reply.send(requests.map(changeRequestToWire));
+    },
+  );
+
+  fastify.post(
+    '/module-registration-requests/:workflowInstanceId/decision',
+    {
+      schema: {
+        params:   Type.Object({ workflowInstanceId: Type.String() }),
+        body:     DecisionBody,
+        response: {
+          200: Type.Object({ moduleRegistrationId: Type.Union([Type.String(), Type.Null()]) }),
+          404: ErrorSchema, 422: ErrorSchema,
+        },
+      },
+      preHandler: [requirePermission('module-registration:decide')],
+    },
+    async (request, reply) => {
+      const { workflowInstanceId } = request.params as { workflowInstanceId: string };
+      const { decisionCode, reason } = request.body as { decisionCode: 'approved' | 'rejected'; reason?: string };
+
+      const result = await fastify.moduleRegistrationService.decideChangeRequest(
+        request.tenantId, workflowInstanceId, decisionCode, request.user.sub, reason,
+      );
+
+      await fastify.audit.record({
+        tenantId: request.tenantId,
+        entityType: 'module_registration_change_request',
+        entityId: workflowInstanceId,
+        actionType: 'update',
+        fieldName: 'decision_code',
+        afterValue: { decisionCode },
+        actorType: 'user',
+        actorId: request.user.sub,
+        actorDisplayName: request.user.displayName,
+        correlationId: request.id,
+      });
+
+      await reply.send(result);
+    },
+  );
+}
+
+function changeRequestToWire(changeRequest: ChangeRequestDto) {
+  return {
+    ...changeRequest,
+    startedAt: changeRequest.startedAt.toISOString(),
+  };
 }
 
 async function recordRegistrationStatusAudit(

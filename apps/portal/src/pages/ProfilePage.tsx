@@ -1,10 +1,11 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../auth/AuthContext.js';
 import { useApiData } from '../hooks/useApiData.js';
-import { getProfile, getAddresses, getFieldValueSet, type ValueSetDto } from '../api/me.js';
+import { getProfile, getAddresses, deleteAddress, getFieldValueSet, type ValueSetDto } from '../api/me.js';
+import { ApiError } from '../api/client.js';
 import { Spinner, Problem, formatDate, PageHeader, Card, CardHeader, CardBody, Button } from '@revelation-srs/ui';
 
 function codeLabel(vs: ValueSetDto | null | undefined, code: string | null | undefined): string | null | undefined {
@@ -18,8 +19,16 @@ export function ProfilePage() {
   const navigate   = useNavigate();
   const { personId } = useAuth();
 
+  const [addressRefreshKey, setAddressRefreshKey] = useState(0);
+  const [confirmDeleteId, setConfirmDeleteId]     = useState<string | null>(null);
+  const [deletingId, setDeletingId]               = useState<string | null>(null);
+  const [deleteError, setDeleteError]             = useState('');
+
   const fetchProfile   = useCallback(() => personId ? getProfile(personId)   : Promise.reject(new Error('')), [personId]);
-  const fetchAddresses = useCallback(() => personId ? getAddresses(personId) : Promise.reject(new Error('')), [personId]);
+  const fetchAddresses = useCallback(
+    () => personId ? getAddresses(personId) : Promise.reject(new Error('')),
+    [personId, addressRefreshKey],
+  );
   const fetchGenderVS  = useCallback(() => getFieldValueSet('person_identity', 'gender_code').catch(() => undefined), []);
   const fetchNatVS     = useCallback(() => getFieldValueSet('person_identity', 'nationality_code').catch(() => undefined), []);
 
@@ -30,6 +39,20 @@ export function ProfilePage() {
 
   const loading = pLoading || aLoading;
   const error   = pError ?? aError;
+
+  async function handleDeleteAddress(addressId: string) {
+    if (!personId) return;
+    setDeletingId(addressId); setDeleteError('');
+    try {
+      await deleteAddress(personId, addressId);
+      setConfirmDeleteId(null);
+      setAddressRefreshKey(k => k + 1);
+    } catch (err) {
+      setDeleteError(err instanceof ApiError ? (err.detail ?? err.message) : 'Failed to remove address');
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   if (loading) {
     return <div className="flex justify-center py-16"><Spinner size="lg" label={t('status.loading')} /></div>;
@@ -88,6 +111,7 @@ export function ProfilePage() {
             }
           />
           <CardBody>
+            {deleteError && <p className="mb-3 text-sm text-danger-600">{deleteError}</p>}
             {addresses && addresses.length > 0 ? (
               <div className="space-y-4">
                 {addresses.map(addr => (
@@ -102,13 +126,35 @@ export function ProfilePage() {
                           .join(', ')}
                       </address>
                     </div>
-                    <Link
-                      to="/profile/addresses/new"
-                      state={{ existing: addr }}
-                      className="shrink-0 text-sm text-primary-600 hover:underline"
-                    >
-                      Edit
-                    </Link>
+                    <div className="shrink-0 flex items-center gap-3">
+                      <Link
+                        to={`/profile/addresses/${addr.id}/edit`}
+                        className="text-sm text-primary-600 hover:underline"
+                      >
+                        Edit
+                      </Link>
+                      {confirmDeleteId === addr.id ? (
+                        <span className="inline-flex items-center gap-2">
+                          <button
+                            onClick={() => void handleDeleteAddress(addr.id)}
+                            disabled={deletingId === addr.id}
+                            className="text-sm font-medium text-danger-600 hover:text-danger-800 disabled:opacity-50"
+                          >
+                            {deletingId === addr.id ? 'Removing…' : 'Confirm'}
+                          </button>
+                          <button onClick={() => setConfirmDeleteId(null)} className="text-sm text-neutral-500">
+                            Cancel
+                          </button>
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => setConfirmDeleteId(addr.id)}
+                          className="text-sm text-danger-500 hover:text-danger-700"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>

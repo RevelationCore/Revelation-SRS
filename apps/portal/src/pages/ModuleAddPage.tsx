@@ -8,7 +8,7 @@ import {
   getEnrolments,
   getModuleRegistrations,
   getModuleOfferings,
-  postModuleRegistration,
+  requestModuleRegistration,
 } from '../api/me.js';
 import type { ModuleOffering } from '../api/me.js';
 import { ArrowLeft } from 'lucide-react';
@@ -59,12 +59,12 @@ export function ModuleAddPage() {
 
   const currentPeriodCode = offerings?.find(o => o.academicPeriodId === currentPeriodId)?.periodCode ?? currentPeriodId;
 
-  const { submitting, submitError, submit } = useFormSubmit<{ moduleRegistrationId: string }>();
+  const { submitting, submitError, submit } = useFormSubmit<{ workflowInstanceId: string }>();
 
   const handleRegister = async (offering: ModuleOffering) => {
     if (!currentEnrolment) return;
     const result = await submit(() =>
-      postModuleRegistration({
+      requestModuleRegistration({
         enrolmentId:      currentEnrolment.enrolmentId,
         moduleOfferingId: offering.moduleOfferingId,
       }),

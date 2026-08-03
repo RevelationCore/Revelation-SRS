@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../auth/AuthContext.js';
 import { useApiData } from '../hooks/useApiData.js';
 import { useFormSubmit } from '../hooks/useFormSubmit.js';
-import { getEnrolments, getModuleRegistrations, getTimetable, postWithdrawal } from '../api/me.js';
+import { getEnrolments, getModuleRegistrations, getTimetable, requestWithdrawal, getMyModuleRegistrationRequests } from '../api/me.js';
 import {
   Spinner, Problem, EmptyState, formatDate, PageHeader, Button, Badge,
   Card, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
@@ -42,6 +42,14 @@ export function ModulesPage() {
   );
   const { data: timetable, loading: tLoading } = useApiData(currentEnrolment ? fetchTimetable : null);
 
+  const fetchRequests = useCallback(
+    () => personId ? getMyModuleRegistrationRequests(personId) : Promise.reject(new Error('')),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [personId, refreshKey],
+  );
+  const { data: changeRequests } = useApiData(personId ? fetchRequests : null);
+  const pendingRequests = changeRequests?.filter(r => r.statusCode === 'running') ?? [];
+
   // Build a lookup map from moduleRegistrationId → timetable entry for display names
   const timetableByRegId = useMemo(() => {
     const map = new Map<string, { moduleCode: string; moduleTitle: string; periodCode: string }>();
@@ -52,7 +60,7 @@ export function ModulesPage() {
   const { submitting, submitError, submit } = useFormSubmit<true>();
 
   const handleWithdraw = async (moduleRegistrationId: string) => {
-    const result = await submit(async () => { await postWithdrawal(moduleRegistrationId); return true as const; });
+    const result = await submit(async () => { await requestWithdrawal(moduleRegistrationId); return true as const; });
     if (result !== undefined) {
       setWithdrawing(null);
       setRefreshKey(k => k + 1);
@@ -85,6 +93,30 @@ export function ModulesPage() {
 
       {error      && <Problem title={t('status.error')} detail={error} />}
       {submitError && <Problem title={t('status.error')} detail={submitError} />}
+
+      {pendingRequests.length > 0 && (
+        <Card className="mb-6 border-warning-200 bg-warning-50">
+          <div className="p-4">
+            <h2 className="mb-2 text-sm font-semibold text-neutral-700">Pending requests</h2>
+            <p className="mb-3 text-xs text-neutral-600">
+              Awaiting personal tutor or registry approval before it takes effect.
+            </p>
+            <ul className="space-y-2">
+              {pendingRequests.map(r => {
+                const actionType = r.context['actionType'] as string | undefined;
+                return (
+                  <li key={r.workflowInstanceId} className="flex items-center justify-between text-sm">
+                    <span className="text-neutral-800">
+                      {actionType === 'withdraw' ? 'Withdrawal request' : 'Registration request'}
+                    </span>
+                    <span className="text-xs text-neutral-500">Submitted {formatDate(r.startedAt)}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        </Card>
+      )}
 
       {!error && registrations?.length === 0 && (
         <EmptyState title="No module registrations found for the current enrolment." />

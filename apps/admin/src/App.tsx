@@ -4,6 +4,7 @@ import { RequireRole } from './auth/RequireRole.js';
 import { RequirePermission } from './auth/RequirePermission.js';
 import { Layout } from './components/Layout.js';
 import { AcademicRulesPage } from './pages/AcademicRulesPage.js';
+import { RegistrationWindowsPage } from './pages/RegistrationWindowsPage.js';
 import { AuditPage } from './pages/AuditPage.js';
 import { CallbackPage } from './pages/CallbackPage.js';
 import { DashboardPage } from './pages/DashboardPage.js';
@@ -29,6 +30,7 @@ import { StudentDetailPage } from './pages/StudentDetailPage.js';
 import { StudentsPage } from './pages/StudentsPage.js';
 import { TaskInboxPage } from './pages/TaskInboxPage.js';
 import { ModuleSelectionProposalsPage } from './pages/ModuleSelectionProposalsPage.js';
+import { ModuleRegistrationRequestsPage } from './pages/ModuleRegistrationRequestsPage.js';
 import { TenantAdminPage } from './pages/TenantAdminPage.js';
 import { TenantConfigPage } from './pages/TenantConfigPage.js';
 import { UcasPage } from './pages/UcasPage.js';
@@ -83,6 +85,7 @@ export function App() {
                 <Route path="dashboard"                  element={<DashboardPage />} />
                 <Route path="tasks" element={<RequirePermission permissions={['workflow-task:complete']}><TaskInboxPage /></RequirePermission>} />
                 <Route path="module-selection-proposals" element={<RequirePermission permissions={['module-selection:decide', 'module-selection:read:all']}><ModuleSelectionProposalsPage /></RequirePermission>} />
+                <Route path="module-registration-requests" element={<RequirePermission permissions={['module-registration:decide']}><ModuleRegistrationRequestsPage /></RequirePermission>} />
                 <Route path="students" element={<RequirePermission permissions={['student:read:all']}><StudentsPage /></RequirePermission>} />
                 <Route path="students/:personId" element={<RequirePermission permissions={['student:read:all']}><StudentDetailPage /></RequirePermission>} />
                 <Route path="exam-boards" element={<RequirePermission permissions={['exam-board:read']}><ExamBoardsPage /></RequirePermission>} />
@@ -116,6 +119,10 @@ export function App() {
                 <Route
                   path="tenant-admin/rules"
                   element={<RequirePermission permissions={['rule:read']}><AcademicRulesPage /></RequirePermission>}
+                />
+                <Route
+                  path="tenant-admin/registration-windows"
+                  element={<RequirePermission permissions={['calendar:read']}><RegistrationWindowsPage /></RequirePermission>}
                 />
                 <Route
                   path="tenant-admin/workflows"

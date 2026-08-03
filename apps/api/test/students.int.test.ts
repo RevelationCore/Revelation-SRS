@@ -338,6 +338,44 @@ describe('POST /api/v1/students/:id/addresses', () => {
     const addresses = res.json<Array<{ addressTypeCode: string; city: string | null }>>();
     expect(addresses.some((a) => a.addressTypeCode === 'home' && a.city === 'Oxford')).toBe(true);
   });
+
+  it('GET a single address by id', async () => {
+    const jwt = await ctx.makeJwt();
+    const list = await ctx.app.inject({
+      method: 'GET', url: `/api/v1/students/${personId}/addresses`,
+      headers: { authorization: `Bearer ${jwt}` },
+    });
+    const addressId = list.json<Array<{ id: string }>>()[0]!.id;
+
+    const res = await ctx.app.inject({
+      method: 'GET', url: `/api/v1/students/${personId}/addresses/${addressId}`,
+      headers: { authorization: `Bearer ${jwt}` },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json<{ city: string | null }>().city).toBe('Oxford');
+  });
+
+  it('DELETE removes the address so it no longer appears in the list', async () => {
+    const jwt = await ctx.makeJwt();
+    const create = await ctx.app.inject({
+      method: 'POST', url: `/api/v1/students/${personId}/addresses`,
+      headers: { authorization: `Bearer ${jwt}` },
+      payload: { addressTypeCode: 'term-time', line1: '1 College Road' },
+    });
+    const addressId = create.json<{ addressId: string }>().addressId;
+
+    const del = await ctx.app.inject({
+      method: 'DELETE', url: `/api/v1/students/${personId}/addresses/${addressId}`,
+      headers: { authorization: `Bearer ${jwt}` },
+    });
+    expect(del.statusCode).toBe(204);
+
+    const get = await ctx.app.inject({
+      method: 'GET', url: `/api/v1/students/${personId}/addresses/${addressId}`,
+      headers: { authorization: `Bearer ${jwt}` },
+    });
+    expect(get.statusCode).toBe(404);
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -378,5 +416,155 @@ describe('POST /api/v1/students/:id/disability-declarations', () => {
     expect(res.statusCode).toBe(201);
     const body = res.json<{ declarationId: string }>();
     expect(body.declarationId).toMatch(/^[0-9a-f-]{36}$/);
+  });
+
+  it('PATCH updates notes and sets status to updated', async () => {
+    const jwt = await ctx.makeJwt();
+    const create = await ctx.app.inject({
+      method: 'POST', url: `/api/v1/students/${personId}/disability-declarations`,
+      headers: { authorization: `Bearer ${jwt}` },
+      payload: { disabilityCategoryCode: '06' },
+    });
+    const declarationId = create.json<{ declarationId: string }>().declarationId;
+
+    const patch = await ctx.app.inject({
+      method: 'PATCH', url: `/api/v1/students/${personId}/disability-declarations/${declarationId}`,
+      headers: { authorization: `Bearer ${jwt}` },
+      payload: { notes: 'Updated context' },
+    });
+    expect(patch.statusCode).toBe(204);
+
+    const list = await ctx.app.inject({
+      method: 'GET', url: `/api/v1/students/${personId}/disability-declarations`,
+      headers: { authorization: `Bearer ${jwt}` },
+    });
+    const updated = list.json<Array<{ declarationId: string; declarationStatusCode: string; notes: string | null }>>()
+      .find(d => d.declarationId === declarationId);
+    expect(updated).toMatchObject({ declarationStatusCode: 'updated', notes: 'Updated context' });
+  });
+
+  it('withdrawal sets status to withdrawn and rejects further edits', async () => {
+    const jwt = await ctx.makeJwt();
+    const create = await ctx.app.inject({
+      method: 'POST', url: `/api/v1/students/${personId}/disability-declarations`,
+      headers: { authorization: `Bearer ${jwt}` },
+      payload: { disabilityCategoryCode: '07' },
+    });
+    const declarationId = create.json<{ declarationId: string }>().declarationId;
+
+    const withdraw = await ctx.app.inject({
+      method: 'POST', url: `/api/v1/students/${personId}/disability-declarations/${declarationId}/withdrawal`,
+      headers: { authorization: `Bearer ${jwt}` },
+    });
+    expect(withdraw.statusCode).toBe(204);
+
+    const list = await ctx.app.inject({
+      method: 'GET', url: `/api/v1/students/${personId}/disability-declarations`,
+      headers: { authorization: `Bearer ${jwt}` },
+    });
+    const withdrawn = list.json<Array<{ declarationId: string; declarationStatusCode: string }>>()
+      .find(d => d.declarationId === declarationId);
+    expect(withdrawn?.declarationStatusCode).toBe('withdrawn');
+
+    const secondWithdraw = await ctx.app.inject({
+      method: 'POST', url: `/api/v1/students/${personId}/disability-declarations/${declarationId}/withdrawal`,
+      headers: { authorization: `Bearer ${jwt}` },
+    });
+    expect(secondWithdraw.statusCode).toBe(422);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Self-scoped enrolment detail routes (portal enrolment detail page). The
+// admin-only /enrolments/:id/* routes require enrolment:read:all; students
+// need their own view, hence these /students/:personId/enrolments/:id/*
+// routes with requireSelfOrPermission.
+
+describe('Self-scoped enrolment detail routes', () => {
+  let personId: string;
+  let enrolmentId: string;
+  let studentJwt: string;
+
+  beforeAll(async () => {
+    const adminJwt = await ctx.makeJwt();
+    const student = await ctx.app.inject({
+      method: 'POST', url: '/api/v1/students', headers: { authorization: `Bearer ${adminJwt}` },
+      payload: { legalFirstName: 'Fay', legalFamilyName: 'Enrolled' },
+    });
+    personId = student.json<{ personId: string }>().personId;
+
+    const enrolment = await ctx.app.inject({
+      method: 'POST', url: '/api/v1/enrolments', headers: { authorization: `Bearer ${adminJwt}` },
+      payload: { personId, modeOfStudyCode: 'full-time', academicYearOfEntry: '2026-27', startDate: '2026-09-21' },
+    });
+    enrolmentId = enrolment.json<{ enrolmentId: string }>().enrolmentId;
+
+    studentJwt = await ctx.makeJwt({ roles: ['student'], tenantId: ctx.tenantId, srsPersonId: personId });
+  });
+
+  it('lets a student read their own enrolment detail, history, transitions and fees', async () => {
+    const detail = await ctx.app.inject({
+      method: 'GET', url: `/api/v1/students/${personId}/enrolments/${enrolmentId}`,
+      headers: { authorization: `Bearer ${studentJwt}` },
+    });
+    expect(detail.statusCode).toBe(200);
+    expect(detail.json<{ enrolmentId: string }>().enrolmentId).toBe(enrolmentId);
+
+    const history = await ctx.app.inject({
+      method: 'GET', url: `/api/v1/students/${personId}/enrolments/${enrolmentId}/history`,
+      headers: { authorization: `Bearer ${studentJwt}` },
+    });
+    expect(history.statusCode).toBe(200);
+    expect(history.json<unknown[]>().length).toBeGreaterThan(0);
+
+    const transitions = await ctx.app.inject({
+      method: 'GET', url: `/api/v1/students/${personId}/enrolments/${enrolmentId}/transitions`,
+      headers: { authorization: `Bearer ${studentJwt}` },
+    });
+    expect(transitions.statusCode).toBe(200);
+
+    const fees = await ctx.app.inject({
+      method: 'GET', url: `/api/v1/students/${personId}/enrolments/${enrolmentId}/fee-liabilities`,
+      headers: { authorization: `Bearer ${studentJwt}` },
+    });
+    expect(fees.statusCode).toBe(200);
+  });
+
+  it('does not let a student read another student\'s enrolment via their own personId route', async () => {
+    const otherStudent = await ctx.app.inject({
+      method: 'POST', url: '/api/v1/students', headers: { authorization: `Bearer ${await ctx.makeJwt()}` },
+      payload: { legalFirstName: 'Gus', legalFamilyName: 'Other' },
+    });
+    const otherPersonId = otherStudent.json<{ personId: string }>().personId;
+
+    // studentJwt's srsPersonId is `personId`, not otherPersonId, so
+    // requireSelfOrPermission itself blocks this at the personId param check.
+    const res = await ctx.app.inject({
+      method: 'GET', url: `/api/v1/students/${otherPersonId}/enrolments/${enrolmentId}`,
+      headers: { authorization: `Bearer ${studentJwt}` },
+    });
+    expect(res.statusCode).toBe(403);
+  });
+
+  it('returns 404 when the enrolmentId does not belong to the personId in the route', async () => {
+    const otherAdminJwt = await ctx.makeJwt();
+    const otherStudent = await ctx.app.inject({
+      method: 'POST', url: '/api/v1/students', headers: { authorization: `Bearer ${otherAdminJwt}` },
+      payload: { legalFirstName: 'Gus', legalFamilyName: 'Other' },
+    });
+    const otherPersonId = otherStudent.json<{ personId: string }>().personId;
+    const otherEnrolment = await ctx.app.inject({
+      method: 'POST', url: '/api/v1/enrolments', headers: { authorization: `Bearer ${otherAdminJwt}` },
+      payload: { personId: otherPersonId, modeOfStudyCode: 'full-time', academicYearOfEntry: '2026-27', startDate: '2026-09-21' },
+    });
+    const otherEnrolmentId = otherEnrolment.json<{ enrolmentId: string }>().enrolmentId;
+
+    // Same tenant, same requester personId in the route (passes
+    // requireSelfOrPermission), but the enrolmentId belongs to someone else.
+    const res = await ctx.app.inject({
+      method: 'GET', url: `/api/v1/students/${personId}/enrolments/${otherEnrolmentId}`,
+      headers: { authorization: `Bearer ${studentJwt}` },
+    });
+    expect(res.statusCode).toBe(404);
   });
 });

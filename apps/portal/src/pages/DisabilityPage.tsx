@@ -3,7 +3,15 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../auth/AuthContext.js';
 import { useApiData } from '../hooks/useApiData.js';
 import { useFormSubmit } from '../hooks/useFormSubmit.js';
-import { getDisabilityDeclarations, postDisabilityDeclaration, getFieldValueSet } from '../api/me.js';
+import { ApiError } from '../api/client.js';
+import {
+  getDisabilityDeclarations,
+  postDisabilityDeclaration,
+  patchDisabilityDeclaration,
+  withdrawDisabilityDeclaration,
+  getFieldValueSet,
+  type DisabilityDeclaration,
+} from '../api/me.js';
 import { Spinner, Problem, EmptyState, formatDate, PageHeader, Button, Badge, Card, CardBody, LabelledField, Textarea } from '@revelation-srs/ui';
 
 export function DisabilityPage() {
@@ -198,28 +206,122 @@ export function DisabilityPage() {
         <div className="space-y-3">
           {declarations.map(d => (
             <Card key={d.declarationId}>
-              <CardBody className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-neutral-900">
-                  {labelFor(d.disabilityCategoryCode)}
-                </p>
-                {hintFor(d.disabilityCategoryCode) && (
-                  <p className="mt-0.5 text-xs text-neutral-500">{hintFor(d.disabilityCategoryCode)}</p>
-                )}
-                <p className="mt-0.5 text-xs text-neutral-400">
-                  {t('portal.disability.declaredOn')} {formatDate(d.declaredAt)}
-                  <span className="ml-2 font-mono">({d.disabilityCategoryCode})</span>
-                </p>
-                {d.notes && (
-                  <p className="mt-1 text-xs text-neutral-600 italic">{d.notes}</p>
-                )}
+              <CardBody>
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-sm font-medium text-neutral-900">
+                    {labelFor(d.disabilityCategoryCode)}
+                  </p>
+                  {hintFor(d.disabilityCategoryCode) && (
+                    <p className="mt-0.5 text-xs text-neutral-500">{hintFor(d.disabilityCategoryCode)}</p>
+                  )}
+                  <p className="mt-0.5 text-xs text-neutral-400">
+                    {t('portal.disability.declaredOn')} {formatDate(d.declaredAt)}
+                    <span className="ml-2 font-mono">({d.disabilityCategoryCode})</span>
+                  </p>
+                  {d.notes && (
+                    <p className="mt-1 text-xs text-neutral-600 italic">{d.notes}</p>
+                  )}
+                </div>
+                <Badge value={d.declarationStatusCode} />
               </div>
-              <Badge value={d.declarationStatusCode} />
+              {personId && d.declarationStatusCode !== 'withdrawn' && (
+                <DeclarationActions
+                  personId={personId}
+                  declaration={d}
+                  onChanged={() => setRefreshKey(k => k + 1)}
+                />
+              )}
               </CardBody>
             </Card>
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function DeclarationActions({
+  personId,
+  declaration,
+  onChanged,
+}: {
+  personId:    string;
+  declaration: DisabilityDeclaration;
+  onChanged:   () => void;
+}) {
+  const { t } = useTranslation();
+  const [mode, setMode]           = useState<'idle' | 'editing' | 'confirm-withdraw'>('idle');
+  const [notes, setNotes]         = useState(declaration.notes ?? '');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError]         = useState('');
+
+  async function handleSaveNotes(e: React.FormEvent) {
+    e.preventDefault();
+    setSubmitting(true); setError('');
+    try {
+      await patchDisabilityDeclaration(personId, declaration.declarationId, notes.trim() || null);
+      setMode('idle');
+      onChanged();
+    } catch (err) {
+      setError(err instanceof ApiError ? (err.detail ?? err.message) : 'Failed to update notes');
+    } finally { setSubmitting(false); }
+  }
+
+  async function handleWithdraw() {
+    setSubmitting(true); setError('');
+    try {
+      await withdrawDisabilityDeclaration(personId, declaration.declarationId);
+      onChanged();
+    } catch (err) {
+      setError(err instanceof ApiError ? (err.detail ?? err.message) : 'Failed to withdraw declaration');
+      setSubmitting(false);
+    }
+  }
+
+  if (mode === 'editing') {
+    return (
+      <form onSubmit={(e) => void handleSaveNotes(e)} className="mt-3 border-t border-neutral-100 pt-3 space-y-2">
+        <LabelledField label="Supporting notes" htmlFor={`notes-${declaration.declarationId}`}>
+          <Textarea
+            id={`notes-${declaration.declarationId}`}
+            rows={3}
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+          />
+        </LabelledField>
+        {error && <p className="text-xs text-danger-600">{error}</p>}
+        <div className="flex gap-2 justify-end">
+          <Button type="button" variant="ghost" size="sm" onClick={() => setMode('idle')}>{t('actions.cancel')}</Button>
+          <Button type="submit" size="sm" disabled={submitting}>{submitting ? t('status.saving') : 'Save notes'}</Button>
+        </div>
+      </form>
+    );
+  }
+
+  if (mode === 'confirm-withdraw') {
+    return (
+      <div className="mt-3 border-t border-neutral-100 pt-3">
+        {error && <p className="mb-2 text-xs text-danger-600">{error}</p>}
+        <p className="mb-2 text-xs text-neutral-600">Withdraw this declaration? This can be seen in your record history.</p>
+        <div className="flex gap-2 justify-end">
+          <Button type="button" variant="ghost" size="sm" onClick={() => setMode('idle')}>{t('actions.cancel')}</Button>
+          <Button type="button" size="sm" disabled={submitting} onClick={() => void handleWithdraw()}>
+            {submitting ? 'Withdrawing…' : 'Confirm withdraw'}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-3 border-t border-neutral-100 pt-3 flex items-center gap-4">
+      <button onClick={() => setMode('editing')} className="text-xs text-primary-600 hover:underline">
+        Edit notes
+      </button>
+      <button onClick={() => setMode('confirm-withdraw')} className="text-xs text-danger-500 hover:text-danger-700">
+        Withdraw
+      </button>
     </div>
   );
 }

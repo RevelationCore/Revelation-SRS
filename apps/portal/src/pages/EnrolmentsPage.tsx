@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../auth/AuthContext.js';
 import { useApiData } from '../hooks/useApiData.js';
@@ -50,7 +51,9 @@ export function EnrolmentsPage() {
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <h2 id={`enrolment-${e.enrolmentId}`} className="text-base font-semibold text-neutral-900">
-                    {e.programmeName ?? e.programmeCode ?? 'Unknown programme'}
+                    <Link to={`/enrolments/${e.enrolmentId}`} className="hover:underline hover:text-primary-700">
+                      {e.programmeName ?? e.programmeCode ?? 'Unknown programme'}
+                    </Link>
                   </h2>
                   <p className="mt-0.5 text-sm text-neutral-500">Academic year {e.academicYearOfEntry}</p>
                 </div>

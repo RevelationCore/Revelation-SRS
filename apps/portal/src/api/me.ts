@@ -138,6 +138,50 @@ export function getEnrolments(personId: string): Promise<Enrolment[]> {
   return api.get(`/api/v1/students/${personId}/enrolments`);
 }
 
+export function getEnrolment(personId: string, enrolmentId: string): Promise<Enrolment> {
+  return api.get(`/api/v1/students/${personId}/enrolments/${enrolmentId}`);
+}
+
+export interface EnrolmentHistoryEntry extends Enrolment {
+  validTo:       string | null;
+  recordedUntil: string | null;
+}
+
+export function getEnrolmentHistory(personId: string, enrolmentId: string): Promise<EnrolmentHistoryEntry[]> {
+  return api.get(`/api/v1/students/${personId}/enrolments/${enrolmentId}/history`);
+}
+
+export interface EnrolmentTransition {
+  transitionId:   string;
+  enrolmentId:    string;
+  fromStatusCode: string;
+  toStatusCode:   string;
+  reasonCode:     string | null;
+  reasonText:     string | null;
+  effectiveAt:    string;
+  actorId:        string;
+  createdAt:      string;
+}
+
+export function getEnrolmentTransitions(personId: string, enrolmentId: string): Promise<EnrolmentTransition[]> {
+  return api.get(`/api/v1/students/${personId}/enrolments/${enrolmentId}/transitions`);
+}
+
+export interface FeeLiability {
+  feeLiabilityId:    string;
+  enrolmentId:       string;
+  personId:          string;
+  academicYear:      string;
+  feeBandCode:       string | null;
+  fundingSourceCode: string | null;
+  statusCode:        string;
+  generatedAt:       string;
+}
+
+export function getEnrolmentFeeLiabilities(personId: string, enrolmentId: string): Promise<FeeLiability[]> {
+  return api.get(`/api/v1/students/${personId}/enrolments/${enrolmentId}/fee-liabilities`);
+}
+
 export function getModuleRegistrations(enrolmentId: string): Promise<ModuleRegistration[]> {
   return api.get(`/api/v1/module-registrations?enrolmentId=${enrolmentId}`);
 }
@@ -189,6 +233,14 @@ export function postAddress(personId: string, body: PostAddressBody): Promise<{ 
   return api.post(`/api/v1/students/${personId}/addresses`, body);
 }
 
+export function getAddress(personId: string, addressId: string): Promise<StudentAddress> {
+  return api.get(`/api/v1/students/${personId}/addresses/${addressId}`);
+}
+
+export function deleteAddress(personId: string, addressId: string): Promise<void> {
+  return api.delete(`/api/v1/students/${personId}/addresses/${addressId}`);
+}
+
 export interface DisabilityDeclaration {
   declarationId:         string;
   disabilityCategoryCode: string;
@@ -207,6 +259,18 @@ export function postDisabilityDeclaration(
   body: { disabilityCategoryCode: string; declarationStatusCode?: string; notes?: string | null },
 ): Promise<{ declarationId: string }> {
   return api.post(`/api/v1/students/${personId}/disability-declarations`, body);
+}
+
+export function patchDisabilityDeclaration(
+  personId: string,
+  declarationId: string,
+  notes: string | null,
+): Promise<void> {
+  return api.patch(`/api/v1/students/${personId}/disability-declarations/${declarationId}`, { notes });
+}
+
+export function withdrawDisabilityDeclaration(personId: string, declarationId: string): Promise<void> {
+  return api.post(`/api/v1/students/${personId}/disability-declarations/${declarationId}/withdrawal`, {});
 }
 
 export interface ModuleOffering {
@@ -235,6 +299,32 @@ export function postModuleRegistration(body: {
 
 export function postWithdrawal(moduleRegistrationId: string): Promise<void> {
   return api.post(`/api/v1/module-registrations/${moduleRegistrationId}/withdrawal`, {});
+}
+
+export interface ChangeRequest {
+  workflowInstanceId: string;
+  workflowTaskId:      string;
+  statusCode:          string;
+  context:             Record<string, unknown>;
+  startedAt:           string;
+}
+
+/** Requests module registration — requires personal-tutor/registry approval before it takes effect. */
+export function requestModuleRegistration(body: {
+  enrolmentId:      string;
+  moduleOfferingId: string;
+  reason?:          string;
+}): Promise<ChangeRequest> {
+  return api.post('/api/v1/module-registrations/requests', body);
+}
+
+/** Requests withdrawal from a module — requires personal-tutor/registry approval before it takes effect. */
+export function requestWithdrawal(moduleRegistrationId: string, reason?: string): Promise<ChangeRequest> {
+  return api.post(`/api/v1/module-registrations/${moduleRegistrationId}/withdrawal-requests`, { reason });
+}
+
+export function getMyModuleRegistrationRequests(personId: string): Promise<ChangeRequest[]> {
+  return api.get(`/api/v1/students/${personId}/module-registration-requests`);
 }
 
 export interface ModuleResult {

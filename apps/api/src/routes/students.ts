@@ -12,6 +12,13 @@ import type {
   IdentityVerificationRequestInput,
   PersonIdentityPatch,
 } from '../platform/students/service.js';
+import type {
+  EnrolmentDto,
+  EnrolmentHistoryDto,
+  EnrolmentTransitionDto,
+  FeeLiabilityDto,
+} from '../platform/enrolment/service.js';
+import type { ChangeRequestDto } from '../platform/registration/service.js';
 
 const PersonIdentitySchema = Type.Object({
   versionId:          Type.String(),
@@ -645,6 +652,77 @@ export function studentRoutes(fastify: FastifyInstance): void {
     },
   );
 
+  const AddressSchema = Type.Object({
+    id:              Type.String(),
+    addressTypeCode: Type.String(),
+    line1:           Type.String(),
+    line2:           Type.Union([Type.String(), Type.Null()]),
+    city:            Type.Union([Type.String(), Type.Null()]),
+    postcode:        Type.Union([Type.String(), Type.Null()]),
+    countryCode:     Type.Union([Type.String(), Type.Null()]),
+    validFrom:       Type.String(),
+  });
+
+  fastify.get(
+    '/students/:personId/addresses/:addressId',
+    {
+      schema: {
+        params:   Type.Object({ personId: Type.String(), addressId: Type.String() }),
+        response: { 200: AddressSchema, 404: ErrorSchema },
+      },
+      preHandler: [requireSelfOrPermission('student:read:own', 'student:read:all')],
+    },
+    async (request, reply) => {
+      const { personId, addressId } = request.params as { personId: string; addressId: string };
+      const address = await fastify.studentService.getAddress(personId, addressId, request.tenantId);
+
+      if (!address) {
+        return reply.code(404).send({
+          type: 'https://srs.example.com/errors/not-found', title: 'Not Found', status: 404,
+          detail: `Address '${addressId}' not found`,
+        });
+      }
+
+      await reply.send({
+        id:              address.id,
+        addressTypeCode: address.addressTypeCode,
+        line1:           address.line1,
+        line2:           address.line2,
+        city:            address.city,
+        postcode:        address.postcode,
+        countryCode:     address.countryCode,
+        validFrom:       address.validFrom.toISOString(),
+      });
+    },
+  );
+
+  fastify.delete(
+    '/students/:personId/addresses/:addressId',
+    {
+      schema: {
+        params:   Type.Object({ personId: Type.String(), addressId: Type.String() }),
+        response: { 204: Type.Null(), 404: ErrorSchema },
+      },
+      preHandler: [requireSelfOrPermission('student:read:own', 'student:write')],
+    },
+    async (request, reply) => {
+      const { personId, addressId } = request.params as { personId: string; addressId: string };
+      await fastify.studentService.deleteAddress(personId, addressId, request.tenantId);
+
+      await fastify.audit.record({
+        tenantId:      request.tenantId,
+        entityType:    'student_address',
+        entityId:      addressId,
+        actionType:    'delete',
+        actorType:     'user',
+        actorId:       request.user.sub,
+        correlationId: request.id,
+      });
+
+      await reply.code(204).send();
+    },
+  );
+
   // ── Disability declarations ─────────────────────────────────────────────────
   fastify.post(
     '/students/:personId/disability-declarations',
@@ -748,34 +826,123 @@ export function studentRoutes(fastify: FastifyInstance): void {
     },
   );
 
+  fastify.patch(
+    '/students/:personId/disability-declarations/:declarationId',
+    {
+      schema: {
+        params:   Type.Object({ personId: Type.String(), declarationId: Type.String() }),
+        body:     Type.Object({ notes: Type.Union([Type.String(), Type.Null()]) }),
+        response: { 204: Type.Null(), 404: ErrorSchema, 422: ErrorSchema },
+      },
+      preHandler: [requireSelfOrPermission('disability:read:own', 'disability:write')],
+    },
+    async (request, reply) => {
+      const { personId, declarationId } = request.params as { personId: string; declarationId: string };
+      const { notes } = request.body as { notes: string | null };
+      await fastify.studentService.updateDisabilityDeclaration(personId, declarationId, request.tenantId, notes);
+
+      await fastify.audit.record({
+        tenantId:      request.tenantId,
+        entityType:    'disability_declaration',
+        entityId:      declarationId,
+        actionType:    'update',
+        actorType:     'user',
+        actorId:       request.user.sub,
+        correlationId: request.id,
+      });
+
+      await reply.code(204).send();
+    },
+  );
+
+  fastify.post(
+    '/students/:personId/disability-declarations/:declarationId/withdrawal',
+    {
+      schema: {
+        params:   Type.Object({ personId: Type.String(), declarationId: Type.String() }),
+        response: { 204: Type.Null(), 404: ErrorSchema, 422: ErrorSchema },
+      },
+      preHandler: [requireSelfOrPermission('disability:read:own', 'disability:write')],
+    },
+    async (request, reply) => {
+      const { personId, declarationId } = request.params as { personId: string; declarationId: string };
+      await fastify.studentService.withdrawDisabilityDeclaration(personId, declarationId, request.tenantId);
+
+      await fastify.audit.record({
+        tenantId:      request.tenantId,
+        entityType:    'disability_declaration',
+        entityId:      declarationId,
+        actionType:    'update',
+        fieldName:     'declaration_status_code',
+        afterValue:    { declarationStatusCode: 'withdrawn' },
+        actorType:     'user',
+        actorId:       request.user.sub,
+        correlationId: request.id,
+      });
+
+      await reply.code(204).send();
+    },
+  );
+
   // ── Student's enrolments ────────────────────────────────────────────────────
+  const StudentEnrolmentSchema = Type.Object({
+    enrolmentId:         Type.String(),
+    personId:            Type.String(),
+    programmeId:         Type.Union([Type.String(), Type.Null()]),
+    programmeCode:       Type.Union([Type.String(), Type.Null()]),
+    programmeName:       Type.Union([Type.String(), Type.Null()]),
+    statusCode:          Type.String(),
+    modeOfStudyCode:     Type.String(),
+    attendanceTypeCode:  Type.Union([Type.String(), Type.Null()]),
+    academicYearOfEntry: Type.String(),
+    startDate:           Type.Union([Type.String(), Type.Null()]),
+    expectedEndDate:     Type.Union([Type.String(), Type.Null()]),
+    actualEndDate:       Type.Union([Type.String(), Type.Null()]),
+    feeBandCode:         Type.Union([Type.String(), Type.Null()]),
+    fundingSourceCode:   Type.Union([Type.String(), Type.Null()]),
+    slcReference:        Type.Union([Type.String(), Type.Null()]),
+    ucasPersonalId:      Type.Union([Type.String(), Type.Null()]),
+    validFrom:           Type.String(),
+    recordedAt:          Type.String(),
+  });
+
+  const StudentEnrolmentHistorySchema = Type.Intersect([
+    StudentEnrolmentSchema,
+    Type.Object({
+      validTo:       Type.Union([Type.String(), Type.Null()]),
+      recordedUntil: Type.Union([Type.String(), Type.Null()]),
+    }),
+  ]);
+
+  const StudentEnrolmentTransitionSchema = Type.Object({
+    transitionId:   Type.String(),
+    enrolmentId:    Type.String(),
+    fromStatusCode: Type.String(),
+    toStatusCode:   Type.String(),
+    reasonCode:     Type.Union([Type.String(), Type.Null()]),
+    reasonText:     Type.Union([Type.String(), Type.Null()]),
+    effectiveAt:    Type.String(),
+    actorId:        Type.String(),
+    createdAt:      Type.String(),
+  });
+
+  const StudentFeeLiabilitySchema = Type.Object({
+    feeLiabilityId:    Type.String(),
+    enrolmentId:       Type.String(),
+    personId:          Type.String(),
+    academicYear:      Type.String(),
+    feeBandCode:       Type.Union([Type.String(), Type.Null()]),
+    fundingSourceCode: Type.Union([Type.String(), Type.Null()]),
+    statusCode:        Type.String(),
+    generatedAt:       Type.String(),
+  });
+
   fastify.get(
     '/students/:personId/enrolments',
     {
       schema: {
         params: Type.Object({ personId: Type.String() }),
-        response: {
-          200: Type.Array(Type.Object({
-            enrolmentId:         Type.String(),
-            personId:            Type.String(),
-            programmeId:         Type.Union([Type.String(), Type.Null()]),
-            programmeCode:       Type.Union([Type.String(), Type.Null()]),
-            programmeName:       Type.Union([Type.String(), Type.Null()]),
-            statusCode:          Type.String(),
-            modeOfStudyCode:     Type.String(),
-            attendanceTypeCode:  Type.Union([Type.String(), Type.Null()]),
-            academicYearOfEntry: Type.String(),
-            startDate:           Type.Union([Type.String(), Type.Null()]),
-            expectedEndDate:     Type.Union([Type.String(), Type.Null()]),
-            actualEndDate:       Type.Union([Type.String(), Type.Null()]),
-            feeBandCode:         Type.Union([Type.String(), Type.Null()]),
-            fundingSourceCode:   Type.Union([Type.String(), Type.Null()]),
-            slcReference:        Type.Union([Type.String(), Type.Null()]),
-            ucasPersonalId:      Type.Union([Type.String(), Type.Null()]),
-            validFrom:           Type.String(),
-            recordedAt:          Type.String(),
-          })),
-        },
+        response: { 200: Type.Array(StudentEnrolmentSchema) },
       },
       preHandler: [requireSelfOrPermission('enrolment:read:own', 'enrolment:read:all')],
     },
@@ -792,6 +959,157 @@ export function studentRoutes(fastify: FastifyInstance): void {
           recordedAt: e.recordedAt.toISOString(),
         })),
       );
+    },
+  );
+
+  /**
+   * Verifies the enrolment both exists and belongs to :personId — the route
+   * param is authorised by requireSelfOrPermission, but without this check a
+   * self-scoped student could pass any enrolmentId belonging to a different
+   * student in the same tenant.
+   */
+  async function getOwnedEnrolment(
+    personId: string,
+    enrolmentId: string,
+    tenantId: string,
+  ): Promise<EnrolmentDto | null> {
+    const enrolment = await fastify.enrolmentService.getEnrolment(enrolmentId, tenantId);
+    return (enrolment && enrolment.personId === personId) ? enrolment : null;
+  }
+
+  fastify.get(
+    '/students/:personId/enrolments/:enrolmentId',
+    {
+      schema: {
+        params:   Type.Object({ personId: Type.String(), enrolmentId: Type.String() }),
+        response: { 200: StudentEnrolmentSchema, 404: ErrorSchema },
+      },
+      preHandler: [requireSelfOrPermission('enrolment:read:own', 'enrolment:read:all')],
+    },
+    async (request, reply) => {
+      const { personId, enrolmentId } = request.params as { personId: string; enrolmentId: string };
+      const enrolment = await getOwnedEnrolment(personId, enrolmentId, request.tenantId);
+      if (!enrolment) {
+        return reply.code(404).send({
+          type: 'https://srs.example.com/errors/not-found', title: 'Not Found', status: 404,
+          detail: `Enrolment '${enrolmentId}' not found`,
+        });
+      }
+      await reply.send({
+        ...enrolment,
+        validFrom:  enrolment.validFrom.toISOString(),
+        recordedAt: enrolment.recordedAt.toISOString(),
+      });
+    },
+  );
+
+  fastify.get(
+    '/students/:personId/enrolments/:enrolmentId/history',
+    {
+      schema: {
+        params:   Type.Object({ personId: Type.String(), enrolmentId: Type.String() }),
+        response: { 200: Type.Array(StudentEnrolmentHistorySchema), 404: ErrorSchema },
+      },
+      preHandler: [requireSelfOrPermission('enrolment:read:own', 'enrolment:read:all')],
+    },
+    async (request, reply) => {
+      const { personId, enrolmentId } = request.params as { personId: string; enrolmentId: string };
+      if (!await getOwnedEnrolment(personId, enrolmentId, request.tenantId)) {
+        return reply.code(404).send({
+          type: 'https://srs.example.com/errors/not-found', title: 'Not Found', status: 404,
+          detail: `Enrolment '${enrolmentId}' not found`,
+        });
+      }
+      const history = await fastify.enrolmentService.getEnrolmentHistory(enrolmentId, request.tenantId);
+      await reply.send(history.map((h: EnrolmentHistoryDto) => ({
+        ...h,
+        validFrom:     h.validFrom.toISOString(),
+        validTo:       h.validTo?.toISOString() ?? null,
+        recordedAt:    h.recordedAt.toISOString(),
+        recordedUntil: h.recordedUntil?.toISOString() ?? null,
+      })));
+    },
+  );
+
+  fastify.get(
+    '/students/:personId/enrolments/:enrolmentId/transitions',
+    {
+      schema: {
+        params:   Type.Object({ personId: Type.String(), enrolmentId: Type.String() }),
+        response: { 200: Type.Array(StudentEnrolmentTransitionSchema), 404: ErrorSchema },
+      },
+      preHandler: [requireSelfOrPermission('enrolment:read:own', 'enrolment:read:all')],
+    },
+    async (request, reply) => {
+      const { personId, enrolmentId } = request.params as { personId: string; enrolmentId: string };
+      if (!await getOwnedEnrolment(personId, enrolmentId, request.tenantId)) {
+        return reply.code(404).send({
+          type: 'https://srs.example.com/errors/not-found', title: 'Not Found', status: 404,
+          detail: `Enrolment '${enrolmentId}' not found`,
+        });
+      }
+      const transitions = await fastify.enrolmentService.listStatusTransitions(enrolmentId, request.tenantId);
+      await reply.send(transitions.map((t: EnrolmentTransitionDto) => ({
+        ...t,
+        effectiveAt: t.effectiveAt.toISOString(),
+        createdAt:   t.createdAt.toISOString(),
+      })));
+    },
+  );
+
+  fastify.get(
+    '/students/:personId/enrolments/:enrolmentId/fee-liabilities',
+    {
+      schema: {
+        params:   Type.Object({ personId: Type.String(), enrolmentId: Type.String() }),
+        response: { 200: Type.Array(StudentFeeLiabilitySchema), 404: ErrorSchema },
+      },
+      preHandler: [requireSelfOrPermission('enrolment:read:own', 'enrolment:read:all')],
+    },
+    async (request, reply) => {
+      const { personId, enrolmentId } = request.params as { personId: string; enrolmentId: string };
+      if (!await getOwnedEnrolment(personId, enrolmentId, request.tenantId)) {
+        return reply.code(404).send({
+          type: 'https://srs.example.com/errors/not-found', title: 'Not Found', status: 404,
+          detail: `Enrolment '${enrolmentId}' not found`,
+        });
+      }
+      const fees = await fastify.enrolmentService.listFeeLiabilities(enrolmentId, request.tenantId);
+      await reply.send(fees.map((f: FeeLiabilityDto) => ({
+        ...f,
+        generatedAt: f.generatedAt.toISOString(),
+      })));
+    },
+  );
+
+  fastify.get(
+    '/students/:personId/module-registration-requests',
+    {
+      schema: {
+        params: Type.Object({ personId: Type.String() }),
+        response: {
+          200: Type.Array(Type.Object({
+            workflowInstanceId: Type.String(),
+            workflowTaskId:      Type.String(),
+            statusCode:          Type.String(),
+            context:             Type.Record(Type.String(), Type.Unknown()),
+            startedAt:           Type.String(),
+          })),
+        },
+      },
+      preHandler: [requireSelfOrPermission('enrolment:read:own', 'enrolment:read:all')],
+    },
+    async (request, reply) => {
+      const { personId } = request.params as { personId: string };
+      const enrolments = await fastify.enrolmentService.listPersonEnrolments(personId, request.tenantId);
+      const requests = await fastify.moduleRegistrationService.listChangeRequestsForEnrolments(
+        request.tenantId,
+        enrolments.map((e) => e.enrolmentId),
+      );
+      await reply.send(requests.map((r: ChangeRequestDto) => ({
+        ...r,
+        startedAt: r.startedAt.toISOString(),
+      })));
     },
   );
 }

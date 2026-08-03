@@ -19,7 +19,7 @@ export interface TestApp {
   tenantId:    string;
   secondTenantId: string;
   teardown:    () => Promise<void>;
-  makeJwt:     (opts?: { sub?: string; roles?: string[]; tenantId?: string }) => Promise<string>;
+  makeJwt:     (opts?: { sub?: string; roles?: string[]; tenantId?: string; srsPersonId?: string }) => Promise<string>;
 }
 
 async function applyMigration(db: Db, fileName: string): Promise<void> {
@@ -48,6 +48,9 @@ export async function startTestApp(opts: StartTestAppOptions = {}): Promise<Test
   await applyMigration(db, '0003_engagement_and_attendance.sql');
   await applyMigration(db, '0004_business_process_foundations.sql');
   await applyMigration(db, '0005_module_selection_rules.sql');
+  await applyMigration(db, '0006_registration_window.sql');
+  await applyMigration(db, '0007_module_registration_change_workflow.sql');
+  await applyMigration(db, '0008_slc_submission_approval_workflow.sql');
 
   // Seed a tenant for tests
   const tenantId = '00000000-0000-0000-0000-000000000001';
@@ -84,7 +87,7 @@ export async function startTestApp(opts: StartTestAppOptions = {}): Promise<Test
 
   // Build HS256 JWTs using Node.js built-in crypto — matches the jwtPlugin's
   // HS256 development path (no external jose / jsonwebtoken dependency needed).
-  const makeJwt = (opts: { sub?: string; roles?: string[]; tenantId?: string } = {}): Promise<string> => {
+  const makeJwt = (opts: { sub?: string; roles?: string[]; tenantId?: string; srsPersonId?: string } = {}): Promise<string> => {
     const header  = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
     const payload = Buffer.from(JSON.stringify({
       sub:                opts.sub ?? 'test-user-001',
@@ -93,6 +96,7 @@ export async function startTestApp(opts: StartTestAppOptions = {}): Promise<Test
       name:               'Test User',
       email:              'test@test.university.ac.uk',
       preferred_username: 'test.user',
+      ...(opts.srsPersonId ? { srs_person_id: opts.srsPersonId } : {}),
       iat: Math.floor(Date.now() / 1000),
       exp: Math.floor(Date.now() / 1000) + 3600,
     })).toString('base64url');

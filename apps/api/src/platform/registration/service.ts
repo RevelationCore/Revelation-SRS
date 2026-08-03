@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import { and, eq, inArray, isNull } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull } from 'drizzle-orm';
 import {
   academicPeriods,
   enrolments,
@@ -8,6 +8,10 @@ import {
   moduleRegistrations,
   moduleRelationships,
   modules,
+  workflowDefinitions,
+  workflowDefinitionVersions,
+  workflowInstances,
+  workflowTasks,
   type Db,
   withTenantContext,
 } from '@revelation-srs/db';
@@ -24,8 +28,16 @@ import type {
 } from '@revelation-srs/domain';
 
 import type { IntegrationBusPublisher } from '../integration-bus/publisher.js';
+import type { WorkflowBridgeService } from '../platform-controls/workflow-bridge-service.js';
 import type { RulesEngine } from '../rules-engine/engine.js';
 import { clockNow } from '../clock.js';
+import type { RegistrationWindowService } from './window-service.js';
+
+type Uuid = `${string}-${string}-${string}-${string}-${string}`;
+
+const CHANGE_WORKFLOW_CODE = 'module-registration-change-approval';
+const CHANGE_DECISION_STEP_KEY = 'approve-or-reject-registration-change';
+const CHANGE_GATEWAY_KEY = 'G01';
 
 export interface CreateModuleRegistrationInput {
   enrolmentId: string;
@@ -76,6 +88,14 @@ export interface TimetableRegistrationDto {
   deliveryModeCode: string | null;
 }
 
+export interface ChangeRequestDto {
+  workflowInstanceId: string;
+  workflowTaskId:      string;
+  statusCode:          string;
+  context:             Record<string, unknown>;
+  startedAt:           Date;
+}
+
 type RegistrationStatusCode = 'registered' | 'withdrawn' | 'completed';
 
 interface CurrentEnrolment {
@@ -97,6 +117,8 @@ export class ModuleRegistrationService {
     private readonly db: Db,
     private readonly eventBus: IntegrationBusPublisher,
     private readonly rules: RulesEngine,
+    private readonly registrationWindows: RegistrationWindowService,
+    private readonly workflowBridge: WorkflowBridgeService,
   ) {}
 
   async createRegistration(
@@ -115,6 +137,7 @@ export class ModuleRegistrationService {
       );
     }
 
+    await this.#validateRegistrationWindow(tenantId, offering.academicPeriodId);
     await this.#ensureNoDuplicateCurrentRegistration(input.enrolmentId, input.moduleOfferingId, tenantId);
     if (!input.skipCapacityCheck) {
       await this.#ensureCapacityAvailable(input.moduleOfferingId, offering.capacity, tenantId);
@@ -206,6 +229,249 @@ export class ModuleRegistrationService {
   async getRegistrationHistory(moduleRegistrationId: string, tenantId: string): Promise<ModuleRegistrationDto[]> {
     const rows = await this.#selectRegistration(moduleRegistrationId, tenantId, false);
     return rows.map((row) => registrationToDto(row.registration, row.moduleId, row.moduleCode, row.moduleTitle, row.academicPeriodId, row.periodCode, row.creditValue ?? null));
+  }
+
+  // ── Registration/withdrawal change requests (workflow-gated) ────────────────
+  // Portal-initiated registration and withdrawal go through a personal-tutor
+  // approval step rather than applying immediately. Staff-initiated direct
+  // registration via createRegistration/withdrawRegistration above (e.g. the
+  // admin console, or ModuleSelectionService confirming an approved
+  // proposal) is unaffected.
+
+  /**
+   * Starts an approval workflow for a registration request. Runs no
+   * business-rule validation itself — createRegistration re-validates
+   * everything (window, capacity, prerequisites, credit limit) at decision
+   * time, since state may have changed while the request was pending.
+   */
+  async requestRegistration(
+    tenantId: string,
+    input: CreateModuleRegistrationInput,
+    requesterId: string,
+    reason?: string,
+  ): Promise<ChangeRequestDto> {
+    const enrolment = await this.#getCurrentEnrolment(input.enrolmentId, tenantId);
+    // Existence check only — confirms the offering is real before creating a
+    // request an approver could never actually apply.
+    await this.#getOfferingContext(input.moduleOfferingId, tenantId);
+
+    return this.#startChangeRequest(tenantId, requesterId, {
+      actionType: 'register',
+      enrolmentId: input.enrolmentId,
+      moduleOfferingId: input.moduleOfferingId,
+      ...(input.registrationDate ? { registrationDate: input.registrationDate } : {}),
+      ...(reason ? { reason } : {}),
+    }, enrolment.enrolmentId);
+  }
+
+  /** Starts an approval workflow for a withdrawal request. */
+  async requestWithdrawal(
+    tenantId: string,
+    moduleRegistrationId: string,
+    requesterId: string,
+    reason?: string,
+  ): Promise<ChangeRequestDto> {
+    const registration = await this.getRegistration(moduleRegistrationId, tenantId);
+    if (!registration) throw new NotFoundError('ModuleRegistration', moduleRegistrationId);
+    if (registration.statusCode !== 'registered') {
+      throw new ValidationError(`Cannot request withdrawal for a registration in status '${registration.statusCode}'`);
+    }
+
+    return this.#startChangeRequest(tenantId, requesterId, {
+      actionType: 'withdraw',
+      moduleRegistrationId,
+      ...(reason ? { reason } : {}),
+    }, registration.enrolmentId);
+  }
+
+  /**
+   * Lists pending (running) registration/withdrawal change requests, joined
+   * with their approval task, for the staff approval queue.
+   */
+  async listPendingChangeRequests(tenantId: string): Promise<ChangeRequestDto[]> {
+    const rows = await withTenantContext(this.db, tenantId, async (tx) =>
+      tx.select({ instance: workflowInstances, task: workflowTasks })
+        .from(workflowInstances)
+        .innerJoin(workflowTasks, and(
+          eq(workflowTasks.workflowInstanceId, workflowInstances.id),
+          eq(workflowTasks.stepKey, CHANGE_DECISION_STEP_KEY),
+        ))
+        .where(and(
+          eq(workflowInstances.tenantId, tenantId as Uuid),
+          eq(workflowInstances.workflowCode, CHANGE_WORKFLOW_CODE),
+          eq(workflowInstances.statusCode, 'running'),
+        ))
+        .orderBy(desc(workflowInstances.startedAt)),
+    );
+    return rows.map((r) => changeRequestToDto(r.instance, r.task));
+  }
+
+  /**
+   * Lists change requests (any status) whose subject is one of the given
+   * enrolments — the student-facing "my requests" view, scoped to the
+   * caller's own enrolments by the route.
+   */
+  async listChangeRequestsForEnrolments(tenantId: string, enrolmentIds: string[]): Promise<ChangeRequestDto[]> {
+    if (enrolmentIds.length === 0) return [];
+    const rows = await withTenantContext(this.db, tenantId, async (tx) =>
+      tx.select({ instance: workflowInstances, task: workflowTasks })
+        .from(workflowInstances)
+        .innerJoin(workflowTasks, and(
+          eq(workflowTasks.workflowInstanceId, workflowInstances.id),
+          eq(workflowTasks.stepKey, CHANGE_DECISION_STEP_KEY),
+        ))
+        .where(and(
+          eq(workflowInstances.tenantId, tenantId as Uuid),
+          eq(workflowInstances.workflowCode, CHANGE_WORKFLOW_CODE),
+          inArray(workflowInstances.subjectEntityId, enrolmentIds as Uuid[]),
+        ))
+        .orderBy(desc(workflowInstances.startedAt)),
+    );
+    return rows.map((r) => changeRequestToDto(r.instance, r.task));
+  }
+
+  /**
+   * Records the approval/rejection decision. On approval, applies the
+   * change by calling createRegistration/withdrawRegistration — the same
+   * validated path staff use directly — so a request that has become
+   * invalid since submission (window closed, capacity gone) still fails
+   * loudly rather than silently succeeding.
+   */
+  async decideChangeRequest(
+    tenantId: string,
+    workflowInstanceId: string,
+    decisionCode: 'approved' | 'rejected',
+    actorId: string,
+    reason?: string,
+  ): Promise<{ moduleRegistrationId: string | null }> {
+    const instance = await this.#getChangeRequestInstance(tenantId, workflowInstanceId);
+    if (instance.statusCode !== 'running') {
+      throw new ValidationError(`Cannot decide a change request in status '${instance.statusCode}'`);
+    }
+
+    const task = await this.#findChangeDecisionTask(tenantId, workflowInstanceId);
+
+    await this.workflowBridge.recordWorkflowDecision({
+      tenantId,
+      workflowInstanceId,
+      gatewayKey: CHANGE_GATEWAY_KEY,
+      decisionCode,
+      ...(reason ? { conditionSummary: reason } : {}),
+      outcomeStepKey: 'request-closed',
+      actorId,
+      metadata: { context: instance.context },
+    });
+    if (task) {
+      await this.workflowBridge.completeWorkflowTask({
+        tenantId, workflowTaskId: task.id, completedBy: actorId,
+        payload: { decisionCode, ...(reason ? { reason } : {}) },
+      });
+    }
+    await this.workflowBridge.completeWorkflowInstance({
+      tenantId, workflowInstanceId, actorId,
+      statusCode: 'completed', metadata: { decisionCode },
+    });
+
+    if (decisionCode !== 'approved') return { moduleRegistrationId: null };
+
+    const context = instance.context as {
+      actionType: 'register' | 'withdraw';
+      enrolmentId?: string;
+      moduleOfferingId?: string;
+      registrationDate?: string;
+      moduleRegistrationId?: string;
+    };
+
+    if (context.actionType === 'register') {
+      const moduleRegistrationId = await this.createRegistration(tenantId, {
+        enrolmentId: context.enrolmentId!,
+        moduleOfferingId: context.moduleOfferingId!,
+        ...(context.registrationDate ? { registrationDate: context.registrationDate } : {}),
+      }, actorId);
+      return { moduleRegistrationId };
+    }
+
+    await this.withdrawRegistration(context.moduleRegistrationId!, tenantId, actorId);
+    return { moduleRegistrationId: context.moduleRegistrationId! };
+  }
+
+  async #startChangeRequest(
+    tenantId: string,
+    requesterId: string,
+    context: Record<string, unknown>,
+    subjectEntityId: string,
+  ): Promise<ChangeRequestDto> {
+    const workflowDefinitionVersionId = await this.#getActiveChangeWorkflowVersionId(tenantId);
+    const instance = await this.workflowBridge.startWorkflowInstance({
+      tenantId,
+      workflowDefinitionVersionId,
+      workflowCode: CHANGE_WORKFLOW_CODE,
+      subjectEntityType: 'enrolment',
+      subjectEntityId,
+      startedBy: requesterId,
+      context,
+    });
+
+    const task = await this.workflowBridge.assignWorkflowTask({
+      tenantId,
+      workflowInstanceId: instance.workflowInstanceId,
+      stepKey: CHANGE_DECISION_STEP_KEY,
+      assigneeRoleCode: 'personal-tutor',
+      payload: context,
+    });
+
+    return {
+      workflowInstanceId: instance.workflowInstanceId,
+      workflowTaskId: task.workflowTaskId,
+      statusCode: 'running',
+      context,
+      startedAt: clockNow(),
+    };
+  }
+
+  async #getChangeRequestInstance(tenantId: string, workflowInstanceId: string) {
+    const rows = await withTenantContext(this.db, tenantId, async (tx) =>
+      tx.select().from(workflowInstances).where(and(
+        eq(workflowInstances.id, workflowInstanceId as Uuid),
+        eq(workflowInstances.tenantId, tenantId as Uuid),
+        eq(workflowInstances.workflowCode, CHANGE_WORKFLOW_CODE),
+      )).limit(1),
+    );
+    if (!rows[0]) throw new NotFoundError('WorkflowInstance', workflowInstanceId);
+    return rows[0];
+  }
+
+  async #findChangeDecisionTask(tenantId: string, workflowInstanceId: string) {
+    const rows = await withTenantContext(this.db, tenantId, async (tx) =>
+      tx.select().from(workflowTasks).where(and(
+        eq(workflowTasks.workflowInstanceId, workflowInstanceId as Uuid),
+        eq(workflowTasks.tenantId, tenantId as Uuid),
+        eq(workflowTasks.stepKey, CHANGE_DECISION_STEP_KEY),
+      )).limit(1),
+    );
+    return rows[0] ?? null;
+  }
+
+  async #getActiveChangeWorkflowVersionId(tenantId: string): Promise<string> {
+    const rows = await withTenantContext(this.db, tenantId, async (tx) =>
+      tx.select({ versionId: workflowDefinitionVersions.id })
+        .from(workflowDefinitions)
+        .innerJoin(
+          workflowDefinitionVersions,
+          and(
+            eq(workflowDefinitionVersions.workflowDefinitionId, workflowDefinitions.id),
+            eq(workflowDefinitionVersions.versionNumber, workflowDefinitions.currentVersionNumber),
+          ),
+        )
+        .where(and(
+          eq(workflowDefinitions.definitionCode, CHANGE_WORKFLOW_CODE),
+          eq(workflowDefinitions.statusCode, 'active'),
+          eq(workflowDefinitionVersions.statusCode, 'active'),
+        ))
+        .limit(1),
+    );
+    if (!rows[0]) throw new NotFoundError('WorkflowDefinition', CHANGE_WORKFLOW_CODE);
+    return rows[0].versionId;
   }
 
   async withdrawRegistration(
@@ -460,6 +726,32 @@ export class ModuleRegistrationService {
     return rows.reduce((sum, row) => sum + (row.creditValue ?? 0), 0);
   }
 
+  /**
+   * Only enforced when the tenant has opted in via
+   * configuration.registrationWindowMode === 'academic-period'. Tenants that
+   * leave it unset keep the previous unrestricted behaviour.
+   */
+  async #validateRegistrationWindow(tenantId: string, academicPeriodId: string): Promise<void> {
+    const mode = await this.registrationWindows.getEnforcementMode(tenantId);
+    if (mode !== 'academic-period') return;
+
+    const window = await this.registrationWindows.getWindowForPeriod(tenantId, academicPeriodId);
+    if (!window) {
+      throw new ValidationError(
+        'No registration window is configured for this academic period',
+        [{ field: 'moduleOfferingId', message: 'An administrator must configure a registration window before students can register' }],
+      );
+    }
+
+    const now = clockNow();
+    if (now < window.opensAt || now > window.closesAt) {
+      throw new ValidationError(
+        'The registration window for this academic period is not open',
+        [{ field: 'moduleOfferingId', message: `Registration is open from ${window.opensAt.toISOString()} to ${window.closesAt.toISOString()}` }],
+      );
+    }
+  }
+
   async #ensureNoDuplicateCurrentRegistration(
     enrolmentId: string,
     moduleOfferingId: string,
@@ -662,5 +954,18 @@ function registrationToDto(
     validTo: row.validTo,
     recordedAt: row.recordedAt,
     recordedUntil: row.recordedUntil,
+  };
+}
+
+function changeRequestToDto(
+  instance: typeof workflowInstances.$inferSelect,
+  task: typeof workflowTasks.$inferSelect,
+): ChangeRequestDto {
+  return {
+    workflowInstanceId: instance.id,
+    workflowTaskId:      task.id,
+    statusCode:          instance.statusCode,
+    context:             instance.context,
+    startedAt:           instance.startedAt,
   };
 }
