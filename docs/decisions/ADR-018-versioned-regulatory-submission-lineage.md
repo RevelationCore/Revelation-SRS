@@ -1,6 +1,6 @@
 # ADR-018: Version Regulatory Submissions with Field-Level Lineage
 
-**Status**: Proposed
+**Status**: Accepted for generic product implementation
 **Date**: 2026-07-26
 
 ## Context

@@ -45,14 +45,14 @@
 
 ## Approved-target position
 
-ADR-016, ADR-017, ADR-019 and ADR-022 are accepted for generic product implementation. ADR-018, ADR-020 and ADR-021 remain proposed. Institutional policy, privacy, records, integration and sponsor approvals remain deployment responsibilities and must not be inferred from generic product status.
+ADR-016 through ADR-022 are all accepted for generic product implementation (ADR-018, ADR-020 and ADR-021 approved 2026-08-03, each already matched by existing implementation — regulatory collection lineage, assessment/moderation staging and rights/retention/audit governance respectively). Institutional policy, privacy, records, integration and sponsor approvals remain deployment responsibilities and must not be inferred from generic product status.
 
 ## Verification snapshot
 
 | Check | Result on 2026-07-27 | Interpretation |
 |---|---|---|
 | Business-process documentation | Pass — 63 pages | Structural documentation integrity only |
-| P0 requirement/ADR coverage | Pass — 23 P0 items, 76 requirements, 7 ADRs | Traceability complete; ADRs remain proposed |
+| P0 requirement/ADR coverage | Pass — 23 P0 items, 76 requirements, 7 ADRs | Traceability complete; all 7 ADRs (016–022) accepted as of 2026-08-03 |
 | Data-model delta coverage | Pass — 19 capabilities | Target design complete; migrations not implemented |
 | Repository typecheck | Pass | `pnpm typecheck` passes across all 13 checked workspace projects; PostgreSQL telemetry uses the supported typed request hook |
 | Repository unit-test command | Pass under OrbStack | `pnpm test` completes across the workspace; focused attendance runtime evidence also includes 5 database invariant tests, 13 API integration scenarios and 18 CI-golden integration tests |
@@ -61,9 +61,9 @@ ADR-016, ADR-017, ADR-019 and ADR-022 are accepted for generic product implement
 
 ## Current launch blockers
 
-1. Approve or revise the remaining target ADRs before implementing their proposed P0 schema.
+None outstanding as of 2026-08-03.
 
-Resolved 2026-08-03 (see Verification snapshot): test prerequisites are now explicit (`pnpm test` no longer mixes unit and container-dependent suites), and clean-clone bootstrap, migration, demo load and an authenticated API journey are demonstrated end to end.
+Resolved 2026-08-03: test prerequisites are now explicit (`pnpm test` no longer mixes unit and container-dependent suites), clean-clone bootstrap/migration/demo load and an authenticated API journey are demonstrated end to end (see Verification snapshot), and the remaining target ADRs (018, 020, 021) are approved (see Approved-target position).
 
 ## Status governance
 

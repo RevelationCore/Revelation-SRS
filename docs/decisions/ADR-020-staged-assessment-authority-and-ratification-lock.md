@@ -1,6 +1,6 @@
 # ADR-020: Model Assessment as Staged Authority with an Immutable Ratification Lock
 
-**Status**: Proposed
+**Status**: Accepted for generic product implementation
 **Date**: 2026-07-26
 
 ## Context

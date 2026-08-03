@@ -1,6 +1,6 @@
 # ADR-021: Govern Identity, Individual Rights, Retention and Audit as Linked Controls
 
-**Status**: Proposed
+**Status**: Accepted for generic product implementation
 **Date**: 2026-07-26
 
 ## Context
