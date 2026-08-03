@@ -31,15 +31,21 @@ export type NewProgressionDecision = typeof progressionDecisions.$inferInsert;
 /**
  * Award — bitemporal; the formal conferral of a qualification.
  *
- * Created by AwardService.conferAward after board ratification.
- * hear_generated_at is set when a structured HEAR document is produced (Stage 10).
+ * Created by AwardService.conferAward after board ratification (taught
+ * awards — exam_board_id set) or AwardService.conferResearchAward after a
+ * PGR completion case (research awards — source_case_id set instead; see
+ * ADR-023). Exactly one of exam_board_id/source_case_id is populated per
+ * award. hear_generated_at is set when a structured HEAR document is
+ * produced (Stage 10) — research awards never populate hear_document,
+ * HEAR being a taught-programme artefact.
  */
 export const awards = pgTable('award', {
   ...bitemporalColumns,
   tenantId:            uuid('tenant_id').notNull().references(() => tenants.id),
   enrolmentId:         uuid('enrolment_id').notNull(),
   personId:            uuid('person_id').notNull(),
-  examBoardId:         uuid('exam_board_id').notNull(),
+  examBoardId:         uuid('exam_board_id'),
+  sourceCaseId:        uuid('source_case_id'), // PGR completion case id, for research awards
   qualificationCode:   text('qualification_code').notNull(),   // e.g. BSc | BA | MEng
   classificationCode:  text('classification_code').notNull(),  // e.g. first | upper-second | lower-second | third | pass
   awardDate:           text('award_date').notNull(),            // ISO date string

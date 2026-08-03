@@ -28,9 +28,9 @@ for (const id of expectedIds) {
 const newCount = (contents.delta.match(/\*\*New aggregate\*\*/g) ?? []).length;
 const extendCount = (contents.delta.match(/\*\*Extend\*\*/g) ?? []).length;
 const partialCount = (contents.delta.match(/\*\*Partial implementation\*\*/g) ?? []).length;
-if (newCount !== 10) errors.push(`Expected 10 unimplemented new-aggregate classifications, found ${newCount}`);
+if (newCount !== 8) errors.push(`Expected 8 unimplemented new-aggregate classifications, found ${newCount}`);
 if (extendCount !== 8) errors.push(`Expected 8 extend classifications, found ${extendCount}`);
-if (partialCount !== 1) errors.push(`Expected 1 partial implementation classification, found ${partialCount}`);
+if (partialCount !== 3) errors.push(`Expected 3 partial implementation classifications, found ${partialCount}`);
 
 for (const [name, text] of Object.entries(contents)) {
   for (const match of text.matchAll(/\[[^\]]+\]\(([^)]+)\)/g)) {

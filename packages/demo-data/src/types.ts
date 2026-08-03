@@ -14,7 +14,8 @@ export type LoadPhase =
   | 'integration'
   | 'progression'
   | 'corrections'
-  | 'notifications';
+  | 'notifications'
+  | 'pgr';
 
 export type ScenarioClass = 'ci-only' | 'standard-demo' | 'performance-hosted';
 

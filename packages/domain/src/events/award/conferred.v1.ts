@@ -3,7 +3,8 @@ export interface AwardConferredV1Payload {
   awardId:             string;
   enrolmentId:         string;
   personId:            string;
-  examBoardId:         string;
+  examBoardId?:        string;
+  sourceCaseId?:       string;
   qualificationCode:   string;
   classificationCode:  string;
   awardDate:           string;

@@ -15,6 +15,8 @@ export const STAFF_ROLES = [
   'dpo',
   'tenant-administrator',
   'system-administrator',
+  'pgr-administrator',
+  'pgr-director',
 ] as const;
 
 export type StudentRole = (typeof STUDENT_ROLES)[number];

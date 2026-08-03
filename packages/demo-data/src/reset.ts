@@ -13,6 +13,7 @@ import { load as moduleSelectionLoad }       from './scenarios/module-selection.
 import { load as assessmentMarksLoad }       from './scenarios/assessment-marks.js';
 import { load as examBoardLoad }              from './scenarios/exam-board.js';
 import { load as institutionYearLoad }        from './scenarios/institution-year.js';
+import { load as pgrLifecycleLoad }           from './scenarios/pgr-lifecycle.js';
 
 const SCENARIO_LOADERS: Record<string, (db: Db, tenantId: string, phase: string, opts: { dryRun?: boolean }) => Promise<void>> = {
   'ci-golden':            ciGoldenLoad,
@@ -23,6 +24,7 @@ const SCENARIO_LOADERS: Record<string, (db: Db, tenantId: string, phase: string,
   'assessment-marks':     assessmentMarksLoad,
   'exam-board':           examBoardLoad,
   'institution-year':    institutionYearLoad,
+  'pgr-lifecycle':        pgrLifecycleLoad,
 };
 
 async function wipeTenantScenarioData(db: Db, tenantId: string): Promise<void> {
@@ -118,6 +120,30 @@ async function wipeTenantScenarioData(db: Db, tenantId: string): Promise<void> {
   // foi_extract has a logical FK to foi_request — delete child before parent
   await db.execute(sql`DELETE FROM foi_extract                 WHERE tenant_id = ${tenantId}`);
   await db.execute(sql`DELETE FROM foi_request                 WHERE tenant_id = ${tenantId}`);
+
+  // PGR (BP-03-007–BP-06-006) — leaf tables first; several hard-reference
+  // person(id), so this entire block must precede the person delete below.
+  await db.execute(sql`DELETE FROM thesis_correction_requirement WHERE tenant_id = ${tenantId}`);
+  await db.execute(sql`DELETE FROM examiner_report               WHERE tenant_id = ${tenantId}`);
+  await db.execute(sql`DELETE FROM final_thesis_deposit          WHERE tenant_id = ${tenantId}`);
+  await db.execute(sql`DELETE FROM pgr_examination_outcome       WHERE tenant_id = ${tenantId}`);
+  await db.execute(sql`DELETE FROM viva_event                    WHERE tenant_id = ${tenantId}`);
+  await db.execute(sql`DELETE FROM examiner_appointment          WHERE tenant_id = ${tenantId}`);
+  await db.execute(sql`DELETE FROM thesis_submission             WHERE tenant_id = ${tenantId}`);
+  await db.execute(sql`DELETE FROM pgr_completion_case           WHERE tenant_id = ${tenantId}`);
+  await db.execute(sql`DELETE FROM pgr_examination_case          WHERE tenant_id = ${tenantId}`);
+  await db.execute(sql`DELETE FROM research_milestone            WHERE tenant_id = ${tenantId}`);
+  await db.execute(sql`DELETE FROM pgr_review_member              WHERE tenant_id = ${tenantId}`);
+  await db.execute(sql`DELETE FROM pgr_progress_review            WHERE tenant_id = ${tenantId}`);
+  await db.execute(sql`DELETE FROM staff_assignment               WHERE tenant_id = ${tenantId}`);
+  await db.execute(sql`DELETE FROM pgr_supervisor_nomination      WHERE tenant_id = ${tenantId}`);
+  await db.execute(sql`DELETE FROM pgr_supervision_case           WHERE tenant_id = ${tenantId}`);
+  // Shared business-case primitive (BPR-D01–D19) — safe to wipe per tenant;
+  // no PGR table (or any other current demo scenario) hard-references these.
+  await db.execute(sql`DELETE FROM case_evidence_reference       WHERE tenant_id = ${tenantId}`);
+  await db.execute(sql`DELETE FROM case_decision                 WHERE tenant_id = ${tenantId}`);
+  await db.execute(sql`DELETE FROM business_case                 WHERE tenant_id = ${tenantId}`);
+
   await db.execute(sql`DELETE FROM enrolment                   WHERE tenant_id = ${tenantId}`);
   await db.execute(sql`DELETE FROM identity_verification_check WHERE tenant_id = ${tenantId}`);
   await db.execute(sql`DELETE FROM person_identity             WHERE tenant_id = ${tenantId}`);

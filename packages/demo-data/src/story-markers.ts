@@ -37,6 +37,11 @@ export const STORY_MARKERS = {
   S6_DAN_WELLBEING:      'S6:dan-wellbeing',      // Wellbeing-supported: disability declaration + active adjustment
   S6_EVA_RESIT:          'S6:eva-resit',          // Resit path: failed module, re-boarded in 2023/24
   S6_FIN_GRADUATED:      'S6:fin-graduated',      // Graduated with first-class distinction, full arc
+
+  // S7 PGR Lifecycle — postgraduate research students across the full BP-03-007–BP-06-006 arc
+  S7_PRIYA_SUPERVISION:  'S7:priya-supervision',  // Approved supervisory team, no review/examination yet
+  S7_JORDAN_MILESTONE:   'S7:jordan-milestone',   // Satisfactory annual review; confirmation-of-registration published
+  S7_AVERY_AWARDED:      'S7:avery-awarded',      // Full lifecycle: ratified pass, completed, research award conferred
 } as const;
 
 export type StoryMarker = typeof STORY_MARKERS[keyof typeof STORY_MARKERS];

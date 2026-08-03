@@ -7419,6 +7419,4006 @@
         }
       }
     },
+    "/api/v1/pgr/supervision-cases": {
+      "post": {
+        "operationId": "createPgrSupervisionCases",
+        "tags": [
+          "pgr"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "enrolmentId",
+                  "ownerId"
+                ],
+                "properties": {
+                  "enrolmentId": {
+                    "type": "string"
+                  },
+                  "ownerId": {
+                    "type": "string"
+                  },
+                  "degreeAim": {
+                    "type": "string"
+                  },
+                  "researchArea": {
+                    "type": "string"
+                  },
+                  "schoolOwner": {
+                    "type": "string"
+                  },
+                  "intendedStartDate": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-publication-class": "public",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "supervisionCaseId"
+                  ],
+                  "properties": {
+                    "supervisionCaseId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pgr/supervision-cases/{caseId}": {
+      "get": {
+        "operationId": "getPgrSupervisionCasesByCaseId",
+        "tags": [
+          "pgr"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "caseId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "supervisionCaseId",
+                    "enrolmentId",
+                    "statusCode",
+                    "ownerId",
+                    "degreeAim",
+                    "researchArea",
+                    "schoolOwner",
+                    "intendedStartDate",
+                    "createdAt"
+                  ],
+                  "properties": {
+                    "supervisionCaseId": {
+                      "type": "string"
+                    },
+                    "enrolmentId": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "type": "string"
+                    },
+                    "ownerId": {
+                      "type": "string"
+                    },
+                    "degreeAim": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "researchArea": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "schoolOwner": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "intendedStartDate": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pgr/supervision-cases/{caseId}/nominations": {
+      "post": {
+        "operationId": "createPgrSupervisionCasesByCaseIdNominations",
+        "tags": [
+          "pgr"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "personId",
+                  "roleDetailCode"
+                ],
+                "properties": {
+                  "personId": {
+                    "type": "string"
+                  },
+                  "roleDetailCode": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "principal"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "additional"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "external"
+                        ]
+                      }
+                    ]
+                  },
+                  "orgOwner": {
+                    "type": "string"
+                  },
+                  "externalOrganisation": {
+                    "type": "string"
+                  },
+                  "contractualStatusCode": {
+                    "type": "string"
+                  },
+                  "accessLevelCode": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "caseId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "nominationId"
+                  ],
+                  "properties": {
+                    "nominationId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "getPgrSupervisionCasesByCaseIdNominations",
+        "tags": [
+          "pgr"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "caseId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "nominationId",
+                      "supervisionCaseId",
+                      "personId",
+                      "roleDetailCode",
+                      "orgOwner",
+                      "externalOrganisation",
+                      "contractualStatusCode",
+                      "accessLevelCode",
+                      "eligibilityCheckedAt",
+                      "nominatedAt"
+                    ],
+                    "properties": {
+                      "nominationId": {
+                        "type": "string"
+                      },
+                      "supervisionCaseId": {
+                        "type": "string"
+                      },
+                      "personId": {
+                        "type": "string"
+                      },
+                      "roleDetailCode": {
+                        "type": "string"
+                      },
+                      "orgOwner": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "externalOrganisation": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "contractualStatusCode": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "accessLevelCode": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "eligibilityCheckedAt": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "nominatedAt": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pgr/supervision-cases/{caseId}/nominations/{nominationId}/eligibility-check": {
+      "post": {
+        "operationId": "createPgrSupervisionCasesByCaseIdNominationsByNominationIdEligibilityCheck",
+        "tags": [
+          "pgr"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "caseId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "nominationId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "204": {
+            "description": "Default Response"
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pgr/supervision-cases/{caseId}/decision": {
+      "post": {
+        "operationId": "createPgrSupervisionCasesByCaseIdDecision",
+        "tags": [
+          "pgr"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "decisionTypeCode"
+                ],
+                "properties": {
+                  "decisionTypeCode": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "approve"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "return"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "reject"
+                        ]
+                      }
+                    ]
+                  },
+                  "reasonText": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "caseId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "204": {
+            "description": "Default Response"
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pgr/supervision-cases/{caseId}/publish": {
+      "post": {
+        "operationId": "createPgrSupervisionCasesByCaseIdPublish",
+        "tags": [
+          "pgr"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "caseId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "204": {
+            "description": "Default Response"
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/enrolments/{enrolmentId}/supervision": {
+      "get": {
+        "operationId": "getEnrolmentsByEnrolmentIdSupervision",
+        "tags": [
+          "pgr"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "enrolmentId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "assignmentId",
+                      "enrolmentId",
+                      "supervisionCaseId",
+                      "personId",
+                      "assignmentTypeCode",
+                      "roleDetailCode",
+                      "orgOwner",
+                      "externalOrganisation",
+                      "contractualStatusCode",
+                      "accessLevelCode",
+                      "validFrom",
+                      "validTo"
+                    ],
+                    "properties": {
+                      "assignmentId": {
+                        "type": "string"
+                      },
+                      "enrolmentId": {
+                        "type": "string"
+                      },
+                      "supervisionCaseId": {
+                        "type": "string"
+                      },
+                      "personId": {
+                        "type": "string"
+                      },
+                      "assignmentTypeCode": {
+                        "type": "string"
+                      },
+                      "roleDetailCode": {
+                        "type": "string"
+                      },
+                      "orgOwner": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "externalOrganisation": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "contractualStatusCode": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "accessLevelCode": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "validFrom": {
+                        "type": "string"
+                      },
+                      "validTo": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pgr/reviews": {
+      "post": {
+        "operationId": "createPgrReviews",
+        "tags": [
+          "pgr"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "enrolmentId",
+                  "reviewTypeCode",
+                  "ownerId"
+                ],
+                "properties": {
+                  "enrolmentId": {
+                    "type": "string"
+                  },
+                  "reviewTypeCode": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "initial"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "annual"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "upgrade"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "return-from-interruption"
+                        ]
+                      }
+                    ]
+                  },
+                  "ownerId": {
+                    "type": "string"
+                  },
+                  "supervisionCaseId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-publication-class": "public",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "reviewId"
+                  ],
+                  "properties": {
+                    "reviewId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pgr/reviews/{reviewId}": {
+      "get": {
+        "operationId": "getPgrReviewsByReviewId",
+        "tags": [
+          "pgr"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "reviewId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "reviewId",
+                    "enrolmentId",
+                    "supervisionCaseId",
+                    "reviewTypeCode",
+                    "statusCode",
+                    "ownerId",
+                    "createdAt"
+                  ],
+                  "properties": {
+                    "reviewId": {
+                      "type": "string"
+                    },
+                    "enrolmentId": {
+                      "type": "string"
+                    },
+                    "supervisionCaseId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "reviewTypeCode": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "type": "string"
+                    },
+                    "ownerId": {
+                      "type": "string"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pgr/reviews/{reviewId}/members": {
+      "post": {
+        "operationId": "createPgrReviewsByReviewIdMembers",
+        "tags": [
+          "pgr"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "personId",
+                  "roleCode"
+                ],
+                "properties": {
+                  "personId": {
+                    "type": "string"
+                  },
+                  "roleCode": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "chair"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "independent-reviewer"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "panel-member"
+                        ]
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "reviewId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "memberId"
+                  ],
+                  "properties": {
+                    "memberId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "getPgrReviewsByReviewIdMembers",
+        "tags": [
+          "pgr"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "reviewId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "memberId",
+                      "reviewId",
+                      "personId",
+                      "roleCode",
+                      "conflictTypeCode",
+                      "declaredAt",
+                      "recusedAt"
+                    ],
+                    "properties": {
+                      "memberId": {
+                        "type": "string"
+                      },
+                      "reviewId": {
+                        "type": "string"
+                      },
+                      "personId": {
+                        "type": "string"
+                      },
+                      "roleCode": {
+                        "type": "string"
+                      },
+                      "conflictTypeCode": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "declaredAt": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "recusedAt": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pgr/reviews/members/{memberId}/conflict": {
+      "post": {
+        "operationId": "createPgrReviewsMembersByMemberIdConflict",
+        "tags": [
+          "pgr"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "conflictTypeCode"
+                ],
+                "properties": {
+                  "conflictTypeCode": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "memberId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "204": {
+            "description": "Default Response"
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pgr/reviews/members/{memberId}/recuse": {
+      "post": {
+        "operationId": "createPgrReviewsMembersByMemberIdRecuse",
+        "tags": [
+          "pgr"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "memberId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "204": {
+            "description": "Default Response"
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pgr/reviews/{reviewId}/evidence": {
+      "post": {
+        "operationId": "createPgrReviewsByReviewIdEvidence",
+        "tags": [
+          "pgr"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "evidenceRef",
+                  "classificationCode",
+                  "sourceSystem"
+                ],
+                "properties": {
+                  "evidenceRef": {
+                    "type": "string"
+                  },
+                  "classificationCode": {
+                    "type": "string"
+                  },
+                  "sourceSystem": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "reviewId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "evidenceId"
+                  ],
+                  "properties": {
+                    "evidenceId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pgr/reviews/{reviewId}/outcome": {
+      "post": {
+        "operationId": "createPgrReviewsByReviewIdOutcome",
+        "tags": [
+          "pgr"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "outcomeCode"
+                ],
+                "properties": {
+                  "outcomeCode": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "satisfactory"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "conditions"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "referral"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "transfer"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "escalation"
+                        ]
+                      }
+                    ]
+                  },
+                  "reasonText": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "reviewId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "204": {
+            "description": "Default Response"
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pgr/reviews/{reviewId}/milestones": {
+      "post": {
+        "operationId": "createPgrReviewsByReviewIdMilestones",
+        "tags": [
+          "pgr"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "milestoneTypeCode",
+                  "achievedDate"
+                ],
+                "properties": {
+                  "milestoneTypeCode": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "confirmation-of-registration"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "upgrade"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "thesis-submission"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "viva"
+                        ]
+                      }
+                    ]
+                  },
+                  "achievedDate": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "reviewId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "milestoneId"
+                  ],
+                  "properties": {
+                    "milestoneId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/enrolments/{enrolmentId}/research-milestones": {
+      "get": {
+        "operationId": "getEnrolmentsByEnrolmentIdResearchMilestones",
+        "tags": [
+          "enrolments"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "enrolmentId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "milestoneId",
+                      "enrolmentId",
+                      "reviewId",
+                      "milestoneTypeCode",
+                      "achievedDate",
+                      "publishedAt"
+                    ],
+                    "properties": {
+                      "milestoneId": {
+                        "type": "string"
+                      },
+                      "enrolmentId": {
+                        "type": "string"
+                      },
+                      "reviewId": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "milestoneTypeCode": {
+                        "type": "string"
+                      },
+                      "achievedDate": {
+                        "type": "string"
+                      },
+                      "publishedAt": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pgr/examinations": {
+      "post": {
+        "operationId": "createPgrExaminations",
+        "tags": [
+          "pgr"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "enrolmentId",
+                  "ownerId",
+                  "formatCode",
+                  "declarationConfirmed",
+                  "storageRef"
+                ],
+                "properties": {
+                  "enrolmentId": {
+                    "type": "string"
+                  },
+                  "ownerId": {
+                    "type": "string"
+                  },
+                  "formatCode": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "traditional"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "practice-based"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "published-work"
+                        ]
+                      }
+                    ]
+                  },
+                  "declarationConfirmed": {
+                    "type": "boolean"
+                  },
+                  "storageRef": {
+                    "type": "string"
+                  },
+                  "restricted": {
+                    "type": "boolean"
+                  },
+                  "restrictionReasonText": {
+                    "type": "string"
+                  },
+                  "restrictionReviewDate": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-publication-class": "public",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "examinationCaseId",
+                    "submissionId"
+                  ],
+                  "properties": {
+                    "examinationCaseId": {
+                      "type": "string"
+                    },
+                    "submissionId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pgr/examinations/{caseId}": {
+      "get": {
+        "operationId": "getPgrExaminationsByCaseId",
+        "tags": [
+          "pgr"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "caseId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "examinationCaseId",
+                    "enrolmentId",
+                    "statusCode",
+                    "ownerId",
+                    "createdAt"
+                  ],
+                  "properties": {
+                    "examinationCaseId": {
+                      "type": "string"
+                    },
+                    "enrolmentId": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "type": "string"
+                    },
+                    "ownerId": {
+                      "type": "string"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pgr/examinations/{caseId}/thesis-submission": {
+      "get": {
+        "operationId": "getPgrExaminationsByCaseIdThesisSubmission",
+        "tags": [
+          "pgr"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "caseId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "submissionId",
+                    "examinationCaseId",
+                    "versionNumber",
+                    "formatCode",
+                    "declarationConfirmed",
+                    "restricted",
+                    "restrictionReasonText",
+                    "restrictionReviewDate",
+                    "storageRef",
+                    "submittedAt"
+                  ],
+                  "properties": {
+                    "submissionId": {
+                      "type": "string"
+                    },
+                    "examinationCaseId": {
+                      "type": "string"
+                    },
+                    "versionNumber": {
+                      "type": "number"
+                    },
+                    "formatCode": {
+                      "type": "string"
+                    },
+                    "declarationConfirmed": {
+                      "type": "boolean"
+                    },
+                    "restricted": {
+                      "type": "boolean"
+                    },
+                    "restrictionReasonText": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "restrictionReviewDate": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "storageRef": {
+                      "type": "string"
+                    },
+                    "submittedAt": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pgr/examinations/{caseId}/examiners": {
+      "post": {
+        "operationId": "createPgrExaminationsByCaseIdExaminers",
+        "tags": [
+          "pgr"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "personId",
+                  "examinerRoleCode"
+                ],
+                "properties": {
+                  "personId": {
+                    "type": "string"
+                  },
+                  "examinerRoleCode": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "internal"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "external"
+                        ]
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "caseId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "appointmentId"
+                  ],
+                  "properties": {
+                    "appointmentId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "getPgrExaminationsByCaseIdExaminers",
+        "tags": [
+          "pgr"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "caseId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "appointmentId",
+                      "examinationCaseId",
+                      "personId",
+                      "examinerRoleCode",
+                      "independenceCheckedAt",
+                      "conflictTypeCode",
+                      "recusedAt",
+                      "confirmedAt"
+                    ],
+                    "properties": {
+                      "appointmentId": {
+                        "type": "string"
+                      },
+                      "examinationCaseId": {
+                        "type": "string"
+                      },
+                      "personId": {
+                        "type": "string"
+                      },
+                      "examinerRoleCode": {
+                        "type": "string"
+                      },
+                      "independenceCheckedAt": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "conflictTypeCode": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "recusedAt": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "confirmedAt": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pgr/examinations/examiners/{appointmentId}/independence-check": {
+      "post": {
+        "operationId": "createPgrExaminationsExaminersByAppointmentIdIndependenceCheck",
+        "tags": [
+          "pgr"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "appointmentId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "204": {
+            "description": "Default Response"
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pgr/examinations/examiners/{appointmentId}/conflict": {
+      "post": {
+        "operationId": "createPgrExaminationsExaminersByAppointmentIdConflict",
+        "tags": [
+          "pgr"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "conflictTypeCode"
+                ],
+                "properties": {
+                  "conflictTypeCode": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "appointmentId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "204": {
+            "description": "Default Response"
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pgr/examinations/examiners/{appointmentId}/recuse": {
+      "post": {
+        "operationId": "createPgrExaminationsExaminersByAppointmentIdRecuse",
+        "tags": [
+          "pgr"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "appointmentId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "204": {
+            "description": "Default Response"
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pgr/examinations/{caseId}/examiners/approve": {
+      "post": {
+        "operationId": "createPgrExaminationsByCaseIdExaminersApprove",
+        "tags": [
+          "pgr"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "caseId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "204": {
+            "description": "Default Response"
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pgr/examinations/{caseId}/examiner-reports": {
+      "post": {
+        "operationId": "createPgrExaminationsByCaseIdExaminerReports",
+        "tags": [
+          "pgr"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "examinerAppointmentId",
+                  "reportRef"
+                ],
+                "properties": {
+                  "examinerAppointmentId": {
+                    "type": "string"
+                  },
+                  "reportRef": {
+                    "type": "string"
+                  },
+                  "recommendationCode": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "caseId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "reportId"
+                  ],
+                  "properties": {
+                    "reportId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "getPgrExaminationsByCaseIdExaminerReports",
+        "tags": [
+          "pgr"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "caseId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "reportId",
+                      "examinationCaseId",
+                      "examinerAppointmentId",
+                      "reportRef",
+                      "recommendationCode",
+                      "submittedAt"
+                    ],
+                    "properties": {
+                      "reportId": {
+                        "type": "string"
+                      },
+                      "examinationCaseId": {
+                        "type": "string"
+                      },
+                      "examinerAppointmentId": {
+                        "type": "string"
+                      },
+                      "reportRef": {
+                        "type": "string"
+                      },
+                      "recommendationCode": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "submittedAt": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pgr/examinations/{caseId}/viva": {
+      "post": {
+        "operationId": "createPgrExaminationsByCaseIdViva",
+        "tags": [
+          "pgr"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "heldAt",
+                  "jointRecommendationText"
+                ],
+                "properties": {
+                  "heldAt": {
+                    "type": "string"
+                  },
+                  "jointRecommendationText": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "caseId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "vivaEventId"
+                  ],
+                  "properties": {
+                    "vivaEventId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "getPgrExaminationsByCaseIdViva",
+        "tags": [
+          "pgr"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "caseId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "required": [
+                        "vivaEventId",
+                        "examinationCaseId",
+                        "heldAt",
+                        "jointRecommendationText",
+                        "recordedAt"
+                      ],
+                      "properties": {
+                        "vivaEventId": {
+                          "type": "string"
+                        },
+                        "examinationCaseId": {
+                          "type": "string"
+                        },
+                        "heldAt": {
+                          "type": "string"
+                        },
+                        "jointRecommendationText": {
+                          "type": "string"
+                        },
+                        "recordedAt": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pgr/examinations/{caseId}/outcome": {
+      "post": {
+        "operationId": "createPgrExaminationsByCaseIdOutcome",
+        "tags": [
+          "pgr"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "outcomeCode"
+                ],
+                "properties": {
+                  "outcomeCode": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "pass"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "pass-minor-corrections"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "pass-major-corrections"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "resubmission"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "fail"
+                        ]
+                      }
+                    ]
+                  },
+                  "correctionsDeadline": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "caseId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "outcomeId"
+                  ],
+                  "properties": {
+                    "outcomeId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "getPgrExaminationsByCaseIdOutcome",
+        "tags": [
+          "pgr"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "caseId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "required": [
+                        "outcomeId",
+                        "examinationCaseId",
+                        "outcomeCode",
+                        "decidedBy",
+                        "decidedAt"
+                      ],
+                      "properties": {
+                        "outcomeId": {
+                          "type": "string"
+                        },
+                        "examinationCaseId": {
+                          "type": "string"
+                        },
+                        "outcomeCode": {
+                          "type": "string"
+                        },
+                        "decidedBy": {
+                          "type": "string"
+                        },
+                        "decidedAt": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pgr/examinations/outcomes/{outcomeId}/corrections": {
+      "get": {
+        "operationId": "getPgrExaminationsOutcomesByOutcomeIdCorrections",
+        "tags": [
+          "pgr"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "outcomeId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "requirementId",
+                      "outcomeId",
+                      "deadlineDate",
+                      "completedAt",
+                      "completedBy"
+                    ],
+                    "properties": {
+                      "requirementId": {
+                        "type": "string"
+                      },
+                      "outcomeId": {
+                        "type": "string"
+                      },
+                      "deadlineDate": {
+                        "type": "string"
+                      },
+                      "completedAt": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "completedBy": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pgr/examinations/corrections/{requirementId}/complete": {
+      "post": {
+        "operationId": "createPgrExaminationsCorrectionsByRequirementIdComplete",
+        "tags": [
+          "pgr"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "requirementId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "204": {
+            "description": "Default Response"
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pgr/completions": {
+      "post": {
+        "operationId": "createPgrCompletions",
+        "tags": [
+          "pgr"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "examinationCaseId",
+                  "ownerId"
+                ],
+                "properties": {
+                  "examinationCaseId": {
+                    "type": "string"
+                  },
+                  "ownerId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-publication-class": "workflow",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "completionCaseId"
+                  ],
+                  "properties": {
+                    "completionCaseId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pgr/completions/{completionCaseId}": {
+      "get": {
+        "operationId": "getPgrCompletionsByCompletionCaseId",
+        "tags": [
+          "pgr"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "completionCaseId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "completionCaseId",
+                    "enrolmentId",
+                    "examinationCaseId",
+                    "statusCode",
+                    "ownerId",
+                    "createdAt"
+                  ],
+                  "properties": {
+                    "completionCaseId": {
+                      "type": "string"
+                    },
+                    "enrolmentId": {
+                      "type": "string"
+                    },
+                    "examinationCaseId": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "type": "string"
+                    },
+                    "ownerId": {
+                      "type": "string"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pgr/completions/{completionCaseId}/deposit": {
+      "post": {
+        "operationId": "createPgrCompletionsByCompletionCaseIdDeposit",
+        "tags": [
+          "pgr"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "depositRef",
+                  "ipDeclarationConfirmed"
+                ],
+                "properties": {
+                  "depositRef": {
+                    "type": "string"
+                  },
+                  "ipDeclarationConfirmed": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "completionCaseId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "depositId"
+                  ],
+                  "properties": {
+                    "depositId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "getPgrCompletionsByCompletionCaseIdDeposit",
+        "tags": [
+          "pgr"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "completionCaseId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "required": [
+                        "depositId",
+                        "completionCaseId",
+                        "depositRef",
+                        "ipDeclarationConfirmed",
+                        "confirmedBy",
+                        "confirmedAt"
+                      ],
+                      "properties": {
+                        "depositId": {
+                          "type": "string"
+                        },
+                        "completionCaseId": {
+                          "type": "string"
+                        },
+                        "depositRef": {
+                          "type": "string"
+                        },
+                        "ipDeclarationConfirmed": {
+                          "type": "boolean"
+                        },
+                        "confirmedBy": {
+                          "type": "string"
+                        },
+                        "confirmedAt": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pgr/completions/{completionCaseId}/complete": {
+      "post": {
+        "operationId": "createPgrCompletionsByCompletionCaseIdComplete",
+        "tags": [
+          "pgr"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "completionCaseId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "204": {
+            "description": "Default Response"
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pgr/completions/{completionCaseId}/award": {
+      "post": {
+        "operationId": "createPgrCompletionsByCompletionCaseIdAward",
+        "tags": [
+          "progression"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "qualificationCode",
+                  "awardDate"
+                ],
+                "properties": {
+                  "qualificationCode": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "awardDate": {
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "completionCaseId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "awardId"
+                  ],
+                  "properties": {
+                    "awardId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/regulatory/hesa/returns": {
       "post": {
         "operationId": "createRegulatoryHesaReturns",
@@ -17370,6 +21370,195 @@
                       },
                       "generatedAt": {
                         "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/students/{personId}/enrolments/{enrolmentId}/pgr/supervision": {
+      "get": {
+        "operationId": "getStudentsByPersonIdEnrolmentsByEnrolmentIdPgrSupervision",
+        "tags": [
+          "students"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "personId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "enrolmentId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "assignmentId",
+                      "personId",
+                      "roleDetailCode",
+                      "validFrom"
+                    ],
+                    "properties": {
+                      "assignmentId": {
+                        "type": "string"
+                      },
+                      "personId": {
+                        "type": "string"
+                      },
+                      "roleDetailCode": {
+                        "type": "string"
+                      },
+                      "validFrom": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/students/{personId}/enrolments/{enrolmentId}/pgr/milestones": {
+      "get": {
+        "operationId": "getStudentsByPersonIdEnrolmentsByEnrolmentIdPgrMilestones",
+        "tags": [
+          "students"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "personId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "enrolmentId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "milestoneId",
+                      "milestoneTypeCode",
+                      "achievedDate",
+                      "publishedAt"
+                    ],
+                    "properties": {
+                      "milestoneId": {
+                        "type": "string"
+                      },
+                      "milestoneTypeCode": {
+                        "type": "string"
+                      },
+                      "achievedDate": {
+                        "type": "string"
+                      },
+                      "publishedAt": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
                       }
                     }
                   }
@@ -39052,6 +43241,10 @@
     {
       "name": "module-selection",
       "description": "Module selection proposals, diet groups, and curriculum rule-set binding"
+    },
+    {
+      "name": "pgr",
+      "description": "Postgraduate research supervision, progress review, and examination"
     }
   ]
 }

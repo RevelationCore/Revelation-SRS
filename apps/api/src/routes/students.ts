@@ -1215,6 +1215,74 @@ export function studentRoutes(fastify: FastifyInstance): void {
     },
   );
 
+  const SelfPgrAssignmentSchema = Type.Object({
+    assignmentId:   Type.String(),
+    personId:       Type.String(),
+    roleDetailCode: Type.String(),
+    validFrom:      Type.String(),
+  });
+
+  const SelfPgrMilestoneSchema = Type.Object({
+    milestoneId:       Type.String(),
+    milestoneTypeCode: Type.String(),
+    achievedDate:      Type.String(),
+    publishedAt:       Type.Union([Type.String(), Type.Null()]),
+  });
+
+  fastify.get(
+    '/students/:personId/enrolments/:enrolmentId/pgr/supervision',
+    {
+      schema: {
+        params:   Type.Object({ personId: Type.String(), enrolmentId: Type.String() }),
+        response: { 200: Type.Array(SelfPgrAssignmentSchema), 404: ErrorSchema },
+      },
+      preHandler: [requireSelfOrPermission('pgr-case:read:own', 'pgr-case:read')],
+    },
+    async (request, reply) => {
+      const { personId, enrolmentId } = request.params as { personId: string; enrolmentId: string };
+      if (!await getOwnedEnrolment(personId, enrolmentId, request.tenantId)) {
+        return reply.code(404).send({
+          type: 'https://srs.example.com/errors/not-found', title: 'Not Found', status: 404,
+          detail: `Enrolment '${enrolmentId}' not found`,
+        });
+      }
+      const assignments = await fastify.supervisionService.listCurrentAssignments(request.tenantId, enrolmentId);
+      await reply.send(assignments.map((a) => ({
+        assignmentId:   a.assignmentId,
+        personId:       a.personId,
+        roleDetailCode: a.roleDetailCode,
+        validFrom:      a.validFrom.toISOString(),
+      })));
+    },
+  );
+
+  fastify.get(
+    '/students/:personId/enrolments/:enrolmentId/pgr/milestones',
+    {
+      schema: {
+        params:   Type.Object({ personId: Type.String(), enrolmentId: Type.String() }),
+        response: { 200: Type.Array(SelfPgrMilestoneSchema), 404: ErrorSchema },
+      },
+      preHandler: [requireSelfOrPermission('pgr-case:read:own', 'pgr-case:read')],
+    },
+    async (request, reply) => {
+      const { personId, enrolmentId } = request.params as { personId: string; enrolmentId: string };
+      if (!await getOwnedEnrolment(personId, enrolmentId, request.tenantId)) {
+        return reply.code(404).send({
+          type: 'https://srs.example.com/errors/not-found', title: 'Not Found', status: 404,
+          detail: `Enrolment '${enrolmentId}' not found`,
+        });
+      }
+      const milestones = await fastify.progressReviewService.listMilestones(request.tenantId, enrolmentId);
+      await reply.send(milestones.map((m) => ({
+        milestoneId:       m.milestoneId,
+        milestoneTypeCode: m.milestoneTypeCode,
+        achievedDate:      m.achievedDate,
+        publishedAt:       m.publishedAt?.toISOString() ?? null,
+      })));
+    },
+  );
+
   fastify.get(
     '/students/:personId/module-registration-requests',
     {

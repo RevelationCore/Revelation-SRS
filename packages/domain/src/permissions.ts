@@ -21,6 +21,8 @@ export const ROLES = [
   'system-administrator',
   'integration-service',
   'programme-approver',
+  'pgr-administrator',
+  'pgr-director',
 ] as const;
 
 export type Role = (typeof ROLES)[number];
@@ -119,6 +121,11 @@ export const PERMISSION_ROLES = {
   'module-selection:configure':         ['registry-administrator', 'tenant-administrator'] as Role[],
   'curriculum-binding:read':             ['registry-administrator', 'programme-approver'] as Role[],
   'curriculum-binding:write':            ['registry-administrator'] as Role[],
+  'pgr-case:read':                       ['pgr-administrator', 'pgr-director', 'research-supervisor', 'registry-administrator'] as Role[],
+  'pgr-case:read:own':                   ['student'] as Role[],
+  'pgr-case:write':                      ['pgr-administrator', 'registry-administrator'] as Role[],
+  'pgr-case:decide':                     ['pgr-director', 'registry-administrator'] as Role[],
+  'award:confer:research':               ['pgr-director', 'registry-administrator'] as Role[],
 } as const;
 
 export type Permission = keyof typeof PERMISSION_ROLES;

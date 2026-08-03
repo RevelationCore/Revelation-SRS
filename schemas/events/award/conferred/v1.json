@@ -17,6 +17,9 @@
         "examBoardId": {
           "type": "string"
         },
+        "sourceCaseId": {
+          "type": "string"
+        },
         "qualificationCode": {
           "type": "string"
         },
@@ -31,7 +34,6 @@
         "awardId",
         "enrolmentId",
         "personId",
-        "examBoardId",
         "qualificationCode",
         "classificationCode",
         "awardDate"

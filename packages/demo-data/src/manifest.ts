@@ -7,6 +7,7 @@ import { manifest as moduleSelectionManifest }       from './scenarios/module-se
 import { manifest as assessmentMarksManifest }       from './scenarios/assessment-marks.js';
 import { manifest as examBoardManifest }              from './scenarios/exam-board.js';
 import { manifest as institutionYearManifest }        from './scenarios/institution-year.js';
+import { manifest as pgrLifecycleManifest }           from './scenarios/pgr-lifecycle.js';
 
 export const SCENARIO_REGISTRY: Map<string, ScenarioRegistryEntry> = new Map([
   [
@@ -40,6 +41,10 @@ export const SCENARIO_REGISTRY: Map<string, ScenarioRegistryEntry> = new Map([
   [
     institutionYearManifest.slug,
     { manifest: institutionYearManifest, class: 'performance-hosted' },
+  ],
+  [
+    pgrLifecycleManifest.slug,
+    { manifest: pgrLifecycleManifest, class: 'standard-demo' },
   ],
 ]);
 

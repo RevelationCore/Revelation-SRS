@@ -112,8 +112,9 @@ function Sidebar({ onLogout, displayName, roles }: { onLogout: () => void; displ
   const canViewIdentityResolution = can('identity:manage');
   const canViewRightsRequests = can('identity:manage', 'retention:enforce');
   const canViewAuditReview = can('audit-log:read');
+  const canViewPgrSupervision = can('pgr-case:read');
   const canViewGovernance = canViewModeration || canViewRegulatoryCollections
-    || canViewIdentityResolution || canViewRightsRequests || canViewAuditReview;
+    || canViewIdentityResolution || canViewRightsRequests || canViewAuditReview || canViewPgrSupervision;
   return (
     <aside className="fixed inset-y-0 left-0 z-20 flex w-56 flex-col bg-white border-r border-neutral-200">
       {/* Brand */}
@@ -153,6 +154,10 @@ function Sidebar({ onLogout, displayName, roles }: { onLogout: () => void; displ
           {canViewIdentityResolution && <SubItem to="/governance/identity-resolution" label="Identity resolution" />}
           {canViewRightsRequests && <SubItem to="/governance/rights-requests" label="Rights requests" />}
           {canViewAuditReview && <SubItem to="/governance/audit-review" label="Audit review" />}
+          {canViewPgrSupervision && <SubItem to="/governance/pgr-supervision" label="PGR supervision" />}
+          {canViewPgrSupervision && <SubItem to="/governance/pgr-progress-review" label="PGR progress review" />}
+          {canViewPgrSupervision && <SubItem to="/governance/pgr-examination" label="PGR examination" />}
+          {canViewPgrSupervision && <SubItem to="/governance/pgr-completion" label="PGR completion" />}
         </>}
 
         {(canViewEnrolmentReporting || canViewRegulatory) && <>

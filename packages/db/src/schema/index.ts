@@ -25,3 +25,4 @@ export * from './engagement-outcome.js';
 export * from './business-case.js';
 export * from './identity-resolution.js';
 export * from './rights.js';
+export * from './pgr.js';

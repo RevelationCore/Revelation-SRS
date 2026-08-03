@@ -75,6 +75,11 @@ export class HearService {
         `Enrolment '${enrolmentId}' has no conferred award; HEAR can only be generated for awarded enrolments`,
       );
     }
+    if (!award.examBoardId) {
+      throw new ValidationError(
+        `Enrolment '${enrolmentId}' has a research award; HEAR generation is not supported for research awards`,
+      );
+    }
 
     const student        = await this.#getStudentIdentity(award.personId, tenantId);
     const ratifiedResults = await this.#getRatifiedModuleResults(enrolmentId, tenantId);

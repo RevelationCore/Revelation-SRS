@@ -1,6 +1,3 @@
-import { readFile } from 'node:fs/promises';
-import { fileURLToPath } from 'node:url';
-
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { eq, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -18,23 +15,9 @@ import { GOLDEN_IDS } from '../src/golden-ids.js';
 import { resetScenario } from '../src/reset.js';
 import { manifest } from '../src/scenarios/ci-golden.js';
 
-const MIGRATIONS_DIR = new URL('../../db/migrations/', import.meta.url);
+import { applyAllMigrations } from './helpers/migrations.js';
+
 const DEMO_TENANT_ID = 'dd000000-0000-4000-8000-000000000001';
-
-async function applyMigration(db: Db, fileName: string): Promise<void> {
-  const sqlText = await readFile(
-    fileURLToPath(new URL(fileName, MIGRATIONS_DIR)),
-    'utf8',
-  );
-  await db.execute(sql.raw(sqlText));
-}
-
-async function applyAllMigrations(db: Db): Promise<void> {
-  await applyMigration(db, '0000_platform_foundations.sql');
-  await applyMigration(db, '0001_platform_hardening_and_refinements.sql');
-  await applyMigration(db, '0002_demo_performance_and_seed_data.sql');
-  await applyMigration(db, '0003_engagement_and_attendance.sql');
-}
 
 let container: StartedPostgreSqlContainer;
 let db: Db;

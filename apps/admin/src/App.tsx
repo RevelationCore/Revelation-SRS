@@ -45,6 +45,10 @@ import { EngagementCasePage } from './pages/EngagementCasePage.js';
 import { ModerationPage } from './pages/ModerationPage.js';
 import { RegulatoryCollectionsPage } from './pages/RegulatoryCollectionsPage.js';
 import { IdentityResolutionPage } from './pages/IdentityResolutionPage.js';
+import { PgrSupervisionPage } from './pages/PgrSupervisionPage.js';
+import { PgrProgressReviewPage } from './pages/PgrProgressReviewPage.js';
+import { PgrExaminationPage } from './pages/PgrExaminationPage.js';
+import { PgrCompletionPage } from './pages/PgrCompletionPage.js';
 import { RightsRequestsPage } from './pages/RightsRequestsPage.js';
 import { AuditReviewPage } from './pages/AuditReviewPage.js';
 
@@ -151,6 +155,10 @@ export function App() {
                 <Route path="governance/moderation" element={<RequirePermission permissions={['mark:write']}><ModerationPage /></RequirePermission>} />
                 <Route path="governance/regulatory-collections" element={<RequirePermission permissions={['regulatory:write']}><RegulatoryCollectionsPage /></RequirePermission>} />
                 <Route path="governance/identity-resolution" element={<RequirePermission permissions={['identity:manage']}><IdentityResolutionPage /></RequirePermission>} />
+                <Route path="governance/pgr-supervision" element={<RequirePermission permissions={['pgr-case:read']}><PgrSupervisionPage /></RequirePermission>} />
+                <Route path="governance/pgr-progress-review" element={<RequirePermission permissions={['pgr-case:read']}><PgrProgressReviewPage /></RequirePermission>} />
+                <Route path="governance/pgr-examination" element={<RequirePermission permissions={['pgr-case:read']}><PgrExaminationPage /></RequirePermission>} />
+                <Route path="governance/pgr-completion" element={<RequirePermission permissions={['pgr-case:read']}><PgrCompletionPage /></RequirePermission>} />
                 <Route path="governance/rights-requests" element={<RequirePermission permissions={['identity:manage', 'retention:enforce']}><RightsRequestsPage /></RequirePermission>} />
                 <Route path="governance/audit-review" element={<RequirePermission permissions={['audit-log:read']}><AuditReviewPage /></RequirePermission>} />
 

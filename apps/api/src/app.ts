@@ -15,6 +15,10 @@ import { AdjustmentService } from './platform/adjustments/adjustment-service.js'
 import { SupportOutcomeService } from './platform/adjustments/support-outcome-service.js';
 import { BusinessCaseService } from './platform/cases/business-case-service.js';
 import { IdentityResolutionService } from './platform/identity/identity-resolution-service.js';
+import { SupervisionService } from './platform/pgr/supervision-service.js';
+import { ProgressReviewService } from './platform/pgr/progress-review-service.js';
+import { ExaminationService } from './platform/pgr/examination-service.js';
+import { CompletionService } from './platform/pgr/completion-service.js';
 import { EngagementOutcomeService } from './platform/engagement-outcomes/service.js';
 import { AssessmentComponentService } from './platform/assessment/component-service.js';
 import { MarkService } from './platform/assessment/mark-service.js';
@@ -101,6 +105,7 @@ import { engagementProxyRoutes } from './routes/engagement-proxy.js';
 import { communicationRoutes } from './routes/communications.js';
 import { correctionCasesRoutes } from './routes/correction-cases.js';
 import { identityResolutionRoutes } from './routes/identity-resolution.js';
+import { pgrRoutes } from './routes/pgr.js';
 import { demoRoutes } from './routes/demo.js';
 import { integrationRegistryRoutes } from './routes/integration-registry.js';
 import { platformControlRoutes } from './routes/platform-controls.js';
@@ -323,6 +328,10 @@ export async function buildApp(
   const regulatoryCollectionService = new RegulatoryCollectionService(db);
   const foi = new FoiService(db, valueSets);
   const examEntries = new ExamEntryService(db, eventBus, regulatoryExchanges);
+  const pgrSupervision = new SupervisionService(db, businessCases, regulatoryExchanges);
+  const pgrProgressReview = new ProgressReviewService(db, businessCases, regulatoryExchanges, valueSets);
+  const pgrExamination = new ExaminationService(db, businessCases, valueSets);
+  const pgrCompletion = new CompletionService(db, businessCases, pgrExamination, pgrSupervision, awards, regulatoryExchanges);
 
   // Decorate the Fastify instance so plugins and routes can access shared services
   fastify.decorate('config',          config);
@@ -375,6 +384,10 @@ export async function buildApp(
   fastify.decorate('regulatoryCollectionService', regulatoryCollectionService);
   fastify.decorate('foiService',         foi);
   fastify.decorate('examEntryService',   examEntries);
+  fastify.decorate('supervisionService', pgrSupervision);
+  fastify.decorate('progressReviewService', pgrProgressReview);
+  fastify.decorate('examinationService', pgrExamination);
+  fastify.decorate('completionService', pgrCompletion);
   fastify.decorate('localeService',       localeService);
   fastify.decorate('currencyService',     currencyService);
   fastify.decorate('communicationService', communications);
@@ -476,6 +489,7 @@ export async function buildApp(
         { name: 'communications',       description: 'Communication templates, channel dispatch, and audit log' },
         { name: 'integration-registry', description: 'Integration contracts, registrations, and exchange audit' },
         { name: 'module-selection',     description: 'Module selection proposals, diet groups, and curriculum rule-set binding' },
+        { name: 'pgr',                  description: 'Postgraduate research supervision, progress review, and examination' },
       ],
     },
   });
@@ -518,6 +532,8 @@ export async function buildApp(
       ['/regulatory',                'regulatory'],
       ['/identity-change-requests',  'students'],
       ['/students',                  'students'],
+      ['/pgr',                       'pgr'],
+      ['/supervision',               'pgr'],
       ['/enrolments',                'enrolments'],
       ['/marks',                     'assessment'],
       ['/moderation',                'assessment'],
@@ -587,6 +603,7 @@ export async function buildApp(
   await fastify.register(progressionRoutes,         { prefix: '/api/v1' });
   await fastify.register(correctionCasesRoutes,     { prefix: '/api/v1' });
   await fastify.register(identityResolutionRoutes,  { prefix: '/api/v1' });
+  await fastify.register(pgrRoutes,                 { prefix: '/api/v1' });
   await fastify.register(regulatoryHesaRoutes,      { prefix: '/api/v1' });
   await fastify.register(regulatorySlcRoutes,       { prefix: '/api/v1' });
   await fastify.register(regulatoryUcasRoutes,      { prefix: '/api/v1' });
@@ -682,6 +699,10 @@ declare module 'fastify' {
     regulatoryCollectionService: RegulatoryCollectionService;
     foiService:         FoiService;
     examEntryService:   ExamEntryService;
+    supervisionService: SupervisionService;
+    progressReviewService: ProgressReviewService;
+    examinationService: ExaminationService;
+    completionService: CompletionService;
     localeService:        LocaleService;
     currencyService:      CurrencyService;
     communicationService: CommunicationService;

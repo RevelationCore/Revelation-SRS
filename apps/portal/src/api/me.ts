@@ -182,6 +182,28 @@ export function getEnrolmentFeeLiabilities(personId: string, enrolmentId: string
   return api.get(`/api/v1/students/${personId}/enrolments/${enrolmentId}/fee-liabilities`);
 }
 
+export interface PgrSupervisionAssignment {
+  assignmentId:   string;
+  personId:       string;
+  roleDetailCode: string;
+  validFrom:      string;
+}
+
+export interface PgrMilestone {
+  milestoneId:       string;
+  milestoneTypeCode: string;
+  achievedDate:      string;
+  publishedAt:       string | null;
+}
+
+export function getPgrSupervision(personId: string, enrolmentId: string): Promise<PgrSupervisionAssignment[]> {
+  return api.get(`/api/v1/students/${personId}/enrolments/${enrolmentId}/pgr/supervision`);
+}
+
+export function getPgrMilestones(personId: string, enrolmentId: string): Promise<PgrMilestone[]> {
+  return api.get(`/api/v1/students/${personId}/enrolments/${enrolmentId}/pgr/milestones`);
+}
+
 export function getModuleRegistrations(enrolmentId: string): Promise<ModuleRegistration[]> {
   return api.get(`/api/v1/module-registrations?enrolmentId=${enrolmentId}`);
 }

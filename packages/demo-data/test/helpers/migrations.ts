@@ -30,6 +30,11 @@ export async function applyAllMigrations(db: Db): Promise<void> {
   await applyMigration(db, '0011_ofs_extract_generation_workflow.sql');
   await applyMigration(db, '0012_ucas_confirmation_submission_workflow.sql');
   await applyMigration(db, '0013_ukvi_cas_submission_workflow.sql');
+  await applyMigration(db, '0014_pgr_foundation.sql');
+  await applyMigration(db, '0015_pgr_supervision.sql');
+  await applyMigration(db, '0016_pgr_progress_review.sql');
+  await applyMigration(db, '0017_pgr_thesis_examination.sql');
+  await applyMigration(db, '0018_pgr_completion_and_research_award.sql');
 
   // Wellbeing module schema (separate pgSchema 'wellbeing' in same database)
   await applyMigration(db, '0000_wellbeing_foundations.sql', WELLBEING_MIGRATIONS_DIR);

@@ -35,7 +35,8 @@ export interface AwardDto {
   awardId:             string;
   enrolmentId:         string;
   personId:            string;
-  examBoardId:         string;
+  examBoardId:         string | null;
+  sourceCaseId:        string | null;
   qualificationCode:   string;
   classificationCode:  string;
   awardDate:           string;
@@ -52,6 +53,12 @@ export interface ConferAwardInput {
   qualificationCode:  string;
   classificationCode: string;
   awardDate:          string;
+}
+
+export interface ConferResearchAwardInput {
+  qualificationCode: string;
+  awardDate:         string;
+  sourceCaseId:      string;
 }
 
 // ── Service ───────────────────────────────────────────────────────────────────
@@ -135,6 +142,7 @@ export class AwardService {
         enrolmentId:         enrolmentId as `${string}-${string}-${string}-${string}-${string}`,
         personId:            enrolment.personId as `${string}-${string}-${string}-${string}-${string}`,
         examBoardId:         input.examBoardId as `${string}-${string}-${string}-${string}-${string}`,
+        sourceCaseId:        null,
         qualificationCode:   input.qualificationCode,
         classificationCode:  input.classificationCode,
         awardDate:           input.awardDate,
@@ -165,6 +173,81 @@ export class AwardService {
         examBoardId:        input.examBoardId,
         qualificationCode:  input.qualificationCode,
         classificationCode: input.classificationCode,
+        awardDate:          input.awardDate,
+      };
+      await this.eventBus.publish(
+        EVENT_TYPES.AWARD_CONFERRED,
+        '1.0.0',
+        tenantId,
+        actorId,
+        'personal',
+        payload,
+      );
+    }
+
+    return awardId;
+  }
+
+  /**
+   * Confers a research (PGR) award. Additive to conferAward, not a
+   * modification of it — research degrees are pass/fail, not classified,
+   * and have no exam board; the authorising evidence is a PGR completion
+   * case (BP-06-006) instead. Still drives the same graduation cascade and
+   * guards against double-conferral.
+   */
+  async conferResearchAward(
+    enrolmentId: string,
+    tenantId: string,
+    input: ConferResearchAwardInput,
+    actorId: string,
+  ): Promise<string> {
+    const enrolment = await this.#getEnrolment(enrolmentId, tenantId);
+
+    const existing = await this.#getCurrentAward(enrolmentId, tenantId);
+    if (existing) {
+      throw new ValidationError(`Enrolment '${enrolmentId}' already has a conferred award`);
+    }
+
+    const now     = clockNow();
+    const awardId = randomUUID();
+
+    await withTenantContext(this.db, tenantId, async (tx) => {
+      await tx.insert(awards).values({
+        versionId:           randomUUID(),
+        id:                  awardId,
+        tenantId:            tenantId as `${string}-${string}-${string}-${string}-${string}`,
+        enrolmentId:         enrolmentId as `${string}-${string}-${string}-${string}-${string}`,
+        personId:            enrolment.personId as `${string}-${string}-${string}-${string}-${string}`,
+        examBoardId:         null,
+        sourceCaseId:        input.sourceCaseId as `${string}-${string}-${string}-${string}-${string}`,
+        qualificationCode:   input.qualificationCode,
+        classificationCode:  'pass',
+        awardDate:           input.awardDate,
+        hearGeneratedAt:     null, // research awards do not generate a HEAR document
+        certificateIssuedAt: null,
+        hearDocument:        null,
+        actorId,
+        validFrom:           now,
+        validTo:             null,
+        recordedAt:          now,
+        recordedUntil:       null,
+      });
+    });
+
+    // Graduate the enrolment via the standard transition path to preserve
+    // the transition ledger and person status cascade (→ alumnus).
+    if (enrolment.statusCode !== 'graduated') {
+      await this.enrolmentService.transitionStatus(enrolmentId, tenantId, 'graduated', now, actorId, {});
+    }
+
+    if (this.eventBus.isConnected()) {
+      const payload: AwardConferredV1Payload = {
+        awardId,
+        enrolmentId,
+        personId:           enrolment.personId,
+        sourceCaseId:       input.sourceCaseId,
+        qualificationCode:  input.qualificationCode,
+        classificationCode: 'pass',
         awardDate:          input.awardDate,
       };
       await this.eventBus.publish(
@@ -392,6 +475,7 @@ function awardToDto(row: typeof awards.$inferSelect): AwardDto {
     enrolmentId:         row.enrolmentId,
     personId:            row.personId,
     examBoardId:         row.examBoardId,
+    sourceCaseId:        row.sourceCaseId,
     qualificationCode:   row.qualificationCode,
     classificationCode:  row.classificationCode,
     awardDate:           row.awardDate,

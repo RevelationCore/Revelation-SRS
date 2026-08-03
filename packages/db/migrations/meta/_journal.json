@@ -99,6 +99,41 @@
       "when": 1785000013000,
       "tag": "0013_ukvi_cas_submission_workflow",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1785000014000,
+      "tag": "0014_pgr_foundation",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1785000015000,
+      "tag": "0015_pgr_supervision",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1785000016000,
+      "tag": "0016_pgr_progress_review",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1785000017000,
+      "tag": "0017_pgr_thesis_examination",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1785000018000,
+      "tag": "0018_pgr_completion_and_research_award",
+      "breakpoints": true
     }
   ]
 }

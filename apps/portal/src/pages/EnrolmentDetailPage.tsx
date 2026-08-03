@@ -8,6 +8,8 @@ import {
   getEnrolmentHistory,
   getEnrolmentTransitions,
   getEnrolmentFeeLiabilities,
+  getPgrSupervision,
+  getPgrMilestones,
   getFieldValueSet,
   type ValueSetDto,
 } from '../api/me.js';
@@ -40,6 +42,14 @@ export function EnrolmentDetailPage() {
     () => (personId && enrolmentId) ? getEnrolmentFeeLiabilities(personId, enrolmentId) : Promise.reject(new Error('')),
     [personId, enrolmentId],
   );
+  const fetchSupervision = useCallback(
+    () => (personId && enrolmentId) ? getPgrSupervision(personId, enrolmentId) : Promise.reject(new Error('')),
+    [personId, enrolmentId],
+  );
+  const fetchMilestones  = useCallback(
+    () => (personId && enrolmentId) ? getPgrMilestones(personId, enrolmentId) : Promise.reject(new Error('')),
+    [personId, enrolmentId],
+  );
   const fetchModeVS    = useCallback(() => getFieldValueSet('enrolment', 'mode_of_study_code').catch(() => undefined), []);
   const fetchFeeVS     = useCallback(() => getFieldValueSet('enrolment', 'fee_band_code').catch(() => undefined), []);
   const fetchFundingVS = useCallback(() => getFieldValueSet('enrolment', 'funding_source_code').catch(() => undefined), []);
@@ -49,6 +59,8 @@ export function EnrolmentDetailPage() {
   const { data: history                                       } = useApiData(ready ? fetchHistory     : null);
   const { data: transitions                                   } = useApiData(ready ? fetchTransitions : null);
   const { data: fees                                           } = useApiData(ready ? fetchFees        : null);
+  const { data: supervision                                    } = useApiData(ready ? fetchSupervision : null);
+  const { data: milestones                                     } = useApiData(ready ? fetchMilestones  : null);
   const { data: modeVS    } = useApiData(fetchModeVS);
   const { data: feeVS     } = useApiData(fetchFeeVS);
   const { data: fundingVS } = useApiData(fetchFundingVS);
@@ -83,6 +95,56 @@ export function EnrolmentDetailPage() {
             </dl>
           </CardBody>
         </Card>
+
+        {((supervision && supervision.length > 0) || (milestones && milestones.length > 0)) && (
+          <Card>
+            <CardHeader title="Research degree" />
+            <CardBody className="space-y-4">
+              {supervision && supervision.length > 0 && (
+                <div>
+                  <h3 className="text-xs font-medium text-neutral-500 mb-2">Supervisory team</h3>
+                  <Table>
+                    <TableHead>
+                      <tr>
+                        <TableHeaderCell>Role</TableHeaderCell>
+                        <TableHeaderCell>Since</TableHeaderCell>
+                      </tr>
+                    </TableHead>
+                    <TableBody>
+                      {supervision.map(s => (
+                        <TableRow key={s.assignmentId}>
+                          <TableCell><Badge value={s.roleDetailCode} /></TableCell>
+                          <TableCell>{formatDate(s.validFrom)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+              {milestones && milestones.length > 0 && (
+                <div>
+                  <h3 className="text-xs font-medium text-neutral-500 mb-2">Milestones</h3>
+                  <Table>
+                    <TableHead>
+                      <tr>
+                        <TableHeaderCell>Milestone</TableHeaderCell>
+                        <TableHeaderCell>Achieved</TableHeaderCell>
+                      </tr>
+                    </TableHead>
+                    <TableBody>
+                      {milestones.map(m => (
+                        <TableRow key={m.milestoneId}>
+                          <TableCell><Badge value={m.milestoneTypeCode} /></TableCell>
+                          <TableCell>{formatDate(m.achievedDate)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardBody>
+          </Card>
+        )}
 
         {transitions && transitions.length > 0 && (
           <Card>

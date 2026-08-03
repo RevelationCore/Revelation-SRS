@@ -19,7 +19,12 @@ if (capabilityRows.length !== 20) {
   errors.push(`Expected 20 current-capability rows, found ${capabilityRows.length}`);
 }
 
-for (const status of ['Implemented baseline', 'Partial', 'Proposed target']) {
+// 'Proposed target' is intentionally not required here: it described PGR
+// lifecycle when that was the only wholly-unstarted capability. PGR moved to
+// Partial once BP-03-007/04-003/05-010/06-006 were implemented (2026-08-03),
+// and every remaining capability now has at least some implementation, so
+// requiring a still-unstarted row would force a dishonest downgrade.
+for (const status of ['Implemented baseline', 'Partial']) {
   if (!capabilityRows.some((row) => row[2] === status)) {
     errors.push(`Current-capability matrix has no ${status} capability`);
   }

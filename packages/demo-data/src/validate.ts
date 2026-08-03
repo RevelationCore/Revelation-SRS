@@ -430,6 +430,16 @@ const SCENARIO_CHECKS: Record<string, Check[]> = {
     checkLockedProgressionDecisionsExist,
     checkS5ProgressionAndAward, // RR-009: progression decisions locked
   ],
+  'pgr-lifecycle': [
+    atLeastNPersons(12),
+    async (db, tenantId) => {
+      const [row] = await db
+        .select({ n: count() })
+        .from(awards)
+        .where(and(eq(awards.tenantId, tenantId), isNotNull(awards.sourceCaseId)));
+      return (row?.n ?? 0) === 0 ? '[pgr-lifecycle] no research award (source_case_id set) found' : null;
+    },
+  ],
   'institution-year': [
     atLeastNPersons(50_000),
     atLeastNBoards(16),
