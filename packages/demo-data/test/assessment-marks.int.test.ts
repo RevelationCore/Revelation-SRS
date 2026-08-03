@@ -382,7 +382,7 @@ describe('S4 story-marker persons', () => {
       .from(persons)
       .where(eq(persons.id, aliceId));
     expect(rows).toHaveLength(1);
-    expect(rows[0]!.statusCode).toBe('enrolled');
+    expect(rows[0]!.statusCode).toBe('student');
   });
 
   it('bob (seq 2) has an EC claim', async () => {

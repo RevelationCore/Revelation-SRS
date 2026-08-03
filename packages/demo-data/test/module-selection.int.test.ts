@@ -210,7 +210,7 @@ describe('S3 story-marker persons', () => {
       .from(persons)
       .where(eq(persons.id, aliceId));
     expect(personRows).toHaveLength(1);
-    expect(personRows[0]!.statusCode).toBe('enrolled');
+    expect(personRows[0]!.statusCode).toBe('student');
   });
 
   it('bob (seq 2) exists with enrolled status', async () => {
@@ -220,7 +220,7 @@ describe('S3 story-marker persons', () => {
       .from(persons)
       .where(eq(persons.id, bobId));
     expect(rows).toHaveLength(1);
-    expect(rows[0]!.statusCode).toBe('enrolled');
+    expect(rows[0]!.statusCode).toBe('student');
   });
 
   it('carol (seq 3) exists with enrolled status', async () => {
@@ -230,7 +230,7 @@ describe('S3 story-marker persons', () => {
       .from(persons)
       .where(eq(persons.id, carolId));
     expect(rows).toHaveLength(1);
-    expect(rows[0]!.statusCode).toBe('enrolled');
+    expect(rows[0]!.statusCode).toBe('student');
   });
 });
 

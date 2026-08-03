@@ -408,7 +408,7 @@ describe('Post-ratification cases', () => {
     expect(rows.length).toBe(3);
   });
 
-  it('case statuses cover upheld, under-review, dismissed', async () => {
+  it('case statuses cover upheld, under-review, not-upheld', async () => {
     const rows = await db
       .select({ statusCode: postRatificationCases.statusCode })
       .from(postRatificationCases)
@@ -416,7 +416,7 @@ describe('Post-ratification cases', () => {
     const statuses = new Set(rows.map(r => r.statusCode));
     expect(statuses.has('upheld')).toBe(true);
     expect(statuses.has('under-review')).toBe(true);
-    expect(statuses.has('dismissed')).toBe(true);
+    expect(statuses.has('not-upheld')).toBe(true);
   });
 
   it('case references carry DEMO-PRC prefix', async () => {

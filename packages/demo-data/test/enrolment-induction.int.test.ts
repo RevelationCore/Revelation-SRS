@@ -152,7 +152,7 @@ describe('S2 story-marker persons', () => {
       .from(persons)
       .where(eq(persons.id, aliceId));
     expect(personRows).toHaveLength(1);
-    expect(personRows[0]!.statusCode).toBe('enrolled');
+    expect(personRows[0]!.statusCode).toBe('student');
   });
 
   it('bob (seq 2) is intermitting', async () => {
@@ -162,7 +162,10 @@ describe('S2 story-marker persons', () => {
       .from(persons)
       .where(eq(persons.id, bobId));
     expect(rows).toHaveLength(1);
-    expect(rows[0]!.statusCode).toBe('intermitting');
+    // person_status_code is a coarse lifecycle status (prospective/student/
+    // alumnus/deceased/merged); 'intermitting' is an enrolment-level status
+    // and maps to 'student' here — see toPersonStatusCode in generators/persons.ts.
+    expect(rows[0]!.statusCode).toBe('student');
   });
 
   it('carol (seq 3) is graduated', async () => {
@@ -172,7 +175,7 @@ describe('S2 story-marker persons', () => {
       .from(persons)
       .where(eq(persons.id, carolId));
     expect(rows).toHaveLength(1);
-    expect(rows[0]!.statusCode).toBe('graduated');
+    expect(rows[0]!.statusCode).toBe('alumnus');
   });
 
   it('alice has an enrolment in enrolled status', async () => {

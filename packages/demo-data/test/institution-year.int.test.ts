@@ -382,7 +382,7 @@ describe('Post-ratification cases', () => {
     expect(row!.n).toBe(3);
   });
 
-  it('case statuses cover upheld, under-review, dismissed', async () => {
+  it('case statuses cover upheld, under-review, not-upheld', async () => {
     const rows = await db
       .selectDistinct({ s: postRatificationCases.statusCode })
       .from(postRatificationCases)
@@ -390,7 +390,7 @@ describe('Post-ratification cases', () => {
     const statuses = rows.map(r => r.s);
     expect(statuses).toContain('upheld');
     expect(statuses).toContain('under-review');
-    expect(statuses).toContain('dismissed');
+    expect(statuses).toContain('not-upheld');
   });
 
   it('creates exactly 1 post-ratification amendment', async () => {
