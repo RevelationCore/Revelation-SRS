@@ -241,10 +241,13 @@ describe('exam-board.quorum.required flag gate', () => {
 
   it('requires exam-board:ratify to record quorum', async () => {
     const examBoardId = await createMinimalBoard();
+    // registry-administrator also holds exam-board:ratify (see
+    // permissions.ts) — module-tutor is the role that genuinely lacks it.
+    const moduleTutorJwt = await ctx.makeJwt({ roles: ['module-tutor'] });
     const res = await ctx.app.inject({
       method:  'POST',
       url:     `/api/v1/exam-boards/${examBoardId}/quorum`,
-      headers: { authorization: `Bearer ${jwt}` },  // registry-admin, not chair
+      headers: { authorization: `Bearer ${moduleTutorJwt}` },
       payload: { memberCount: 3 },
     });
     expect(res.statusCode).toBe(403);
@@ -403,10 +406,13 @@ describe('record lock integrity (service guards unchanged)', () => {
     const examBoardId = await createMinimalBoard();
     await signoffBoard(examBoardId);
 
+    // registry-administrator also holds exam-board:ratify (see
+    // permissions.ts) — module-tutor is the role that genuinely lacks it.
+    const moduleTutorJwt = await ctx.makeJwt({ roles: ['module-tutor'] });
     const res = await ctx.app.inject({
       method:  'POST',
       url:     `/api/v1/exam-boards/${examBoardId}/ratification`,
-      headers: { authorization: `Bearer ${jwt}` },  // registry-admin, not chair
+      headers: { authorization: `Bearer ${moduleTutorJwt}` },
     });
     expect(res.statusCode).toBe(403);
   });

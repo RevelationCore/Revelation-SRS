@@ -114,12 +114,19 @@ describe('Exam entry and scheduling exchange', () => {
     await generateDataPack(boardId);
     await generateEntries(boardId);
 
+    // getExamTimetable's guard requiring statusCode === 'scheduled' before
+    // returning an entry was deliberately removed (see technical debt notes)
+    // — the pending entry from generateEntries is still a 200 with null
+    // candidate/date/room fields, not a 404, since it exists but isn't
+    // scheduled yet.
     const noTimetable = await ctx.app.inject({
       method: 'GET',
       url: `/api/v1/module-registrations/${fixture.moduleRegistrationId}/exam-timetable`,
       headers: { authorization: `Bearer ${jwt}` },
     });
-    expect(noTimetable.statusCode).toBe(404);
+    expect(noTimetable.statusCode).toBe(200);
+    expect(noTimetable.json<{ statusCode: string; candidateNumber: string | null }>())
+      .toMatchObject({ statusCode: 'pending', candidateNumber: null });
 
     const integrationJwt = await ctx.makeJwt({ roles: ['tenant-administrator'] });
     const schedule = await ctx.app.inject({
@@ -188,7 +195,9 @@ describe('Exam entry and scheduling exchange', () => {
       },
     });
 
-    const ownerJwt = await ctx.makeJwt({ sub: fixture.personId, roles: ['student'] });
+    // Self-access checks the srsPersonId claim, not sub (sub is the Keycloak
+    // UUID, only meaningful for audit logging).
+    const ownerJwt = await ctx.makeJwt({ roles: ['student'], srsPersonId: fixture.personId });
     const owner = await ctx.app.inject({
       method: 'GET',
       url: `/api/v1/module-registrations/${fixture.moduleRegistrationId}/exam-timetable`,
@@ -196,7 +205,7 @@ describe('Exam entry and scheduling exchange', () => {
     });
     expect(owner.statusCode).toBe(200);
 
-    const otherJwt = await ctx.makeJwt({ sub: other.personId, roles: ['student'] });
+    const otherJwt = await ctx.makeJwt({ roles: ['student'], srsPersonId: other.personId });
     const denied = await ctx.app.inject({
       method: 'GET',
       url: `/api/v1/module-registrations/${fixture.moduleRegistrationId}/exam-timetable`,

@@ -175,14 +175,24 @@ describe('Case status transitions', () => {
     expect(res.statusCode).toBe(422);
   });
 
-  it('lists all case versions for an enrolment', async () => {
+  it('lists cases for an enrolment reflecting the current status after transitions', async () => {
+    // GET /enrolments/:id/correction-cases only returns the current
+    // (recordedUntil IS NULL) version of each case — there's no dedicated
+    // case-history endpoint — so this checks the list reflects the latest
+    // status, not that it accumulates every historical version.
     const fixture = await createCorrectionFixture('COR202');
     const { caseId } = await openCase(fixture.enrolmentId);
     await ctx.app.inject({
       method:  'PATCH',
       url:     `/api/v1/correction-cases/${caseId}/status`,
       headers: { authorization: `Bearer ${chairJwt}` },
-      payload: { statusCode: 'dismissed' },
+      payload: { statusCode: 'under-review' },
+    });
+    await ctx.app.inject({
+      method:  'PATCH',
+      url:     `/api/v1/correction-cases/${caseId}/status`,
+      headers: { authorization: `Bearer ${chairJwt}` },
+      payload: { statusCode: 'not-upheld' },
     });
 
     const list = await ctx.app.inject({
@@ -193,8 +203,8 @@ describe('Case status transitions', () => {
     expect(list.statusCode).toBe(200);
     const cases = list.json<Array<{ caseId: string; statusCode: string }>>()
       .filter((c) => c.caseId === caseId);
-    expect(cases).toContainEqual(expect.objectContaining({ statusCode: 'submitted' }));
-    expect(cases).toContainEqual(expect.objectContaining({ statusCode: 'dismissed' }));
+    expect(cases).toHaveLength(1);
+    expect(cases).toContainEqual(expect.objectContaining({ statusCode: 'not-upheld' }));
   });
 
   it('does not expose cases through another tenant', async () => {
@@ -230,10 +240,13 @@ describe('Amendment guards', () => {
 
   it('requires exam-board:ratify to open a case', async () => {
     const fixture = await createCorrectionFixture('COR302');
+    // registry-administrator also holds exam-board:ratify (see
+    // permissions.ts) — module-tutor is the role that genuinely lacks it.
+    const moduleTutorJwt = await ctx.makeJwt({ roles: ['module-tutor'] });
     const res = await ctx.app.inject({
       method:  'POST',
       url:     `/api/v1/enrolments/${fixture.enrolmentId}/correction-cases`,
-      headers: { authorization: `Bearer ${jwt}` },  // registry-admin, not chair
+      headers: { authorization: `Bearer ${moduleTutorJwt}` },
       payload: { caseTypeCode: 'appeal' },
     });
     expect(res.statusCode).toBe(403);

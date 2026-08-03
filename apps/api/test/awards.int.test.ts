@@ -228,7 +228,10 @@ describe('Award conferral', () => {
     const fixture = await createAwardFixture('AWD205');
     await seedRatifiedResult(fixture, 'AWD205A', 72, 20);
     const examBoardId = await createExamBoard();
-    const res = await conferAward(fixture, examBoardId, 'BSc', 'first', jwt);  // registry-admin, not chair
+    // registry-administrator also holds exam-board:ratify (see
+    // permissions.ts) — module-tutor is the role that genuinely lacks it.
+    const moduleTutorJwt = await ctx.makeJwt({ roles: ['module-tutor'] });
+    const res = await conferAward(fixture, examBoardId, 'BSc', 'first', moduleTutorJwt);
     expect(res.statusCode).toBe(403);
   });
 });

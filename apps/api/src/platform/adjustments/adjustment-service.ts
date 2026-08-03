@@ -387,6 +387,14 @@ export class AdjustmentService {
     return adjustmentToDto(row);
   }
 
+  /**
+   * Checks any version (current or historical) exists — deliberately not
+   * limited to the current version. listDistributions is a read/history
+   * operation and must still work after the adjustment has been expired
+   * (expireAdjustment closes the current version with no replacement row),
+   * otherwise there would be no way to see that its pending distributions
+   * were marked superseded.
+   */
   async #ensureAdjustmentExists(adjustmentId: string, tenantId: string): Promise<void> {
     const rows = await withTenantContext(this.db, tenantId, async (tx) =>
       tx
@@ -396,7 +404,6 @@ export class AdjustmentService {
           and(
             eq(reasonableAdjustments.id, adjustmentId as `${string}-${string}-${string}-${string}-${string}`),
             eq(reasonableAdjustments.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
-            isNull(reasonableAdjustments.recordedUntil),
           ),
         )
         .limit(1),

@@ -141,8 +141,9 @@ describe('HEAR generation', () => {
       headers: { authorization: `Bearer ${chairJwt}` },
     });
 
-    // Student JWT: sub matches personId, role = student
-    const studentJwt = await ctx.makeJwt({ sub: fixture.personId, roles: ['student'] });
+    // Self-access checks the srsPersonId claim, not sub (sub is the Keycloak
+    // UUID, only meaningful for audit logging).
+    const studentJwt = await ctx.makeJwt({ roles: ['student'], srsPersonId: fixture.personId });
     const res = await ctx.app.inject({
       method:  'GET',
       url:     `/api/v1/enrolments/${fixture.enrolmentId}/hear`,
@@ -169,10 +170,13 @@ describe('HEAR generation', () => {
 
   it('requires exam-board:ratify to generate', async () => {
     const fixture = await createHearFixture('HEAR107');
+    // registry-administrator also holds exam-board:ratify (see
+    // permissions.ts) — module-tutor is the role that genuinely lacks it.
+    const moduleTutorJwt = await ctx.makeJwt({ roles: ['module-tutor'] });
     const res = await ctx.app.inject({
       method:  'POST',
       url:     `/api/v1/enrolments/${fixture.enrolmentId}/hear`,
-      headers: { authorization: `Bearer ${jwt}` },  // registry-admin, not chair
+      headers: { authorization: `Bearer ${moduleTutorJwt}` },
     });
     expect(res.statusCode).toBe(403);
   });

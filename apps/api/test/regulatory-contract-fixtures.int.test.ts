@@ -130,7 +130,7 @@ describe('Regulatory contract fixtures', () => {
     expect(inbound.statusCode).toBe(201);
   });
 
-  it('UKVI CAS, visa status, and attendance payloads satisfy pinned v1 fixture structure', async () => {
+  it('UKVI CAS and visa status payloads satisfy pinned v1 fixture structure', async () => {
     const casFixture = await readJson<{ requests: Array<Record<string, unknown>> }>('ukvi/v1/cas-request.sample.json');
     const visaFixture = await readJson<Record<string, unknown>>('ukvi/v1/visa-status.sample.json');
     const expected = casFixture.requests[0]!;
@@ -172,6 +172,11 @@ describe('Regulatory contract fixtures', () => {
     });
     expect(visa.statusCode).toBe(201);
 
+    // Direct attendance-report generation is deliberately retired in favour
+    // of the engagement evidence-snapshot + human sponsor decision +
+    // independent authorisation flow (see attendance/engagement vertical
+    // slice tests) — this asserts the retirement stays in effect rather
+    // than silently regressing back to direct generation.
     const academicPeriodId = await createAcademicPeriod('UKVI-CONTRACT');
     const attendance = await ctx.app.inject({
       method: 'POST',
@@ -179,9 +184,8 @@ describe('Regulatory contract fixtures', () => {
       headers: { authorization: `Bearer ${jwt}` },
       payload: { academicPeriodId },
     });
-    expect(attendance.statusCode).toBe(200);
-    expect(attendance.json<{ payload: { students: unknown[]; _attendance_data_completeness: string } }>().payload)
-      .toMatchObject({ _attendance_data_completeness: 'pending-attendance-integration' });
+    expect(attendance.statusCode).toBe(422);
+    expect(attendance.json<{ detail: string }>().detail).toContain('retired');
   });
 
   it('Exam Scheduling timetable fixture is accepted and schedules entries bitemporally', async () => {

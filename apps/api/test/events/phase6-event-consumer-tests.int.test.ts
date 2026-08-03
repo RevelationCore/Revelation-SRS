@@ -213,6 +213,12 @@ describe('Phase 6 event consumers', () => {
     const assigned = expectEvent('srs.regulatory.ukvi-cas-assigned', 'sensitive');
     expect(assigned['casReference']).toBe('CAS-EVT6-001');
 
+    // Direct attendance-report generation is deliberately retired in favour
+    // of the engagement evidence-snapshot + human sponsor decision +
+    // independent authorisation flow (see attendance/engagement vertical
+    // slice tests, which cover the srs.regulatory.ukvi-attendance-submitted
+    // event via that flow instead) — this asserts the retirement stays in
+    // effect rather than silently regressing back to direct generation.
     const academicPeriodId = await createAcademicPeriod('EVT6-UKVI');
     const attendance = await ctx.app.inject({
       method: 'POST',
@@ -220,10 +226,8 @@ describe('Phase 6 event consumers', () => {
       headers: { authorization: `Bearer ${jwt}` },
       payload: { academicPeriodId },
     });
-    expect(attendance.statusCode).toBe(200);
-    const attendanceEvent = expectEvent('srs.regulatory.ukvi-attendance-submitted', 'regulatory');
-    expect(isUuid(attendanceEvent['reportId'])).toBe(true);
-    expect(attendanceEvent['studentCount']).toEqual(expect.any(Number));
+    expect(attendance.statusCode).toBe(422);
+    expect(attendance.json<{ detail: string }>().detail).toContain('retired');
 
     const visa = await ctx.app.inject({
       method: 'POST',
