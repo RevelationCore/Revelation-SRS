@@ -64,6 +64,12 @@ import {
   recordAssignmentVersion,
   recordSponsorReportVersion,
 } from '../api/casCases.js';
+import {
+  type SupportOutcome,
+  listSupportOutcomes,
+  recordSupportOutcome,
+  distributeSupportOutcome,
+} from '../api/supportOutcomes.js';
 import { ApiError } from '../api/client.js';
 import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
@@ -117,6 +123,7 @@ export function StudentDetailPage() {
   const canWriteCas = userHasAnyPermission(roles, ['regulatory:write']);
   const canReadDisability = userHasAnyPermission(roles, ['disability:read']);
   const canReadAdjustments = userHasAnyPermission(roles, ['adjustment:read:all']);
+  const canWriteAdjustments = userHasAnyPermission(roles, ['adjustment:write']);
   const canReadCircumstances = userHasAnyPermission(roles, ['circumstances:read']);
   const canReadNotifications = userHasAnyPermission(roles, ['notifications:read']);
   const tabs: Tab[] = [
@@ -173,7 +180,8 @@ export function StudentDetailPage() {
       )}
       {tab === 'wellbeing' && personId && (
         <WellbeingTab personId={personId} canReadDisability={canReadDisability}
-          canReadAdjustments={canReadAdjustments} canReadCircumstances={canReadCircumstances} />
+          canReadAdjustments={canReadAdjustments} canReadCircumstances={canReadCircumstances}
+          canWriteAdjustments={canWriteAdjustments} />
       )}
       {tab === 'corrections' && personId && (
         <CorrectionsTab personId={personId} canRatify={canRatify} />
@@ -1795,11 +1803,13 @@ function WellbeingTab({
   canReadDisability,
   canReadAdjustments,
   canReadCircumstances,
+  canWriteAdjustments,
 }: {
   personId: string;
   canReadDisability: boolean;
   canReadAdjustments: boolean;
   canReadCircumstances: boolean;
+  canWriteAdjustments: boolean;
 }) {
   const [declarations, setDeclarations] = useState<DisabilityDeclaration[] | null>(null);
   const [adjustments,  setAdjustments]  = useState<Adjustment[] | null>(null);
@@ -1933,6 +1943,220 @@ function WellbeingTab({
         )}
       </section>
 
+      {/* Support outcomes */}
+      <section>
+        <h2 className="text-sm font-semibold text-neutral-700 uppercase tracking-wide mb-3">Support Outcomes</h2>
+        <SupportOutcomesSection personId={personId} canWrite={canWriteAdjustments} />
+      </section>
+
     </div>
+  );
+}
+
+// Minimum-necessary support outcome, distributed per-target via
+// distribution_item (BPR-D09). Distinct from the adjustment/EC records
+// above — this is what actually gets shared with exam officers, module
+// tutors etc, scoped by visibilityScopeCode.
+function SupportOutcomesSection({ personId, canWrite }: { personId: string; canWrite: boolean }) {
+  const [enrolments, setEnrolments]     = useState<Enrolment[]>([]);
+  const [outcomes,   setOutcomes]       = useState<SupportOutcome[]>([]);
+  const [selectedEnrolId, setSelectedEnrolId] = useState('');
+  const [loading, setLoading]           = useState(true);
+  const [error,   setError]             = useState('');
+  const [showCreate, setShowCreate]     = useState(false);
+  const [creating, setCreating]         = useState(false);
+
+  const [outcomeTypeCode, setOutcomeTypeCode]           = useState('');
+  const [minimumNecessaryText, setMinimumNecessaryText] = useState('');
+  const [visibilityScopeCode, setVisibilityScopeCode]   = useState('');
+
+  const { members: outcomeTypes }       = useValueSet('support_outcome', 'outcome_type_code');
+  const { members: visibilityScopes }   = useValueSet('support_outcome', 'visibility_scope_code');
+
+  const loadOutcomes = useCallback(async (enrolmentId: string) => {
+    if (!enrolmentId) return;
+    setLoading(true); setError('');
+    try {
+      setOutcomes(await listSupportOutcomes(enrolmentId));
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : 'Failed to load support outcomes');
+    } finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const enrols = await listStudentEnrolments(personId);
+        setEnrolments(enrols);
+        const first = enrols[0];
+        if (first) {
+          setSelectedEnrolId(first.enrolmentId);
+          await loadOutcomes(first.enrolmentId);
+        } else { setLoading(false); }
+      } catch { setLoading(false); }
+    })();
+  }, [personId, loadOutcomes]);
+
+  async function handleRecord(e: FormEvent) {
+    e.preventDefault();
+    if (!selectedEnrolId || !outcomeTypeCode || !minimumNecessaryText.trim() || !visibilityScopeCode) return;
+    setCreating(true); setError('');
+    try {
+      await recordSupportOutcome(selectedEnrolId, {
+        outcomeTypeCode,
+        minimumNecessaryText: minimumNecessaryText.trim(),
+        visibilityScopeCode,
+      });
+      setShowCreate(false);
+      setOutcomeTypeCode(''); setMinimumNecessaryText(''); setVisibilityScopeCode('');
+      await loadOutcomes(selectedEnrolId);
+    } catch (err) {
+      setError(err instanceof ApiError ? (err.detail ?? err.message) : 'Failed to record support outcome');
+    } finally { setCreating(false); }
+  }
+
+  const label = (members: { code: string; displayLabel: string }[], code: string) =>
+    members.find(m => m.code === code)?.displayLabel ?? code;
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-3">
+        {enrolments.length > 1 ? (
+          <div className="flex items-center gap-3">
+            <label className="text-sm text-neutral-500" htmlFor="so-enrol-select">Enrolment:</label>
+            <Select
+              id="so-enrol-select"
+              value={selectedEnrolId}
+              onChange={(e) => { setSelectedEnrolId(e.target.value); void loadOutcomes(e.target.value); }}
+              className="w-auto"
+            >
+              {enrolments.map(e => (
+                <option key={e.enrolmentId} value={e.enrolmentId}>
+                  {e.academicYearOfEntry} ({e.statusCode})
+                </option>
+              ))}
+            </Select>
+          </div>
+        ) : <span />}
+        {canWrite && <Button size="sm" onClick={() => setShowCreate(s => !s)}>Record outcome</Button>}
+      </div>
+
+      {showCreate && (
+        <Card className="mb-4 border-primary-200 bg-primary-50">
+          <CardBody>
+            <form onSubmit={(e) => void handleRecord(e)} className="space-y-3">
+              <LabelledField label="Outcome type" htmlFor="so-type" required>
+                <Select id="so-type" value={outcomeTypeCode} onChange={(e) => setOutcomeTypeCode(e.target.value)}>
+                  <option value="">Select…</option>
+                  {outcomeTypes.map(m => <option key={m.code} value={m.code}>{m.displayLabel}</option>)}
+                </Select>
+              </LabelledField>
+              <LabelledField label="Minimum-necessary description" htmlFor="so-text" required>
+                <Textarea
+                  id="so-text"
+                  value={minimumNecessaryText}
+                  onChange={(e) => setMinimumNecessaryText(e.target.value)}
+                  rows={3}
+                  placeholder="e.g. 25% extra time in written examinations"
+                />
+              </LabelledField>
+              <LabelledField label="Visibility scope" htmlFor="so-scope" required>
+                <Select id="so-scope" value={visibilityScopeCode} onChange={(e) => setVisibilityScopeCode(e.target.value)}>
+                  <option value="">Select…</option>
+                  {visibilityScopes.map(m => <option key={m.code} value={m.code}>{m.displayLabel}</option>)}
+                </Select>
+              </LabelledField>
+              {error && <p className="text-xs text-danger-600">{error}</p>}
+              <div className="flex gap-2 justify-end">
+                <Button type="submit" size="sm" disabled={creating}>{creating ? 'Recording…' : 'Record outcome'}</Button>
+                <Button type="button" variant="ghost" size="sm" onClick={() => setShowCreate(false)}>Cancel</Button>
+              </div>
+            </form>
+          </CardBody>
+        </Card>
+      )}
+
+      {error && !showCreate && <p className="mb-3 text-sm text-danger-600">{error}</p>}
+
+      {loading ? (
+        <div className="flex justify-center py-8"><Spinner /></div>
+      ) : outcomes.length === 0 ? (
+        <p className="text-sm text-neutral-600">No support outcomes on record for this enrolment.</p>
+      ) : (
+        <div className="space-y-3">
+          {outcomes.map(o => (
+            <Card key={o.supportOutcomeId}>
+              <CardBody>
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <Badge value={o.outcomeTypeCode} label={label(outcomeTypes, o.outcomeTypeCode)} />
+                    <p className="text-sm text-neutral-800 mt-1.5">{o.minimumNecessaryText}</p>
+                    <p className="text-xs text-neutral-500 mt-1">
+                      Visible to: {label(visibilityScopes, o.visibilityScopeCode)}
+                    </p>
+                  </div>
+                </div>
+                {canWrite && (
+                  <SupportOutcomeDistribution supportOutcomeId={o.supportOutcomeId} />
+                )}
+              </CardBody>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SupportOutcomeDistribution({ supportOutcomeId }: { supportOutcomeId: string }) {
+  const [open, setOpen]                   = useState(false);
+  const [targetSystemCodes, setTargetSystemCodes] = useState('');
+  const [distributing, setDistributing]   = useState(false);
+  const [error, setError]                 = useState('');
+  const [distributedIds, setDistributedIds] = useState<string[] | null>(null);
+
+  async function handleDistribute(e: FormEvent) {
+    e.preventDefault();
+    const codes = targetSystemCodes.split(',').map(s => s.trim()).filter(Boolean);
+    if (codes.length === 0) return;
+    setDistributing(true); setError('');
+    try {
+      const { distributionItemIds } = await distributeSupportOutcome(supportOutcomeId, codes);
+      setDistributedIds(distributionItemIds);
+    } catch (err) {
+      setError(err instanceof ApiError ? (err.detail ?? err.message) : 'Failed to distribute support outcome');
+    } finally { setDistributing(false); }
+  }
+
+  if (distributedIds) {
+    return (
+      <p className="mt-3 text-xs text-success-700">
+        Distributed to {distributedIds.length} downstream {distributedIds.length === 1 ? 'system' : 'systems'}.
+      </p>
+    );
+  }
+
+  if (!open) {
+    return (
+      <div className="mt-3">
+        <Button variant="secondary" size="sm" onClick={() => setOpen(true)}>Distribute</Button>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={(e) => void handleDistribute(e)} className="mt-3 border-t border-neutral-100 pt-3 space-y-2">
+      <p className="text-xs font-semibold text-neutral-700">Distribute to downstream systems:</p>
+      <Input
+        value={targetSystemCodes}
+        onChange={(e) => setTargetSystemCodes(e.target.value)}
+        placeholder="exam-office, module-tutor"
+      />
+      {error && <p className="text-xs text-danger-600">{error}</p>}
+      <div className="flex gap-2 justify-end">
+        <Button type="button" variant="ghost" size="sm" onClick={() => setOpen(false)}>Cancel</Button>
+        <Button type="submit" size="sm" disabled={distributing}>{distributing ? 'Distributing…' : 'Distribute'}</Button>
+      </div>
+    </form>
   );
 }
