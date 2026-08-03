@@ -42,6 +42,35 @@ export function submitHesaReturn(returnId: string, submissionReference?: string)
   return api.post(`/api/v1/regulatory/hesa/returns/${returnId}/submit`, { submissionReference });
 }
 
+export interface HesaSubmissionRequest {
+  workflowInstanceId: string;
+  workflowTaskId:      string;
+  statusCode:          string;
+  context:             Record<string, unknown>;
+  startedAt:           string;
+}
+
+/** Requests approval to mark a validated, file-generated HESA return submitted. */
+export function requestHesaReturnSubmission(
+  returnId: string,
+  submissionReference?: string,
+  reason?: string,
+): Promise<HesaSubmissionRequest> {
+  return api.post(`/api/v1/regulatory/hesa/returns/${returnId}/submission-requests`, { submissionReference, reason });
+}
+
+export function listHesaSubmissionRequests(): Promise<HesaSubmissionRequest[]> {
+  return api.get<HesaSubmissionRequest[]>('/api/v1/regulatory/hesa/returns/submission-requests');
+}
+
+export function decideHesaSubmissionRequest(
+  workflowInstanceId: string,
+  decisionCode: 'approved' | 'rejected',
+  reason?: string,
+): Promise<void> {
+  return api.post(`/api/v1/regulatory/hesa/returns/submission-requests/${workflowInstanceId}/decision`, { decisionCode, reason });
+}
+
 export async function downloadHesaFile(returnId: string, token: string | null): Promise<void> {
   const baseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000';
   const res = await fetch(`${baseUrl}/api/v1/regulatory/hesa/returns/${returnId}/file`, {
@@ -74,8 +103,34 @@ export function listUcasApplications(): Promise<UcasApplication[]> {
   return api.get<UcasApplication[]>('/api/v1/regulatory/ucas/applications');
 }
 
-export function generateUcasConfirmations(): Promise<void> {
-  return api.post('/api/v1/regulatory/ucas/confirmations/generate', {});
+export function generateUcasConfirmations(cycle: string): Promise<void> {
+  return api.post('/api/v1/regulatory/ucas/confirmations/generate', { cycle });
+}
+
+export interface UcasSubmissionRequest {
+  workflowInstanceId: string;
+  workflowTaskId:      string;
+  statusCode:          string;
+  recordCount:         number;
+  context:             Record<string, unknown> & { cycle: string };
+  startedAt:           string;
+}
+
+/** Snapshots the current preview for a cycle and starts a regulatory-officer approval workflow for it. */
+export function requestUcasSubmission(cycle: string, reason?: string): Promise<UcasSubmissionRequest> {
+  return api.post('/api/v1/regulatory/ucas/confirmations/requests', { cycle, reason });
+}
+
+export function listUcasSubmissionRequests(): Promise<UcasSubmissionRequest[]> {
+  return api.get<UcasSubmissionRequest[]>('/api/v1/regulatory/ucas/confirmations/requests');
+}
+
+export function decideUcasSubmissionRequest(
+  workflowInstanceId: string,
+  decisionCode: 'approved' | 'rejected',
+  reason?: string,
+): Promise<{ processedCount: number }> {
+  return api.post(`/api/v1/regulatory/ucas/confirmations/requests/${workflowInstanceId}/decision`, { decisionCode, reason });
 }
 
 // ── SLC ──────────────────────────────────────────────────────────────────────
@@ -158,6 +213,32 @@ export function generateCasRequests(): Promise<{
   return api.post('/api/v1/regulatory/ukvi/cas-requests/generate', {});
 }
 
+export interface UkviCasSubmissionRequest {
+  workflowInstanceId: string;
+  workflowTaskId:      string;
+  statusCode:          string;
+  recordCount:         number;
+  context:             Record<string, unknown>;
+  startedAt:           string;
+}
+
+/** Snapshots the current preview of pending CAS requests and starts a regulatory-officer approval workflow for it. */
+export function requestUkviCasSubmission(reason?: string): Promise<UkviCasSubmissionRequest> {
+  return api.post('/api/v1/regulatory/ukvi/cas-requests/submission-requests', { reason });
+}
+
+export function listUkviCasSubmissionRequests(): Promise<UkviCasSubmissionRequest[]> {
+  return api.get<UkviCasSubmissionRequest[]>('/api/v1/regulatory/ukvi/cas-requests/submission-requests');
+}
+
+export function decideUkviCasSubmissionRequest(
+  workflowInstanceId: string,
+  decisionCode: 'approved' | 'rejected',
+  reason?: string,
+): Promise<{ processedCount: number }> {
+  return api.post(`/api/v1/regulatory/ukvi/cas-requests/submission-requests/${workflowInstanceId}/decision`, { decisionCode, reason });
+}
+
 export function listComplianceAlerts(): Promise<ComplianceAlert[]> {
   return api.get<ComplianceAlert[]>('/api/v1/regulatory/ukvi/compliance-alerts');
 }
@@ -226,4 +307,34 @@ export function getOfsB3Extract(extractId: string): Promise<OfsB3Extract> {
 
 export function generateOfsParticipationReport(academicYear: string): Promise<{ extractId: string; recordCount: number; payload: Record<string, unknown> }> {
   return api.post('/api/v1/regulatory/ofs/participation-reports', { academicYear });
+}
+
+export type OfsExtractTypeCode = 'b3-student-outcomes' | 'access-participation-progress';
+
+export interface OfsGenerationRequest {
+  workflowInstanceId: string;
+  workflowTaskId:      string;
+  statusCode:          string;
+  context:             Record<string, unknown> & { extractTypeCode: OfsExtractTypeCode; academicYear: string };
+  startedAt:           string;
+}
+
+export function requestOfsExtractGeneration(
+  extractTypeCode: OfsExtractTypeCode,
+  academicYear: string,
+  reason?: string,
+): Promise<OfsGenerationRequest> {
+  return api.post('/api/v1/regulatory/ofs/generation-requests', { extractTypeCode, academicYear, reason });
+}
+
+export function listOfsGenerationRequests(): Promise<OfsGenerationRequest[]> {
+  return api.get<OfsGenerationRequest[]>('/api/v1/regulatory/ofs/generation-requests');
+}
+
+export function decideOfsGenerationRequest(
+  workflowInstanceId: string,
+  decisionCode: 'approved' | 'rejected',
+  reason?: string,
+): Promise<{ extractId: string | null }> {
+  return api.post(`/api/v1/regulatory/ofs/generation-requests/${workflowInstanceId}/decision`, { decisionCode, reason });
 }

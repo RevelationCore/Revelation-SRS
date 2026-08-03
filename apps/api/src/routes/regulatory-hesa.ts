@@ -2,7 +2,7 @@ import { Type } from '@sinclair/typebox';
 import { requirePermission } from '@revelation-srs/auth';
 import type { FastifyInstance } from 'fastify';
 
-import type { HesaReturnDto, HesaValidationReportPayload } from '../platform/regulatory/hesa-service.js';
+import type { HesaReturnDto, HesaSubmissionRequestDto, HesaValidationReportPayload } from '../platform/regulatory/hesa-service.js';
 
 const ErrorSchema = Type.Object({
   type: Type.String(),
@@ -232,6 +232,108 @@ export function regulatoryHesaRoutes(fastify: FastifyInstance): void {
       await reply.code(201).send({ returnId: amendmentId });
     },
   );
+
+  // ── Submission approval workflow (BPR-W12 rollout) ──────────────────────────
+  const HesaSubmissionRequestSchema = Type.Object({
+    workflowInstanceId: Type.String(),
+    workflowTaskId:      Type.String(),
+    statusCode:          Type.String(),
+    context:             Type.Record(Type.String(), Type.Unknown()),
+    startedAt:           Type.String(),
+  });
+
+  fastify.post(
+    '/regulatory/hesa/returns/:returnId/submission-requests',
+    {
+      schema: {
+        params: Type.Object({ returnId: Type.String() }),
+        body: Type.Object({
+          submissionReference: Type.Optional(Type.String()),
+          reason:              Type.Optional(Type.String()),
+        }),
+        response: { 202: HesaSubmissionRequestSchema, 404: ErrorSchema, 422: ErrorSchema },
+      },
+      preHandler: [requirePermission('regulatory:write')],
+    },
+    async (request, reply) => {
+      const { returnId } = request.params as { returnId: string };
+      const { submissionReference, reason } = request.body as { submissionReference?: string; reason?: string };
+
+      const submissionRequest = await fastify.hesaService.requestReturnSubmission(
+        request.tenantId, returnId, request.user.sub, submissionReference, reason,
+      );
+
+      await fastify.audit.record({
+        tenantId: request.tenantId,
+        entityType: 'hesa_student_return',
+        entityId: submissionRequest.workflowInstanceId,
+        actionType: 'create',
+        actorType: 'user',
+        actorId: request.user.sub,
+        actorDisplayName: request.user.displayName,
+        correlationId: request.id,
+      });
+
+      await reply.code(202).send(hesaSubmissionRequestToWire(submissionRequest));
+    },
+  );
+
+  fastify.get(
+    '/regulatory/hesa/returns/submission-requests',
+    {
+      schema: { response: { 200: Type.Array(HesaSubmissionRequestSchema) } },
+      preHandler: [requirePermission('regulatory:decide')],
+    },
+    async (request, reply) => {
+      const requests = await fastify.hesaService.listPendingReturnSubmissionRequests(request.tenantId);
+      await reply.send(requests.map(hesaSubmissionRequestToWire));
+    },
+  );
+
+  fastify.post(
+    '/regulatory/hesa/returns/submission-requests/:workflowInstanceId/decision',
+    {
+      schema: {
+        params: Type.Object({ workflowInstanceId: Type.String() }),
+        body: Type.Object({
+          decisionCode: Type.Union([Type.Literal('approved'), Type.Literal('rejected')]),
+          reason:       Type.Optional(Type.String()),
+        }),
+        response: { 204: Type.Null(), 404: ErrorSchema, 422: ErrorSchema },
+      },
+      preHandler: [requirePermission('regulatory:decide')],
+    },
+    async (request, reply) => {
+      const { workflowInstanceId } = request.params as { workflowInstanceId: string };
+      const { decisionCode, reason } = request.body as { decisionCode: 'approved' | 'rejected'; reason?: string };
+
+      await fastify.hesaService.decideReturnSubmission(
+        request.tenantId, workflowInstanceId, decisionCode, request.user.sub, reason,
+      );
+
+      await fastify.audit.record({
+        tenantId: request.tenantId,
+        entityType: 'hesa_student_return',
+        entityId: workflowInstanceId,
+        actionType: 'update',
+        fieldName: 'decision_code',
+        afterValue: { decisionCode },
+        actorType: 'user',
+        actorId: request.user.sub,
+        actorDisplayName: request.user.displayName,
+        correlationId: request.id,
+      });
+
+      await reply.code(204).send();
+    },
+  );
+}
+
+function hesaSubmissionRequestToWire(submissionRequest: HesaSubmissionRequestDto) {
+  return {
+    ...submissionRequest,
+    startedAt: submissionRequest.startedAt.toISOString(),
+  };
 }
 
 function hesaReturnToWire(hesaReturn: HesaReturnDto) {

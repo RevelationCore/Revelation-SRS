@@ -1,8 +1,12 @@
 import { randomUUID } from 'node:crypto';
 
-import { and, eq, sql } from 'drizzle-orm';
+import { and, desc, eq, sql } from 'drizzle-orm';
 import {
   ofsExtracts,
+  workflowDefinitions,
+  workflowDefinitionVersions,
+  workflowInstances,
+  workflowTasks,
   type Db,
   type OfsExtract,
   withTenantContext,
@@ -10,11 +14,28 @@ import {
 import {
   EVENT_TYPES,
   NotFoundError,
+  ValidationError,
   type RegulatoryOfsExtractGeneratedV1Payload,
 } from '@revelation-srs/domain';
 
+import type { WorkflowBridgeService } from '../platform-controls/workflow-bridge-service.js';
 import type { IntegrationBusPublisher } from '../integration-bus/publisher.js';
 import { clockNow } from '../clock.js';
+
+type Uuid = `${string}-${string}-${string}-${string}-${string}`;
+type OfsExtractTypeCode = 'b3-student-outcomes' | 'access-participation-progress';
+
+const OFS_GENERATION_WORKFLOW_CODE = 'ofs-extract-generation-approval';
+const OFS_GENERATION_DECISION_STEP_KEY = 'approve-or-reject-generation';
+const OFS_GENERATION_GATEWAY_KEY = 'G01';
+
+export interface OfsGenerationRequestDto {
+  workflowInstanceId: string;
+  workflowTaskId:      string;
+  statusCode:          string;
+  context:             Record<string, unknown>;
+  startedAt:           Date;
+}
 
 interface B3MetricRow {
   total_enrolments: number | string;
@@ -48,6 +69,7 @@ export class OfsService {
   constructor(
     private readonly db: Db,
     private readonly eventBus: IntegrationBusPublisher,
+    private readonly workflowBridge?: WorkflowBridgeService,
   ) {}
 
   async generateB3Extract(
@@ -167,6 +189,165 @@ export class OfsService {
 
     if (!rows[0]) throw new NotFoundError('OfS extract', extractId);
     return toDto(rows[0]);
+  }
+
+  // ── Generation approval workflow ────────────────────────────────────────────
+  // OfS has no existing submit/transmit step at all (unlike SLC/HESA/UCAS/
+  // UKVI) — the admin console's only further action after generation is a
+  // client-side JSON download. There is nothing to gate before transmission
+  // because there is no transmission step in this codebase. The workflow
+  // gate is therefore placed before the one meaningful mutating action that
+  // does exist: creating the official extract record. Unlike SLC, there is
+  // no "preview" to snapshot and re-use at decision time — B3/participation
+  // extracts are live aggregate statistics, so re-deriving them fresh at
+  // approval time (rather than reusing whatever was true when requested) is
+  // the correct behaviour here, not a bug to guard against.
+
+  async requestExtractGeneration(
+    tenantId: string,
+    extractTypeCode: OfsExtractTypeCode,
+    academicYear: string,
+    requesterId: string,
+    reason?: string,
+  ): Promise<OfsGenerationRequestDto> {
+    if (!this.workflowBridge) throw new ValidationError('OfS extract generation workflow is not configured');
+
+    const context: Record<string, unknown> = { extractTypeCode, academicYear, ...(reason ? { reason } : {}) };
+
+    const workflowDefinitionVersionId = await this.#getActiveGenerationWorkflowVersionId(tenantId);
+    const instance = await this.workflowBridge.startWorkflowInstance({
+      tenantId,
+      workflowDefinitionVersionId,
+      workflowCode: OFS_GENERATION_WORKFLOW_CODE,
+      subjectEntityType: 'ofs_extract',
+      startedBy: requesterId,
+      context,
+    });
+
+    const task = await this.workflowBridge.assignWorkflowTask({
+      tenantId,
+      workflowInstanceId: instance.workflowInstanceId,
+      stepKey: OFS_GENERATION_DECISION_STEP_KEY,
+      assigneeRoleCode: 'regulatory-officer',
+      payload: context,
+    });
+
+    return {
+      workflowInstanceId: instance.workflowInstanceId,
+      workflowTaskId: task.workflowTaskId,
+      statusCode: 'running',
+      context,
+      startedAt: clockNow(),
+    };
+  }
+
+  async listPendingGenerationRequests(tenantId: string): Promise<OfsGenerationRequestDto[]> {
+    const rows = await withTenantContext(this.db, tenantId, async (tx) =>
+      tx.select({ instance: workflowInstances, task: workflowTasks })
+        .from(workflowInstances)
+        .innerJoin(workflowTasks, and(
+          eq(workflowTasks.workflowInstanceId, workflowInstances.id),
+          eq(workflowTasks.stepKey, OFS_GENERATION_DECISION_STEP_KEY),
+        ))
+        .where(and(
+          eq(workflowInstances.tenantId, tenantId as Uuid),
+          eq(workflowInstances.workflowCode, OFS_GENERATION_WORKFLOW_CODE),
+          eq(workflowInstances.statusCode, 'running'),
+        ))
+        .orderBy(desc(workflowInstances.startedAt)),
+    );
+    return rows.map((r) => ofsGenerationRequestToDto(r.instance, r.task));
+  }
+
+  async decideExtractGeneration(
+    tenantId: string,
+    workflowInstanceId: string,
+    decisionCode: 'approved' | 'rejected',
+    actorId: string,
+    reason?: string,
+  ): Promise<{ extractId: string | null }> {
+    if (!this.workflowBridge) throw new ValidationError('OfS extract generation workflow is not configured');
+
+    const instance = await this.#getGenerationInstance(tenantId, workflowInstanceId);
+    if (instance.statusCode !== 'running') {
+      throw new ValidationError(`Cannot decide a generation request in status '${instance.statusCode}'`);
+    }
+
+    const task = await this.#findGenerationDecisionTask(tenantId, workflowInstanceId);
+
+    await this.workflowBridge.recordWorkflowDecision({
+      tenantId,
+      workflowInstanceId,
+      gatewayKey: OFS_GENERATION_GATEWAY_KEY,
+      decisionCode,
+      ...(reason ? { conditionSummary: reason } : {}),
+      outcomeStepKey: 'request-closed',
+      actorId,
+      metadata: { context: instance.context },
+    });
+    if (task) {
+      await this.workflowBridge.completeWorkflowTask({
+        tenantId, workflowTaskId: task.id, completedBy: actorId,
+        payload: { decisionCode, ...(reason ? { reason } : {}) },
+      });
+    }
+    await this.workflowBridge.completeWorkflowInstance({
+      tenantId, workflowInstanceId, actorId,
+      statusCode: 'completed', metadata: { decisionCode },
+    });
+
+    if (decisionCode !== 'approved') return { extractId: null };
+
+    const context = instance.context as { extractTypeCode: OfsExtractTypeCode; academicYear: string };
+    const result = context.extractTypeCode === 'b3-student-outcomes'
+      ? await this.generateB3Extract(tenantId, context.academicYear, actorId)
+      : await this.generateParticipationReport(tenantId, context.academicYear, actorId);
+    return { extractId: result.extractId };
+  }
+
+  async #getActiveGenerationWorkflowVersionId(tenantId: string): Promise<string> {
+    const rows = await withTenantContext(this.db, tenantId, async (tx) =>
+      tx.select({ versionId: workflowDefinitionVersions.id })
+        .from(workflowDefinitions)
+        .innerJoin(
+          workflowDefinitionVersions,
+          and(
+            eq(workflowDefinitionVersions.workflowDefinitionId, workflowDefinitions.id),
+            eq(workflowDefinitionVersions.versionNumber, workflowDefinitions.currentVersionNumber),
+          ),
+        )
+        .where(and(
+          eq(workflowDefinitions.definitionCode, OFS_GENERATION_WORKFLOW_CODE),
+          eq(workflowDefinitions.statusCode, 'active'),
+          eq(workflowDefinitionVersions.statusCode, 'active'),
+        ))
+        .limit(1),
+    );
+    if (!rows[0]) throw new NotFoundError('WorkflowDefinition', OFS_GENERATION_WORKFLOW_CODE);
+    return rows[0].versionId;
+  }
+
+  async #getGenerationInstance(tenantId: string, workflowInstanceId: string) {
+    const rows = await withTenantContext(this.db, tenantId, async (tx) =>
+      tx.select().from(workflowInstances).where(and(
+        eq(workflowInstances.id, workflowInstanceId as Uuid),
+        eq(workflowInstances.tenantId, tenantId as Uuid),
+        eq(workflowInstances.workflowCode, OFS_GENERATION_WORKFLOW_CODE),
+      )).limit(1),
+    );
+    if (!rows[0]) throw new NotFoundError('WorkflowInstance', workflowInstanceId);
+    return rows[0];
+  }
+
+  async #findGenerationDecisionTask(tenantId: string, workflowInstanceId: string) {
+    const rows = await withTenantContext(this.db, tenantId, async (tx) =>
+      tx.select().from(workflowTasks).where(and(
+        eq(workflowTasks.workflowInstanceId, workflowInstanceId as Uuid),
+        eq(workflowTasks.tenantId, tenantId as Uuid),
+        eq(workflowTasks.stepKey, OFS_GENERATION_DECISION_STEP_KEY),
+      )).limit(1),
+    );
+    return rows[0] ?? null;
   }
 
   async #insertExtract(
@@ -326,4 +507,17 @@ function toNumber(value: number | string): number {
 function rate(numerator: number, denominator: number): number | null {
   if (denominator === 0) return null;
   return Number((numerator / denominator).toFixed(4));
+}
+
+function ofsGenerationRequestToDto(
+  instance: typeof workflowInstances.$inferSelect,
+  task: typeof workflowTasks.$inferSelect,
+): OfsGenerationRequestDto {
+  return {
+    workflowInstanceId: instance.id,
+    workflowTaskId:      task.id,
+    statusCode:          instance.statusCode,
+    context:             instance.context,
+    startedAt:           instance.startedAt,
+  };
 }

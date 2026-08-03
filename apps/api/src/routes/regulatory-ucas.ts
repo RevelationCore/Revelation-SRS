@@ -6,6 +6,7 @@ import type {
   UcasApplicationDto,
   UcasApplicationPayload,
   UcasConfirmationPayload,
+  UcasSubmissionRequestDto,
 } from '../platform/regulatory/ucas-service.js';
 
 const ErrorSchema = Type.Object({
@@ -204,6 +205,107 @@ export function regulatoryUcasRoutes(fastify: FastifyInstance): void {
       await reply.send(result);
     },
   );
+
+  // ── Submission approval workflow (BPR-W12 rollout) ──────────────────────────
+  const UcasSubmissionRequestSchema = Type.Object({
+    workflowInstanceId: Type.String(),
+    workflowTaskId:      Type.String(),
+    statusCode:          Type.String(),
+    recordCount:         Type.Number(),
+    context:             Type.Record(Type.String(), Type.Unknown()),
+    startedAt:           Type.String(),
+  });
+
+  fastify.post(
+    '/regulatory/ucas/confirmations/requests',
+    {
+      schema: {
+        body: Type.Object({
+          cycle:  Type.String({ minLength: 1 }),
+          reason: Type.Optional(Type.String()),
+        }),
+        response: { 202: UcasSubmissionRequestSchema, 422: ErrorSchema },
+      },
+      preHandler: [requirePermission('regulatory:write')],
+    },
+    async (request, reply) => {
+      const { cycle, reason } = request.body as { cycle: string; reason?: string };
+      const submissionRequest = await fastify.ucasService.requestSubmission(request.tenantId, cycle, request.user.sub, reason);
+
+      await fastify.audit.record({
+        tenantId: request.tenantId,
+        entityType: 'ucas_confirmation_batch',
+        entityId: submissionRequest.workflowInstanceId,
+        actionType: 'create',
+        actorType: 'user',
+        actorId: request.user.sub,
+        actorDisplayName: request.user.displayName,
+        correlationId: request.id,
+      });
+
+      await reply.code(202).send(submissionRequestToWire(submissionRequest));
+    },
+  );
+
+  fastify.get(
+    '/regulatory/ucas/confirmations/requests',
+    {
+      schema: { response: { 200: Type.Array(UcasSubmissionRequestSchema) } },
+      preHandler: [requirePermission('regulatory:decide')],
+    },
+    async (request, reply) => {
+      const requests = await fastify.ucasService.listPendingSubmissionRequests(request.tenantId);
+      await reply.send(requests.map(submissionRequestToWire));
+    },
+  );
+
+  fastify.post(
+    '/regulatory/ucas/confirmations/requests/:workflowInstanceId/decision',
+    {
+      schema: {
+        params: Type.Object({ workflowInstanceId: Type.String() }),
+        body: Type.Object({
+          decisionCode: Type.Union([Type.Literal('approved'), Type.Literal('rejected')]),
+          reason:       Type.Optional(Type.String()),
+        }),
+        response: {
+          200: Type.Object({ processedCount: Type.Number() }),
+          404: ErrorSchema, 422: ErrorSchema,
+        },
+      },
+      preHandler: [requirePermission('regulatory:decide')],
+    },
+    async (request, reply) => {
+      const { workflowInstanceId } = request.params as { workflowInstanceId: string };
+      const { decisionCode, reason } = request.body as { decisionCode: 'approved' | 'rejected'; reason?: string };
+
+      const result = await fastify.ucasService.decideSubmissionRequest(
+        request.tenantId, workflowInstanceId, decisionCode, request.user.sub, reason,
+      );
+
+      await fastify.audit.record({
+        tenantId: request.tenantId,
+        entityType: 'ucas_confirmation_batch',
+        entityId: workflowInstanceId,
+        actionType: 'update',
+        fieldName: 'decision_code',
+        afterValue: { decisionCode },
+        actorType: 'user',
+        actorId: request.user.sub,
+        actorDisplayName: request.user.displayName,
+        correlationId: request.id,
+      });
+
+      await reply.send(result);
+    },
+  );
+}
+
+function submissionRequestToWire(submissionRequest: UcasSubmissionRequestDto) {
+  return {
+    ...submissionRequest,
+    startedAt: submissionRequest.startedAt.toISOString(),
+  };
 }
 
 function applicationToWire(application: UcasApplicationDto) {

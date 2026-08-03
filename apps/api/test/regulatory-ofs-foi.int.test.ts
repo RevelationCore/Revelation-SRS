@@ -205,6 +205,121 @@ describe('OfS reporting and FOI support', () => {
   });
 });
 
+describe('OfS extract generation approval workflow', () => {
+  it('approving a B3 generation request produces a B3 extract', async () => {
+    const completed = await createEnrolment('OfsWf', 'B3Approve', '2031-32');
+    await createAward(completed.enrolmentId, completed.personId);
+
+    const request = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/v1/regulatory/ofs/generation-requests',
+      headers: { authorization: `Bearer ${jwt}` },
+      payload: { extractTypeCode: 'b3-student-outcomes', academicYear: '2031-32' },
+    });
+    expect(request.statusCode).toBe(202);
+    const { workflowInstanceId } = request.json<{ workflowInstanceId: string }>();
+
+    const pending = await ctx.app.inject({
+      method: 'GET',
+      url: '/api/v1/regulatory/ofs/generation-requests',
+      headers: { authorization: `Bearer ${jwt}` },
+    });
+    expect(pending.statusCode).toBe(200);
+    expect(pending.json<Array<{ workflowInstanceId: string }>>().some(r => r.workflowInstanceId === workflowInstanceId)).toBe(true);
+
+    const decide = await ctx.app.inject({
+      method: 'POST',
+      url: `/api/v1/regulatory/ofs/generation-requests/${workflowInstanceId}/decision`,
+      headers: { authorization: `Bearer ${jwt}` },
+      payload: { decisionCode: 'approved' },
+    });
+    expect(decide.statusCode).toBe(200);
+    const { extractId } = decide.json<{ extractId: string | null }>();
+    expect(extractId).not.toBeNull();
+
+    const detail = await ctx.app.inject({
+      method: 'GET',
+      url: `/api/v1/regulatory/ofs/b3-extracts/${extractId}`,
+      headers: { authorization: `Bearer ${jwt}` },
+    });
+    expect(detail.statusCode).toBe(200);
+    expect(detail.json<{ payload: { extractTypeCode: string } }>().payload.extractTypeCode)
+      .toBe('b3-student-outcomes');
+  });
+
+  it('approving a participation-progress generation request produces a participation report', async () => {
+    const student = await createEnrolment('OfsWf', 'ParticipationApprove', '2032-33');
+    await createRegulatoryProfile(student.personId, student.enrolmentId);
+
+    const request = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/v1/regulatory/ofs/generation-requests',
+      headers: { authorization: `Bearer ${jwt}` },
+      payload: { extractTypeCode: 'access-participation-progress', academicYear: '2032-33' },
+    });
+    expect(request.statusCode).toBe(202);
+    const { workflowInstanceId } = request.json<{ workflowInstanceId: string }>();
+
+    const decide = await ctx.app.inject({
+      method: 'POST',
+      url: `/api/v1/regulatory/ofs/generation-requests/${workflowInstanceId}/decision`,
+      headers: { authorization: `Bearer ${jwt}` },
+      payload: { decisionCode: 'approved' },
+    });
+    expect(decide.statusCode).toBe(200);
+    const { extractId } = decide.json<{ extractId: string | null }>();
+    expect(extractId).not.toBeNull();
+  });
+
+  it('a rejected request produces no extract, and cannot be decided twice', async () => {
+    await createEnrolment('OfsWf', 'Reject', '2033-34');
+    const request = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/v1/regulatory/ofs/generation-requests',
+      headers: { authorization: `Bearer ${jwt}` },
+      payload: { extractTypeCode: 'b3-student-outcomes', academicYear: '2033-34' },
+    });
+    const { workflowInstanceId } = request.json<{ workflowInstanceId: string }>();
+
+    const decide = await ctx.app.inject({
+      method: 'POST',
+      url: `/api/v1/regulatory/ofs/generation-requests/${workflowInstanceId}/decision`,
+      headers: { authorization: `Bearer ${jwt}` },
+      payload: { decisionCode: 'rejected', reason: 'Not ready yet' },
+    });
+    expect(decide.statusCode).toBe(200);
+    expect(decide.json<{ extractId: string | null }>().extractId).toBeNull();
+
+    const secondDecide = await ctx.app.inject({
+      method: 'POST',
+      url: `/api/v1/regulatory/ofs/generation-requests/${workflowInstanceId}/decision`,
+      headers: { authorization: `Bearer ${jwt}` },
+      payload: { decisionCode: 'approved' },
+    });
+    expect(secondDecide.statusCode).toBe(422);
+  });
+
+  it('rejects a decision from a role lacking regulatory:decide', async () => {
+    await createEnrolment('OfsWf', 'WrongRole', '2034-35');
+    const request = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/v1/regulatory/ofs/generation-requests',
+      headers: { authorization: `Bearer ${jwt}` },
+      payload: { extractTypeCode: 'b3-student-outcomes', academicYear: '2034-35' },
+    });
+    const { workflowInstanceId } = request.json<{ workflowInstanceId: string }>();
+
+    const moduleTutorJwt = await ctx.makeJwt({ roles: ['module-tutor'] });
+    const decide = await ctx.app.inject({
+      method: 'POST',
+      url: `/api/v1/regulatory/ofs/generation-requests/${workflowInstanceId}/decision`,
+      headers: { authorization: `Bearer ${moduleTutorJwt}` },
+      payload: { decisionCode: 'approved' },
+    });
+    expect(decide.statusCode).toBe(403);
+  });
+});
+
 async function createPerson(legalFirstName: string, legalFamilyName: string): Promise<string> {
   const res = await ctx.app.inject({
     method: 'POST',

@@ -314,12 +314,12 @@ export async function buildApp(
   const localeService   = new LocaleService(db, audit);
   const currencyService = new CurrencyService(db, audit);
   const communications  = new CommunicationService(db, localeService, featureFlags);
-  const ucas = new UcasService(db, valueSets, eventBus, enrolments, regulatoryExchanges, admissions, featureFlags);
-  const hesa = new HesaService(db, eventBus, students, regulatoryExchanges);
+  const ucas = new UcasService(db, valueSets, eventBus, enrolments, regulatoryExchanges, admissions, featureFlags, workflowBridge);
+  const hesa = new HesaService(db, eventBus, students, regulatoryExchanges, workflowBridge);
   const slc = new SlcService(db, eventBus, valueSets, enrolments, regulatoryExchanges, workflowBridge);
-  const ukvi = new UkviService(db, eventBus, valueSets, rules, regulatoryExchanges);
+  const ukvi = new UkviService(db, eventBus, valueSets, rules, regulatoryExchanges, workflowBridge);
   const casCases = new CasCaseService(db);
-  const ofs = new OfsService(db, eventBus);
+  const ofs = new OfsService(db, eventBus, workflowBridge);
   const regulatoryCollectionService = new RegulatoryCollectionService(db);
   const foi = new FoiService(db, valueSets);
   const examEntries = new ExamEntryService(db, eventBus, regulatoryExchanges);

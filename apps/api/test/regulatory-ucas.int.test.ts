@@ -210,6 +210,111 @@ describe('UCAS outbound confirmations', () => {
   });
 });
 
+describe('UCAS confirmation submission approval workflow', () => {
+  it('rejects a submission request when there are no pending confirmations for the cycle', async () => {
+    const request = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/v1/regulatory/ucas/confirmations/requests',
+      headers: { authorization: `Bearer ${jwt}` },
+      payload: { cycle: '2099' },
+    });
+    expect(request.statusCode).toBe(422);
+  });
+
+  it('approving a submission request processes exactly the previewed confirmations', async () => {
+    const person = await createPerson('Ucas', 'WorkflowApprove');
+    const enrolmentId = await createEnrolment(person.personId, { ucasPersonalId: '9000000101' });
+
+    const request = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/v1/regulatory/ucas/confirmations/requests',
+      headers: { authorization: `Bearer ${jwt}` },
+      payload: { cycle: '2027' },
+    });
+    expect(request.statusCode).toBe(202);
+    const { workflowInstanceId, recordCount } = request.json<{ workflowInstanceId: string; recordCount: number }>();
+    expect(recordCount).toBeGreaterThanOrEqual(1);
+
+    const pending = await ctx.app.inject({
+      method: 'GET',
+      url: '/api/v1/regulatory/ucas/confirmations/requests',
+      headers: { authorization: `Bearer ${jwt}` },
+    });
+    expect(pending.statusCode).toBe(200);
+    expect(pending.json<Array<{ workflowInstanceId: string }>>().some(r => r.workflowInstanceId === workflowInstanceId)).toBe(true);
+
+    const decide = await ctx.app.inject({
+      method: 'POST',
+      url: `/api/v1/regulatory/ucas/confirmations/requests/${workflowInstanceId}/decision`,
+      headers: { authorization: `Bearer ${jwt}` },
+      payload: { decisionCode: 'approved' },
+    });
+    expect(decide.statusCode).toBe(200);
+    expect(decide.json<{ processedCount: number }>().processedCount).toBe(recordCount);
+
+    const triggerRows = await ctx.db.execute(sql`
+      SELECT status_code
+      FROM enrolment_downstream_trigger
+      WHERE tenant_id = ${ctx.tenantId}
+        AND enrolment_id = ${enrolmentId}
+        AND trigger_type_code = 'ucas-confirmation'
+    `) as Array<{ status_code: string }>;
+    expect(triggerRows).toEqual([expect.objectContaining({ status_code: 'processed' })]);
+  });
+
+  it('a rejected request processes nothing, and cannot be decided twice', async () => {
+    const person = await createPerson('Ucas', 'WorkflowReject');
+    await createEnrolment(person.personId, { ucasPersonalId: '9000000102' });
+
+    const request = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/v1/regulatory/ucas/confirmations/requests',
+      headers: { authorization: `Bearer ${jwt}` },
+      payload: { cycle: '2027' },
+    });
+    const { workflowInstanceId } = request.json<{ workflowInstanceId: string }>();
+
+    const decide = await ctx.app.inject({
+      method: 'POST',
+      url: `/api/v1/regulatory/ucas/confirmations/requests/${workflowInstanceId}/decision`,
+      headers: { authorization: `Bearer ${jwt}` },
+      payload: { decisionCode: 'rejected', reason: 'Cycle not ready' },
+    });
+    expect(decide.statusCode).toBe(200);
+    expect(decide.json<{ processedCount: number }>().processedCount).toBe(0);
+
+    const secondDecide = await ctx.app.inject({
+      method: 'POST',
+      url: `/api/v1/regulatory/ucas/confirmations/requests/${workflowInstanceId}/decision`,
+      headers: { authorization: `Bearer ${jwt}` },
+      payload: { decisionCode: 'approved' },
+    });
+    expect(secondDecide.statusCode).toBe(422);
+  });
+
+  it('rejects a decision from a role lacking regulatory:decide', async () => {
+    const person = await createPerson('Ucas', 'WorkflowWrongRole');
+    await createEnrolment(person.personId, { ucasPersonalId: '9000000103' });
+
+    const request = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/v1/regulatory/ucas/confirmations/requests',
+      headers: { authorization: `Bearer ${jwt}` },
+      payload: { cycle: '2027' },
+    });
+    const { workflowInstanceId } = request.json<{ workflowInstanceId: string }>();
+
+    const moduleTutorJwt = await ctx.makeJwt({ roles: ['module-tutor'] });
+    const decide = await ctx.app.inject({
+      method: 'POST',
+      url: `/api/v1/regulatory/ucas/confirmations/requests/${workflowInstanceId}/decision`,
+      headers: { authorization: `Bearer ${moduleTutorJwt}` },
+      payload: { decisionCode: 'approved' },
+    });
+    expect(decide.statusCode).toBe(403);
+  });
+});
+
 function confirmedPayload(ucasPersonalId: string) {
   return {
     ucasPersonalId,

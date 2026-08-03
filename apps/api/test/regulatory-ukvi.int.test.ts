@@ -370,6 +370,107 @@ describe('UKVI compliance exchange', () => {
   });
 });
 
+describe('UKVI CAS request submission approval workflow', () => {
+  it('rejects a submission request when there are no pending CAS requests', async () => {
+    const request = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/v1/regulatory/ukvi/cas-requests/submission-requests',
+      headers: { authorization: `Bearer ${jwt}` },
+      payload: {},
+    });
+    expect(request.statusCode).toBe(422);
+  });
+
+  it('approving a submission request processes exactly the previewed CAS requests', async () => {
+    const fixture = await createUkviEnrolment('Ukvi', 'WorkflowApprove');
+
+    const request = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/v1/regulatory/ukvi/cas-requests/submission-requests',
+      headers: { authorization: `Bearer ${jwt}` },
+      payload: {},
+    });
+    expect(request.statusCode).toBe(202);
+    const { workflowInstanceId, recordCount } = request.json<{ workflowInstanceId: string; recordCount: number }>();
+    expect(recordCount).toBeGreaterThanOrEqual(1);
+
+    const pending = await ctx.app.inject({
+      method: 'GET',
+      url: '/api/v1/regulatory/ukvi/cas-requests/submission-requests',
+      headers: { authorization: `Bearer ${jwt}` },
+    });
+    expect(pending.statusCode).toBe(200);
+    expect(pending.json<Array<{ workflowInstanceId: string }>>().some(r => r.workflowInstanceId === workflowInstanceId)).toBe(true);
+
+    const decide = await ctx.app.inject({
+      method: 'POST',
+      url: `/api/v1/regulatory/ukvi/cas-requests/submission-requests/${workflowInstanceId}/decision`,
+      headers: { authorization: `Bearer ${jwt}` },
+      payload: { decisionCode: 'approved' },
+    });
+    expect(decide.statusCode).toBe(200);
+    expect(decide.json<{ processedCount: number }>().processedCount).toBe(recordCount);
+
+    const casRows = await ctx.db.execute(sql`
+      SELECT status_code
+      FROM ukvi_cas_request
+      WHERE tenant_id = ${ctx.tenantId}
+        AND enrolment_id = ${fixture.enrolmentId}
+    `) as Array<{ status_code: string }>;
+    expect(casRows).toEqual([expect.objectContaining({ status_code: 'pending' })]);
+  });
+
+  it('a rejected request processes nothing, and cannot be decided twice', async () => {
+    await createUkviEnrolment('Ukvi', 'WorkflowReject');
+
+    const request = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/v1/regulatory/ukvi/cas-requests/submission-requests',
+      headers: { authorization: `Bearer ${jwt}` },
+      payload: {},
+    });
+    const { workflowInstanceId } = request.json<{ workflowInstanceId: string }>();
+
+    const decide = await ctx.app.inject({
+      method: 'POST',
+      url: `/api/v1/regulatory/ukvi/cas-requests/submission-requests/${workflowInstanceId}/decision`,
+      headers: { authorization: `Bearer ${jwt}` },
+      payload: { decisionCode: 'rejected', reason: 'Not ready' },
+    });
+    expect(decide.statusCode).toBe(200);
+    expect(decide.json<{ processedCount: number }>().processedCount).toBe(0);
+
+    const secondDecide = await ctx.app.inject({
+      method: 'POST',
+      url: `/api/v1/regulatory/ukvi/cas-requests/submission-requests/${workflowInstanceId}/decision`,
+      headers: { authorization: `Bearer ${jwt}` },
+      payload: { decisionCode: 'approved' },
+    });
+    expect(secondDecide.statusCode).toBe(422);
+  });
+
+  it('rejects a decision from a role lacking regulatory:decide', async () => {
+    await createUkviEnrolment('Ukvi', 'WorkflowWrongRole');
+
+    const request = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/v1/regulatory/ukvi/cas-requests/submission-requests',
+      headers: { authorization: `Bearer ${jwt}` },
+      payload: {},
+    });
+    const { workflowInstanceId } = request.json<{ workflowInstanceId: string }>();
+
+    const moduleTutorJwt = await ctx.makeJwt({ roles: ['module-tutor'] });
+    const decide = await ctx.app.inject({
+      method: 'POST',
+      url: `/api/v1/regulatory/ukvi/cas-requests/submission-requests/${workflowInstanceId}/decision`,
+      headers: { authorization: `Bearer ${moduleTutorJwt}` },
+      payload: { decisionCode: 'approved' },
+    });
+    expect(decide.statusCode).toBe(403);
+  });
+});
+
 async function createPerson(legalFirstName: string, legalFamilyName: string): Promise<string> {
   const res = await ctx.app.inject({
     method: 'POST',

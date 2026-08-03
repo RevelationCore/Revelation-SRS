@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 
-import { and, eq, isNull, sql } from 'drizzle-orm';
+import { and, desc, eq, isNull, sql } from 'drizzle-orm';
 import {
   engagementOutcomes,
   enrolmentDownstreamTriggers,
@@ -10,6 +10,10 @@ import {
   ukviEngagementEvidenceSnapshots,
   ukviSponsorDecisions,
   ukviVisaStatuses,
+  workflowDefinitions,
+  workflowDefinitionVersions,
+  workflowInstances,
+  workflowTasks,
   type Db,
   type UkviCasRequest,
   withTenantContext,
@@ -27,10 +31,26 @@ import {
 
 import type { IntegrationBusPublisher } from '../integration-bus/publisher.js';
 import type { RulesEngine } from '../rules-engine/engine.js';
+import type { WorkflowBridgeService } from '../platform-controls/workflow-bridge-service.js';
 import type { ValueSetService } from '../value-sets/service.js';
 import { clockNow } from '../clock.js';
 
 import { RegulatoryExchangeService } from './exchange-service.js';
+
+type Uuid = `${string}-${string}-${string}-${string}-${string}`;
+
+const CAS_SUBMISSION_WORKFLOW_CODE = 'ukvi-cas-request-submission-approval';
+const CAS_SUBMISSION_DECISION_STEP_KEY = 'approve-or-reject-submission';
+const CAS_SUBMISSION_GATEWAY_KEY = 'G01';
+
+export interface UkviCasSubmissionRequestDto {
+  workflowInstanceId: string;
+  workflowTaskId:      string;
+  statusCode:          string;
+  recordCount:         number;
+  context:             Record<string, unknown>;
+  startedAt:           Date;
+}
 
 interface CasSourceRow {
   trigger_id: string;
@@ -85,6 +105,7 @@ export interface UkviPersonData {
 export interface UkviCasRequestGenerationResult {
   processedCount: number;
   casRequests: Array<{
+    triggerId: string;
     casRequestId: string;
     enrolmentId: string;
     personData: UkviPersonData;
@@ -180,13 +201,18 @@ export class UkviService {
     private readonly valueSets: ValueSetService,
     private readonly rules: RulesEngine,
     exchanges?: RegulatoryExchangeService,
+    private readonly workflowBridge?: WorkflowBridgeService,
   ) {
     this.exchanges = exchanges ?? new RegulatoryExchangeService(db);
   }
 
-  async generateCasRequests(tenantId: string, actorId: string): Promise<UkviCasRequestGenerationResult> {
+  async generateCasRequests(
+    tenantId: string,
+    actorId: string,
+    opts: { dryRun?: boolean; triggerIds?: string[] } = {},
+  ): Promise<UkviCasRequestGenerationResult> {
     const now = clockNow();
-    const rows = await this.#loadPendingCasSources(tenantId);
+    const rows = await this.#loadPendingCasSources(tenantId, opts.triggerIds);
     const casRequests: UkviCasRequestGenerationResult['casRequests'] = [];
     const seenTriggers = new Set<string>();
 
@@ -196,6 +222,11 @@ export class UkviService {
 
       const casRequestId = randomUUID();
       const personData = mapCasPersonData(row);
+
+      if (opts.dryRun) {
+        casRequests.push({ triggerId: row.trigger_id, casRequestId, enrolmentId: row.enrolment_id, personData });
+        continue;
+      }
 
       await withTenantContext(this.db, tenantId, async (tx) => {
         await tx.insert(ukviCasRequests).values({
@@ -250,10 +281,171 @@ export class UkviService {
         requestedAt: now.toISOString(),
       });
 
-      casRequests.push({ casRequestId, enrolmentId: row.enrolment_id, personData });
+      casRequests.push({ triggerId: row.trigger_id, casRequestId, enrolmentId: row.enrolment_id, personData });
     }
 
     return { processedCount: casRequests.length, casRequests };
+  }
+
+  // ── Submission approval workflow (BPR-W12 rollout) ──────────────────────────
+  // Snapshots the previewed trigger set into the workflow context, exactly as
+  // SlcService.requestSubmission / UcasService.requestSubmission do, so a
+  // later approval acts on precisely what was reviewed rather than a fresh
+  // (possibly diverged) query.
+
+  async requestCasSubmission(
+    tenantId: string,
+    requesterId: string,
+    reason?: string,
+  ): Promise<UkviCasSubmissionRequestDto> {
+    if (!this.workflowBridge) throw new ValidationError('UKVI CAS submission workflow is not configured');
+
+    const preview = await this.generateCasRequests(tenantId, requesterId, { dryRun: true });
+    if (preview.casRequests.length === 0) {
+      throw new ValidationError('No pending UKVI CAS requests to submit');
+    }
+    const triggerIds = preview.casRequests.map((c) => c.triggerId);
+
+    const workflowDefinitionVersionId = await this.#getActiveCasSubmissionWorkflowVersionId(tenantId);
+    const instance = await this.workflowBridge.startWorkflowInstance({
+      tenantId,
+      workflowDefinitionVersionId,
+      workflowCode: CAS_SUBMISSION_WORKFLOW_CODE,
+      subjectEntityType: 'ukvi_cas_request_batch',
+      startedBy: requesterId,
+      context: { triggerIds, recordCount: triggerIds.length, ...(reason ? { reason } : {}) },
+    });
+
+    const task = await this.workflowBridge.assignWorkflowTask({
+      tenantId,
+      workflowInstanceId: instance.workflowInstanceId,
+      stepKey: CAS_SUBMISSION_DECISION_STEP_KEY,
+      assigneeRoleCode: 'regulatory-officer',
+      payload: { triggerIds, recordCount: triggerIds.length },
+    });
+
+    return {
+      workflowInstanceId: instance.workflowInstanceId,
+      workflowTaskId: task.workflowTaskId,
+      statusCode: 'running',
+      recordCount: triggerIds.length,
+      context: { triggerIds, recordCount: triggerIds.length },
+      startedAt: clockNow(),
+    };
+  }
+
+  async listPendingCasSubmissionRequests(tenantId: string): Promise<UkviCasSubmissionRequestDto[]> {
+    const rows = await withTenantContext(this.db, tenantId, async (tx) =>
+      tx.select({ instance: workflowInstances, task: workflowTasks })
+        .from(workflowInstances)
+        .innerJoin(workflowTasks, and(
+          eq(workflowTasks.workflowInstanceId, workflowInstances.id),
+          eq(workflowTasks.stepKey, CAS_SUBMISSION_DECISION_STEP_KEY),
+        ))
+        .where(and(
+          eq(workflowInstances.tenantId, tenantId as Uuid),
+          eq(workflowInstances.workflowCode, CAS_SUBMISSION_WORKFLOW_CODE),
+          eq(workflowInstances.statusCode, 'running'),
+        ))
+        .orderBy(desc(workflowInstances.startedAt)),
+    );
+    return rows.map((r) => ({
+      workflowInstanceId: r.instance.id,
+      workflowTaskId:      r.task.id,
+      statusCode:          r.instance.statusCode,
+      recordCount:         Array.isArray(r.instance.context['triggerIds']) ? (r.instance.context['triggerIds'] as unknown[]).length : 0,
+      context:             r.instance.context,
+      startedAt:           r.instance.startedAt,
+    }));
+  }
+
+  async decideCasSubmissionRequest(
+    tenantId: string,
+    workflowInstanceId: string,
+    decisionCode: 'approved' | 'rejected',
+    actorId: string,
+    reason?: string,
+  ): Promise<{ processedCount: number }> {
+    if (!this.workflowBridge) throw new ValidationError('UKVI CAS submission workflow is not configured');
+
+    const instance = await this.#getCasSubmissionInstance(tenantId, workflowInstanceId);
+    if (instance.statusCode !== 'running') {
+      throw new ValidationError(`Cannot decide a submission request in status '${instance.statusCode}'`);
+    }
+
+    const task = await this.#findCasSubmissionDecisionTask(tenantId, workflowInstanceId);
+
+    await this.workflowBridge.recordWorkflowDecision({
+      tenantId,
+      workflowInstanceId,
+      gatewayKey: CAS_SUBMISSION_GATEWAY_KEY,
+      decisionCode,
+      ...(reason ? { conditionSummary: reason } : {}),
+      outcomeStepKey: 'request-closed',
+      actorId,
+      metadata: { context: instance.context },
+    });
+    if (task) {
+      await this.workflowBridge.completeWorkflowTask({
+        tenantId, workflowTaskId: task.id, completedBy: actorId,
+        payload: { decisionCode, ...(reason ? { reason } : {}) },
+      });
+    }
+    await this.workflowBridge.completeWorkflowInstance({
+      tenantId, workflowInstanceId, actorId,
+      statusCode: 'completed', metadata: { decisionCode },
+    });
+
+    if (decisionCode !== 'approved') return { processedCount: 0 };
+
+    const triggerIds = instance.context['triggerIds'] as string[];
+    const result = await this.generateCasRequests(tenantId, actorId, { dryRun: false, triggerIds });
+    return { processedCount: result.processedCount };
+  }
+
+  async #getCasSubmissionInstance(tenantId: string, workflowInstanceId: string) {
+    const rows = await withTenantContext(this.db, tenantId, async (tx) =>
+      tx.select().from(workflowInstances).where(and(
+        eq(workflowInstances.id, workflowInstanceId as Uuid),
+        eq(workflowInstances.tenantId, tenantId as Uuid),
+        eq(workflowInstances.workflowCode, CAS_SUBMISSION_WORKFLOW_CODE),
+      )).limit(1),
+    );
+    if (!rows[0]) throw new NotFoundError('WorkflowInstance', workflowInstanceId);
+    return rows[0];
+  }
+
+  async #findCasSubmissionDecisionTask(tenantId: string, workflowInstanceId: string) {
+    const rows = await withTenantContext(this.db, tenantId, async (tx) =>
+      tx.select().from(workflowTasks).where(and(
+        eq(workflowTasks.workflowInstanceId, workflowInstanceId as Uuid),
+        eq(workflowTasks.tenantId, tenantId as Uuid),
+        eq(workflowTasks.stepKey, CAS_SUBMISSION_DECISION_STEP_KEY),
+      )).limit(1),
+    );
+    return rows[0] ?? null;
+  }
+
+  async #getActiveCasSubmissionWorkflowVersionId(tenantId: string): Promise<string> {
+    const rows = await withTenantContext(this.db, tenantId, async (tx) =>
+      tx.select({ versionId: workflowDefinitionVersions.id })
+        .from(workflowDefinitions)
+        .innerJoin(
+          workflowDefinitionVersions,
+          and(
+            eq(workflowDefinitionVersions.workflowDefinitionId, workflowDefinitions.id),
+            eq(workflowDefinitionVersions.versionNumber, workflowDefinitions.currentVersionNumber),
+          ),
+        )
+        .where(and(
+          eq(workflowDefinitions.definitionCode, CAS_SUBMISSION_WORKFLOW_CODE),
+          eq(workflowDefinitions.statusCode, 'active'),
+          eq(workflowDefinitionVersions.statusCode, 'active'),
+        ))
+        .limit(1),
+    );
+    if (!rows[0]) throw new NotFoundError('WorkflowDefinition', CAS_SUBMISSION_WORKFLOW_CODE);
+    return rows[0].versionId;
   }
 
   async recordCasAssignment(
@@ -714,7 +906,10 @@ export class UkviService {
     return rows[0].id;
   }
 
-  async #loadPendingCasSources(tenantId: string): Promise<CasSourceRow[]> {
+  async #loadPendingCasSources(tenantId: string, triggerIds?: string[]): Promise<CasSourceRow[]> {
+    const triggerFilter = triggerIds && triggerIds.length > 0
+      ? sql`AND edt.id IN (${sql.join(triggerIds.map((id) => sql`${id}`), sql`, `)})`
+      : sql``;
     return (await withTenantContext(this.db, tenantId, async (tx) =>
       tx.execute(sql`
         SELECT
@@ -748,6 +943,7 @@ export class UkviService {
         WHERE edt.tenant_id = ${tenantId}
           AND edt.trigger_type_code = 'ukvi-cas'
           AND edt.status_code = 'pending'
+          ${triggerFilter}
         ORDER BY edt.created_at ASC
       `),
     )) as unknown as CasSourceRow[];

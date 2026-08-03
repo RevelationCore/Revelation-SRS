@@ -208,6 +208,115 @@ describe('HESA student returns', () => {
   });
 });
 
+describe('HESA return submission approval workflow', () => {
+  async function createValidatedReturnWithFile(academicYear: string): Promise<string> {
+    await createHesaStudent('Hesa', 'Workflow', '2000-05-05');
+    const returnId = await createReturn(academicYear);
+    await ctx.app.inject({
+      method: 'POST', url: `/api/v1/regulatory/hesa/returns/${returnId}/validate`,
+      headers: { authorization: `Bearer ${jwt}` },
+    });
+    // Generates and persists the submission file as a side effect.
+    await ctx.app.inject({
+      method: 'GET', url: `/api/v1/regulatory/hesa/returns/${returnId}/file`,
+      headers: { authorization: `Bearer ${jwt}` },
+    });
+    return returnId;
+  }
+
+  it('rejects a submission request when no submission file has been generated yet', async () => {
+    await createHesaStudent('Hesa', 'NoFile', '2000-01-01');
+    const returnId = await createReturn('2028-29');
+    const request = await ctx.app.inject({
+      method: 'POST', url: `/api/v1/regulatory/hesa/returns/${returnId}/submission-requests`,
+      headers: { authorization: `Bearer ${jwt}` },
+      payload: {},
+    });
+    expect(request.statusCode).toBe(422);
+  });
+
+  it('approving a submission request marks the return submitted', async () => {
+    const returnId = await createValidatedReturnWithFile('2028-30');
+
+    const request = await ctx.app.inject({
+      method: 'POST', url: `/api/v1/regulatory/hesa/returns/${returnId}/submission-requests`,
+      headers: { authorization: `Bearer ${jwt}` },
+      payload: { submissionReference: 'HESA-WF-001' },
+    });
+    expect(request.statusCode).toBe(202);
+    const { workflowInstanceId } = request.json<{ workflowInstanceId: string }>();
+
+    const pending = await ctx.app.inject({
+      method: 'GET', url: '/api/v1/regulatory/hesa/returns/submission-requests',
+      headers: { authorization: `Bearer ${jwt}` },
+    });
+    expect(pending.statusCode).toBe(200);
+    expect(pending.json<Array<{ workflowInstanceId: string }>>().some(r => r.workflowInstanceId === workflowInstanceId)).toBe(true);
+
+    const decide = await ctx.app.inject({
+      method: 'POST', url: `/api/v1/regulatory/hesa/returns/submission-requests/${workflowInstanceId}/decision`,
+      headers: { authorization: `Bearer ${jwt}` },
+      payload: { decisionCode: 'approved' },
+    });
+    expect(decide.statusCode).toBe(204);
+
+    const detail = await ctx.app.inject({
+      method: 'GET', url: `/api/v1/regulatory/hesa/returns/${returnId}`,
+      headers: { authorization: `Bearer ${jwt}` },
+    });
+    expect(detail.json<{ statusCode: string; submissionReference: string | null }>())
+      .toMatchObject({ statusCode: 'submitted', submissionReference: 'HESA-WF-001' });
+  });
+
+  it('a rejected request leaves the return unsubmitted, and cannot be decided twice', async () => {
+    const returnId = await createValidatedReturnWithFile('2028-31');
+    const request = await ctx.app.inject({
+      method: 'POST', url: `/api/v1/regulatory/hesa/returns/${returnId}/submission-requests`,
+      headers: { authorization: `Bearer ${jwt}` },
+      payload: {},
+    });
+    const { workflowInstanceId } = request.json<{ workflowInstanceId: string }>();
+
+    const decide = await ctx.app.inject({
+      method: 'POST', url: `/api/v1/regulatory/hesa/returns/submission-requests/${workflowInstanceId}/decision`,
+      headers: { authorization: `Bearer ${jwt}` },
+      payload: { decisionCode: 'rejected', reason: 'Needs another validation pass' },
+    });
+    expect(decide.statusCode).toBe(204);
+
+    const detail = await ctx.app.inject({
+      method: 'GET', url: `/api/v1/regulatory/hesa/returns/${returnId}`,
+      headers: { authorization: `Bearer ${jwt}` },
+    });
+    expect(detail.json<{ statusCode: string }>().statusCode).not.toBe('submitted');
+
+    const secondDecide = await ctx.app.inject({
+      method: 'POST', url: `/api/v1/regulatory/hesa/returns/submission-requests/${workflowInstanceId}/decision`,
+      headers: { authorization: `Bearer ${jwt}` },
+      payload: { decisionCode: 'approved' },
+    });
+    expect(secondDecide.statusCode).toBe(422);
+  });
+
+  it('rejects a decision from a role lacking regulatory:decide', async () => {
+    const returnId = await createValidatedReturnWithFile('2028-32');
+    const request = await ctx.app.inject({
+      method: 'POST', url: `/api/v1/regulatory/hesa/returns/${returnId}/submission-requests`,
+      headers: { authorization: `Bearer ${jwt}` },
+      payload: {},
+    });
+    const { workflowInstanceId } = request.json<{ workflowInstanceId: string }>();
+
+    const moduleTutorJwt = await ctx.makeJwt({ roles: ['module-tutor'] });
+    const decide = await ctx.app.inject({
+      method: 'POST', url: `/api/v1/regulatory/hesa/returns/submission-requests/${workflowInstanceId}/decision`,
+      headers: { authorization: `Bearer ${moduleTutorJwt}` },
+      payload: { decisionCode: 'approved' },
+    });
+    expect(decide.statusCode).toBe(403);
+  });
+});
+
 async function createReturn(academicYear: string): Promise<string> {
   const res = await ctx.app.inject({
     method: 'POST',

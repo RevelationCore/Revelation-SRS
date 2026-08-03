@@ -4,20 +4,25 @@ import {
   type ComplianceAlert,
   type SponsorDecision,
   type UkviOperationalStatus,
+  type UkviCasSubmissionRequest,
   authoriseSponsorDecision,
   evaluateComplianceAlerts,
-  generateCasRequests,
   listCasRequests,
   listComplianceAlerts,
   listSponsorDecisions,
   resolveComplianceAlert,
   getUkviOperationalStatus,
+  requestUkviCasSubmission,
+  listUkviCasSubmissionRequests,
+  decideUkviCasSubmissionRequest,
 } from '../api/regulatory.js';
 import { ApiError } from '../api/client.js';
+import { useAuth } from '../auth/AuthContext.js';
+import { userHasAnyPermission } from '../auth/RequirePermission.js';
 import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
 import {
-  PageHeader, Button, Card, CardBody, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, StatCard,
+  PageHeader, Button, Card, CardHeader, CardBody, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, StatCard,
 } from '@revelation-srs/ui';
 
 type Tab = 'cas' | 'compliance' | 'decisions';
@@ -147,10 +152,12 @@ function SponsorDecisionsTab() {
 }
 
 function CasTab() {
+  const { roles } = useAuth();
+  const canDecide = userHasAnyPermission(roles, ['regulatory:decide']);
   const [requests,   setRequests]   = useState<CasRequest[]>([]);
   const [loading,    setLoading]    = useState(true);
   const [error,      setError]      = useState('');
-  const [generating, setGenerating] = useState(false);
+  const [requesting, setRequesting] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
 
   const load = useCallback(async () => {
@@ -167,18 +174,17 @@ function CasTab() {
 
   useEffect(() => { void load(); }, [load]);
 
-  async function handleGenerate() {
-    setGenerating(true);
+  async function handleRequestSubmission() {
+    setRequesting(true);
     setError('');
     setSuccessMsg('');
     try {
-      const result = await generateCasRequests();
-      setSuccessMsg(`Generated ${result.processedCount} CAS request(s).`);
-      await load();
+      await requestUkviCasSubmission();
+      setSuccessMsg('Approval requested to submit pending CAS requests.');
     } catch (err) {
-      setError(err instanceof ApiError ? (err.detail ?? err.message) : 'Failed to generate CAS requests');
+      setError(err instanceof ApiError ? (err.detail ?? err.message) : 'Failed to request CAS submission');
     } finally {
-      setGenerating(false);
+      setRequesting(false);
     }
   }
 
@@ -186,8 +192,8 @@ function CasTab() {
     <div>
       <div className="flex items-center justify-between mb-4">
         <p className="text-sm text-neutral-600">Confirmation of Acceptance for Studies (CAS) requests for international students.</p>
-        <Button onClick={() => void handleGenerate()} disabled={generating}>
-          {generating ? 'Generating…' : 'Generate CAS requests'}
+        <Button onClick={() => void handleRequestSubmission()} disabled={requesting}>
+          {requesting ? 'Requesting…' : 'Request approval to submit'}
         </Button>
       </div>
 
@@ -226,7 +232,121 @@ function CasTab() {
           </Table>
         </Card>
       )}
+
+      {canDecide && (
+        <div className="mt-8">
+          <UkviCasSubmissionRequestsQueue onDecided={load} />
+        </div>
+      )}
     </div>
+  );
+}
+
+function UkviCasSubmissionRequestsQueue({ onDecided }: { onDecided: () => void }) {
+  const [requests, setRequests] = useState<UkviCasSubmissionRequest[]>([]);
+  const [loading,  setLoading]  = useState(true);
+  const [error,    setError]    = useState('');
+  const [deciding, setDeciding] = useState<string | null>(null);
+  const [reasonById, setReasonById] = useState<Record<string, string>>({});
+  const [busyId,   setBusyId]   = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true); setError('');
+    try {
+      setRequests(await listUkviCasSubmissionRequests());
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : 'Failed to load submission requests');
+    } finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { void load(); }, [load]);
+
+  async function handleDecide(workflowInstanceId: string, decisionCode: 'approved' | 'rejected') {
+    setBusyId(workflowInstanceId); setError('');
+    try {
+      await decideUkviCasSubmissionRequest(workflowInstanceId, decisionCode, reasonById[workflowInstanceId]?.trim() || undefined);
+      setDeciding(null);
+      await load();
+      onDecided();
+    } catch (e) {
+      setError(e instanceof ApiError ? (e.detail ?? e.message) : 'Failed to record decision');
+    } finally { setBusyId(null); }
+  }
+
+  return (
+    <Card>
+      <CardHeader
+        title="Pending CAS submission requests"
+        actions={<Button variant="secondary" size="sm" onClick={() => void load()}>Refresh</Button>}
+      />
+      <CardBody>
+        {error && <p className="mb-3 text-sm text-danger-600">{error}</p>}
+        {loading ? (
+          <div className="flex justify-center py-8"><Spinner /></div>
+        ) : requests.length === 0 ? (
+          <p className="text-sm text-neutral-600">No pending submission requests.</p>
+        ) : (
+          <Table>
+            <TableHead>
+              <tr>
+                <TableHeaderCell>CAS requests</TableHeaderCell>
+                <TableHeaderCell>Requested</TableHeaderCell>
+                <TableHeaderCell><span className="sr-only">Actions</span></TableHeaderCell>
+              </tr>
+            </TableHead>
+            <TableBody>
+              {requests.map(r => (
+                <TableRow key={r.workflowInstanceId}>
+                  <TableCell className="text-xs">{r.recordCount}</TableCell>
+                  <TableCell className="text-neutral-500">
+                    {new Date(r.startedAt).toLocaleDateString('en-GB')}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {deciding === r.workflowInstanceId ? (
+                      <div className="inline-flex flex-col items-end gap-2">
+                        <input
+                          type="text"
+                          placeholder="Reason (optional)"
+                          className="rounded border border-neutral-300 px-2 py-1 text-xs w-56"
+                          value={reasonById[r.workflowInstanceId] ?? ''}
+                          onChange={(e) => setReasonById(v => ({ ...v, [r.workflowInstanceId]: e.target.value }))}
+                        />
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            disabled={busyId === r.workflowInstanceId}
+                            className="bg-success-600 hover:bg-success-700"
+                            onClick={() => void handleDecide(r.workflowInstanceId, 'approved')}
+                          >
+                            Approve
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            className="border-danger-300 text-danger-700 hover:bg-danger-50"
+                            disabled={busyId === r.workflowInstanceId}
+                            onClick={() => void handleDecide(r.workflowInstanceId, 'rejected')}
+                          >
+                            Reject
+                          </Button>
+                          <Button type="button" variant="ghost" size="sm" onClick={() => setDeciding(null)}>
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <Button type="button" variant="secondary" size="sm" onClick={() => setDeciding(r.workflowInstanceId)}>
+                        Decide
+                      </Button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </CardBody>
+    </Card>
   );
 }
 

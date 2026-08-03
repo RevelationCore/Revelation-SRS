@@ -2,21 +2,26 @@ import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import {
   type HesaReturn,
   type HesaValidationResult,
+  type HesaSubmissionRequest,
   createHesaReturn,
   downloadHesaFile,
   getHesaReturn,
   listHesaReturns,
-  submitHesaReturn,
+  requestHesaReturnSubmission,
+  listHesaSubmissionRequests,
+  decideHesaSubmissionRequest,
   validateHesaReturn,
 } from '../api/regulatory.js';
 import { ApiError } from '../api/client.js';
 import { useAuth } from '../auth/AuthContext.js';
+import { userHasAnyPermission } from '../auth/RequirePermission.js';
 import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
-import { PageHeader, Card, CardBody, Button, Input } from '@revelation-srs/ui';
+import { PageHeader, Card, CardHeader, CardBody, Button, Input, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell } from '@revelation-srs/ui';
 
 export function HesaPage() {
-  const { token }          = useAuth();
+  const { token, roles }   = useAuth();
+  const canDecide = userHasAnyPermission(roles, ['regulatory:decide']);
   const [returns,   setReturns]   = useState<HesaReturn[]>([]);
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState('');
@@ -90,16 +95,16 @@ export function HesaPage() {
     }
   }
 
-  async function handleSubmit(returnId: string) {
+  async function handleRequestSubmission(returnId: string) {
     setSubmitting(true);
     setActionError('');
     try {
-      await submitHesaReturn(returnId);
+      await requestHesaReturnSubmission(returnId, selected?.submissionReference ?? undefined);
       const r = await getHesaReturn(returnId);
       setSelected(r);
       await load();
     } catch (err) {
-      setActionError(err instanceof ApiError ? (err.detail ?? err.message) : 'Submit failed');
+      setActionError(err instanceof ApiError ? (err.detail ?? err.message) : 'Failed to request submission');
     } finally {
       setSubmitting(false);
     }
@@ -207,10 +212,10 @@ export function HesaPage() {
                     <Button
                       size="sm"
                       className="bg-success-600 hover:bg-success-700"
-                      onClick={() => void handleSubmit(selected.returnId)}
+                      onClick={() => void handleRequestSubmission(selected.returnId)}
                       disabled={submitting}
                     >
-                      {submitting ? 'Submitting…' : 'Submit to HESA'}
+                      {submitting ? 'Submitting…' : 'Request approval to submit'}
                     </Button>
                   )}
                 </div>
@@ -241,7 +246,123 @@ export function HesaPage() {
           )}
         </div>
       </div>
+
+      {canDecide && (
+        <div className="mt-8">
+          <HesaSubmissionRequestsQueue onDecided={load} />
+        </div>
+      )}
     </div>
+  );
+}
+
+function HesaSubmissionRequestsQueue({ onDecided }: { onDecided: () => void }) {
+  const [requests, setRequests] = useState<HesaSubmissionRequest[]>([]);
+  const [loading,  setLoading]  = useState(true);
+  const [error,    setError]    = useState('');
+  const [deciding, setDeciding] = useState<string | null>(null);
+  const [reasonById, setReasonById] = useState<Record<string, string>>({});
+  const [busyId,   setBusyId]   = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true); setError('');
+    try {
+      setRequests(await listHesaSubmissionRequests());
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : 'Failed to load submission requests');
+    } finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { void load(); }, [load]);
+
+  async function handleDecide(workflowInstanceId: string, decisionCode: 'approved' | 'rejected') {
+    setBusyId(workflowInstanceId); setError('');
+    try {
+      await decideHesaSubmissionRequest(workflowInstanceId, decisionCode, reasonById[workflowInstanceId]?.trim() || undefined);
+      setDeciding(null);
+      await load();
+      onDecided();
+    } catch (e) {
+      setError(e instanceof ApiError ? (e.detail ?? e.message) : 'Failed to record decision');
+    } finally { setBusyId(null); }
+  }
+
+  return (
+    <Card>
+      <CardHeader
+        title="Pending submission requests"
+        actions={<Button variant="secondary" size="sm" onClick={() => void load()}>Refresh</Button>}
+      />
+      <CardBody>
+        {error && <p className="mb-3 text-sm text-danger-600">{error}</p>}
+        {loading ? (
+          <div className="flex justify-center py-8"><Spinner /></div>
+        ) : requests.length === 0 ? (
+          <p className="text-sm text-neutral-600">No pending submission requests.</p>
+        ) : (
+          <Table>
+            <TableHead>
+              <tr>
+                <TableHeaderCell>Academic year</TableHeaderCell>
+                <TableHeaderCell>Reference</TableHeaderCell>
+                <TableHeaderCell>Submitted</TableHeaderCell>
+                <TableHeaderCell><span className="sr-only">Actions</span></TableHeaderCell>
+              </tr>
+            </TableHead>
+            <TableBody>
+              {requests.map(r => (
+                <TableRow key={r.workflowInstanceId}>
+                  <TableCell>{String(r.context['academicYear'] ?? '—')}</TableCell>
+                  <TableCell className="font-mono text-xs">{String(r.context['submissionReference'] ?? '—')}</TableCell>
+                  <TableCell className="text-neutral-500">
+                    {new Date(r.startedAt).toLocaleDateString('en-GB')}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {deciding === r.workflowInstanceId ? (
+                      <div className="inline-flex flex-col items-end gap-2">
+                        <input
+                          type="text"
+                          placeholder="Reason (optional)"
+                          className="rounded border border-neutral-300 px-2 py-1 text-xs w-56"
+                          value={reasonById[r.workflowInstanceId] ?? ''}
+                          onChange={(e) => setReasonById(v => ({ ...v, [r.workflowInstanceId]: e.target.value }))}
+                        />
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            disabled={busyId === r.workflowInstanceId}
+                            className="bg-success-600 hover:bg-success-700"
+                            onClick={() => void handleDecide(r.workflowInstanceId, 'approved')}
+                          >
+                            Approve
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            className="border-danger-300 text-danger-700 hover:bg-danger-50"
+                            disabled={busyId === r.workflowInstanceId}
+                            onClick={() => void handleDecide(r.workflowInstanceId, 'rejected')}
+                          >
+                            Reject
+                          </Button>
+                          <Button type="button" variant="ghost" size="sm" onClick={() => setDeciding(null)}>
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <Button type="button" variant="secondary" size="sm" onClick={() => setDeciding(r.workflowInstanceId)}>
+                        Decide
+                      </Button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </CardBody>
+    </Card>
   );
 }
 

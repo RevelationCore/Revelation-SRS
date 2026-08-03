@@ -1,15 +1,20 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   type OfsB3Extract,
-  generateOfsB3Extract,
-  generateOfsParticipationReport,
+  type OfsGenerationRequest,
+  type OfsExtractTypeCode,
   getOfsB3Extract,
+  requestOfsExtractGeneration,
+  listOfsGenerationRequests,
+  decideOfsGenerationRequest,
 } from '../api/regulatory.js';
 import { ApiError } from '../api/client.js';
+import { useAuth } from '../auth/AuthContext.js';
+import { userHasAnyPermission } from '../auth/RequirePermission.js';
 import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
 import {
-  PageHeader, Button, Select, Card, CardBody, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
+  PageHeader, Button, Select, Card, CardHeader, CardBody, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
 } from '@revelation-srs/ui';
 
 const OFS_ACADEMIC_YEARS = ['2025-26', '2024-25', '2023-24', '2022-23'];
@@ -27,13 +32,14 @@ interface ParticipationReport {
 // ── B3 Extract tab ────────────────────────────────────────────────────────────
 
 function B3Tab({
-  extracts, setExtracts,
+  extracts, setExtracts, onRequested,
 }: {
   extracts: OfsB3Extract[];
   setExtracts: React.Dispatch<React.SetStateAction<OfsB3Extract[]>>;
+  onRequested: () => void;
 }) {
   const [academicYear, setAcademicYear] = useState(OFS_ACADEMIC_YEARS[0]!);
-  const [generating,   setGenerating]   = useState(false);
+  const [requesting,   setRequesting]   = useState(false);
   const [polling,      setPolling]      = useState<string | null>(null);
   const [selected,     setSelected]     = useState<OfsB3Extract | null>(null);
   const [error,        setError]        = useState('');
@@ -54,20 +60,17 @@ function B3Tab({
     return () => clearInterval(id);
   }, [polling, selected, setExtracts]);
 
-  async function handleGenerate() {
+  async function handleRequestGeneration() {
     (document.activeElement as HTMLElement | null)?.blur();
-    setGenerating(true); setError(''); setSuccessMsg('');
+    setRequesting(true); setError(''); setSuccessMsg('');
     try {
-      const { extractId } = await generateOfsB3Extract(academicYear);
-      const ext = await getOfsB3Extract(extractId);
-      setExtracts(prev => [ext, ...prev]);
-      setSelected(ext);
-      if (ext.statusCode === 'pending') setPolling(extractId);
-      setSuccessMsg(`B3 extract for ${academicYear} generated successfully.`);
+      await requestOfsExtractGeneration('b3-student-outcomes', academicYear);
+      onRequested();
+      setSuccessMsg(`Approval requested to generate the B3 extract for ${academicYear}.`);
     } catch (err) {
-      setError(err instanceof ApiError ? (err.detail ?? err.message) : 'Failed to generate B3 extract');
+      setError(err instanceof ApiError ? (err.detail ?? err.message) : 'Failed to request B3 extract generation');
     } finally {
-      setGenerating(false);
+      setRequesting(false);
     }
   }
 
@@ -83,8 +86,9 @@ function B3Tab({
   return (
     <div className="space-y-5">
       <p className="text-sm text-neutral-500">
-        Generate the OfS B3 student data extract for a given academic year. The extract can be
-        downloaded as JSON for submission to the OfS data portal.
+        Request approval to generate the OfS B3 student data extract for a given academic year.
+        Once a regulatory officer approves the request, the extract can be downloaded as JSON for
+        submission to the OfS data portal.
       </p>
 
       <div className="flex items-center gap-3">
@@ -97,15 +101,15 @@ function B3Tab({
         >
           {OFS_ACADEMIC_YEARS.map(y => <option key={y} value={y}>{y}</option>)}
         </Select>
-        <Button onClick={() => void handleGenerate()} disabled={generating} icon={generating ? <Spinner /> : undefined}>
-          {generating ? 'Generating…' : 'Generate extract'}
+        <Button onClick={() => void handleRequestGeneration()} disabled={requesting} icon={requesting ? <Spinner /> : undefined}>
+          {requesting ? 'Requesting…' : 'Request approval to generate'}
         </Button>
       </div>
 
       {error      && <p className="text-sm text-danger-600">{error}</p>}
       {successMsg && <p className="text-sm text-success-600">{successMsg}</p>}
 
-      {extracts.length === 0 && !generating ? (
+      {extracts.length === 0 && !requesting ? (
         <p className="text-sm text-neutral-600">No extracts generated in this session.</p>
       ) : extracts.length > 0 && (
         <div className="space-y-4">
@@ -169,36 +173,28 @@ function B3Tab({
 // ── Participation Report tab ───────────────────────────────────────────────────
 
 function ParticipationTab({
-  reports, setReports,
+  reports, onRequested,
 }: {
   reports: ParticipationReport[];
-  setReports: React.Dispatch<React.SetStateAction<ParticipationReport[]>>;
+  onRequested: () => void;
 }) {
   const [academicYear, setAcademicYear] = useState(OFS_ACADEMIC_YEARS[0]!);
-  const [generating,   setGenerating]   = useState(false);
+  const [requesting,   setRequesting]   = useState(false);
   const [selected,     setSelected]     = useState<ParticipationReport | null>(null);
   const [error,        setError]        = useState('');
   const [successMsg,   setSuccessMsg]   = useState('');
 
-  async function handleGenerate() {
+  async function handleRequestGeneration() {
     (document.activeElement as HTMLElement | null)?.blur();
-    setGenerating(true); setError(''); setSuccessMsg('');
+    setRequesting(true); setError(''); setSuccessMsg('');
     try {
-      const result = await generateOfsParticipationReport(academicYear);
-      const report: ParticipationReport = {
-        extractId:   result.extractId,
-        academicYear,
-        recordCount: result.recordCount,
-        generatedAt: new Date().toISOString(),
-        payload:     result.payload,
-      };
-      setReports(prev => [report, ...prev]);
-      setSelected(report);
-      setSuccessMsg(`Participation report for ${academicYear} generated successfully.`);
+      await requestOfsExtractGeneration('access-participation-progress', academicYear);
+      onRequested();
+      setSuccessMsg(`Approval requested to generate the participation report for ${academicYear}.`);
     } catch (err) {
-      setError(err instanceof ApiError ? (err.detail ?? err.message) : 'Failed to generate report');
+      setError(err instanceof ApiError ? (err.detail ?? err.message) : 'Failed to request report generation');
     } finally {
-      setGenerating(false);
+      setRequesting(false);
     }
   }
 
@@ -214,8 +210,8 @@ function ParticipationTab({
   return (
     <div className="space-y-5">
       <p className="text-sm text-neutral-500">
-        Generate the OfS participation report for a given academic year. This report covers
-        widening participation metrics and equality of opportunity data.
+        Request approval to generate the OfS participation report for a given academic year. This
+        report covers widening participation metrics and equality of opportunity data.
       </p>
 
       <div className="flex items-center gap-3">
@@ -228,15 +224,15 @@ function ParticipationTab({
         >
           {OFS_ACADEMIC_YEARS.map(y => <option key={y} value={y}>{y}</option>)}
         </Select>
-        <Button onClick={() => void handleGenerate()} disabled={generating} icon={generating ? <Spinner /> : undefined}>
-          {generating ? 'Generating…' : 'Generate report'}
+        <Button onClick={() => void handleRequestGeneration()} disabled={requesting} icon={requesting ? <Spinner /> : undefined}>
+          {requesting ? 'Requesting…' : 'Request approval to generate'}
         </Button>
       </div>
 
       {error      && <p className="text-sm text-danger-600">{error}</p>}
       {successMsg && <p className="text-sm text-success-600">{successMsg}</p>}
 
-      {reports.length === 0 && !generating ? (
+      {reports.length === 0 && !requesting ? (
         <p className="text-sm text-neutral-600">No reports generated in this session.</p>
       ) : reports.length > 0 && (
         <div className="space-y-4">
@@ -290,12 +286,151 @@ function ParticipationTab({
   );
 }
 
+// ── Generation requests queue ────────────────────────────────────────────────
+
+function OfsGenerationRequestsQueue({
+  refreshSignal, onApproved,
+}: {
+  refreshSignal: number;
+  onApproved: (extractTypeCode: OfsExtractTypeCode, extractId: string) => void;
+}) {
+  const [requests, setRequests] = useState<OfsGenerationRequest[]>([]);
+  const [loading,  setLoading]  = useState(true);
+  const [error,    setError]    = useState('');
+  const [deciding, setDeciding] = useState<string | null>(null);
+  const [reasonById, setReasonById] = useState<Record<string, string>>({});
+  const [busyId,   setBusyId]   = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true); setError('');
+    try {
+      setRequests(await listOfsGenerationRequests());
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : 'Failed to load generation requests');
+    } finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { void load(); }, [load, refreshSignal]);
+
+  async function handleDecide(request: OfsGenerationRequest, decisionCode: 'approved' | 'rejected') {
+    setBusyId(request.workflowInstanceId); setError('');
+    try {
+      const { extractId } = await decideOfsGenerationRequest(
+        request.workflowInstanceId, decisionCode, reasonById[request.workflowInstanceId]?.trim() || undefined,
+      );
+      setDeciding(null);
+      if (decisionCode === 'approved' && extractId) onApproved(request.context.extractTypeCode, extractId);
+      await load();
+    } catch (e) {
+      setError(e instanceof ApiError ? (e.detail ?? e.message) : 'Failed to record decision');
+    } finally { setBusyId(null); }
+  }
+
+  return (
+    <Card>
+      <CardHeader
+        title="Pending extract generation requests"
+        actions={<Button variant="secondary" size="sm" onClick={() => void load()}>Refresh</Button>}
+      />
+      <CardBody>
+        {error && <p className="mb-3 text-sm text-danger-600">{error}</p>}
+        {loading ? (
+          <div className="flex justify-center py-8"><Spinner /></div>
+        ) : requests.length === 0 ? (
+          <p className="text-sm text-neutral-600">No pending generation requests.</p>
+        ) : (
+          <Table>
+            <TableHead>
+              <tr>
+                <TableHeaderCell>Extract type</TableHeaderCell>
+                <TableHeaderCell>Academic year</TableHeaderCell>
+                <TableHeaderCell>Requested</TableHeaderCell>
+                <TableHeaderCell><span className="sr-only">Actions</span></TableHeaderCell>
+              </tr>
+            </TableHead>
+            <TableBody>
+              {requests.map(r => (
+                <TableRow key={r.workflowInstanceId}>
+                  <TableCell>
+                    {r.context.extractTypeCode === 'b3-student-outcomes' ? 'B3 student outcomes' : 'Access & participation'}
+                  </TableCell>
+                  <TableCell>{r.context.academicYear}</TableCell>
+                  <TableCell className="text-neutral-500">
+                    {new Date(r.startedAt).toLocaleDateString('en-GB')}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {deciding === r.workflowInstanceId ? (
+                      <div className="inline-flex flex-col items-end gap-2">
+                        <input
+                          type="text"
+                          placeholder="Reason (optional)"
+                          className="rounded border border-neutral-300 px-2 py-1 text-xs w-56"
+                          value={reasonById[r.workflowInstanceId] ?? ''}
+                          onChange={(e) => setReasonById(v => ({ ...v, [r.workflowInstanceId]: e.target.value }))}
+                        />
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            disabled={busyId === r.workflowInstanceId}
+                            className="bg-success-600 hover:bg-success-700"
+                            onClick={() => void handleDecide(r, 'approved')}
+                          >
+                            Approve
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            className="border-danger-300 text-danger-700 hover:bg-danger-50"
+                            disabled={busyId === r.workflowInstanceId}
+                            onClick={() => void handleDecide(r, 'rejected')}
+                          >
+                            Reject
+                          </Button>
+                          <Button type="button" variant="ghost" size="sm" onClick={() => setDeciding(null)}>
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <Button type="button" variant="secondary" size="sm" onClick={() => setDeciding(r.workflowInstanceId)}>
+                        Decide
+                      </Button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </CardBody>
+    </Card>
+  );
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export function OfsPage() {
+  const { roles } = useAuth();
+  const canDecide = userHasAnyPermission(roles, ['regulatory:decide']);
   const [tab,     setTab]     = useState<Tab>('b3');
   const [b3s,     setB3s]     = useState<OfsB3Extract[]>([]);
   const [reports, setReports] = useState<ParticipationReport[]>([]);
+  const [refreshSignal, setRefreshSignal] = useState(0);
+
+  async function handleApproved(extractTypeCode: OfsExtractTypeCode, extractId: string) {
+    const extract = await getOfsB3Extract(extractId);
+    if (extractTypeCode === 'b3-student-outcomes') {
+      setB3s(prev => [extract, ...prev]);
+    } else {
+      setReports(prev => [{
+        extractId:   extract.extractId,
+        academicYear: extract.academicYear,
+        recordCount: extract.recordCount,
+        generatedAt: extract.generatedAt ?? new Date().toISOString(),
+        payload:     extract.payload,
+      }, ...prev]);
+    }
+  }
 
   return (
     <div>
@@ -322,8 +457,17 @@ export function OfsPage() {
         </nav>
       </div>
 
-      {tab === 'b3'            && <B3Tab extracts={b3s} setExtracts={setB3s} />}
-      {tab === 'participation' && <ParticipationTab reports={reports} setReports={setReports} />}
+      {tab === 'b3'            && <B3Tab extracts={b3s} setExtracts={setB3s} onRequested={() => setRefreshSignal(s => s + 1)} />}
+      {tab === 'participation' && <ParticipationTab reports={reports} onRequested={() => setRefreshSignal(s => s + 1)} />}
+
+      {canDecide && (
+        <div className="mt-8">
+          <OfsGenerationRequestsQueue
+            refreshSignal={refreshSignal}
+            onApproved={(extractTypeCode, extractId) => void handleApproved(extractTypeCode, extractId)}
+          />
+        </div>
+      )}
     </div>
   );
 }

@@ -52,6 +52,10 @@ export async function startTestApp(opts: StartTestAppOptions = {}): Promise<Test
   await applyMigration(db, '0007_module_registration_change_workflow.sql');
   await applyMigration(db, '0008_slc_submission_approval_workflow.sql');
   await applyMigration(db, '0009_legal_identity_change_workflow.sql');
+  await applyMigration(db, '0010_hesa_submission_approval_workflow.sql');
+  await applyMigration(db, '0011_ofs_extract_generation_workflow.sql');
+  await applyMigration(db, '0012_ucas_confirmation_submission_workflow.sql');
+  await applyMigration(db, '0013_ukvi_cas_submission_workflow.sql');
 
   // Seed a tenant for tests
   const tenantId = '00000000-0000-0000-0000-000000000001';

@@ -71,6 +71,34 @@
       "when": 1785000009000,
       "tag": "0009_legal_identity_change_workflow",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1785000010000,
+      "tag": "0010_hesa_submission_approval_workflow",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1785000011000,
+      "tag": "0011_ofs_extract_generation_workflow",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1785000012000,
+      "tag": "0012_ucas_confirmation_submission_workflow",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1785000013000,
+      "tag": "0013_ukvi_cas_submission_workflow",
+      "breakpoints": true
     }
   ]
 }

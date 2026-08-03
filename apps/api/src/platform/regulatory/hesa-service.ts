@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 
-import { and, eq, sql } from 'drizzle-orm';
+import { and, desc, eq, sql } from 'drizzle-orm';
 import {
   hesaIdentifierAssignments,
   hesaStudentReturnRecords,
@@ -8,6 +8,10 @@ import {
   hesaSubmissions,
   hesaValidationIssues,
   hesaValidationReports,
+  workflowDefinitions,
+  workflowDefinitionVersions,
+  workflowInstances,
+  workflowTasks,
   type Db,
   type HesaStudentReturn,
   withTenantContext,
@@ -21,11 +25,26 @@ import {
   type RegulatoryHesaReturnSubmittedV1Payload,
 } from '@revelation-srs/domain';
 
+import type { WorkflowBridgeService } from '../platform-controls/workflow-bridge-service.js';
 import type { IntegrationBusPublisher } from '../integration-bus/publisher.js';
 import type { StudentService } from '../students/service.js';
 import { clockNow } from '../clock.js';
 
 import { RegulatoryExchangeService } from './exchange-service.js';
+
+type Uuid = `${string}-${string}-${string}-${string}-${string}`;
+
+const HESA_SUBMISSION_WORKFLOW_CODE = 'hesa-return-submission-approval';
+const HESA_SUBMISSION_DECISION_STEP_KEY = 'approve-or-reject-submission';
+const HESA_SUBMISSION_GATEWAY_KEY = 'G01';
+
+export interface HesaSubmissionRequestDto {
+  workflowInstanceId: string;
+  workflowTaskId:      string;
+  statusCode:          string;
+  context:             Record<string, unknown>;
+  startedAt:           Date;
+}
 
 interface HesaEnrolmentRow {
   enrolment_id: string;
@@ -105,6 +124,7 @@ export class HesaService {
     private readonly eventBus: IntegrationBusPublisher,
     private readonly students: StudentService,
     exchanges?: RegulatoryExchangeService,
+    private readonly workflowBridge?: WorkflowBridgeService,
   ) {
     this.exchanges = exchanges ?? new RegulatoryExchangeService(db);
   }
@@ -403,6 +423,175 @@ export class HesaService {
       submissionReference,
       submittedAt: now.toISOString(),
     });
+  }
+
+  // ── Submission approval workflow ────────────────────────────────────────────
+  // Unlike SLC, HESA already has a persisted, stateful batch (the
+  // hesa_student_return row and its statusCode lifecycle) — the returnId
+  // itself is the natural workflow subject, no trigger-ID snapshot needed
+  // since the return's records were already fixed at generateStudentReturn
+  // time and don't change underneath a pending approval.
+
+  async requestReturnSubmission(
+    tenantId: string,
+    returnId: string,
+    requesterId: string,
+    submissionReference?: string,
+    reason?: string,
+  ): Promise<HesaSubmissionRequestDto> {
+    if (!this.workflowBridge) throw new ValidationError('HESA submission workflow is not configured');
+
+    const hesaReturn = await this.#requireReturn(returnId, tenantId);
+    if (hesaReturn.statusCode === 'submitted') {
+      throw new ValidationError('This HESA return has already been submitted');
+    }
+    const submissions = await withTenantContext(this.db, tenantId, async (tx) =>
+      tx.select({ id: hesaSubmissions.hesaStudentReturnId }).from(hesaSubmissions)
+        .where(eq(hesaSubmissions.hesaStudentReturnId, returnId)).limit(1),
+    );
+    if (submissions.length === 0) {
+      throw new ValidationError('A generated HESA submission file is required before requesting submission approval');
+    }
+
+    const context: Record<string, unknown> = {
+      returnId,
+      academicYear: hesaReturn.academicYear,
+      ...(submissionReference ? { submissionReference } : {}),
+      ...(reason ? { reason } : {}),
+    };
+
+    const workflowDefinitionVersionId = await this.#getActiveSubmissionWorkflowVersionId(tenantId);
+    const instance = await this.workflowBridge.startWorkflowInstance({
+      tenantId,
+      workflowDefinitionVersionId,
+      workflowCode: HESA_SUBMISSION_WORKFLOW_CODE,
+      subjectEntityType: 'hesa_student_return',
+      subjectEntityId: returnId,
+      startedBy: requesterId,
+      context,
+    });
+
+    const task = await this.workflowBridge.assignWorkflowTask({
+      tenantId,
+      workflowInstanceId: instance.workflowInstanceId,
+      stepKey: HESA_SUBMISSION_DECISION_STEP_KEY,
+      assigneeRoleCode: 'regulatory-officer',
+      payload: context,
+    });
+
+    return {
+      workflowInstanceId: instance.workflowInstanceId,
+      workflowTaskId: task.workflowTaskId,
+      statusCode: 'running',
+      context,
+      startedAt: clockNow(),
+    };
+  }
+
+  async listPendingReturnSubmissionRequests(tenantId: string): Promise<HesaSubmissionRequestDto[]> {
+    const rows = await withTenantContext(this.db, tenantId, async (tx) =>
+      tx.select({ instance: workflowInstances, task: workflowTasks })
+        .from(workflowInstances)
+        .innerJoin(workflowTasks, and(
+          eq(workflowTasks.workflowInstanceId, workflowInstances.id),
+          eq(workflowTasks.stepKey, HESA_SUBMISSION_DECISION_STEP_KEY),
+        ))
+        .where(and(
+          eq(workflowInstances.tenantId, tenantId as Uuid),
+          eq(workflowInstances.workflowCode, HESA_SUBMISSION_WORKFLOW_CODE),
+          eq(workflowInstances.statusCode, 'running'),
+        ))
+        .orderBy(desc(workflowInstances.startedAt)),
+    );
+    return rows.map((r) => hesaSubmissionRequestToDto(r.instance, r.task));
+  }
+
+  async decideReturnSubmission(
+    tenantId: string,
+    workflowInstanceId: string,
+    decisionCode: 'approved' | 'rejected',
+    actorId: string,
+    reason?: string,
+  ): Promise<void> {
+    if (!this.workflowBridge) throw new ValidationError('HESA submission workflow is not configured');
+
+    const instance = await this.#getSubmissionInstance(tenantId, workflowInstanceId);
+    if (instance.statusCode !== 'running') {
+      throw new ValidationError(`Cannot decide a submission request in status '${instance.statusCode}'`);
+    }
+
+    const task = await this.#findSubmissionDecisionTask(tenantId, workflowInstanceId);
+
+    await this.workflowBridge.recordWorkflowDecision({
+      tenantId,
+      workflowInstanceId,
+      gatewayKey: HESA_SUBMISSION_GATEWAY_KEY,
+      decisionCode,
+      ...(reason ? { conditionSummary: reason } : {}),
+      outcomeStepKey: 'request-closed',
+      actorId,
+      metadata: { context: instance.context },
+    });
+    if (task) {
+      await this.workflowBridge.completeWorkflowTask({
+        tenantId, workflowTaskId: task.id, completedBy: actorId,
+        payload: { decisionCode, ...(reason ? { reason } : {}) },
+      });
+    }
+    await this.workflowBridge.completeWorkflowInstance({
+      tenantId, workflowInstanceId, actorId,
+      statusCode: 'completed', metadata: { decisionCode },
+    });
+
+    if (decisionCode !== 'approved') return;
+
+    const context = instance.context as { returnId: string; submissionReference?: string };
+    await this.markSubmitted(context.returnId, tenantId, context.submissionReference ?? null, actorId);
+  }
+
+  async #getActiveSubmissionWorkflowVersionId(tenantId: string): Promise<string> {
+    const rows = await withTenantContext(this.db, tenantId, async (tx) =>
+      tx.select({ versionId: workflowDefinitionVersions.id })
+        .from(workflowDefinitions)
+        .innerJoin(
+          workflowDefinitionVersions,
+          and(
+            eq(workflowDefinitionVersions.workflowDefinitionId, workflowDefinitions.id),
+            eq(workflowDefinitionVersions.versionNumber, workflowDefinitions.currentVersionNumber),
+          ),
+        )
+        .where(and(
+          eq(workflowDefinitions.definitionCode, HESA_SUBMISSION_WORKFLOW_CODE),
+          eq(workflowDefinitions.statusCode, 'active'),
+          eq(workflowDefinitionVersions.statusCode, 'active'),
+        ))
+        .limit(1),
+    );
+    if (!rows[0]) throw new NotFoundError('WorkflowDefinition', HESA_SUBMISSION_WORKFLOW_CODE);
+    return rows[0].versionId;
+  }
+
+  async #getSubmissionInstance(tenantId: string, workflowInstanceId: string) {
+    const rows = await withTenantContext(this.db, tenantId, async (tx) =>
+      tx.select().from(workflowInstances).where(and(
+        eq(workflowInstances.id, workflowInstanceId as Uuid),
+        eq(workflowInstances.tenantId, tenantId as Uuid),
+        eq(workflowInstances.workflowCode, HESA_SUBMISSION_WORKFLOW_CODE),
+      )).limit(1),
+    );
+    if (!rows[0]) throw new NotFoundError('WorkflowInstance', workflowInstanceId);
+    return rows[0];
+  }
+
+  async #findSubmissionDecisionTask(tenantId: string, workflowInstanceId: string) {
+    const rows = await withTenantContext(this.db, tenantId, async (tx) =>
+      tx.select().from(workflowTasks).where(and(
+        eq(workflowTasks.workflowInstanceId, workflowInstanceId as Uuid),
+        eq(workflowTasks.tenantId, tenantId as Uuid),
+        eq(workflowTasks.stepKey, HESA_SUBMISSION_DECISION_STEP_KEY),
+      )).limit(1),
+    );
+    return rows[0] ?? null;
   }
 
   async generateAmendment(returnId: string, tenantId: string, actorId: string): Promise<string> {
@@ -797,4 +986,17 @@ function escapeXml(value: unknown): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;');
+}
+
+function hesaSubmissionRequestToDto(
+  instance: typeof workflowInstances.$inferSelect,
+  task: typeof workflowTasks.$inferSelect,
+): HesaSubmissionRequestDto {
+  return {
+    workflowInstanceId: instance.id,
+    workflowTaskId:      task.id,
+    statusCode:          instance.statusCode,
+    context:             instance.context,
+    startedAt:           instance.startedAt,
+  };
 }
