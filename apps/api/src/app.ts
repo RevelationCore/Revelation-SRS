@@ -316,7 +316,7 @@ export async function buildApp(
   const communications  = new CommunicationService(db, localeService, featureFlags);
   const ucas = new UcasService(db, valueSets, eventBus, enrolments, regulatoryExchanges, admissions, featureFlags);
   const hesa = new HesaService(db, eventBus, students, regulatoryExchanges);
-  const slc = new SlcService(db, eventBus, valueSets, enrolments, regulatoryExchanges);
+  const slc = new SlcService(db, eventBus, valueSets, enrolments, regulatoryExchanges, workflowBridge);
   const ukvi = new UkviService(db, eventBus, valueSets, rules, regulatoryExchanges);
   const casCases = new CasCaseService(db);
   const ofs = new OfsService(db, eventBus);

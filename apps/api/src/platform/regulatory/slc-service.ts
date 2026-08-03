@@ -1,12 +1,16 @@
 import { createHash } from 'node:crypto';
 
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull } from 'drizzle-orm';
 import {
   enrolmentDownstreamTriggers,
   enrolments,
   feeLiabilities,
   integrationExchanges,
   slcNotifications,
+  workflowDefinitions,
+  workflowDefinitionVersions,
+  workflowInstances,
+  workflowTasks,
   type Db,
   withTenantContext,
 } from '@revelation-srs/db';
@@ -20,10 +24,26 @@ import {
 
 import type { EnrolmentService } from '../enrolment/service.js';
 import type { IntegrationBusPublisher } from '../integration-bus/publisher.js';
+import type { WorkflowBridgeService } from '../platform-controls/workflow-bridge-service.js';
 import type { ValueSetService } from '../value-sets/service.js';
 import { clockNow } from '../clock.js';
 
 import { RegulatoryExchangeService } from './exchange-service.js';
+
+type Uuid = `${string}-${string}-${string}-${string}-${string}`;
+
+const SUBMISSION_WORKFLOW_CODE = 'slc-confirmation-submission-approval';
+const SUBMISSION_DECISION_STEP_KEY = 'approve-or-reject-submission';
+const SUBMISSION_GATEWAY_KEY = 'G01';
+
+export interface SubmissionRequestDto {
+  workflowInstanceId: string;
+  workflowTaskId:      string;
+  statusCode:          string;
+  recordCount:         number;
+  context:             Record<string, unknown>;
+  startedAt:           Date;
+}
 
 export interface SlcConfirmationRecord {
   triggerId: string;
@@ -80,6 +100,7 @@ export class SlcService {
     private readonly valueSets: ValueSetService,
     private readonly enrolmentService: EnrolmentService,
     exchanges?: RegulatoryExchangeService,
+    private readonly workflowBridge?: WorkflowBridgeService,
   ) {
     this.exchanges = exchanges ?? new RegulatoryExchangeService(db);
   }
@@ -87,7 +108,7 @@ export class SlcService {
   async generateConfirmations(
     tenantId: string,
     actorId: string,
-    opts: { dryRun?: boolean } = {},
+    opts: { dryRun?: boolean; triggerIds?: string[] } = {},
   ): Promise<{ processedCount: number; payload: SlcConfirmationPayload }> {
     const now = clockNow();
     const confirmations: SlcConfirmationRecord[] = [];
@@ -120,6 +141,7 @@ export class SlcService {
             eq(enrolmentDownstreamTriggers.tenantId, tenantId),
             eq(enrolmentDownstreamTriggers.triggerTypeCode, 'slc-confirmation'),
             eq(enrolmentDownstreamTriggers.statusCode, 'pending'),
+            ...(opts.triggerIds ? [inArray(enrolmentDownstreamTriggers.id, opts.triggerIds as Uuid[])] : []),
           ),
         ),
     );
@@ -169,6 +191,174 @@ export class SlcService {
     }
 
     return { processedCount: confirmations.length, payload: { confirmations } };
+  }
+
+  // ── Submission approval workflow ────────────────────────────────────────────
+  // Reference implementation for BPR-W12 (technical debt item: all regulatory
+  // submission processes should be workflow-gated rather than a stateless
+  // "generate with dryRun" toggle). Unlike the old two-call preview/submit
+  // (nothing persisted a batch between the calls, so the submitted set could
+  // silently diverge from what was previewed), the previewed trigger IDs are
+  // snapshotted into the workflow context and re-used verbatim at decision
+  // time — an approver acts on exactly what they saw, not a fresh live query.
+
+  /** Snapshots the current preview and starts an approval workflow for it. */
+  async requestSubmission(tenantId: string, requesterId: string, reason?: string): Promise<SubmissionRequestDto> {
+    if (!this.workflowBridge) throw new ValidationError('SLC submission workflow is not configured');
+
+    const preview = await this.generateConfirmations(tenantId, requesterId, { dryRun: true });
+    if (preview.payload.confirmations.length === 0) {
+      throw new ValidationError('No pending SLC confirmations to submit');
+    }
+    const triggerIds = preview.payload.confirmations.map((c) => c.triggerId);
+
+    const workflowDefinitionVersionId = await this.#getActiveSubmissionWorkflowVersionId(tenantId);
+    const instance = await this.workflowBridge.startWorkflowInstance({
+      tenantId,
+      workflowDefinitionVersionId,
+      workflowCode: SUBMISSION_WORKFLOW_CODE,
+      subjectEntityType: 'slc_confirmation_batch',
+      startedBy: requesterId,
+      context: { triggerIds, recordCount: triggerIds.length, ...(reason ? { reason } : {}) },
+    });
+
+    const task = await this.workflowBridge.assignWorkflowTask({
+      tenantId,
+      workflowInstanceId: instance.workflowInstanceId,
+      stepKey: SUBMISSION_DECISION_STEP_KEY,
+      assigneeRoleCode: 'regulatory-officer',
+      payload: { triggerIds, recordCount: triggerIds.length },
+    });
+
+    return {
+      workflowInstanceId: instance.workflowInstanceId,
+      workflowTaskId: task.workflowTaskId,
+      statusCode: 'running',
+      recordCount: triggerIds.length,
+      context: { triggerIds, recordCount: triggerIds.length },
+      startedAt: clockNow(),
+    };
+  }
+
+  /** Lists pending (running) submission requests for the approval queue. */
+  async listPendingSubmissionRequests(tenantId: string): Promise<SubmissionRequestDto[]> {
+    const rows = await withTenantContext(this.db, tenantId, async (tx) =>
+      tx.select({ instance: workflowInstances, task: workflowTasks })
+        .from(workflowInstances)
+        .innerJoin(workflowTasks, and(
+          eq(workflowTasks.workflowInstanceId, workflowInstances.id),
+          eq(workflowTasks.stepKey, SUBMISSION_DECISION_STEP_KEY),
+        ))
+        .where(and(
+          eq(workflowInstances.tenantId, tenantId as Uuid),
+          eq(workflowInstances.workflowCode, SUBMISSION_WORKFLOW_CODE),
+          eq(workflowInstances.statusCode, 'running'),
+        ))
+        .orderBy(desc(workflowInstances.startedAt)),
+    );
+    return rows.map((r) => ({
+      workflowInstanceId: r.instance.id,
+      workflowTaskId:      r.task.id,
+      statusCode:          r.instance.statusCode,
+      recordCount:         Array.isArray(r.instance.context['triggerIds']) ? (r.instance.context['triggerIds'] as unknown[]).length : 0,
+      context:             r.instance.context,
+      startedAt:           r.instance.startedAt,
+    }));
+  }
+
+  /**
+   * Records the decision. On approval, submits exactly the snapshotted
+   * trigger set (not a fresh query) via the existing generateConfirmations
+   * path — so items added/removed from the pending queue after the request
+   * was submitted don't silently change what gets sent to SLC.
+   */
+  async decideSubmissionRequest(
+    tenantId: string,
+    workflowInstanceId: string,
+    decisionCode: 'approved' | 'rejected',
+    actorId: string,
+    reason?: string,
+  ): Promise<{ processedCount: number }> {
+    if (!this.workflowBridge) throw new ValidationError('SLC submission workflow is not configured');
+
+    const instance = await this.#getSubmissionInstance(tenantId, workflowInstanceId);
+    if (instance.statusCode !== 'running') {
+      throw new ValidationError(`Cannot decide a submission request in status '${instance.statusCode}'`);
+    }
+
+    const task = await this.#findSubmissionDecisionTask(tenantId, workflowInstanceId);
+
+    await this.workflowBridge.recordWorkflowDecision({
+      tenantId,
+      workflowInstanceId,
+      gatewayKey: SUBMISSION_GATEWAY_KEY,
+      decisionCode,
+      ...(reason ? { conditionSummary: reason } : {}),
+      outcomeStepKey: 'request-closed',
+      actorId,
+      metadata: { context: instance.context },
+    });
+    if (task) {
+      await this.workflowBridge.completeWorkflowTask({
+        tenantId, workflowTaskId: task.id, completedBy: actorId,
+        payload: { decisionCode, ...(reason ? { reason } : {}) },
+      });
+    }
+    await this.workflowBridge.completeWorkflowInstance({
+      tenantId, workflowInstanceId, actorId,
+      statusCode: 'completed', metadata: { decisionCode },
+    });
+
+    if (decisionCode !== 'approved') return { processedCount: 0 };
+
+    const triggerIds = instance.context['triggerIds'] as string[];
+    const result = await this.generateConfirmations(tenantId, actorId, { dryRun: false, triggerIds });
+    return { processedCount: result.processedCount };
+  }
+
+  async #getSubmissionInstance(tenantId: string, workflowInstanceId: string) {
+    const rows = await withTenantContext(this.db, tenantId, async (tx) =>
+      tx.select().from(workflowInstances).where(and(
+        eq(workflowInstances.id, workflowInstanceId as Uuid),
+        eq(workflowInstances.tenantId, tenantId as Uuid),
+        eq(workflowInstances.workflowCode, SUBMISSION_WORKFLOW_CODE),
+      )).limit(1),
+    );
+    if (!rows[0]) throw new NotFoundError('WorkflowInstance', workflowInstanceId);
+    return rows[0];
+  }
+
+  async #findSubmissionDecisionTask(tenantId: string, workflowInstanceId: string) {
+    const rows = await withTenantContext(this.db, tenantId, async (tx) =>
+      tx.select().from(workflowTasks).where(and(
+        eq(workflowTasks.workflowInstanceId, workflowInstanceId as Uuid),
+        eq(workflowTasks.tenantId, tenantId as Uuid),
+        eq(workflowTasks.stepKey, SUBMISSION_DECISION_STEP_KEY),
+      )).limit(1),
+    );
+    return rows[0] ?? null;
+  }
+
+  async #getActiveSubmissionWorkflowVersionId(tenantId: string): Promise<string> {
+    const rows = await withTenantContext(this.db, tenantId, async (tx) =>
+      tx.select({ versionId: workflowDefinitionVersions.id })
+        .from(workflowDefinitions)
+        .innerJoin(
+          workflowDefinitionVersions,
+          and(
+            eq(workflowDefinitionVersions.workflowDefinitionId, workflowDefinitions.id),
+            eq(workflowDefinitionVersions.versionNumber, workflowDefinitions.currentVersionNumber),
+          ),
+        )
+        .where(and(
+          eq(workflowDefinitions.definitionCode, SUBMISSION_WORKFLOW_CODE),
+          eq(workflowDefinitions.statusCode, 'active'),
+          eq(workflowDefinitionVersions.statusCode, 'active'),
+        ))
+        .limit(1),
+    );
+    if (!rows[0]) throw new NotFoundError('WorkflowDefinition', SUBMISSION_WORKFLOW_CODE);
+    return rows[0].versionId;
   }
 
   async generateStatusChangeNotification(

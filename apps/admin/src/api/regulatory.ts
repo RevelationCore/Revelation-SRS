@@ -101,6 +101,32 @@ export function generateSlcConfirmations(opts: { dryRun?: boolean } = {}): Promi
   return api.post(`/api/v1/regulatory/slc/confirmations/generate${qs}`, {});
 }
 
+export interface SlcSubmissionRequest {
+  workflowInstanceId: string;
+  workflowTaskId:      string;
+  statusCode:          string;
+  recordCount:         number;
+  context:             Record<string, unknown>;
+  startedAt:           string;
+}
+
+/** Snapshots the current preview and starts a regulatory-officer approval workflow for it. */
+export function requestSlcSubmission(reason?: string): Promise<SlcSubmissionRequest> {
+  return api.post('/api/v1/regulatory/slc/confirmations/requests', { reason });
+}
+
+export function listSlcSubmissionRequests(): Promise<SlcSubmissionRequest[]> {
+  return api.get<SlcSubmissionRequest[]>('/api/v1/regulatory/slc/confirmations/requests');
+}
+
+export function decideSlcSubmissionRequest(
+  workflowInstanceId: string,
+  decisionCode: 'approved' | 'rejected',
+  reason?: string,
+): Promise<{ processedCount: number }> {
+  return api.post(`/api/v1/regulatory/slc/confirmations/requests/${workflowInstanceId}/decision`, { decisionCode, reason });
+}
+
 // ── UKVI ─────────────────────────────────────────────────────────────────────
 
 export interface CasRequest {

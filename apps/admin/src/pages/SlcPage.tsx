@@ -1,15 +1,27 @@
-import { useState } from 'react';
-import { type SlcConfirmationRecord, generateSlcConfirmations } from '../api/regulatory.js';
+import { useCallback, useEffect, useState } from 'react';
+import {
+  type SlcConfirmationRecord,
+  type SlcSubmissionRequest,
+  generateSlcConfirmations,
+  requestSlcSubmission,
+  listSlcSubmissionRequests,
+  decideSlcSubmissionRequest,
+} from '../api/regulatory.js';
 import { ApiError } from '../api/client.js';
+import { useAuth } from '../auth/AuthContext.js';
+import { userHasAnyPermission } from '../auth/RequirePermission.js';
 import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
 import {
-  PageHeader, Button, Card, CardBody, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
+  PageHeader, Button, Card, CardBody, CardHeader, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
 } from '@revelation-srs/ui';
 
-type Step = 'idle' | 'previewing' | 'preview' | 'submitting' | 'submitted';
+type Step = 'idle' | 'previewing' | 'preview' | 'requesting' | 'requested';
 
 export function SlcPage() {
+  const { roles } = useAuth();
+  const canDecide = userHasAnyPermission(roles, ['regulatory:decide']);
+
   const [step,     setStep]     = useState<Step>('idle');
   const [records,  setRecords]  = useState<SlcConfirmationRecord[]>([]);
   const [error,    setError]    = useState('');
@@ -27,15 +39,14 @@ export function SlcPage() {
     }
   }
 
-  async function handleSubmit() {
+  async function handleRequestSubmission() {
     (document.activeElement as HTMLElement | null)?.blur();
-    setStep('submitting'); setError('');
+    setStep('requesting'); setError('');
     try {
-      const result = await generateSlcConfirmations({ dryRun: false });
-      setRecords(result.payload.confirmations);
-      setStep('submitted');
+      await requestSlcSubmission();
+      setStep('requested');
     } catch (err) {
-      setError(err instanceof ApiError ? (err.detail ?? err.message) : 'Failed to submit confirmations');
+      setError(err instanceof ApiError ? (err.detail ?? err.message) : 'Failed to request submission');
       setStep('preview');
     }
   }
@@ -52,12 +63,12 @@ export function SlcPage() {
 
         {/* Step indicator */}
         <div className="flex items-center gap-3">
-          {(['preview', 'review', 'submit'] as const).map((label, i) => {
+          {(['preview', 'review', 'request approval'] as const).map((label, i) => {
             const active = (i === 0 && (step === 'previewing' || step === 'preview')) ||
                            (i === 1 && step === 'preview') ||
-                           (i === 2 && (step === 'submitting' || step === 'submitted'));
+                           (i === 2 && (step === 'requesting' || step === 'requested'));
             const done   = (i === 0 && step !== 'idle' && step !== 'previewing') ||
-                           (i === 2 && step === 'submitted');
+                           (i === 2 && step === 'requested');
             return (
               <span key={label} className="flex items-center gap-2">
                 <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
@@ -68,7 +79,7 @@ export function SlcPage() {
                   {done ? '✓' : i + 1}
                 </span>
                 <span className={`text-sm ${active || done ? 'text-neutral-900 font-medium' : 'text-neutral-600'}`}>
-                  {label === 'preview' ? 'Preview' : label === 'review' ? 'Review records' : 'Submit to SLC'}
+                  {label === 'preview' ? 'Preview' : label === 'review' ? 'Review records' : 'Request approval'}
                 </span>
                 {i < 2 && <span className="text-neutral-300 mx-1">›</span>}
               </span>
@@ -86,7 +97,8 @@ export function SlcPage() {
               <p className="text-sm text-neutral-600 mb-4">
                 This process collects all pending SLC triggers (new enrolments, withdrawals, and
                 intermissions) and generates confirmation records for transmission to the Student
-                Loans Company. Preview the records before submitting to ensure accuracy.
+                Loans Company. Preview the records, then request approval — a regulatory officer
+                must approve the exact batch previewed before it is transmitted.
               </p>
               <Button onClick={() => void handlePreview()}>Preview confirmations</Button>
             </CardBody>
@@ -101,15 +113,15 @@ export function SlcPage() {
         )}
 
         {/* Step 2 — review */}
-        {(step === 'preview' || step === 'submitting' || step === 'submitted') && (
+        {(step === 'preview' || step === 'requesting' || step === 'requested') && (
           <Card className="overflow-hidden">
             <div className="flex items-center justify-between px-4 py-3 bg-neutral-50 border-b border-neutral-200">
               <span className="text-sm font-medium text-neutral-700">
                 {records.length} confirmation{records.length !== 1 ? 's' : ''} pending
-                {step === 'submitted' && ' — submitted'}
+                {step === 'requested' && ' — submitted for approval'}
               </span>
-              {step === 'submitted' && (
-                <span className="text-xs text-success-600 font-medium">Transmitted to SLC</span>
+              {step === 'requested' && (
+                <span className="text-xs text-warning-700 font-medium">Awaiting regulatory officer approval</span>
               )}
             </div>
 
@@ -147,29 +159,143 @@ export function SlcPage() {
         {/* Step 3 — actions */}
         {step === 'preview' && (
           <div className="flex items-center gap-3">
-            <Button onClick={() => void handleSubmit()} disabled={records.length === 0}>
-              Submit {records.length} confirmation{records.length !== 1 ? 's' : ''} to SLC
+            <Button onClick={() => void handleRequestSubmission()} disabled={records.length === 0}>
+              Request approval to submit {records.length} confirmation{records.length !== 1 ? 's' : ''}
             </Button>
             <Button variant="ghost" onClick={handleReset}>Cancel</Button>
           </div>
         )}
 
-        {step === 'submitting' && (
+        {step === 'requesting' && (
           <div className="flex items-center gap-3 text-sm text-neutral-500">
-            <Spinner /> Transmitting to SLC…
+            <Spinner /> Submitting for approval…
           </div>
         )}
 
-        {step === 'submitted' && (
+        {step === 'requested' && (
           <div className="flex items-center gap-3">
-            <p className="text-sm text-success-600">
-              {records.length} confirmation{records.length !== 1 ? 's' : ''} successfully transmitted to SLC.
+            <p className="text-sm text-neutral-700">
+              Submission request created. It will appear below (and to any regulatory officer)
+              until decided.
             </p>
             <Button variant="ghost" onClick={handleReset}>Start new batch</Button>
           </div>
         )}
 
       </div>
+
+      {canDecide && (
+        <div className="max-w-4xl mt-8">
+          <SubmissionRequestsQueue />
+        </div>
+      )}
     </div>
+  );
+}
+
+function SubmissionRequestsQueue() {
+  const [requests, setRequests] = useState<SlcSubmissionRequest[]>([]);
+  const [loading,  setLoading]  = useState(true);
+  const [error,    setError]    = useState('');
+  const [deciding, setDeciding] = useState<string | null>(null);
+  const [reasonById, setReasonById] = useState<Record<string, string>>({});
+  const [busyId,   setBusyId]   = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true); setError('');
+    try {
+      setRequests(await listSlcSubmissionRequests());
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : 'Failed to load submission requests');
+    } finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { void load(); }, [load]);
+
+  async function handleDecide(workflowInstanceId: string, decisionCode: 'approved' | 'rejected') {
+    setBusyId(workflowInstanceId); setError('');
+    try {
+      await decideSlcSubmissionRequest(workflowInstanceId, decisionCode, reasonById[workflowInstanceId]?.trim() || undefined);
+      setDeciding(null);
+      await load();
+    } catch (e) {
+      setError(e instanceof ApiError ? (e.detail ?? e.message) : 'Failed to record decision');
+    } finally { setBusyId(null); }
+  }
+
+  return (
+    <Card>
+      <CardHeader
+        title="Pending submission requests"
+        actions={<Button variant="secondary" size="sm" onClick={() => void load()}>Refresh</Button>}
+      />
+      <CardBody>
+        {error && <p className="mb-3 text-sm text-danger-600">{error}</p>}
+        {loading ? (
+          <div className="flex justify-center py-8"><Spinner /></div>
+        ) : requests.length === 0 ? (
+          <p className="text-sm text-neutral-600">No pending submission requests.</p>
+        ) : (
+          <Table>
+            <TableHead>
+              <tr>
+                <TableHeaderCell>Records</TableHeaderCell>
+                <TableHeaderCell>Submitted</TableHeaderCell>
+                <TableHeaderCell><span className="sr-only">Actions</span></TableHeaderCell>
+              </tr>
+            </TableHead>
+            <TableBody>
+              {requests.map(r => (
+                <TableRow key={r.workflowInstanceId}>
+                  <TableCell>{r.recordCount}</TableCell>
+                  <TableCell className="text-neutral-500">
+                    {new Date(r.startedAt).toLocaleDateString('en-GB')}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {deciding === r.workflowInstanceId ? (
+                      <div className="inline-flex flex-col items-end gap-2">
+                        <input
+                          type="text"
+                          placeholder="Reason (optional)"
+                          className="rounded border border-neutral-300 px-2 py-1 text-xs w-56"
+                          value={reasonById[r.workflowInstanceId] ?? ''}
+                          onChange={(e) => setReasonById(v => ({ ...v, [r.workflowInstanceId]: e.target.value }))}
+                        />
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            disabled={busyId === r.workflowInstanceId}
+                            className="bg-success-600 hover:bg-success-700"
+                            onClick={() => void handleDecide(r.workflowInstanceId, 'approved')}
+                          >
+                            Approve
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            className="border-danger-300 text-danger-700 hover:bg-danger-50"
+                            disabled={busyId === r.workflowInstanceId}
+                            onClick={() => void handleDecide(r.workflowInstanceId, 'rejected')}
+                          >
+                            Reject
+                          </Button>
+                          <Button type="button" variant="ghost" size="sm" onClick={() => setDeciding(null)}>
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <Button type="button" variant="secondary" size="sm" onClick={() => setDeciding(r.workflowInstanceId)}>
+                        Decide
+                      </Button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </CardBody>
+    </Card>
   );
 }

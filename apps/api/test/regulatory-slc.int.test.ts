@@ -170,6 +170,106 @@ describe('SLC exchange', () => {
   });
 });
 
+describe('SLC confirmation submission approval workflow', () => {
+  it('approving a submission request submits exactly the previewed batch', async () => {
+    const fixture = await createSlcEnrolment('SLC-WF-001');
+
+    const request = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/v1/regulatory/slc/confirmations/requests',
+      headers: { authorization: `Bearer ${jwt}` },
+      payload: {},
+    });
+    expect(request.statusCode).toBe(202);
+    const { workflowInstanceId, recordCount } = request.json<{ workflowInstanceId: string; recordCount: number }>();
+    expect(recordCount).toBeGreaterThanOrEqual(1);
+
+    const pending = await ctx.app.inject({
+      method: 'GET',
+      url: '/api/v1/regulatory/slc/confirmations/requests',
+      headers: { authorization: `Bearer ${jwt}` },
+    });
+    expect(pending.statusCode).toBe(200);
+    expect(pending.json<Array<{ workflowInstanceId: string }>>().some(r => r.workflowInstanceId === workflowInstanceId)).toBe(true);
+
+    // Another trigger arrives after the request snapshot was taken — it must
+    // not be swept up in this approval.
+    const later = await createSlcEnrolment('SLC-WF-002');
+
+    const decide = await ctx.app.inject({
+      method: 'POST',
+      url: `/api/v1/regulatory/slc/confirmations/requests/${workflowInstanceId}/decision`,
+      headers: { authorization: `Bearer ${jwt}` },
+      payload: { decisionCode: 'approved' },
+    });
+    expect(decide.statusCode).toBe(200);
+    expect(decide.json<{ processedCount: number }>().processedCount).toBe(recordCount);
+
+    const triggerRows = await ctx.db.execute(sql`
+      SELECT status_code FROM enrolment_downstream_trigger
+      WHERE tenant_id = ${ctx.tenantId} AND enrolment_id = ${fixture.enrolmentId} AND trigger_type_code = 'slc-confirmation'
+    `) as Array<{ status_code: string }>;
+    expect(triggerRows[0]?.status_code).toBe('processed');
+
+    // The later-arriving trigger was not part of the approved batch, so it's
+    // still pending.
+    const laterTriggerRows = await ctx.db.execute(sql`
+      SELECT status_code FROM enrolment_downstream_trigger
+      WHERE tenant_id = ${ctx.tenantId} AND enrolment_id = ${later.enrolmentId} AND trigger_type_code = 'slc-confirmation'
+    `) as Array<{ status_code: string }>;
+    expect(laterTriggerRows[0]?.status_code).toBe('pending');
+  });
+
+  it('a rejected request does not submit anything, and cannot be decided twice', async () => {
+    await createSlcEnrolment('SLC-WF-003');
+
+    const request = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/v1/regulatory/slc/confirmations/requests',
+      headers: { authorization: `Bearer ${jwt}` },
+      payload: {},
+    });
+    const { workflowInstanceId } = request.json<{ workflowInstanceId: string }>();
+
+    const decide = await ctx.app.inject({
+      method: 'POST',
+      url: `/api/v1/regulatory/slc/confirmations/requests/${workflowInstanceId}/decision`,
+      headers: { authorization: `Bearer ${jwt}` },
+      payload: { decisionCode: 'rejected', reason: 'Awaiting revised data' },
+    });
+    expect(decide.statusCode).toBe(200);
+    expect(decide.json<{ processedCount: number }>().processedCount).toBe(0);
+
+    const secondDecide = await ctx.app.inject({
+      method: 'POST',
+      url: `/api/v1/regulatory/slc/confirmations/requests/${workflowInstanceId}/decision`,
+      headers: { authorization: `Bearer ${jwt}` },
+      payload: { decisionCode: 'approved' },
+    });
+    expect(secondDecide.statusCode).toBe(422);
+  });
+
+  it('rejects a submission request when a role lacking regulatory:decide tries to decide it', async () => {
+    await createSlcEnrolment('SLC-WF-004');
+    const request = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/v1/regulatory/slc/confirmations/requests',
+      headers: { authorization: `Bearer ${jwt}` },
+      payload: {},
+    });
+    const { workflowInstanceId } = request.json<{ workflowInstanceId: string }>();
+
+    const moduleTutorJwt = await ctx.makeJwt({ roles: ['module-tutor'] });
+    const decide = await ctx.app.inject({
+      method: 'POST',
+      url: `/api/v1/regulatory/slc/confirmations/requests/${workflowInstanceId}/decision`,
+      headers: { authorization: `Bearer ${moduleTutorJwt}` },
+      payload: { decisionCode: 'approved' },
+    });
+    expect(decide.statusCode).toBe(403);
+  });
+});
+
 async function createPerson(legalFirstName: string, legalFamilyName: string): Promise<string> {
   const res = await ctx.app.inject({
     method: 'POST',
