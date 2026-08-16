@@ -116,8 +116,9 @@ export function HesaPage() {
 
       {showCreate && (
         <form onSubmit={(e) => void handleCreate(e)} className="mb-4 flex items-center gap-3 bg-primary-50 rounded-lg p-4">
-          <label className="text-sm text-neutral-700">Academic year:</label>
+          <label htmlFor="hesa-year-input" className="text-sm text-neutral-700">Academic year:</label>
           <Input
+            id="hesa-year-input"
             value={yearInput}
             onChange={(e) => setYearInput(e.target.value)}
             placeholder="e.g. 2025/26"

@@ -214,6 +214,13 @@ describe('Stage 8 — End-to-End Acceptance Review', () => {
     });
 
     it('1.8 — record a formal assessment', async () => {
+      const startRes = await ctx.app.inject({
+        method:  'POST',
+        url:     `/api/v1/adjustment-cases/${adjustmentCaseId}/start-assessment`,
+        headers: { authorization: `Bearer ${advisorJwt}` },
+      });
+      expect(startRes.statusCode).toBe(204);
+
       const res = await ctx.app.inject({
         method:  'POST',
         url:     `/api/v1/adjustment-cases/${adjustmentCaseId}/assessments`,
@@ -660,6 +667,17 @@ describe('Stage 8 — End-to-End Acceptance Review', () => {
         },
       });
       adjCaseId = ac.json<{ id: string }>().id;
+
+      // Approval requires a determination — satisfy the precondition.
+      await ctx.app.inject({
+        method: 'POST', url: `/api/v1/adjustment-cases/${adjCaseId}/start-assessment`,
+        headers: { authorization: `Bearer ${advisorJwt}` },
+      });
+      await ctx.app.inject({
+        method: 'POST', url: `/api/v1/adjustment-cases/${adjCaseId}/assessments`,
+        headers: { authorization: `Bearer ${advisorJwt}` },
+        payload: { assessorId: 'disability-advisor-001', assessedAt: '2026-06-15T10:00:00Z', outcomeCode: 'recommended' },
+      });
     });
 
     it('N1.1 — first approve returns 202', async () => {
@@ -743,6 +761,17 @@ describe('Stage 8 — End-to-End Acceptance Review', () => {
         },
       });
       adjCaseId = ac.json<{ id: string }>().id;
+
+      // Approval requires a determination — satisfy the precondition.
+      await ctx.app.inject({
+        method: 'POST', url: `/api/v1/adjustment-cases/${adjCaseId}/start-assessment`,
+        headers: { authorization: `Bearer ${advisorJwt}` },
+      });
+      await ctx.app.inject({
+        method: 'POST', url: `/api/v1/adjustment-cases/${adjCaseId}/assessments`,
+        headers: { authorization: `Bearer ${advisorJwt}` },
+        payload: { assessorId: 'disability-advisor-001', assessedAt: '2026-06-15T10:00:00Z', outcomeCode: 'recommended' },
+      });
     });
 
     it('N2.1 — first approve fails (SRS unavailable) → 502', async () => {
@@ -832,6 +861,17 @@ describe('Stage 8 — End-to-End Acceptance Review', () => {
         },
       });
       const adjId = ac.json<{ id: string }>().id;
+
+      // Approval requires a determination — satisfy the precondition.
+      await ctx.app.inject({
+        method: 'POST', url: `/api/v1/adjustment-cases/${adjId}/start-assessment`,
+        headers: { authorization: `Bearer ${advisorJwt}` },
+      });
+      await ctx.app.inject({
+        method: 'POST', url: `/api/v1/adjustment-cases/${adjId}/assessments`,
+        headers: { authorization: `Bearer ${advisorJwt}` },
+        payload: { assessorId: 'disability-advisor-001', assessedAt: '2026-06-15T10:00:00Z', outcomeCode: 'recommended' },
+      });
 
       await ctx.app.inject({
         method:  'POST',

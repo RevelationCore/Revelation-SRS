@@ -85,3 +85,30 @@ export const adjustmentPanelDecisions = w.table('adjustment_panel_decision', {
 
 export type AdjustmentPanelDecision    = typeof adjustmentPanelDecisions.$inferSelect;
 export type NewAdjustmentPanelDecision = typeof adjustmentPanelDecisions.$inferInsert;
+
+// ---------------------------------------------------------------------------
+
+/**
+ * Evidence attached to an adjustment case (DSA medical letters, specialist
+ * assessor reports, etc.). The binary content lives in the `documents`
+ * schema (see @revelation-srs/documents, installed alongside this module's
+ * own tables — schema/index.ts re-exports it into this database) — this
+ * row is the case-scoped pointer plus the evidence's business meaning.
+ * `documentId` is not a foreign key to `documents.document` because that
+ * table is owned by a separate package's schema module, not this one;
+ * same "opaque cross-boundary reference" convention used for
+ * `srsApplicationRef` above.
+ */
+export const adjustmentCaseEvidence = w.table('adjustment_case_evidence', {
+  id:                uuid('id').primaryKey().defaultRandom(),
+  tenantId:          uuid('tenant_id').notNull(),
+  adjustmentCaseId:  uuid('adjustment_case_id').notNull(),
+  documentId:        uuid('document_id').notNull(),
+  evidenceTypeCode:  text('evidence_type_code').notNull(), // medical-letter | assessor-report | dsa-award-letter | other
+  uploadedBy:        text('uploaded_by').notNull(),
+  uploadedAt:        timestamp('uploaded_at', { withTimezone: true }).notNull().defaultNow(),
+  deletedAt:         timestamp('deleted_at', { withTimezone: true }),
+});
+
+export type AdjustmentCaseEvidence    = typeof adjustmentCaseEvidence.$inferSelect;
+export type NewAdjustmentCaseEvidence = typeof adjustmentCaseEvidence.$inferInsert;

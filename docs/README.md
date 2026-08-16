@@ -15,6 +15,7 @@ This index separates maintained product knowledge from superseded delivery evide
 | Learn UK HE terminology | [Domain glossary](domain-glossary.md) |
 | Browse business processes | [UK HE business process library](business-processes/README.md) |
 | Set up a development environment | [Developer setup](developer-setup.md) |
+| Try and appraise the product | [Appraisal pack](appraisal/README.md) |
 | Contribute a change | [Contributor guide](../CONTRIBUTING.md) |
 
 ## Product analysis

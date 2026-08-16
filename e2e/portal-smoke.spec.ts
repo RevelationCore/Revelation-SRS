@@ -7,7 +7,9 @@ const PORTAL = 'http://localhost:5174';
 test.describe('Portal smoke', () => {
   test('login page renders and passes axe', async ({ page }) => {
     await page.goto(`${PORTAL}/login`);
-    await expect(page.getByRole('heading', { name: 'Revelation SRS' })).toBeVisible();
+    // exact: true — "Sign in to Revelation SRS" (the h2 below) also matches
+    // an unscoped substring search for "Revelation SRS".
+    await expect(page.getByRole('heading', { name: 'Revelation SRS', exact: true })).toBeVisible();
     await expect(page.getByRole('heading', { name: /sign in/i })).toBeVisible();
 
     const results = await new AxeBuilder({ page }).analyze();

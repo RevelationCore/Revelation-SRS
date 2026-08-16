@@ -4,17 +4,21 @@
     "noEmit": true,
     "rootDir": ".",
     "types": ["node"],
-    "lib": ["ES2022", "DOM", "DOM.Iterable"]
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx"
   },
   "include": [
     "apps/**/*.ts",
+    "apps/**/*.tsx",
     "packages/**/*.ts",
+    "packages/**/*.tsx",
     "adapters/**/*.ts",
     "modules/**/*.ts",
     "e2e/**/*.ts",
     "tutorials/**/*.ts",
     "playwright.config.ts",
-    "playwright.golden.config.ts"
+    "playwright.golden.config.ts",
+    "vitest.e2e-helpers.config.ts"
   ],
   "exclude": [
     "**/dist/**",

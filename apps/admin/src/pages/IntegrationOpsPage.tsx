@@ -16,6 +16,7 @@ import { userHasAnyPermission } from '../auth/RequirePermission.js';
 import {
   PageHeader, Card, CardBody, Button,
   Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
+  Tabs, TabsList, TabsTrigger, TabsContent,
 } from '@revelation-srs/ui';
 
 type Tab = 'health' | 'failed';
@@ -29,27 +30,14 @@ export function IntegrationOpsPage() {
     <div>
       <PageHeader title="Integration operations" />
 
-      <div className="flex gap-1 mb-6 border-b border-neutral-200">
-        {([
-          ['health', 'Connector health'],
-          ['failed', 'Failed exchanges'],
-        ] as [Tab, string][]).map(([t, label]) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 ${
-              tab === t
-                ? 'border-primary-600 text-primary-600'
-                : 'border-transparent text-neutral-500 hover:text-neutral-700'
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
-      {tab === 'health'  && <ConnectorHealthTab canManage={canManage} />}
-      {tab === 'failed'  && <FailedExchangesTab />}
+      <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)}>
+        <TabsList className="mb-6">
+          <TabsTrigger value="health">Connector health</TabsTrigger>
+          <TabsTrigger value="failed">Failed exchanges</TabsTrigger>
+        </TabsList>
+        <TabsContent value="health"><ConnectorHealthTab canManage={canManage} /></TabsContent>
+        <TabsContent value="failed"><FailedExchangesTab /></TabsContent>
+      </Tabs>
     </div>
   );
 }

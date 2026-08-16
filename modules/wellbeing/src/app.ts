@@ -1,5 +1,6 @@
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
+import multipart from '@fastify/multipart';
 import { jwtPlugin, tenantContextPlugin } from '@revelation-srs/auth';
 import Fastify from 'fastify';
 import type { FastifyInstance } from 'fastify';
@@ -63,6 +64,12 @@ export async function buildApp(config: Config, appOpts: AppOptions = {}): Promis
     credentials: true,
   });
 
+  // Evidence uploads (multipart/form-data) — capped well above the
+  // per-document byte limit the storage adapter itself enforces, so the
+  // adapter's DocumentTooLargeError (not a raw multipart abort) is what
+  // the caller actually sees.
+  await fastify.register(multipart, { limits: { fileSize: 20 * 1024 * 1024 } });
+
   // JWT authentication (RS256 in prod, HS256 in dev/test)
   const jwtOpts = config.keycloakJwksUrl
     ? { jwksUrl: config.keycloakJwksUrl }
@@ -80,8 +87,8 @@ export async function buildApp(config: Config, appOpts: AppOptions = {}): Promis
   // Routes
   await fastify.register(healthRoutes);
   await fastify.register(disabilityCaseRoutes, { edrms: new EdrmsSimulator() });
-  const srsClient   = appOpts.srsAdjustmentClient ?? new SrsAdjustmentStubClient();
-  const srsEcClient = appOpts.srsEcClient         ?? new SrsEcStubClient();
+  const srsClient      = appOpts.srsAdjustmentClient ?? new SrsAdjustmentStubClient();
+  const srsEcClient    = appOpts.srsEcClient         ?? new SrsEcStubClient();
   await fastify.register(adjustmentCaseRoutes, { srsClient });
   await fastify.register(ecClaimRoutes, { srsEcClient });
   await fastify.register(mentalHealthCaseRoutes);

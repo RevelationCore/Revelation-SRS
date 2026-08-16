@@ -9,7 +9,8 @@
     "./tailwind-preset": "./tailwind-preset.js"
   },
   "scripts": {
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test:component": "vitest run --config vitest.component.config.ts"
   },
   "peerDependencies": {
     "@radix-ui/react-dialog": "^1.1.0",

@@ -11,8 +11,9 @@
  *   KN-07  Tab component — arrow-key switching works
  *   KN-08  Skip-to-main or equivalent (first tab target is meaningful)
  */
- 
+/* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call */
 import { test, expect } from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
 
 import { injectAdminAuth } from './helpers/auth.js';
 import { mockApiRoutes, mockTaskList, MOCK } from './helpers/api-mocks.js';
@@ -110,8 +111,8 @@ test.describe('Focus visibility (KN-04)', () => {
 test.describe('Inline confirm — keyboard (KN-05)', () => {
   test('task complete confirm button is keyboard-reachable', async ({ page }) => {
     await injectAdminAuth(page);
-    await mockTaskList(page);
     await mockApiRoutes(page);
+    await mockTaskList(page);
     await page.goto(`${ADMIN}/tasks`);
 
     await expect(page.getByText('enrolment-review')).toBeVisible();
@@ -193,8 +194,10 @@ test.describe('Modal dialog focus management (KN-06)', () => {
   });
 
   test('accessibility statement page is accessible without auth', async ({ page }) => {
-    await page.goto(`${ADMIN}/accessibility`);
+    await page.goto(`${ADMIN}/accessibility-statement`);
     await expect(page.getByRole('heading', { name: /accessibility statement/i })).toBeVisible();
+    const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze();
+    expect(results.violations).toEqual([]);
   });
 });
 
@@ -213,17 +216,24 @@ test.describe('Tab component keyboard navigation (KN-07)', () => {
 
     await expect(page.getByRole('heading', { name: /student/i })).toBeVisible({ timeout: 8_000 });
 
-    // Tab component buttons should be reachable
-    const tabButtons = page.getByRole('button').filter({ hasText: /identity|enrolments|registrations|history|corrections/i });
-    const count = await tabButtons.count();
+    // Real ARIA tabs (role="tab" within role="tablist"), not plain buttons.
+    const tabs = page.getByRole('tab');
+    const count = await tabs.count();
     expect(count).toBeGreaterThan(0);
 
+    const firstTab = tabs.nth(0);
+    await expect(firstTab).toHaveAttribute('aria-selected', 'true');
+
     if (count > 1) {
-      const secondTab = tabButtons.nth(1);
-      await secondTab.focus();
-      await page.keyboard.press('Enter');
-      // Verify tab switch happened (heading or content change)
+      // Arrow-key navigation moves both focus and selection between tabs —
+      // the Radix Tabs primitive provides this automatically; a hand-rolled
+      // row of buttons (which this page used before) does not.
+      await firstTab.focus();
+      await page.keyboard.press('ArrowRight');
+      const secondTab = tabs.nth(1);
       await expect(secondTab).toBeFocused();
+      await expect(secondTab).toHaveAttribute('aria-selected', 'true');
+      await expect(firstTab).toHaveAttribute('aria-selected', 'false');
     }
   });
 });

@@ -39,6 +39,25 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      - name: Run frontend component tests
+        id: component_tests
+        run: pnpm test:component
+
+      - name: Record component evidence
+        if: always()
+        run: node scripts/write-evidence-manifest.mjs component component "${{ steps.component_tests.outcome }}"
+
+      - name: Upload component evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidence-component-${{ github.sha }}
+          path: test-results/evidence/
+          retention-days: 30
+
+      - name: Validate principal journey metadata
+        run: pnpm check:journey-metadata
+
       - name: Clock-use check (no raw new Date / Date.now in api/src)
         run: |
           if grep -rn --include='*.ts' 'new Date()\|Date\.now()' apps/api/src/ | grep -v '// clock:allow' | grep -v 'src/platform/clock\.ts'; then
@@ -285,7 +304,7 @@ jobs:
 
   # ── 7. Frontend smoke tests (Playwright + axe) ───────────────────────────
   frontend-smoke:
-    name: Frontend Smoke & Accessibility
+    name: Mocked UI & Accessibility
     runs-on: ubuntu-latest
     needs: [typecheck-and-lint]
     steps:
@@ -304,8 +323,21 @@ jobs:
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps chromium
 
-      - name: Run smoke tests
-        run: pnpm test:e2e
+      - name: Run mocked UI tests
+        id: mocked_ui_tests
+        run: pnpm test:ui:mocked
+
+      - name: Record mocked UI evidence
+        if: always()
+        run: node scripts/write-evidence-manifest.mjs mocked-ui mocked-ui "${{ steps.mocked_ui_tests.outcome }}"
+
+      - name: Upload mocked UI evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidence-mocked-ui-${{ github.sha }}
+          path: test-results/evidence/
+          retention-days: 30
 
       - name: Upload Playwright report
         if: failure()
@@ -389,10 +421,9 @@ jobs:
 
   # ── 10. Golden full-stack E2E ─────────────────────────────────────────────
   golden-e2e:
-    name: Golden E2E
+    name: Real Full-stack Journey
     runs-on: ubuntu-latest
     needs: [integration-tests]
-    if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
 
@@ -415,13 +446,45 @@ jobs:
       - name: Build frontend apps
         run: pnpm --filter @revelation-srs/portal build && pnpm --filter @revelation-srs/admin build
 
-      - name: Run golden full-stack E2E
-        run: pnpm test:e2e:golden
+      - name: Start essential platform services
+        run: docker compose -f infra/compose/docker-compose.yml up -d postgres nats temporal keycloak
+
+      - name: Wait for Keycloak readiness
+        run: node scripts/environment.mjs ready keycloak
+
+      - name: Migrate and seed deterministic journey data
+        run: |
+          cp .env.example .env
+          pnpm migrate
+          pnpm demo:reset ci-golden
+          pnpm demo:validate ci-golden
+
+      - name: Start API and admin application
+        run: |
+          DEMO_DATA_ENABLED=true pnpm --filter @revelation-srs/api dev > /tmp/srs-api.log 2>&1 &
+          pnpm --filter @revelation-srs/admin dev > /tmp/srs-admin.log 2>&1 &
+          node scripts/environment.mjs ready api admin
+
+      - name: Run real full-stack journey
+        id: real_journey
+        run: pnpm test:journey
         env:
           DATABASE_URL:            postgres://srs:srs@localhost:5432/srs
           JWT_SECRET:              test-secret
           DEMO_DATA_ENABLED:       "true"
           TESTCONTAINERS_RYUK_DISABLED: "true"
+
+      - name: Record real journey evidence
+        if: always()
+        run: node scripts/write-evidence-manifest.mjs real-journey real-journey "${{ steps.real_journey.outcome }}"
+
+      - name: Upload real journey evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidence-real-journey-${{ github.sha }}
+          path: test-results/evidence/
+          retention-days: 30
 
       - name: Upload golden E2E report
         if: failure()
@@ -430,6 +493,55 @@ jobs:
           name: golden-e2e-report-${{ github.sha }}
           path: playwright-report/
           retention-days: 14
+
+      - name: Collect journey diagnostics
+        if: failure()
+        run: |
+          mkdir -p test-results/real-journey
+          cp /tmp/srs-api.log /tmp/srs-admin.log test-results/real-journey/ 2>/dev/null || true
+          docker compose -f infra/compose/docker-compose.yml ps > test-results/real-journey/compose-status.txt
+
+      - name: Upload journey diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: real-journey-diagnostics-${{ github.sha }}
+          path: test-results/real-journey/
+          retention-days: 14
+
+  status-consistency:
+    name: Product Status Consistency
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: "${{ env.PNPM_VERSION }}" }
+      - uses: actions/setup-node@v4
+        with: { node-version: "${{ env.NODE_VERSION }}", cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check:current-capabilities
+      - run: pnpm check:doc-links
+
+  evidence-summary:
+    name: Test Evidence Summary
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [typecheck-and-lint, frontend-smoke, golden-e2e]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: evidence-*-${{ github.sha }}
+          path: test-results/evidence
+          merge-multiple: true
+      - uses: actions/setup-node@v4
+        with: { node-version: "${{ env.NODE_VERSION }}" }
+      - run: node scripts/generate-evidence-report.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: test-evidence-summary-${{ github.sha }}
+          path: test-results/evidence-report/
+          retention-days: 30
 
   # ── 11. npm audit ────────────────────────────────────────────────────────
   dependency-audit:

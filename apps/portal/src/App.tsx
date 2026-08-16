@@ -17,6 +17,8 @@ import { ResultsPage } from './pages/ResultsPage.js';
 import { TimetablePage } from './pages/TimetablePage.js';
 import { ExamPage } from './pages/ExamPage.js';
 import { AdjustmentsPage } from './pages/AdjustmentsPage.js';
+import { AdjustmentRequestPage } from './pages/AdjustmentRequestPage.js';
+import { AdjustmentCaseDetailPage } from './pages/AdjustmentCaseDetailPage.js';
 import { DisabilityPage } from './pages/DisabilityPage.js';
 import { CircumstancesPage } from './pages/CircumstancesPage.js';
 import { NotificationsPage } from './pages/NotificationsPage.js';
@@ -55,6 +57,8 @@ export function App() {
           <Route path="/timetable"             element={<TimetablePage />} />
           <Route path="/exams"                 element={<ExamPage />} />
           <Route path="/adjustments"           element={<AdjustmentsPage />} />
+          <Route path="/adjustments/request"   element={<AdjustmentRequestPage />} />
+          <Route path="/adjustments/requests/:caseId" element={<AdjustmentCaseDetailPage />} />
           <Route path="/disability"            element={<DisabilityPage />} />
           <Route path="/circumstances"         element={<CircumstancesPage />} />
           <Route path="/notifications"         element={<NotificationsPage />} />

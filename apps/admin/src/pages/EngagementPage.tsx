@@ -12,7 +12,7 @@ import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
 import {
   PageHeader, Button, Card, CardBody, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
-  LabelledField, Input,
+  LabelledField, Input, Tabs, TabsList, TabsTrigger, TabsContent,
 } from '@revelation-srs/ui';
 
 type Tab = 'events' | 'alerts' | 'policies';
@@ -66,26 +66,23 @@ export function EngagementPage() {
         description="Evidence supports human review; it never determines academic status or sponsor reporting."
         actions={<Button variant="secondary" onClick={() => void load()}>Refresh</Button>}
       />
-      <div className="mb-5 flex gap-1 border-b border-neutral-200" role="tablist" aria-label="Engagement workspace">
-        {canReadAlerts && <TabButton active={tab === 'alerts'} onClick={() => setTab('alerts')}>Alert queue ({alerts.length})</TabButton>}
-        {canReadEvents && <TabButton active={tab === 'events'} onClick={() => setTab('events')}>Evidence worklist ({events.length})</TabButton>}
-        {canReadPolicies && <TabButton active={tab === 'policies'} onClick={() => setTab('policies')}>Policies ({policies.length})</TabButton>}
-      </div>
       {error && <div role="alert" className="mb-4 rounded border border-danger-200 bg-danger-50 p-3 text-sm text-danger-700">{error}</div>}
-      {loading ? <div className="flex justify-center py-16"><Spinner /></div> : (
-        <>
-          {tab === 'alerts' && <AlertQueue alerts={alerts} canManage={canManageCases} onOpen={openCase} />}
-          {tab === 'events' && <EventWorklist events={events} />}
-          {tab === 'policies' && <PolicyPanel policies={policies} canManage={canManagePolicy} onCreated={load} />}
-        </>
-      )}
+      <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)}>
+        <TabsList aria-label="Engagement workspace" className="mb-5">
+          {canReadAlerts && <TabsTrigger value="alerts">Alert queue ({alerts.length})</TabsTrigger>}
+          {canReadEvents && <TabsTrigger value="events">Evidence worklist ({events.length})</TabsTrigger>}
+          {canReadPolicies && <TabsTrigger value="policies">Policies ({policies.length})</TabsTrigger>}
+        </TabsList>
+        {loading ? <div className="flex justify-center py-16"><Spinner /></div> : (
+          <>
+            <TabsContent value="alerts"><AlertQueue alerts={alerts} canManage={canManageCases} onOpen={openCase} /></TabsContent>
+            <TabsContent value="events"><EventWorklist events={events} /></TabsContent>
+            <TabsContent value="policies"><PolicyPanel policies={policies} canManage={canManagePolicy} onCreated={load} /></TabsContent>
+          </>
+        )}
+      </Tabs>
     </section>
   );
-}
-
-function TabButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
-  return <button role="tab" aria-selected={active} onClick={onClick}
-    className={`px-4 py-2 text-sm font-medium ${active ? 'border-b-2 border-primary-600 text-primary-700' : 'text-neutral-500 hover:text-neutral-800'}`}>{children}</button>;
 }
 
 function AlertQueue({ alerts, canManage, onOpen }: {

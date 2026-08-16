@@ -1,5 +1,6 @@
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
+import multipart from '@fastify/multipart';
 import rateLimiter from '@fastify/rate-limit';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
@@ -406,6 +407,12 @@ export async function buildApp(
   // - Security plugins -
 
   await fastify.register(helmet, { global: true });
+
+  // Adjustment outcome-document uploads. Capped above the per-document
+  // byte limit the storage adapter itself enforces, so the adapter's
+  // DocumentTooLargeError (not a raw multipart abort) is what the caller
+  // actually sees.
+  await fastify.register(multipart, { limits: { fileSize: 20 * 1024 * 1024 } });
 
   await fastify.register(cors, {
     origin: config.corsOrigins,

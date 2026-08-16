@@ -1,4 +1,4 @@
-import { api } from './client.js';
+import { api, ApiError, getStoredToken } from './client.js';
 
 export interface StudentSummary {
   personId:        string;
@@ -129,10 +129,51 @@ export interface Adjustment {
   validTo:            string | null;
   recordedAt:         string;
   recordedUntil:      string | null;
+  sourceCaseId:       string | null;
+  outcomeDocumentId:  string | null;
 }
 
 export function listAdjustments(personId: string): Promise<Adjustment[]> {
   return api.get<Adjustment[]>(`/api/v1/students/${personId}/adjustments`);
+}
+
+// A detail document expanding on the coded adjustment (e.g. a specific
+// seating/equipment/software specification), stored independently in
+// core SRS's own document store — see AdjustmentService#attachOutcomeDocument.
+export async function uploadOutcomeDocument(
+  personId: string,
+  adjustmentId: string,
+  file: File,
+): Promise<{ documentId: string; checksumSha256: string }> {
+  const form = new FormData();
+  form.append('file', file);
+
+  const token = getStoredToken();
+  const res = await fetch(
+    `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000'}/api/v1/students/${personId}/adjustments/${adjustmentId}/outcome-document`,
+    { method: 'POST', headers: token ? { Authorization: `Bearer ${token}` } : {}, body: form },
+  );
+  if (!res.ok) {
+    let message = `Upload failed (${res.status})`;
+    try {
+      const body = await res.json() as { detail?: string; title?: string };
+      message = body.detail ?? body.title ?? message;
+    } catch {
+      // response wasn't JSON — keep the generic message
+    }
+    throw new ApiError(res.status, message);
+  }
+  return res.json() as Promise<{ documentId: string; checksumSha256: string }>;
+}
+
+export async function downloadOutcomeDocument(personId: string, adjustmentId: string): Promise<Blob> {
+  const token = getStoredToken();
+  const res = await fetch(
+    `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000'}/api/v1/students/${personId}/adjustments/${adjustmentId}/outcome-document`,
+    { headers: token ? { Authorization: `Bearer ${token}` } : {} },
+  );
+  if (!res.ok) throw new ApiError(res.status, `Download failed (${res.status})`);
+  return res.blob();
 }
 
 export interface ExceptionalCircumstances {

@@ -11,6 +11,7 @@
     { "path": "../../packages/domain" },
     { "path": "../../packages/db" },
     { "path": "../../packages/auth" },
+    { "path": "../../packages/documents" },
     { "path": "../../packages/workflow" }
   ],
   "include": ["src"]

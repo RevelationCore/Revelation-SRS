@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "journeys": [
+    {
+      "id": "J-S0-STATUS",
+      "titlePattern": "demo status endpoint returns active scenario",
+      "capabilities": ["demo-and-migration-tooling"],
+      "requirements": ["NFR-OPS-001"],
+      "personas": ["evaluator"],
+      "scenario": "ci-golden",
+      "evidenceClass": "real-journey"
+    },
+    {
+      "id": "J-S0-STUDENT-RECORD",
+      "titlePattern": "persisted student-record mutation",
+      "capabilities": ["person-identity-and-student-profile"],
+      "requirements": ["SID-002", "SID-003"],
+      "personas": ["registry-administrator"],
+      "scenario": "ci-golden",
+      "evidenceClass": "real-journey"
+    },
+    {
+      "id": "J-S0-BOARD",
+      "titlePattern": "S0 golden — exam boards",
+      "capabilities": ["exam-boards-and-ratification"],
+      "requirements": ["GOV-002"],
+      "personas": ["registry-administrator", "exam-board-chair"],
+      "scenario": "ci-golden",
+      "evidenceClass": "real-journey"
+    }
+  ]
+}

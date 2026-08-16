@@ -33,6 +33,11 @@ export function LoginPage() {
   const { t }    = useTranslation();
   const [starting, setStarting] = useState(false);
   const [error, setError]       = useState('');
+  // Declared alongside the other hooks, not after the early return below —
+  // conditionally skipping a hook call changes the hook order between
+  // renders, which is undefined behaviour in React regardless of whether
+  // this particular component happens to unmount right after.
+  const [rawToken, setRawToken] = useState('');
 
   // Redirect if already authenticated
   if (isReady && token) {
@@ -53,8 +58,6 @@ export function LoginPage() {
   }
 
   // ── Dev JWT-paste fallback (VITE_DEV_AUTH=true only) ─────────────────────
-
-  const [rawToken, setRawToken] = useState('');
 
   function handlePasteSubmit(e: FormEvent) {
     e.preventDefault();

@@ -15,6 +15,7 @@ import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
 import {
   PageHeader, Button, Select, Card, CardHeader, CardBody, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
+  Tabs, TabsList, TabsTrigger, TabsContent,
 } from '@revelation-srs/ui';
 
 const OFS_ACADEMIC_YEARS = ['2025-26', '2024-25', '2023-24', '2022-23'];
@@ -436,29 +437,14 @@ export function OfsPage() {
     <div>
       <PageHeader title="Office for Students (OfS)" />
 
-      <div className="border-b border-neutral-200 mb-6">
-        <nav className="-mb-px flex gap-6">
-          {([
-            { id: 'b3',            label: 'B3 Extract' },
-            { id: 'participation', label: 'Participation Report' },
-          ] as { id: Tab; label: string }[]).map(t => (
-            <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
-              className={`pb-3 text-sm font-medium border-b-2 focus:outline-none ${
-                tab === t.id
-                  ? 'border-primary-600 text-primary-600'
-                  : 'border-transparent text-neutral-500 hover:text-neutral-700 hover:border-neutral-300'
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
-        </nav>
-      </div>
-
-      {tab === 'b3'            && <B3Tab extracts={b3s} setExtracts={setB3s} onRequested={() => setRefreshSignal(s => s + 1)} />}
-      {tab === 'participation' && <ParticipationTab reports={reports} onRequested={() => setRefreshSignal(s => s + 1)} />}
+      <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)}>
+        <TabsList className="mb-6">
+          <TabsTrigger value="b3">B3 Extract</TabsTrigger>
+          <TabsTrigger value="participation">Participation Report</TabsTrigger>
+        </TabsList>
+        <TabsContent value="b3"><B3Tab extracts={b3s} setExtracts={setB3s} onRequested={() => setRefreshSignal(s => s + 1)} /></TabsContent>
+        <TabsContent value="participation"><ParticipationTab reports={reports} onRequested={() => setRefreshSignal(s => s + 1)} /></TabsContent>
+      </Tabs>
 
       {canDecide && (
         <div className="mt-8">

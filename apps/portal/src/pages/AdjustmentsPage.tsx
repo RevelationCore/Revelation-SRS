@@ -1,9 +1,24 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../auth/AuthContext.js';
 import { useApiData } from '../hooks/useApiData.js';
-import { getEnrolments, getAdjustments, getFieldValueSet } from '../api/me.js';
-import { Spinner, Problem, EmptyState, formatDate, PageHeader, Card, CardBody } from '@revelation-srs/ui';
+import { getEnrolments, getAdjustments, getFieldValueSet, downloadAdjustmentOutcomeDocument } from '../api/me.js';
+import { ApiError } from '../api/client.js';
+import { listMyAdjustmentCases, type AdjustmentCase } from '../api/adjustmentCases.js';
+import { Spinner, Problem, EmptyState, formatDate, PageHeader, Card, CardBody, Button, Badge } from '@revelation-srs/ui';
+
+const REQUEST_STATUS_LABELS: Record<string, string> = {
+  referral_received:  'Referral received',
+  assessment_pending: 'Assessment pending',
+  under_assessment:   'Being assessed',
+  determination_made: 'Assessment complete',
+  under_review:        'Under panel review',
+  approved:            'Approved',
+  rejected:            'Not approved',
+  review_complete:     'Review complete',
+  closed:              'Closed',
+};
 
 export function AdjustmentsPage() {
   const { t }    = useTranslation();
@@ -19,11 +34,18 @@ export function AdjustmentsPage() {
 
   const fetchAdjustments = useCallback(
     () => personId ? getAdjustments(personId, currentEnrolment?.enrolmentId) : Promise.reject(new Error('')),
-    [personId, currentEnrolment?.enrolmentId], // eslint-disable-line react-hooks/exhaustive-deps
+    [personId, currentEnrolment?.enrolmentId],
   );
   const { data: adjustments, loading: aLoading, error: aError } = useApiData(
     personId ? fetchAdjustments : null,
   );
+
+  const fetchMyCases = useCallback(
+    () => personId ? listMyAdjustmentCases(personId) : Promise.reject(new Error('')),
+    [personId],
+  );
+  const { data: myCases, loading: casesLoading } = useApiData(personId ? fetchMyCases : null);
+  const openCases = myCases?.items.filter((c) => !['approved', 'rejected', 'closed'].includes(c.statusCode)) ?? [];
 
   const fetchTypeSet  = useCallback(() => getFieldValueSet('reasonable_adjustment', 'adjustment_type_code'), []);
   const fetchScopeSet = useCallback(() => getFieldValueSet('reasonable_adjustment', 'scope_code'), []);
@@ -45,7 +67,32 @@ export function AdjustmentsPage() {
       <PageHeader
         title={t('portal.nav.adjustments')}
         description="Your learning support adjustments and reasonable adjustments"
+        actions={<Link to="/adjustments/request"><Button>Request an adjustment</Button></Link>}
       />
+
+      <section className="mb-8">
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-neutral-600">My adjustment requests</h2>
+        {casesLoading ? (
+          <div className="flex justify-center py-8"><Spinner /></div>
+        ) : openCases.length === 0 ? (
+          <p className="text-sm text-neutral-600">You have no open adjustment requests.</p>
+        ) : (
+          <div className="space-y-3">
+            {openCases.map((c: AdjustmentCase) => (
+              <Link
+                key={c.id}
+                to={`/adjustments/requests/${c.id}`}
+                className="flex items-center justify-between rounded-md border border-neutral-200 bg-white px-4 py-3 hover:bg-neutral-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary-600"
+              >
+                <span className="text-sm font-medium capitalize text-neutral-900">{c.adjustmentTypeCode.replace(/-/g, ' ')}</span>
+                <Badge value={c.statusCode} label={REQUEST_STATUS_LABELS[c.statusCode] ?? c.statusCode} />
+              </Link>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-neutral-600">Approved and in effect</h2>
 
       {error && <Problem title={t('status.error')} detail={error} />}
 
@@ -84,6 +131,14 @@ export function AdjustmentsPage() {
                     <dd className="mt-0.5 text-neutral-900 whitespace-pre-line">{adj.notes}</dd>
                   </div>
                 )}
+                {adj.outcomeDocumentId && (
+                  <div className="sm:col-span-3">
+                    <dt className="text-xs font-medium text-neutral-500">Detail document</dt>
+                    <dd className="mt-0.5">
+                      <OutcomeDocumentDownloadLink personId={adj.personId} adjustmentId={adj.adjustmentId} />
+                    </dd>
+                  </div>
+                )}
               </dl>
               </CardBody>
             </Card>
@@ -91,5 +146,35 @@ export function AdjustmentsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+function OutcomeDocumentDownloadLink({ personId, adjustmentId }: { personId: string; adjustmentId: string }) {
+  const [error, setError] = useState('');
+
+  async function handleDownload() {
+    setError('');
+    try {
+      const blob = await downloadAdjustmentOutcomeDocument(personId, adjustmentId);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `adjustment-detail-${adjustmentId.slice(0, 8)}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to download document');
+    }
+  }
+
+  return (
+    <>
+      <button type="button" onClick={() => void handleDownload()} className="text-sm text-primary-600 hover:underline">
+        Download detail document
+      </button>
+      {error && <span className="ml-2 text-xs text-danger-600">{error}</span>}
+    </>
   );
 }

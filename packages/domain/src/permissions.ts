@@ -7,6 +7,7 @@ export const ROLES = [
   'research-supervisor',
   'wellbeing-advisor',
   'wellbeing-mental-health-advisor',
+  'wellbeing-specialist-assessor',
   'wellbeing-panel-chair',
   'wellbeing-auditor',
   'exam-board-member',
@@ -47,6 +48,14 @@ export const PERMISSION_ROLES = {
   'adjustment:read:own':       ['student'] as Role[],
   'adjustment:read:all':       ['registry-administrator', 'wellbeing-advisor', 'integration-service'] as Role[],
   'adjustment:write':          ['registry-administrator', 'wellbeing-advisor'] as Role[],
+  // Reasonable-adjustment *case* (wellbeing-module-hosted process — referral,
+  // assessment, panel, approve/reject), distinct from the `adjustment:*`
+  // permissions above which gate the core-SRS *distributed outcome* record.
+  'adjustment-case:read:own':  ['student'] as Role[],
+  'adjustment-case:read:all':  ['wellbeing-advisor', 'wellbeing-specialist-assessor', 'wellbeing-panel-chair', 'registry-administrator'] as Role[],
+  'adjustment-case:write:own': ['student'] as Role[],
+  'adjustment-case:manage':    ['wellbeing-advisor', 'registry-administrator'] as Role[],
+  'adjustment-case:assess':    ['wellbeing-specialist-assessor', 'wellbeing-advisor'] as Role[],
   'special-category:read':     ['wellbeing-advisor', 'wellbeing-mental-health-advisor', 'wellbeing-panel-chair', 'wellbeing-auditor', 'dpo', 'registry-administrator'] as Role[],
   'mh-session-note:read':      ['wellbeing-mental-health-advisor', 'wellbeing-auditor', 'dpo'] as Role[],
   'panel-decision:write':      ['wellbeing-panel-chair', 'registry-administrator'] as Role[],

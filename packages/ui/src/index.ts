@@ -14,6 +14,8 @@ export * from './components/PageHeader.js';
 export * from './components/Problem.js';
 export * from './components/Spinner.js';
 export * from './components/StatCard.js';
+export * from './components/StatusNotice.js';
+export * from './components/SkipLink.js';
 export * from './components/Table.js';
 export * from './components/Tabs.js';
 export * from './form/Field.js';

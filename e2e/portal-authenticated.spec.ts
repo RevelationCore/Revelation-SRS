@@ -7,7 +7,9 @@
  *  3. Navigates to the route and waits for the page heading to appear.
  *  4. Runs axe and asserts zero violations.
  *
- * This covers all 14 protected portal routes.
+ * This covers all 17 protected portal routes (including the two dynamic
+ * detail/edit routes and /modules/select, which the original table omitted
+ * — see docs/product/accessibility-improvement-plan.md D1).
  */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call */
 import { test, expect } from '@playwright/test';
@@ -20,19 +22,22 @@ const PORTAL = 'http://localhost:5174';
 
 // [route, heading text or regex]
 const PAGES: [string, string | RegExp][] = [
-  ['/dashboard',          /welcome/i],
+  ['/dashboard',          /home/i],
   ['/profile',            /profile/i],
-  ['/profile/edit',       /edit profile/i],
+  ['/profile/edit',       /edit your profile/i],
   ['/profile/addresses/new', /add address/i],
+  ['/profile/addresses/test-address-001/edit', /update address/i],
   ['/enrolments',         /enrolments/i],
+  ['/enrolments/enrol-001', /BSC-CS/i],
   ['/modules',            /modules/i],
   ['/modules/add',        /add module/i],
+  ['/modules/select',     /module selection/i],
   ['/results',            /results/i],
   ['/timetable',          /timetable/i],
   ['/exams',              /exams/i],
   ['/adjustments',        /adjustments/i],
   ['/disability',         /disability/i],
-  ['/circumstances',      /exceptional circumstances/i],
+  ['/circumstances',      /circumstances/i],
   ['/notifications',      /notifications/i],
 ];
 
@@ -53,9 +58,15 @@ test.describe('Portal — authenticated page rendering and axe scans', () => {
           ? page.getByRole('heading', { name: heading, exact: false })
           : page.getByRole('heading', { name: heading });
       await expect(locator).toBeVisible({ timeout: 10_000 });
+      // Let in-flight fetches (e.g. value-set loads that disable/re-enable a
+      // submit button) and their CSS transitions settle before scanning —
+      // otherwise axe can catch a genuinely-accessible disabled→enabled
+      // button mid-transition, which is neither the exempted disabled colour
+      // nor the final enabled one, and fails color-contrast on neither.
+      await page.waitForLoadState('networkidle');
 
       const results = await new AxeBuilder({ page })
-        .withTags(['wcag2a', 'wcag2aa'])
+        .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
         .analyze();
       expect(results.violations).toEqual([]);
     });
@@ -69,20 +80,32 @@ test.describe('Portal — authenticated page rendering and axe scans', () => {
     await mockApiRoutes(page);
     await page.goto(`${PORTAL}/dashboard`);
 
-    for (const label of ['Dashboard', 'Profile', 'Enrolments', 'Modules', 'Results']) {
-      await expect(page.getByRole('link', { name: label, exact: false })).toBeVisible();
+    // Scoped to the sidebar nav landmark: several of these labels also
+    // appear in dashboard quick-link cards (e.g. "View all enrolments"),
+    // which would otherwise make an unscoped, substring-matching lookup
+    // ambiguous.
+    const nav = page.getByRole('navigation', { name: 'Main' });
+    for (const label of ['Dashboard', 'Profile', 'Enrolments', 'My modules', 'Results']) {
+      await expect(nav.getByRole('link', { name: label, exact: true })).toBeVisible();
     }
   });
 
   test('login page passes axe', async ({ page }) => {
     await page.goto(`${PORTAL}/login`);
-    const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze();
+    const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze();
     expect(results.violations).toEqual([]);
   });
 
   test('/403 page passes axe', async ({ page }) => {
     await page.goto(`${PORTAL}/403`);
-    const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze();
+    const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze();
+    expect(results.violations).toEqual([]);
+  });
+
+  test('accessibility statement page is accessible without auth', async ({ page }) => {
+    await page.goto(`${PORTAL}/accessibility-statement`);
+    await expect(page.getByRole('heading', { name: /accessibility statement/i })).toBeVisible();
+    const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze();
     expect(results.violations).toEqual([]);
   });
 });

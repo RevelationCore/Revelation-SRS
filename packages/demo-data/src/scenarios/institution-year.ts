@@ -39,6 +39,7 @@ import {
 
 import {
   // ID helpers
+  adjustmentCaseId,
   assessmentComponentId,
   awardBoardId,
   examBoardIdForPeriod,
@@ -94,10 +95,15 @@ import {
 } from '../generators/index.js';
 import {
   adjustmentCasesTable,
+  adjustmentAssessmentsTable,
+  adjustmentPanelDecisionsTable,
   disabilitySupportCasesTable,
   ecClaimsTable,
   mentalHealthCasesTable,
   wellbeingCasesTable,
+  generateAdjustmentAssessment,
+  generateAdjustmentPanelDecision,
+  type AdjustmentCaseOutcome,
 } from '../generators/wellbeing.js';
 import { provisionPersonas } from '../generators/keycloak.js';
 import { deterministicId } from '../generators/ids.js';
@@ -485,6 +491,8 @@ async function loadWellbeing(db: Db, tenantId: string): Promise<void> {
   const mentalHealthRows:     typeof mentalHealthCasesTable.$inferInsert[]      = [];
   const ecClaimRows:          typeof ecClaimsTable.$inferInsert[]               = [];
   const srsAdjRows:           typeof reasonableAdjustments.$inferInsert[]       = [];
+  const assessmentRows:       typeof adjustmentAssessmentsTable.$inferInsert[]  = [];
+  const panelDecisionRows:    typeof adjustmentPanelDecisionsTable.$inferInsert[] = [];
 
   for (let seq = 1; seq <= TOTAL_STUDENTS; seq++) {
     const status = statusCodeForSeq(seq);
@@ -500,22 +508,43 @@ async function loadWellbeing(db: Db, tenantId: string): Promise<void> {
     wellbeingCaseRows.push(generateWellbeingCase(tenantId, pId, seq));
 
     if (!isEva) {
+      // Lifecycle variety: Dan (the flagship wellbeing archetype) goes
+      // through the panel-escalation branch; roughly 1 in 6 of the rest
+      // are rejected (evidence didn't support the request — no core-SRS
+      // record follows, matching real production behaviour); everyone
+      // else is a straightforward specialist-assessor recommendation.
+      const outcome: AdjustmentCaseOutcome = isDan
+        ? 'approved-via-panel'
+        : seq % 6 === 0 ? 'rejected' : 'approved';
+
       disabilityRows.push(generateDisabilitySupportCase(tenantId, pId, seq));
-      adjustmentCaseRows.push(generateAdjustmentCase(tenantId, pId, seq));
-      const adjId = adjustmentId(tenantId, seq);
-      srsAdjRows.push({
-        versionId:          adjId,
-        id:                 adjId,
-        tenantId,
-        enrolmentId:        eId,
-        personId:           pId,
-        adjustmentTypeCode: 'extra-time',
-        scopeCode:          'exam',
-        notes:              'DEMO - 25% additional time. Synthetic record.',
-        actorId:            ACTOR,
-        validFrom:          VALID_FROM,
-        recordedAt:         VALID_FROM,
-      });
+      adjustmentCaseRows.push(generateAdjustmentCase(tenantId, pId, seq, outcome));
+      assessmentRows.push(generateAdjustmentAssessment(tenantId, seq, outcome));
+      if (outcome === 'approved-via-panel') {
+        panelDecisionRows.push(generateAdjustmentPanelDecision(tenantId, seq));
+      }
+
+      // A rejected case never produces a core-SRS record — matching real
+      // production behaviour (see modules/wellbeing's reject route).
+      if (outcome !== 'rejected') {
+        const adjId = adjustmentId(tenantId, seq);
+        srsAdjRows.push({
+          versionId:          adjId,
+          id:                 adjId,
+          tenantId,
+          enrolmentId:        eId,
+          personId:           pId,
+          adjustmentTypeCode: 'extra-time',
+          scopeCode:          'exam',
+          notes:              'DEMO - 25% additional time. Synthetic record.',
+          actorId:            ACTOR,
+          validFrom:          VALID_FROM,
+          recordedAt:         VALID_FROM,
+          // Genuine cross-service link back to the wellbeing case that
+          // approved it — previously these were fabricated independently.
+          sourceCaseId:       adjustmentCaseId(tenantId, seq),
+        });
+      }
     }
     if (isEva || hasEcClaim(seq)) {
       ecClaimRows.push(generateEcClaim(tenantId, pId, eId, seq));
@@ -530,6 +559,8 @@ async function loadWellbeing(db: Db, tenantId: string): Promise<void> {
       await batchInsert(db, wellbeingCasesTable,         wellbeingCaseRows.splice(0));
       await batchInsert(db, disabilitySupportCasesTable, disabilityRows.splice(0));
       await batchInsert(db, adjustmentCasesTable,        adjustmentCaseRows.splice(0));
+      await batchInsert(db, adjustmentAssessmentsTable,  assessmentRows.splice(0));
+      await batchInsert(db, adjustmentPanelDecisionsTable, panelDecisionRows.splice(0));
       await batchInsert(db, mentalHealthCasesTable,      mentalHealthRows.splice(0));
       await batchInsert(db, ecClaimsTable,               ecClaimRows.splice(0));
     }
@@ -539,6 +570,8 @@ async function loadWellbeing(db: Db, tenantId: string): Promise<void> {
   if (wellbeingCaseRows.length > 0)    await batchInsert(db, wellbeingCasesTable,         wellbeingCaseRows);
   if (disabilityRows.length > 0)        await batchInsert(db, disabilitySupportCasesTable, disabilityRows);
   if (adjustmentCaseRows.length > 0)   await batchInsert(db, adjustmentCasesTable,        adjustmentCaseRows);
+  if (assessmentRows.length > 0)       await batchInsert(db, adjustmentAssessmentsTable,  assessmentRows);
+  if (panelDecisionRows.length > 0)    await batchInsert(db, adjustmentPanelDecisionsTable, panelDecisionRows);
   if (mentalHealthRows.length > 0)      await batchInsert(db, mentalHealthCasesTable,       mentalHealthRows);
   if (ecClaimRows.length > 0)           await batchInsert(db, ecClaimsTable,               ecClaimRows);
 }

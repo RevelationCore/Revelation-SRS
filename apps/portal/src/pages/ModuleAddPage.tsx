@@ -69,7 +69,7 @@ export function ModuleAddPage() {
         moduleOfferingId: offering.moduleOfferingId,
       }),
     );
-    if (result !== undefined) navigate('/modules');
+    if (result !== undefined) navigate('/modules', { state: { notice: 'Registration request submitted. It is awaiting staff approval before it takes effect.' } });
   };
 
   const loading = eLoading || rLoading || oLoading;

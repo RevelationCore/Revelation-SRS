@@ -1,3 +1,4 @@
+import { forwardRef } from 'react';
 import type { InputHTMLAttributes, ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes } from 'react';
 
 const FIELD_BASE = [
@@ -15,23 +16,32 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   invalid?: boolean;
 }
 
-export function Input({ invalid, className = '', ...rest }: InputProps) {
+// Every field below forwards its ref. react-hook-form's register() spreads a
+// ref onto whatever element it's given to read/reset the field's current
+// value; a plain (non-forwardRef) function component silently drops that
+// ref, which leaves the field permanently "unregistered" from RHF's
+// perspective — it renders correctly but never reports a value, so
+// submission fails validation as if the field were always empty.
+
+export const Input = forwardRef<HTMLInputElement, InputProps>(function Input({ invalid, className = '', ...rest }, ref) {
   return (
     <input
+      ref={ref}
       aria-invalid={invalid ? 'true' : undefined}
       className={`${FIELD_BASE} ${fieldBorder(invalid)} ${className}`}
       {...rest}
     />
   );
-}
+});
 
 interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   invalid?: boolean;
 }
 
-export function Select({ invalid, className = '', children, ...rest }: SelectProps) {
+export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select({ invalid, className = '', children, ...rest }, ref) {
   return (
     <select
+      ref={ref}
       aria-invalid={invalid ? 'true' : undefined}
       className={`${FIELD_BASE} ${fieldBorder(invalid)} bg-white ${className}`}
       {...rest}
@@ -39,31 +49,33 @@ export function Select({ invalid, className = '', children, ...rest }: SelectPro
       {children}
     </select>
   );
-}
+});
 
 interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   invalid?: boolean;
 }
 
-export function Textarea({ invalid, className = '', ...rest }: TextareaProps) {
+export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function Textarea({ invalid, className = '', ...rest }, ref) {
   return (
     <textarea
+      ref={ref}
       aria-invalid={invalid ? 'true' : undefined}
       className={`${FIELD_BASE} ${fieldBorder(invalid)} ${className}`}
       {...rest}
     />
   );
-}
+});
 
-export function Checkbox({ className = '', ...rest }: InputHTMLAttributes<HTMLInputElement>) {
+export const Checkbox = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(function Checkbox({ className = '', ...rest }, ref) {
   return (
     <input
+      ref={ref}
       type="checkbox"
       className={`h-4 w-4 rounded border-neutral-300 text-primary-600 focus:ring-2 focus:ring-primary-500 ${className}`}
       {...rest}
     />
   );
-}
+});
 
 interface LabelledFieldProps {
   label:        string;

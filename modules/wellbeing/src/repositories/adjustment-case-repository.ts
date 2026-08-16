@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, desc, eq, isNull } from 'drizzle-orm';
 
 import type { WellbeingTx } from '../db/client.js';
 import {
@@ -45,6 +45,55 @@ export interface StatusTransitionUpdates {
   recommendedAdjustment?: string;
   rationale?:             string;
   srsApplicationRef?:     string;
+}
+
+// ── State machine ─────────────────────────────────────────────────────────────
+
+export const ADJUSTMENT_STATUSES = [
+  'referral_received', 'assessment_pending', 'under_assessment', 'determination_made',
+  'approved', 'rejected', 'under_review', 'review_complete', 'closed',
+] as const;
+export type AdjustmentStatus = (typeof ADJUSTMENT_STATUSES)[number];
+
+/**
+ * Legal next-states per current state. Referral/assessment stages are the
+ * Disability Adviser / Specialist Assessor main flow (BP-04-004); panel
+ * review is the escalation branch (a 'referred-to-panel' assessment outcome,
+ * or a manual refer-to-panel action) rather than a mandatory step for every
+ * case — matching the business process doc, which names no "panel" actor
+ * in its main flow.
+ */
+const ALLOWED_TRANSITIONS: Record<AdjustmentStatus, AdjustmentStatus[]> = {
+  // 'under_review' is reachable directly from any pre-determination state —
+  // a panel referral can be raised at any point once a case exists, not
+  // only after a full assessment has run. 'rejected' is likewise reachable
+  // early (e.g. a referral that's plainly out of scope) — rejection grants
+  // nothing, so unlike approve() it carries no evidentiary precondition of
+  // its own (that's checked separately, only for approve, via
+  // hasApprovableDetermination).
+  referral_received:   ['assessment_pending', 'under_assessment', 'under_review', 'rejected', 'closed'],
+  assessment_pending:  ['under_assessment', 'under_review', 'rejected', 'closed'],
+  under_assessment:    ['determination_made', 'under_review', 'rejected', 'closed'],
+  determination_made:  ['approved', 'rejected', 'under_review'],
+  under_review:        ['determination_made', 'approved', 'rejected', 'review_complete'],
+  review_complete:     ['closed'],
+  approved:            ['under_review', 'closed'],
+  rejected:            ['under_review', 'closed'],
+  closed:              [],
+};
+
+export class IllegalStatusTransitionError extends Error {
+  constructor(from: string, to: string) {
+    super(`Cannot transition adjustment case from '${from}' to '${to}'`);
+    this.name = 'IllegalStatusTransitionError';
+  }
+}
+
+export class ApprovalPreconditionError extends Error {
+  constructor() {
+    super('Approval requires either a recommending needs assessment or an upheld/modified panel decision');
+    this.name = 'ApprovalPreconditionError';
+  }
 }
 
 // ── Case CRUD ─────────────────────────────────────────────────────────────────
@@ -121,8 +170,37 @@ export async function listAdjustmentCasesForPerson(
 }
 
 /**
+ * Cross-student triage queue — staff-only (see routes.ts's permission
+ * gate). Without this, a disability adviser has no way to discover a new
+ * referral without already knowing the student's personId.
+ */
+export async function listAllAdjustmentCases(
+  tx:       WellbeingTx,
+  tenantId: string,
+  statusCode?: string,
+): Promise<AdjustmentCase[]> {
+  return tx
+    .select()
+    .from(adjustmentCases)
+    .where(
+      and(
+        eq(adjustmentCases.tenantId, tenantId),
+        isNull(adjustmentCases.recordedUntil),
+        ...(statusCode ? [eq(adjustmentCases.statusCode, statusCode)] : []),
+      ),
+    )
+    .orderBy(adjustmentCases.recordedAt);
+}
+
+/**
  * Transition an adjustment case to a new status (bitemporal close + reopen).
  * Optional updates to non-status fields are carried into the new version.
+ *
+ * Validates the transition against ALLOWED_TRANSITIONS unless
+ * `skipValidation` is set — that escape hatch exists only for the
+ * permission-gated administrative-correction path (a distinct action from
+ * a normal workflow transition; see routes.ts's status-correction route),
+ * never for ordinary case progression.
  */
 export async function transitionAdjustmentStatus(
   tx:        WellbeingTx,
@@ -131,10 +209,24 @@ export async function transitionAdjustmentStatus(
   newStatus: string,
   actorId:   string,
   updates?:  StatusTransitionUpdates,
+  options?:  { skipValidation?: boolean },
 ): Promise<void> {
   const current = await findCurrentAdjustmentCase(tx, tenantId, caseId);
   if (!current) {
     throw Object.assign(new Error(`Adjustment case ${caseId} not found`), { statusCode: 404 });
+  }
+
+  // A same-status "transition" isn't a workflow jump at all — it's the
+  // bitemporal amendment pattern used to persist an updated field (e.g.
+  // attaching srsApplicationRef once the SRS call returns) as a new
+  // version without changing where the case sits in the workflow. Always
+  // legal, unlike a genuine state change.
+  if (!options?.skipValidation && newStatus !== current.statusCode) {
+    const from = current.statusCode as AdjustmentStatus;
+    const legalNextStates = ALLOWED_TRANSITIONS[from] ?? [];
+    if (!legalNextStates.includes(newStatus as AdjustmentStatus)) {
+      throw Object.assign(new IllegalStatusTransitionError(from, newStatus), { statusCode: 409 });
+    }
   }
 
   const now = new Date();
@@ -274,9 +366,32 @@ export async function getCurrentPanelDecision(
         eq(adjustmentPanelDecisions.adjustmentCaseId, caseId),
       ),
     )
-    .orderBy(adjustmentPanelDecisions.panelDate)
+    .orderBy(desc(adjustmentPanelDecisions.panelDate))
     .limit(1);
   return rows[0] ?? null;
+}
+
+/**
+ * Approval precondition: a case may only be approved on the strength of
+ * either a recommending needs assessment or an upheld/modified panel
+ * decision — never on referral information alone. Checks the most recent
+ * record of each kind.
+ */
+export async function hasApprovableDetermination(
+  tx:       WellbeingTx,
+  tenantId: string,
+  caseId:   string,
+): Promise<boolean> {
+  const [latestAssessment] = await tx
+    .select({ outcomeCode: adjustmentAssessments.outcomeCode })
+    .from(adjustmentAssessments)
+    .where(and(eq(adjustmentAssessments.tenantId, tenantId), eq(adjustmentAssessments.adjustmentCaseId, caseId)))
+    .orderBy(desc(adjustmentAssessments.assessedAt))
+    .limit(1);
+  if (latestAssessment?.outcomeCode === 'recommended') return true;
+
+  const panelDecision = await getCurrentPanelDecision(tx, tenantId, caseId);
+  return panelDecision !== null && ['upheld', 'modified'].includes(panelDecision.decisionCode);
 }
 
 export async function markPanelDecisionDistributed(

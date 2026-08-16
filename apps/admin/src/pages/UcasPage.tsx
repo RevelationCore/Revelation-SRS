@@ -71,6 +71,7 @@ export function UcasPage() {
         actions={
           <div className="flex items-center gap-2">
             <Select
+              aria-label="UCAS admissions cycle"
               value={cycle}
               onChange={e => setCycle(e.target.value)}
               className="w-auto"

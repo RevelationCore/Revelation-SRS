@@ -46,12 +46,27 @@ The API will be available at `http://localhost:3000`. See the [service endpoints
 
 ## Running the test suite
 
+Choose the command by the evidence you need:
+
+| Command | What it proves | Prerequisites | Typical failure owner |
+|---|---|---|---|
+| `pnpm test:quick` | Types, lint, unit and isolated React component behaviour | Node and pnpm | Author of the changed package |
+| `pnpm test:unit` | Pure/default Vitest suites; integration files are excluded | Node and pnpm | Package maintainer |
+| `pnpm test:component` | UI states and interactions against controlled HTTP boundaries | Node and pnpm | Frontend maintainer |
+| `pnpm test:ui:mocked` | Browser rendering, routing, keyboard and axe checks with mocked APIs/auth | Playwright Chromium | Frontend maintainer |
+| `pnpm test:service` | API/database/module/adapter persistence and contracts | Docker/Testcontainers | Service maintainer |
+| `pnpm test:journey` | Browser plus real API/database against a prepared deterministic scenario | Running supported full stack | Test/platform maintainer |
+| `pnpm test:uat` | Assisted appraisal observations and structured findings | Running full stack and active scenario | Product/test facilitator |
+| `pnpm test:all` | All release evidence classes above | All prerequisites | Release owner |
+
+Mocked UI evidence is deliberately not described as end-to-end evidence. `pnpm test:e2e` remains a temporary compatibility alias for `test:ui:mocked`, and `pnpm test:int` remains an alias for `test:service`.
+
 ```bash
-# Unit tests — no Docker required
-pnpm test
+# Fast contributor feedback — no Docker required
+pnpm test:quick
 
 # Integration tests — Docker required (Testcontainers spins up ephemeral PostgreSQL)
-pnpm test:int
+pnpm test:service
 
 # TypeScript type checking
 pnpm typecheck
@@ -60,7 +75,7 @@ pnpm typecheck
 pnpm lint
 
 # All checks together (what CI runs)
-pnpm typecheck && pnpm lint && pnpm test && pnpm test:int
+pnpm test:all
 ```
 
 Integration tests use [Testcontainers](https://node.testcontainers.org/) and manage their own ephemeral PostgreSQL instances. The `docker compose` services from step 4 are **not** required for integration tests.
@@ -152,8 +167,8 @@ See [CONTRIBUTING.md](../CONTRIBUTING.md) for the full contribution guide and si
 | `pnpm install` | Install all workspace dependencies |
 | `pnpm build` | Build all packages |
 | `pnpm dev` | Start all services in watch mode |
-| `pnpm test` | Run all unit tests |
-| `pnpm test:int` | Run all integration tests |
+| `pnpm test` / `pnpm test:unit` | Run unit/default package tests |
+| `pnpm test:int` / `pnpm test:service` | Run service integration tests |
 | `pnpm typecheck` | TypeScript type check across all packages |
 | `pnpm lint` | ESLint across all packages |
 | `pnpm migrate` | Apply all pending database migrations |
@@ -161,7 +176,8 @@ See [CONTRIBUTING.md](../CONTRIBUTING.md) for the full contribution guide and si
 | `pnpm demo:reset <slug>` | Load a named demo scenario |
 | `pnpm demo:validate <slug>` | Validate a named demo scenario |
 | `pnpm demo:status` | Show which scenario is currently loaded |
-| `pnpm test:e2e` | Run Playwright E2E tests (requires running stack) |
+| `pnpm test:ui:mocked` | Run mocked Playwright UI tests |
+| `pnpm test:journey` | Run the real full-stack Playwright journey against a prepared stack |
 
 ---
 

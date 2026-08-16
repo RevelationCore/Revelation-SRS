@@ -27,6 +27,8 @@ const AdjustmentSchema = Type.Object({
   validTo: Type.Union([Type.String(), Type.Null()]),
   recordedAt: Type.String(),
   recordedUntil: Type.Union([Type.String(), Type.Null()]),
+  sourceCaseId: Type.Union([Type.String(), Type.Null()]),
+  outcomeDocumentId: Type.Union([Type.String(), Type.Null()]),
 });
 
 const DistributionSchema = Type.Object({
@@ -47,6 +49,7 @@ const RecordAdjustmentBody = Type.Object({
   validFrom: Type.String({ format: 'date-time' }),
   validTo: Type.Optional(Type.String({ format: 'date-time' })),
   notes: Type.Optional(Type.String()),
+  sourceCaseId: Type.Optional(Type.String()),
 });
 
 const ListAdjustmentQuery = Type.Object({
@@ -206,6 +209,80 @@ export function adjustmentRoutes(fastify: FastifyInstance): void {
       });
 
       await reply.code(204).send();
+    },
+  );
+
+  // ── Outcome document ────────────────────────────────────────────────────
+  //
+  // Detail document expanding on the coded adjustment (e.g. a specific
+  // seating/equipment/software specification), when type/scope/notes alone
+  // aren't expressive enough. Staff-authored (upload is adjustment:write
+  // only — a student can view but not attach their own "official" outcome
+  // document); download is self-or-all, matching the list route above.
+
+  fastify.post(
+    '/students/:personId/adjustments/:adjustmentId/outcome-document',
+    {
+      schema: {
+        params: Type.Object({ personId: Type.String(), adjustmentId: Type.String() }),
+        response: {
+          201: Type.Object({ documentId: Type.String(), checksumSha256: Type.String() }),
+          400: ErrorSchema,
+          404: ErrorSchema,
+          422: ErrorSchema,
+        },
+      },
+      preHandler: [requirePermission('adjustment:write')],
+    },
+    async (request, reply) => {
+      const { personId, adjustmentId } = request.params as { personId: string; adjustmentId: string };
+
+      const file = await request.file();
+      if (!file) return reply.code(400).send({ error: 'multipart file field is required' });
+      const content = await file.toBuffer();
+
+      const result = await fastify.adjustmentService.attachOutcomeDocument(
+        adjustmentId,
+        personId,
+        request.tenantId,
+        request.user.sub,
+        { filename: file.filename, mimeType: file.mimetype, content },
+      );
+
+      await fastify.audit.record({
+        tenantId: request.tenantId,
+        entityType: 'reasonable_adjustment',
+        entityId: adjustmentId,
+        actionType: 'update',
+        actorType: 'user',
+        actorId: request.user.sub,
+        actorDisplayName: request.user.displayName,
+        correlationId: request.id,
+        reasonText: 'Outcome document attached',
+      });
+
+      await reply.code(201).send(result);
+    },
+  );
+
+  fastify.get(
+    '/students/:personId/adjustments/:adjustmentId/outcome-document',
+    {
+      schema: {
+        params: Type.Object({ personId: Type.String(), adjustmentId: Type.String() }),
+        response: { 404: ErrorSchema },
+      },
+      preHandler: [requireSelfOrPermission('adjustment:read:own', 'adjustment:read:all')],
+    },
+    async (request, reply) => {
+      const { personId, adjustmentId } = request.params as { personId: string; adjustmentId: string };
+      const doc = await fastify.adjustmentService.getOutcomeDocument(
+        adjustmentId, personId, request.tenantId, request.user.sub,
+      );
+      await reply
+        .header('content-type', doc.mimeType)
+        .header('content-disposition', `attachment; filename="${doc.filename}"`)
+        .send(doc.content);
     },
   );
 }

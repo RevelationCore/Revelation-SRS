@@ -33,6 +33,7 @@ import { Spinner } from '../components/Spinner.js';
 import {
   Card, CardHeader, CardBody, Button, LabelledField, Input, Select, PageHeader,
   Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
+  Tabs, TabsList, TabsTrigger, TabsContent,
 } from '@revelation-srs/ui';
 
 type Tab = 'overview' | 'entries' | 'candidates' | 'signoff' | 'authority';
@@ -92,29 +93,21 @@ export function ExamBoardDetailPage() {
         description={<span className="font-mono text-xs">{boardId}</span>}
       />
 
-      <div className="flex gap-1 mb-6 border-b border-neutral-200">
-        {TABS.map(({ id, label }) => (
-          <button
-            key={id}
-            onClick={() => setTab(id)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
-              tab === id
-                ? 'border-primary-600 text-primary-600'
-                : 'border-transparent text-neutral-500 hover:text-neutral-800'
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)}>
+        <TabsList className="mb-6">
+          {TABS.map(({ id, label }) => <TabsTrigger key={id} value={id}>{label}</TabsTrigger>)}
+        </TabsList>
 
-      {tab === 'overview'   && <OverviewTab board={board} boardId={boardId} onRefresh={reload}
-        canWriteBoard={canWriteBoard} canReadIntegrations={canReadIntegrations}
-        canManageIntegrations={canManageIntegrations} />}
-      {tab === 'entries'    && <EntriesTab    boardId={boardId} />}
-      {tab === 'candidates' && <CandidatesTab boardId={boardId} />}
-      {tab === 'signoff'    && <SignoffTab    board={board} boardId={boardId} onRefresh={reload} />}
-      {tab === 'authority'  && <AuthorityTab  boardId={boardId} />}
+        <TabsContent value="overview">
+          <OverviewTab board={board} boardId={boardId} onRefresh={reload}
+            canWriteBoard={canWriteBoard} canReadIntegrations={canReadIntegrations}
+            canManageIntegrations={canManageIntegrations} />
+        </TabsContent>
+        <TabsContent value="entries"><EntriesTab boardId={boardId} /></TabsContent>
+        <TabsContent value="candidates"><CandidatesTab boardId={boardId} /></TabsContent>
+        <TabsContent value="signoff"><SignoffTab board={board} boardId={boardId} onRefresh={reload} /></TabsContent>
+        <TabsContent value="authority"><AuthorityTab boardId={boardId} /></TabsContent>
+      </Tabs>
     </div>
   );
 }

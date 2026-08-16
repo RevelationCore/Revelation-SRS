@@ -30,7 +30,7 @@ test.beforeEach(async ({ page }) => {
 
 test('shows the governed sponsor-decision and operational boundary', async ({ page }) => {
   await page.goto(`${ADMIN}/regulatory/ukvi`);
-  await page.getByRole('button', { name: 'Sponsor decisions' }).click();
+  await page.getByRole('tab', { name: 'Sponsor decisions' }).click();
   await expect(page.getByText(/never automatically changes academic status/i)).toBeVisible();
   await expect(page.getByText('sustained-non-engagement')).toBeVisible();
   await expect(page.getByText('Evidence reconciliation').locator('../..')).toContainText('1');

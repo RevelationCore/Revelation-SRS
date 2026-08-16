@@ -15,7 +15,7 @@ import { ApiError } from '../api/client.js';
 import { useAuth } from '../auth/AuthContext.js';
 import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
-import { PageHeader, Card, Button, Dialog, DialogClose, LabelledField, Input, Select } from '@revelation-srs/ui';
+import { PageHeader, Card, Button, Dialog, DialogClose, LabelledField, Input, Select, Tabs, TabsList, TabsTrigger, TabsContent } from '@revelation-srs/ui';
 
 type DetailTab = 'assignments' | 'governance' | 'impact';
 
@@ -257,42 +257,31 @@ function FlagDetail({
 
       {error && <p className="mb-3 text-sm text-danger-600">{error}</p>}
 
-      <div className="flex gap-1 mb-4 border-b border-neutral-200">
-        {TABS.map(({ id, label }) => (
-          <button
-            key={id}
-            onClick={() => setTab(id)}
-            className={`px-3 py-1.5 text-xs font-medium border-b-2 -mb-px ${
-              tab === id ? 'border-primary-600 text-primary-600' : 'border-transparent text-neutral-500 hover:text-neutral-800'
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <Tabs value={tab} onValueChange={(v) => setTab(v as DetailTab)}>
+        <TabsList className="mb-4">
+          {TABS.map(({ id, label }) => <TabsTrigger key={id} value={id}>{label}</TabsTrigger>)}
+        </TabsList>
 
-      {/* Governance tab reads directly from flag — no spinner needed */}
-      {tab === 'governance' && (
-        <dl className="grid grid-cols-2 gap-3 text-xs">
-          <InfoRow label="Class"               value={flag.flagClassCode} />
-          <InfoRow label="Risk"                value={flag.riskClassCode} />
-          <InfoRow label="Owner contact"       value={flag.ownerContact} />
-          <InfoRow label="Review date"         value={flag.reviewDate ? new Date(flag.reviewDate).toLocaleDateString('en-GB') : null} />
-          <InfoRow label="Retirement condition" value={flag.retirementCondition} />
-          <InfoRow label="Non-bypassable"      value={flag.nonBypassable ? 'Yes' : 'No'} />
-          {flag.allowedScopeCodes.length > 0 && (
-            <div className="col-span-2">
-              <dt className="text-neutral-500 mb-0.5">Allowed scopes</dt>
-              <dd className="text-neutral-900 font-mono">{flag.allowedScopeCodes.join(', ')}</dd>
-            </div>
-          )}
-        </dl>
-      )}
+        {/* Governance tab reads directly from flag — no spinner needed */}
+        <TabsContent value="governance">
+          <dl className="grid grid-cols-2 gap-3 text-xs">
+            <InfoRow label="Class"               value={flag.flagClassCode} />
+            <InfoRow label="Risk"                value={flag.riskClassCode} />
+            <InfoRow label="Owner contact"       value={flag.ownerContact} />
+            <InfoRow label="Review date"         value={flag.reviewDate ? new Date(flag.reviewDate).toLocaleDateString('en-GB') : null} />
+            <InfoRow label="Retirement condition" value={flag.retirementCondition} />
+            <InfoRow label="Non-bypassable"      value={flag.nonBypassable ? 'Yes' : 'No'} />
+            {flag.allowedScopeCodes.length > 0 && (
+              <div className="col-span-2">
+                <dt className="text-neutral-500 mb-0.5">Allowed scopes</dt>
+                <dd className="text-neutral-900 font-mono">{flag.allowedScopeCodes.join(', ')}</dd>
+              </div>
+            )}
+          </dl>
+        </TabsContent>
 
-      {tab !== 'governance' && (
-        loading ? <Spinner /> : (
-          <>
-            {tab === 'assignments' && (
+        <TabsContent value="assignments">
+          {loading ? <Spinner /> : (
               <div>
                 {assignments.length === 0 ? (
                   <p className="text-xs text-neutral-600 mb-3">No overrides — default applies everywhere.</p>
@@ -328,16 +317,20 @@ function FlagDetail({
                   showAddAssignment ? (
                     <form onSubmit={(e) => void handleAddAssignment(e)} className="flex items-end gap-2 mt-2 bg-primary-50 rounded p-3 flex-wrap">
                       <div>
-                        <label className="block text-xs text-neutral-600 mb-0.5">Variant</label>
-                        <select name="variantKey" className="rounded border border-neutral-300 px-2 py-1 text-xs">
-                          {flag.variants.map(v => (
-                            <option key={v.featureFlagVariantId} value={v.variantKey}>{v.variantKey}</option>
-                          ))}
-                        </select>
+                        <label className="block text-xs text-neutral-600 mb-0.5">
+                          Variant
+                          <select name="variantKey" className="mt-0.5 block rounded border border-neutral-300 px-2 py-1 text-xs">
+                            {flag.variants.map(v => (
+                              <option key={v.featureFlagVariantId} value={v.variantKey}>{v.variantKey}</option>
+                            ))}
+                          </select>
+                        </label>
                       </div>
                       <div>
-                        <label className="block text-xs text-neutral-600 mb-0.5">Role code (optional)</label>
-                        <input name="roleCode" className="rounded border border-neutral-300 px-2 py-1 text-xs w-36" />
+                        <label className="block text-xs text-neutral-600 mb-0.5">
+                          Role code (optional)
+                          <input name="roleCode" className="mt-0.5 block rounded border border-neutral-300 px-2 py-1 text-xs w-36" />
+                        </label>
                       </div>
                       <button type="submit" disabled={addingAssignment} className="rounded bg-primary-600 px-2.5 py-1 text-xs text-white disabled:opacity-50">
                         {addingAssignment ? '…' : 'Add'}
@@ -351,9 +344,11 @@ function FlagDetail({
                   )
                 )}
               </div>
-            )}
+          )}
+        </TabsContent>
 
-            {tab === 'impact' && (
+        <TabsContent value="impact">
+          {loading ? <Spinner /> : (
               <div className="space-y-4 text-xs">
                 {impact ? (
                   <>
@@ -399,10 +394,9 @@ function FlagDetail({
                   <p className="text-neutral-600">No impact data available.</p>
                 )}
               </div>
-            )}
-          </>
-        )
-      )}
+          )}
+        </TabsContent>
+      </Tabs>
       </div>
     </Card>
   );

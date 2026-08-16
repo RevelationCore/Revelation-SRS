@@ -20,6 +20,11 @@ export interface SubmitAdjustmentInput {
   validFrom:          string;
   validTo?:           string;
   notes?:             string;
+  /** This wellbeing module case's logical id — carried through so the
+   * core-SRS `reasonable_adjustment` record it produces is traceable back
+   * to the case that approved it (see packages/db's `source_case_id`
+   * column). Opaque cross-service reference, not a foreign key. */
+  sourceCaseId?:      string;
 }
 
 export interface SubmitAdjustmentResult {
@@ -47,6 +52,7 @@ export class SrsAdjustmentHttpClient implements SrsAdjustmentClient {
       validFrom:          input.validFrom,
       ...(input.validTo !== undefined ? { validTo: input.validTo } : {}),
       ...(input.notes   !== undefined ? { notes:   input.notes }   : {}),
+      ...(input.sourceCaseId !== undefined ? { sourceCaseId: input.sourceCaseId } : {}),
     };
 
     const res = await fetch(url, {

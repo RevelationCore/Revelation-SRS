@@ -29,7 +29,7 @@ export function TabsTrigger({ className = '', ...rest }: RadixTabs.TabsTriggerPr
 export function TabsContent({ className = '', ...rest }: RadixTabs.TabsContentProps) {
   return (
     <RadixTabs.Content
-      className={`pt-4 focus-visible:outline-none ${className}`}
+      className={`pt-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary-600 focus-visible:-outline-offset-2 ${className}`}
       {...rest}
     />
   );

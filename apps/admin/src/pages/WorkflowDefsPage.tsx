@@ -18,6 +18,7 @@ import { Spinner } from '../components/Spinner.js';
 import {
   PageHeader, Card, CardBody, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
   Button, Input, LabelledField, Dialog, DialogClose,
+  Tabs, TabsList, TabsTrigger, TabsContent,
 } from '@revelation-srs/ui';
 
 type Tab = 'definitions' | 'assignments';
@@ -47,24 +48,14 @@ export function WorkflowDefsPage() {
         </p>
       )}
 
-      <div className="flex gap-1 mb-6 border-b border-neutral-200">
-        {(['definitions', 'assignments'] as Tab[]).map(t => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
-              tab === t
-                ? 'border-primary-600 text-primary-600'
-                : 'border-transparent text-neutral-500 hover:text-neutral-800'
-            }`}
-          >
-            {t === 'definitions' ? 'Definitions' : 'Assignment rules'}
-          </button>
-        ))}
-      </div>
-
-      {tab === 'definitions'  && <DefinitionsTab canWrite={canWrite} />}
-      {tab === 'assignments'  && <AssignmentsTab canWrite={canWrite} />}
+      <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)}>
+        <TabsList className="mb-6">
+          <TabsTrigger value="definitions">Definitions</TabsTrigger>
+          <TabsTrigger value="assignments">Assignment rules</TabsTrigger>
+        </TabsList>
+        <TabsContent value="definitions"><DefinitionsTab canWrite={canWrite} /></TabsContent>
+        <TabsContent value="assignments"><AssignmentsTab canWrite={canWrite} /></TabsContent>
+      </Tabs>
     </div>
   );
 }
@@ -294,7 +285,12 @@ function AssignmentsTab({ canWrite }: { canWrite: boolean }) {
 
   async function handleCreate(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const fd                         = new FormData(e.currentTarget);
+    // Captured before the first await: React nulls a SyntheticEvent's
+    // currentTarget once the handler task returns, so reading it after an
+    // await (e.g. to .reset()) throws — see EngagementCasePage for the same
+    // fix, where this silently discarded a successful save as a false error.
+    const form                        = e.currentTarget;
+    const fd                         = new FormData(form);
     const workflowDefinitionVersionId = String(fd.get('workflowDefinitionVersionId') ?? '').trim();
     const stepKey                    = String(fd.get('stepKey')                     ?? '').trim();
     const ruleKey                    = String(fd.get('ruleKey')                     ?? '').trim();
@@ -309,7 +305,7 @@ function AssignmentsTab({ canWrite }: { canWrite: boolean }) {
         ...(assigneeRoleCode ? { assigneeRoleCode } : {}),
       });
       setShowCreate(false);
-      e.currentTarget.reset();
+      form.reset();
       await load();
     } catch (err) {
       setError(err instanceof ApiError ? (err.detail ?? err.message) : 'Create failed');

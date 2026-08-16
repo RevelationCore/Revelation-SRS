@@ -22,6 +22,7 @@ import { userHasAnyPermission } from '../auth/RequirePermission.js';
 import {
   PageHeader, Card, CardBody, Button, Input, Select, LabelledField, Dialog, DialogClose,
   Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
+  Tabs, TabsList, TabsTrigger, TabsContent,
 } from '@revelation-srs/ui';
 
 type Tab = 'contracts' | 'registrations' | 'exchanges';
@@ -37,25 +38,16 @@ export function IntegrationsPage() {
     <div>
       <PageHeader title="Integrations" />
 
-      <div className="flex gap-1 mb-6 border-b border-neutral-200">
-        {(['registrations', 'contracts', 'exchanges'] as Tab[]).map(t => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
-              tab === t
-                ? 'border-primary-600 text-primary-600'
-                : 'border-transparent text-neutral-500 hover:text-neutral-800'
-            }`}
-          >
-            {t === 'registrations' ? 'Registrations' : t === 'contracts' ? 'Contracts' : 'Exchange log'}
-          </button>
-        ))}
-      </div>
-
-      {tab === 'registrations' && <RegistrationsTab canManage={canManage} />}
-      {tab === 'contracts'     && <ContractsTab canManage={canManage} />}
-      {tab === 'exchanges'     && <ExchangesTab />}
+      <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)}>
+        <TabsList className="mb-6">
+          <TabsTrigger value="registrations">Registrations</TabsTrigger>
+          <TabsTrigger value="contracts">Contracts</TabsTrigger>
+          <TabsTrigger value="exchanges">Exchange log</TabsTrigger>
+        </TabsList>
+        <TabsContent value="registrations"><RegistrationsTab canManage={canManage} /></TabsContent>
+        <TabsContent value="contracts"><ContractsTab canManage={canManage} /></TabsContent>
+        <TabsContent value="exchanges"><ExchangesTab /></TabsContent>
+      </Tabs>
     </div>
   );
 }
@@ -438,11 +430,11 @@ function ExchangesTab() {
   return (
     <div>
       <form onSubmit={handleFilter} className="flex items-center gap-3 mb-4">
-        <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="w-auto">
+        <Select aria-label="Filter by status" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="w-auto">
           <option value="">All statuses</option>
           {['pending', 'processed', 'failed', 'retried'].map(s => <option key={s} value={s}>{s}</option>)}
         </Select>
-        <Select value={dirFilter} onChange={(e) => setDirFilter(e.target.value)} className="w-auto">
+        <Select aria-label="Filter by direction" value={dirFilter} onChange={(e) => setDirFilter(e.target.value)} className="w-auto">
           <option value="">All directions</option>
           <option value="inbound">Inbound</option>
           <option value="outbound">Outbound</option>

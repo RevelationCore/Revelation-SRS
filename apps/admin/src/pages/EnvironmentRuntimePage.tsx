@@ -14,6 +14,7 @@ import { Spinner } from '../components/Spinner.js';
 import {
   PageHeader, Card, CardHeader, CardBody, Button, Select, LabelledField, Textarea,
   Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
+  Tabs, TabsList, TabsTrigger, TabsContent,
 } from '@revelation-srs/ui';
 
 type Tab = 'runtime' | 'environments' | 'promotions';
@@ -25,25 +26,16 @@ export function EnvironmentRuntimePage() {
     <div>
       <PageHeader title="Environment runtime" />
 
-      <div className="flex gap-1 mb-6 border-b border-neutral-200">
-        {(['runtime', 'environments', 'promotions'] as Tab[]).map(t => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 capitalize ${
-              tab === t
-                ? 'border-primary-600 text-primary-600'
-                : 'border-transparent text-neutral-500 hover:text-neutral-700'
-            }`}
-          >
-            {t}
-          </button>
-        ))}
-      </div>
-
-      {tab === 'runtime'      && <RuntimeTab />}
-      {tab === 'environments' && <EnvironmentsTab />}
-      {tab === 'promotions'   && <PromotionsTab />}
+      <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)}>
+        <TabsList className="mb-6">
+          {(['runtime', 'environments', 'promotions'] as Tab[]).map(t => (
+            <TabsTrigger key={t} value={t} className="capitalize">{t}</TabsTrigger>
+          ))}
+        </TabsList>
+        <TabsContent value="runtime"><RuntimeTab /></TabsContent>
+        <TabsContent value="environments"><EnvironmentsTab /></TabsContent>
+        <TabsContent value="promotions"><PromotionsTab /></TabsContent>
+      </Tabs>
     </div>
   );
 }

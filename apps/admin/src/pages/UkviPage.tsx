@@ -23,6 +23,7 @@ import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
 import {
   PageHeader, Button, Card, CardHeader, CardBody, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, StatCard,
+  Tabs, TabsList, TabsTrigger, TabsContent,
 } from '@revelation-srs/ui';
 
 type Tab = 'cas' | 'compliance' | 'decisions';
@@ -34,25 +35,16 @@ export function UkviPage() {
     <div>
       <PageHeader title="UKVI" />
 
-      <div className="flex gap-1 mb-6 border-b border-neutral-200">
-        {(['cas', 'compliance', 'decisions'] as Tab[]).map(t => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
-              tab === t
-                ? 'border-primary-600 text-primary-600'
-                : 'border-transparent text-neutral-500 hover:text-neutral-800'
-            }`}
-          >
-            {t === 'cas' ? 'CAS requests' : t === 'compliance' ? 'Compliance alerts' : 'Sponsor decisions'}
-          </button>
-        ))}
-      </div>
-
-      {tab === 'cas'        && <CasTab />}
-      {tab === 'compliance' && <ComplianceTab />}
-      {tab === 'decisions'  && <SponsorDecisionsTab />}
+      <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)}>
+        <TabsList className="mb-6">
+          <TabsTrigger value="cas">CAS requests</TabsTrigger>
+          <TabsTrigger value="compliance">Compliance alerts</TabsTrigger>
+          <TabsTrigger value="decisions">Sponsor decisions</TabsTrigger>
+        </TabsList>
+        <TabsContent value="cas"><CasTab /></TabsContent>
+        <TabsContent value="compliance"><ComplianceTab /></TabsContent>
+        <TabsContent value="decisions"><SponsorDecisionsTab /></TabsContent>
+      </Tabs>
     </div>
   );
 }

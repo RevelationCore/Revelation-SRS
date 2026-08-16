@@ -164,6 +164,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/students/{personId}/adjustments/{adjustmentId}/outcome-document": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getStudentsByPersonIdAdjustmentsByAdjustmentIdOutcomeDocument"];
+        put?: never;
+        post: operations["createStudentsByPersonIdAdjustmentsByAdjustmentIdOutcomeDocument"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/enrolments/{enrolmentId}/support-outcomes": {
         parameters: {
             query?: never;
@@ -764,9 +780,25 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        get: operations["getIdentityResolutionCases"];
         put?: never;
         post: operations["createIdentityResolutionCases"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/identity-resolution/correction-cases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getIdentityResolutionCorrectionCases"];
+        put?: never;
+        post: operations["createIdentityResolutionCorrectionCases"];
         delete?: never;
         options?: never;
         head?: never;
@@ -821,7 +853,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/identity-resolution/correction-cases": {
+    "/api/v1/pgr/supervision-cases": {
         parameters: {
             query?: never;
             header?: never;
@@ -830,7 +862,535 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["createIdentityResolutionCorrectionCases"];
+        post: operations["createPgrSupervisionCases"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pgr/supervision-cases/{caseId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getPgrSupervisionCasesByCaseId"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pgr/supervision-cases/{caseId}/nominations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getPgrSupervisionCasesByCaseIdNominations"];
+        put?: never;
+        post: operations["createPgrSupervisionCasesByCaseIdNominations"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pgr/supervision-cases/{caseId}/nominations/{nominationId}/eligibility-check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createPgrSupervisionCasesByCaseIdNominationsByNominationIdEligibilityCheck"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pgr/supervision-cases/{caseId}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createPgrSupervisionCasesByCaseIdDecision"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pgr/supervision-cases/{caseId}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createPgrSupervisionCasesByCaseIdPublish"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/enrolments/{enrolmentId}/supervision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getEnrolmentsByEnrolmentIdSupervision"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pgr/reviews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createPgrReviews"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pgr/reviews/{reviewId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getPgrReviewsByReviewId"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pgr/reviews/{reviewId}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getPgrReviewsByReviewIdMembers"];
+        put?: never;
+        post: operations["createPgrReviewsByReviewIdMembers"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pgr/reviews/members/{memberId}/conflict": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createPgrReviewsMembersByMemberIdConflict"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pgr/reviews/members/{memberId}/recuse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createPgrReviewsMembersByMemberIdRecuse"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pgr/reviews/{reviewId}/evidence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createPgrReviewsByReviewIdEvidence"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pgr/reviews/{reviewId}/outcome": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createPgrReviewsByReviewIdOutcome"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pgr/reviews/{reviewId}/milestones": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createPgrReviewsByReviewIdMilestones"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/enrolments/{enrolmentId}/research-milestones": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getEnrolmentsByEnrolmentIdResearchMilestones"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pgr/examinations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createPgrExaminations"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pgr/examinations/{caseId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getPgrExaminationsByCaseId"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pgr/examinations/{caseId}/thesis-submission": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getPgrExaminationsByCaseIdThesisSubmission"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pgr/examinations/{caseId}/examiners": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getPgrExaminationsByCaseIdExaminers"];
+        put?: never;
+        post: operations["createPgrExaminationsByCaseIdExaminers"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pgr/examinations/examiners/{appointmentId}/independence-check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createPgrExaminationsExaminersByAppointmentIdIndependenceCheck"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pgr/examinations/examiners/{appointmentId}/conflict": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createPgrExaminationsExaminersByAppointmentIdConflict"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pgr/examinations/examiners/{appointmentId}/recuse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createPgrExaminationsExaminersByAppointmentIdRecuse"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pgr/examinations/{caseId}/examiners/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createPgrExaminationsByCaseIdExaminersApprove"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pgr/examinations/{caseId}/examiner-reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getPgrExaminationsByCaseIdExaminerReports"];
+        put?: never;
+        post: operations["createPgrExaminationsByCaseIdExaminerReports"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pgr/examinations/{caseId}/viva": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getPgrExaminationsByCaseIdViva"];
+        put?: never;
+        post: operations["createPgrExaminationsByCaseIdViva"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pgr/examinations/{caseId}/outcome": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getPgrExaminationsByCaseIdOutcome"];
+        put?: never;
+        post: operations["createPgrExaminationsByCaseIdOutcome"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pgr/examinations/outcomes/{outcomeId}/corrections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getPgrExaminationsOutcomesByOutcomeIdCorrections"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pgr/examinations/corrections/{requirementId}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createPgrExaminationsCorrectionsByRequirementIdComplete"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pgr/completions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createPgrCompletions"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pgr/completions/{completionCaseId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getPgrCompletionsByCompletionCaseId"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pgr/completions/{completionCaseId}/deposit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getPgrCompletionsByCompletionCaseIdDeposit"];
+        put?: never;
+        post: operations["createPgrCompletionsByCompletionCaseIdDeposit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pgr/completions/{completionCaseId}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createPgrCompletionsByCompletionCaseIdComplete"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pgr/completions/{completionCaseId}/award": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createPgrCompletionsByCompletionCaseIdAward"];
         delete?: never;
         options?: never;
         head?: never;
@@ -949,6 +1509,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/regulatory/hesa/returns/{returnId}/submission-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createRegulatoryHesaReturnsByReturnIdSubmissionRequests"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/regulatory/hesa/returns/submission-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getRegulatoryHesaReturnsSubmissionRequests"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/regulatory/hesa/returns/submission-requests/{workflowInstanceId}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createRegulatoryHesaReturnsSubmissionRequestsByWorkflowInstanceIdDecision"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/regulatory/slc/confirmations/generate": {
         parameters: {
             query?: never;
@@ -1013,6 +1621,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/regulatory/slc/confirmations/requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getRegulatorySlcConfirmationsRequests"];
+        put?: never;
+        post: operations["createRegulatorySlcConfirmationsRequests"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/regulatory/slc/confirmations/requests/{workflowInstanceId}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createRegulatorySlcConfirmationsRequestsByWorkflowInstanceIdDecision"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/regulatory/ucas/applications": {
         parameters: {
             query?: never;
@@ -1055,6 +1695,38 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["createRegulatoryUcasConfirmationsGenerate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/regulatory/ucas/confirmations/requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getRegulatoryUcasConfirmationsRequests"];
+        put?: never;
+        post: operations["createRegulatoryUcasConfirmationsRequests"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/regulatory/ucas/confirmations/requests/{workflowInstanceId}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createRegulatoryUcasConfirmationsRequestsByWorkflowInstanceIdDecision"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1253,7 +1925,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/regulatory/collections": {
+    "/api/v1/regulatory/ukvi/cas-requests/submission-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getRegulatoryUkviCasRequestsSubmissionRequests"];
+        put?: never;
+        post: operations["createRegulatoryUkviCasRequestsSubmissionRequests"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/regulatory/ukvi/cas-requests/submission-requests/{workflowInstanceId}/decision": {
         parameters: {
             query?: never;
             header?: never;
@@ -1261,6 +1949,22 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
+        put?: never;
+        post: operations["createRegulatoryUkviCasRequestsSubmissionRequestsByWorkflowInstanceIdDecision"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/regulatory/collections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getRegulatoryCollections"];
         put?: never;
         post: operations["createRegulatoryCollections"];
         delete?: never;
@@ -1461,6 +2165,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/regulatory/ofs/generation-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getRegulatoryOfsGenerationRequests"];
+        put?: never;
+        post: operations["createRegulatoryOfsGenerationRequests"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/regulatory/ofs/generation-requests/{workflowInstanceId}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createRegulatoryOfsGenerationRequestsByWorkflowInstanceIdDecision"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/regulatory/foi/requests": {
         parameters: {
             query?: never;
@@ -1653,6 +2389,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/students/{personId}/identity-change-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getStudentsByPersonIdIdentityChangeRequests"];
+        put?: never;
+        post: operations["createStudentsByPersonIdIdentityChangeRequests"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/identity-change-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getIdentityChangeRequests"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/identity-change-requests/{workflowInstanceId}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createIdentityChangeRequestsByWorkflowInstanceIdDecision"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/students/{personId}/addresses": {
         parameters: {
             query?: never;
@@ -1664,6 +2448,22 @@ export interface paths {
         put?: never;
         post: operations["createStudentsByPersonIdAddresses"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/students/{personId}/addresses/{addressId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getStudentsByPersonIdAddressesByAddressId"];
+        put?: never;
+        post?: never;
+        delete: operations["deleteStudentsByPersonIdAddressesByAddressId"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1685,6 +2485,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/students/{personId}/disability-declarations/{declarationId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["updateStudentsByPersonIdDisabilityDeclarationsByDeclarationId"];
+        trace?: never;
+    };
+    "/api/v1/students/{personId}/disability-declarations/{declarationId}/withdrawal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createStudentsByPersonIdDisabilityDeclarationsByDeclarationIdWithdrawal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/students/{personId}/enrolments": {
         parameters: {
             query?: never;
@@ -1693,6 +2525,118 @@ export interface paths {
             cookie?: never;
         };
         get: operations["getStudentsByPersonIdEnrolments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/students/{personId}/enrolments/{enrolmentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getStudentsByPersonIdEnrolmentsByEnrolmentId"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/students/{personId}/enrolments/{enrolmentId}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getStudentsByPersonIdEnrolmentsByEnrolmentIdHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/students/{personId}/enrolments/{enrolmentId}/transitions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getStudentsByPersonIdEnrolmentsByEnrolmentIdTransitions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/students/{personId}/enrolments/{enrolmentId}/fee-liabilities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getStudentsByPersonIdEnrolmentsByEnrolmentIdFeeLiabilities"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/students/{personId}/enrolments/{enrolmentId}/pgr/supervision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getStudentsByPersonIdEnrolmentsByEnrolmentIdPgrSupervision"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/students/{personId}/enrolments/{enrolmentId}/pgr/milestones": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getStudentsByPersonIdEnrolmentsByEnrolmentIdPgrMilestones"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/students/{personId}/module-registration-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getStudentsByPersonIdModuleRegistrationRequests"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2165,6 +3109,22 @@ export interface paths {
         patch: operations["updateMarksByMarkId"];
         trace?: never;
     };
+    "/api/v1/moderation/reviews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getModerationReviews"];
+        put?: never;
+        post: operations["createModerationReviews"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/moderation/mark-sets": {
         parameters: {
             query?: never;
@@ -2175,22 +3135,6 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["createModerationMarkSets"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/moderation/reviews": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["createModerationReviews"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2351,6 +3295,262 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["createModuleRegistrationsByModuleRegistrationIdCompletion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/module-registrations/requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createModuleRegistrationsRequests"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/module-registrations/{moduleRegistrationId}/withdrawal-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createModuleRegistrationsByModuleRegistrationIdWithdrawalRequests"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/module-registration-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getModuleRegistrationRequests"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/module-registration-requests/{workflowInstanceId}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createModuleRegistrationRequestsByWorkflowInstanceIdDecision"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/registration-windows": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getRegistrationWindows"];
+        put?: never;
+        post: operations["createRegistrationWindows"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/registration-windows/{registrationWindowId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["updateRegistrationWindowsByRegistrationWindowId"];
+        trace?: never;
+    };
+    "/api/v1/module-selection-proposals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getModuleSelectionProposals"];
+        put?: never;
+        post: operations["createModuleSelectionProposals"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/module-selection-proposals/{proposalId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getModuleSelectionProposalsByProposalId"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/module-selection-proposals/{proposalId}/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createModuleSelectionProposalsByProposalIdItems"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/module-selection-proposals/{proposalId}/items/{proposalItemId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["deleteModuleSelectionProposalsByProposalIdItemsByProposalItemId"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/module-selection-proposals/{proposalId}/submission": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createModuleSelectionProposalsByProposalIdSubmission"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/module-selection-proposals/{proposalId}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createModuleSelectionProposalsByProposalIdDecision"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/enrolment-curriculum-bindings/{enrolmentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getEnrolmentCurriculumBindingsByEnrolmentId"];
+        put?: never;
+        post: operations["createEnrolmentCurriculumBindingsByEnrolmentId"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/programme-rule-sets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getProgrammeRuleSets"];
+        put?: never;
+        post: operations["createProgrammeRuleSets"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/module-groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getModuleGroups"];
+        put?: never;
+        post: operations["createModuleGroups"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/module-groups/{moduleGroupId}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createModuleGroupsByModuleGroupIdMembers"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3188,7 +4388,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        get: operations["getAuditReviewCases"];
         put?: never;
         post: operations["createAuditReviewCases"];
         delete?: never;
@@ -3236,9 +4436,41 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        get: operations["getRightsRequests"];
         put?: never;
         post: operations["createRightsRequests"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/retention-schedules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getRetentionSchedules"];
+        put?: never;
+        post: operations["createRetentionSchedules"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/retention-assignments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getRetentionAssignments"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -3323,22 +4555,6 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["updateRightsRestrictionsByRestrictionIdLift"];
-        trace?: never;
-    };
-    "/api/v1/retention-schedules": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["createRetentionSchedules"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
         trace?: never;
     };
     "/api/v1/retention-schedules/{scheduleId}/assignments": {
@@ -3740,6 +4956,8 @@ export interface operations {
                         validTo: string | null;
                         recordedAt: string;
                         recordedUntil: string | null;
+                        sourceCaseId: string | null;
+                        outcomeDocumentId: string | null;
                     }[];
                 };
             };
@@ -3779,6 +4997,7 @@ export interface operations {
                     /** Format: date-time */
                     validTo?: string;
                     notes?: string;
+                    sourceCaseId?: string;
                 };
             };
         };
@@ -3853,6 +5072,8 @@ export interface operations {
                         validTo: string | null;
                         recordedAt: string;
                         recordedUntil: string | null;
+                        sourceCaseId: string | null;
+                        outcomeDocumentId: string | null;
                     };
                 };
             };
@@ -3978,6 +5199,102 @@ export interface operations {
             };
             /** @description Default Response */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getStudentsByPersonIdAdjustmentsByAdjustmentIdOutcomeDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personId: string;
+                adjustmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createStudentsByPersonIdAdjustmentsByAdjustmentIdOutcomeDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personId: string;
+                adjustmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        documentId: string;
+                        checksumSha256: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -6426,6 +7743,34 @@ export interface operations {
             };
         };
     };
+    getIdentityResolutionCases: {
+        parameters: {
+            query?: {
+                statusCode?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        identityResolutionCaseId: string;
+                        subjectPersonId: string;
+                        statusCode: string;
+                        ownerId: string;
+                        createdAt: string;
+                    }[];
+                };
+            };
+        };
+    };
     createIdentityResolutionCases: {
         parameters: {
             query?: never;
@@ -6450,6 +7795,67 @@ export interface operations {
                 content: {
                     "application/json": {
                         identityResolutionCaseId: string;
+                    };
+                };
+            };
+        };
+    };
+    getIdentityResolutionCorrectionCases: {
+        parameters: {
+            query?: {
+                statusCode?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        dataCorrectionCaseId: string;
+                        personId: string;
+                        correctedEntityType: string;
+                        correctedFieldName: string;
+                        statusCode: string;
+                        ownerId: string;
+                        createdAt: string;
+                    }[];
+                };
+            };
+        };
+    };
+    createIdentityResolutionCorrectionCases: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    personId: string;
+                    correctedEntityType: string;
+                    correctedFieldName: string;
+                    ownerId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        dataCorrectionCaseId: string;
                     };
                 };
             };
@@ -6590,7 +7996,7 @@ export interface operations {
             };
         };
     };
-    createIdentityResolutionCorrectionCases: {
+    createPgrSupervisionCases: {
         parameters: {
             query?: never;
             header?: never;
@@ -6600,9 +8006,1534 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
+                    enrolmentId: string;
+                    ownerId: string;
+                    degreeAim?: string;
+                    researchArea?: string;
+                    schoolOwner?: string;
+                    intendedStartDate?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        supervisionCaseId: string;
+                    };
+                };
+            };
+        };
+    };
+    getPgrSupervisionCasesByCaseId: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                caseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        supervisionCaseId: string;
+                        enrolmentId: string;
+                        statusCode: string;
+                        ownerId: string;
+                        degreeAim: string | null;
+                        researchArea: string | null;
+                        schoolOwner: string | null;
+                        intendedStartDate: string | null;
+                        createdAt: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getPgrSupervisionCasesByCaseIdNominations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                caseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        nominationId: string;
+                        supervisionCaseId: string;
+                        personId: string;
+                        roleDetailCode: string;
+                        orgOwner: string | null;
+                        externalOrganisation: string | null;
+                        contractualStatusCode: string | null;
+                        accessLevelCode: string | null;
+                        eligibilityCheckedAt: string | null;
+                        nominatedAt: string;
+                    }[];
+                };
+            };
+        };
+    };
+    createPgrSupervisionCasesByCaseIdNominations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                caseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
                     personId: string;
-                    correctedEntityType: string;
-                    correctedFieldName: string;
+                    roleDetailCode: "principal" | "additional" | "external";
+                    orgOwner?: string;
+                    externalOrganisation?: string;
+                    contractualStatusCode?: string;
+                    accessLevelCode?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        nominationId: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createPgrSupervisionCasesByCaseIdNominationsByNominationIdEligibilityCheck: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                caseId: string;
+                nominationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createPgrSupervisionCasesByCaseIdDecision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                caseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    decisionTypeCode: "approve" | "return" | "reject";
+                    reasonText?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createPgrSupervisionCasesByCaseIdPublish: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                caseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getEnrolmentsByEnrolmentIdSupervision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrolmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        assignmentId: string;
+                        enrolmentId: string;
+                        supervisionCaseId: string;
+                        personId: string;
+                        assignmentTypeCode: string;
+                        roleDetailCode: string;
+                        orgOwner: string | null;
+                        externalOrganisation: string | null;
+                        contractualStatusCode: string | null;
+                        accessLevelCode: string | null;
+                        validFrom: string;
+                        validTo: string | null;
+                    }[];
+                };
+            };
+        };
+    };
+    createPgrReviews: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    enrolmentId: string;
+                    reviewTypeCode: "initial" | "annual" | "upgrade" | "return-from-interruption";
+                    ownerId: string;
+                    supervisionCaseId?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        reviewId: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getPgrReviewsByReviewId: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reviewId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        reviewId: string;
+                        enrolmentId: string;
+                        supervisionCaseId: string | null;
+                        reviewTypeCode: string;
+                        statusCode: string;
+                        ownerId: string;
+                        createdAt: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getPgrReviewsByReviewIdMembers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reviewId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        memberId: string;
+                        reviewId: string;
+                        personId: string;
+                        roleCode: string;
+                        conflictTypeCode: string | null;
+                        declaredAt: string | null;
+                        recusedAt: string | null;
+                    }[];
+                };
+            };
+        };
+    };
+    createPgrReviewsByReviewIdMembers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reviewId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    personId: string;
+                    roleCode: "chair" | "independent-reviewer" | "panel-member";
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        memberId: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createPgrReviewsMembersByMemberIdConflict: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                memberId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    conflictTypeCode: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createPgrReviewsMembersByMemberIdRecuse: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                memberId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createPgrReviewsByReviewIdEvidence: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reviewId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    evidenceRef: string;
+                    classificationCode: string;
+                    sourceSystem: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        evidenceId: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createPgrReviewsByReviewIdOutcome: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reviewId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    outcomeCode: "satisfactory" | "conditions" | "referral" | "transfer" | "escalation";
+                    reasonText?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createPgrReviewsByReviewIdMilestones: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reviewId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    milestoneTypeCode: "confirmation-of-registration" | "upgrade" | "thesis-submission" | "viva";
+                    achievedDate: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        milestoneId: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getEnrolmentsByEnrolmentIdResearchMilestones: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrolmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        milestoneId: string;
+                        enrolmentId: string;
+                        reviewId: string | null;
+                        milestoneTypeCode: string;
+                        achievedDate: string;
+                        publishedAt: string | null;
+                    }[];
+                };
+            };
+        };
+    };
+    createPgrExaminations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    enrolmentId: string;
+                    ownerId: string;
+                    formatCode: "traditional" | "practice-based" | "published-work";
+                    declarationConfirmed: boolean;
+                    storageRef: string;
+                    restricted?: boolean;
+                    restrictionReasonText?: string;
+                    restrictionReviewDate?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        examinationCaseId: string;
+                        submissionId: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getPgrExaminationsByCaseId: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                caseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        examinationCaseId: string;
+                        enrolmentId: string;
+                        statusCode: string;
+                        ownerId: string;
+                        createdAt: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getPgrExaminationsByCaseIdThesisSubmission: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                caseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        submissionId: string;
+                        examinationCaseId: string;
+                        versionNumber: number;
+                        formatCode: string;
+                        declarationConfirmed: boolean;
+                        restricted: boolean;
+                        restrictionReasonText: string | null;
+                        restrictionReviewDate: string | null;
+                        storageRef: string;
+                        submittedAt: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getPgrExaminationsByCaseIdExaminers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                caseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        appointmentId: string;
+                        examinationCaseId: string;
+                        personId: string;
+                        examinerRoleCode: string;
+                        independenceCheckedAt: string | null;
+                        conflictTypeCode: string | null;
+                        recusedAt: string | null;
+                        confirmedAt: string | null;
+                    }[];
+                };
+            };
+        };
+    };
+    createPgrExaminationsByCaseIdExaminers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                caseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    personId: string;
+                    examinerRoleCode: "internal" | "external";
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        appointmentId: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createPgrExaminationsExaminersByAppointmentIdIndependenceCheck: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                appointmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createPgrExaminationsExaminersByAppointmentIdConflict: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                appointmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    conflictTypeCode: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createPgrExaminationsExaminersByAppointmentIdRecuse: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                appointmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createPgrExaminationsByCaseIdExaminersApprove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                caseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getPgrExaminationsByCaseIdExaminerReports: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                caseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        reportId: string;
+                        examinationCaseId: string;
+                        examinerAppointmentId: string;
+                        reportRef: string;
+                        recommendationCode: string | null;
+                        submittedAt: string;
+                    }[];
+                };
+            };
+        };
+    };
+    createPgrExaminationsByCaseIdExaminerReports: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                caseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    examinerAppointmentId: string;
+                    reportRef: string;
+                    recommendationCode?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        reportId: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getPgrExaminationsByCaseIdViva: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                caseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        vivaEventId: string;
+                        examinationCaseId: string;
+                        heldAt: string;
+                        jointRecommendationText: string;
+                        recordedAt: string;
+                    } | null;
+                };
+            };
+        };
+    };
+    createPgrExaminationsByCaseIdViva: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                caseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    heldAt: string;
+                    jointRecommendationText: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        vivaEventId: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getPgrExaminationsByCaseIdOutcome: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                caseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        outcomeId: string;
+                        examinationCaseId: string;
+                        outcomeCode: string;
+                        decidedBy: string;
+                        decidedAt: string;
+                    } | null;
+                };
+            };
+        };
+    };
+    createPgrExaminationsByCaseIdOutcome: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                caseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    outcomeCode: "pass" | "pass-minor-corrections" | "pass-major-corrections" | "resubmission" | "fail";
+                    correctionsDeadline?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        outcomeId: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getPgrExaminationsOutcomesByOutcomeIdCorrections: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                outcomeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        requirementId: string;
+                        outcomeId: string;
+                        deadlineDate: string;
+                        completedAt: string | null;
+                        completedBy: string | null;
+                    }[];
+                };
+            };
+        };
+    };
+    createPgrExaminationsCorrectionsByRequirementIdComplete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                requirementId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createPgrCompletions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    examinationCaseId: string;
                     ownerId: string;
                 };
             };
@@ -6615,7 +9546,273 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        dataCorrectionCaseId: string;
+                        completionCaseId: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getPgrCompletionsByCompletionCaseId: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                completionCaseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        completionCaseId: string;
+                        enrolmentId: string;
+                        examinationCaseId: string;
+                        statusCode: string;
+                        ownerId: string;
+                        createdAt: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getPgrCompletionsByCompletionCaseIdDeposit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                completionCaseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        depositId: string;
+                        completionCaseId: string;
+                        depositRef: string;
+                        ipDeclarationConfirmed: boolean;
+                        confirmedBy: string;
+                        confirmedAt: string;
+                    } | null;
+                };
+            };
+        };
+    };
+    createPgrCompletionsByCompletionCaseIdDeposit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                completionCaseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    depositRef: string;
+                    ipDeclarationConfirmed: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        depositId: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createPgrCompletionsByCompletionCaseIdComplete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                completionCaseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createPgrCompletionsByCompletionCaseIdAward: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                completionCaseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    qualificationCode: string;
+                    awardDate: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        awardId: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
                     };
                 };
             };
@@ -6990,6 +10187,154 @@ export interface operations {
             };
         };
     };
+    createRegulatoryHesaReturnsByReturnIdSubmissionRequests: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                returnId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    submissionReference?: string;
+                    reason?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        workflowInstanceId: string;
+                        workflowTaskId: string;
+                        statusCode: string;
+                        context: {
+                            [key: string]: unknown;
+                        };
+                        startedAt: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getRegulatoryHesaReturnsSubmissionRequests: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        workflowInstanceId: string;
+                        workflowTaskId: string;
+                        statusCode: string;
+                        context: {
+                            [key: string]: unknown;
+                        };
+                        startedAt: string;
+                    }[];
+                };
+            };
+        };
+    };
+    createRegulatoryHesaReturnsSubmissionRequestsByWorkflowInstanceIdDecision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workflowInstanceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    decisionCode: "approved" | "rejected";
+                    reason?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
     createRegulatorySlcConfirmationsGenerate: {
         parameters: {
             query?: {
@@ -7195,6 +10540,143 @@ export interface operations {
             };
         };
     };
+    getRegulatorySlcConfirmationsRequests: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        workflowInstanceId: string;
+                        workflowTaskId: string;
+                        statusCode: string;
+                        recordCount: number;
+                        context: {
+                            [key: string]: unknown;
+                        };
+                        startedAt: string;
+                    }[];
+                };
+            };
+        };
+    };
+    createRegulatorySlcConfirmationsRequests: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    reason?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        workflowInstanceId: string;
+                        workflowTaskId: string;
+                        statusCode: string;
+                        recordCount: number;
+                        context: {
+                            [key: string]: unknown;
+                        };
+                        startedAt: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createRegulatorySlcConfirmationsRequestsByWorkflowInstanceIdDecision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workflowInstanceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    decisionCode: "approved" | "rejected";
+                    reason?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        processedCount: number;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
     getRegulatoryUcasApplications: {
         parameters: {
             query?: {
@@ -7379,6 +10861,144 @@ export interface operations {
                                 confirmedAt: string;
                             }[];
                         };
+                    };
+                };
+            };
+        };
+    };
+    getRegulatoryUcasConfirmationsRequests: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        workflowInstanceId: string;
+                        workflowTaskId: string;
+                        statusCode: string;
+                        recordCount: number;
+                        context: {
+                            [key: string]: unknown;
+                        };
+                        startedAt: string;
+                    }[];
+                };
+            };
+        };
+    };
+    createRegulatoryUcasConfirmationsRequests: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    cycle: string;
+                    reason?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        workflowInstanceId: string;
+                        workflowTaskId: string;
+                        statusCode: string;
+                        recordCount: number;
+                        context: {
+                            [key: string]: unknown;
+                        };
+                        startedAt: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createRegulatoryUcasConfirmationsRequestsByWorkflowInstanceIdDecision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workflowInstanceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    decisionCode: "approved" | "rejected";
+                    reason?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        processedCount: number;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
                     };
                 };
             };
@@ -8000,6 +11620,174 @@ export interface operations {
             };
         };
     };
+    getRegulatoryUkviCasRequestsSubmissionRequests: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        workflowInstanceId: string;
+                        workflowTaskId: string;
+                        statusCode: string;
+                        recordCount: number;
+                        context: {
+                            [key: string]: unknown;
+                        };
+                        startedAt: string;
+                    }[];
+                };
+            };
+        };
+    };
+    createRegulatoryUkviCasRequestsSubmissionRequests: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    reason?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        workflowInstanceId: string;
+                        workflowTaskId: string;
+                        statusCode: string;
+                        recordCount: number;
+                        context: {
+                            [key: string]: unknown;
+                        };
+                        startedAt: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createRegulatoryUkviCasRequestsSubmissionRequestsByWorkflowInstanceIdDecision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workflowInstanceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    decisionCode: "approved" | "rejected";
+                    reason?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        processedCount: number;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getRegulatoryCollections: {
+        parameters: {
+            query?: {
+                regulatorCode?: string;
+                academicYear?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        regulatoryCollectionId: string;
+                        regulatorCode: string;
+                        collectionTypeCode: string;
+                        academicYear: string;
+                        statusCode: string;
+                        createdAt: string;
+                        createdBy: string;
+                    }[];
+                };
+            };
+        };
+    };
     createRegulatoryCollections: {
         parameters: {
             query?: never;
@@ -8564,6 +12352,143 @@ export interface operations {
                         payload: {
                             [key: string]: unknown;
                         };
+                    };
+                };
+            };
+        };
+    };
+    getRegulatoryOfsGenerationRequests: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        workflowInstanceId: string;
+                        workflowTaskId: string;
+                        statusCode: string;
+                        context: {
+                            [key: string]: unknown;
+                        };
+                        startedAt: string;
+                    }[];
+                };
+            };
+        };
+    };
+    createRegulatoryOfsGenerationRequests: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    extractTypeCode: "b3-student-outcomes" | "access-participation-progress";
+                    academicYear: string;
+                    reason?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        workflowInstanceId: string;
+                        workflowTaskId: string;
+                        statusCode: string;
+                        context: {
+                            [key: string]: unknown;
+                        };
+                        startedAt: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createRegulatoryOfsGenerationRequestsByWorkflowInstanceIdDecision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workflowInstanceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    decisionCode: "approved" | "rejected";
+                    reason?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        extractId: string | null;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
                     };
                 };
             };
@@ -9233,6 +13158,20 @@ export interface operations {
                 content?: never;
             };
             /** @description Default Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -9281,6 +13220,185 @@ export interface operations {
                         validFrom: string;
                         recordedAt: string;
                     }[];
+                };
+            };
+        };
+    };
+    getStudentsByPersonIdIdentityChangeRequests: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        workflowInstanceId: string;
+                        workflowTaskId: string;
+                        statusCode: string;
+                        context: {
+                            [key: string]: unknown;
+                        };
+                        startedAt: string;
+                    }[];
+                };
+            };
+        };
+    };
+    createStudentsByPersonIdIdentityChangeRequests: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    genderCode?: string;
+                    nationalityCode?: string;
+                    reason?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        workflowInstanceId: string;
+                        workflowTaskId: string;
+                        statusCode: string;
+                        context: {
+                            [key: string]: unknown;
+                        };
+                        startedAt: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getIdentityChangeRequests: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        workflowInstanceId: string;
+                        workflowTaskId: string;
+                        statusCode: string;
+                        context: {
+                            [key: string]: unknown;
+                        };
+                        startedAt: string;
+                    }[];
+                };
+            };
+        };
+    };
+    createIdentityChangeRequestsByWorkflowInstanceIdDecision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workflowInstanceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    decisionCode: "approved" | "rejected";
+                    reason?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
                 };
             };
         };
@@ -9353,6 +13471,87 @@ export interface operations {
             };
         };
     };
+    getStudentsByPersonIdAddressesByAddressId: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personId: string;
+                addressId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        addressTypeCode: string;
+                        line1: string;
+                        line2: string | null;
+                        city: string | null;
+                        postcode: string | null;
+                        countryCode: string | null;
+                        validFrom: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    deleteStudentsByPersonIdAddressesByAddressId: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personId: string;
+                addressId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
     getStudentsByPersonIdDisabilityDeclarations: {
         parameters: {
             query?: never;
@@ -9414,6 +13613,110 @@ export interface operations {
             };
         };
     };
+    updateStudentsByPersonIdDisabilityDeclarationsByDeclarationId: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personId: string;
+                declarationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    notes: string | null;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createStudentsByPersonIdDisabilityDeclarationsByDeclarationIdWithdrawal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personId: string;
+                declarationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
     getStudentsByPersonIdEnrolments: {
         parameters: {
             query?: never;
@@ -9450,6 +13753,328 @@ export interface operations {
                         ucasPersonalId: string | null;
                         validFrom: string;
                         recordedAt: string;
+                    }[];
+                };
+            };
+        };
+    };
+    getStudentsByPersonIdEnrolmentsByEnrolmentId: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personId: string;
+                enrolmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        enrolmentId: string;
+                        personId: string;
+                        programmeId: string | null;
+                        programmeCode: string | null;
+                        programmeName: string | null;
+                        statusCode: string;
+                        modeOfStudyCode: string;
+                        attendanceTypeCode: string | null;
+                        academicYearOfEntry: string;
+                        startDate: string | null;
+                        expectedEndDate: string | null;
+                        actualEndDate: string | null;
+                        feeBandCode: string | null;
+                        fundingSourceCode: string | null;
+                        slcReference: string | null;
+                        ucasPersonalId: string | null;
+                        validFrom: string;
+                        recordedAt: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getStudentsByPersonIdEnrolmentsByEnrolmentIdHistory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personId: string;
+                enrolmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        enrolmentId: string;
+                        personId: string;
+                        programmeId: string | null;
+                        programmeCode: string | null;
+                        programmeName: string | null;
+                        statusCode: string;
+                        modeOfStudyCode: string;
+                        attendanceTypeCode: string | null;
+                        academicYearOfEntry: string;
+                        startDate: string | null;
+                        expectedEndDate: string | null;
+                        actualEndDate: string | null;
+                        feeBandCode: string | null;
+                        fundingSourceCode: string | null;
+                        slcReference: string | null;
+                        ucasPersonalId: string | null;
+                        validFrom: string;
+                        recordedAt: string;
+                    } & {
+                        validTo: string | null;
+                        recordedUntil: string | null;
+                    })[];
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getStudentsByPersonIdEnrolmentsByEnrolmentIdTransitions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personId: string;
+                enrolmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        transitionId: string;
+                        enrolmentId: string;
+                        fromStatusCode: string;
+                        toStatusCode: string;
+                        reasonCode: string | null;
+                        reasonText: string | null;
+                        effectiveAt: string;
+                        actorId: string;
+                        createdAt: string;
+                    }[];
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getStudentsByPersonIdEnrolmentsByEnrolmentIdFeeLiabilities: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personId: string;
+                enrolmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        feeLiabilityId: string;
+                        enrolmentId: string;
+                        personId: string;
+                        academicYear: string;
+                        feeBandCode: string | null;
+                        fundingSourceCode: string | null;
+                        statusCode: string;
+                        generatedAt: string;
+                    }[];
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getStudentsByPersonIdEnrolmentsByEnrolmentIdPgrSupervision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personId: string;
+                enrolmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        assignmentId: string;
+                        personId: string;
+                        roleDetailCode: string;
+                        validFrom: string;
+                    }[];
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getStudentsByPersonIdEnrolmentsByEnrolmentIdPgrMilestones: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personId: string;
+                enrolmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        milestoneId: string;
+                        milestoneTypeCode: string;
+                        achievedDate: string;
+                        publishedAt: string | null;
+                    }[];
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getStudentsByPersonIdModuleRegistrationRequests: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        workflowInstanceId: string;
+                        workflowTaskId: string;
+                        statusCode: string;
+                        context: {
+                            [key: string]: unknown;
+                        };
+                        startedAt: string;
                     }[];
                 };
             };
@@ -11376,6 +16001,65 @@ export interface operations {
             };
         };
     };
+    getModerationReviews: {
+        parameters: {
+            query?: {
+                onlyOpen?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        moderationReviewId: string;
+                        markSetId: string;
+                        moderatorActorId: string;
+                        ruleVersion: string;
+                        startedAt: string;
+                        completedAt: string | null;
+                        outcomeCode: string | null;
+                    }[];
+                };
+            };
+        };
+    };
+    createModerationReviews: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    markSetId: string;
+                    ruleVersion: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        reviewId: string;
+                    };
+                };
+            };
+        };
+    };
     createModerationMarkSets: {
         parameters: {
             query?: never;
@@ -11429,35 +16113,6 @@ export interface operations {
                         title: string;
                         status: number;
                         detail?: string;
-                    };
-                };
-            };
-        };
-    };
-    createModerationReviews: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    markSetId: string;
-                    ruleVersion: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Default Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        reviewId: string;
                     };
                 };
             };
@@ -12002,6 +16657,1173 @@ export interface operations {
                         title: string;
                         status: number;
                         detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createModuleRegistrationsRequests: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    enrolmentId: string;
+                    moduleOfferingId: string;
+                    registrationDate?: string;
+                    reason?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        workflowInstanceId: string;
+                        workflowTaskId: string;
+                        statusCode: string;
+                        context: {
+                            [key: string]: unknown;
+                        };
+                        startedAt: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createModuleRegistrationsByModuleRegistrationIdWithdrawalRequests: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                moduleRegistrationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    reason?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        workflowInstanceId: string;
+                        workflowTaskId: string;
+                        statusCode: string;
+                        context: {
+                            [key: string]: unknown;
+                        };
+                        startedAt: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getModuleRegistrationRequests: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        workflowInstanceId: string;
+                        workflowTaskId: string;
+                        statusCode: string;
+                        context: {
+                            [key: string]: unknown;
+                        };
+                        startedAt: string;
+                    }[];
+                };
+            };
+        };
+    };
+    createModuleRegistrationRequestsByWorkflowInstanceIdDecision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workflowInstanceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    decisionCode: "approved" | "rejected";
+                    reason?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        moduleRegistrationId: string | null;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getRegistrationWindows: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        registrationWindowId: string;
+                        academicPeriodId: string;
+                        academicYear: string;
+                        periodCode: string;
+                        opensAt: string;
+                        closesAt: string;
+                    }[];
+                };
+            };
+        };
+    };
+    createRegistrationWindows: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    academicPeriodId: string;
+                    /** Format: date-time */
+                    opensAt: string;
+                    /** Format: date-time */
+                    closesAt: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        registrationWindowId: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    updateRegistrationWindowsByRegistrationWindowId: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                registrationWindowId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: date-time */
+                    opensAt: string;
+                    /** Format: date-time */
+                    closesAt: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getModuleSelectionProposals: {
+        parameters: {
+            query?: {
+                enrolmentId?: string;
+                statusCode?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        moduleSelectionProposalId: string;
+                        enrolmentId: string;
+                        academicPeriodId: string;
+                        programmeRuleSetId: string;
+                        statusCode: string;
+                        submittedAt: string | null;
+                        decidedAt: string | null;
+                        decisionAuthorityCode: string | null;
+                        decisionReason: string | null;
+                        workflowInstanceId: string | null;
+                        items: {
+                            proposalItemId: string;
+                            moduleId: string;
+                            moduleCode: string;
+                            moduleTitle: string;
+                            creditValue: number | null;
+                            fheqLevel: number | null;
+                            moduleOfferingId: string | null;
+                            preferenceRank: number | null;
+                            sourceCode: string;
+                            validationStateCode: string;
+                            validationMessages: {
+                                ruleTypeCode: string;
+                                message: string;
+                                severity: "error" | "warning";
+                            }[];
+                        }[];
+                    }[];
+                };
+            };
+            /** @description Default Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createModuleSelectionProposals: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    enrolmentId: string;
+                    academicPeriodId: string;
+                    fheqLevel: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        moduleSelectionProposalId: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getModuleSelectionProposalsByProposalId: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                proposalId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        moduleSelectionProposalId: string;
+                        enrolmentId: string;
+                        academicPeriodId: string;
+                        programmeRuleSetId: string;
+                        statusCode: string;
+                        submittedAt: string | null;
+                        decidedAt: string | null;
+                        decisionAuthorityCode: string | null;
+                        decisionReason: string | null;
+                        workflowInstanceId: string | null;
+                        items: {
+                            proposalItemId: string;
+                            moduleId: string;
+                            moduleCode: string;
+                            moduleTitle: string;
+                            creditValue: number | null;
+                            fheqLevel: number | null;
+                            moduleOfferingId: string | null;
+                            preferenceRank: number | null;
+                            sourceCode: string;
+                            validationStateCode: string;
+                            validationMessages: {
+                                ruleTypeCode: string;
+                                message: string;
+                                severity: "error" | "warning";
+                            }[];
+                        }[];
+                    };
+                };
+            };
+            /** @description Default Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createModuleSelectionProposalsByProposalIdItems: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                proposalId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    moduleId: string;
+                    moduleOfferingId?: string;
+                    preferenceRank?: number;
+                    sourceCode?: "student-choice" | "staff-assisted";
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        proposalItemId: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    deleteModuleSelectionProposalsByProposalIdItemsByProposalItemId: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                proposalId: string;
+                proposalItemId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Default Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createModuleSelectionProposalsByProposalIdSubmission: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                proposalId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        moduleSelectionProposalId: string;
+                        enrolmentId: string;
+                        academicPeriodId: string;
+                        programmeRuleSetId: string;
+                        statusCode: string;
+                        submittedAt: string | null;
+                        decidedAt: string | null;
+                        decisionAuthorityCode: string | null;
+                        decisionReason: string | null;
+                        workflowInstanceId: string | null;
+                        items: {
+                            proposalItemId: string;
+                            moduleId: string;
+                            moduleCode: string;
+                            moduleTitle: string;
+                            creditValue: number | null;
+                            fheqLevel: number | null;
+                            moduleOfferingId: string | null;
+                            preferenceRank: number | null;
+                            sourceCode: string;
+                            validationStateCode: string;
+                            validationMessages: {
+                                ruleTypeCode: string;
+                                message: string;
+                                severity: "error" | "warning";
+                            }[];
+                        }[];
+                    };
+                };
+            };
+            /** @description Default Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createModuleSelectionProposalsByProposalIdDecision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                proposalId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    decisionCode: "approved" | "rejected" | "returned";
+                    reason: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        moduleSelectionProposalId: string;
+                        enrolmentId: string;
+                        academicPeriodId: string;
+                        programmeRuleSetId: string;
+                        statusCode: string;
+                        submittedAt: string | null;
+                        decidedAt: string | null;
+                        decisionAuthorityCode: string | null;
+                        decisionReason: string | null;
+                        workflowInstanceId: string | null;
+                        items: {
+                            proposalItemId: string;
+                            moduleId: string;
+                            moduleCode: string;
+                            moduleTitle: string;
+                            creditValue: number | null;
+                            fheqLevel: number | null;
+                            moduleOfferingId: string | null;
+                            preferenceRank: number | null;
+                            sourceCode: string;
+                            validationStateCode: string;
+                            validationMessages: {
+                                ruleTypeCode: string;
+                                message: string;
+                                severity: "error" | "warning";
+                            }[];
+                        }[];
+                    };
+                };
+            };
+            /** @description Default Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getEnrolmentCurriculumBindingsByEnrolmentId: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrolmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        enrolmentCurriculumBindingId: string;
+                        enrolmentId: string;
+                        programmeRouteId: string | null;
+                        programmeRuleSetId: string;
+                        decisionAuthorityCode: string;
+                        decisionReason: string | null;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createEnrolmentCurriculumBindingsByEnrolmentId: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrolmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    programmeRouteId?: string;
+                    programmeRuleSetId: string;
+                    decisionReason?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        enrolmentCurriculumBindingId: string;
+                    };
+                };
+            };
+        };
+    };
+    getProgrammeRuleSets: {
+        parameters: {
+            query: {
+                programmeId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        programmeRuleSetId: string;
+                        programmeId: string;
+                        programmeRouteId: string | null;
+                        entryAcademicYear: string | null;
+                        ruleSetCode: string;
+                        description: string | null;
+                    }[];
+                };
+            };
+        };
+    };
+    createProgrammeRuleSets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    programmeId: string;
+                    programmeRouteId?: string;
+                    entryAcademicYear?: string;
+                    ruleSetCode: string;
+                    description?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        programmeRuleSetId: string;
+                    };
+                };
+            };
+        };
+    };
+    getModuleGroups: {
+        parameters: {
+            query: {
+                programmeRuleSetId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        moduleGroupId: string;
+                        programmeRuleSetId: string;
+                        fheqLevel: number | null;
+                        groupCode: string;
+                        title: string;
+                        groupTypeCode: string;
+                        minModules: number | null;
+                        maxModules: number | null;
+                        minCredits: number | null;
+                        maxCredits: number | null;
+                        minFheqLevel: number | null;
+                        maxFheqLevel: number | null;
+                        members: {
+                            moduleGroupMemberId: string;
+                            moduleId: string;
+                            moduleCode: string;
+                            moduleTitle: string;
+                            isDefault: boolean;
+                            isNonCondonable: boolean;
+                        }[];
+                    }[];
+                };
+            };
+        };
+    };
+    createModuleGroups: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    programmeRuleSetId: string;
+                    fheqLevel?: number;
+                    groupCode: string;
+                    title: string;
+                    groupTypeCode: "compulsory" | "optional-pool" | "elective-pool";
+                    minModules?: number;
+                    maxModules?: number;
+                    minCredits?: number;
+                    maxCredits?: number;
+                    minFheqLevel?: number;
+                    maxFheqLevel?: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        moduleGroupId: string;
+                    };
+                };
+            };
+        };
+    };
+    createModuleGroupsByModuleGroupIdMembers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                moduleGroupId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    moduleId: string;
+                    isDefault?: boolean;
+                    isNonCondonable?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        moduleGroupMemberId: string;
                     };
                 };
             };
@@ -15970,6 +21792,33 @@ export interface operations {
             };
         };
     };
+    getAuditReviewCases: {
+        parameters: {
+            query?: {
+                statusCode?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        auditReviewCaseId: string;
+                        statusCode: string;
+                        ownerId: string;
+                        createdAt: string;
+                    }[];
+                };
+            };
+        };
+    };
     createAuditReviewCases: {
         parameters: {
             query?: never;
@@ -16073,6 +21922,36 @@ export interface operations {
             };
         };
     };
+    getRightsRequests: {
+        parameters: {
+            query?: {
+                statusCode?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        individualRightsRequestId: string;
+                        personId: string;
+                        requestTypeCode: string;
+                        statusCode: string;
+                        ownerId: string;
+                        receivedAt: string;
+                        statutoryDeadlineDate: string;
+                    }[];
+                };
+            };
+        };
+    };
     createRightsRequests: {
         parameters: {
             query?: never;
@@ -16100,6 +21979,94 @@ export interface operations {
                     "application/json": {
                         requestId: string;
                     };
+                };
+            };
+        };
+    };
+    getRetentionSchedules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        retentionScheduleId: string;
+                        entityType: string;
+                        retentionPeriodMonths: string;
+                        triggerEventCode: string;
+                        description: string | null;
+                    }[];
+                };
+            };
+        };
+    };
+    createRetentionSchedules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    entityType: string;
+                    retentionPeriodMonths: string;
+                    triggerEventCode: string;
+                    description?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        retentionScheduleId: string;
+                    };
+                };
+            };
+        };
+    };
+    getRetentionAssignments: {
+        parameters: {
+            query?: {
+                retentionScheduleId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        retentionAssignmentId: string;
+                        retentionScheduleId: string;
+                        entityType: string;
+                        entityId: string;
+                        assignedAt: string;
+                        scheduledDisposalDate: string | null;
+                        hasActiveHold: boolean;
+                        disposed: boolean;
+                    }[];
                 };
             };
         };
@@ -16256,37 +22223,6 @@ export interface operations {
                         title: string;
                         status: number;
                         detail?: string;
-                    };
-                };
-            };
-        };
-    };
-    createRetentionSchedules: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    entityType: string;
-                    retentionPeriodMonths: string;
-                    triggerEventCode: string;
-                    description?: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Default Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        retentionScheduleId: string;
                     };
                 };
             };

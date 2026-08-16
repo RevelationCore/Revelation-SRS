@@ -4,7 +4,7 @@ export function AccessibilityStatementPage() {
       <h1 className="text-2xl font-semibold text-neutral-900 mb-6">Accessibility Statement</h1>
 
       <p className="text-sm text-neutral-500 mb-6">
-        Last reviewed: June 2026. Next review due: June 2027.
+        Last reviewed: August 2026. Next review due: August 2027.
       </p>
 
       <section className="mb-6">
@@ -12,8 +12,11 @@ export function AccessibilityStatementPage() {
         <p className="text-sm text-neutral-700">
           Revelation SRS Administration is designed to conform to{' '}
           <abbr title="Web Content Accessibility Guidelines">WCAG</abbr> 2.1 Level AA.
-          We believe this application substantially conforms to WCAG 2.1 AA, with the
-          known exceptions listed below.
+          We believe this application substantially conforms to WCAG 2.1 AA on the basis
+          of automated testing and manual code-level review (see "Assessment approach"
+          below), with the known exceptions and limitations listed below. This
+          conformance basis has not been independently audited or verified by testing
+          with real assistive technology users.
         </p>
       </section>
 
@@ -48,6 +51,34 @@ export function AccessibilityStatementPage() {
             confirmed.
           </p>
         </div>
+
+        <div className="border border-warning-200 bg-warning-50 rounded p-4 mb-4">
+          <h3 className="text-sm font-medium text-warning-900 mb-1">
+            No assistive-technology user testing (R-A11Y-002) — Open gap
+          </h3>
+          <p className="text-sm text-warning-800">
+            This application has not been tested by people who use screen readers,
+            switch devices, or other assistive technology, and has not undergone
+            testing with a real screen reader (e.g. NVDA, JAWS, VoiceOver, TalkBack).
+            Conformance is currently based on automated tooling and manual review
+            against the WCAG success criteria, not on observed real-world use. This is
+            a genuine gap, not an accepted design trade-off, and remediation (either an
+            independent audit or structured assistive-technology user testing) is
+            intended but not yet scheduled.
+          </p>
+        </div>
+
+        <div className="border border-warning-200 bg-warning-50 rounded p-4">
+          <h3 className="text-sm font-medium text-warning-900 mb-1">
+            No independent accessibility audit (R-A11Y-003) — Open gap
+          </h3>
+          <p className="text-sm text-warning-800">
+            This statement reflects self-assessment by the development team, not a
+            review by an independent accessibility specialist or auditor. WCAG 2.2 has
+            also not yet been evaluated; this application has only been assessed
+            against WCAG 2.1.
+          </p>
+        </div>
       </section>
 
       <section className="mb-6">
@@ -56,12 +87,15 @@ export function AccessibilityStatementPage() {
           Accessibility was assessed using:
         </p>
         <ul className="list-disc list-inside text-sm text-neutral-700 space-y-1">
-          <li>Automated axe-core scans via Playwright on all 26 authenticated routes</li>
-          <li>Keyboard-only navigation testing (Tab, Enter, Escape, arrow keys)</li>
-          <li>Screen reader testing with NVDA on Windows and VoiceOver on macOS</li>
-          <li>Manual review of heading hierarchy, form labels, and colour contrast</li>
-          <li>Colour contrast verification against WCAG AA thresholds (4.5:1 normal text, 3:1 large text)</li>
+          <li>Automated axe-core scans (WCAG 2.1 A/AA and WCAG 2.1 AA-additional rule sets) via Playwright on all 42 authenticated routes plus the sign-in, forbidden, and this accessibility statement page</li>
+          <li>Automated keyboard-operability tests covering sign-in, primary navigation, modal dialogs, tab panels, and inline confirm actions (Tab, Enter, Escape, arrow keys)</li>
+          <li>Manual code-level review of heading structure, form label association, ARIA roles, and focus-visible styling, using semantic HTML and Radix UI accessible primitives (dialogs, tabs) as the underlying implementation</li>
         </ul>
+        <p className="text-sm text-neutral-700 mt-2">
+          Colour contrast has not been separately verified against WCAG AA thresholds
+          beyond what the automated axe-core scans check; a manual contrast review has
+          not been carried out.
+        </p>
       </section>
 
       <section className="mb-6">

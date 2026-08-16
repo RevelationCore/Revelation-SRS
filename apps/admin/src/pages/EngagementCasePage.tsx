@@ -66,13 +66,20 @@ export function EngagementCasePage() {
 
 function ContactForm({ caseId, onDone, onError }: FormProps) {
   async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); const fd = new FormData(event.currentTarget);
+    event.preventDefault();
+    // React nulls a SyntheticEvent's currentTarget once the handler task
+    // returns, so it must be captured before the first await — reading it
+    // afterward (to fd.get() or .reset()) throws, which was being silently
+    // swallowed by the catch below as a false "Action failed", after the
+    // save had already succeeded and without ever reloading the timeline.
+    const form = event.currentTarget;
+    const fd = new FormData(form);
     try {
       await recordCaseContact(caseId, {
         channelCode: String(fd.get('channelCode')), outcomeCode: String(fd.get('outcomeCode')),
         attemptedAt: new Date().toISOString(), communicationLocale: String(fd.get('locale') || 'en-GB'),
         operationalNote: String(fd.get('note') || ''),
-      }); event.currentTarget.reset(); await onDone();
+      }); form.reset(); await onDone();
     } catch (cause) { onError(message(cause)); }
   }
   return <FormCard title="Record contact"><form onSubmit={(event) => void submit(event)} className="space-y-3">
@@ -86,12 +93,14 @@ function ContactForm({ caseId, onDone, onError }: FormProps) {
 }
 function ActionForm({ caseId, onDone, onError }: FormProps) {
   async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); const fd = new FormData(event.currentTarget);
+    event.preventDefault();
+    const form = event.currentTarget;
+    const fd = new FormData(form);
     try {
       await addCaseAction(caseId, {
         actionTypeCode: String(fd.get('actionTypeCode')), ownerRoleCode: String(fd.get('ownerRoleCode')),
         dueAt: new Date(String(fd.get('dueAt'))).toISOString(),
-      }); event.currentTarget.reset(); await onDone();
+      }); form.reset(); await onDone();
     } catch (cause) { onError(message(cause)); }
   }
   return <FormCard title="Add action"><form onSubmit={(event) => void submit(event)} className="space-y-3">

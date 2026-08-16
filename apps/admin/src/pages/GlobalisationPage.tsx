@@ -15,7 +15,7 @@ import { ApiError } from '../api/client.js';
 import { Spinner } from '../components/Spinner.js';
 import { useAuth } from '../auth/AuthContext.js';
 import { userHasAnyPermission } from '../auth/RequirePermission.js';
-import { PageHeader, Card, CardBody, Button, Input, LabelledField } from '@revelation-srs/ui';
+import { PageHeader, Card, CardBody, Button, Input, LabelledField, Tabs, TabsList, TabsTrigger, TabsContent } from '@revelation-srs/ui';
 
 type Tab = 'locale' | 'currency' | 'labels';
 
@@ -34,25 +34,16 @@ export function GlobalisationPage() {
         </p>
       )}
 
-      <div className="flex gap-1 mb-6 border-b border-neutral-200">
-        {(['locale', 'currency', 'labels'] as Tab[]).map(t => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
-              tab === t
-                ? 'border-primary-600 text-primary-600'
-                : 'border-transparent text-neutral-500 hover:text-neutral-800'
-            }`}
-          >
-            {t === 'locale' ? 'Locale & timezone' : t === 'currency' ? 'Currency' : 'Value-set labels'}
-          </button>
-        ))}
-      </div>
-
-      {tab === 'locale'   && <LocaleTab   canWrite={canWrite} />}
-      {tab === 'currency' && <CurrencyTab canWrite={canWrite} />}
-      {tab === 'labels'   && <LabelsTab   canWrite={canWrite} />}
+      <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)}>
+        <TabsList className="mb-6">
+          <TabsTrigger value="locale">Locale &amp; timezone</TabsTrigger>
+          <TabsTrigger value="currency">Currency</TabsTrigger>
+          <TabsTrigger value="labels">Value-set labels</TabsTrigger>
+        </TabsList>
+        <TabsContent value="locale"><LocaleTab canWrite={canWrite} /></TabsContent>
+        <TabsContent value="currency"><CurrencyTab canWrite={canWrite} /></TabsContent>
+        <TabsContent value="labels"><LabelsTab canWrite={canWrite} /></TabsContent>
+      </Tabs>
     </div>
   );
 }

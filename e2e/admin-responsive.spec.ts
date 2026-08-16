@@ -78,6 +78,8 @@ test.describe('Portal — mobile viewport (375×667)', () => {
 
   test('portal login page renders on mobile', async ({ page }) => {
     await page.goto('http://localhost:5174/login');
-    await expect(page.getByRole('heading', { name: 'Revelation SRS' })).toBeVisible();
+    // exact: true — "Sign in to Revelation SRS" also matches an unscoped
+    // substring search for "Revelation SRS".
+    await expect(page.getByRole('heading', { name: 'Revelation SRS', exact: true })).toBeVisible();
   });
 });

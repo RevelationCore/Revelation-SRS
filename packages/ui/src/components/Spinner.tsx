@@ -9,7 +9,7 @@ export function Spinner({ size = 'md', label = 'Loading…' }: SpinnerProps) {
     <span role="status" aria-label={label}>
       <span
         aria-hidden="true"
-        className={`block animate-spin rounded-full border-2 border-neutral-300 border-t-primary-600 ${cls}`}
+        className={`block motion-safe:animate-spin rounded-full border-2 border-neutral-300 border-t-primary-600 ${cls}`}
       />
     </span>
   );

@@ -323,10 +323,15 @@ function EditMemberRow({
     <tr className="bg-primary-50">
       <td className="py-2 pr-4 font-mono text-neutral-600">{member.code}</td>
       <td className="py-2 pr-4">
+        {/* This row only exists because the user just activated "Edit" on
+            it; moving focus into the newly-revealed field is the
+            WAI-ARIA-recommended behaviour for edit-in-place, not a
+            page-load autofocus. */}
         <input
           value={displayLabel}
           onChange={e => setDisplayLabel(e.target.value)}
           className={inputCls}
+          // eslint-disable-next-line jsx-a11y/no-autofocus
           autoFocus
         />
       </td>

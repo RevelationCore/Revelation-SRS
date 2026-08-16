@@ -1,4 +1,4 @@
-import { api } from './client.js';
+import { api, ApiError } from './client.js';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -108,6 +108,7 @@ export interface Adjustment {
   validFrom:         string;
   validTo:           string | null;
   recordedAt:        string;
+  outcomeDocumentId: string | null;
 }
 
 export interface ExceptionalCircumstances {
@@ -219,6 +220,19 @@ export function getExamEntries(moduleRegistrationId: string): Promise<ExamEntry[
 export function getAdjustments(personId: string, enrolmentId?: string): Promise<Adjustment[]> {
   const qs = enrolmentId ? `?enrolmentId=${enrolmentId}` : '';
   return api.get(`/api/v1/students/${personId}/adjustments${qs}`);
+}
+
+// A detail document expanding on the coded adjustment (e.g. a specific
+// seating/equipment/software specification) that a disability adviser
+// attached to this record.
+export async function downloadAdjustmentOutcomeDocument(personId: string, adjustmentId: string): Promise<Blob> {
+  const token = localStorage.getItem('srs_portal_token');
+  const baseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000';
+  const res = await fetch(`${baseUrl}/api/v1/students/${personId}/adjustments/${adjustmentId}/outcome-document`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!res.ok) throw new ApiError(res.status, `Download failed (${res.status})`);
+  return res.blob();
 }
 
 export function getExceptionalCircumstances(

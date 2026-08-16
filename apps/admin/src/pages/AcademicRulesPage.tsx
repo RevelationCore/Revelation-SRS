@@ -88,7 +88,7 @@ export function AcademicRulesPage() {
       )}
 
       <form onSubmit={handleFilter} className="flex items-center gap-3 mb-4">
-        <Select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="w-auto">
+        <Select aria-label="Filter by rule type" value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="w-auto">
           <option value="">All types</option>
           {ruleTypes.map(({ code, displayLabel }) => <option key={code} value={code}>{displayLabel}</option>)}
         </Select>

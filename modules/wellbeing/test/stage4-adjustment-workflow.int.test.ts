@@ -102,11 +102,34 @@ describe('Stage 4 — GET /api/v1/adjustment-cases?personId=', () => {
     expect(c?.statusCode).toBe('referral_received');
   });
 
-  it('returns 400 when personId is missing', async () => {
+  it('with no personId, a staff caller (adjustment-case:read:all) gets the cross-student triage queue instead', async () => {
     const res = await ctx.app.inject({
       method:  'GET',
       url:     '/api/v1/adjustment-cases',
+      headers: { authorization: `Bearer ${ctx.makeJwt()}` }, // wellbeing-advisor
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json<{ items: Array<{ id: string }> }>();
+    expect(body.items.some((i) => i.id === adjustmentCaseId)).toBe(true);
+  });
+
+  it('the queue can be filtered by statusCode', async () => {
+    const res = await ctx.app.inject({
+      method:  'GET',
+      url:     '/api/v1/adjustment-cases?statusCode=referral_received',
       headers: { authorization: `Bearer ${ctx.makeJwt()}` },
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json<{ items: Array<{ id: string; statusCode: string }> }>();
+    expect(body.items.every((i) => i.statusCode === 'referral_received')).toBe(true);
+  });
+
+  it('returns 400 when personId is missing and the caller has no read:all permission', async () => {
+    const studentJwt = ctx.makeJwt({ roles: ['student'], srsPersonId: PERSON_ID });
+    const res = await ctx.app.inject({
+      method:  'GET',
+      url:     '/api/v1/adjustment-cases',
+      headers: { authorization: `Bearer ${studentJwt}` },
     });
     expect(res.statusCode).toBe(400);
   });
@@ -148,15 +171,38 @@ describe('Stage 4 — GET /api/v1/adjustment-cases/:caseId', () => {
   });
 });
 
-// ── Status transitions ────────────────────────────────────────────────────────
+// ── State machine: start-assessment + illegal transitions ─────────────────────
 
-describe('Stage 4 — PATCH /api/v1/adjustment-cases/:caseId/status (state machine)', () => {
-  it('transitions to under_assessment', async () => {
-    const res = await ctx.app.inject({
-      method:  'PATCH',
-      url:     `/api/v1/adjustment-cases/${adjustmentCaseId}/status`,
+describe('Stage 4 — POST /api/v1/adjustment-cases/:caseId/start-assessment (state machine)', () => {
+  it('rejects a transition out of a closed case (closed has no legal next states)', async () => {
+    const createRes = await ctx.app.inject({
+      method:  'POST',
+      url:     '/api/v1/adjustment-cases',
       headers: { authorization: `Bearer ${ctx.makeJwt()}` },
-      payload: { statusCode: 'under_assessment' },
+      payload: { wellbeingCaseId, disabilitySupportCaseId: disabilityCaseId, personId: PERSON_ID, adjustmentTypeCode: 'other' },
+    });
+    const throwawayCaseId = createRes.json<{ id: string }>().id;
+
+    const closeRes = await ctx.app.inject({
+      method:  'POST',
+      url:     `/api/v1/adjustment-cases/${throwawayCaseId}/close`,
+      headers: { authorization: `Bearer ${ctx.makeJwt()}` },
+    });
+    expect(closeRes.statusCode).toBe(204);
+
+    const illegalRes = await ctx.app.inject({
+      method:  'POST',
+      url:     `/api/v1/adjustment-cases/${throwawayCaseId}/start-assessment`,
+      headers: { authorization: `Bearer ${ctx.makeJwt()}` },
+    });
+    expect(illegalRes.statusCode).toBe(409);
+  });
+
+  it('transitions referral_received -> under_assessment', async () => {
+    const res = await ctx.app.inject({
+      method:  'POST',
+      url:     `/api/v1/adjustment-cases/${adjustmentCaseId}/start-assessment`,
+      headers: { authorization: `Bearer ${ctx.makeJwt()}` },
     });
     expect(res.statusCode).toBe(204);
   });
@@ -179,27 +225,13 @@ describe('Stage 4 — PATCH /api/v1/adjustment-cases/:caseId/status (state machi
     expect(Number(rows[0]?.['cnt'])).toBe(2); // referral_received + under_assessment
   });
 
-  it('transitions to determination_made with recommended adjustment', async () => {
+  it('start-assessment a second time is idempotent (a same-status "transition" is always legal)', async () => {
     const res = await ctx.app.inject({
-      method:  'PATCH',
-      url:     `/api/v1/adjustment-cases/${adjustmentCaseId}/status`,
+      method:  'POST',
+      url:     `/api/v1/adjustment-cases/${adjustmentCaseId}/start-assessment`,
       headers: { authorization: `Bearer ${ctx.makeJwt()}` },
-      payload: {
-        statusCode:            'determination_made',
-        recommendedAdjustment: '25% extra time in all examinations',
-      },
     });
     expect(res.statusCode).toBe(204);
-  });
-
-  it('recommended adjustment is carried into the new version', async () => {
-    const res = await ctx.app.inject({
-      method:  'GET',
-      url:     `/api/v1/adjustment-cases/${adjustmentCaseId}`,
-      headers: { authorization: `Bearer ${ctx.makeJwt()}` },
-    });
-    expect(res.json<{ recommendedAdjustment: string }>().recommendedAdjustment)
-      .toBe('25% extra time in all examinations');
   });
 });
 
@@ -236,6 +268,15 @@ describe('Stage 4 — POST /api/v1/adjustment-cases/:caseId/assessments', () => 
     const assessments = res.json<{ assessments: Array<{ id: string; outcomeCode: string }> }>().assessments;
     const a = assessments.find((x) => x.id === assessmentId);
     expect(a?.outcomeCode).toBe('recommended');
+  });
+
+  it('a recommending outcome auto-transitions the case to determination_made', async () => {
+    const res = await ctx.app.inject({
+      method:  'GET',
+      url:     `/api/v1/adjustment-cases/${adjustmentCaseId}`,
+      headers: { authorization: `Bearer ${ctx.makeJwt()}` },
+    });
+    expect(res.json<{ statusCode: string }>().statusCode).toBe('determination_made');
   });
 
   it('returns 404 for unknown case', async () => {
@@ -410,6 +451,57 @@ describe('Stage 4 — approve idempotency: calling approve twice does not double
 
 // ── Module registration validation ───────────────────────────────────────────
 
+describe('Stage 4 — approve requires a determination (precondition)', () => {
+  let freshCaseId: string;
+
+  beforeAll(async () => {
+    const res = await ctx.app.inject({
+      method:  'POST',
+      url:     '/api/v1/adjustment-cases',
+      headers: { authorization: `Bearer ${ctx.makeJwt()}` },
+      payload: { wellbeingCaseId, disabilitySupportCaseId: disabilityCaseId, personId: PERSON_ID, adjustmentTypeCode: 'exam-time' },
+    });
+    freshCaseId = res.json<{ id: string }>().id;
+  });
+
+  it('returns 409 when neither a recommending assessment nor an upheld/modified panel decision exists', async () => {
+    const res = await ctx.app.inject({
+      method:  'POST',
+      url:     `/api/v1/adjustment-cases/${freshCaseId}/approve`,
+      headers: { authorization: `Bearer ${panelJwt}` },
+      payload: {
+        enrolmentId: ENROLMENT_ID, scopeCode: 'all-modules',
+        recommendedAdjustment: '25% extra time', validFrom: '2026-09-01T00:00:00Z',
+        forceApprove: true, // proves this 409 is the determination check, not the module-registration one
+      },
+    });
+    expect(res.statusCode).toBe(409);
+  });
+
+  it('a not-recommended assessment does not satisfy the precondition either', async () => {
+    await ctx.app.inject({
+      method: 'POST', url: `/api/v1/adjustment-cases/${freshCaseId}/start-assessment`,
+      headers: { authorization: `Bearer ${ctx.makeJwt()}` },
+    });
+    await ctx.app.inject({
+      method: 'POST', url: `/api/v1/adjustment-cases/${freshCaseId}/assessments`,
+      headers: { authorization: `Bearer ${ctx.makeJwt()}` },
+      payload: { assessorId: 'x', assessedAt: '2026-06-15T10:00:00Z', outcomeCode: 'not-recommended' },
+    });
+
+    const res = await ctx.app.inject({
+      method:  'POST',
+      url:     `/api/v1/adjustment-cases/${freshCaseId}/approve`,
+      headers: { authorization: `Bearer ${panelJwt}` },
+      payload: {
+        enrolmentId: ENROLMENT_ID, scopeCode: 'all-modules',
+        recommendedAdjustment: '25% extra time', validFrom: '2026-09-01T00:00:00Z', forceApprove: true,
+      },
+    });
+    expect(res.statusCode).toBe(409);
+  });
+});
+
 describe('Stage 4 — approve validates active module registrations', () => {
   let emptyProjCaseId: string;
 
@@ -437,6 +529,19 @@ describe('Stage 4 — approve validates active module registrations', () => {
       },
     });
     emptyProjCaseId = acRes.json<{ id: string }>().id;
+
+    // Satisfy the approval precondition (a recommending assessment) so this
+    // block's 422/forceApprove tests exercise the module-registration
+    // check specifically, not the determination precondition.
+    await ctx.app.inject({
+      method: 'POST', url: `/api/v1/adjustment-cases/${emptyProjCaseId}/start-assessment`,
+      headers: { authorization: `Bearer ${ctx.makeJwt()}` },
+    });
+    await ctx.app.inject({
+      method: 'POST', url: `/api/v1/adjustment-cases/${emptyProjCaseId}/assessments`,
+      headers: { authorization: `Bearer ${ctx.makeJwt()}` },
+      payload: { assessorId: 'x', assessedAt: '2026-06-15T10:00:00Z', outcomeCode: 'recommended' },
+    });
   });
 
   it('returns 422 when person has no active module registrations', async () => {
@@ -517,6 +622,241 @@ describe('Stage 4 — POST /api/v1/adjustment-cases/:caseId/reject', () => {
       WHERE  adjustment_case_id = ${rejectedCaseId}::uuid
     `);
     expect(Number(rows[0]?.['cnt'])).toBe(0);
+  });
+});
+
+// ── Self-service: no existing disability case yet ──────────────────────────────
+
+describe('Stage 4 — student self-service request with no existing disability case', () => {
+  const NEW_PERSON_ID = '22222222-0000-0000-0000-000000000088';
+  let selfServiceCaseId: string;
+  let selfServiceJwt: string;
+
+  beforeAll(() => {
+    selfServiceJwt = ctx.makeJwt({ roles: ['student'], srsPersonId: NEW_PERSON_ID, sub: 'student-first-request' });
+  });
+
+  it('creates a case, auto-opening a disability support case, when none is supplied', async () => {
+    const res = await ctx.app.inject({
+      method:  'POST',
+      url:     '/api/v1/adjustment-cases',
+      headers: { authorization: `Bearer ${selfServiceJwt}` },
+      payload: { personId: NEW_PERSON_ID, adjustmentTypeCode: 'exam-time', rationale: 'First request, no prior referral' },
+    });
+    expect(res.statusCode).toBe(201);
+    selfServiceCaseId = res.json<{ id: string }>().id;
+  });
+
+  it('the case is genuinely linked to a real disability support case, not a placeholder', async () => {
+    const res = await ctx.app.inject({
+      method:  'GET',
+      url:     `/api/v1/adjustment-cases/${selfServiceCaseId}`,
+      headers: { authorization: `Bearer ${selfServiceJwt}` },
+    });
+    const body = res.json<{ wellbeingCaseId: string; disabilitySupportCaseId: string }>();
+    expect(body.wellbeingCaseId).toMatch(/^[0-9a-f-]{36}$/);
+    expect(body.disabilitySupportCaseId).toMatch(/^[0-9a-f-]{36}$/);
+
+    const dcRes = await ctx.app.inject({
+      method:  'GET',
+      url:     `/api/v1/disability-cases?personId=${NEW_PERSON_ID}`,
+      headers: { authorization: `Bearer ${ctx.makeJwt()}` },
+    });
+    const cases = dcRes.json<{ items: Array<{ id: string; supportTypeCode: string }> }>().items;
+    expect(cases.find((c) => c.id === body.disabilitySupportCaseId)?.supportTypeCode).toBe('interim');
+  });
+
+  it('a second self-service request from the same student reuses the same disability support case', async () => {
+    const res = await ctx.app.inject({
+      method:  'POST',
+      url:     '/api/v1/adjustment-cases',
+      headers: { authorization: `Bearer ${selfServiceJwt}` },
+      payload: { personId: NEW_PERSON_ID, adjustmentTypeCode: 'venue' },
+    });
+    expect(res.statusCode).toBe(201);
+    const secondCaseId = res.json<{ id: string }>().id;
+
+    const [first, second] = await Promise.all([
+      ctx.app.inject({ method: 'GET', url: `/api/v1/adjustment-cases/${selfServiceCaseId}`, headers: { authorization: `Bearer ${selfServiceJwt}` } }),
+      ctx.app.inject({ method: 'GET', url: `/api/v1/adjustment-cases/${secondCaseId}`, headers: { authorization: `Bearer ${selfServiceJwt}` } }),
+    ]);
+    const firstBody  = first.json<{ disabilitySupportCaseId: string }>();
+    const secondBody = second.json<{ disabilitySupportCaseId: string }>();
+    expect(secondBody.disabilitySupportCaseId).toBe(firstBody.disabilitySupportCaseId);
+  });
+});
+
+// ── Own-record authorization ───────────────────────────────────────────────────
+
+describe('Stage 4 — student own-record authorization', () => {
+  let ownCaseId:   string;
+  let otherStudentJwt: string;
+  let ownStudentJwt:   string;
+
+  beforeAll(async () => {
+    ownStudentJwt   = ctx.makeJwt({ roles: ['student'], srsPersonId: PERSON_ID, sub: 'student-own' });
+    otherStudentJwt = ctx.makeJwt({ roles: ['student'], srsPersonId: '22222222-0000-0000-0000-000000000099', sub: 'student-other' });
+
+    const res = await ctx.app.inject({
+      method:  'POST',
+      url:     '/api/v1/adjustment-cases',
+      headers: { authorization: `Bearer ${ownStudentJwt}` },
+      payload: { wellbeingCaseId, disabilitySupportCaseId: disabilityCaseId, personId: PERSON_ID, adjustmentTypeCode: 'exam-time' },
+    });
+    expect(res.statusCode).toBe(201);
+    ownCaseId = res.json<{ id: string }>().id;
+  });
+
+  it('a student can create a case for themselves', () => {
+    expect(ownCaseId).toMatch(/^[0-9a-f-]{36}$/);
+  });
+
+  it('a student cannot create a case for someone else', async () => {
+    const res = await ctx.app.inject({
+      method:  'POST',
+      url:     '/api/v1/adjustment-cases',
+      headers: { authorization: `Bearer ${ownStudentJwt}` },
+      payload: { wellbeingCaseId, disabilitySupportCaseId: disabilityCaseId, personId: '22222222-0000-0000-0000-000000000099', adjustmentTypeCode: 'exam-time' },
+    });
+    expect(res.statusCode).toBe(403);
+  });
+
+  it('the owning student can read their own case', async () => {
+    const res = await ctx.app.inject({
+      method:  'GET',
+      url:     `/api/v1/adjustment-cases/${ownCaseId}`,
+      headers: { authorization: `Bearer ${ownStudentJwt}` },
+    });
+    expect(res.statusCode).toBe(200);
+  });
+
+  it('a different student cannot read someone else\'s case', async () => {
+    const res = await ctx.app.inject({
+      method:  'GET',
+      url:     `/api/v1/adjustment-cases/${ownCaseId}`,
+      headers: { authorization: `Bearer ${otherStudentJwt}` },
+    });
+    expect(res.statusCode).toBe(403);
+  });
+
+  it('staff (adjustment-case:read:all) can read any student\'s case', async () => {
+    const res = await ctx.app.inject({
+      method:  'GET',
+      url:     `/api/v1/adjustment-cases/${ownCaseId}`,
+      headers: { authorization: `Bearer ${ctx.makeJwt()}` }, // wellbeing-advisor
+    });
+    expect(res.statusCode).toBe(200);
+  });
+
+  it('a student cannot start an assessment on their own case (requires adjustment-case:assess)', async () => {
+    const res = await ctx.app.inject({
+      method:  'POST',
+      url:     `/api/v1/adjustment-cases/${ownCaseId}/start-assessment`,
+      headers: { authorization: `Bearer ${ownStudentJwt}` },
+    });
+    expect(res.statusCode).toBe(403);
+  });
+});
+
+// ── Evidence ───────────────────────────────────────────────────────────────────
+
+function buildMultipartBody(filename: string, content: string, evidenceTypeCode: string): { body: Buffer; contentType: string } {
+  const boundary = '----wellbeingTestBoundary';
+  const parts = [
+    `--${boundary}`,
+    `Content-Disposition: form-data; name="evidenceTypeCode"`,
+    '',
+    evidenceTypeCode,
+    `--${boundary}`,
+    `Content-Disposition: form-data; name="file"; filename="${filename}"`,
+    'Content-Type: application/pdf',
+    '',
+    content,
+    `--${boundary}--`,
+    '',
+  ].join('\r\n');
+  return { body: Buffer.from(parts), contentType: `multipart/form-data; boundary=${boundary}` };
+}
+
+describe('Stage 4 — evidence', () => {
+  let evidenceCaseId: string;
+  let evidenceId:     string;
+
+  beforeAll(async () => {
+    const res = await ctx.app.inject({
+      method:  'POST',
+      url:     '/api/v1/adjustment-cases',
+      headers: { authorization: `Bearer ${ctx.makeJwt()}` },
+      payload: { wellbeingCaseId, disabilitySupportCaseId: disabilityCaseId, personId: PERSON_ID, adjustmentTypeCode: 'exam-time' },
+    });
+    evidenceCaseId = res.json<{ id: string }>().id;
+  });
+
+  it('uploads evidence and returns a checksum', async () => {
+    const { body, contentType } = buildMultipartBody('assessor-report.pdf', 'a specialist assessor report', 'assessor-report');
+    const res = await ctx.app.inject({
+      method:  'POST',
+      url:     `/api/v1/adjustment-cases/${evidenceCaseId}/evidence`,
+      headers: { authorization: `Bearer ${ctx.makeJwt()}`, 'content-type': contentType },
+      payload: body,
+    });
+    expect(res.statusCode).toBe(201);
+    const json = res.json<{ id: string; documentId: string; checksumSha256: string }>();
+    evidenceId = json.id;
+    expect(json.checksumSha256).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it('evidence appears in case detail', async () => {
+    const res = await ctx.app.inject({
+      method:  'GET',
+      url:     `/api/v1/adjustment-cases/${evidenceCaseId}`,
+      headers: { authorization: `Bearer ${ctx.makeJwt()}` },
+    });
+    const evidence = res.json<{ evidence: Array<{ id: string; evidenceTypeCode: string }> }>().evidence;
+    expect(evidence.find((e) => e.id === evidenceId)?.evidenceTypeCode).toBe('assessor-report');
+  });
+
+  it('downloads the evidence content byte-for-byte', async () => {
+    const res = await ctx.app.inject({
+      method:  'GET',
+      url:     `/api/v1/adjustment-cases/${evidenceCaseId}/evidence/${evidenceId}`,
+      headers: { authorization: `Bearer ${ctx.makeJwt()}` },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toBe('a specialist assessor report');
+  });
+
+  it('a student who does not own the case cannot download its evidence', async () => {
+    const otherStudentJwt = ctx.makeJwt({ roles: ['student'], srsPersonId: '22222222-0000-0000-0000-000000000098' });
+    const res = await ctx.app.inject({
+      method:  'GET',
+      url:     `/api/v1/adjustment-cases/${evidenceCaseId}/evidence/${evidenceId}`,
+      headers: { authorization: `Bearer ${otherStudentJwt}` },
+    });
+    expect(res.statusCode).toBe(403);
+  });
+
+  it('deletes evidence; it no longer appears in case detail nor downloads', async () => {
+    const delRes = await ctx.app.inject({
+      method:  'DELETE',
+      url:     `/api/v1/adjustment-cases/${evidenceCaseId}/evidence/${evidenceId}`,
+      headers: { authorization: `Bearer ${ctx.makeJwt()}` },
+    });
+    expect(delRes.statusCode).toBe(204);
+
+    const getRes = await ctx.app.inject({
+      method:  'GET',
+      url:     `/api/v1/adjustment-cases/${evidenceCaseId}`,
+      headers: { authorization: `Bearer ${ctx.makeJwt()}` },
+    });
+    expect(getRes.json<{ evidence: unknown[] }>().evidence).toHaveLength(0);
+
+    const downloadRes = await ctx.app.inject({
+      method:  'GET',
+      url:     `/api/v1/adjustment-cases/${evidenceCaseId}/evidence/${evidenceId}`,
+      headers: { authorization: `Bearer ${ctx.makeJwt()}` },
+    });
+    expect(downloadRes.statusCode).toBe(404);
   });
 });
 

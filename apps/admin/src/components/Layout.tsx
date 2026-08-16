@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import type { ComponentType } from 'react';
 import { useAuth } from '../auth/AuthContext.js';
-import { getDisplayName } from '@revelation-srs/ui';
+import { getDisplayName, SkipLink } from '@revelation-srs/ui';
 import { DemoBanner } from './DemoBanner.js';
 import { userHasAnyPermission } from '../auth/RequirePermission.js';
 import type { Permission } from '@revelation-srs/domain';
@@ -113,8 +113,10 @@ function Sidebar({ onLogout, displayName, roles }: { onLogout: () => void; displ
   const canViewRightsRequests = can('identity:manage', 'retention:enforce');
   const canViewAuditReview = can('audit-log:read');
   const canViewPgrSupervision = can('pgr-case:read');
+  const canViewAdjustmentCases = can('adjustment-case:read:all');
   const canViewGovernance = canViewModeration || canViewRegulatoryCollections
-    || canViewIdentityResolution || canViewRightsRequests || canViewAuditReview || canViewPgrSupervision;
+    || canViewIdentityResolution || canViewRightsRequests || canViewAuditReview || canViewPgrSupervision
+    || canViewAdjustmentCases;
   return (
     <aside className="fixed inset-y-0 left-0 z-20 flex w-56 flex-col bg-white border-r border-neutral-200">
       {/* Brand */}
@@ -158,6 +160,7 @@ function Sidebar({ onLogout, displayName, roles }: { onLogout: () => void; displ
           {canViewPgrSupervision && <SubItem to="/governance/pgr-progress-review" label="PGR progress review" />}
           {canViewPgrSupervision && <SubItem to="/governance/pgr-examination" label="PGR examination" />}
           {canViewPgrSupervision && <SubItem to="/governance/pgr-completion" label="PGR completion" />}
+          {canViewAdjustmentCases && <SubItem to="/governance/adjustment-cases" label="Adjustment cases" />}
         </>}
 
         {(canViewEnrolmentReporting || canViewRegulatory) && <>
@@ -239,12 +242,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex h-screen overflow-hidden bg-neutral-50">
+      <SkipLink />
       <Sidebar onLogout={handleLogout} displayName={displayName} roles={roles} />
 
       {/* Content area — offset by sidebar width */}
       <div className="flex flex-col flex-1 ml-56 min-w-0 overflow-hidden">
         <DemoBanner />
-        <main className="flex-1 min-h-0 overflow-y-auto px-8 py-8 max-w-6xl w-full">
+        <main id="main-content" className="flex-1 min-h-0 overflow-y-auto px-8 py-8 max-w-6xl w-full">
           {children}
         </main>
       </div>

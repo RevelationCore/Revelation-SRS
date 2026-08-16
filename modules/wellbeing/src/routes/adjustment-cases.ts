@@ -1,5 +1,13 @@
 import { requirePermission } from '@revelation-srs/auth';
-import type { FastifyInstance } from 'fastify';
+import {
+  createPostgresDocumentAdapter,
+  DocumentNotFoundError,
+  DocumentTooLargeError,
+  DocumentTypeNotAllowedError,
+  type RetrievedDocument,
+} from '@revelation-srs/documents';
+import { hasPermission, type Permission } from '@revelation-srs/domain';
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 
 import { withWellbeingTenantContext } from '../db/client.js';
 import type { SrsAdjustmentClient } from '../srs/srs-adjustment-client.js';
@@ -7,13 +15,28 @@ import {
   createAdjustmentCase,
   findCurrentAdjustmentCase,
   listAdjustmentCasesForPerson,
+  listAllAdjustmentCases,
   transitionAdjustmentStatus,
   personHasActiveModules,
   recordAssessment,
   listAssessments,
   recordPanelDecision,
   getCurrentPanelDecision,
+  hasApprovableDetermination,
+  ApprovalPreconditionError,
 } from '../repositories/adjustment-case-repository.js';
+import type { AdjustmentCase } from '../db/schema/adjustment.js';
+import {
+  createEvidence,
+  listEvidence,
+  findEvidence,
+  softDeleteEvidence,
+} from '../repositories/adjustment-case-evidence-repository.js';
+import {
+  createDisabilityCase,
+  listCasesForPerson,
+} from '../repositories/disability-case-repository.js';
+import type { WellbeingTx } from '../db/client.js';
 import {
   enqueueHandoff,
   findHandoffForCase,
@@ -21,6 +44,52 @@ import {
   markHandoffFailed,
 } from '../repositories/srs-handoff-repository.js';
 import { appendAudit } from '../repositories/audit-log-repository.js';
+
+// ── Own-record authorization ────────────────────────────────────────────────
+//
+// Staff hold 'adjustment-case:read:all'/'adjustment-case:manage'/
+// 'panel-decision:write' and may act on any case. A student only holds
+// 'adjustment-case:read:own'/'adjustment-case:write:own' and may only act
+// on a case whose personId is their own srsPersonId JWT claim — unlike
+// most other SRS routes, that comparison can't be done against a URL
+// :personId param here (routes are keyed by :caseId), so the case has to
+// be loaded first.
+
+// eslint-disable-next-line @typescript-eslint/require-await
+async function assertCaseAccess(
+  request: FastifyRequest,
+  c: AdjustmentCase,
+  opts: { ownPermission: Permission; allPermission: Permission },
+): Promise<void> {
+  const roles = request.user.roles;
+  if (hasPermission(roles, opts.allPermission)) return;
+  if (hasPermission(roles, opts.ownPermission) && c.personId === request.user.srsPersonId) return;
+  throw Object.assign(new Error(`Role(s) ${roles.join(', ')} may not access this adjustment case`), { statusCode: 403 });
+}
+
+function assertOwnPersonOrAll(request: FastifyRequest, targetPersonId: string, ownPermission: Permission, allPermission: Permission): void {
+  const roles = request.user.roles;
+  if (hasPermission(roles, allPermission)) return;
+  if (hasPermission(roles, ownPermission) && targetPersonId === request.user.srsPersonId) return;
+  throw Object.assign(new Error(`Role(s) ${roles.join(', ')} may not access records for this person`), { statusCode: 403 });
+}
+
+/**
+ * Reuse the person's current disability support case if they have one;
+ * otherwise open a new interim referral. Used when an adjustment-case
+ * create request doesn't supply the IDs directly (the student
+ * self-service path — see the POST handler below).
+ */
+async function resolveDisabilityCaseForPerson(
+  tx: WellbeingTx, tenantId: string, actorId: string, personId: string,
+): Promise<{ wellbeingCaseId: string; disabilityCaseId: string }> {
+  const existing = await listCasesForPerson(tx, tenantId, personId);
+  const current  = existing.at(-1);
+  if (current) {
+    return { wellbeingCaseId: current.wellbeingCase.id, disabilityCaseId: current.disabilityCase.id };
+  }
+  return createDisabilityCase(tx, tenantId, actorId, { personId, supportTypeCode: 'interim' });
+}
 
 // ── Route plugin ──────────────────────────────────────────────────────────────
 
@@ -35,8 +104,8 @@ export async function adjustmentCaseRoutes(
 
   fastify.post<{
     Body: {
-      wellbeingCaseId:         string;
-      disabilitySupportCaseId: string;
+      wellbeingCaseId?:        string;
+      disabilitySupportCaseId?: string;
       personId:                string;
       adjustmentTypeCode:      string;
       rationale?:              string;
@@ -47,13 +116,29 @@ export async function adjustmentCaseRoutes(
     const actorId      = request.user.sub;
     const body         = request.body;
 
+    assertOwnPersonOrAll(request, body.personId, 'adjustment-case:write:own', 'adjustment-case:manage');
+
     const caseId = await withWellbeingTenantContext(
       request.server.wellbeingDb,
       tenantId,
       async (tx) => {
+        // Staff creating a case on behalf of a student normally already
+        // know the disability support case to attach it to. A student
+        // requesting their own first adjustment typically doesn't have
+        // one yet — resolve (reuse the current one, or open a new
+        // interim referral) rather than requiring the caller to supply
+        // opaque IDs they can't know.
+        let wellbeingCaseId = body.wellbeingCaseId;
+        let disabilitySupportCaseId = body.disabilitySupportCaseId;
+        if (!wellbeingCaseId || !disabilitySupportCaseId) {
+          const resolved = await resolveDisabilityCaseForPerson(tx, tenantId, actorId, body.personId);
+          wellbeingCaseId = resolved.wellbeingCaseId;
+          disabilitySupportCaseId = resolved.disabilityCaseId;
+        }
+
         const id = await createAdjustmentCase(tx, tenantId, actorId, {
-          wellbeingCaseId:         body.wellbeingCaseId,
-          disabilitySupportCaseId: body.disabilitySupportCaseId,
+          wellbeingCaseId,
+          disabilitySupportCaseId,
           personId:                body.personId,
           adjustmentTypeCode:      body.adjustmentTypeCode,
           ...(body.rationale       !== undefined ? { rationale:       body.rationale }       : {}),
@@ -77,17 +162,32 @@ export async function adjustmentCaseRoutes(
     return reply.code(201).send({ id: caseId });
   });
 
-  // ── GET /api/v1/adjustment-cases?personId= ────────────────────────────────
+  // ── GET /api/v1/adjustment-cases?personId=  (own/all)  ─────────────────────
+  // ── GET /api/v1/adjustment-cases?statusCode=  (all — staff triage queue) ───
+  //
+  // personId omitted -> a cross-student queue, staff-only
+  // (adjustment-case:read:all); a student without that permission must
+  // supply their own personId (enforced by assertOwnPersonOrAll).
 
   fastify.get<{
-    Querystring: { personId?: string };
+    Querystring: { personId?: string; statusCode?: string };
   }>('/api/v1/adjustment-cases', async (request, reply) => {
     const { tenantId } = request;
-    const { personId } = request.query;
+    const { personId, statusCode } = request.query;
 
     if (!personId) {
-      return reply.code(400).send({ error: 'personId query parameter is required' });
+      if (!hasPermission(request.user.roles, 'adjustment-case:read:all')) {
+        return reply.code(400).send({ error: 'personId query parameter is required' });
+      }
+      const cases = await withWellbeingTenantContext(
+        request.server.wellbeingDb,
+        tenantId,
+        (tx) => listAllAdjustmentCases(tx, tenantId, statusCode),
+      );
+      return reply.send({ items: cases, total: cases.length });
     }
+
+    assertOwnPersonOrAll(request, personId, 'adjustment-case:read:own', 'adjustment-case:read:all');
 
     const cases = await withWellbeingTenantContext(
       request.server.wellbeingDb,
@@ -114,10 +214,13 @@ export async function adjustmentCaseRoutes(
         const c = await findCurrentAdjustmentCase(tx, tenantId, caseId);
         if (!c) return null;
 
-        const [assessments, panelDecision, handoff] = await Promise.all([
+        await assertCaseAccess(request, c, { ownPermission: 'adjustment-case:read:own', allPermission: 'adjustment-case:read:all' });
+
+        const [assessments, panelDecision, handoff, evidence] = await Promise.all([
           listAssessments(tx, tenantId, caseId),
           getCurrentPanelDecision(tx, tenantId, caseId),
           findHandoffForCase(tx, caseId),
+          listEvidence(tx, tenantId, caseId),
         ]);
 
         await appendAudit(tx, {
@@ -130,7 +233,7 @@ export async function adjustmentCaseRoutes(
           context:      { action: 'read-adjustment' },
         });
 
-        return { c, assessments, panelDecision, handoff };
+        return { c, assessments, panelDecision, handoff, evidence };
       },
     );
 
@@ -140,30 +243,113 @@ export async function adjustmentCaseRoutes(
 
     return reply.send({
       ...result.c,
-      assessments:    result.assessments,
-      panelDecision:  result.panelDecision,
+      assessments:      result.assessments,
+      panelDecision:    result.panelDecision,
       srsHandoffStatus: result.handoff?.statusCode ?? null,
+      evidence:         result.evidence,
     });
   });
 
-  // ── PATCH /api/v1/adjustment-cases/:caseId/status ─────────────────────────
+  // ── POST /api/v1/adjustment-cases/:caseId/start-assessment ────────────────
+  //
+  // referral_received|assessment_pending -> under_assessment. Manual action;
+  // no other trigger naturally produces this transition.
 
-  fastify.patch<{
+  fastify.post<{
     Params: { caseId: string };
-    Body:   { statusCode: string; recommendedAdjustment?: string; rationale?: string };
-  }>('/api/v1/adjustment-cases/:caseId/status', async (request, reply) => {
+  }>('/api/v1/adjustment-cases/:caseId/start-assessment', {
+    preHandler: [requirePermission('adjustment-case:assess')],
+  }, async (request, reply) => {
     const { tenantId } = request;
     const actorId      = request.user.sub;
     const { caseId }   = request.params;
-    const { statusCode, recommendedAdjustment, rationale } = request.body;
+
+    await withWellbeingTenantContext(
+      request.server.wellbeingDb,
+      tenantId,
+      (tx) => transitionAdjustmentStatus(tx, tenantId, caseId, 'under_assessment', actorId),
+    );
+
+    return reply.code(204).send();
+  });
+
+  // ── POST /api/v1/adjustment-cases/:caseId/request-review ──────────────────
+  //
+  // Reopens an approved/rejected case for review.
+
+  fastify.post<{
+    Params: { caseId: string };
+  }>('/api/v1/adjustment-cases/:caseId/request-review', {
+    preHandler: [requirePermission('adjustment-case:manage')],
+  }, async (request, reply) => {
+    const { tenantId } = request;
+    const actorId      = request.user.sub;
+    const { caseId }   = request.params;
+
+    await withWellbeingTenantContext(
+      request.server.wellbeingDb,
+      tenantId,
+      (tx) => transitionAdjustmentStatus(tx, tenantId, caseId, 'under_review', actorId),
+    );
+
+    return reply.code(204).send();
+  });
+
+  // ── POST /api/v1/adjustment-cases/:caseId/close ────────────────────────────
+
+  fastify.post<{
+    Params: { caseId: string };
+  }>('/api/v1/adjustment-cases/:caseId/close', {
+    preHandler: [requirePermission('adjustment-case:manage')],
+  }, async (request, reply) => {
+    const { tenantId } = request;
+    const actorId      = request.user.sub;
+    const { caseId }   = request.params;
+
+    await withWellbeingTenantContext(
+      request.server.wellbeingDb,
+      tenantId,
+      (tx) => transitionAdjustmentStatus(tx, tenantId, caseId, 'closed', actorId),
+    );
+
+    return reply.code(204).send();
+  });
+
+  // ── PATCH /api/v1/adjustment-cases/:caseId/status-correction ──────────────
+  //
+  // Administrative correction only — bypasses the state-machine check, but
+  // requires an explicit reason and the same 'manage' permission as every
+  // other write action, and is audited distinctly from a normal transition
+  // so a correction is never mistaken for ordinary case progression.
+
+  fastify.patch<{
+    Params: { caseId: string };
+    Body:   { statusCode: string; reason: string };
+  }>('/api/v1/adjustment-cases/:caseId/status-correction', {
+    preHandler: [requirePermission('adjustment-case:manage')],
+  }, async (request, reply) => {
+    const { tenantId } = request;
+    const actorId      = request.user.sub;
+    const { caseId }   = request.params;
+    const { statusCode, reason } = request.body;
 
     await withWellbeingTenantContext(
       request.server.wellbeingDb,
       tenantId,
       async (tx) => {
-        await transitionAdjustmentStatus(tx, tenantId, caseId, statusCode, actorId, {
-          ...(recommendedAdjustment !== undefined ? { recommendedAdjustment } : {}),
-          ...(rationale             !== undefined ? { rationale }             : {}),
+        const c = await findCurrentAdjustmentCase(tx, tenantId, caseId);
+        if (!c) throw Object.assign(new Error('Adjustment case not found'), { statusCode: 404 });
+
+        await transitionAdjustmentStatus(tx, tenantId, caseId, statusCode, actorId, undefined, { skipValidation: true });
+
+        await appendAudit(tx, {
+          tenantId,
+          actorId,
+          actionCode:   'write',
+          resourceType: 'disability-case',
+          resourceId:   caseId,
+          personId:     c.personId,
+          context:      { action: 'status-correction', from: c.statusCode, to: statusCode, reason },
         });
       },
     );
@@ -172,6 +358,12 @@ export async function adjustmentCaseRoutes(
   });
 
   // ── POST /api/v1/adjustment-cases/:caseId/assessments ─────────────────────
+  //
+  // Recording an assessment also progresses the case: a conclusive outcome
+  // (recommended/not-recommended) advances it to determination_made;
+  // referred-to-panel escalates it directly to under_review, same
+  // destination as a panel decision itself (the assessor is flagging the
+  // need for one, not yet recording one).
 
   fastify.post<{
     Params: { caseId: string };
@@ -182,7 +374,9 @@ export async function adjustmentCaseRoutes(
       findings?:         string;
       recommendedAction?: string;
     };
-  }>('/api/v1/adjustment-cases/:caseId/assessments', async (request, reply) => {
+  }>('/api/v1/adjustment-cases/:caseId/assessments', {
+    preHandler: [requirePermission('adjustment-case:assess')],
+  }, async (request, reply) => {
     const { tenantId } = request;
     const actorId      = request.user.sub;
     const { caseId }   = request.params;
@@ -205,6 +399,12 @@ export async function adjustmentCaseRoutes(
           ...(body.findings          !== undefined ? { findings:          body.findings }          : {}),
           ...(body.recommendedAction !== undefined ? { recommendedAction: body.recommendedAction } : {}),
         });
+
+        if (body.outcomeCode === 'recommended' || body.outcomeCode === 'not-recommended') {
+          await transitionAdjustmentStatus(tx, tenantId, caseId, 'determination_made', actorId);
+        } else if (body.outcomeCode === 'referred-to-panel') {
+          await transitionAdjustmentStatus(tx, tenantId, caseId, 'under_review', actorId);
+        }
 
         await appendAudit(tx, {
           tenantId,
@@ -258,8 +458,8 @@ export async function adjustmentCaseRoutes(
           ...(body.decisionRationale !== undefined ? { decisionRationale: body.decisionRationale } : {}),
         });
 
-        // Transition case to under_review if still pending assessment
-        if (['referral_received', 'assessment_pending', 'under_assessment', 'determination_made'].includes(c.statusCode)) {
+        // Transition case to under_review if not already there
+        if (c.statusCode !== 'under_review') {
           await transitionAdjustmentStatus(tx, tenantId, caseId, 'under_review', actorId);
         }
 
@@ -285,6 +485,10 @@ export async function adjustmentCaseRoutes(
   // Atomically transitions case to 'approved' and enqueues SRS handoff.
   // The idempotency_key UNIQUE constraint means duplicate calls are safe.
   // After the DB commit, we attempt synchronous SRS delivery.
+  //
+  // Precondition: approval requires either a recommending needs assessment
+  // or an upheld/modified panel decision — referral information alone is
+  // not sufficient (hasApprovableDetermination).
 
   fastify.post<{
     Params: { caseId: string };
@@ -321,6 +525,20 @@ export async function adjustmentCaseRoutes(
         }
         personId = c.personId;
 
+        // Check existing handoff — idempotent re-approve. Checked before
+        // the determination precondition so a retried/duplicate approve
+        // call on an already-approved case still short-circuits cleanly.
+        const existing = await findHandoffForCase(tx, caseId);
+        if (existing) {
+          outboxId    = existing.id;
+          alreadySent = existing.statusCode === 'sent';
+          return; // do not create a second outbox record
+        }
+
+        if (!await hasApprovableDetermination(tx, tenantId, caseId)) {
+          throw Object.assign(new ApprovalPreconditionError(), { statusCode: 409 });
+        }
+
         // Validate module registrations unless caller opts out
         if (!body.forceApprove) {
           const hasModules = await personHasActiveModules(tx, tenantId, personId);
@@ -330,14 +548,6 @@ export async function adjustmentCaseRoutes(
               { statusCode: 422 },
             );
           }
-        }
-
-        // Check existing handoff — idempotent re-approve
-        const existing = await findHandoffForCase(tx, caseId);
-        if (existing) {
-          outboxId    = existing.id;
-          alreadySent = existing.statusCode === 'sent';
-          return; // do not create a second outbox record
         }
 
         // Transition to approved (bitemporal)
@@ -354,6 +564,7 @@ export async function adjustmentCaseRoutes(
           scopeCode:          body.scopeCode,
           validFrom:          body.validFrom,
           recommendedAdjustment: body.recommendedAdjustment,
+          sourceCaseId:       caseId,
         };
         if (body.validTo !== undefined) payload['validTo'] = body.validTo;
         if (body.notes   !== undefined) payload['notes']   = body.notes;
@@ -404,6 +615,7 @@ export async function adjustmentCaseRoutes(
         )),
         scopeCode:          body.scopeCode,
         validFrom:          body.validFrom,
+        sourceCaseId:       caseId,
         ...(body.validTo !== undefined ? { validTo: body.validTo } : {}),
         ...(body.notes   !== undefined ? { notes:   body.notes }   : {}),
       });
@@ -449,6 +661,141 @@ export async function adjustmentCaseRoutes(
         }
         await transitionAdjustmentStatus(tx, tenantId, caseId, 'rejected', actorId, {
           rationale: request.body.rationale,
+        });
+      },
+    );
+
+    return reply.code(204).send();
+  });
+
+  // ── Evidence ────────────────────────────────────────────────────────────────
+  //
+  // The document adapter's own queries are RLS-tenant-scoped just like
+  // every other table here (see packages/documents' migration) — it must
+  // therefore run against the SAME transaction as the rest of a request's
+  // reads/writes, not a connection opened outside withWellbeingTenantContext.
+  // A previous version of this code called the (constructor-injected)
+  // adapter outside the transaction; that only worked in tests because the
+  // test database role happens to bypass RLS (superuser), masking what
+  // would be a hard failure — or worse, a silent tenant-isolation gap — in
+  // production. Fixed by constructing the adapter fresh from `tx` each time.
+
+  fastify.post(
+    '/api/v1/adjustment-cases/:caseId/evidence',
+    async (request: FastifyRequest<{ Params: { caseId: string } }>, reply: FastifyReply) => {
+      const { tenantId } = request;
+      const actorId      = request.user.sub;
+      const { caseId }   = request.params;
+
+      const file = await request.file();
+      if (!file) return reply.code(400).send({ error: 'multipart file field is required' });
+      const evidenceTypeCode = (file.fields['evidenceTypeCode'] as { value?: string } | undefined)?.value ?? 'other';
+      const content = await file.toBuffer();
+
+      try {
+        const evidenceId = await withWellbeingTenantContext(
+          request.server.wellbeingDb,
+          tenantId,
+          async (tx) => {
+            const c = await findCurrentAdjustmentCase(tx, tenantId, caseId);
+            if (!c) throw Object.assign(new Error('Adjustment case not found'), { statusCode: 404 });
+            await assertCaseAccess(request, c, { ownPermission: 'adjustment-case:write:own', allPermission: 'adjustment-case:manage' });
+
+            const stored = await createPostgresDocumentAdapter(tx).store({
+              tenantId,
+              ownerService: 'wellbeing',
+              ownerRef:     caseId,
+              filename:     file.filename,
+              mimeType:     file.mimetype,
+              content,
+              actorId,
+            });
+
+            const id = await createEvidence(tx, tenantId, {
+              adjustmentCaseId: caseId,
+              documentId:       stored.documentId,
+              evidenceTypeCode,
+              uploadedBy:       actorId,
+            });
+
+            await appendAudit(tx, {
+              tenantId, actorId, actionCode: 'write', resourceType: 'disability-case',
+              resourceId: caseId, personId: c.personId,
+              context: { action: 'upload-evidence', evidenceTypeCode },
+            });
+
+            return { id, documentId: stored.documentId, checksumSha256: stored.checksumSha256 };
+          },
+        );
+
+        return reply.code(201).send(evidenceId);
+      } catch (err) {
+        if (err instanceof DocumentTooLargeError || err instanceof DocumentTypeNotAllowedError) {
+          return reply.code(422).send({ error: err.message });
+        }
+        throw err;
+      }
+    },
+  );
+
+  fastify.get<{
+    Params: { caseId: string; evidenceId: string };
+  }>('/api/v1/adjustment-cases/:caseId/evidence/:evidenceId', async (request, reply) => {
+    const { tenantId } = request;
+    const actorId      = request.user.sub;
+    const { caseId, evidenceId } = request.params;
+
+    let doc: RetrievedDocument;
+    try {
+      doc = await withWellbeingTenantContext(
+        request.server.wellbeingDb,
+        tenantId,
+        async (tx) => {
+          const c = await findCurrentAdjustmentCase(tx, tenantId, caseId);
+          if (!c) throw Object.assign(new Error('Adjustment case not found'), { statusCode: 404 });
+          await assertCaseAccess(request, c, { ownPermission: 'adjustment-case:read:own', allPermission: 'adjustment-case:read:all' });
+
+          const evidence = await findEvidence(tx, tenantId, caseId, evidenceId);
+          if (!evidence) throw Object.assign(new Error('Evidence not found'), { statusCode: 404 });
+
+          return createPostgresDocumentAdapter(tx).retrieve(tenantId, evidence.documentId, actorId);
+        },
+      );
+    } catch (err) {
+      if (err instanceof DocumentNotFoundError) return reply.code(404).send({ error: 'Document not found' });
+      throw err;
+    }
+
+    return reply
+      .header('content-type', doc.mimeType)
+      .header('content-disposition', `attachment; filename="${doc.filename}"`)
+      .send(doc.content);
+  });
+
+  fastify.delete<{
+    Params: { caseId: string; evidenceId: string };
+  }>('/api/v1/adjustment-cases/:caseId/evidence/:evidenceId', {
+    preHandler: [requirePermission('adjustment-case:manage')],
+  }, async (request, reply) => {
+    const { tenantId } = request;
+    const actorId      = request.user.sub;
+    const { caseId, evidenceId } = request.params;
+
+    await withWellbeingTenantContext(
+      request.server.wellbeingDb,
+      tenantId,
+      async (tx) => {
+        const c = await findCurrentAdjustmentCase(tx, tenantId, caseId);
+        if (!c) throw Object.assign(new Error('Adjustment case not found'), { statusCode: 404 });
+
+        const evidence = await findEvidence(tx, tenantId, caseId, evidenceId);
+        if (!evidence) throw Object.assign(new Error('Evidence not found'), { statusCode: 404 });
+
+        await createPostgresDocumentAdapter(tx).softDelete(tenantId, evidence.documentId, actorId, 'removed from adjustment case');
+        await softDeleteEvidence(tx, tenantId, evidenceId);
+        await appendAudit(tx, {
+          tenantId, actorId, actionCode: 'write', resourceType: 'disability-case',
+          resourceId: caseId, personId: c.personId, context: { action: 'delete-evidence' },
         });
       },
     );

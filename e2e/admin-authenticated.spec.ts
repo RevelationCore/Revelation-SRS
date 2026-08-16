@@ -7,7 +7,9 @@
  *  3. Navigates to the route and waits for the page heading to appear.
  *  4. Runs axe and asserts zero violations.
  *
- * This covers all 26 protected admin routes.
+ * This covers all 42 protected admin routes (including the Governance
+ * section, StudentDetailPage, and ExamBoardDetailPage, which the original
+ * table omitted — see docs/product/accessibility-improvement-plan.md D1).
  */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call */
 import { test, expect } from '@playwright/test';
@@ -22,8 +24,14 @@ const ADMIN = 'http://localhost:5173';
 const PAGES: [string, string | RegExp][] = [
   ['/dashboard',                   'Dashboard'],
   ['/students',                    'Students'],
+  ['/students/test-student-001',   /test student/i],
   ['/tasks',                       'Task inbox'],
+  ['/module-selection-proposals',  'Module selection proposals'],
+  ['/module-registration-requests', 'Module registration requests'],
+  ['/identity-change-requests',    'Legal identity change requests'],
   ['/exam-boards',                 'Exam boards'],
+  ['/exam-boards/test-exam-board-001', /progression/i],
+  ['/engagement',                  'Academic engagement'],
   ['/regulatory',                  'Regulatory'],
   ['/regulatory/hesa',             'HESA'],
   ['/regulatory/ucas',             'UCAS'],
@@ -35,6 +43,7 @@ const PAGES: [string, string | RegExp][] = [
   ['/tenant-admin/value-sets',     'Value sets'],
   ['/tenant-admin/globalisation',  'Globalisation'],
   ['/tenant-admin/rules',          'Academic rules'],
+  ['/tenant-admin/registration-windows', 'Registration windows'],
   ['/tenant-admin/workflows',      'Workflow definitions'],
   ['/tenant-admin/flags',          'Feature flags'],
   ['/tenant-admin/integrations',   'Integrations'],
@@ -43,6 +52,15 @@ const PAGES: [string, string | RegExp][] = [
   ['/reporting/enrolments',        'Enrolment volumes'],
   ['/reporting/regulatory-status', 'Regulatory submission status'],
   ['/reporting/foi',               /freedom of information/i],
+  ['/governance/moderation',              'Mark moderation'],
+  ['/governance/regulatory-collections',  'Regulatory collections'],
+  ['/governance/identity-resolution',     'Identity resolution'],
+  ['/governance/pgr-supervision',         'PGR supervision'],
+  ['/governance/pgr-progress-review',     'PGR progress review'],
+  ['/governance/pgr-examination',         'PGR thesis examination'],
+  ['/governance/pgr-completion',          'PGR completion'],
+  ['/governance/rights-requests',         'Individual rights requests'],
+  ['/governance/audit-review',            'Audit review'],
   ['/operations',                  'Operations'],
   ['/operations/environment',      'Environment runtime'],
   ['/operations/integrations',     'Integration operations'],
@@ -61,10 +79,20 @@ test.describe('Admin — authenticated page rendering and axe scans', () => {
         typeof heading === 'string'
           ? page.getByRole('heading', { name: heading, exact: false, level: 1 })
           : page.getByRole('heading', { name: heading });
-      await expect(locator).toBeVisible({ timeout: 10_000 });
+      // 15s: under a full local parallel run (all specs, unlimited workers)
+      // this occasionally borders on a plain 10s timeout for no logic
+      // reason — CI already runs with only 2 workers, where this has more
+      // headroom.
+      await expect(locator).toBeVisible({ timeout: 15_000 });
+      // Let in-flight fetches (which disable/re-enable buttons like
+      // "Refresh" once loading finishes) and their CSS transitions settle
+      // before scanning — otherwise axe can catch a genuinely-accessible
+      // disabled→enabled control mid-transition, matching neither the
+      // exempted disabled colour nor the final enabled one.
+      await page.waitForLoadState('networkidle');
 
       const results = await new AxeBuilder({ page })
-        .withTags(['wcag2a', 'wcag2aa'])
+        .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
         .analyze();
       expect(results.violations).toEqual([]);
     });
@@ -96,13 +124,13 @@ test.describe('Admin — authenticated page rendering and axe scans', () => {
   test('/403 page renders without auth and passes axe', async ({ page }) => {
     await page.goto(`${ADMIN}/403`);
     await expect(page.getByRole('heading', { name: /permission/i })).toBeVisible();
-    const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze();
+    const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze();
     expect(results.violations).toEqual([]);
   });
 
   test('login page passes axe', async ({ page }) => {
     await page.goto(`${ADMIN}/login`);
-    const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze();
+    const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze();
     expect(results.violations).toEqual([]);
   });
 });

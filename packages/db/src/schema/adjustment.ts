@@ -1,5 +1,6 @@
 import { text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { pgTable } from 'drizzle-orm/pg-core';
+import { documents } from '@revelation-srs/documents';
 
 import { bitemporalColumns } from '../temporal.js';
 
@@ -23,6 +24,19 @@ export const reasonableAdjustments = pgTable('reasonable_adjustment', {
   scopeCode:         text('scope_code').notNull(),             // all | exam | coursework | attendance
   notes:             text('notes'),
   actorId:           text('actor_id').notNull(),
+  // Opaque cross-service reference to the wellbeing module's adjustment_case
+  // logical id, when this record originated from that module's referral ->
+  // assessment -> approve workflow. Not a foreign key — the wellbeing
+  // module's database is entirely separate from this one. Null when a
+  // registry administrator recorded the adjustment directly (a manual/
+  // legacy entry with no wellbeing case behind it).
+  sourceCaseId:      uuid('source_case_id'),
+  // Detail document expanding on the coded adjustment (e.g. a specific
+  // seating/equipment/software specification) when the type/scope/notes
+  // fields aren't expressive enough on their own. Stored via this
+  // service's own `packages/documents` install — a real FK, unlike
+  // sourceCaseId above, since both tables live in this same database.
+  outcomeDocumentId: uuid('outcome_document_id').references(() => documents.id),
 });
 
 export type ReasonableAdjustment    = typeof reasonableAdjustments.$inferSelect;

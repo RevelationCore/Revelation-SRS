@@ -13,7 +13,6 @@
  *   GP-A08  Integration ops — connector health check trigger
  *   GP-A09  RBAC — role-gated route returns 403 when role absent
  */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call */
 import { test, expect } from '@playwright/test';
 
 import { injectAdminAuth } from './helpers/auth.js';
@@ -24,26 +23,29 @@ const ADMIN = 'http://localhost:5173';
 test.describe('Admin — student management (GP-A01)', () => {
   test('search returns student, clicking row navigates to detail', async ({ page }) => {
     await injectAdminAuth(page);
-    await mockStudentList(page);
     await mockApiRoutes(page);
+    await mockStudentList(page);
 
     await page.goto(`${ADMIN}/students`);
     await expect(page.getByRole('heading', { name: 'Students' })).toBeVisible();
 
-    // Student list renders
-    await expect(page.getByText('Student')).toBeVisible();
+    // Student list renders — 'Student' alone matches the nav link, page
+    // heading and "New student" button too, so check the full name instead.
+    await expect(page.getByRole('cell', { name: 'Test Student' })).toBeVisible();
     await expect(page.getByText('S000001')).toBeVisible();
 
-    // Navigate to student detail
-    await page.getByRole('link', { name: /student/i }).first().click();
+    // Navigate to student detail — scoped to the table row, not the first
+    // "student" link on the page (the sidebar nav link comes first in DOM
+    // order and also matches the /student/i substring).
+    await page.getByRole('row').filter({ hasText: 'S000001' }).getByRole('link').click();
     expect(page.url()).toContain('/students/');
     await expect(page.getByRole('heading', { name: /student/i })).toBeVisible();
   });
 
   test('search filter updates query param', async ({ page }) => {
     await injectAdminAuth(page);
-    await mockStudentList(page);
     await mockApiRoutes(page);
+    await mockStudentList(page);
 
     await page.goto(`${ADMIN}/students`);
     const searchBox = page.getByRole('searchbox').or(page.getByPlaceholder(/search/i));
@@ -58,8 +60,8 @@ test.describe('Admin — student management (GP-A01)', () => {
 test.describe('Admin — task inbox (GP-A02)', () => {
   test('task list renders with pending task', async ({ page }) => {
     await injectAdminAuth(page);
-    await mockTaskList(page);
     await mockApiRoutes(page);
+    await mockTaskList(page);
 
     await page.goto(`${ADMIN}/tasks`);
     await expect(page.getByRole('heading', { name: 'Task inbox' })).toBeVisible();
@@ -68,8 +70,8 @@ test.describe('Admin — task inbox (GP-A02)', () => {
 
   test('complete task — confirm dialog appears', async ({ page }) => {
     await injectAdminAuth(page);
-    await mockTaskList(page);
     await mockApiRoutes(page);
+    await mockTaskList(page);
 
     await page.goto(`${ADMIN}/tasks`);
     await expect(page.getByText('enrolment-review')).toBeVisible();
@@ -87,8 +89,8 @@ test.describe('Admin — task inbox (GP-A02)', () => {
 
   test('empty state renders when no tasks', async ({ page }) => {
     await injectAdminAuth(page);
-    await mockTaskList(page, []);
     await mockApiRoutes(page);
+    await mockTaskList(page, []);
 
     await page.goto(`${ADMIN}/tasks`);
     await expect(page.getByRole('heading', { name: 'Task inbox' })).toBeVisible();
@@ -100,24 +102,37 @@ test.describe('Admin — task inbox (GP-A02)', () => {
 test.describe('Admin — exam boards (GP-A03)', () => {
   test('exam boards list renders', async ({ page }) => {
     await injectAdminAuth(page);
+    // mockApiRoutes must be registered first: Playwright resolves the most
+    // recently registered matching route first, so a page-specific route
+    // registered before the generic catch-all would be shadowed by it.
+    await mockApiRoutes(page);
+    // Boards have no free-text name in the real ExamBoard contract — they're
+    // identified by boardTypeCode + academicYear, which is what the list
+    // actually renders (see ExamBoardsPage.tsx).
     await page.route('**/api/v1/exam-boards**', async (route) => {
       await route.fulfill({
         json: [{
-          boardId:      'board-001',
-          boardName:    'Computer Science Board',
-          boardTypeCode:'undergraduate',
-          academicYear: '2025',
-          statusCode:   'scheduled',
-          scheduledDate:'2026-06-15',
-          createdAt:    '2026-01-01T00:00:00Z',
+          examBoardId:      'board-001',
+          boardTypeCode:    'undergraduate',
+          academicYear:     '2025',
+          academicPeriodId: null,
+          periodCode:       null,
+          meetingDate:      '2026-06-15',
+          ratifiedAt:       null,
+          deferredAt:       null,
+          deferralReason:   null,
+          quorumCount:      null,
+          quorumRecordedAt: null,
+          actorId:          'test-staff-001',
+          createdAt:        '2026-01-01T00:00:00Z',
         }],
       });
     });
-    await mockApiRoutes(page);
 
     await page.goto(`${ADMIN}/exam-boards`);
     await expect(page.getByRole('heading', { name: 'Exam boards' })).toBeVisible();
-    await expect(page.getByText('Computer Science Board')).toBeVisible();
+    await expect(page.getByText('undergraduate')).toBeVisible();
+    await expect(page.getByText('2025')).toBeVisible();
   });
 });
 
@@ -128,19 +143,28 @@ test.describe('Admin — regulatory returns (GP-A04)', () => {
 
     await page.goto(`${ADMIN}/regulatory`);
     await expect(page.getByRole('heading', { name: 'Regulatory' })).toBeVisible();
-    await expect(page.getByText('HESA')).toBeVisible();
-    await expect(page.getByText('UCAS')).toBeVisible();
-    await expect(page.getByText('SLC')).toBeVisible();
-    await expect(page.getByText('UKVI')).toBeVisible();
-    await expect(page.getByText('OfS')).toBeVisible();
+    // .first(): each regulator appears in both the sidebar nav and its own
+    // body card heading.
+    await expect(page.getByText('HESA').first()).toBeVisible();
+    await expect(page.getByText('UCAS').first()).toBeVisible();
+    await expect(page.getByText('SLC').first()).toBeVisible();
+    await expect(page.getByText('UKVI').first()).toBeVisible();
+    await expect(page.getByText('OfS').first()).toBeVisible();
   });
 
   test('HESA page renders with draft return', async ({ page }) => {
     await injectAdminAuth(page);
-    await page.route('**/api/v1/regulatory/hesa/returns**', async (route) => {
+    await mockApiRoutes(page);
+    // Scoped precisely: an unqualified '**/returns**' pattern also matches
+    // the sibling .../returns/submission-requests endpoint, feeding that
+    // queue HESA-return-shaped items instead of submission requests and
+    // crashing the whole page on `request.context['academicYear']`.
+    await page.route('**/api/v1/regulatory/hesa/returns', async (route) => {
       await route.fulfill({ json: [MOCK.hesaReturn] });
     });
-    await mockApiRoutes(page);
+    await page.route('**/api/v1/regulatory/hesa/returns/submission-requests**', async (route) => {
+      await route.fulfill({ json: [] });
+    });
 
     await page.goto(`${ADMIN}/regulatory/hesa`);
     await expect(page.getByRole('heading', { name: /hesa/i })).toBeVisible();
@@ -156,8 +180,10 @@ test.describe('Admin — tenant configuration (GP-A05)', () => {
 
     await page.goto(`${ADMIN}/tenant-admin/config`);
     await expect(page.getByRole('heading', { name: /tenant configuration/i })).toBeVisible();
-    // Institution name from MOCK.tenantConfig
-    await expect(page.getByDisplayValue('Test University')).toBeVisible();
+    // Institution name from MOCK.tenantConfig — getByDisplayValue is a
+    // Testing Library API, not part of Playwright's Page/Locator; the field
+    // is checked directly by its current value instead.
+    await expect(page.getByLabel('Institution name')).toHaveValue('Test University');
   });
 });
 
@@ -192,12 +218,15 @@ test.describe('Admin — reporting (GP-A06)', () => {
 
     await page.goto(`${ADMIN}/reporting/regulatory-status`);
     await expect(page.getByRole('heading', { name: /regulatory submission status/i })).toBeVisible();
-    await expect(page.getByText('HESA returns')).toBeVisible();
-    await expect(page.getByText('UCAS applications')).toBeVisible();
+    // .first(): each label appears in both a summary card and its section
+    // heading.
+    await expect(page.getByText('HESA returns').first()).toBeVisible();
+    await expect(page.getByText('UCAS applications').first()).toBeVisible();
   });
 
   test('FOI page renders request list and new request button', async ({ page }) => {
     await injectAdminAuth(page);
+    await mockApiRoutes(page);
     await page.route('**/api/v1/regulatory/foi/requests**', async (route) => {
       if (route.request().method() === 'GET') {
         await route.fulfill({ json: [{
@@ -215,7 +244,6 @@ test.describe('Admin — reporting (GP-A06)', () => {
         await route.fulfill({ status: 204, body: '' });
       }
     });
-    await mockApiRoutes(page);
 
     await page.goto(`${ADMIN}/reporting/foi`);
     await expect(page.getByRole('heading', { name: /freedom of information/i })).toBeVisible();
@@ -237,28 +265,38 @@ test.describe('Admin — operations (GP-A07/GP-A08)', () => {
 
   test('integration ops page renders connector health tab', async ({ page }) => {
     await injectAdminAuth(page);
+    await mockApiRoutes(page);
     await page.route('**/api/v1/integration-registrations**', async (route) => {
       if (route.request().method() === 'GET') {
         await route.fulfill({
           json: [{
-            registrationId: 'reg-001',
-            contractId:     'contract-001',
-            name:           'VLE Connector',
-            endpointUrl:    'http://vle.test/api',
-            statusCode:     'enabled',
-            createdAt:      '2026-01-01T00:00:00Z',
+            registrationId:           'reg-001',
+            tenantId:                 'test-tenant-001',
+            contractId:               'contract-001',
+            displayName:              'VLE Connector',
+            contractVersion:          '1.0.0',
+            transportCode:            'rest',
+            endpointUrl:              'http://vle.test/api',
+            enabled:                  true,
+            healthStatusCode:         'healthy',
+            lastHealthCheckAt:        null,
+            lastSuccessfulExchangeAt: null,
+            registeredAt:             '2026-01-01T00:00:00Z',
           }],
         });
       } else {
         await route.fulfill({ status: 204, body: '' });
       }
     });
-    await mockApiRoutes(page);
 
     await page.goto(`${ADMIN}/operations/integrations`);
     await expect(page.getByRole('heading', { name: 'Integration operations' })).toBeVisible();
-    await expect(page.getByText('VLE Connector')).toBeVisible();
-    await expect(page.getByRole('button', { name: /health check/i })).toBeVisible();
+    // exact: true — a health-check help panel also mentions "VLE connector".
+    await expect(page.getByText('VLE Connector', { exact: true })).toBeVisible();
+    // Health check is recorded per outcome (ok/degraded/down), not one
+    // generic "Health check" button; exact: true avoids the bulk "Record
+    // all OK" action, which also matches an unscoped substring search.
+    await expect(page.getByRole('button', { name: 'ok', exact: true })).toBeVisible();
   });
 });
 

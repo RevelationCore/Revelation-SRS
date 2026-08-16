@@ -39,18 +39,20 @@ test.describe('Portal — dashboard (GP-P01)', () => {
     await setupPortal(page);
     await page.goto(`${PORTAL}/dashboard`);
 
-    // Welcome heading should include the student name
-    await expect(page.getByRole('heading', { name: /welcome/i })).toBeVisible();
-    await expect(page.getByText(/student/i)).toBeVisible();
+    // Home heading includes the student's name — checked together since
+    // "student" alone also matches the sidebar brand and other page chrome.
+    await expect(page.getByRole('heading', { name: /home, test student/i })).toBeVisible();
   });
 
   test('dashboard shows enrolment summary card', async ({ page }) => {
     await setupPortal(page);
     await page.goto(`${PORTAL}/dashboard`);
 
-    await expect(page.getByRole('heading', { name: /welcome/i })).toBeVisible();
-    // Enrolment data from mock should appear
-    await expect(page.getByText(/BSC-CS/i).or(page.getByText(/enrolled/i))).toBeVisible();
+    await expect(page.getByRole('heading', { name: /home/i })).toBeVisible();
+    // Both appear more than once on the dashboard (a stat card and a table
+    // row) — .first() confirms presence without asserting which surface.
+    await expect(page.getByText('BSC-CS').first()).toBeVisible();
+    await expect(page.getByText('Enrolled').first()).toBeVisible();
   });
 });
 
@@ -60,7 +62,13 @@ test.describe('Portal — profile (GP-P02)', () => {
     await page.goto(`${PORTAL}/profile`);
 
     await expect(page.getByRole('heading', { name: /profile/i })).toBeVisible();
-    await expect(page.getByText('Test').or(page.getByText('Student'))).toBeVisible();
+    // Scoped to the page content, not the sidebar (which also shows the
+    // signed-in user's truncated name and would otherwise make an unscoped
+    // 'Test'/'Student' substring search ambiguous). Both legal name fields
+    // are expected together, not as alternatives.
+    const main = page.getByRole('main');
+    await expect(main.getByText('Test', { exact: true })).toBeVisible();
+    await expect(main.getByText('Student', { exact: true })).toBeVisible();
   });
 
   test('edit profile link is visible', async ({ page }) => {
@@ -79,7 +87,11 @@ test.describe('Portal — enrolments (GP-P03)', () => {
     await page.goto(`${PORTAL}/enrolments`);
 
     await expect(page.getByRole('heading', { name: /enrolments/i })).toBeVisible();
-    await expect(page.getByText('BSC-CS').or(page.getByText('enrolled'))).toBeVisible();
+    // Both are expected to be present at once (programme code and status),
+    // not alternatives — an .or() here is a strict-mode violation once both
+    // render, since each half matches a different element.
+    await expect(page.getByText('BSC-CS')).toBeVisible();
+    await expect(page.getByText('Enrolled')).toBeVisible();
   });
 });
 
@@ -115,9 +127,12 @@ test.describe('Portal — navigation (GP-P08)', () => {
   test('clicking Profile nav item routes to /profile', async ({ page }) => {
     await setupPortal(page);
     await page.goto(`${PORTAL}/dashboard`);
-    await expect(page.getByRole('heading', { name: /welcome/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /home/i })).toBeVisible();
 
-    await page.getByRole('link', { name: /profile/i }).click();
+    // Scoped to the sidebar nav landmark — dashboard quick-link cards repeat
+    // some of these labels (e.g. "Profile Identity and contact details"),
+    // which would otherwise make an unscoped lookup ambiguous.
+    await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Profile' }).click();
     expect(page.url()).toContain('/profile');
     await expect(page.getByRole('heading', { name: /profile/i })).toBeVisible();
   });
@@ -126,7 +141,7 @@ test.describe('Portal — navigation (GP-P08)', () => {
     await setupPortal(page);
     await page.goto(`${PORTAL}/dashboard`);
 
-    await page.getByRole('link', { name: /enrolments/i }).click();
+    await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: /enrolments/i }).click();
     expect(page.url()).toContain('/enrolments');
     await expect(page.getByRole('heading', { name: /enrolments/i })).toBeVisible();
   });

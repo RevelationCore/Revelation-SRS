@@ -642,6 +642,9 @@
                   },
                   "notes": {
                     "type": "string"
+                  },
+                  "sourceCaseId": {
+                    "type": "string"
                   }
                 }
               }
@@ -782,7 +785,9 @@
                       "validFrom",
                       "validTo",
                       "recordedAt",
-                      "recordedUntil"
+                      "recordedUntil",
+                      "sourceCaseId",
+                      "outcomeDocumentId"
                     ],
                     "properties": {
                       "adjustmentId": {
@@ -830,6 +835,26 @@
                         "type": "string"
                       },
                       "recordedUntil": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "sourceCaseId": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "outcomeDocumentId": {
                         "anyOf": [
                           {
                             "type": "string"
@@ -912,7 +937,9 @@
                     "validFrom",
                     "validTo",
                     "recordedAt",
-                    "recordedUntil"
+                    "recordedUntil",
+                    "sourceCaseId",
+                    "outcomeDocumentId"
                   ],
                   "properties": {
                     "adjustmentId": {
@@ -960,6 +987,26 @@
                       "type": "string"
                     },
                     "recordedUntil": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "sourceCaseId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "outcomeDocumentId": {
                       "anyOf": [
                         {
                           "type": "string"
@@ -1220,6 +1267,200 @@
           "204": {
             "description": "Default Response"
           },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/students/{personId}/adjustments/{adjustmentId}/outcome-document": {
+      "post": {
+        "operationId": "createStudentsByPersonIdAdjustmentsByAdjustmentIdOutcomeDocument",
+        "tags": [
+          "adjustments"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "personId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "adjustmentId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "integration",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "documentId",
+                    "checksumSha256"
+                  ],
+                  "properties": {
+                    "documentId": {
+                      "type": "string"
+                    },
+                    "checksumSha256": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "getStudentsByPersonIdAdjustmentsByAdjustmentIdOutcomeDocument",
+        "tags": [
+          "adjustments"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "personId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "adjustmentId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "integration",
+        "responses": {
           "404": {
             "description": "Default Response",
             "content": {

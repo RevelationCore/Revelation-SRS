@@ -11,8 +11,11 @@ import {
   rawMarkForSlot,
 } from '../src/generators/assessment.js';
 import {
+  adjustmentCaseId,
   disabilityCaseId,
   generateAdjustmentCase,
+  generateAdjustmentAssessment,
+  generateAdjustmentPanelDecision,
   generateDisabilitySupportCase,
   generateEcClaim,
   generateMentalHealthCase,
@@ -374,6 +377,52 @@ describe('generateAdjustmentCase', () => {
 
   it('disabilitySupportCaseId matches disabilityCaseId helper', () => {
     expect(ac.disabilitySupportCaseId).toBe(disabilityCaseId(TENANT_ID, 50));
+  });
+
+  it('a rejected outcome sets statusCode "rejected" and clears the recommended adjustment', () => {
+    const rejected = generateAdjustmentCase(TENANT_ID, PERSON_ID, 51, 'rejected');
+    expect(rejected.statusCode).toBe('rejected');
+    expect(rejected.recommendedAdjustment).toBeNull();
+  });
+
+  it('an approved-via-panel outcome still sets statusCode "approved"', () => {
+    const panelled = generateAdjustmentCase(TENANT_ID, PERSON_ID, 52, 'approved-via-panel');
+    expect(panelled.statusCode).toBe('approved');
+  });
+});
+
+describe('generateAdjustmentAssessment', () => {
+  it('maps outcome "approved" to outcomeCode "recommended"', () => {
+    const a = generateAdjustmentAssessment(TENANT_ID, 50, 'approved');
+    expect(a.outcomeCode).toBe('recommended');
+    expect(a.adjustmentCaseId).toBe(adjustmentCaseId(TENANT_ID, 50));
+  });
+
+  it('maps outcome "rejected" to outcomeCode "not-recommended" with no recommended action', () => {
+    const a = generateAdjustmentAssessment(TENANT_ID, 51, 'rejected');
+    expect(a.outcomeCode).toBe('not-recommended');
+    expect(a.recommendedAction).toBeNull();
+  });
+
+  it('maps outcome "approved-via-panel" to outcomeCode "referred-to-panel"', () => {
+    const a = generateAdjustmentAssessment(TENANT_ID, 52, 'approved-via-panel');
+    expect(a.outcomeCode).toBe('referred-to-panel');
+  });
+});
+
+describe('generateAdjustmentPanelDecision', () => {
+  const pd = generateAdjustmentPanelDecision(TENANT_ID, 52);
+
+  it('decisionCode is "upheld"', () => {
+    expect(pd.decisionCode).toBe('upheld');
+  });
+
+  it('is linked to the same adjustment case', () => {
+    expect(pd.adjustmentCaseId).toBe(adjustmentCaseId(TENANT_ID, 52));
+  });
+
+  it('distributedToSrs is true', () => {
+    expect(pd.distributedToSrs).toBe(true);
   });
 });
 

@@ -107,6 +107,8 @@ The [Current Capability Matrix](docs/product/current-capabilities.md) is the aut
 
 ## Getting Started
 
+For a guided, fictional-data product appraisal, start with [TRY.md](TRY.md). It provides a one-command evaluator path and three goal-based journeys without requiring familiarity with the architecture.
+
 > **First-time setup takes around 15 minutes**, mostly waiting for Docker to pull images. Subsequent starts take under a minute.
 
 ### Prerequisites

@@ -49,6 +49,144 @@ afterAll(async () => {
 });
 
 describe('Reasonable adjustments', () => {
+  it('stores and returns sourceCaseId when the wellbeing module handoff supplies one', async () => {
+    const fixture = await createAdjustmentFixture('ADJ102');
+    const sourceCaseId = '11111111-2222-3333-4444-555555555555';
+
+    const adjustment = await createAdjustment(fixture, {
+      adjustmentTypeCode: 'extra-time',
+      scopeCode: 'exam',
+      validFrom: '2027-09-01T00:00:00.000Z',
+      sourceCaseId,
+    });
+
+    const get = await ctx.app.inject({
+      method: 'GET',
+      url: `/api/v1/students/${fixture.personId}/adjustments`,
+      headers: { authorization: `Bearer ${jwt}` },
+    });
+    expect(get.json<Array<{ adjustmentId: string; sourceCaseId: string | null }>>())
+      .toContainEqual(expect.objectContaining({ adjustmentId: adjustment.adjustmentId, sourceCaseId }));
+  });
+
+  it('leaves sourceCaseId null for a direct registry entry with no wellbeing case', async () => {
+    const fixture = await createAdjustmentFixture('ADJ103');
+
+    const adjustment = await createAdjustment(fixture, {
+      adjustmentTypeCode: 'deadline-extension',
+      scopeCode: 'coursework',
+      validFrom: '2027-09-01T00:00:00.000Z',
+    });
+
+    const get = await ctx.app.inject({
+      method: 'GET',
+      url: `/api/v1/students/${fixture.personId}/adjustments`,
+      headers: { authorization: `Bearer ${jwt}` },
+    });
+    expect(get.json<Array<{ adjustmentId: string; sourceCaseId: string | null }>>())
+      .toContainEqual(expect.objectContaining({ adjustmentId: adjustment.adjustmentId, sourceCaseId: null }));
+  });
+
+  it('attaches an outcome document and can retrieve it byte-for-byte', async () => {
+    const fixture = await createAdjustmentFixture('ADJ104');
+    const adjustment = await createAdjustment(fixture, {
+      adjustmentTypeCode: 'extra-time', scopeCode: 'all', validFrom: '2027-09-01T00:00:00.000Z',
+    });
+
+    const content = 'Detailed adjustment specification: laptop with screen-reader software, separate room, 25% extra time.';
+    const { body, contentType } = buildMultipartBody('outcome-spec.pdf', content);
+
+    const uploadRes = await ctx.app.inject({
+      method: 'POST',
+      url: `/api/v1/students/${fixture.personId}/adjustments/${adjustment.adjustmentId}/outcome-document`,
+      headers: { authorization: `Bearer ${jwt}`, 'content-type': contentType },
+      payload: body,
+    });
+    expect(uploadRes.statusCode).toBe(201);
+    const { documentId, checksumSha256 } = uploadRes.json<{ documentId: string; checksumSha256: string }>();
+    expect(documentId).toBeTruthy();
+    expect(checksumSha256).toMatch(/^[0-9a-f]{64}$/);
+
+    const downloadRes = await ctx.app.inject({
+      method: 'GET',
+      url: `/api/v1/students/${fixture.personId}/adjustments/${adjustment.adjustmentId}/outcome-document`,
+      headers: { authorization: `Bearer ${jwt}` },
+    });
+    expect(downloadRes.statusCode).toBe(200);
+    expect(downloadRes.body).toBe(content);
+
+    const listRes = await ctx.app.inject({
+      method: 'GET',
+      url: `/api/v1/students/${fixture.personId}/adjustments`,
+      headers: { authorization: `Bearer ${jwt}` },
+    });
+    expect(listRes.json<Array<{ adjustmentId: string; outcomeDocumentId: string | null }>>())
+      .toContainEqual(expect.objectContaining({ adjustmentId: adjustment.adjustmentId, outcomeDocumentId: documentId }));
+  });
+
+  it('the owning student can download their own outcome document; another student cannot', async () => {
+    const fixture = await createAdjustmentFixture('ADJ105');
+    const adjustment = await createAdjustment(fixture, {
+      adjustmentTypeCode: 'extra-time', scopeCode: 'all', validFrom: '2027-09-01T00:00:00.000Z',
+    });
+
+    const { body, contentType } = buildMultipartBody('outcome-spec.pdf', 'self-service outcome detail');
+    await ctx.app.inject({
+      method: 'POST',
+      url: `/api/v1/students/${fixture.personId}/adjustments/${adjustment.adjustmentId}/outcome-document`,
+      headers: { authorization: `Bearer ${jwt}`, 'content-type': contentType },
+      payload: body,
+    });
+
+    const ownStudentJwt   = await ctx.makeJwt({ roles: ['student'], srsPersonId: fixture.personId });
+    const otherStudentJwt = await ctx.makeJwt({ roles: ['student'], srsPersonId: 'not-this-student' });
+
+    const ownRes = await ctx.app.inject({
+      method: 'GET',
+      url: `/api/v1/students/${fixture.personId}/adjustments/${adjustment.adjustmentId}/outcome-document`,
+      headers: { authorization: `Bearer ${ownStudentJwt}` },
+    });
+    expect(ownRes.statusCode).toBe(200);
+
+    const otherRes = await ctx.app.inject({
+      method: 'GET',
+      url: `/api/v1/students/${fixture.personId}/adjustments/${adjustment.adjustmentId}/outcome-document`,
+      headers: { authorization: `Bearer ${otherStudentJwt}` },
+    });
+    expect(otherRes.statusCode).toBe(403);
+  });
+
+  it('returns 404 for an adjustment with no outcome document attached', async () => {
+    const fixture = await createAdjustmentFixture('ADJ106');
+    const adjustment = await createAdjustment(fixture, {
+      adjustmentTypeCode: 'extra-time', scopeCode: 'all', validFrom: '2027-09-01T00:00:00.000Z',
+    });
+
+    const res = await ctx.app.inject({
+      method: 'GET',
+      url: `/api/v1/students/${fixture.personId}/adjustments/${adjustment.adjustmentId}/outcome-document`,
+      headers: { authorization: `Bearer ${jwt}` },
+    });
+    expect(res.statusCode).toBe(404);
+  });
+
+  it('a student who is not the owner cannot attach an outcome document (adjustment:write required)', async () => {
+    const fixture = await createAdjustmentFixture('ADJ107');
+    const adjustment = await createAdjustment(fixture, {
+      adjustmentTypeCode: 'extra-time', scopeCode: 'all', validFrom: '2027-09-01T00:00:00.000Z',
+    });
+    const ownStudentJwt = await ctx.makeJwt({ roles: ['student'], srsPersonId: fixture.personId });
+
+    const { body, contentType } = buildMultipartBody('outcome-spec.pdf', 'should not be allowed');
+    const res = await ctx.app.inject({
+      method: 'POST',
+      url: `/api/v1/students/${fixture.personId}/adjustments/${adjustment.adjustmentId}/outcome-document`,
+      headers: { authorization: `Bearer ${ownStudentJwt}`, 'content-type': contentType },
+      payload: body,
+    });
+    expect(res.statusCode).toBe(403);
+  });
+
   it('records an adjustment, creates distribution rows, and publishes approval', async () => {
     const fixture = await createAdjustmentFixture('ADJ101');
 
@@ -239,6 +377,7 @@ async function createAdjustment(
     validFrom: string;
     validTo?: string;
     notes?: string;
+    sourceCaseId?: string;
   },
 ): Promise<{ adjustmentId: string }> {
   const adjustment = await ctx.app.inject({
@@ -260,4 +399,18 @@ async function listDistributions(adjustmentId: string) {
     url: `/api/v1/adjustments/${adjustmentId}/distributions`,
     headers: { authorization: `Bearer ${jwt}` },
   });
+}
+
+function buildMultipartBody(filename: string, content: string): { body: Buffer; contentType: string } {
+  const boundary = '----adjustmentsTestBoundary';
+  const parts = [
+    `--${boundary}`,
+    `Content-Disposition: form-data; name="file"; filename="${filename}"`,
+    'Content-Type: application/pdf',
+    '',
+    content,
+    `--${boundary}--`,
+    '',
+  ].join('\r\n');
+  return { body: Buffer.from(parts), contentType: `multipart/form-data; boundary=${boundary}` };
 }

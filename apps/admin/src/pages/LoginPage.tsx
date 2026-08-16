@@ -103,7 +103,7 @@ export function LoginPage() {
                 className="w-full flex items-center justify-center gap-3 rounded py-2.5 px-4 bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-60"
               >
                 {starting
-                  ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  ? <span className="h-4 w-4 motion-safe:animate-spin rounded-full border-2 border-white border-t-transparent" />
                   : <KeycloakIcon />
                 }
                 {starting ? t('auth.signingIn') : t('auth.signInWithKeycloak')}

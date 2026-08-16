@@ -10,6 +10,13 @@ import {
   withTenantContext,
 } from '@revelation-srs/db';
 import {
+  createPostgresDocumentAdapter,
+  DocumentNotFoundError,
+  DocumentTooLargeError,
+  DocumentTypeNotAllowedError,
+  type RetrievedDocument,
+} from '@revelation-srs/documents';
+import {
   EVENT_TYPES,
   NotFoundError,
   ValidationError,
@@ -31,6 +38,11 @@ export interface RecordAdjustmentInput {
   validFrom: string;
   validTo?: string;
   notes?: string;
+  /** Wellbeing module adjustment_case logical id, when this record
+   * originated from that module's referral -> assessment -> approve
+   * workflow rather than a direct registry-administrator entry. Opaque
+   * cross-service reference, not validated against anything in this DB. */
+  sourceCaseId?: string;
 }
 
 export interface AdjustmentDto {
@@ -45,6 +57,14 @@ export interface AdjustmentDto {
   validTo: Date | null;
   recordedAt: Date;
   recordedUntil: Date | null;
+  sourceCaseId: string | null;
+  outcomeDocumentId: string | null;
+}
+
+export interface AttachOutcomeDocumentInput {
+  filename: string;
+  mimeType: string;
+  content: Buffer;
 }
 
 export interface AdjustmentDistributionDto {
@@ -102,6 +122,7 @@ export class AdjustmentService {
         validTo,
         recordedAt: now,
         recordedUntil: null,
+        sourceCaseId: input.sourceCaseId ?? null,
       });
 
       if (targetSystems.length > 0) {
@@ -294,6 +315,110 @@ export class AdjustmentService {
     }
   }
 
+  /**
+   * Attach a detail document expanding on the coded adjustment (e.g. a
+   * specific seating/equipment/software specification) — for when the
+   * type/scope/notes fields alone aren't expressive enough. Stored via
+   * this service's own packages/documents install, independent of
+   * whatever the wellbeing module holds for the case that originated
+   * this record (if any) — see sourceCaseId's doc comment on why that's
+   * a deliberate choice, not an oversight.
+   *
+   * A bitemporal correction: the current version is closed and a new one
+   * inserted with the same valid-time range (the adjustment itself
+   * hasn't changed, only our documentation of it) — never an in-place
+   * overwrite.
+   */
+  async attachOutcomeDocument(
+    adjustmentId: string,
+    personId:     string,
+    tenantId:     string,
+    actorId:      string,
+    input:        AttachOutcomeDocumentInput,
+  ): Promise<{ documentId: string; checksumSha256: string }> {
+    return withTenantContext(this.db, tenantId, async (tx) => {
+      const rows = await tx
+        .select()
+        .from(reasonableAdjustments)
+        .where(
+          and(
+            eq(reasonableAdjustments.id, adjustmentId as `${string}-${string}-${string}-${string}-${string}`),
+            eq(reasonableAdjustments.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
+            isNull(reasonableAdjustments.recordedUntil),
+          ),
+        )
+        .limit(1);
+
+      const current = rows[0];
+      // Not-found (rather than forbidden) for a personId/adjustmentId
+      // mismatch — consistent with #ensureEnrolmentBelongsToPerson, and
+      // avoids letting a caller probe which adjustment IDs exist.
+      if (!current || current.personId !== personId) throw new NotFoundError('ReasonableAdjustment', adjustmentId);
+
+      let stored;
+      try {
+        stored = await createPostgresDocumentAdapter(tx).store({
+          tenantId,
+          ownerService: 'srs-adjustments',
+          ownerRef:     adjustmentId,
+          filename:     input.filename,
+          mimeType:     input.mimeType,
+          content:      input.content,
+          actorId,
+        });
+      } catch (err) {
+        if (err instanceof DocumentTooLargeError || err instanceof DocumentTypeNotAllowedError) {
+          throw new ValidationError(err.message);
+        }
+        throw err;
+      }
+
+      const now = clockNow();
+      await tx
+        .update(reasonableAdjustments)
+        .set({ recordedUntil: now })
+        .where(eq(reasonableAdjustments.versionId, current.versionId));
+
+      await tx.insert(reasonableAdjustments).values({
+        ...current,
+        versionId:         randomUUID(),
+        actorId,
+        recordedAt:        now,
+        recordedUntil:     null,
+        outcomeDocumentId: stored.documentId,
+      });
+
+      return { documentId: stored.documentId, checksumSha256: stored.checksumSha256 };
+    });
+  }
+
+  async getOutcomeDocument(adjustmentId: string, personId: string, tenantId: string, actorId: string): Promise<RetrievedDocument> {
+    return withTenantContext(this.db, tenantId, async (tx) => {
+      const rows = await tx
+        .select({ personId: reasonableAdjustments.personId, outcomeDocumentId: reasonableAdjustments.outcomeDocumentId })
+        .from(reasonableAdjustments)
+        .where(
+          and(
+            eq(reasonableAdjustments.id, adjustmentId as `${string}-${string}-${string}-${string}-${string}`),
+            eq(reasonableAdjustments.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
+            isNull(reasonableAdjustments.recordedUntil),
+          ),
+        )
+        .limit(1);
+
+      const current = rows[0];
+      if (!current || current.personId !== personId) throw new NotFoundError('ReasonableAdjustment', adjustmentId);
+      if (!current.outcomeDocumentId) throw new NotFoundError('AdjustmentOutcomeDocument', adjustmentId);
+
+      try {
+        return await createPostgresDocumentAdapter(tx).retrieve(tenantId, current.outcomeDocumentId, actorId);
+      } catch (err) {
+        if (err instanceof DocumentNotFoundError) throw new NotFoundError('AdjustmentOutcomeDocument', adjustmentId);
+        throw err;
+      }
+    });
+  }
+
   async #validateInput(tenantId: string, input: RecordAdjustmentInput): Promise<void> {
     const validFrom = new Date(input.validFrom);
     const validTo = input.validTo ? new Date(input.validTo) : null;
@@ -454,6 +579,8 @@ function adjustmentToDto(row: typeof reasonableAdjustments.$inferSelect): Adjust
     validTo: row.validTo,
     recordedAt: row.recordedAt,
     recordedUntil: row.recordedUntil,
+    sourceCaseId: row.sourceCaseId,
+    outcomeDocumentId: row.outcomeDocumentId,
   };
 }
 

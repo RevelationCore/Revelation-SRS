@@ -1,8 +1,10 @@
 # Integration Contract Catalogue
 
-> Status: Updated — Phase 7 Stage 3 (event subjects reconciled with implementation; OFS contract added)
-> Last updated: 2026-06-15
+> Status: Updated — Partner Systems Sandbox (2026-08-04): CRM, Library, Accommodation, Estates, OIV, SETS, Payroll, Research Proposals, CMS and ITSM contracts seeded and simulated end-to-end
+> Last updated: 2026-08-04
 > This catalogue enumerates every integration contract between Revelation SRS and external systems or first-party modules. Each contract maps to one or more reference model flows, defines direction, pattern, owner, payload, failure handling, and replay strategy.
+>
+> **Simulated contracts**: the 19 contracts marked *(simulated)* below have no real external system behind them. `apps/partner-systems-sandbox` is a standalone demo app that exercises both directions of each one against SRS's real integration registry/exchange surface (the same `integration_contract`/`integration_registration`/`integration_exchange` model every other contract in this catalogue uses), so a genuine future system can replace the stub without any change to the contract itself. It is explicitly a placeholder, not a production integration — see the sandbox's own README for scope and non-goals.
 
 ---
 
@@ -184,7 +186,7 @@ Every contract below must be implemented with the full field set above. Where de
 
 ---
 
-## CRM
+## CRM *(simulated — see `apps/partner-systems-sandbox`)*
 
 | Field | Value |
 |---|---|
@@ -237,7 +239,7 @@ Every contract below must be implemented with the full field set above. Where de
 
 ---
 
-## Library
+## Library *(simulated — see `apps/partner-systems-sandbox`)*
 
 | Field | Value |
 |---|---|
@@ -378,14 +380,72 @@ Every contract below must be implemented with the full field set above. Where de
 
 ## HR, Payroll, and Research
 
+Payroll and Research Proposals rows are *(simulated — see `apps/partner-systems-sandbox`)*; HR and CRIS rows are real, built for the PGR lifecycle (ADR-023).
+
 | Contract ID | Flows | Direction | Pattern | Notes |
 |---|---|---|---|---|
 | `hr-staff-assignments.v1` | F-HR-SIS-01 | Inbound | REST / event | Tutor / supervisor assignment confirmations |
 | `hr-student-staff-roles.v1` | F-SIS-HR-01 | Outbound | Event / file | GTA and student-staff role data |
 | `payroll-student-pay-authorisation.v1` | F-SIS-PAY-01 | Outbound | File / API | Bursary and GTA payment authorisations |
 | `payroll-payment-confirmation.v1` | F-PAY-SIS-01 | Inbound | REST / file | Bursary / stipend payment confirmations |
+| `research-proposal-eligibility.v1` | F-SIS-RP-01 | Outbound | REST / API | Student researcher eligibility and supervisor assignment data |
+| `research-studentship-award.v1` | F-RP-SIS-01 | Inbound | REST / API | Funded research studentship award records |
 | `cris-pgr-profile.v1` | F-SIS-CRIS-01 | Outbound | REST / event | PGR enrolment and researcher profile |
 | `cris-pgr-milestones.v1` | F-CRIS-SIS-01 | Inbound | REST / event | Research milestones and publications |
+
+---
+
+## Accommodation and Conferencing *(simulated — see `apps/partner-systems-sandbox`)*
+
+| Contract ID | Flows | Direction | Pattern | Owner | Notes |
+|---|---|---|---|---|---|
+| `accommodation-eligibility.v1` | F-SIS-ACC-01 | Outbound | Event / file | Student Identity | Enrolment/profile change drives an eligibility snapshot |
+| `accommodation-booking-status.v1` | F-ACC-SIS-01 | Inbound | REST / file | Student Standing / Enrolment | Room allocation, booking status, check-in/out records |
+
+---
+
+## Estates *(simulated — see `apps/partner-systems-sandbox`)*
+
+| Contract ID | Flows | Direction | Pattern | Owner | Notes |
+|---|---|---|---|---|---|
+| `estates-occupancy-forecast.v1` | F-SIS-EST-01 | Outbound | File / event | Reporting | Scheduled enrolment/timetable-derived occupancy forecast |
+| `estates-room-availability.v1` | F-EST-SIS-01 | Inbound | REST / file | Timetable support | Room allocation confirmations and availability updates |
+
+---
+
+## Online ID Verification *(simulated — see `apps/partner-systems-sandbox`)*
+
+| Contract ID | Flows | Direction | Pattern | Owner | Notes |
+|---|---|---|---|---|---|
+| `identity-verification-request.v1` | F-SIS-OIV-01 | Outbound | REST | Student Identity | Verification requested at enrolment / onboarding |
+| `identity-verification-outcome.v1` | F-OIV-SIS-01 | Inbound | REST / webhook | Student Identity | Verification outcome, confidence score, fraud flags |
+
+---
+
+## Student Evaluation of Teaching Software *(simulated — see `apps/partner-systems-sandbox`)*
+
+| Contract ID | Flows | Direction | Pattern | Owner | Notes |
+|---|---|---|---|---|---|
+| `sets-survey-roster.v1` | F-SIS-SETS-01 | Outbound | File / API | Enrolment & Registration | Module roster and student registration data for survey distribution |
+| `sets-survey-summary.v1` | F-SETS-SIS-01 | Inbound | REST / file | Reporting | Survey completion rates and aggregated feedback scores |
+
+---
+
+## Content Management Systems *(simulated — see `apps/partner-systems-sandbox`)*
+
+| Contract ID | Flows | Direction | Pattern | Owner | Notes |
+|---|---|---|---|---|---|
+| `cms-cohort-personalisation.v1` | F-SIS-CMS-01 | Outbound | API / event | Student Identity / Reporting | Cohort and programme data for content personalisation |
+| `cms-policy-publication.v1` | F-CMS-SIS-01 | Inbound | REST / event | Records / Compliance | Published regulatory and policy notifications |
+
+---
+
+## IT Service Management *(simulated — see `apps/partner-systems-sandbox`)*
+
+| Contract ID | Flows | Direction | Pattern | Owner | Notes |
+|---|---|---|---|---|---|
+| `itsm-student-context.v1` | F-SIS-ITSM-01 | Outbound | API | Student Identity | Identity and account context for incident handling |
+| `itsm-account-impact.v1` | F-ITSM-SIS-01 | Inbound | REST / event | Student Identity | Service request outcomes affecting student account status |
 
 ---
 

@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import type { ComponentType } from 'react';
 import { useAuth } from '../auth/AuthContext.js';
-import { getDisplayName } from '@revelation-srs/ui';
+import { getDisplayName, SkipLink } from '@revelation-srs/ui';
 import { DemoBanner } from './DemoBanner.js';
 
 const NAV_ITEMS: Array<{ to: string; label: string; icon: ComponentType<{ className?: string }> }> = [
@@ -63,6 +63,7 @@ export function Layout() {
 
   return (
     <div className="flex min-h-screen bg-neutral-50">
+      <SkipLink />
 
       {/* ── Desktop sidebar ──────────────────────────────────── */}
       <aside className="hidden md:flex fixed inset-y-0 left-0 z-20 w-52 flex-col bg-white border-r border-neutral-200">
@@ -70,7 +71,7 @@ export function Layout() {
         <div className="flex h-14 items-center px-4 border-b border-neutral-100 flex-shrink-0">
           <NavLink to="/dashboard" className="text-sm font-bold text-primary-700 tracking-tight leading-tight">
             Revelation<br />
-            <span className="text-xs font-semibold text-primary-500 tracking-widest">Student Portal</span>
+            <span className="text-xs font-semibold text-primary-600 tracking-widest">Student Portal</span>
           </NavLink>
         </div>
 
@@ -99,18 +100,15 @@ export function Layout() {
 
       {/* ── Mobile overlay sidebar ───────────────────────────── */}
       {mobileOpen && (
-        <div
-          className="fixed inset-0 z-30 md:hidden"
-          onClick={() => setMobileOpen(false)}
-        >
-          {/* Backdrop */}
-          <div className="absolute inset-0 bg-black/30" />
+        <div className="fixed inset-0 z-30 md:hidden">
+          {/* Backdrop — a real "Close menu" button below provides the
+              keyboard-operable equivalent, so this is a mouse-only
+              convenience and correctly hidden from assistive tech rather
+              than made into a pointless full-screen tab stop. */}
+          <div className="absolute inset-0 bg-black/30" aria-hidden="true" onClick={() => setMobileOpen(false)} />
 
           {/* Drawer */}
-          <aside
-            className="absolute inset-y-0 left-0 w-64 bg-white flex flex-col shadow-popover"
-            onClick={e => e.stopPropagation()}
-          >
+          <aside className="absolute inset-y-0 left-0 w-64 bg-white flex flex-col shadow-popover">
             <div className="flex h-14 items-center justify-between px-4 border-b border-neutral-100">
               <span className="text-sm font-bold text-primary-700">Revelation SRS</span>
               <button
@@ -164,7 +162,7 @@ export function Layout() {
 
         <DemoBanner />
 
-        <main className="flex-1 px-6 py-8 max-w-4xl w-full">
+        <main id="main-content" className="flex-1 px-6 py-8 max-w-4xl w-full">
           <Outlet />
         </main>
       </div>

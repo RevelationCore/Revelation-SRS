@@ -27,11 +27,43 @@ import AxeBuilder from '@axe-core/playwright';
 
 import { PERSONAS, ADMIN, injectPersona, appBase } from './personas.js';
 import { MANIFEST, type StoryEntry, type Check } from './remaining-stories.manifest.js';
-import { type Finding, writeReport } from './findings-reporter.js';
+import { defaultRunContext, type Finding, type FindingClass, writeReport } from './findings-reporter.js';
 
 // ── Findings accumulator ──────────────────────────────────────────────────────
 
 const allFindings: Finding[] = [];
+const runContext = defaultRunContext();
+
+async function health(request: { get: (url: string) => Promise<{ ok: () => boolean; status: () => number }> }, url: string) {
+  try { const response = await request.get(url); return { ok: response.ok(), detail: `HTTP ${response.status()}` }; }
+  catch (error) { return { ok: false, detail: error instanceof Error ? error.message : 'unreachable' }; }
+}
+
+function classify(actual: string, fallback: FindingClass): FindingClass {
+  if (/ERR_CONNECTION|ECONNREFUSED|unreachable|timed out/i.test(actual)) return 'environment';
+  if (/HTTP 401|HTTP 403|token|unauthor/i.test(actual)) return 'authentication';
+  return fallback;
+}
+
+test.beforeAll(async ({ request }) => {
+  const api = ADMIN.replace(':5173', ':3000');
+  runContext.serviceHealth = {
+    api: await health(request, `${api}/health`),
+    admin: await health(request, ADMIN),
+    portal: await health(request, ADMIN.replace(':5173', ':5174')),
+  };
+  try {
+    const response = await request.get(`${api}/api/v1/demo/status`);
+    const body = response.ok() ? await response.json() as { active?: boolean; schemaVersion?: string | null } : {};
+    runContext.scenarioVersion = body.schemaVersion ?? null;
+    if (!body.active) runContext.serviceHealth['api'] = { ok: false, detail: 'API reachable but no demo scenario is active' };
+  } catch { /* API health already records reachability */ }
+  if (Object.values(runContext.serviceHealth).some((service) => !service.ok)) {
+    runContext.status = 'invalid-environment';
+    allFindings.push({ storyId: 'RUN-PREFLIGHT', title: 'UAT environment preflight', scenario: 'run-level', persona: 'none', severity: 'High', classification: 'environment', url: ADMIN, expected: 'API, admin, portal and an active demo scenario are available', actual: Object.entries(runContext.serviceHealth).filter(([, value]) => !value.ok).map(([name, value]) => `${name}: ${value.detail}`).join('; '), evidence: [] });
+    throw new Error('UAT environment preflight failed; the run is invalid and product stories were not appraised.');
+  }
+});
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -157,6 +189,7 @@ for (const [scenario, stories] of byScenario) {
               scenario: story.scenario,
               persona:  story.persona,
               severity: 'Medium',
+              classification: classify(ce, 'console'),
               url:      `${base}${story.startUrl}`,
               expected: 'No console errors',
               actual:   ce,
@@ -173,6 +206,7 @@ for (const [scenario, stories] of byScenario) {
             scenario: story.scenario,
             persona:  story.persona,
             severity: 'High',
+            classification: classify(he, 'network'),
             url:      `${base}${story.startUrl}`,
             expected: 'API returns 2xx',
             actual:   he,
@@ -191,6 +225,7 @@ for (const [scenario, stories] of byScenario) {
               scenario: story.scenario,
               persona:  story.persona,
               severity: check.type === 'axe' ? 'Low' : 'Medium',
+              classification: check.type === 'axe' ? 'accessibility' : 'product-assertion',
               url:      `${base}${story.startUrl}`,
               expected: `Check: ${check.type}${check.value ? ` (${check.value})` : ''}`,
               actual:   failure,
@@ -220,9 +255,9 @@ for (const [scenario, stories] of byScenario) {
 
 // ── Write findings report after all tests ─────────────────────────────────────
 
-test.afterAll(async () => {
+test.afterAll(() => {
   if (allFindings.length > 0) {
-    const outPath = writeReport(allFindings);
-    console.info(`\nFindings written to: ${outPath}`);
+    const paths = writeReport(allFindings, runContext);
+    console.info(`\nFindings written to: ${paths.markdown} and ${paths.json}`);
   }
 });

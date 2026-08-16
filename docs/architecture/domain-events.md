@@ -175,6 +175,8 @@ These events are published to the `SRS_EVENTS` stream but are **not part of the 
 
 These events were planned in Phase 2 but not implemented in Phases 4–6. They remain on the product roadmap but have no `EVENT_TYPES` entries and no schemas.
 
+> **Not covered by this backlog**: CRM, Library, Accommodation, Estates, Online ID Verification, Student Evaluation of Teaching Software, Payroll, Research Proposals, Content Management Systems and IT Service Management are deliberately absent from the list below — they are not "planned but unbuilt". Their contracts are seeded (migration `0019_partner_systems_contracts`) and simulated end-to-end by `apps/partner-systems-sandbox` against the real integration registry — see `docs/architecture/integration-contract-catalogue.md`.
+
 ### Student lifecycle
 - `srs.student.re-enrolled` — Annual re-enrolment confirmation
 - `srs.student.hold-applied` / `srs.student.hold-released` — Account holds

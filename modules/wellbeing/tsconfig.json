@@ -10,7 +10,8 @@
   "references": [
     { "path": "../../packages/domain" },
     { "path": "../../packages/db" },
-    { "path": "../../packages/auth" }
+    { "path": "../../packages/auth" },
+    { "path": "../../packages/documents" }
   ],
   "include": ["src"]
 }

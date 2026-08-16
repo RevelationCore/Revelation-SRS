@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://revelation-srs.example/schemas/test-evidence-manifest.schema.json",
+  "title": "Revelation SRS test evidence manifest",
+  "type": "object",
+  "required": ["schemaVersion", "suite", "commit", "environment", "startedAt", "durationMs", "evidenceClass", "result", "metadata", "artifacts"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "suite": { "type": "string", "minLength": 1 },
+    "commit": { "type": "string", "minLength": 1 },
+    "environment": { "type": "string", "minLength": 1 },
+    "startedAt": { "type": "string", "format": "date-time" },
+    "durationMs": { "type": "integer", "minimum": 0 },
+    "evidenceClass": { "enum": ["unit", "component", "mocked-ui", "service-integration", "real-journey", "uat"] },
+    "result": { "enum": ["passed", "failed", "invalid-environment", "not-run"] },
+    "metadata": { "type": "object" },
+    "artifacts": { "type": "array", "items": { "type": "string" } },
+    "limitations": { "type": "array", "items": { "type": "string" } }
+  },
+  "additionalProperties": false
+}

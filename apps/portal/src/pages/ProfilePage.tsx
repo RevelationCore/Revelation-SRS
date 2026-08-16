@@ -1,12 +1,12 @@
 import { useCallback, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../auth/AuthContext.js';
 import { useApiData } from '../hooks/useApiData.js';
 import { getProfile, getAddresses, deleteAddress, getFieldValueSet, type ValueSetDto } from '../api/me.js';
 import { ApiError } from '../api/client.js';
-import { Spinner, Problem, formatDate, PageHeader, Card, CardHeader, CardBody, Button } from '@revelation-srs/ui';
+import { Spinner, Problem, StatusNotice, formatDate, PageHeader, Card, CardHeader, CardBody, Button } from '@revelation-srs/ui';
 
 function codeLabel(vs: ValueSetDto | null | undefined, code: string | null | undefined): string | null | undefined {
   if (!code) return code;
@@ -17,6 +17,8 @@ function codeLabel(vs: ValueSetDto | null | undefined, code: string | null | und
 export function ProfilePage() {
   const { t }      = useTranslation();
   const navigate   = useNavigate();
+  const location   = useLocation();
+  const notice = (location.state as { notice?: string } | null)?.notice;
   const { personId } = useAuth();
 
   const [addressRefreshKey, setAddressRefreshKey] = useState(0);
@@ -27,6 +29,10 @@ export function ProfilePage() {
   const fetchProfile   = useCallback(() => personId ? getProfile(personId)   : Promise.reject(new Error('')), [personId]);
   const fetchAddresses = useCallback(
     () => personId ? getAddresses(personId) : Promise.reject(new Error('')),
+    // addressRefreshKey is intentionally unused in the body: bumping it
+    // changes this callback's identity so useApiData's effect re-runs and
+    // refetches after a mutation.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [personId, addressRefreshKey],
   );
   const fetchGenderVS  = useCallback(() => getFieldValueSet('person_identity', 'gender_code').catch(() => undefined), []);
@@ -66,6 +72,7 @@ export function ProfilePage() {
       />
 
       {error && <Problem title={t('status.error')} detail={error} />}
+      {notice && <StatusNotice>{notice}</StatusNotice>}
 
       <div className="space-y-6">
         {/* Identity */}

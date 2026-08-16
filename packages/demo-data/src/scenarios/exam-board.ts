@@ -33,6 +33,7 @@ import {
 
 import {
   // ID helpers
+  adjustmentCaseId,
   assessmentComponentId,
   awardBoardId,
   markLogicalId,
@@ -436,6 +437,9 @@ async function loadWellbeing(db: Db, tenantId: string): Promise<void> {
         actorId:            ACTOR,
         validFrom:          VALID_FROM,
         recordedAt:         VALID_FROM,
+        // Genuine cross-service link back to the wellbeing case that
+        // approved it — previously these were fabricated independently.
+        sourceCaseId:       adjustmentCaseId(tenantId, seq),
       });
     }
     if (isBob || hasEcClaim(seq)) {

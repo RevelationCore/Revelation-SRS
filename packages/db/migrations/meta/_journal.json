@@ -134,6 +134,27 @@
       "when": 1785000018000,
       "tag": "0018_pgr_completion_and_research_award",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1785000019000,
+      "tag": "0019_partner_systems_contracts",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1785000020000,
+      "tag": "0020_reasonable_adjustment_source_case",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1785000021000,
+      "tag": "0021_adjustment_outcome_documents",
+      "breakpoints": true
     }
   ]
 }

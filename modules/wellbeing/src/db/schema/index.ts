@@ -1,3 +1,7 @@
+// Only the table definitions, not the adapter/scanner classes — this
+// barrel feeds drizzle()'s `schema` option directly, which expects table
+// (and relation) exports only.
+export { documents, documentAccessLog } from '@revelation-srs/documents';
 export * from './wellbeing-case.js';
 export * from './disability.js';
 export * from './adjustment.js';

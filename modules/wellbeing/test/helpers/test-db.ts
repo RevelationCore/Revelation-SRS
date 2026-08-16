@@ -19,7 +19,7 @@ export interface TestWellbeingApp {
   tenantId:     string;
   secondTenantId: string;
   teardown:     () => Promise<void>;
-  makeJwt:      (opts?: { sub?: string; roles?: string[]; tenantId?: string }) => string;
+  makeJwt:      (opts?: { sub?: string; roles?: string[]; tenantId?: string; srsPersonId?: string }) => string;
 }
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -46,6 +46,7 @@ export async function startTestApp(appOpts: AppOptions = {}): Promise<TestWellbe
   // Apply wellbeing module migrations
   const wellbeingMigrationsDir = join(__dirname, '../../migrations');
   await applySql(db, join(wellbeingMigrationsDir, '0000_wellbeing_foundations.sql'));
+  await applySql(db, join(wellbeingMigrationsDir, '0001_adjustment_production_hardening.sql'));
 
   // Seed test tenants
   const tenantId       = '00000000-0000-0000-0000-000000000001';
@@ -73,7 +74,7 @@ export async function startTestApp(appOpts: AppOptions = {}): Promise<TestWellbe
   const app = await buildApp(config, appOpts);
   await app.ready();
 
-  const makeJwt = (opts: { sub?: string; roles?: string[]; tenantId?: string } = {}): string => {
+  const makeJwt = (opts: { sub?: string; roles?: string[]; tenantId?: string; srsPersonId?: string } = {}): string => {
     const header  = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
     const payload = Buffer.from(JSON.stringify({
       sub:                opts.sub ?? 'test-advisor-001',
@@ -82,6 +83,7 @@ export async function startTestApp(appOpts: AppOptions = {}): Promise<TestWellbe
       name:               'Test Advisor',
       email:              'advisor@test.university.ac.uk',
       preferred_username: 'test.advisor',
+      ...(opts.srsPersonId !== undefined ? { srs_person_id: opts.srsPersonId } : {}),
       iat: Math.floor(Date.now() / 1000),
       exp: Math.floor(Date.now() / 1000) + 3600,
     })).toString('base64url');

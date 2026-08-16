@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../auth/AuthContext.js';
@@ -8,12 +8,14 @@ import { useFormSubmit } from '../hooks/useFormSubmit.js';
 import { getEnrolments, getModuleRegistrations, getTimetable, requestWithdrawal, getMyModuleRegistrationRequests } from '../api/me.js';
 import {
   Spinner, Problem, EmptyState, formatDate, PageHeader, Button, Badge,
-  Card, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
+  Card, StatusNotice, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
 } from '@revelation-srs/ui';
 
 export function ModulesPage() {
   const { t }    = useTranslation();
   const { personId } = useAuth();
+  const location = useLocation();
+  const notice = (location.state as { notice?: string } | null)?.notice;
 
   const [withdrawing, setWithdrawing] = useState<string | null>(null);
   const [refreshKey,  setRefreshKey]  = useState(0);
@@ -93,6 +95,7 @@ export function ModulesPage() {
 
       {error      && <Problem title={t('status.error')} detail={error} />}
       {submitError && <Problem title={t('status.error')} detail={submitError} />}
+      {notice && <StatusNotice>{notice}</StatusNotice>}
 
       {pendingRequests.length > 0 && (
         <Card className="mb-6 border-warning-200 bg-warning-50">

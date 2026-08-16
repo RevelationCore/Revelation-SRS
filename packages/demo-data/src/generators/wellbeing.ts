@@ -92,6 +92,32 @@ const adjustmentCasesTable = w.table('adjustment_case', {
   recordedUntil:            timestamp('recorded_until',{ withTimezone: true }),
 });
 
+const adjustmentAssessmentsTable = w.table('adjustment_assessment', {
+  id:                uuid('id').primaryKey().defaultRandom(),
+  tenantId:          uuid('tenant_id').notNull(),
+  adjustmentCaseId:  uuid('adjustment_case_id').notNull(),
+  assessorId:        text('assessor_id').notNull(),
+  assessedAt:        timestamp('assessed_at', { withTimezone: true }).notNull(),
+  outcomeCode:       text('outcome_code'),
+  findings:          text('findings'),
+  recommendedAction: text('recommended_action'),
+  createdAt:         timestamp('created_at', { withTimezone: true }).notNull(),
+  updatedAt:         timestamp('updated_at', { withTimezone: true }).notNull(),
+});
+
+const adjustmentPanelDecisionsTable = w.table('adjustment_panel_decision', {
+  id:                uuid('id').primaryKey().defaultRandom(),
+  tenantId:          uuid('tenant_id').notNull(),
+  adjustmentCaseId:  uuid('adjustment_case_id').notNull(),
+  panelChairId:      text('panel_chair_id').notNull(),
+  panelDate:         timestamp('panel_date', { withTimezone: true }).notNull(),
+  decisionCode:      text('decision_code').notNull(),
+  decisionRationale: text('decision_rationale'),
+  distributedToSrs:  boolean('distributed_to_srs').notNull(),
+  createdAt:         timestamp('created_at', { withTimezone: true }).notNull(),
+  updatedAt:         timestamp('updated_at', { withTimezone: true }).notNull(),
+});
+
 const ecClaimsTable = w.table('ec_claim', {
   versionId:               uuid('version_id').primaryKey(),
   id:                      uuid('id').notNull(),
@@ -117,6 +143,8 @@ export {
   disabilitySupportCasesTable,
   mentalHealthCasesTable,
   adjustmentCasesTable,
+  adjustmentAssessmentsTable,
+  adjustmentPanelDecisionsTable,
   ecClaimsTable,
 };
 
@@ -126,6 +154,8 @@ export type NewWellbeingCase            = typeof wellbeingCasesTable.$inferInser
 export type NewDisabilitySupportCase    = typeof disabilitySupportCasesTable.$inferInsert;
 export type NewMentalHealthCase         = typeof mentalHealthCasesTable.$inferInsert;
 export type NewAdjustmentCase           = typeof adjustmentCasesTable.$inferInsert;
+export type NewAdjustmentAssessment     = typeof adjustmentAssessmentsTable.$inferInsert;
+export type NewAdjustmentPanelDecision  = typeof adjustmentPanelDecisionsTable.$inferInsert;
 export type NewEcClaim                  = typeof ecClaimsTable.$inferInsert;
 
 // ─── ID helpers ───────────────────────────────────────────────────────────────
@@ -148,6 +178,14 @@ export function adjustmentCaseId(tenantId: string, seq: number): string {
 
 export function ecClaimId(tenantId: string, seq: number): string {
   return deterministicId('ec-claim', tenantId, String(seq));
+}
+
+export function adjustmentAssessmentId(tenantId: string, seq: number): string {
+  return deterministicId('adjustment-assessment', tenantId, String(seq));
+}
+
+export function adjustmentPanelDecisionId(tenantId: string, seq: number): string {
+  return deterministicId('adjustment-panel-decision', tenantId, String(seq));
 }
 
 // ─── Wellbeing constants ──────────────────────────────────────────────────────
@@ -226,10 +264,20 @@ export function generateDisabilitySupportCase(
   };
 }
 
+export type AdjustmentCaseOutcome = 'approved' | 'rejected' | 'approved-via-panel';
+
+/**
+ * `outcome` picks which real lifecycle this demo case represents — not
+ * just a status label, but a status paired with the assessment/panel
+ * record that would actually have produced it (generateAdjustmentAssessment
+ * / generateAdjustmentPanelDecision below), so the demo data is internally
+ * consistent with the production workflow rather than a floating snapshot.
+ */
 export function generateAdjustmentCase(
   tenantId:            string,
   personId:            string,
   seq:                 number,
+  outcome:             AdjustmentCaseOutcome = 'approved',
 ): NewAdjustmentCase {
   const adjId          = adjustmentCaseId(tenantId, seq);
   const wbId           = wellbeingCaseId(tenantId, seq);
@@ -243,12 +291,60 @@ export function generateAdjustmentCase(
     disabilitySupportCaseId:  disId,
     personId,
     adjustmentTypeCode:       ADJUSTMENT_TYPES[typeIdx]!,
-    statusCode:               'approved',
-    recommendedAdjustment:    'DEMO - 25% additional time in examinations',
-    rationale:                'DEMO - DSA assessment outcome applied',
+    statusCode:               outcome === 'rejected' ? 'rejected' : 'approved',
+    recommendedAdjustment:    outcome === 'rejected' ? null : 'DEMO - 25% additional time in examinations',
+    rationale:                outcome === 'rejected'
+      ? 'DEMO - Evidence did not support the requested adjustment'
+      : 'DEMO - DSA assessment outcome applied',
     actorId:                  ACTOR,
     validFrom:                VALID_FROM,
     recordedAt:               VALID_FROM,
+  };
+}
+
+/** The needs-assessment record backing an approved/rejected demo case. */
+export function generateAdjustmentAssessment(
+  tenantId: string,
+  seq:      number,
+  outcome:  AdjustmentCaseOutcome,
+): NewAdjustmentAssessment {
+  const outcomeCode = outcome === 'rejected'
+    ? 'not-recommended'
+    : outcome === 'approved-via-panel'
+      ? 'referred-to-panel'
+      : 'recommended';
+  return {
+    id:                adjustmentAssessmentId(tenantId, seq),
+    tenantId,
+    adjustmentCaseId:  adjustmentCaseId(tenantId, seq),
+    assessorId:        'demo-specialist-assessor',
+    assessedAt:        VALID_FROM,
+    outcomeCode,
+    findings:           outcome === 'rejected'
+      ? 'DEMO - Assessment found insufficient evidence of a substantial and long-term impairment'
+      : 'DEMO - Assessment supports additional time as a reasonable adjustment',
+    recommendedAction: outcome === 'rejected' ? null : 'DEMO - Grant 25% additional time in examinations',
+    createdAt:         VALID_FROM,
+    updatedAt:         VALID_FROM,
+  };
+}
+
+/** The panel-decision record backing the escalation-branch demo case. */
+export function generateAdjustmentPanelDecision(
+  tenantId: string,
+  seq:      number,
+): NewAdjustmentPanelDecision {
+  return {
+    id:                adjustmentPanelDecisionId(tenantId, seq),
+    tenantId,
+    adjustmentCaseId:  adjustmentCaseId(tenantId, seq),
+    panelChairId:      'demo-panel-chair',
+    panelDate:         VALID_FROM,
+    decisionCode:      'upheld',
+    decisionRationale: 'DEMO - Panel agrees the specialist assessment supports this adjustment',
+    distributedToSrs:  true,
+    createdAt:         VALID_FROM,
+    updatedAt:         VALID_FROM,
   };
 }
 

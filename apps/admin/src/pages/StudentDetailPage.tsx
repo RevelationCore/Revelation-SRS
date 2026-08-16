@@ -1,4 +1,4 @@
-import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { type ChangeEvent, type FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import {
@@ -17,6 +17,8 @@ import {
   updateHesaId,
   updatePersonStatus,
   listStudentNotifications,
+  uploadOutcomeDocument,
+  downloadOutcomeDocument,
 } from '../api/students.js';
 import {
   type CorrectionCase,
@@ -79,6 +81,7 @@ import { userHasAnyPermission } from '../auth/RequirePermission.js';
 import {
   PageHeader, Card, CardHeader, CardBody, Button, Input, Select, Textarea, LabelledField,
   Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, Dialog, DialogClose,
+  Tabs, TabsList, TabsTrigger, TabsContent,
 } from '@revelation-srs/ui';
 
 type Tab = 'identity' | 'enrolments' | 'registrations' | 'assessment' | 'history' | 'wellbeing' | 'corrections' | 'cas' | 'communications';
@@ -146,52 +149,45 @@ export function StudentDetailPage() {
         actions={<Badge value={student.personStatusCode} />}
       />
 
-      {/* Tabs */}
-      <div className="border-b border-neutral-200 mb-6">
-        {tabs.map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`mr-6 pb-3 text-sm font-medium capitalize border-b-2 transition-colors ${
-              tab === t
-                ? 'border-primary-600 text-primary-600'
-                : 'border-transparent text-neutral-500 hover:text-neutral-700'
-            }`}
-          >
-            {t === 'cas' ? 'CAS' : t}
-          </button>
-        ))}
-      </div>
+      <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)}>
+        <TabsList className="mb-6">
+          {tabs.map((t) => (
+            <TabsTrigger key={t} value={t} className="capitalize">{t === 'cas' ? 'CAS' : t}</TabsTrigger>
+          ))}
+        </TabsList>
 
-      {tab === 'identity' && (
-        <IdentityTab student={student} onUpdated={reload} canWrite={canWriteStudent} />
-      )}
-      {tab === 'enrolments' && personId && (
-        <EnrolmentsTab personId={personId} student={student} onUpdated={reload} />
-      )}
-      {tab === 'registrations' && personId && (
-        <RegistrationsTab personId={personId} />
-      )}
-      {tab === 'assessment' && personId && (
-        <AssessmentTab personId={personId} />
-      )}
-      {tab === 'history' && personId && (
-        <HistoryTab personId={personId} />
-      )}
-      {tab === 'wellbeing' && personId && (
-        <WellbeingTab personId={personId} canReadDisability={canReadDisability}
-          canReadAdjustments={canReadAdjustments} canReadCircumstances={canReadCircumstances}
-          canWriteAdjustments={canWriteAdjustments} />
-      )}
-      {tab === 'corrections' && personId && (
-        <CorrectionsTab personId={personId} canRatify={canRatify} />
-      )}
-      {tab === 'cas' && personId && (
-        <CasTab personId={personId} canWrite={canWriteCas} />
-      )}
-      {tab === 'communications' && personId && (
-        <CommunicationsTab personId={personId} />
-      )}
+        <TabsContent value="identity">
+          <IdentityTab student={student} onUpdated={reload} canWrite={canWriteStudent} />
+        </TabsContent>
+        <TabsContent value="enrolments">
+          {personId && <EnrolmentsTab personId={personId} student={student} onUpdated={reload} />}
+        </TabsContent>
+        <TabsContent value="registrations">
+          {personId && <RegistrationsTab personId={personId} />}
+        </TabsContent>
+        <TabsContent value="assessment">
+          {personId && <AssessmentTab personId={personId} />}
+        </TabsContent>
+        <TabsContent value="history">
+          {personId && <HistoryTab personId={personId} />}
+        </TabsContent>
+        <TabsContent value="wellbeing">
+          {personId && (
+            <WellbeingTab personId={personId} canReadDisability={canReadDisability}
+              canReadAdjustments={canReadAdjustments} canReadCircumstances={canReadCircumstances}
+              canWriteAdjustments={canWriteAdjustments} />
+          )}
+        </TabsContent>
+        <TabsContent value="corrections">
+          {personId && <CorrectionsTab personId={personId} canRatify={canRatify} />}
+        </TabsContent>
+        <TabsContent value="cas">
+          {personId && <CasTab personId={personId} canWrite={canWriteCas} />}
+        </TabsContent>
+        <TabsContent value="communications">
+          {personId && <CommunicationsTab personId={personId} />}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
@@ -305,12 +301,12 @@ function IdentityTab({
             <IdentityRow label="Email (inst.)" value={id?.emailInstitutional} />
             <IdentityRow label="Email (pers.)" value={id?.emailPersonal} />
             <IdentityRow label="Mobile"        value={id?.phoneMobile} />
-            {id && (
-              <p className="text-xs text-neutral-600 pt-1">
-                Updated {new Date(id.recordedAt).toLocaleDateString()}
-              </p>
-            )}
           </dl>
+        )}
+        {!editing && id && (
+          <p className="text-xs text-neutral-600 pt-1">
+            Updated {new Date(id.recordedAt).toLocaleDateString()}
+          </p>
         )}
         </CardBody>
       </Card>
@@ -522,8 +518,10 @@ function EnrolmentCard({
 
   return (
     <Card className="overflow-hidden">
-      <div
-        className="flex items-center gap-4 px-4 py-3 cursor-pointer hover:bg-neutral-50"
+      <button
+        type="button"
+        aria-expanded={expanded}
+        className="flex w-full items-center gap-4 px-4 py-3 text-left cursor-pointer hover:bg-neutral-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary-600 focus-visible:-outline-offset-2"
         onClick={onToggle}
       >
         <div className="flex-1 min-w-0">
@@ -541,7 +539,7 @@ function EnrolmentCard({
         {expanded
           ? <ChevronUp className="h-4 w-4 text-neutral-500" aria-hidden="true" />
           : <ChevronDown className="h-4 w-4 text-neutral-500" aria-hidden="true" />}
-      </div>
+      </button>
 
       {expanded && (
         <div className="border-t border-neutral-100 px-4 py-4 space-y-4">
@@ -1890,6 +1888,7 @@ function WellbeingTab({
                   <TableHeaderCell>Valid From</TableHeaderCell>
                   <TableHeaderCell>Valid To</TableHeaderCell>
                   <TableHeaderCell>Notes</TableHeaderCell>
+                  <TableHeaderCell>Outcome document</TableHeaderCell>
                 </tr>
               </TableHead>
               <TableBody>
@@ -1900,6 +1899,14 @@ function WellbeingTab({
                     <TableCell>{new Date(a.validFrom).toLocaleDateString('en-GB')}</TableCell>
                     <TableCell>{a.validTo ? new Date(a.validTo).toLocaleDateString('en-GB') : 'Open-ended'}</TableCell>
                     <TableCell className="text-neutral-500">{a.notes ?? '—'}</TableCell>
+                    <TableCell>
+                      <OutcomeDocumentCell
+                        personId={personId}
+                        adjustment={a}
+                        canWrite={canWriteAdjustments}
+                        onUploaded={() => { void listAdjustments(personId).then(setAdjustments); }}
+                      />
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -1949,6 +1956,80 @@ function WellbeingTab({
         <SupportOutcomesSection personId={personId} canWrite={canWriteAdjustments} />
       </section>
 
+    </div>
+  );
+}
+
+// A detail document expanding on the coded adjustment (e.g. a specific
+// seating/equipment/software specification), when type/scope/notes alone
+// aren't expressive enough. Stored independently in core SRS's own
+// document store, not the wellbeing module's — see
+// AdjustmentService#attachOutcomeDocument's doc comment for why.
+function OutcomeDocumentCell({
+  personId, adjustment, canWrite, onUploaded,
+}: {
+  personId: string;
+  adjustment: Adjustment;
+  canWrite: boolean;
+  onUploaded: () => void;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const [error, setError]         = useState('');
+
+  async function handleUpload(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setUploading(true); setError('');
+    try {
+      await uploadOutcomeDocument(personId, adjustment.adjustmentId, file);
+      onUploaded();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to upload outcome document');
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function handleDownload() {
+    setError('');
+    try {
+      const blob = await downloadOutcomeDocument(personId, adjustment.adjustmentId);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `outcome-${adjustment.adjustmentId.slice(0, 8)}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to download outcome document');
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      {adjustment.outcomeDocumentId ? (
+        <button type="button" onClick={() => void handleDownload()} className="text-xs text-primary-600 hover:underline">
+          Download
+        </button>
+      ) : (
+        <span className="text-xs text-neutral-500">None</span>
+      )}
+      {canWrite && (
+        <label className="text-xs text-primary-600 hover:underline cursor-pointer">
+          {uploading ? 'Uploading…' : adjustment.outcomeDocumentId ? 'Replace' : 'Upload'}
+          <input
+            type="file"
+            accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
+            className="sr-only"
+            disabled={uploading}
+            onChange={(e) => void handleUpload(e)}
+          />
+        </label>
+      )}
+      {error && <span className="text-xs text-danger-600">{error}</span>}
     </div>
   );
 }

@@ -72,7 +72,7 @@ export function AddAddressPage() {
         countryCode:     data.countryCode || null,
       }),
     );
-    if (result !== undefined) navigate('/profile');
+    if (result !== undefined) navigate('/profile', { state: { notice: isEdit ? 'Address updated.' : 'Address added.' } });
   };
 
   if (isEdit && existingLoading) {

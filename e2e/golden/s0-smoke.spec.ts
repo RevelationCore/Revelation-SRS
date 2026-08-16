@@ -14,7 +14,7 @@
  *   DEMO_GOLDEN_ADMIN_URL  — base URL of the admin app (default: http://localhost:5173)
  *   DEMO_GOLDEN_API_URL    — base URL of the API server (default: http://localhost:3000)
  *
- * If neither URL is set to a reachable server the tests skip automatically.
+ * Required environments fail during setup when either URL is unavailable.
  * Run with: pnpm test:e2e:playwright:golden
  */
 import { type Page, test, expect } from '@playwright/test';
@@ -67,14 +67,12 @@ async function injectStaffAuth(page: Page, tenantId: string): Promise<void> {
 
 // ─── Demo status preflight ─────────────────────────────────────────────────────
 
-async function getDemoStatus(): Promise<{ active: boolean; tenantId?: string }> {
-  try {
-    const res  = await fetch(`${API_URL}/api/v1/demo/status`);
-    const data = await res.json() as { active: boolean; scenarioSlug?: string };
-    return { active: data.active === true };
-  } catch {
-    return { active: false };
-  }
+async function getDemoStatus(): Promise<{ active: boolean; tenantId: string; scenarioSlug: string | null }> {
+  const res = await fetch(`${API_URL}/api/v1/demo/status`);
+  if (!res.ok) throw new Error(`Demo status preflight failed: HTTP ${res.status}`);
+  const data = await res.json() as { active: boolean; tenantId: string | null; scenarioSlug: string | null };
+  if (!data.active || !data.tenantId) throw new Error('Demo status preflight failed: no active demo tenant');
+  return { active: true, tenantId: data.tenantId, scenarioSlug: data.scenarioSlug };
 }
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
@@ -82,7 +80,6 @@ async function getDemoStatus(): Promise<{ active: boolean; tenantId?: string }> 
 test.describe('S0 golden — demo banner', () => {
   test('demo status endpoint returns active scenario', async ({ request }) => {
     const res = await request.get(`${API_URL}/api/v1/demo/status`);
-    test.skip(!res.ok(), 'API is not reachable — skipping golden tests');
     expect(res.status()).toBe(200);
     const body = await res.json() as { active: boolean; scenarioSlug: string | null };
     expect(body.active).toBe(true);
@@ -93,9 +90,8 @@ test.describe('S0 golden — demo banner', () => {
 test.describe('S0 golden — admin student record (PERSON_ENROLLED)', () => {
   test.beforeEach(async ({ page }) => {
     const status = await getDemoStatus();
-    test.skip(!status.active, 'Demo API is not active — skipping golden admin tests');
-
-    await injectStaffAuth(page, 'test-golden');
+    expect(status.scenarioSlug).toBe('ci-golden');
+    await injectStaffAuth(page, status.tenantId);
   });
 
   test('enrolled student record is accessible by golden ID', async ({ page }) => {
@@ -126,8 +122,8 @@ test.describe('S0 golden — admin student record (PERSON_ENROLLED)', () => {
 test.describe('S0 golden — exam boards', () => {
   test.beforeEach(async ({ page }) => {
     const status = await getDemoStatus();
-    test.skip(!status.active, 'Demo API is not active — skipping golden board tests');
-    await injectStaffAuth(page, 'test-golden');
+    expect(status.scenarioSlug).toBe('ci-golden');
+    await injectStaffAuth(page, status.tenantId);
   });
 
   test('scheduled board is visible in the boards list', async ({ page }) => {
@@ -140,5 +136,46 @@ test.describe('S0 golden — exam boards', () => {
     await page.goto(`${ADMIN_URL}/exam-boards`);
     await expect(page.getByRole('heading', { name: /exam boards/i })).toBeVisible({ timeout: 10_000 });
     await expect(page.getByText(/ratified/i)).toBeVisible();
+  });
+});
+
+test.describe('S0 golden — persisted student-record mutation', () => {
+  test('staff creates an address and the real API returns the persisted result', async ({ page, request }) => {
+    const status = await getDemoStatus();
+    expect(status.scenarioSlug).toBe('ci-golden');
+    const token = goldenStaffToken(status.tenantId);
+    await injectStaffAuth(page, status.tenantId);
+
+    const marker = `DEMO - Journey ${Date.now()}`;
+    const create = await request.post(`${API_URL}/api/v1/students/${GOLDEN_IDS.PERSON_ENROLLED}/addresses`, {
+      headers: { authorization: `Bearer ${token}` },
+      data: {
+        addressTypeCode: 'term-time',
+        line1: marker,
+        city: 'Testford',
+        postcode: 'ZZ1 1ZZ',
+        countryCode: 'GB',
+      },
+    });
+    expect(create.status()).toBe(201);
+    const { addressId } = await create.json() as { addressId: string };
+
+    const persisted = await request.get(
+      `${API_URL}/api/v1/students/${GOLDEN_IDS.PERSON_ENROLLED}/addresses/${addressId}`,
+      { headers: { authorization: `Bearer ${token}` } },
+    );
+    expect(persisted.status()).toBe(200);
+    await expect(persisted.json()).resolves.toMatchObject({ id: addressId, line1: marker, city: 'Testford' });
+
+    // The browser uses the same real API and must still render the subject after mutation.
+    await page.goto(`${ADMIN_URL}/students/${GOLDEN_IDS.PERSON_ENROLLED}`);
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible({ timeout: 10_000 });
+
+    // Keep repeated local/CI runs isolated while proving the delete path too.
+    const cleanup = await request.delete(
+      `${API_URL}/api/v1/students/${GOLDEN_IDS.PERSON_ENROLLED}/addresses/${addressId}`,
+      { headers: { authorization: `Bearer ${token}` } },
+    );
+    expect(cleanup.status()).toBe(204);
   });
 });

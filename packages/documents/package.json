@@ -1,0 +1,33 @@
+{
+  "name": "@revelation-srs/documents",
+  "version": "0.0.1",
+  "private": true,
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "dev": "tsc -p tsconfig.json --watch",
+    "test": "vitest run --reporter=verbose --passWithNoTests",
+    "test:int": "vitest run --reporter=verbose --config vitest.int.config.ts --passWithNoTests"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.36.0"
+  },
+  "devDependencies": {
+    "@revelation-srs/testing": "workspace:*",
+    "@testcontainers/postgresql": "^12.0.1",
+    "@types/node": "^22.0.0",
+    "postgres": "^3.0.0",
+    "typescript": "^6.0.0",
+    "vitest": "^2.1.9"
+  }
+}

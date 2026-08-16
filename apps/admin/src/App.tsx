@@ -51,6 +51,8 @@ import { PgrExaminationPage } from './pages/PgrExaminationPage.js';
 import { PgrCompletionPage } from './pages/PgrCompletionPage.js';
 import { RightsRequestsPage } from './pages/RightsRequestsPage.js';
 import { AuditReviewPage } from './pages/AuditReviewPage.js';
+import { AdjustmentCasesPage } from './pages/AdjustmentCasesPage.js';
+import { AdjustmentCaseDetailPage } from './pages/AdjustmentCaseDetailPage.js';
 
 const ENGAGEMENT_ROLES = ['module-tutor', 'personal-tutor', 'engagement-officer', 'registry-administrator', 'tenant-administrator'];
 const ADMIN_PERMISSIONS = [
@@ -161,6 +163,8 @@ export function App() {
                 <Route path="governance/pgr-completion" element={<RequirePermission permissions={['pgr-case:read']}><PgrCompletionPage /></RequirePermission>} />
                 <Route path="governance/rights-requests" element={<RequirePermission permissions={['identity:manage', 'retention:enforce']}><RightsRequestsPage /></RequirePermission>} />
                 <Route path="governance/audit-review" element={<RequirePermission permissions={['audit-log:read']}><AuditReviewPage /></RequirePermission>} />
+                <Route path="governance/adjustment-cases" element={<RequirePermission permissions={['adjustment-case:read:all']}><AdjustmentCasesPage /></RequirePermission>} />
+                <Route path="governance/adjustment-cases/:caseId" element={<RequirePermission permissions={['adjustment-case:read:all']}><AdjustmentCaseDetailPage /></RequirePermission>} />
 
                 {/* Operations */}
                 <Route path="operations" element={<RequirePermission permissions={['environment:read', 'integration:read']}><OperationsPage /></RequirePermission>} />

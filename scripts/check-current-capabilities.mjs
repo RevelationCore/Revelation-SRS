@@ -6,17 +6,27 @@ const matrixPath = resolve(root, 'docs/product/current-capabilities.md');
 const readmePath = resolve(root, 'README.md');
 const docsIndexPath = resolve(root, 'docs/README.md');
 const historyPath = resolve(root, 'docs/history.md');
+const tryPath = resolve(root, 'TRY.md');
+const appraisalPath = resolve(root, 'docs/appraisal/README.md');
 const matrix = readFileSync(matrixPath, 'utf8');
 const readme = readFileSync(readmePath, 'utf8');
 const docsIndex = readFileSync(docsIndexPath, 'utf8');
 const history = readFileSync(historyPath, 'utf8');
+const tryDoc = readFileSync(tryPath, 'utf8');
+const appraisal = readFileSync(appraisalPath, 'utf8');
 const errors = [];
 
 const capabilityRows = [
-  ...matrix.matchAll(/^\| ([^|]+) \| \*\*(Implemented baseline|Partial|Approved target|Proposed target|Not assessed)\*\* \|/gm),
+  ...matrix.matchAll(/^\| `([a-z0-9-]+)` \| ([^|]+) \| \*\*(Implemented baseline|Partial|Approved target|Proposed target|Not assessed)\*\* \|/gm),
 ];
 if (capabilityRows.length !== 20) {
   errors.push(`Expected 20 current-capability rows, found ${capabilityRows.length}`);
+}
+
+const capabilityIds = capabilityRows.map((row) => row[1]);
+const duplicateIds = capabilityIds.filter((id, index) => capabilityIds.indexOf(id) !== index);
+if (duplicateIds.length > 0) {
+  errors.push(`Capability matrix has duplicate IDs: ${[...new Set(duplicateIds)].join(', ')}`);
 }
 
 // 'Proposed target' is intentionally not required here: it described PGR
@@ -25,7 +35,7 @@ if (capabilityRows.length !== 20) {
 // and every remaining capability now has at least some implementation, so
 // requiring a still-unstarted row would force a dishonest downgrade.
 for (const status of ['Implemented baseline', 'Partial']) {
-  if (!capabilityRows.some((row) => row[2] === status)) {
+  if (!capabilityRows.some((row) => row[3] === status)) {
     errors.push(`Current-capability matrix has no ${status} capability`);
   }
 }
@@ -36,14 +46,19 @@ if (/Status.*v1\.0\.0 released|all 11 phases complete/i.test(readme)) {
 if (!readme.includes('Alpha —')) errors.push('README does not declare alpha convergence status');
 if (!readme.includes('Current Capability Matrix')) errors.push('README does not link the status authority');
 if (!docsIndex.includes('Current capabilities')) errors.push('Documentation index does not link current capabilities');
+if (!readme.includes('TRY.md')) errors.push('README does not link the evaluator entry point');
+if (!tryDoc.includes('Alpha')) errors.push('TRY.md does not declare Alpha maturity');
+if (!tryDoc.includes('current capability matrix')) errors.push('TRY.md does not link the status authority');
+if (!appraisal.includes('Product maturity: Alpha')) errors.push('Appraisal pack does not declare Alpha maturity');
+if (!appraisal.includes('current capability matrix')) errors.push('Appraisal pack does not link the status authority');
 if (!history.includes('pre-convergence-2026-07-27')) {
   errors.push('Documentation history does not identify the preservation tag');
 }
 if (!matrix.includes('Repository typecheck | Pass')) {
   errors.push('Capability matrix does not record the passing repository typecheck');
 }
-if (!matrix.includes('Clean-clone application bootstrap | **Not verified')) {
-  errors.push('Capability matrix does not record unverified clean-clone bootstrap');
+if (!matrix.includes('Clean-clone application bootstrap | Pass')) {
+  errors.push('Capability matrix does not record a passing clean-clone bootstrap verification');
 }
 
 for (const [path, contents] of [
@@ -51,6 +66,8 @@ for (const [path, contents] of [
   [readmePath, readme],
   [docsIndexPath, docsIndex],
   [historyPath, history],
+  [tryPath, tryDoc],
+  [appraisalPath, appraisal],
 ]) {
   for (const match of contents.matchAll(/\[[^\]]+\]\(([^)]+)\)/g)) {
     const rawTarget = match[1];

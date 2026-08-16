@@ -47,6 +47,7 @@ export const STUDENT_TOKEN = makeJwt({
   given_name:         'Test',
   family_name:        'Student',
   email:              't.student@test.ac.uk',
+  srs_person_id:      'test-student-001',
   realm_access:       { roles: ['student'] },
   tenant_id:          'test-tenant-001',
   exp:                EXP,

@@ -55,7 +55,7 @@ export function EnrolmentReportPage() {
               ))}
               <div className="rounded-lg border border-primary-100 bg-primary-50 p-3 text-center">
                 <p className="text-2xl font-bold text-primary-700">{data.total}</p>
-                <p className="text-xs text-neutral-500 mt-0.5">Total</p>
+                <p className="text-xs text-neutral-600 mt-0.5">Total</p>
               </div>
             </div>
             </CardBody>
