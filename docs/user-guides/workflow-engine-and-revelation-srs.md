@@ -292,9 +292,16 @@ use. Nothing here is illustrative; every path and identifier below is real.
 
 **1. The definition, its steps, and its decision gateway are declared in a
 migration — `packages/db/migrations/0007_module_registration_change_workflow.sql`.**
-Revelation SRS has no admin UI for authoring workflow definitions yet — they're
-declared as governed reference data, the same way a value set or an academic
-rule is. This one migration:
+`apps/admin/src/pages/WorkflowDefsPage.tsx` (**Workflows** under Tenant Admin,
+`workflow:read`/`workflow:write`) lets an admin browse definitions, view a
+version's steps read-only, create a new definition *shell* (code, name,
+description), enable/disable one, and manage assignment rules — but it can't
+author a version's steps, transitions, or decision gateway, and neither can
+the API underneath it (`apps/api/src/routes/platform-controls.ts` has no
+endpoint to create a `workflow_definition_version`, `workflow_step`, or
+`workflow_decision_gateway`). Real process content — steps, transitions, the
+gateway — is declared as governed reference data in a migration, the same way
+a value set or an academic rule is. This one migration:
 
 - inserts into `workflow_definition` — registers the code
   `module-registration-change-approval`, owned by the `registration` module;
@@ -387,6 +394,28 @@ step 2 above.
    `apps/api/test/workflow-coverage.int.test.ts`, so CI keeps verifying its
    shape — start/end step, an assignment rule per human-task step, an
    escalation policy — stays complete.
+
+#### Why isn't step 1 a UI, if the definition table already is one?
+
+`apps/admin/src/pages/WorkflowDefsPage.tsx` (**Workflows**, under Tenant
+Admin) does let an admin browse definitions, view a version's steps
+read-only, create a definition shell, enable/disable one, and manage
+assignment rules. It stops there deliberately, not for lack of a screen: a
+step's key is a literal string referenced directly in hand-written
+TypeScript — `'approve-or-reject-registration-change'` is hard-coded in
+`registration/service.ts`, and what happens on approval (re-running
+registration/withdrawal validation) is bespoke code in `decideChangeRequest`.
+If an admin authored a brand-new step through a builder UI, nothing in the
+running application would call `startWorkflowInstance`/`assignWorkflowTask`
+for it, and there'd be no decision endpoint beyond the Task Inbox's generic
+"Complete" — which can't drive a typed approve/reject outcome. A builder
+that only writes rows would produce configuration that *looks* like a
+governed workflow but that no code path enforces, which is worse than no
+builder at all in an audited system. A no-code builder for the purely
+generic case — routing, escalation, and audit, completed via the Task
+Inbox, with no bespoke side effect — is a real gap and a buildable feature;
+one for the nine bespoke cases above would first need a plugin mechanism
+for "what happens on approval," which is a materially larger undertaking.
 
 ### The Task Inbox, and why most decisions bypass it
 
