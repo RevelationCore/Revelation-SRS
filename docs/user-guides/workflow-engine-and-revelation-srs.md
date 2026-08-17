@@ -5,7 +5,34 @@
 >
 > Structure: Part 1 introduces workflow/orchestration engines as a general
 > software concept. Part 2 describes, precisely and with explicit caveats
-> about what's built versus designed, how Revelation SRS uses Temporal.
+> about what's built versus designed, how Revelation SRS uses Temporal, walks
+> one real workflow through every file involved, and closes with a
+> hands-on walkthrough you can follow in the running application.
+
+### In short: does Revelation SRS run a full production workflow?
+
+**Partially, and by design — not by omission.** Every governed decision in
+the codebase gets the full *data model* of a real workflow engine: a
+versioned definition, a running instance, a task with a deadline and an
+assignee, and an immutable decision audit. That model is real, enforced by
+the database, and covered by tests. What it does **not** yet get is *live
+Temporal execution* — no code path in the application today starts, signals,
+or queries an actual running Temporal workflow process. The platform
+services described in this guide call the same lifecycle methods a Temporal
+activity would call, directly and synchronously from a REST handler, rather
+than through Temporal's runtime.
+
+So: the workflow **shape** — definition, instance, task, decision audit,
+escalation policy, permission-gated human decisions — is production-grade
+and used throughout the app today, right now, by nine different platform
+services. The workflow **engine** underneath it — Temporal-managed durable
+execution, crash-survival, and live timers — is deployed, configured, and
+ready, but not yet wired into any of them. "The honest, important nuance"
+below explains the exact mechanism, why it's a deliberate staged position
+rather than a gap, and which ADRs govern it. If you'd rather see this than
+read about it, "Try it yourself" near the end of this guide is a walkthrough
+in the running app, and "Configuring a workflow" traces one real workflow
+through every file behind it.
 
 ## Part 1 — Workflow engines as a concept
 
@@ -256,6 +283,111 @@ Nine platform services in `apps/api/src/platform/` construct and call
 | SLC | Approving Student Loans Company confirmations | `regulatory-officer` |
 | UCAS | Approving UCAS confirmations | `regulatory-officer` |
 
+### Configuring a workflow: a worked example
+
+Take the first row of that table — `module-registration-change-approval` —
+and trace it through every file involved, from its declared configuration to
+the code that runs it to the screens a student and a decision-maker actually
+use. Nothing here is illustrative; every path and identifier below is real.
+
+**1. The definition, its steps, and its decision gateway are declared in a
+migration — `packages/db/migrations/0007_module_registration_change_workflow.sql`.**
+Revelation SRS has no admin UI for authoring workflow definitions yet — they're
+declared as governed reference data, the same way a value set or an academic
+rule is. This one migration:
+
+- inserts into `workflow_definition` — registers the code
+  `module-registration-change-approval`, owned by the `registration` module;
+- inserts into `workflow_definition_version` — version 1, with a
+  `definition_json` blob naming the decision step key and its audit table;
+- inserts into `workflow_step` — four steps in order: `request-submitted`
+  (`start`) → `approve-or-reject-registration-change` (`human-task`, owner
+  role `personal-tutor`) → `decision-gateway` (`decision`) →
+  `request-closed` (`end`);
+- inserts into `workflow_decision_gateway` — gateway `G01`, "Approve or
+  reject the registration change?", with its own `source_reference` pointing
+  back at this migration file, so the catalogue is self-documenting about
+  where a gateway was defined.
+
+One honest gap worth naming here: this migration does **not** insert a row
+into `workflow_assignment_rule`. The `personal-tutor` assignee is instead
+hard-coded directly in the calling TypeScript (next step) rather than
+resolved from the rules table at runtime. Contrast this with the older,
+catalogue-only "Stage 2" workflow definitions seeded in
+`packages/db/migrations/0001_platform_hardening_and_refinements.sql`, which
+*do* populate `workflow_assignment_rule` fully (role, priority, per-step) —
+those are more completely configured as data, but (per the honest nuance
+below) have no live caller at all. `module-registration-change-approval` is
+the reverse: it's the one nine real services actually call, but its own
+assignment logic is simpler than the data model supports. Both facts are
+worth knowing before assuming either "the catalogue" or "what's wired up"
+alone tells the whole story.
+
+**2. An instance actually starts in application code —
+`apps/api/src/platform/registration/service.ts`.** `ModuleRegistrationService`
+holds a `CHANGE_WORKFLOW_CODE = 'module-registration-change-approval'`
+constant. When a student calls `requestRegistration` or `requestWithdrawal`,
+the service calls `this.workflowBridge.startWorkflowInstance(...)` followed
+by `this.workflowBridge.assignWorkflowTask({ stepKey:
+'approve-or-reject-registration-change', assigneeRoleCode: 'personal-tutor',
+... })` — directly, synchronously, inside the request handler.
+
+**3. The decision is recorded through a dedicated endpoint —
+`apps/api/src/routes/module-registrations.ts`.** `POST
+/module-registrations/:workflowInstanceId/decision`, gated by
+`requirePermission('module-registration:decide')`, calls
+`ModuleRegistrationService#decideChangeRequest`, which records the *actual*
+decision code (`approved`/`rejected`), completes the task and instance, and —
+only if approved — re-runs the same validated registration/withdrawal logic
+staff use directly.
+
+**4. The permission is declared once, centrally —
+`packages/domain/src/permissions.ts`.**
+`'module-registration:decide': ['registry-administrator', 'personal-tutor']`
+— both roles can decide; there's no separate permission for "my own
+students" versus "any student."
+
+**5. The decision-maker's screen —
+`apps/admin/src/pages/ModuleRegistrationRequestsPage.tsx`,** registered at
+`/module-registration-requests` in `apps/admin/src/App.tsx` and surfaced as
+the **Registration requests** sidebar entry in
+`apps/admin/src/components/Layout.tsx` (visible only to roles holding
+`module-registration:decide`). It lists pending requests and offers
+**Decide → Approve / Reject** with an optional free-text reason.
+
+**6. The screen that starts it all —
+`apps/portal/src/pages/ModulesPage.tsx`,** calling `requestWithdrawal` /
+`requestRegistration` in `apps/portal/src/api/me.ts`. A student sees a
+**Withdraw** button on an active registration; confirming it is what fires
+step 2 above.
+
+#### If you were adding a new workflow, the same six steps apply
+
+1. Pick a `definitionCode` and write a migration inserting
+   `workflow_definition` / `workflow_definition_version` / `workflow_step` /
+   `workflow_decision_gateway` — and, if you want assignee resolution to be
+   genuinely data-driven rather than hard-coded, `workflow_assignment_rule`
+   rows too (see the fully-populated Stage 2 pattern in
+   `0001_platform_hardening_and_refinements.sql` for the shape to copy).
+2. Construct a `WorkflowBridgeService` in the owning platform service's
+   constructor (follow `registration/service.ts` as the template).
+3. Call `startWorkflowInstance` + `assignWorkflowTask` with your
+   `workflowCode` at the point the process begins.
+4. Add a decision endpoint — or, if the decision genuinely is just "done or
+   not done" with no approve/reject distinction, let the generic Task Inbox
+   handle it instead — that calls `completeWorkflowTask` +
+   `recordWorkflowDecision` + `completeWorkflowInstance` with the real
+   decision code, then performs the resulting domain mutation.
+5. Grant the deciding role a permission in
+   `packages/domain/src/permissions.ts` and gate the route with it.
+6. Add a purpose-built admin page if the decision needs more than "done"
+   (recommended whenever there's a real approve/reject distinction);
+   otherwise the generic Task Inbox already lists it for free.
+7. Add the new definition code to the expected catalogue in
+   `apps/api/test/workflow-coverage.int.test.ts`, so CI keeps verifying its
+   shape — start/end step, an assignment rule per human-task step, an
+   escalation policy — stays complete.
+
 ### The Task Inbox, and why most decisions bypass it
 
 `apps/admin/src/pages/TaskInboxPage.tsx` gives staff a cross-process view of
@@ -334,3 +466,65 @@ server and UI alongside the rest of the stack; the UI is reachable at
 `TEMPORAL_TASK_QUEUE` environment variables — ready for a domain service to
 supply its own activity implementations and register a worker when its
 workflows are progressively wired onto live Temporal execution.
+
+### Try it yourself: walk the same workflow through the running app
+
+This is `module-registration-change-approval` — the exact workflow traced
+file-by-file above — end to end, in the standard demo environment, using two
+of the project's existing demo personas. No special setup beyond the
+project's normal local run is needed.
+
+**Start the environment**
+
+```bash
+pnpm evaluate
+```
+
+This provisions the default `module-selection` scenario and prints both
+application URLs — the student portal and the admin console.
+
+**1. As the student — submit a withdrawal request**
+
+1. Open the student portal at `http://localhost:5174` and sign in as
+   `alice.demo` / `Demo-2026!`.
+2. Go to **My modules**.
+3. Find a module registered with status "Registered" and click **Withdraw**.
+4. Confirm: "Withdraw from this module?" → click **Confirm**.
+5. A **Pending requests** card appears at the top of the page: "Withdrawal
+   request — Submitted [today]." That's a new `workflow_instance`, sitting
+   at the `approve-or-reject-registration-change` step, with a
+   `workflow_task` assigned and waiting.
+
+**2. As the decision-maker — approve or reject it**
+
+1. Open the admin console at `http://localhost:5173` and sign in as
+   `registry` / `Demo-2026!` — the `registry-administrator` role holds
+   `module-registration:decide`, the same permission a `personal-tutor`
+   persona would hold.
+2. Go to **Registration requests** in the sidebar.
+3. You'll see the withdrawal request: its type, the enrolment it belongs to,
+   and when it was submitted.
+4. Click **Decide**, optionally type a reason, then click **Approve** (or
+   **Reject**, to see the other branch — nothing is destructive; the demo
+   environment resets).
+
+**3. Back as the student — see the outcome**
+
+1. Return to the portal and refresh **My modules**.
+2. The Pending requests card is gone. If you approved it, the module
+   registration itself now shows as withdrawn; if you rejected it, the
+   registration is unchanged, and the reason you entered is preserved on the
+   decision-audit record described earlier in this guide.
+
+**What you just exercised**: `startWorkflowInstance` + `assignWorkflowTask`
+on submission, then `completeWorkflowTask` + `recordWorkflowDecision` +
+`completeWorkflowInstance` on the admin decision — real `WorkflowBridgeService`
+calls, writing real rows to `workflow_instance`, `workflow_task`, and
+`workflow_decision_audit`, exactly as described earlier in this guide. What
+you did *not* just exercise is a live Temporal process: as "the honest,
+important nuance" explained, this flow runs entirely through direct,
+synchronous calls today, not through Temporal's runtime. If you're curious,
+the same task also appears in the generic **Task inbox** in the admin
+sidebar — but, as "The Task Inbox" section explains, its own Complete action
+can't drive this particular decision; the dedicated Registration requests
+page is what actually resolves it.
