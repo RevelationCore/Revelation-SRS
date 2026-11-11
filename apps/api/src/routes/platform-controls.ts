@@ -1,7 +1,7 @@
 import { requireAnyPermission, requirePermission } from '@revelation-srs/auth';
 import { Type } from '@sinclair/typebox';
 import type { FastifyInstance } from 'fastify';
-import { hasPermission } from '@revelation-srs/domain';
+import { hasPermission, ValidationError } from '@revelation-srs/domain';
 
 import { clockNow } from '../platform/clock.js';
 import type {
@@ -22,6 +22,7 @@ import type {
   CreateWorkflowDefinitionInput,
   UpdateWorkflowDefinitionInput,
 } from '../platform/platform-controls/workflow-definition-service.js';
+import type { CreateGenericVersionInput } from '../platform/platform-controls/workflow-builder-service.js';
 
 const JsonRecord = Type.Record(Type.String(), Type.Unknown());
 const JsonValue = Type.Unknown();
@@ -186,6 +187,23 @@ const WorkflowStepSchema = Type.Object({
   displayName:   Type.String(),
   ownerRoleCode: Type.Union([Type.String(), Type.Null()]),
   sortOrder:     Type.Number(),
+  configuration: JsonRecord,
+});
+
+const WorkflowOutcomeOptionSchema = Type.Object({
+  code:  Type.String({ minLength: 1, maxLength: 60 }),
+  label: Type.String({ minLength: 1, maxLength: 120 }),
+});
+
+const CreateGenericVersionBody = Type.Object({
+  step: Type.Object({
+    displayName:         Type.String({ minLength: 1, maxLength: 200 }),
+    description:         Type.Optional(Type.String()),
+    assigneeRoleCode:    Type.String(),
+    outcomeOptions:      Type.Array(WorkflowOutcomeOptionSchema, { minItems: 1 }),
+    dueAfterHours:       Type.Optional(Type.Integer({ minimum: 1 })),
+    escalateToRoleCode:  Type.Optional(Type.String()),
+  }),
 });
 
 const WorkflowDefinitionVersionSchema = Type.Object({
@@ -232,6 +250,7 @@ const WorkflowTaskSchema = Type.Object({
   payload: JsonRecord,
   createdAt: Type.String(),
   updatedAt: Type.String(),
+  outcomeOptions: Type.Union([Type.Array(WorkflowOutcomeOptionSchema), Type.Null()]),
 });
 
 const WorkflowAssignmentRuleSchema = Type.Object({
@@ -296,6 +315,8 @@ const WorkflowStartBody = Type.Object({
 
 const WorkflowTaskCompletionBody = Type.Object({
   payload: Type.Optional(JsonRecord),
+  decisionCode: Type.Optional(Type.String()),
+  note: Type.Optional(Type.String()),
 });
 
 const WorkflowInstanceCompletionBody = Type.Object({
@@ -449,6 +470,65 @@ export function platformControlRoutes(fastify: FastifyInstance): void {
       request.tenantId,
       request.body as UpdateWorkflowDefinitionInput,
     );
+    await reply.code(204).send();
+  });
+
+  // Author a single-step generic workflow version — no bespoke code
+  // involved. Restricted to ownerModuleCode 'custom' definitions by
+  // WorkflowBuilderService itself; see workflow-builder-service.ts for why.
+  fastify.post('/workflow-definitions/:workflowDefinitionId/versions', {
+    schema: {
+      params: Type.Object({ workflowDefinitionId: Type.String() }),
+      body: CreateGenericVersionBody,
+      response: {
+        201: Type.Object({ workflowDefinitionVersionId: Type.String(), versionNumber: Type.Number() }),
+        404: ErrorSchema,
+        422: ErrorSchema,
+      },
+    },
+    preHandler: [requirePermission('workflow:write')],
+  }, async (request, reply) => {
+    const { workflowDefinitionId } = request.params as { workflowDefinitionId: string };
+    const result = await fastify.workflowBuilderService.createGenericVersion(
+      request.tenantId,
+      workflowDefinitionId,
+      request.body as CreateGenericVersionInput,
+      request.user.sub,
+    );
+    await fastify.audit.record({
+      tenantId: request.tenantId,
+      entityType: 'workflow_definition_version',
+      entityId: result.workflowDefinitionVersionId,
+      afterValue: request.body,
+      actionType: 'create',
+      actorType: 'user',
+      actorId: request.user.sub,
+      actorDisplayName: request.user.displayName,
+      correlationId: request.id,
+    });
+    await reply.code(201).send(result);
+  });
+
+  fastify.post('/workflow-definition-versions/:workflowDefinitionVersionId/publish', {
+    schema: {
+      params: Type.Object({ workflowDefinitionVersionId: Type.String() }),
+      response: { 204: Type.Null(), 404: ErrorSchema, 422: ErrorSchema },
+    },
+    preHandler: [requirePermission('workflow:write')],
+  }, async (request, reply) => {
+    const { workflowDefinitionVersionId } = request.params as { workflowDefinitionVersionId: string };
+    await fastify.workflowBuilderService.publishVersion(request.tenantId, workflowDefinitionVersionId);
+    await fastify.audit.record({
+      tenantId: request.tenantId,
+      entityType: 'workflow_definition_version',
+      entityId: workflowDefinitionVersionId,
+      afterValue: { statusCode: 'active' },
+      actionType: 'update',
+      actorType: 'user',
+      actorId: request.user.sub,
+      actorDisplayName: request.user.displayName,
+      correlationId: request.id,
+    });
     await reply.code(204).send();
   });
 
@@ -636,22 +716,56 @@ export function platformControlRoutes(fastify: FastifyInstance): void {
     schema: {
       params: Type.Object({ workflowTaskId: Type.String() }),
       body: WorkflowTaskCompletionBody,
-      response: { 204: Type.Null(), 404: ErrorSchema },
+      response: { 204: Type.Null(), 404: ErrorSchema, 422: ErrorSchema },
     },
     preHandler: [requirePermission('workflow-task:complete')],
   }, async (request, reply) => {
     const { workflowTaskId } = request.params as { workflowTaskId: string };
-    const body = request.body as { payload?: Record<string, unknown> };
+    const body = request.body as { payload?: Record<string, unknown>; decisionCode?: string; note?: string };
     await fastify.workflowResponsibilityService.assertCanCompleteTask(request.tenantId, workflowTaskId, {
       actorId: request.user.sub,
       roles: request.user.roles,
     });
+
+    const task = await fastify.workflowTaskService.getTask(workflowTaskId, request.tenantId);
+
+    if (body.decisionCode) {
+      const option = task.outcomeOptions?.find((o) => o.code === body.decisionCode);
+      if (!option) {
+        throw new ValidationError('decisionCode is not one of this task\'s configured outcome options', [
+          { field: 'decisionCode', message: `'${body.decisionCode}' is not a valid outcome for this task` },
+        ]);
+      }
+    }
+
     await fastify.workflowBridgeService.completeWorkflowTask({
       tenantId: request.tenantId,
       workflowTaskId,
       completedBy: request.user.sub,
-      payload: body.payload ?? {},
+      payload: { ...(body.payload ?? {}), ...(body.note ? { note: body.note } : {}) },
     });
+
+    if (body.decisionCode) {
+      await fastify.workflowBridgeService.recordWorkflowDecision({
+        tenantId: request.tenantId,
+        workflowInstanceId: task.workflowInstanceId,
+        gatewayKey: `${task.stepKey}:completion`,
+        decisionCode: body.decisionCode,
+        actorId: request.user.sub,
+        ...(body.note ? { metadata: { note: body.note } } : {}),
+      });
+      // v1 builder-authored workflows are single-step: any decision ends
+      // the instance. The decision code itself, not instance status,
+      // carries approve/reject — matching how the bespoke platform
+      // services already do it (e.g. ModuleRegistrationService).
+      await fastify.workflowBridgeService.completeWorkflowInstance({
+        tenantId: request.tenantId,
+        workflowInstanceId: task.workflowInstanceId,
+        statusCode: 'completed',
+        actorId: request.user.sub,
+      });
+    }
+
     await reply.code(204).send();
   });
 
@@ -673,6 +787,21 @@ export function platformControlRoutes(fastify: FastifyInstance): void {
       metadata: body.metadata ?? {},
     });
     await reply.code(204).send();
+  });
+
+  // Idempotent — meant to be invoked periodically by an external scheduler
+  // (a k8s CronJob or equivalent), the same operating pattern the existing
+  // regulatory downstream-trigger "drain" endpoints already use. See
+  // workflow-escalation-service.ts for why this codebase has no
+  // in-process timer instead.
+  fastify.post('/workflow-tasks/sweep-overdue', {
+    schema: {
+      response: { 200: Type.Object({ escalatedTaskIds: Type.Array(Type.String()) }) },
+    },
+    preHandler: [requirePermission('workflow:write')],
+  }, async (request, reply) => {
+    const result = await fastify.workflowEscalationService.sweepOverdueTasks(request.tenantId);
+    await reply.send(result);
   });
 
   fastify.get('/feature-flags', {

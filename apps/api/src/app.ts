@@ -13,7 +13,6 @@ import type { FastifyInstance } from 'fastify';
 
 import type { Config } from './config.js';
 import { AdjustmentService } from './platform/adjustments/adjustment-service.js';
-import { SupportOutcomeService } from './platform/adjustments/support-outcome-service.js';
 import { BusinessCaseService } from './platform/cases/business-case-service.js';
 import { IdentityResolutionService } from './platform/identity/identity-resolution-service.js';
 import { SupervisionService } from './platform/pgr/supervision-service.js';
@@ -54,6 +53,8 @@ import { FeatureFlagService } from './platform/platform-controls/feature-flag-se
 import { WorkflowBridgeService } from './platform/platform-controls/workflow-bridge-service.js';
 import { WorkflowDefinitionService } from './platform/platform-controls/workflow-definition-service.js';
 import { WorkflowResponsibilityService } from './platform/platform-controls/workflow-responsibility-service.js';
+import { WorkflowBuilderService } from './platform/platform-controls/workflow-builder-service.js';
+import { WorkflowEscalationService } from './platform/platform-controls/workflow-escalation-service.js';
 import { WorkflowInstanceService, WorkflowTaskService } from './platform/platform-controls/workflow-runtime-service.js';
 import { DemoService } from './platform/demo/service.js';
 import { RetentionEnforcementService } from './platform/privacy/retention-service.js';
@@ -100,7 +101,6 @@ import { tenantAdminRoutes } from './routes/tenant-admin.js';
 import { valueSetsRoutes } from './routes/value-sets.js';
 import { globalisationRoutes } from './routes/globalisation.js';
 import { adjustmentRoutes } from './routes/adjustments.js';
-import { supportOutcomesRoutes } from './routes/support-outcomes.js';
 import { engagementOutcomeRoutes } from './routes/engagement-outcomes.js';
 import { engagementProxyRoutes } from './routes/engagement-proxy.js';
 import { communicationRoutes } from './routes/communications.js';
@@ -210,7 +210,6 @@ function classifyOperation(method: string, url: string): string {
 
   // Integration — surfaces for adjacent system connectivity
   if (path.includes('/adjustments')) return 'integration';
-  if (path.includes('/support-outcomes')) return 'integration';
   if (path.includes('/engagement-outcomes')) return 'integration';
   if (path.includes('/communication-templates') || path.includes('/communication-dispatch-log')) return 'integration';
 
@@ -288,7 +287,6 @@ export async function buildApp(
   const businessCases = new BusinessCaseService(db);
   const auditReview = new AuditReviewService(db, businessCases);
   const identityResolution = new IdentityResolutionService(db, businessCases);
-  const supportOutcomes = new SupportOutcomeService(db, businessCases);
   const engagementOutcomes = new EngagementOutcomeService(db, eventBus);
   const exceptionalCircumstances = new ExceptionalCircumstancesService(db, eventBus);
   const misconduct = new MisconductService(db, valueSets, eventBus);
@@ -315,6 +313,8 @@ export async function buildApp(
   const workflowTasks = new WorkflowTaskService(db);
   const moduleSelection = new ModuleSelectionService(db, eventBus, rules, workflowBridge, registrations);
   const workflowResponsibilities = new WorkflowResponsibilityService(db);
+  const workflowBuilder = new WorkflowBuilderService(db, workflowResponsibilities);
+  const workflowEscalation = new WorkflowEscalationService(db, workflowBridge);
   const environments = new EnvironmentService(db, runtimeDeployment);
   const admissions    = new AdmissionsService(db, workflowBridge);
   const localeService   = new LocaleService(db, audit);
@@ -357,7 +357,6 @@ export async function buildApp(
   fastify.decorate('adjustmentService', adjustments);
   fastify.decorate('businessCaseService', businessCases);
   fastify.decorate('identityResolutionService', identityResolution);
-  fastify.decorate('supportOutcomeService', supportOutcomes);
   fastify.decorate('engagementOutcomeService', engagementOutcomes);
   fastify.decorate('exceptionalCircumstancesService', exceptionalCircumstances);
   fastify.decorate('misconductService', misconduct);
@@ -374,6 +373,8 @@ export async function buildApp(
   fastify.decorate('workflowTaskService', workflowTasks);
   fastify.decorate('workflowBridgeService', workflowBridge);
   fastify.decorate('workflowResponsibilityService', workflowResponsibilities);
+  fastify.decorate('workflowBuilderService', workflowBuilder);
+  fastify.decorate('workflowEscalationService', workflowEscalation);
   fastify.decorate('featureFlagService', featureFlags);
   fastify.decorate('environmentService', environments);
   fastify.decorate('ucasService',        ucas);
@@ -515,7 +516,6 @@ export async function buildApp(
     const tagMap: Array<[string, string]> = [
       // More-specific patterns must precede their containing segments
       ['/adjustments',               'adjustments'],
-      ['/support-outcomes',          'adjustments'],
       ['/engagement-outcomes',       'engagement-outcomes'],
       ['/exceptional-circumstances', 'circumstances'],
       ['/misconduct-outcomes',       'circumstances'],
@@ -601,7 +601,6 @@ export async function buildApp(
   await fastify.register(healthRoutes);
   await fastify.register(valueSetsRoutes,           { prefix: '/api/v1' });
   await fastify.register(adjustmentRoutes,          { prefix: '/api/v1' });
-  await fastify.register(supportOutcomesRoutes,     { prefix: '/api/v1' });
   await fastify.register(engagementOutcomeRoutes,   { prefix: '/api/v1' });
   await fastify.register(engagementProxyRoutes,     { prefix: '/api/v1' });
   await fastify.register(circumstancesRoutes,       { prefix: '/api/v1' });
@@ -678,7 +677,6 @@ declare module 'fastify' {
     adjustmentService: AdjustmentService;
     businessCaseService: BusinessCaseService;
     identityResolutionService: IdentityResolutionService;
-    supportOutcomeService: SupportOutcomeService;
     engagementOutcomeService: EngagementOutcomeService;
     exceptionalCircumstancesService: ExceptionalCircumstancesService;
     misconductService: MisconductService;
@@ -695,6 +693,8 @@ declare module 'fastify' {
     workflowTaskService: WorkflowTaskService;
     workflowBridgeService: WorkflowBridgeService;
     workflowResponsibilityService: WorkflowResponsibilityService;
+    workflowBuilderService: WorkflowBuilderService;
+    workflowEscalationService: WorkflowEscalationService;
     featureFlagService: FeatureFlagService;
     environmentService: EnvironmentService;
     ucasService:        UcasService;

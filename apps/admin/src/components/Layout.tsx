@@ -180,6 +180,7 @@ function Sidebar({ onLogout, displayName, roles }: { onLogout: () => void; displ
           {can('rule:read') && <SubItem to="/tenant-admin/rules" label="Academic rules" />}
           {can('calendar:read') && <SubItem to="/tenant-admin/registration-windows" label="Registration windows" />}
           {can('workflow:read') && <SubItem to="/tenant-admin/workflows" label="Workflows" />}
+          {can('workflow:write') && <SubItem to="/tenant-admin/workflows/start" label="Start a workflow" />}
           {can('feature-flag:read') && <SubItem to="/tenant-admin/flags" label="Feature flags" />}
           {can('integration:read') && <SubItem to="/tenant-admin/integrations" label="Integrations" />}
           {can('audit-log:read') && <SubItem to="/tenant-admin/audit" label="Audit log" />}

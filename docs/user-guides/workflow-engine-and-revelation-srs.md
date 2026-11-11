@@ -293,15 +293,16 @@ use. Nothing here is illustrative; every path and identifier below is real.
 **1. The definition, its steps, and its decision gateway are declared in a
 migration — `packages/db/migrations/0007_module_registration_change_workflow.sql`.**
 `apps/admin/src/pages/WorkflowDefsPage.tsx` (**Workflows** under Tenant Admin,
-`workflow:read`/`workflow:write`) lets an admin browse definitions, view a
-version's steps read-only, create a new definition *shell* (code, name,
-description), enable/disable one, and manage assignment rules — but it can't
-author a version's steps, transitions, or decision gateway, and neither can
-the API underneath it (`apps/api/src/routes/platform-controls.ts` has no
-endpoint to create a `workflow_definition_version`, `workflow_step`, or
-`workflow_decision_gateway`). Real process content — steps, transitions, the
-gateway — is declared as governed reference data in a migration, the same way
-a value set or an academic rule is. This one migration:
+`workflow:read`/`workflow:write`) lets an admin browse every definition, view
+a version's steps, create a new definition *shell* (code, name, description),
+enable/disable one, and manage assignment rules. For a bespoke definition
+like this one — `ownerModuleCode: 'registration'`, with real hand-written
+code reacting to its step key — that's as far as the UI (correctly) goes:
+authoring its steps, transitions, or decision gateway is only possible
+through a migration, the same way a value set or an academic rule is
+governed reference data. ("Configuring a generic workflow instead," below,
+covers the one category of workflow this restriction doesn't apply to.)
+This migration:
 
 - inserts into `workflow_definition` — registers the code
   `module-registration-change-approval`, owned by the `registration` module;
@@ -395,27 +396,61 @@ step 2 above.
    shape — start/end step, an assignment rule per human-task step, an
    escalation policy — stays complete.
 
-#### Why isn't step 1 a UI, if the definition table already is one?
+### Configuring a *generic* workflow instead — no migration required
 
-`apps/admin/src/pages/WorkflowDefsPage.tsx` (**Workflows**, under Tenant
-Admin) does let an admin browse definitions, view a version's steps
-read-only, create a definition shell, enable/disable one, and manage
-assignment rules. It stops there deliberately, not for lack of a screen: a
-step's key is a literal string referenced directly in hand-written
-TypeScript — `'approve-or-reject-registration-change'` is hard-coded in
-`registration/service.ts`, and what happens on approval (re-running
-registration/withdrawal validation) is bespoke code in `decideChangeRequest`.
-If an admin authored a brand-new step through a builder UI, nothing in the
-running application would call `startWorkflowInstance`/`assignWorkflowTask`
-for it, and there'd be no decision endpoint beyond the Task Inbox's generic
-"Complete" — which can't drive a typed approve/reject outcome. A builder
-that only writes rows would produce configuration that *looks* like a
-governed workflow but that no code path enforces, which is worse than no
-builder at all in an audited system. A no-code builder for the purely
-generic case — routing, escalation, and audit, completed via the Task
-Inbox, with no bespoke side effect — is a real gap and a buildable feature;
-one for the nine bespoke cases above would first need a plugin mechanism
-for "what happens on approval," which is a materially larger undertaking.
+The restriction above is real for the nine bespoke workflows, but it does
+not apply to a narrower, genuinely useful case: a single-decision,
+role-routed review with no bespoke side effect beyond recording the
+decision — "flag this record for someone to look at, escalate if they
+don't within N days, keep an audited record of what they decided." That
+shape needs nothing a developer has to hand-write, and `WorkflowDefsPage`
+can now author one end to end, no migration involved.
+
+From **Workflows**, selecting a definition with `ownerModuleCode: 'custom'`
+(the default for anything created through **New definition**) reveals a
+**Configure step** action: step name, description, an assignee role, a
+choice of outcome options (Approve/Reject, or a single "Mark complete"), an
+optional due-after duration, and an optional escalate-to role. Saving calls
+`POST /workflow-definitions/:id/versions`
+(`apps/api/src/platform/platform-controls/workflow-builder-service.ts`),
+which inserts exactly the same shape of rows the migration above does by
+hand — a `start`/`human-task`/`end` `workflow_step` triple, a
+`workflow_decision_gateway`, and (unlike `module-registration-change-approval`)
+a real `workflow_assignment_rule` — then publishes it.
+
+A new **Start a workflow** page (`apps/admin/src/pages/StartWorkflowPage.tsx`,
+under Tenant Admin) lists every published generic workflow and lets any
+`workflow:write` holder start an instance against any record by type and ID
+— calling the pre-existing, already-generic `POST /workflow-instances`
+endpoint (`platform-controls.ts:521`), which resolves the assignee from the
+rule just created rather than needing one hard-coded anywhere. The resulting
+task appears in the Task Inbox with real **Approve**/**Reject** buttons (or
+whatever outcome labels were configured) instead of the plain "Complete"
+confirmation — the completion endpoint now accepts an optional
+`decisionCode`, validates it against the step's configured options, and
+records a proper `workflow_decision_audit` entry, exactly like the bespoke
+services already do.
+
+**And it's the first thing in this codebase to actually enforce a
+due-date.** `POST /workflow-tasks/sweep-overdue`
+(`workflow-escalation-service.ts`) — meant to be invoked periodically by an
+external scheduler, not an in-process timer, matching the regulatory
+trigger-drain endpoints — reassigns an overdue task to its configured
+escalation role (or marks it terminally `escalated`, the same fallback
+`genericHumanTaskWorkflow` always documented) exactly once per task, since
+`escalateWorkflowTask` moving a task's status to `escalated` is itself what
+drops it out of the sweep's next pass — no separate marker needed.
+
+**What this still doesn't do**, deliberately: a generic workflow is
+single-step (no sequential chains — every real bespoke workflow in the app
+is single-step too, so this matches, rather than falls short of, existing
+practice), can't be triggered automatically by a domain event (a genuine
+`workflow_trigger_rule` consumer would need a new safe condition-language
+subsystem — real risk, not yet built), and can't perform a bespoke side
+effect on approval — only record the decision. Reach for it when a process
+is "route this to someone, on a deadline, with an audit trail"; reach for a
+migration and real service code, as the six steps above show, when a
+decision needs to actually *do* something beyond being recorded.
 
 ### The Task Inbox, and why most decisions bypass it
 
@@ -557,3 +592,14 @@ the same task also appears in the generic **Task inbox** in the admin
 sidebar — but, as "The Task Inbox" section explains, its own Complete action
 can't drive this particular decision; the dedicated Registration requests
 page is what actually resolves it.
+
+**A second, shorter thing worth trying**: as `tenant-administrator`, go to
+**Workflows**, click **New definition**, then **Configure step** to author
+a single-step review (an assignee role, Approve/Reject outcomes, a due-after
+duration, an escalation role) and save — this publishes immediately. Go to
+**Start a workflow**, pick it, and start an instance against any subject
+type/ID you like. It now behaves exactly like the module-registration flow
+above — same Task Inbox, same typed decision, same audit trail — except you
+configured it yourself, from the UI, in under a minute, with no migration
+and no code. See "Configuring a generic workflow instead" earlier in this
+guide for exactly what's happening underneath.

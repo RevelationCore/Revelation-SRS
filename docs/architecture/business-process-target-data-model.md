@@ -93,7 +93,7 @@ erDiagram
 | Capability | Proposed roots and children |
 |---|---|
 | BPR-D08 | `expected_engagement_event`, `engagement_evidence`, `engagement_alert`, `engagement_intervention_case` |
-| BPR-D09 | Extended `reasonable_adjustment`, `support_outcome`, shared `distribution_item`/attempt/acknowledgement |
+| BPR-D09 | `reasonable_adjustment`/`adjustment_distribution`, confirmed as the durable target (2026-08-17) rather than a migration onto `support_outcome`/shared `distribution_item` — see the current-capabilities note and `docs/user-guides/wellbeing-and-revelation-srs.md` for why |
 | BPR-D10 | `assessment_candidate_attempt`, `mark_set`, `mark_set_member`, `moderation_review`, `moderation_sample`, calculation evidence |
 | BPR-D11 | Extended board/pack entities plus `board_member_conflict`, `board_quorum_decision`, `exam_board_decision`, `ratification_record`, `result_publication` |
 | BPR-D13 | Extended `post_ratification_case`, `post_ratification_amendment`, `distribution_item` |

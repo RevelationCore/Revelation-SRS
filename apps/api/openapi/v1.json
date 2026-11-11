@@ -1493,310 +1493,6 @@
         }
       }
     },
-    "/api/v1/enrolments/{enrolmentId}/support-outcomes": {
-      "post": {
-        "operationId": "createEnrolmentsByEnrolmentIdSupportOutcomes",
-        "tags": [
-          "adjustments"
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "required": [
-                  "outcomeTypeCode",
-                  "minimumNecessaryText",
-                  "visibilityScopeCode"
-                ],
-                "properties": {
-                  "sourceCaseId": {
-                    "type": "string"
-                  },
-                  "sourceDecisionId": {
-                    "type": "string"
-                  },
-                  "outcomeTypeCode": {
-                    "type": "string"
-                  },
-                  "minimumNecessaryText": {
-                    "type": "string"
-                  },
-                  "visibilityScopeCode": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "in": "path",
-            "name": "enrolmentId",
-            "required": true
-          }
-        ],
-        "x-publication-class": "integration",
-        "responses": {
-          "201": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "supportOutcomeId"
-                  ],
-                  "properties": {
-                    "supportOutcomeId": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "type",
-                    "title",
-                    "status"
-                  ],
-                  "properties": {
-                    "type": {
-                      "type": "string"
-                    },
-                    "title": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "number"
-                    },
-                    "detail": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "get": {
-        "operationId": "getEnrolmentsByEnrolmentIdSupportOutcomes",
-        "tags": [
-          "adjustments"
-        ],
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "in": "path",
-            "name": "enrolmentId",
-            "required": true
-          }
-        ],
-        "x-publication-class": "integration",
-        "responses": {
-          "200": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "required": [
-                      "supportOutcomeId",
-                      "enrolmentId",
-                      "sourceCaseId",
-                      "sourceDecisionId",
-                      "outcomeTypeCode",
-                      "minimumNecessaryText",
-                      "visibilityScopeCode",
-                      "actorId",
-                      "validFrom",
-                      "validTo",
-                      "recordedAt",
-                      "recordedUntil"
-                    ],
-                    "properties": {
-                      "supportOutcomeId": {
-                        "type": "string"
-                      },
-                      "enrolmentId": {
-                        "type": "string"
-                      },
-                      "sourceCaseId": {
-                        "anyOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "null"
-                          }
-                        ]
-                      },
-                      "sourceDecisionId": {
-                        "anyOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "null"
-                          }
-                        ]
-                      },
-                      "outcomeTypeCode": {
-                        "type": "string"
-                      },
-                      "minimumNecessaryText": {
-                        "type": "string"
-                      },
-                      "visibilityScopeCode": {
-                        "type": "string"
-                      },
-                      "actorId": {
-                        "type": "string"
-                      },
-                      "validFrom": {
-                        "type": "string"
-                      },
-                      "validTo": {
-                        "anyOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "null"
-                          }
-                        ]
-                      },
-                      "recordedAt": {
-                        "type": "string"
-                      },
-                      "recordedUntil": {
-                        "anyOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "null"
-                          }
-                        ]
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/support-outcomes/{supportOutcomeId}/distribute": {
-      "post": {
-        "operationId": "createSupportOutcomesBySupportOutcomeIdDistribute",
-        "tags": [
-          "adjustments"
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "required": [
-                  "targetSystemCodes"
-                ],
-                "properties": {
-                  "targetSystemCodes": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "in": "path",
-            "name": "supportOutcomeId",
-            "required": true
-          }
-        ],
-        "x-publication-class": "integration",
-        "responses": {
-          "201": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "distributionItemIds"
-                  ],
-                  "properties": {
-                    "distributionItemIds": {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "type",
-                    "title",
-                    "status"
-                  ],
-                  "properties": {
-                    "type": {
-                      "type": "string"
-                    },
-                    "title": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "number"
-                    },
-                    "detail": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/students/{personId}/engagement-outcomes": {
       "post": {
         "operationId": "createStudentsByPersonIdEngagementOutcomes",
@@ -32630,7 +32326,8 @@
                             "stepTypeCode",
                             "displayName",
                             "ownerRoleCode",
-                            "sortOrder"
+                            "sortOrder",
+                            "configuration"
                           ],
                           "properties": {
                             "stepKey": {
@@ -32654,6 +32351,10 @@
                             },
                             "sortOrder": {
                               "type": "number"
+                            },
+                            "configuration": {
+                              "type": "object",
+                              "additionalProperties": {}
                             }
                           }
                         }
@@ -32665,6 +32366,171 @@
             }
           },
           "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createWorkflowDefinitionsByWorkflowDefinitionIdVersions",
+        "tags": [
+          "platform-controls"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "step"
+                ],
+                "properties": {
+                  "step": {
+                    "type": "object",
+                    "required": [
+                      "displayName",
+                      "assigneeRoleCode",
+                      "outcomeOptions"
+                    ],
+                    "properties": {
+                      "displayName": {
+                        "minLength": 1,
+                        "maxLength": 200,
+                        "type": "string"
+                      },
+                      "description": {
+                        "type": "string"
+                      },
+                      "assigneeRoleCode": {
+                        "type": "string"
+                      },
+                      "outcomeOptions": {
+                        "minItems": 1,
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "required": [
+                            "code",
+                            "label"
+                          ],
+                          "properties": {
+                            "code": {
+                              "minLength": 1,
+                              "maxLength": 60,
+                              "type": "string"
+                            },
+                            "label": {
+                              "minLength": 1,
+                              "maxLength": 120,
+                              "type": "string"
+                            }
+                          }
+                        }
+                      },
+                      "dueAfterHours": {
+                        "minimum": 1,
+                        "type": "integer"
+                      },
+                      "escalateToRoleCode": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "workflowDefinitionId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "system",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "workflowDefinitionVersionId",
+                    "versionNumber"
+                  ],
+                  "properties": {
+                    "workflowDefinitionVersionId": {
+                      "type": "string"
+                    },
+                    "versionNumber": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
             "description": "Default Response",
             "content": {
               "application/json": {
@@ -33034,7 +32900,8 @@
                           "stepTypeCode",
                           "displayName",
                           "ownerRoleCode",
-                          "sortOrder"
+                          "sortOrder",
+                          "configuration"
                         ],
                         "properties": {
                           "stepKey": {
@@ -33058,6 +32925,10 @@
                           },
                           "sortOrder": {
                             "type": "number"
+                          },
+                          "configuration": {
+                            "type": "object",
+                            "additionalProperties": {}
                           }
                         }
                       }
@@ -33068,6 +32939,88 @@
             }
           },
           "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workflow-definition-versions/{workflowDefinitionVersionId}/publish": {
+      "post": {
+        "operationId": "createWorkflowDefinitionVersionsByWorkflowDefinitionVersionIdPublish",
+        "tags": [
+          "platform-controls"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "workflowDefinitionVersionId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "system",
+        "responses": {
+          "204": {
+            "description": "Default Response"
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
             "description": "Default Response",
             "content": {
               "application/json": {
@@ -33705,7 +33658,8 @@
                       "completedAt",
                       "payload",
                       "createdAt",
-                      "updatedAt"
+                      "updatedAt",
+                      "outcomeOptions"
                     ],
                     "properties": {
                       "workflowTaskId": {
@@ -33782,6 +33736,35 @@
                       },
                       "updatedAt": {
                         "type": "string"
+                      },
+                      "outcomeOptions": {
+                        "anyOf": [
+                          {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "required": [
+                                "code",
+                                "label"
+                              ],
+                              "properties": {
+                                "code": {
+                                  "minLength": 1,
+                                  "maxLength": 60,
+                                  "type": "string"
+                                },
+                                "label": {
+                                  "minLength": 1,
+                                  "maxLength": 120,
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
                       }
                     }
                   }
@@ -33808,6 +33791,12 @@
                   "payload": {
                     "type": "object",
                     "additionalProperties": {}
+                  },
+                  "decisionCode": {
+                    "type": "string"
+                  },
+                  "note": {
+                    "type": "string"
                   }
                 }
               }
@@ -33830,6 +33819,35 @@
             "description": "Default Response"
           },
           "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
             "description": "Default Response",
             "content": {
               "application/json": {
@@ -33943,6 +33961,38 @@
                     },
                     "detail": {
                       "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workflow-tasks/sweep-overdue": {
+      "post": {
+        "operationId": "createWorkflowTasksSweepOverdue",
+        "tags": [
+          "platform-controls"
+        ],
+        "x-publication-class": "admin",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "escalatedTaskIds"
+                  ],
+                  "properties": {
+                    "escalatedTaskIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
                     }
                   }
                 }

@@ -38,6 +38,7 @@ import { UcasPage } from './pages/UcasPage.js';
 import { UkviPage } from './pages/UkviPage.js';
 import { ValueSetsPage } from './pages/ValueSetsPage.js';
 import { WorkflowDefsPage } from './pages/WorkflowDefsPage.js';
+import { StartWorkflowPage } from './pages/StartWorkflowPage.js';
 import { AccessibilityStatementPage } from './pages/AccessibilityStatementPage.js';
 import { NotFoundPage } from './pages/NotFoundPage.js';
 import { EngagementPage } from './pages/EngagementPage.js';
@@ -135,6 +136,10 @@ export function App() {
                 <Route
                   path="tenant-admin/workflows"
                   element={<RequirePermission permissions={['workflow:read']}><WorkflowDefsPage /></RequirePermission>}
+                />
+                <Route
+                  path="tenant-admin/workflows/start"
+                  element={<RequirePermission permissions={['workflow:write']}><StartWorkflowPage /></RequirePermission>}
                 />
                 <Route
                   path="tenant-admin/flags"

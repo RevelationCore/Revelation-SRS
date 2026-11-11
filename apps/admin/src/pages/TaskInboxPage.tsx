@@ -8,7 +8,8 @@ import {
   Button, Select,
 } from '@revelation-srs/ui';
 
-const STATUS_OPTIONS = ['', 'pending', 'in-progress', 'completed', 'cancelled'];
+const STATUS_OPTIONS = ['', 'pending', 'in-progress', 'escalated', 'completed', 'cancelled'];
+const ACTIONABLE_STATUSES = new Set(['pending', 'in-progress', 'escalated']);
 
 export function TaskInboxPage() {
   const [tasks,      setTasks]      = useState<WorkflowTask[]>([]);
@@ -17,6 +18,7 @@ export function TaskInboxPage() {
   const [statusFilter, setStatusFilter] = useState('pending');
   const [completing, setCompleting] = useState<string | null>(null);
   const [confirmId,  setConfirmId]  = useState<string | null>(null);
+  const [noteByTask, setNoteByTask] = useState<Record<string, string>>({});
 
   const load = useCallback(async (status: string) => {
     setLoading(true);
@@ -33,11 +35,10 @@ export function TaskInboxPage() {
 
   useEffect(() => { void load(statusFilter); }, [load, statusFilter]);
 
-  async function handleComplete(taskId: string, e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
+  async function handleComplete(taskId: string, decisionCode?: string) {
     setCompleting(taskId);
     try {
-      await completeWorkflowTask(taskId);
+      await completeWorkflowTask(taskId, { decisionCode, note: noteByTask[taskId]?.trim() || undefined });
       setConfirmId(null);
       void load(statusFilter);
     } catch (err) {
@@ -45,6 +46,11 @@ export function TaskInboxPage() {
     } finally {
       setCompleting(null);
     }
+  }
+
+  function handlePlainComplete(taskId: string, e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    void handleComplete(taskId);
   }
 
   return (
@@ -109,25 +115,54 @@ export function TaskInboxPage() {
                     >
                       View workflow
                     </Link>
-                    {task.statusCode === 'pending' || task.statusCode === 'in-progress' ? (
+                    {ACTIONABLE_STATUSES.has(task.statusCode) ? (
                       confirmId === task.workflowTaskId ? (
-                        <form
-                          onSubmit={(e) => void handleComplete(task.workflowTaskId, e)}
-                          className="inline-flex items-center gap-2"
-                        >
-                          <span className="text-xs text-neutral-600">Complete task?</span>
-                          <Button
-                            type="submit"
-                            size="sm"
-                            disabled={completing === task.workflowTaskId}
-                            className="bg-success-600 hover:bg-success-700"
+                        task.outcomeOptions?.length ? (
+                          <div className="inline-flex flex-col items-end gap-2">
+                            <input
+                              type="text"
+                              placeholder="Note (optional)"
+                              className="rounded border border-neutral-300 px-2 py-1 text-xs w-56"
+                              value={noteByTask[task.workflowTaskId] ?? ''}
+                              onChange={(e) => setNoteByTask(v => ({ ...v, [task.workflowTaskId]: e.target.value }))}
+                            />
+                            <div className="flex gap-2">
+                              {task.outcomeOptions.map(option => (
+                                <Button
+                                  key={option.code}
+                                  type="button"
+                                  size="sm"
+                                  disabled={completing === task.workflowTaskId}
+                                  className="bg-success-600 hover:bg-success-700"
+                                  onClick={() => void handleComplete(task.workflowTaskId, option.code)}
+                                >
+                                  {completing === task.workflowTaskId ? 'Saving…' : option.label}
+                                </Button>
+                              ))}
+                              <Button type="button" variant="ghost" size="sm" onClick={() => setConfirmId(null)}>
+                                Cancel
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <form
+                            onSubmit={(e) => handlePlainComplete(task.workflowTaskId, e)}
+                            className="inline-flex items-center gap-2"
                           >
-                            {completing === task.workflowTaskId ? 'Saving…' : 'Confirm'}
-                          </Button>
-                          <Button type="button" variant="ghost" size="sm" onClick={() => setConfirmId(null)}>
-                            Cancel
-                          </Button>
-                        </form>
+                            <span className="text-xs text-neutral-600">Complete task?</span>
+                            <Button
+                              type="submit"
+                              size="sm"
+                              disabled={completing === task.workflowTaskId}
+                              className="bg-success-600 hover:bg-success-700"
+                            >
+                              {completing === task.workflowTaskId ? 'Saving…' : 'Confirm'}
+                            </Button>
+                            <Button type="button" variant="ghost" size="sm" onClick={() => setConfirmId(null)}>
+                              Cancel
+                            </Button>
+                          </form>
+                        )
                       ) : (
                         <Button
                           type="button"
@@ -136,7 +171,7 @@ export function TaskInboxPage() {
                           className="border-success-300 text-success-700 hover:bg-success-50"
                           onClick={() => setConfirmId(task.workflowTaskId)}
                         >
-                          Complete
+                          {task.outcomeOptions?.length ? 'Decide' : 'Complete'}
                         </Button>
                       )
                     ) : null}
@@ -155,6 +190,7 @@ function taskStatusColour(code: string): string {
   const map: Record<string, string> = {
     pending:     'bg-warning-100 text-warning-700',
     'in-progress': 'bg-primary-100 text-primary-700',
+    escalated:   'bg-danger-100 text-danger-700',
     completed:   'bg-success-100 text-success-700',
     cancelled:   'bg-neutral-100 text-neutral-600',
     failed:      'bg-danger-100 text-danger-700',

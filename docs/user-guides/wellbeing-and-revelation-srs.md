@@ -297,8 +297,33 @@ older `evidence_reference`/EDRMS-reference pattern used by disability support
 and the newer in-house `packages/documents` pattern used by reasonable
 adjustments coexist deliberately rather than having been consolidated onto
 one approach — institutions with an existing EDRMS can use the former;
-those without one get the latter. And a second, parallel outcome-distribution
-path (`support_outcome`/`distribution_item`, used by other case-managed
-capabilities such as PGR and identity-resolution) exists alongside
-`reasonable_adjustment`/`adjustment_distribution` for historical reasons —
-a known, explicitly tracked duality, not an oversight.
+those without one get the latter.
+
+**Update, 2026-08-17 — the duality below has been resolved.** An earlier
+version of this guide described a second, unconnected outcome-distribution
+pathway: `support_outcome`/shared `distribution_item` primitives, reachable
+only through their own standalone endpoint, alongside the live
+`reasonable_adjustment`/`adjustment_distribution` path. Investigating it
+properly found it wasn't two working systems doing the same job — it was
+one working system and one that was never finished. `support_outcome` had
+no acknowledge/reconcile path anywhere in the codebase (the underlying
+`BusinessCaseService` methods for it had zero callers), published no domain
+events, and never had a writer for its own documented "superseded" status —
+while `adjustment_distribution` had all of that, plus two real, documented
+external adapter contracts (VLE, attendance) keying their idempotency on
+it. It also turned out not to be adjustments-only: a real, if narrow, admin
+UI section ("Support Outcomes" on the student detail page) let a registry
+administrator record and distribute an outcome entirely disconnected from
+the reasonable-adjustments table on the same page — genuinely confusing in
+practice, not just in the schema.
+
+`support_outcome`, its standalone routes, and that admin UI section have
+been retired (migration `0022_retire_support_outcome`) rather than finished
+and migrated onto — reasonable adjustments now has exactly one distribution
+mechanism, the one that was already live and tested. The underlying shared
+primitives (`business_case`, `case_decision`, `distribution_item` and
+friends) are untouched and remain in use elsewhere — post-ratification
+corrections (BPR-D13) genuinely use `distribution_item`, and PGR and
+identity-resolution genuinely use `business_case`/`case_decision` — this
+was specifically about retiring the one adjustments-facing consumer that
+never became real.

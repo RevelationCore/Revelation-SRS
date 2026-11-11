@@ -155,6 +155,13 @@
       "when": 1785000021000,
       "tag": "0021_adjustment_outcome_documents",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1785000022000,
+      "tag": "0022_retire_support_outcome",
+      "breakpoints": true
     }
   ]
 }

@@ -68,25 +68,14 @@ export type AdjustmentDistribution    = typeof adjustmentDistributions.$inferSel
 export type NewAdjustmentDistribution = typeof adjustmentDistributions.$inferInsert;
 
 // ─────────────────────────────────────────────────────────────────────────────
-// BPR-D09 — support-outcome distribution (Stage 2, migration 0004_business_process_foundations).
-//
-// adjustment_distribution is a separate, simpler flat-status delivery path.
-// support_outcome is the minimum-necessary outcome record; per-target
-// delivery goes through the shared distribution_item/attempt/acknowledgement
-// primitives (packages/db/src/schema/business-case.ts) instead of a single
-// status column, so exchange history and reconciliation are recorded.
-
-export const supportOutcomes = pgTable('support_outcome', {
-  ...bitemporalColumns,
-  tenantId:            uuid('tenant_id').notNull().references(() => tenants.id),
-  enrolmentId:         uuid('enrolment_id').notNull(),
-  sourceCaseId:        uuid('source_case_id'),        // FK -> business_case.id, nullable
-  sourceDecisionId:    uuid('source_decision_id'),     // FK -> case_decision.id, nullable
-  outcomeTypeCode:     text('outcome_type_code').notNull(),
-  minimumNecessaryText: text('minimum_necessary_text').notNull(),
-  visibilityScopeCode: text('visibility_scope_code').notNull(),
-  actorId:             text('actor_id').notNull(),
-});
-
-export type SupportOutcome    = typeof supportOutcomes.$inferSelect;
-export type NewSupportOutcome = typeof supportOutcomes.$inferInsert;
+// BPR-D09 note: an earlier `support_outcome`/shared distribution_item table
+// (originally migration 0046_support_outcome_distribution, since squashed
+// into 0004_business_process_foundations) was intended to replace
+// adjustment_distribution above. It never reached parity — no route ever
+// drove a distribution_item past creation (no acknowledge/reconcile path),
+// it published no domain events, and no writer ever superseded one — while
+// adjustment_distribution remained the live, tested, externally-contracted
+// path (two documented adapters, VLE and attendance, key their idempotency
+// on it). Retired in migration 0022_retire_support_outcome.sql rather than
+// finished and migrated onto, given it was unused and untested end to end.
+// See docs/user-guides/wellbeing-and-revelation-srs.md for the full account.

@@ -1,11 +1,17 @@
 import { api } from './client.js';
 
+export interface WorkflowOutcomeOption {
+  code:  string;
+  label: string;
+}
+
 export interface WorkflowStep {
   stepKey:       string;
   stepTypeCode:  string;
   displayName:   string;
   ownerRoleCode: string | null;
   sortOrder:     number;
+  configuration: Record<string, unknown>;
 }
 
 export interface WorkflowDefinition {
@@ -81,6 +87,45 @@ export function listWorkflowDefinitionVersions(workflowDefinitionId: string): Pr
 
 export function getWorkflowDefinitionVersion(versionId: string): Promise<WorkflowDefinitionVersion> {
   return api.get<WorkflowDefinitionVersion>(`/api/v1/workflow-definition-versions/${versionId}`);
+}
+
+export function createGenericWorkflowVersion(
+  workflowDefinitionId: string,
+  body: {
+    step: {
+      displayName:         string;
+      description?:        string;
+      assigneeRoleCode:    string;
+      outcomeOptions:      WorkflowOutcomeOption[];
+      dueAfterHours?:      number;
+      escalateToRoleCode?: string;
+    };
+  },
+): Promise<{ workflowDefinitionVersionId: string; versionNumber: number }> {
+  return api.post(`/api/v1/workflow-definitions/${workflowDefinitionId}/versions`, body);
+}
+
+export function publishWorkflowVersion(workflowDefinitionVersionId: string): Promise<void> {
+  return api.post(`/api/v1/workflow-definition-versions/${workflowDefinitionVersionId}/publish`, {});
+}
+
+export interface StartWorkflowInstanceInput {
+  workflowDefinitionVersionId: string;
+  workflowCode:                string;
+  subjectEntityType:           string;
+  subjectEntityId?:            string;
+  task: {
+    stepKey:           string;
+    assigneeRoleCode?: string;
+    dueAt?:            string;
+    payload?:          Record<string, unknown>;
+  };
+}
+
+export function startWorkflowInstance(
+  body: StartWorkflowInstanceInput,
+): Promise<{ workflowInstanceId: string; workflowTaskId?: string }> {
+  return api.post('/api/v1/workflow-instances', body);
 }
 
 export function listWorkflowAssignmentRules(): Promise<WorkflowAssignmentRule[]> {

@@ -18,6 +18,7 @@ export interface WorkflowStepDto {
   displayName:   string;
   ownerRoleCode: string | null;
   sortOrder:     number;
+  configuration: Record<string, unknown>;
 }
 
 export interface WorkflowDefinitionDto {
@@ -122,6 +123,28 @@ export class WorkflowDefinitionService {
     return versionToDto(rows[0].version, stepRows);
   }
 
+  async getStepByKey(
+    workflowDefinitionVersionId: string,
+    stepKey: string,
+    tenantId: string,
+  ): Promise<WorkflowStepDto | null> {
+    const rows = await withTenantContext(this.db, tenantId, async (tx) =>
+      tx.select().from(workflowSteps).where(and(
+        eq(workflowSteps.workflowDefinitionVersionId, workflowDefinitionVersionId as `${string}-${string}-${string}-${string}-${string}`),
+        eq(workflowSteps.stepKey, stepKey),
+      )).limit(1),
+    );
+    if (!rows[0]) return null;
+    return {
+      stepKey:       rows[0].stepKey,
+      stepTypeCode:  rows[0].stepTypeCode,
+      displayName:   rows[0].displayName,
+      ownerRoleCode: rows[0].ownerRoleCode ?? null,
+      sortOrder:     rows[0].sortOrder,
+      configuration: rows[0].configuration,
+    };
+  }
+
   async createDefinition(
     tenantId: string,
     input: CreateWorkflowDefinitionInput,
@@ -211,6 +234,7 @@ function versionToDto(
       displayName:   s.displayName,
       ownerRoleCode: s.ownerRoleCode ?? null,
       sortOrder:     s.sortOrder,
+      configuration: s.configuration,
     })),
   };
 }

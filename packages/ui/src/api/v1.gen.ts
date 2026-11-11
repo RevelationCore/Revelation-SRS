@@ -180,38 +180,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/enrolments/{enrolmentId}/support-outcomes": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getEnrolmentsByEnrolmentIdSupportOutcomes"];
-        put?: never;
-        post: operations["createEnrolmentsByEnrolmentIdSupportOutcomes"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/support-outcomes/{supportOutcomeId}/distribute": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["createSupportOutcomesBySupportOutcomeIdDistribute"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/students/{personId}/engagement-outcomes": {
         parameters: {
             query?: never;
@@ -3678,7 +3646,7 @@ export interface paths {
         };
         get: operations["getWorkflowDefinitionsByWorkflowDefinitionIdVersions"];
         put?: never;
-        post?: never;
+        post: operations["createWorkflowDefinitionsByWorkflowDefinitionIdVersions"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3711,6 +3679,22 @@ export interface paths {
         get: operations["getWorkflowDefinitionVersionsByWorkflowDefinitionVersionId"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workflow-definition-versions/{workflowDefinitionVersionId}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createWorkflowDefinitionVersionsByWorkflowDefinitionVersionIdPublish"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3791,6 +3775,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["createWorkflowInstancesByWorkflowInstanceIdCompletion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workflow-tasks/sweep-overdue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createWorkflowTasksSweepOverdue"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5295,133 +5295,6 @@ export interface operations {
             };
             /** @description Default Response */
             422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        type: string;
-                        title: string;
-                        status: number;
-                        detail?: string;
-                    };
-                };
-            };
-        };
-    };
-    getEnrolmentsByEnrolmentIdSupportOutcomes: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                enrolmentId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Default Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        supportOutcomeId: string;
-                        enrolmentId: string;
-                        sourceCaseId: string | null;
-                        sourceDecisionId: string | null;
-                        outcomeTypeCode: string;
-                        minimumNecessaryText: string;
-                        visibilityScopeCode: string;
-                        actorId: string;
-                        validFrom: string;
-                        validTo: string | null;
-                        recordedAt: string;
-                        recordedUntil: string | null;
-                    }[];
-                };
-            };
-        };
-    };
-    createEnrolmentsByEnrolmentIdSupportOutcomes: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                enrolmentId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    sourceCaseId?: string;
-                    sourceDecisionId?: string;
-                    outcomeTypeCode: string;
-                    minimumNecessaryText: string;
-                    visibilityScopeCode: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Default Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        supportOutcomeId: string;
-                    };
-                };
-            };
-            /** @description Default Response */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        type: string;
-                        title: string;
-                        status: number;
-                        detail?: string;
-                    };
-                };
-            };
-        };
-    };
-    createSupportOutcomesBySupportOutcomeIdDistribute: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                supportOutcomeId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    targetSystemCodes: string[];
-                };
-            };
-        };
-        responses: {
-            /** @description Default Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        distributionItemIds: string[];
-                    };
-                };
-            };
-            /** @description Default Response */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -18383,12 +18256,84 @@ export interface operations {
                             displayName: string;
                             ownerRoleCode: string | null;
                             sortOrder: number;
+                            configuration: {
+                                [key: string]: unknown;
+                            };
                         }[];
                     }[];
                 };
             };
             /** @description Default Response */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createWorkflowDefinitionsByWorkflowDefinitionIdVersions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workflowDefinitionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    step: {
+                        displayName: string;
+                        description?: string;
+                        assigneeRoleCode: string;
+                        outcomeOptions: {
+                            code: string;
+                            label: string;
+                        }[];
+                        dueAfterHours?: number;
+                        escalateToRoleCode?: string;
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        workflowDefinitionVersionId: string;
+                        versionNumber: number;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -18543,12 +18488,63 @@ export interface operations {
                             displayName: string;
                             ownerRoleCode: string | null;
                             sortOrder: number;
+                            configuration: {
+                                [key: string]: unknown;
+                            };
                         }[];
                     };
                 };
             };
             /** @description Default Response */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createWorkflowDefinitionVersionsByWorkflowDefinitionVersionIdPublish: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workflowDefinitionVersionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -18803,6 +18799,10 @@ export interface operations {
                         };
                         createdAt: string;
                         updatedAt: string;
+                        outcomeOptions: {
+                            code: string;
+                            label: string;
+                        }[] | null;
                     }[];
                 };
             };
@@ -18823,6 +18823,8 @@ export interface operations {
                     payload?: {
                         [key: string]: unknown;
                     };
+                    decisionCode?: string;
+                    note?: string;
                 };
             };
         };
@@ -18836,6 +18838,20 @@ export interface operations {
             };
             /** @description Default Response */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -18888,6 +18904,28 @@ export interface operations {
                         title: string;
                         status: number;
                         detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createWorkflowTasksSweepOverdue: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        escalatedTaskIds: string[];
                     };
                 };
             };

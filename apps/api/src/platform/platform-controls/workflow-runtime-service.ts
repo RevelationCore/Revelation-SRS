@@ -2,10 +2,16 @@ import { and, desc, eq, inArray, or } from 'drizzle-orm';
 import {
   workflowInstances,
   workflowTasks,
+  workflowSteps,
   type Db,
   withTenantContext,
 } from '@revelation-srs/db';
 import { NotFoundError } from '@revelation-srs/domain';
+
+export interface WorkflowOutcomeOptionDto {
+  code:  string;
+  label: string;
+}
 
 export interface WorkflowInstanceDto {
   workflowInstanceId: string;
@@ -37,6 +43,7 @@ export interface WorkflowTaskDto {
   payload: Record<string, unknown>;
   createdAt: Date;
   updatedAt: Date;
+  outcomeOptions: WorkflowOutcomeOptionDto[] | null;
 }
 
 export class WorkflowInstanceService {
@@ -83,31 +90,45 @@ export class WorkflowTaskService {
     } = {},
   ): Promise<WorkflowTaskDto[]> {
     const rows = await withTenantContext(this.db, tenantId, async (tx) =>
-      tx.select().from(workflowTasks).where(and(
-        eq(workflowTasks.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
-        ...(opts.statusCode ? [eq(workflowTasks.statusCode, opts.statusCode)] : []),
-        ...(opts.assigneeRoleCode ? [eq(workflowTasks.assigneeRoleCode, opts.assigneeRoleCode)] : []),
-        ...(opts.workflowInstanceId ? [eq(workflowTasks.workflowInstanceId, opts.workflowInstanceId as `${string}-${string}-${string}-${string}-${string}`)] : []),
-        ...(opts.assigneeActorId ? [or(
-          eq(workflowTasks.assigneeActorId, opts.assigneeActorId),
-          ...(opts.assigneeRoleCodes?.length
-            ? [inArray(workflowTasks.assigneeRoleCode, opts.assigneeRoleCodes)]
-            : []),
-        )] : []),
-      )).orderBy(desc(workflowTasks.createdAt)),
+      tx.select({ task: workflowTasks, step: workflowSteps })
+        .from(workflowTasks)
+        .innerJoin(workflowInstances, eq(workflowTasks.workflowInstanceId, workflowInstances.id))
+        .leftJoin(workflowSteps, and(
+          eq(workflowSteps.workflowDefinitionVersionId, workflowInstances.workflowDefinitionVersionId),
+          eq(workflowSteps.stepKey, workflowTasks.stepKey),
+        ))
+        .where(and(
+          eq(workflowTasks.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
+          ...(opts.statusCode ? [eq(workflowTasks.statusCode, opts.statusCode)] : []),
+          ...(opts.assigneeRoleCode ? [eq(workflowTasks.assigneeRoleCode, opts.assigneeRoleCode)] : []),
+          ...(opts.workflowInstanceId ? [eq(workflowTasks.workflowInstanceId, opts.workflowInstanceId as `${string}-${string}-${string}-${string}-${string}`)] : []),
+          ...(opts.assigneeActorId ? [or(
+            eq(workflowTasks.assigneeActorId, opts.assigneeActorId),
+            ...(opts.assigneeRoleCodes?.length
+              ? [inArray(workflowTasks.assigneeRoleCode, opts.assigneeRoleCodes)]
+              : []),
+          )] : []),
+        )).orderBy(desc(workflowTasks.createdAt)),
     );
-    return rows.map(taskToDto);
+    return rows.map((r) => taskToDto(r.task, r.step?.configuration ?? null));
   }
 
   async getTask(workflowTaskId: string, tenantId: string): Promise<WorkflowTaskDto> {
     const rows = await withTenantContext(this.db, tenantId, async (tx) =>
-      tx.select().from(workflowTasks).where(and(
-        eq(workflowTasks.id, workflowTaskId as `${string}-${string}-${string}-${string}-${string}`),
-        eq(workflowTasks.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
-      )).limit(1),
+      tx.select({ task: workflowTasks, step: workflowSteps })
+        .from(workflowTasks)
+        .innerJoin(workflowInstances, eq(workflowTasks.workflowInstanceId, workflowInstances.id))
+        .leftJoin(workflowSteps, and(
+          eq(workflowSteps.workflowDefinitionVersionId, workflowInstances.workflowDefinitionVersionId),
+          eq(workflowSteps.stepKey, workflowTasks.stepKey),
+        ))
+        .where(and(
+          eq(workflowTasks.id, workflowTaskId as `${string}-${string}-${string}-${string}-${string}`),
+          eq(workflowTasks.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
+        )).limit(1),
     );
     if (!rows[0]) throw new NotFoundError('WorkflowTask', workflowTaskId);
-    return taskToDto(rows[0]);
+    return taskToDto(rows[0].task, rows[0].step?.configuration ?? null);
   }
 }
 
@@ -129,7 +150,10 @@ function instanceToDto(row: typeof workflowInstances.$inferSelect): WorkflowInst
   };
 }
 
-function taskToDto(row: typeof workflowTasks.$inferSelect): WorkflowTaskDto {
+function taskToDto(
+  row: typeof workflowTasks.$inferSelect,
+  stepConfiguration: Record<string, unknown> | null,
+): WorkflowTaskDto {
   return {
     workflowTaskId: row.id,
     workflowInstanceId: row.workflowInstanceId,
@@ -144,5 +168,17 @@ function taskToDto(row: typeof workflowTasks.$inferSelect): WorkflowTaskDto {
     payload: row.payload,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
+    outcomeOptions: extractOutcomeOptions(stepConfiguration),
   };
+}
+
+function extractOutcomeOptions(stepConfiguration: Record<string, unknown> | null): WorkflowOutcomeOptionDto[] | null {
+  const raw = stepConfiguration?.['outcomeOptions'];
+  if (!Array.isArray(raw)) return null;
+  const options = raw.filter((o): o is WorkflowOutcomeOptionDto =>
+    typeof o === 'object' && o !== null
+    && typeof (o as Record<string, unknown>)['code'] === 'string'
+    && typeof (o as Record<string, unknown>)['label'] === 'string',
+  );
+  return options.length > 0 ? options : null;
 }

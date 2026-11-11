@@ -1,5 +1,10 @@
 import { api } from './client.js';
 
+export interface WorkflowOutcomeOption {
+  code:  string;
+  label: string;
+}
+
 export interface WorkflowTask {
   workflowTaskId:    string;
   workflowInstanceId: string;
@@ -13,6 +18,7 @@ export interface WorkflowTask {
   completedAt:       string | null;
   payload:           Record<string, unknown>;
   createdAt:         string;
+  outcomeOptions:    WorkflowOutcomeOption[] | null;
 }
 
 export function listWorkflowTasks(params?: {
@@ -28,7 +34,11 @@ export function listWorkflowTasks(params?: {
 
 export function completeWorkflowTask(
   taskId:  string,
-  payload?: Record<string, unknown>,
+  opts?: { payload?: Record<string, unknown>; decisionCode?: string; note?: string },
 ): Promise<void> {
-  return api.post(`/api/v1/workflow-tasks/${taskId}/completion`, { payload: payload ?? {} });
+  return api.post(`/api/v1/workflow-tasks/${taskId}/completion`, {
+    payload: opts?.payload ?? {},
+    ...(opts?.decisionCode ? { decisionCode: opts.decisionCode } : {}),
+    ...(opts?.note ? { note: opts.note } : {}),
+  });
 }
