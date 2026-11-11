@@ -75,4 +75,79 @@ describe('TaskInboxPage — typed outcomes and escalation', () => {
     expect(await screen.findByText('escalated')).toBeVisible();
     expect(screen.getByRole('button', { name: 'Decide' })).toBeVisible();
   });
+
+  it('shows an assigned task under the default Open view and lets it be decided', async () => {
+    const assignedTask = { ...genericTask, statusCode: 'assigned' };
+    server.use(http.get(`${API}/api/v1/workflow-tasks`, () => HttpResponse.json([
+      assignedTask,
+      { ...genericTask, workflowTaskId: 'task-done', statusCode: 'completed' },
+    ])));
+    renderWithProviders(<TaskInboxPage />, { roles: ['registry-administrator'] });
+
+    expect(await screen.findByRole('button', { name: 'Decide' })).toBeVisible();
+    // Only the open task is listed; the completed one is filtered out.
+    expect(screen.getAllByRole('button', { name: 'Decide' })).toHaveLength(1);
+    expect(screen.getAllByRole('link', { name: 'View workflow' })).toHaveLength(1);
+  });
+});
+
+describe('TaskInboxPage — Temporal-run tasks', () => {
+  const temporalTask = {
+    ...genericTask,
+    statusCode: 'assigned',
+    executionBackend: 'temporal',
+    revision: 0,
+    escalatedAt: null,
+    attentionReasonCode: null,
+  };
+
+  it('tells the user a saved decision is being applied, then that it was applied', async () => {
+    server.use(
+      http.get(`${API}/api/v1/workflow-tasks`, () => HttpResponse.json([temporalTask]), { once: true }),
+      http.get(`${API}/api/v1/workflow-tasks`, () => HttpResponse.json([])),
+      http.post(`${API}/api/v1/workflow-tasks/:id/completion`, () => HttpResponse.json({
+        commandId: 'cmd-1', workflowInstanceId: 'wf-001', decisionCode: 'approved', status: 'pending',
+        acceptedAt: '2026-11-11T10:00:00Z', appliedAt: null, errorDetail: null,
+        statusUrl: '/api/v1/workflow-commands/cmd-1',
+      }, { status: 202 })),
+      http.get(`${API}/api/v1/workflow-commands/cmd-1`, () => HttpResponse.json({
+        commandId: 'cmd-1', workflowInstanceId: 'wf-001', decisionCode: 'approved', status: 'applied',
+        acceptedAt: '2026-11-11T10:00:00Z', appliedAt: '2026-11-11T10:00:03Z', errorDetail: null,
+        statusUrl: '/api/v1/workflow-commands/cmd-1',
+      })),
+    );
+    const { container } = renderWithProviders(<TaskInboxPage />, { roles: ['registry-administrator'] });
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Decide' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Approve' }));
+
+    expect(await screen.findByText('Decision received. Applying it now…')).toBeVisible();
+    expect(await screen.findByText('Decision applied.', {}, { timeout: 5_000 })).toBeVisible();
+    await expectNoA11yViolations(container);
+  });
+
+  it('marks a task whose deadline passed with nobody to escalate to', async () => {
+    server.use(http.get(`${API}/api/v1/workflow-tasks`, () => HttpResponse.json([
+      { ...temporalTask, attentionReasonCode: 'deadline-passed-no-escalation-role' },
+    ])));
+    renderWithProviders(<TaskInboxPage />, { roles: ['registry-administrator'] });
+
+    expect(await screen.findByText('Needs attention')).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Decide' })).toBeVisible();
+  });
+
+  it('shows why a decision could not be applied', async () => {
+    server.use(
+      http.get(`${API}/api/v1/workflow-tasks`, () => HttpResponse.json([temporalTask])),
+      http.post(`${API}/api/v1/workflow-tasks/:id/completion`, () => HttpResponse.json({
+        type: 'about:blank', title: 'Conflict', status: 409,
+        detail: 'A decision has already been made for this task',
+      }, { status: 409 })),
+    );
+    renderWithProviders(<TaskInboxPage />, { roles: ['registry-administrator'] });
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Decide' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Reject' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('A decision has already been made for this task');
+  });
 });

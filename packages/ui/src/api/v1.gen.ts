@@ -3797,6 +3797,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workflow-commands/{commandId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getWorkflowCommandsByCommandId"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workflow-execution/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getWorkflowExecutionHealth"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workflow-execution/reconcile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createWorkflowExecutionReconcile"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/feature-flags": {
         parameters: {
             query?: never;
@@ -16746,11 +16794,43 @@ export interface operations {
                 content: {
                     "application/json": {
                         moduleRegistrationId: string | null;
+                        /** @enum {string} */
+                        status?: "applied";
+                        commandId?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        moduleRegistrationId: null;
+                        /** @enum {string} */
+                        status: "pending";
+                        commandId: string;
+                        statusUrl: string;
                     };
                 };
             };
             /** @description Default Response */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -18691,6 +18771,9 @@ export interface operations {
                             [key: string]: unknown;
                         };
                         createdAt: string;
+                        executionBackend: "legacy" | "temporal";
+                        executionStatus: string | null;
+                        executionStatusDetail: string | null;
                     }[];
                 };
             };
@@ -18745,6 +18828,8 @@ export interface operations {
                     "application/json": {
                         workflowInstanceId: string;
                         workflowTaskId?: string;
+                        executionBackend?: "legacy" | "temporal";
+                        executionStatus?: string;
                     };
                 };
             };
@@ -18803,6 +18888,10 @@ export interface operations {
                             code: string;
                             label: string;
                         }[] | null;
+                        revision: number;
+                        escalatedAt: string | null;
+                        attentionReasonCode: string | null;
+                        executionBackend: "legacy" | "temporal";
                     }[];
                 };
             };
@@ -18811,7 +18900,9 @@ export interface operations {
     createWorkflowTasksByWorkflowTaskIdCompletion: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "idempotency-key"?: string;
+            };
             path: {
                 workflowTaskId: string;
             };
@@ -18830,6 +18921,48 @@ export interface operations {
         };
         responses: {
             /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        commandId: string;
+                        workflowInstanceId: string;
+                        workflowTaskId: string | null;
+                        commandType: "decision" | "cancellation";
+                        decisionCode: string | null;
+                        status: "applied" | "pending" | "failed" | "superseded";
+                        acceptedAt: string;
+                        appliedAt: string | null;
+                        errorCode: string | null;
+                        errorDetail: string | null;
+                        statusUrl: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        commandId: string;
+                        workflowInstanceId: string;
+                        workflowTaskId: string | null;
+                        commandType: "decision" | "cancellation";
+                        decisionCode: string | null;
+                        status: "applied" | "pending" | "failed" | "superseded";
+                        acceptedAt: string;
+                        appliedAt: string | null;
+                        errorCode: string | null;
+                        errorDetail: string | null;
+                        statusUrl: string;
+                    };
+                };
+            };
+            /** @description Default Response */
             204: {
                 headers: {
                     [name: string]: unknown;
@@ -18838,6 +18971,20 @@ export interface operations {
             };
             /** @description Default Response */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -18887,6 +19034,48 @@ export interface operations {
         };
         responses: {
             /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        commandId: string;
+                        workflowInstanceId: string;
+                        workflowTaskId: string | null;
+                        commandType: "decision" | "cancellation";
+                        decisionCode: string | null;
+                        status: "applied" | "pending" | "failed" | "superseded";
+                        acceptedAt: string;
+                        appliedAt: string | null;
+                        errorCode: string | null;
+                        errorDetail: string | null;
+                        statusUrl: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        commandId: string;
+                        workflowInstanceId: string;
+                        workflowTaskId: string | null;
+                        commandType: "decision" | "cancellation";
+                        decisionCode: string | null;
+                        status: "applied" | "pending" | "failed" | "superseded";
+                        acceptedAt: string;
+                        appliedAt: string | null;
+                        errorCode: string | null;
+                        errorDetail: string | null;
+                        statusUrl: string;
+                    };
+                };
+            };
+            /** @description Default Response */
             204: {
                 headers: {
                     [name: string]: unknown;
@@ -18895,6 +19084,20 @@ export interface operations {
             };
             /** @description Default Response */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -18926,6 +19129,106 @@ export interface operations {
                 content: {
                     "application/json": {
                         escalatedTaskIds: string[];
+                    };
+                };
+            };
+        };
+    };
+    getWorkflowCommandsByCommandId: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                commandId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        commandId: string;
+                        workflowInstanceId: string;
+                        workflowTaskId: string | null;
+                        commandType: "decision" | "cancellation";
+                        decisionCode: string | null;
+                        status: "applied" | "pending" | "failed" | "superseded";
+                        acceptedAt: string;
+                        appliedAt: string | null;
+                        errorCode: string | null;
+                        errorDetail: string | null;
+                        statusUrl: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getWorkflowExecutionHealth: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        temporalExecutionEnabled: boolean;
+                        startingInstances: number;
+                        needsAttentionInstances: number;
+                        pendingCommands: number;
+                        failedCommands: number;
+                        unpublishedEvents: number;
+                        oldestPendingCommandSeconds: number | null;
+                    };
+                };
+            };
+        };
+    };
+    createWorkflowExecutionReconcile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        startsRetried: number;
+                        commandsRedelivered: number;
+                        eventsPublished: number;
                     };
                 };
             };

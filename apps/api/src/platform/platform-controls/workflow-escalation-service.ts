@@ -57,6 +57,9 @@ export class WorkflowEscalationService {
           inArray(workflowTasks.statusCode, OVERDUE_STATUS_CODES),
           isNotNull(workflowTasks.dueAt),
           lt(workflowTasks.dueAt, now),
+          // Temporal-run reviews own their own deadline timer; the sweep must
+          // not make a competing change to them.
+          eq(workflowInstances.executionBackend, 'legacy'),
         )),
     );
 

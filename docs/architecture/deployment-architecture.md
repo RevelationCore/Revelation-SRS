@@ -62,8 +62,7 @@ graph TB
         PG["postgres:16\nPort 5432"]
         NATS["nats:2 (JetStream)\nPort 4222 · 8222 (monitor)"]
         KC["keycloak:26 (Quarkus)\nPort 8081"]
-        TMP["temporalio/auto-setup\nPort 7233"]
-        TUI["temporalio/ui\nPort 8233"]
+        TMP["temporalio/temporal 1.10.0 (dev server + UI)\nPort 7233 · 8233 (UI)"]
         PROM["prom/prometheus\nPort 9090"]
         GRF["grafana/grafana\nPort 3001"]
         LOKI["grafana/loki\nPort 3100"]
@@ -71,7 +70,7 @@ graph TB
     end
 ```
 
-The local stack uses `temporalio/auto-setup` with PostgreSQL persistence and a separate Temporal UI container. The PostgreSQL init scripts create the Keycloak schema used by the local identity provider.
+The local stack uses the official Temporal CLI dev server (`temporalio/temporal:1.10.0`, bundling Server 1.32.2 and the Web UI) with SQLite persistence on a named volume. It is not production-like; production uses `temporalio/server:1.32.2` with PostgreSQL (see [ADR-024](../decisions/ADR-024-live-temporal-execution.md)). The PostgreSQL init scripts create the Keycloak schema used by the local identity provider.
 
 ### Resource allocation guidance (Mac Mini)
 
@@ -217,7 +216,7 @@ Every service exposes two standard endpoints:
 | Endpoint | Purpose | Checks |
 |---|---|---|
 | `GET /health` | Liveness — is the process alive? | Process running; no fatal internal error |
-| `GET /ready` | Readiness — can it serve traffic? | Database connection pool healthy; NATS connected; Temporal worker running; Keycloak JWKS reachable |
+| `GET /ready` | Readiness — can it serve traffic? | Database connection pool healthy; NATS connected; Keycloak JWKS reachable. Temporal is reported with `required: false` and does not fail readiness (ADR-024); worker readiness is the worker's own `/ready` on port 9466 |
 
 Format (both endpoints):
 ```json

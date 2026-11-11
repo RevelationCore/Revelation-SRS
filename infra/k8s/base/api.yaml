@@ -92,6 +92,15 @@ spec:
               value: nats://srs-nats:4222
             - name: TEMPORAL_ADDRESS
               value: srs-temporal:7233
+            # Live Temporal execution (ADR-024). Off by default; overlays turn it
+            # on once a worker is running. The rollout flag
+            # workflow.temporal-execution then picks which new reviews use it.
+            - name: TEMPORAL_EXECUTION_ENABLED
+              value: "false"
+            - name: TEMPORAL_NAMESPACE
+              value: srs-production
+            - name: TEMPORAL_TASK_QUEUE
+              value: srs-workflows
             - name: WELLBEING_URL
               value: http://srs-wellbeing:3002
             - name: ATTENDANCE_API_URL

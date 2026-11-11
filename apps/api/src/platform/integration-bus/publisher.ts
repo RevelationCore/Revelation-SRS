@@ -12,6 +12,10 @@ export interface PublishOptions {
   validAt?: Date;
   /** The event that caused this one; omit for commands/user actions. */
   causationId?: string;
+  /** Stable event ID (e.g. an outbox row ID) so redelivery can be de-duplicated. */
+  eventId?: string;
+  /** When the fact occurred, if earlier than publication (outbox relay). */
+  occurredAt?: Date;
 }
 
 /**
@@ -65,12 +69,12 @@ export class IntegrationBusPublisher {
 
     const now = clockNow().toISOString();
     const envelope: DomainEventEnvelope<TPayload> = {
-      id:                 randomUUID(),
+      id:                 options.eventId ?? randomUUID(),
       type,
       version,
       schemaRef:          `https://srs.example.com/schemas/events/${type.replace(/\./g, '/')}/${version}.json`,
       tenantId,
-      occurredAt:         now,
+      occurredAt:         options.occurredAt?.toISOString() ?? now,
       publishedAt:        now,
       validAt:            (options.validAt ?? clockNow()).toISOString(),
       correlationId,
@@ -86,6 +90,10 @@ export class IntegrationBusPublisher {
       set: (carrier: MsgHdrs, key: string, value: string) => carrier.set(key, value),
     });
 
-    await this.js.publish(type, this.jc.encode(envelope), { headers: hdrs });
+    // msgID lets JetStream drop duplicates inside its de-duplication window.
+    await this.js.publish(type, this.jc.encode(envelope), {
+      headers: hdrs,
+      ...(options.eventId ? { msgID: options.eventId } : {}),
+    });
   }
 }

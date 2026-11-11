@@ -27,6 +27,10 @@ export interface WorkflowInstanceDto {
   completedAt: Date | null;
   context: Record<string, unknown>;
   createdAt: Date;
+  executionBackend: 'legacy' | 'temporal';
+  /** Temporal-run only: starting, awaiting-decision, needs-attention, completed, cancelled, failed. */
+  executionStatus: string | null;
+  executionStatusDetail: string | null;
 }
 
 export interface WorkflowTaskDto {
@@ -44,6 +48,10 @@ export interface WorkflowTaskDto {
   createdAt: Date;
   updatedAt: Date;
   outcomeOptions: WorkflowOutcomeOptionDto[] | null;
+  revision: number;
+  escalatedAt: Date | null;
+  attentionReasonCode: string | null;
+  executionBackend: 'legacy' | 'temporal';
 }
 
 export class WorkflowInstanceService {
@@ -90,7 +98,7 @@ export class WorkflowTaskService {
     } = {},
   ): Promise<WorkflowTaskDto[]> {
     const rows = await withTenantContext(this.db, tenantId, async (tx) =>
-      tx.select({ task: workflowTasks, step: workflowSteps })
+      tx.select({ task: workflowTasks, step: workflowSteps, backend: workflowInstances.executionBackend })
         .from(workflowTasks)
         .innerJoin(workflowInstances, eq(workflowTasks.workflowInstanceId, workflowInstances.id))
         .leftJoin(workflowSteps, and(
@@ -110,12 +118,12 @@ export class WorkflowTaskService {
           )] : []),
         )).orderBy(desc(workflowTasks.createdAt)),
     );
-    return rows.map((r) => taskToDto(r.task, r.step?.configuration ?? null));
+    return rows.map((r) => taskToDto(r.task, r.step?.configuration ?? null, r.backend));
   }
 
   async getTask(workflowTaskId: string, tenantId: string): Promise<WorkflowTaskDto> {
     const rows = await withTenantContext(this.db, tenantId, async (tx) =>
-      tx.select({ task: workflowTasks, step: workflowSteps })
+      tx.select({ task: workflowTasks, step: workflowSteps, backend: workflowInstances.executionBackend })
         .from(workflowTasks)
         .innerJoin(workflowInstances, eq(workflowTasks.workflowInstanceId, workflowInstances.id))
         .leftJoin(workflowSteps, and(
@@ -128,7 +136,7 @@ export class WorkflowTaskService {
         )).limit(1),
     );
     if (!rows[0]) throw new NotFoundError('WorkflowTask', workflowTaskId);
-    return taskToDto(rows[0].task, rows[0].step?.configuration ?? null);
+    return taskToDto(rows[0].task, rows[0].step?.configuration ?? null, rows[0].backend);
   }
 }
 
@@ -147,12 +155,16 @@ function instanceToDto(row: typeof workflowInstances.$inferSelect): WorkflowInst
     completedAt: row.completedAt,
     context: row.context,
     createdAt: row.createdAt,
+    executionBackend: row.executionBackend,
+    executionStatus: row.executionStatus,
+    executionStatusDetail: row.executionStatusDetail,
   };
 }
 
 function taskToDto(
   row: typeof workflowTasks.$inferSelect,
   stepConfiguration: Record<string, unknown> | null,
+  executionBackend: 'legacy' | 'temporal',
 ): WorkflowTaskDto {
   return {
     workflowTaskId: row.id,
@@ -169,6 +181,10 @@ function taskToDto(
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
     outcomeOptions: extractOutcomeOptions(stepConfiguration),
+    revision: row.revision,
+    escalatedAt: row.escalatedAt,
+    attentionReasonCode: row.attentionReasonCode,
+    executionBackend,
   };
 }
 

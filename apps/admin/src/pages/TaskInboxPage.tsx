@@ -1,6 +1,8 @@
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { type WorkflowTask, listWorkflowTasks, completeWorkflowTask } from '../api/tasks.js';
+import {
+  type WorkflowTask, listWorkflowTasks, completeWorkflowTask, getWorkflowCommand,
+} from '../api/tasks.js';
 import { ApiError } from '../api/client.js';
 import { Spinner } from '../components/Spinner.js';
 import {
@@ -8,14 +10,21 @@ import {
   Button, Select,
 } from '@revelation-srs/ui';
 
-const STATUS_OPTIONS = ['', 'pending', 'in-progress', 'escalated', 'completed', 'cancelled'];
-const ACTIONABLE_STATUSES = new Set(['pending', 'in-progress', 'escalated']);
+// 'open' is a client-side view of every status that still needs a decision.
+const STATUS_OPTIONS = ['open', '', 'pending', 'assigned', 'in-progress', 'escalated', 'completed', 'cancelled'];
+const ACTIONABLE_STATUSES = new Set(['pending', 'assigned', 'in-progress', 'escalated']);
+const STATUS_LABELS: Record<string, string> = { open: 'Open', '': 'All' };
+
+/** How long to keep checking a saved decision before telling the user it will finish later. */
+const PENDING_POLL_MS = 2_000;
+const PENDING_POLL_ATTEMPTS = 8;
 
 export function TaskInboxPage() {
   const [tasks,      setTasks]      = useState<WorkflowTask[]>([]);
   const [loading,    setLoading]    = useState(true);
   const [error,      setError]      = useState('');
-  const [statusFilter, setStatusFilter] = useState('pending');
+  const [notice,     setNotice]     = useState('');
+  const [statusFilter, setStatusFilter] = useState('open');
   const [completing, setCompleting] = useState<string | null>(null);
   const [confirmId,  setConfirmId]  = useState<string | null>(null);
   const [noteByTask, setNoteByTask] = useState<Record<string, string>>({});
@@ -24,8 +33,8 @@ export function TaskInboxPage() {
     setLoading(true);
     setError('');
     try {
-      const data = await listWorkflowTasks(status ? { statusCode: status } : undefined);
-      setTasks(data);
+      const data = await listWorkflowTasks(status && status !== 'open' ? { statusCode: status } : undefined);
+      setTasks(status === 'open' ? data.filter((t) => ACTIONABLE_STATUSES.has(t.statusCode)) : data);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'Failed to load tasks');
     } finally {
@@ -37,15 +46,45 @@ export function TaskInboxPage() {
 
   async function handleComplete(taskId: string, decisionCode?: string) {
     setCompleting(taskId);
+    setNotice('');
     try {
-      await completeWorkflowTask(taskId, { decisionCode, note: noteByTask[taskId]?.trim() || undefined });
+      const receipt = await completeWorkflowTask(taskId, { decisionCode, note: noteByTask[taskId]?.trim() || undefined });
       setConfirmId(null);
+      if (receipt?.status === 'pending') {
+        // Saved, but the workflow service has not applied it yet. Retrying
+        // would not make a second decision, but there is no need to.
+        setNotice('Decision received. Applying it now…');
+        void waitForDecision(receipt.commandId);
+      }
       void load(statusFilter);
     } catch (err) {
       setError(err instanceof ApiError ? (err.detail ?? err.message) : 'Failed to complete task');
     } finally {
       setCompleting(null);
     }
+  }
+
+  async function waitForDecision(commandId: string) {
+    for (let attempt = 0; attempt < PENDING_POLL_ATTEMPTS; attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, PENDING_POLL_MS));
+      try {
+        const current = await getWorkflowCommand(commandId);
+        if (current.status === 'applied') {
+          setNotice('Decision applied.');
+          void load(statusFilter);
+          return;
+        }
+        if (current.status === 'failed' || current.status === 'superseded') {
+          setNotice('');
+          setError(current.errorDetail ?? 'The decision was recorded but could not be applied.');
+          void load(statusFilter);
+          return;
+        }
+      } catch {
+        // Keep the saved-decision message; the decision is not lost.
+      }
+    }
+    setNotice('Decision saved. It will be applied automatically when the workflow service is available — you do not need to decide again.');
   }
 
   function handlePlainComplete(taskId: string, e: FormEvent<HTMLFormElement>) {
@@ -67,7 +106,7 @@ export function TaskInboxPage() {
               className="w-auto"
             >
               {STATUS_OPTIONS.map(s => (
-                <option key={s} value={s}>{s || 'All'}</option>
+                <option key={s} value={s}>{STATUS_LABELS[s] ?? s}</option>
               ))}
             </Select>
             <Button variant="secondary" onClick={() => void load(statusFilter)}>Refresh</Button>
@@ -75,7 +114,8 @@ export function TaskInboxPage() {
         }
       />
 
-      {error && <p className="mb-4 text-sm text-danger-600">{error}</p>}
+      {error && <p role="alert" className="mb-4 text-sm text-danger-600">{error}</p>}
+      <p role="status" aria-live="polite" className={notice ? 'mb-4 text-sm text-primary-700' : 'sr-only'}>{notice}</p>
 
       {loading ? (
         <div className="flex justify-center py-16"><Spinner /></div>
@@ -107,6 +147,14 @@ export function TaskInboxPage() {
                     <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${taskStatusColour(task.statusCode)}`}>
                       {task.statusCode}
                     </span>
+                    {task.attentionReasonCode && ACTIONABLE_STATUSES.has(task.statusCode) && (
+                      <span
+                        className="ml-2 rounded-full px-2.5 py-0.5 text-xs font-medium bg-danger-100 text-danger-700"
+                        title="The deadline passed and no escalation role is configured"
+                      >
+                        Needs attention
+                      </span>
+                    )}
                   </TableCell>
                   <TableCell className="text-right">
                     <Link
@@ -189,6 +237,7 @@ export function TaskInboxPage() {
 function taskStatusColour(code: string): string {
   const map: Record<string, string> = {
     pending:     'bg-warning-100 text-warning-700',
+    assigned:    'bg-warning-100 text-warning-700',
     'in-progress': 'bg-primary-100 text-primary-700',
     escalated:   'bg-danger-100 text-danger-700',
     completed:   'bg-success-100 text-success-700',

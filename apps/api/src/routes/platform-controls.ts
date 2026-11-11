@@ -1,7 +1,7 @@
 import { requireAnyPermission, requirePermission } from '@revelation-srs/auth';
 import { Type } from '@sinclair/typebox';
 import type { FastifyInstance } from 'fastify';
-import { hasPermission, ValidationError } from '@revelation-srs/domain';
+import { ConflictError, hasPermission, NotFoundError, ValidationError } from '@revelation-srs/domain';
 
 import { clockNow } from '../platform/clock.js';
 import type {
@@ -23,6 +23,7 @@ import type {
   UpdateWorkflowDefinitionInput,
 } from '../platform/platform-controls/workflow-definition-service.js';
 import type { CreateGenericVersionInput } from '../platform/platform-controls/workflow-builder-service.js';
+import type { CommandReceipt } from '../platform/platform-controls/review-execution-service.js';
 
 const JsonRecord = Type.Record(Type.String(), Type.Unknown());
 const JsonValue = Type.Unknown();
@@ -234,6 +235,9 @@ const WorkflowInstanceSchema = Type.Object({
   completedAt: Type.Union([Type.String(), Type.Null()]),
   context: JsonRecord,
   createdAt: Type.String(),
+  executionBackend: Type.Union([Type.Literal('legacy'), Type.Literal('temporal')]),
+  executionStatus: Type.Union([Type.String(), Type.Null()]),
+  executionStatusDetail: Type.Union([Type.String(), Type.Null()]),
 });
 
 const WorkflowTaskSchema = Type.Object({
@@ -251,6 +255,24 @@ const WorkflowTaskSchema = Type.Object({
   createdAt: Type.String(),
   updatedAt: Type.String(),
   outcomeOptions: Type.Union([Type.Array(WorkflowOutcomeOptionSchema), Type.Null()]),
+  revision: Type.Integer(),
+  escalatedAt: Type.Union([Type.String(), Type.Null()]),
+  attentionReasonCode: Type.Union([Type.String(), Type.Null()]),
+  executionBackend: Type.Union([Type.Literal('legacy'), Type.Literal('temporal')]),
+});
+
+const WorkflowCommandSchema = Type.Object({
+  commandId: Type.String(),
+  workflowInstanceId: Type.String(),
+  workflowTaskId: Type.Union([Type.String(), Type.Null()]),
+  commandType: Type.Union([Type.Literal('decision'), Type.Literal('cancellation')]),
+  decisionCode: Type.Union([Type.String(), Type.Null()]),
+  status: Type.Union([Type.Literal('applied'), Type.Literal('pending'), Type.Literal('failed'), Type.Literal('superseded')]),
+  acceptedAt: Type.String(),
+  appliedAt: Type.Union([Type.String(), Type.Null()]),
+  errorCode: Type.Union([Type.String(), Type.Null()]),
+  errorDetail: Type.Union([Type.String(), Type.Null()]),
+  statusUrl: Type.String(),
 });
 
 const WorkflowAssignmentRuleSchema = Type.Object({
@@ -605,6 +627,8 @@ export function platformControlRoutes(fastify: FastifyInstance): void {
         201: Type.Object({
           workflowInstanceId: Type.String(),
           workflowTaskId: Type.Optional(Type.String()),
+          executionBackend: Type.Optional(Type.Union([Type.Literal('legacy'), Type.Literal('temporal')])),
+          executionStatus: Type.Optional(Type.String()),
         }),
         404: ErrorSchema,
       },
@@ -612,6 +636,61 @@ export function platformControlRoutes(fastify: FastifyInstance): void {
     preHandler: [requirePermission('workflow:write')],
   }, async (request, reply) => {
     const body = request.body as WorkflowStartBodyShape;
+
+    // A review with a task may run on Temporal, if the deployment and the
+    // rollout flag allow it. The backend is chosen here and never changes.
+    if (body.task && await fastify.reviewExecutionService.selectBackend(request.tenantId, {
+      workflowDefinitionVersionId: body.workflowDefinitionVersionId,
+      ...(body.environmentId ? { environmentId: body.environmentId } : {}),
+    }) === 'temporal') {
+      const assignment = await fastify.workflowResponsibilityService.resolveTaskAssignment(
+        request.tenantId,
+        {
+          workflowDefinitionVersionId: body.workflowDefinitionVersionId,
+          stepKey: body.task.stepKey,
+          roleCodes: body.task.assignmentContext?.roleCodes ?? request.user.roles,
+          ...(body.task.assignmentContext?.organisationalUnitCode
+            ? { organisationalUnitCode: body.task.assignmentContext.organisationalUnitCode }
+            : {}),
+          ...(body.task.assignmentContext?.programmeId ? { programmeId: body.task.assignmentContext.programmeId } : {}),
+          ...(body.task.assignmentContext?.sourceSystemCode ? { sourceSystemCode: body.task.assignmentContext.sourceSystemCode } : {}),
+        },
+        {
+          ...(body.task.assigneeRoleCode ? { assigneeRoleCode: body.task.assigneeRoleCode } : {}),
+          ...(body.task.assigneeActorId ? { assigneeActorId: body.task.assigneeActorId } : {}),
+        },
+      );
+      const started = await fastify.reviewExecutionService.startReview({
+        tenantId: request.tenantId,
+        ...(body.environmentId ? { environmentId: body.environmentId } : {}),
+        workflowDefinitionVersionId: body.workflowDefinitionVersionId,
+        workflowCode: body.workflowCode,
+        subjectEntityType: body.subjectEntityType,
+        ...(body.subjectEntityId ? { subjectEntityId: body.subjectEntityId } : {}),
+        ...(body.correlationId ? { correlationId: body.correlationId } : {}),
+        startedBy: request.user.sub,
+        context: body.context ?? {},
+        task: {
+          stepKey: body.task.stepKey,
+          ...(body.task.taskTypeCode ? { taskTypeCode: body.task.taskTypeCode } : {}),
+          ...(body.task.assigneeActorId ? { assigneeActorId: body.task.assigneeActorId } : {}),
+          ...(assignment.assigneeRoleCode ? { assigneeRoleCode: assignment.assigneeRoleCode } : {}),
+          ...(body.task.dueAt ? { dueAt: body.task.dueAt } : {}),
+          payload: {
+            ...(body.task.payload ?? {}),
+            workflowAssignment: {
+              reasonCode: assignment.reasonCode,
+              ...(assignment.ruleKey ? { ruleKey: assignment.ruleKey } : {}),
+              ...(assignment.ruleId ? { ruleId: assignment.ruleId } : {}),
+              ...(assignment.assigneeExpression ? { assigneeExpression: assignment.assigneeExpression } : {}),
+            },
+          },
+        },
+      });
+      await reply.code(201).send(started);
+      return;
+    }
+
     const instance = await fastify.workflowBridgeService.startWorkflowInstance({
       tenantId: request.tenantId,
       ...(body.environmentId ? { environmentId: body.environmentId } : {}),
@@ -676,6 +755,7 @@ export function platformControlRoutes(fastify: FastifyInstance): void {
     await reply.code(201).send({
       workflowInstanceId: instance.workflowInstanceId,
       ...(workflowTaskId ? { workflowTaskId } : {}),
+      executionBackend: 'legacy',
     });
   });
 
@@ -707,6 +787,7 @@ export function platformControlRoutes(fastify: FastifyInstance): void {
       ...task,
       dueAt: task.dueAt?.toISOString() ?? null,
       completedAt: task.completedAt?.toISOString() ?? null,
+      escalatedAt: task.escalatedAt?.toISOString() ?? null,
       createdAt: task.createdAt.toISOString(),
       updatedAt: task.updatedAt.toISOString(),
     })));
@@ -715,8 +796,17 @@ export function platformControlRoutes(fastify: FastifyInstance): void {
   fastify.post('/workflow-tasks/:workflowTaskId/completion', {
     schema: {
       params: Type.Object({ workflowTaskId: Type.String() }),
+      headers: Type.Object({ 'idempotency-key': Type.Optional(Type.String({ maxLength: 200 })) }),
       body: WorkflowTaskCompletionBody,
-      response: { 204: Type.Null(), 404: ErrorSchema, 422: ErrorSchema },
+      response: {
+        // Temporal-run task: the decision was applied.
+        200: WorkflowCommandSchema,
+        // Temporal-run task: the decision is saved and will be applied; poll statusUrl.
+        202: WorkflowCommandSchema,
+        // Legacy task: completed in-process.
+        204: Type.Null(),
+        404: ErrorSchema, 409: ErrorSchema, 422: ErrorSchema,
+      },
     },
     preHandler: [requirePermission('workflow-task:complete')],
   }, async (request, reply) => {
@@ -736,6 +826,31 @@ export function platformControlRoutes(fastify: FastifyInstance): void {
           { field: 'decisionCode', message: `'${body.decisionCode}' is not a valid outcome for this task` },
         ]);
       }
+    }
+
+    if (task.executionBackend === 'temporal') {
+      if (task.outcomeOptions?.length && !body.decisionCode) {
+        throw new ValidationError('This task needs a decision', [
+          { field: 'decisionCode', message: 'Choose one of the task\'s outcome options' },
+        ]);
+      }
+      const receipt = await fastify.reviewExecutionService.submitCommand({
+        tenantId: request.tenantId,
+        workflowTaskId,
+        actorId: request.user.sub,
+        commandType: 'decision',
+        decisionCode: body.decisionCode ?? 'mark-complete',
+        payload: { ...(body.payload ?? {}), ...(body.note ? { note: body.note } : {}) },
+        ...((request.headers as Record<string, string | undefined>)['idempotency-key']
+          ? { idempotencyKey: (request.headers as Record<string, string>)['idempotency-key'] }
+          : {}),
+      });
+      if (receipt.status === 'failed' || receipt.status === 'superseded') {
+        throw new ConflictError(receipt.errorDetail
+          ?? 'This task changed before the decision could be applied. Reload and try again.');
+      }
+      await reply.code(receipt.status === 'applied' ? 200 : 202).send(commandReceiptToWire(receipt));
+      return;
     }
 
     await fastify.workflowBridgeService.completeWorkflowTask({
@@ -773,12 +888,41 @@ export function platformControlRoutes(fastify: FastifyInstance): void {
     schema: {
       params: Type.Object({ workflowInstanceId: Type.String() }),
       body: WorkflowInstanceCompletionBody,
-      response: { 204: Type.Null(), 404: ErrorSchema },
+      response: {
+        200: WorkflowCommandSchema,
+        202: WorkflowCommandSchema,
+        204: Type.Null(),
+        404: ErrorSchema, 409: ErrorSchema,
+      },
     },
     preHandler: [requirePermission('workflow:write')],
   }, async (request, reply) => {
     const { workflowInstanceId } = request.params as { workflowInstanceId: string };
     const body = request.body as { statusCode?: 'completed' | 'cancelled' | 'failed'; metadata?: Record<string, unknown> };
+
+    const instance = await fastify.workflowInstanceService.getInstance(workflowInstanceId, request.tenantId);
+    if (instance.executionBackend === 'temporal') {
+      // Administrative completion would bypass the review's decision (and
+      // any business change it applies). Only cancellation is allowed, and
+      // it is serialised with decisions like any other command.
+      if ((body.statusCode ?? 'completed') !== 'cancelled') {
+        throw new ConflictError('A Temporal-run review is completed by deciding its task. It can only be cancelled here.');
+      }
+      const workflowTaskId = await fastify.reviewExecutionService.findOpenTaskId(request.tenantId, workflowInstanceId);
+      if (!workflowTaskId) throw new ConflictError('This review is already closed');
+      const receipt = await fastify.reviewExecutionService.submitCommand({
+        tenantId: request.tenantId,
+        workflowTaskId,
+        actorId: request.user.sub,
+        commandType: 'cancellation',
+        payload: body.metadata ?? {},
+      });
+      if (receipt.status === 'superseded' || receipt.status === 'failed') {
+        throw new ConflictError(receipt.errorDetail ?? 'This review changed before it could be cancelled');
+      }
+      await reply.code(receipt.status === 'applied' ? 200 : 202).send(commandReceiptToWire(receipt));
+      return;
+    }
     await fastify.workflowBridgeService.completeWorkflowInstance({
       tenantId: request.tenantId,
       workflowInstanceId,
@@ -802,6 +946,60 @@ export function platformControlRoutes(fastify: FastifyInstance): void {
   }, async (request, reply) => {
     const result = await fastify.workflowEscalationService.sweepOverdueTasks(request.tenantId);
     await reply.send(result);
+  });
+
+  fastify.get('/workflow-commands/:commandId', {
+    schema: {
+      params: Type.Object({ commandId: Type.String() }),
+      response: { 200: WorkflowCommandSchema, 404: ErrorSchema },
+    },
+    preHandler: [requireAnyPermission('workflow:read', 'workflow-task:complete', 'module-registration:decide')],
+  }, async (request, reply) => {
+    const { commandId } = request.params as { commandId: string };
+    const receipt = await fastify.reviewExecutionService.getCommand(request.tenantId, commandId);
+    // Without workflow:read, only the person who submitted it may see it.
+    if (!hasPermission(request.user.roles, 'workflow:read')) {
+      const own = await fastify.reviewExecutionService.isCommandActor(request.tenantId, commandId, request.user.sub);
+      if (!own) throw new NotFoundError('WorkflowCommand', commandId);
+    }
+    await reply.send(commandReceiptToWire(receipt));
+  });
+
+  fastify.get('/workflow-execution/health', {
+    schema: {
+      response: {
+        200: Type.Object({
+          temporalExecutionEnabled: Type.Boolean(),
+          startingInstances: Type.Integer(),
+          needsAttentionInstances: Type.Integer(),
+          pendingCommands: Type.Integer(),
+          failedCommands: Type.Integer(),
+          unpublishedEvents: Type.Integer(),
+          oldestPendingCommandSeconds: Type.Union([Type.Integer(), Type.Null()]),
+        }),
+      },
+    },
+    preHandler: [requirePermission('workflow:read')],
+  }, async (request, reply) => {
+    const summary = await fastify.workflowReconciler.health(request.tenantId);
+    await reply.send({ temporalExecutionEnabled: fastify.reviewExecutionService.isAvailable, ...summary });
+  });
+
+  // Runs one reconciliation pass. The worker process runs this on a timer;
+  // the endpoint exists for operators and tests.
+  fastify.post('/workflow-execution/reconcile', {
+    schema: {
+      response: {
+        200: Type.Object({
+          startsRetried: Type.Integer(),
+          commandsRedelivered: Type.Integer(),
+          eventsPublished: Type.Integer(),
+        }),
+      },
+    },
+    preHandler: [requirePermission('workflow:write')],
+  }, async (_request, reply) => {
+    await reply.send(await fastify.workflowReconciler.runOnce());
   });
 
   fastify.get('/feature-flags', {
@@ -1185,5 +1383,21 @@ function workflowAssignmentRuleToWire(rule: WorkflowAssignmentRuleDto) {
   return {
     ...rule,
     createdAt: rule.createdAt.toISOString(),
+  };
+}
+
+function commandReceiptToWire(receipt: CommandReceipt) {
+  return {
+    commandId: receipt.commandId,
+    workflowInstanceId: receipt.workflowInstanceId,
+    workflowTaskId: receipt.workflowTaskId,
+    commandType: receipt.commandType,
+    decisionCode: receipt.decisionCode,
+    status: receipt.status,
+    acceptedAt: receipt.acceptedAt.toISOString(),
+    appliedAt: receipt.appliedAt?.toISOString() ?? null,
+    errorCode: receipt.errorCode,
+    errorDetail: receipt.errorDetail,
+    statusUrl: `/api/v1/workflow-commands/${receipt.commandId}`,
   };
 }

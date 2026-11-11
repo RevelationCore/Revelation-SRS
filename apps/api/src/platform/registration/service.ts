@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 
 import { and, desc, eq, inArray, isNull } from 'drizzle-orm';
 import {
@@ -29,13 +29,30 @@ import type {
 
 import type { IntegrationBusPublisher } from '../integration-bus/publisher.js';
 import type { WorkflowBridgeService } from '../platform-controls/workflow-bridge-service.js';
+import type { ReviewActivitiesService } from '../platform-controls/review-activities.js';
+import type { ReviewExecutionService } from '../platform-controls/review-execution-service.js';
 import type { RulesEngine } from '../rules-engine/engine.js';
 import { clockNow } from '../clock.js';
+
 import type { RegistrationWindowService } from './window-service.js';
 
 type Uuid = `${string}-${string}-${string}-${string}-${string}`;
 
 const CHANGE_WORKFLOW_CODE = 'module-registration-change-approval';
+
+export interface ChangeDecisionResult {
+  moduleRegistrationId: string | null;
+  /** 'pending' when a Temporal-run decision was saved but not yet applied. */
+  status: 'applied' | 'pending';
+  commandId?: string;
+}
+
+/** A UUID-shaped value derived from a stable key (same key, same UUID). */
+function deterministicUuid(key: string): string {
+  const h = createHash('sha256').update(key).digest('hex');
+  const variant = ((parseInt(h[16]!, 16) & 0x3) | 0x8).toString(16);
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-5${h.slice(13, 16)}-${variant}${h.slice(17, 20)}-${h.slice(20, 32)}`;
+}
 const CHANGE_DECISION_STEP_KEY = 'approve-or-reject-registration-change';
 const CHANGE_GATEWAY_KEY = 'G01';
 
@@ -52,6 +69,12 @@ export interface CreateModuleRegistrationInput {
    * exclusion, credit limit) still apply.
    */
   skipCapacityCheck?: boolean;
+  /**
+   * Caller-chosen registration ID. A workflow that may retry the same
+   * approval derives this from its decision command, so a retry finds the
+   * registration it already created instead of creating a second one.
+   */
+  moduleRegistrationId?: string;
 }
 
 export interface ModuleRegistrationDto {
@@ -119,7 +142,33 @@ export class ModuleRegistrationService {
     private readonly rules: RulesEngine,
     private readonly registrationWindows: RegistrationWindowService,
     private readonly workflowBridge: WorkflowBridgeService,
+    private readonly reviewExecution?: ReviewExecutionService,
   ) {}
+
+  /**
+   * On Temporal-run change requests, an approval's registration/withdrawal
+   * is applied by the worker as a domain effect, before the review closes.
+   * The registration ID is derived from the decision command, so a retried
+   * activity finds the registration it already created.
+   */
+  registerWorkflowEffects(activities: ReviewActivitiesService): void {
+    activities.registerEffect(CHANGE_WORKFLOW_CODE, {
+      decisionCodes: ['approved'],
+      apply: async ({ tenantId, commandId, instance, command }) => {
+        const context = instance.context as { actionType?: string; moduleRegistrationId?: string };
+        if (context.actionType === 'withdraw') {
+          const current = await this.getRegistration(context.moduleRegistrationId!, tenantId);
+          if (current?.statusCode === 'withdrawn') return { moduleRegistrationId: context.moduleRegistrationId! };
+          const id = await this.#applyApprovedChange(tenantId, instance.context, command.actorId);
+          return { moduleRegistrationId: id };
+        }
+        const moduleRegistrationId = deterministicUuid(`module-registration:${commandId}`);
+        if (await this.getRegistration(moduleRegistrationId, tenantId)) return { moduleRegistrationId };
+        const id = await this.#applyApprovedChange(tenantId, instance.context, command.actorId, moduleRegistrationId);
+        return { moduleRegistrationId: id };
+      },
+    });
+  }
 
   async createRegistration(
     tenantId: string,
@@ -145,7 +194,7 @@ export class ModuleRegistrationService {
     await this.#ensureModuleRulesSatisfied(input.enrolmentId, offering, tenantId);
     await this.#ensureCreditLimitNotExceeded(enrolment, offering, tenantId);
 
-    const moduleRegistrationId = randomUUID();
+    const moduleRegistrationId = input.moduleRegistrationId ?? randomUUID();
     const now = clockNow();
     await withTenantContext(this.db, tenantId, async (tx) => {
       await tx.insert(moduleRegistrations).values({
@@ -336,6 +385,10 @@ export class ModuleRegistrationService {
    * validated path staff use directly — so a request that has become
    * invalid since submission (window closed, capacity gone) still fails
    * loudly rather than silently succeeding.
+   *
+   * The change is applied before the workflow is closed. If it fails, the
+   * request stays 'running' and can be decided again once the cause is
+   * fixed; closing first would leave a completed request with no change.
    */
   async decideChangeRequest(
     tenantId: string,
@@ -343,13 +396,20 @@ export class ModuleRegistrationService {
     decisionCode: 'approved' | 'rejected',
     actorId: string,
     reason?: string,
-  ): Promise<{ moduleRegistrationId: string | null }> {
+  ): Promise<ChangeDecisionResult> {
     const instance = await this.#getChangeRequestInstance(tenantId, workflowInstanceId);
     if (instance.statusCode !== 'running') {
       throw new ValidationError(`Cannot decide a change request in status '${instance.statusCode}'`);
     }
 
+    if (instance.executionBackend === 'temporal') {
+      return this.#decideOnTemporal(tenantId, workflowInstanceId, decisionCode, actorId, reason);
+    }
+
     const task = await this.#findChangeDecisionTask(tenantId, workflowInstanceId);
+    const moduleRegistrationId = decisionCode === 'approved'
+      ? await this.#applyApprovedChange(tenantId, instance.context, actorId)
+      : null;
 
     await this.workflowBridge.recordWorkflowDecision({
       tenantId,
@@ -372,9 +432,56 @@ export class ModuleRegistrationService {
       statusCode: 'completed', metadata: { decisionCode },
     });
 
-    if (decisionCode !== 'approved') return { moduleRegistrationId: null };
+    return { moduleRegistrationId, status: 'applied' };
+  }
 
-    const context = instance.context as {
+  async #decideOnTemporal(
+    tenantId: string,
+    workflowInstanceId: string,
+    decisionCode: 'approved' | 'rejected',
+    actorId: string,
+    reason?: string,
+  ): Promise<ChangeDecisionResult> {
+    if (!this.reviewExecution) throw new Error('Temporal execution is not configured');
+    const workflowTaskId = await this.reviewExecution.findOpenTaskId(tenantId, workflowInstanceId);
+    if (!workflowTaskId) throw new ConflictError('This change request is already closed');
+
+    const receipt = await this.reviewExecution.submitCommand({
+      tenantId,
+      workflowTaskId,
+      actorId,
+      commandType: 'decision',
+      decisionCode,
+      payload: reason ? { note: reason } : {},
+    });
+
+    if (receipt.status === 'failed') {
+      throw new ConflictError(
+        `Decision recorded, but the registration change was not applied: ${receipt.errorDetail ?? 'unknown reason'}. `
+        + 'The request is still open and can be decided again.',
+      );
+    }
+    if (receipt.status === 'superseded') {
+      throw new ConflictError('This change request was updated before the decision could be applied. Reload and try again.');
+    }
+    if (receipt.status === 'pending') {
+      return { moduleRegistrationId: null, status: 'pending', commandId: receipt.commandId };
+    }
+    const outcome = receipt.result['outcome'] as { result?: { moduleRegistrationId?: string } } | undefined;
+    return {
+      moduleRegistrationId: outcome?.result?.moduleRegistrationId ?? null,
+      status: 'applied',
+      commandId: receipt.commandId,
+    };
+  }
+
+  async #applyApprovedChange(
+    tenantId: string,
+    rawContext: Record<string, unknown>,
+    actorId: string,
+    moduleRegistrationId?: string,
+  ): Promise<string> {
+    const context = rawContext as {
       actionType: 'register' | 'withdraw';
       enrolmentId?: string;
       moduleOfferingId?: string;
@@ -383,16 +490,16 @@ export class ModuleRegistrationService {
     };
 
     if (context.actionType === 'register') {
-      const moduleRegistrationId = await this.createRegistration(tenantId, {
+      return this.createRegistration(tenantId, {
         enrolmentId: context.enrolmentId!,
         moduleOfferingId: context.moduleOfferingId!,
         ...(context.registrationDate ? { registrationDate: context.registrationDate } : {}),
+        ...(moduleRegistrationId ? { moduleRegistrationId } : {}),
       }, actorId);
-      return { moduleRegistrationId };
     }
 
     await this.withdrawRegistration(context.moduleRegistrationId!, tenantId, actorId);
-    return { moduleRegistrationId: context.moduleRegistrationId! };
+    return context.moduleRegistrationId!;
   }
 
   async #startChangeRequest(
@@ -402,6 +509,32 @@ export class ModuleRegistrationService {
     subjectEntityId: string,
   ): Promise<ChangeRequestDto> {
     const workflowDefinitionVersionId = await this.#getActiveChangeWorkflowVersionId(tenantId);
+
+    if (this.reviewExecution
+      && (await this.reviewExecution.selectBackend(tenantId, { workflowDefinitionVersionId })) === 'temporal') {
+      const started = await this.reviewExecution.startReview({
+        tenantId,
+        workflowDefinitionVersionId,
+        workflowCode: CHANGE_WORKFLOW_CODE,
+        subjectEntityType: 'enrolment',
+        subjectEntityId,
+        startedBy: requesterId,
+        context,
+        task: {
+          stepKey: CHANGE_DECISION_STEP_KEY,
+          assigneeRoleCode: 'personal-tutor',
+          payload: context,
+        },
+      });
+      return {
+        workflowInstanceId: started.workflowInstanceId,
+        workflowTaskId: started.workflowTaskId,
+        statusCode: 'running',
+        context,
+        startedAt: clockNow(),
+      };
+    }
+
     const instance = await this.workflowBridge.startWorkflowInstance({
       tenantId,
       workflowDefinitionVersionId,

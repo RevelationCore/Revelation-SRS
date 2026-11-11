@@ -3,7 +3,7 @@ import net from 'node:net';
 import { sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 
-type CheckResult = { status: string; latencyMs?: number; error?: string };
+type CheckResult = { status: string; latencyMs?: number; error?: string; required?: boolean; detail?: unknown };
 
 async function tcpCheck(address: string, defaultPort: number): Promise<CheckResult> {
   const t0 = Date.now();
@@ -87,13 +87,21 @@ export function healthRoutes(fastify: FastifyInstance): void {
         ? { status: 'ok' }
         : { status: 'error', error: 'not connected' };
 
-      checks['temporal'] = await tcpCheck(fastify.config.temporalAddress, 7233);
+      // Temporal is reported but does not gate readiness (ADR-024): during a
+      // workflow outage the API must keep serving records and saving
+      // decisions, which the reconciler delivers once Temporal is back. An
+      // open port is not proof a worker is polling; the backlog numbers
+      // below (and the worker's own /ready) are the meaningful signals.
+      checks['temporal'] = {
+        ...(await tcpCheck(fastify.config.temporalAddress, 7233)),
+        required: false,
+      };
 
       if (fastify.config.keycloakJwksUrl) {
         checks['keycloakJwks'] = await jwksCheck(fastify.config.keycloakJwksUrl);
       }
 
-      const allOk = Object.values(checks).every((c) => c.status === 'ok');
+      const allOk = Object.values(checks).every((c) => c.required === false || c.status === 'ok');
 
       await reply.code(allOk ? 200 : 503).send({
         status: allOk ? 'ok' : 'degraded',

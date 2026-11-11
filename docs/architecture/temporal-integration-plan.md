@@ -1,8 +1,9 @@
 # Plan: live Temporal execution in Revelation SRS
 
-Date: 11 November 2026 (revised the same day after review). Status: proposed; implementation
-has not started under this plan.
-Baseline: the current working tree, including the new generic workflow builder and Task Inbox changes.
+Date: 11 November 2026 (revised the same day after review). Status: **Stages 0–4 implemented;
+Stage 5 partly; Stage 6 not started.** See [Implementation progress](#implementation-progress).
+Decisions: [ADR-024](../decisions/ADR-024-live-temporal-execution.md).
+Baseline: the working tree as of commit `3d68f04`, including the generic workflow builder and Task Inbox.
 
 ## At a glance
 
@@ -20,6 +21,49 @@ Baseline: the current working tree, including the new generic workflow builder a
   every service, not only workflows.
 - **Open decisions for the Stage 0 ADR:** namespace model, synchronous (Update) versus
   asynchronous (Signal + `202`) decision acceptance, and which process families Stage 6 covers.
+
+## Implementation progress
+
+Updated 11 November 2026. Sections after this one are the plan as reviewed; where the
+implementation chose between options, ADR-024 records the choice.
+
+| Stage | Status | Evidence |
+|---|---|---|
+| 0. Fix, upgrade, freeze contracts | **Done** | `decideChangeRequest` applies the change before closing (regression test in `module-registrations.int.test.ts`). SDK 1.25.0, Server 1.32.2, UI 2.58.1 pinned. ADR-024 settles the namespace model (one per environment), acceptance model (Update, falling back to saved command + `202`) and Stage 6 scope. Inventory below. |
+| 1. Real application worker | **Done** | `apps/api/src/worker.ts`: real activities, graceful drain, reconciler loop, `/ready` that reflects polling. Startup fails if an activity is missing. `workflow:smoke` passed against local Compose Temporal, including a worker restart that resumed the same execution. k8s worker manifest runs it from the API image with probes. |
+| 2. Retry-safe writes and delivery | **Done** | Migration `0023`: execution metadata, task revisions, `workflow_command`, `workflow_operation_receipt`, `workflow_event_outbox`, rollout flag (default off). Each effect commits with its receipt, audit row and events. The reconciler starts saved reviews and re-delivers saved commands. Legacy instances were backfilled as `legacy` by default. |
+| 3. Generic reviews | **Done** | `reviewWorkflow` keeps real outcomes, absolute deadlines, escalation that keeps waiting, needs-attention, cancellation and queries. Start, decide and cancel routes pick the backend per instance. Task Inbox shows saved/applied/needs-attention states. |
+| 4. Module registration pilot | **Done** | Approvals apply as an idempotent domain effect (registration ID derived from the command). Failures keep the decision visible and reopen the request. Workflow completion follows the domain change. |
+| 5. Recovery and release | **Partly** | Done: 9 time-skipping/replay workflow tests; 18 real-server integration tests (worker restart, Temporal unreachable at start, decision during worker outage, concurrent decisions, deadline races, forged/cross-tenant commands, outbox while NATS down); runbook 04 rewritten; `/ready` no longer fails on Temporal. **Not done:** load test against the 500 ms p95 target, NATS/database-restore drills, alert rules for the backlog metrics, Worker Versioning, UAT rehearsal of flag rollback. |
+| 6. Expand by family | **Not started** | Coverage matrix below. |
+
+### Coverage matrix (Stage 0 inventory)
+
+| Workflow family | Code | Engine owner today | Status |
+|---|---|---|---|
+| Builder-authored single reviews | (per definition) | Bridge → **Temporal when flagged** | Migrated (Stage 3) |
+| Module registration change | `module-registration-change-approval` | Bridge → **Temporal when flagged** | Migrated (Stage 4) |
+| Module selection | `module-selection-approval` | Bridge (legacy) | Stage 6a |
+| Legal identity change | `legal-identity-change-approval` | Bridge (legacy) | Stage 6a |
+| Admissions hand-off | per source (`SOURCE_WORKFLOW`) | Bridge (legacy) | Stage 6a |
+| HESA return submission | `hesa-return-submission-approval` | Bridge (legacy) | Stage 6a |
+| OfS extract generation | `ofs-extract-generation-approval` | Bridge (legacy) | Stage 6a |
+| SLC confirmation submission | `slc-confirmation-submission-approval` | Bridge (legacy) | Stage 6a |
+| UCAS confirmation submission | `ucas-confirmation-submission-approval` | Bridge (legacy) | Stage 6a |
+| UKVI CAS request submission | `ukvi-cas-request-submission-approval` | Bridge (legacy) | Stage 6a |
+| PGR, DSAR, identity resolution | — | `business_case` (ADR-023) | Out of scope (6b, needs its own ADR) |
+| Wellbeing cases | — | `modules/wellbeing` state machines | Out of scope (6b, needs its own ADR) |
+
+### Known limitations
+
+- The rollout flag and `TEMPORAL_EXECUTION_ENABLED` are both off by default. Nothing
+  runs on Temporal until a deployment enables both and runs a worker.
+- An escalation fires once; there is no repeating escalation cycle (as planned).
+- Deadlines use elapsed time; there is no working-day calendar (as planned).
+- The k8s server manifest was updated to `temporalio/server:1.32.2` but not deployed
+  here; its config template and start command need checking against that image.
+- Other services still publish events directly, so they can still lose events while
+  NATS is down. Only workflow events use the outbox.
 
 ## Purpose and intended result
 

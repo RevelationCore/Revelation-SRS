@@ -28506,6 +28506,48 @@
                           "type": "null"
                         }
                       ]
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "applied"
+                      ]
+                    },
+                    "commandId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "moduleRegistrationId",
+                    "status",
+                    "commandId",
+                    "statusUrl"
+                  ],
+                  "properties": {
+                    "moduleRegistrationId": {
+                      "type": "null"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "pending"
+                      ]
+                    },
+                    "commandId": {
+                      "type": "string"
+                    },
+                    "statusUrl": {
+                      "type": "string"
                     }
                   }
                 }
@@ -28513,6 +28555,35 @@
             }
           },
           "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
             "description": "Default Response",
             "content": {
               "application/json": {
@@ -33377,7 +33448,10 @@
                       "startedAt",
                       "completedAt",
                       "context",
-                      "createdAt"
+                      "createdAt",
+                      "executionBackend",
+                      "executionStatus",
+                      "executionStatusDetail"
                     ],
                     "properties": {
                       "workflowInstanceId": {
@@ -33447,6 +33521,42 @@
                       },
                       "createdAt": {
                         "type": "string"
+                      },
+                      "executionBackend": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "enum": [
+                              "legacy"
+                            ]
+                          },
+                          {
+                            "type": "string",
+                            "enum": [
+                              "temporal"
+                            ]
+                          }
+                        ]
+                      },
+                      "executionStatus": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "executionStatusDetail": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
                       }
                     }
                   }
@@ -33565,6 +33675,25 @@
                     },
                     "workflowTaskId": {
                       "type": "string"
+                    },
+                    "executionBackend": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "legacy"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "temporal"
+                          ]
+                        }
+                      ]
+                    },
+                    "executionStatus": {
+                      "type": "string"
                     }
                   }
                 }
@@ -33659,7 +33788,11 @@
                       "payload",
                       "createdAt",
                       "updatedAt",
-                      "outcomeOptions"
+                      "outcomeOptions",
+                      "revision",
+                      "escalatedAt",
+                      "attentionReasonCode",
+                      "executionBackend"
                     ],
                     "properties": {
                       "workflowTaskId": {
@@ -33765,6 +33898,45 @@
                             "type": "null"
                           }
                         ]
+                      },
+                      "revision": {
+                        "type": "integer"
+                      },
+                      "escalatedAt": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "attentionReasonCode": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "executionBackend": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "enum": [
+                              "legacy"
+                            ]
+                          },
+                          {
+                            "type": "string",
+                            "enum": [
+                              "temporal"
+                            ]
+                          }
+                        ]
                       }
                     }
                   }
@@ -33811,14 +33983,314 @@
             "in": "path",
             "name": "workflowTaskId",
             "required": true
+          },
+          {
+            "schema": {
+              "maxLength": 200,
+              "type": "string"
+            },
+            "in": "header",
+            "name": "idempotency-key",
+            "required": false
           }
         ],
         "x-publication-class": "admin",
         "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "commandId",
+                    "workflowInstanceId",
+                    "workflowTaskId",
+                    "commandType",
+                    "decisionCode",
+                    "status",
+                    "acceptedAt",
+                    "appliedAt",
+                    "errorCode",
+                    "errorDetail",
+                    "statusUrl"
+                  ],
+                  "properties": {
+                    "commandId": {
+                      "type": "string"
+                    },
+                    "workflowInstanceId": {
+                      "type": "string"
+                    },
+                    "workflowTaskId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "commandType": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "decision"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "cancellation"
+                          ]
+                        }
+                      ]
+                    },
+                    "decisionCode": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "status": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "applied"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "pending"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "failed"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "superseded"
+                          ]
+                        }
+                      ]
+                    },
+                    "acceptedAt": {
+                      "type": "string"
+                    },
+                    "appliedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "errorCode": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "errorDetail": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "statusUrl": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "commandId",
+                    "workflowInstanceId",
+                    "workflowTaskId",
+                    "commandType",
+                    "decisionCode",
+                    "status",
+                    "acceptedAt",
+                    "appliedAt",
+                    "errorCode",
+                    "errorDetail",
+                    "statusUrl"
+                  ],
+                  "properties": {
+                    "commandId": {
+                      "type": "string"
+                    },
+                    "workflowInstanceId": {
+                      "type": "string"
+                    },
+                    "workflowTaskId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "commandType": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "decision"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "cancellation"
+                          ]
+                        }
+                      ]
+                    },
+                    "decisionCode": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "status": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "applied"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "pending"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "failed"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "superseded"
+                          ]
+                        }
+                      ]
+                    },
+                    "acceptedAt": {
+                      "type": "string"
+                    },
+                    "appliedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "errorCode": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "errorDetail": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "statusUrl": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
           "204": {
             "description": "Default Response"
           },
           "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
             "description": "Default Response",
             "content": {
               "application/json": {
@@ -33935,10 +34407,301 @@
         ],
         "x-publication-class": "admin",
         "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "commandId",
+                    "workflowInstanceId",
+                    "workflowTaskId",
+                    "commandType",
+                    "decisionCode",
+                    "status",
+                    "acceptedAt",
+                    "appliedAt",
+                    "errorCode",
+                    "errorDetail",
+                    "statusUrl"
+                  ],
+                  "properties": {
+                    "commandId": {
+                      "type": "string"
+                    },
+                    "workflowInstanceId": {
+                      "type": "string"
+                    },
+                    "workflowTaskId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "commandType": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "decision"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "cancellation"
+                          ]
+                        }
+                      ]
+                    },
+                    "decisionCode": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "status": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "applied"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "pending"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "failed"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "superseded"
+                          ]
+                        }
+                      ]
+                    },
+                    "acceptedAt": {
+                      "type": "string"
+                    },
+                    "appliedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "errorCode": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "errorDetail": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "statusUrl": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "commandId",
+                    "workflowInstanceId",
+                    "workflowTaskId",
+                    "commandType",
+                    "decisionCode",
+                    "status",
+                    "acceptedAt",
+                    "appliedAt",
+                    "errorCode",
+                    "errorDetail",
+                    "statusUrl"
+                  ],
+                  "properties": {
+                    "commandId": {
+                      "type": "string"
+                    },
+                    "workflowInstanceId": {
+                      "type": "string"
+                    },
+                    "workflowTaskId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "commandType": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "decision"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "cancellation"
+                          ]
+                        }
+                      ]
+                    },
+                    "decisionCode": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "status": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "applied"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "pending"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "failed"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "superseded"
+                          ]
+                        }
+                      ]
+                    },
+                    "acceptedAt": {
+                      "type": "string"
+                    },
+                    "appliedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "errorCode": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "errorDetail": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "statusUrl": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
           "204": {
             "description": "Default Response"
           },
           "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
             "description": "Default Response",
             "content": {
               "application/json": {
@@ -33993,6 +34756,284 @@
                       "items": {
                         "type": "string"
                       }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workflow-commands/{commandId}": {
+      "get": {
+        "operationId": "getWorkflowCommandsByCommandId",
+        "tags": [
+          "platform-controls"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "commandId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "commandId",
+                    "workflowInstanceId",
+                    "workflowTaskId",
+                    "commandType",
+                    "decisionCode",
+                    "status",
+                    "acceptedAt",
+                    "appliedAt",
+                    "errorCode",
+                    "errorDetail",
+                    "statusUrl"
+                  ],
+                  "properties": {
+                    "commandId": {
+                      "type": "string"
+                    },
+                    "workflowInstanceId": {
+                      "type": "string"
+                    },
+                    "workflowTaskId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "commandType": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "decision"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "cancellation"
+                          ]
+                        }
+                      ]
+                    },
+                    "decisionCode": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "status": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "applied"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "pending"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "failed"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "superseded"
+                          ]
+                        }
+                      ]
+                    },
+                    "acceptedAt": {
+                      "type": "string"
+                    },
+                    "appliedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "errorCode": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "errorDetail": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "statusUrl": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workflow-execution/health": {
+      "get": {
+        "operationId": "getWorkflowExecutionHealth",
+        "tags": [
+          "platform-controls"
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "temporalExecutionEnabled",
+                    "startingInstances",
+                    "needsAttentionInstances",
+                    "pendingCommands",
+                    "failedCommands",
+                    "unpublishedEvents",
+                    "oldestPendingCommandSeconds"
+                  ],
+                  "properties": {
+                    "temporalExecutionEnabled": {
+                      "type": "boolean"
+                    },
+                    "startingInstances": {
+                      "type": "integer"
+                    },
+                    "needsAttentionInstances": {
+                      "type": "integer"
+                    },
+                    "pendingCommands": {
+                      "type": "integer"
+                    },
+                    "failedCommands": {
+                      "type": "integer"
+                    },
+                    "unpublishedEvents": {
+                      "type": "integer"
+                    },
+                    "oldestPendingCommandSeconds": {
+                      "anyOf": [
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workflow-execution/reconcile": {
+      "post": {
+        "operationId": "createWorkflowExecutionReconcile",
+        "tags": [
+          "platform-controls"
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "startsRetried",
+                    "commandsRedelivered",
+                    "eventsPublished"
+                  ],
+                  "properties": {
+                    "startsRetried": {
+                      "type": "integer"
+                    },
+                    "commandsRedelivered": {
+                      "type": "integer"
+                    },
+                    "eventsPublished": {
+                      "type": "integer"
                     }
                   }
                 }

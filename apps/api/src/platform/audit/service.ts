@@ -2,7 +2,7 @@ import { createHash, randomUUID } from 'node:crypto';
 
 import { and, desc, eq, gt, isNull } from 'drizzle-orm';
 import { auditRecords, auditPartitionSeals } from '@revelation-srs/db';
-import type { AuditActionType, AuditActorType, Db } from '@revelation-srs/db';
+import type { AuditActionType, AuditActorType, Db, TenantScopedDb } from '@revelation-srs/db';
 
 import { clockNow } from '../clock.js';
 
@@ -105,11 +105,13 @@ export class AuditService {
    * the chain. This is the single choke point every call site already
    * goes through, so no caller needs to change.
    */
-  async record(entry: AuditEntry): Promise<void> {
+  async record(entry: AuditEntry, outerTx?: TenantScopedDb): Promise<void> {
     const tenantId   = (entry.tenantId ?? null) as Uuid | null;
     const occurredAt = clockNow();
 
-    await this.db.transaction(async (tx) => {
+    // With outerTx, the audit row commits or rolls back with the caller's
+    // change (used by workflow activities that must be all-or-nothing).
+    const write = async (tx: TenantScopedDb): Promise<void> => {
       const previousRows = await tx.select({ recordHash: auditRecords.recordHash })
         .from(auditRecords)
         .where(tenantId ? eq(auditRecords.tenantId, tenantId) : isNull(auditRecords.tenantId))
@@ -148,7 +150,10 @@ export class AuditService {
         previousRecordHash,
         recordHash,
       });
-    });
+    };
+
+    if (outerTx) await write(outerTx);
+    else await this.db.transaction(write);
   }
 
   /**

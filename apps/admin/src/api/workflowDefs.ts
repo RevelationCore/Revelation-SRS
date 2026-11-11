@@ -122,9 +122,17 @@ export interface StartWorkflowInstanceInput {
   };
 }
 
+export interface StartedWorkflow {
+  workflowInstanceId: string;
+  workflowTaskId?: string;
+  executionBackend?: 'legacy' | 'temporal';
+  /** 'starting' means saved but not yet running on the workflow service. */
+  executionStatus?: string;
+}
+
 export function startWorkflowInstance(
   body: StartWorkflowInstanceInput,
-): Promise<{ workflowInstanceId: string; workflowTaskId?: string }> {
+): Promise<StartedWorkflow> {
   return api.post('/api/v1/workflow-instances', body);
 }
 

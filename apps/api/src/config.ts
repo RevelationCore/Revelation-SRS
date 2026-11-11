@@ -7,6 +7,14 @@ export interface Config {
   natsUrl:      string;
   attendanceApiUrl: string;
   temporalAddress: string;
+  /** Live Temporal execution. Off unless TEMPORAL_EXECUTION_ENABLED=true. */
+  temporalExecutionEnabled?: boolean;
+  temporalNamespace?: string;
+  temporalTaskQueue?: string;
+  /** How long a decision request waits for the workflow's outcome. */
+  temporalDecisionWaitMs?: number;
+  /** The reconciler leaves commands/starts younger than this to the API. */
+  temporalReconcileGraceSeconds?: number;
   deploymentEnvironmentCode: string;
   releaseVersion: string;
   imageDigest: string | undefined;
@@ -42,6 +50,11 @@ export function loadConfig(): Config {
     natsUrl:         process.env['NATS_URL'] ?? 'nats://localhost:4222',
     attendanceApiUrl: process.env['ATTENDANCE_API_URL'] ?? 'http://localhost:3004',
     temporalAddress: process.env['TEMPORAL_ADDRESS'] ?? 'localhost:7233',
+    temporalExecutionEnabled: process.env['TEMPORAL_EXECUTION_ENABLED'] === 'true',
+    temporalNamespace: process.env['TEMPORAL_NAMESPACE'] ?? 'srs-local',
+    temporalTaskQueue: process.env['TEMPORAL_TASK_QUEUE'] ?? 'srs-workflows',
+    temporalDecisionWaitMs: optionalInt('TEMPORAL_DECISION_WAIT_MS', 10_000),
+    temporalReconcileGraceSeconds: optionalInt('TEMPORAL_RECONCILE_GRACE_SECONDS', 15),
     deploymentEnvironmentCode: process.env['SRS_ENVIRONMENT_CODE'] ?? process.env['NODE_ENV'] ?? 'local',
     releaseVersion: process.env['SRS_RELEASE_VERSION'] ?? process.env['npm_package_version'] ?? '0.0.0',
     imageDigest: optional('SRS_IMAGE_DIGEST'),

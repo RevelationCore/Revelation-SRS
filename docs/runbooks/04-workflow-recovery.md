@@ -1,88 +1,153 @@
 # Runbook 04 — Workflow Recovery
 
-Covers: Temporal workflow stuck or failed, worker pod down, workflow needing
-manual reset.
+Covers: Temporal-run reviews that are stuck, decisions that were saved but not
+applied, a worker that is down, and Temporal or NATS outages.
+
+Background: [ADR-024](../decisions/ADR-024-live-temporal-execution.md). The SRS
+database is the record of truth. Temporal coordinates waiting, deadlines and the
+order decisions are applied. **Do not edit workflow rows in the database by hand,
+and do not start a fresh Temporal workflow for a review that already has one.**
+
+Only reviews with `execution_backend = 'temporal'` run on Temporal. Legacy
+reviews are not covered here; their deadlines are handled by
+`POST /api/v1/workflow-tasks/sweep-overdue`.
 
 ---
 
-## Step 1 — Identify the failing workflow
+## Step 1 — Check the backlog
 
-Open the Temporal UI at `https://temporal.example.com` (requires operator access).
-
-- Navigate to **Namespace: default → Workflows → Failed**.
-- Note the `workflowId` and `runId` of the failing workflow.
-- Inspect the workflow history for the failing event and error message.
-
-Alternatively via the Temporal CLI:
 ```bash
-temporal workflow list --query 'ExecutionStatus="Failed"' -n default
-temporal workflow describe --workflow-id <id> -n default
+curl -H "Authorization: Bearer <token>" https://api.example.com/api/v1/workflow-execution/health
 ```
 
----
-
-## Step 2 — Diagnose the failure
-
-| Failure type | Symptom | Action |
+| Field | Meaning | Normal |
 |---|---|---|
-| Activity failure (retryable) | Activity is retrying; backoff increasing | Wait; or manually terminate and re-trigger if stuck |
-| Activity failure (non-retryable) | Workflow has failed permanently | Inspect error; fix data; reset workflow to before failing event |
-| Worker pod down | Workflow stuck in `Running` with no heartbeat | Restart worker pod; workflow resumes automatically |
-| Schema mismatch | `ApplicationError: unknown activity type` | Rolling deploy workers before API; see upgrade runbook |
+| `startingInstances` | Reviews saved but not yet started on Temporal | 0, or briefly above 0 |
+| `pendingCommands` | Decisions saved but not yet applied | 0, or briefly above 0 |
+| `oldestPendingCommandSeconds` | Age of the oldest unapplied decision | Under a minute |
+| `needsAttentionInstances` | Deadline passed with no escalation role configured | Act on these (Step 5) |
+| `failedCommands` | Decisions recorded whose business change could not be applied | See Step 6 |
+| `unpublishedEvents` | Workflow events waiting for NATS | 0 when NATS is up |
 
----
-
-## Step 3 — Restart worker pods
-
-If the worker is down or unresponsive:
+Then check the worker:
 
 ```bash
 kubectl get pods -l app.kubernetes.io/name=srs-worker -n revelation-srs
+kubectl exec deploy/srs-worker -n revelation-srs -- wget -qO- http://localhost:9466/ready
+```
+
+`/ready` returns 503 unless the worker is polling its task queue. Its response
+also shows the last reconciliation result.
+
+---
+
+## Step 2 — Worker down or not polling
+
+```bash
 kubectl rollout restart deployment/srs-worker -n revelation-srs
 ```
 
-Temporal workflows resume automatically once a worker is available — no manual
-intervention is required for healthy workflows that were simply waiting for a worker.
+Waiting reviews resume on the new worker with their timers intact. Decisions
+saved while the worker was down are re-delivered by the reconciler within
+`RECONCILE_INTERVAL_MS` (default 15 s). Staff do **not** need to decide again,
+and doing so is refused as a duplicate.
 
----
-
-## Step 4 — Reset a failed workflow
-
-If a workflow has permanently failed and the underlying issue is fixed:
+To confirm a worker can run workflow code at all:
 
 ```bash
-# Reset to the last completed event before the failure
-temporal workflow reset \
-  --workflow-id <id> \
-  --run-id <run-id> \
-  --event-id <last-good-event-id> \
-  --reason "manual reset after data fix [incident-XXX]" \
-  -n default
-```
-
-Verify the reset workflow resumes and completes:
-```bash
-temporal workflow describe --workflow-id <id> -n default
+TEMPORAL_ADDRESS=<address> TEMPORAL_NAMESPACE=<namespace> \
+  pnpm --filter @revelation-srs/api workflow:smoke
 ```
 
 ---
 
-## Step 5 — Audit trail
+## Step 3 — Temporal unavailable
 
-Record the intervention in the SRS audit log via the admin API:
+While Temporal is down:
+
+- The API stays ready and keeps serving records (`/ready` reports Temporal as
+  `required: false`).
+- New Temporal-run reviews are saved with status **Starting**.
+- Decisions are saved and return `202 Accepted`.
+
+When Temporal is back, the reconciler starts the saved reviews and delivers the
+saved decisions. To run a pass immediately:
 
 ```bash
-curl -X POST -H "Authorization: Bearer <token>" \
-  https://api.example.com/api/v1/audit-log \
-  -H 'Content-Type: application/json' \
-  -d '{"entityType":"workflow","entityId":"<id>","action":"manual_reset","notes":"<reason>"}'
+curl -X POST -H "Authorization: Bearer <token>" https://api.example.com/api/v1/workflow-execution/reconcile
 ```
+
+If the outage lasts a long time, turn the rollout flag `workflow.temporal-execution`
+off so new reviews start on the legacy path. Reviews that already started on
+Temporal stay on Temporal.
 
 ---
 
-## Step 6 — Post-recovery verification
+## Step 4 — NATS unavailable
 
-1. Temporal UI shows no failed workflows.
-2. `TemporalWorkflowFailures` Prometheus alert is resolved.
-3. `TemporalWorkerDown` alert is resolved.
-4. Affected student records are in the expected state.
+Workflow events are saved in `workflow_event_outbox` and published by the
+reconciler when NATS returns. Consumers receive each event's stable `id` and
+must de-duplicate on it. No action is needed beyond restoring NATS.
+
+---
+
+## Step 5 — Needs attention
+
+A review whose deadline passed with no escalation role configured is flagged
+**Needs attention** in the Task Inbox. It is never completed automatically. Ask
+the assigned role (or someone with `workflow:write`) to decide it, or cancel it:
+
+```bash
+curl -X POST -H "Authorization: Bearer <token>" -H 'Content-Type: application/json' \
+  https://api.example.com/api/v1/workflow-instances/<instanceId>/completion \
+  -d '{"statusCode":"cancelled","metadata":{"reason":"<reason>"}}'
+```
+
+Administrative completion (`"statusCode":"completed"`) is refused for
+Temporal-run reviews because it would bypass the decision.
+
+---
+
+## Step 6 — Decision recorded but change not applied
+
+For a review that applies a business change (currently module registration
+change requests), a business-rule failure (closed window, capacity, duplicate)
+is shown to the decider with the reason. The decision is kept in
+`workflow_decision_audit` with `changeApplied: false`, and the review stays open.
+Fix the cause and decide again. Nothing is retried automatically.
+
+---
+
+## Step 7 — Inspecting Temporal directly
+
+The Temporal UI is for operators only (restricted ingress). The workflow ID is
+`srs:<environment>:<tenantId>:<workflowInstanceId>`, stored on the instance as
+`temporal_workflow_id`.
+
+```bash
+temporal workflow describe --workflow-id <id> -n <namespace>
+temporal workflow query --workflow-id <id> --type reviewState -n <namespace>
+```
+
+A reset re-runs activities, which is safe because every effect is applied under
+a receipt. Record the reason:
+
+```bash
+temporal workflow reset --workflow-id <id> --type LastWorkflowTask \
+  --reason "<reason> [incident-XXX]" -n <namespace>
+```
+
+Do not terminate a review that has pending decisions unless you also cancel it
+in the SRS (Step 5). A terminated execution with unapplied decisions shows up as
+`pendingCommands` that never clear.
+
+---
+
+## Step 8 — Post-recovery checks
+
+1. `workflow-execution/health` shows `startingInstances` and `pendingCommands`
+   at 0, or falling.
+2. The worker's `/ready` returns 200.
+3. Affected student records are in the expected state. For registration change
+   requests, check that each approved request has exactly one registration.
+4. Record the intervention in the incident log, with workflow IDs.

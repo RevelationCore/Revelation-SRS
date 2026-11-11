@@ -1,4 +1,4 @@
-import { boolean, integer, jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { boolean, integer, jsonb, pgTable, primaryKey, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 
 import { tenants } from './tenant.js';
 
@@ -153,6 +153,16 @@ export const workflowInstances = pgTable('workflow_instance', {
   completedAt:                 timestamp('completed_at', { withTimezone: true }),
   context:                     jsonb('context').notNull().$type<Record<string, unknown>>().default({}),
   createdAt:                   timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  // Execution metadata (migration 0023). The backend is fixed at start.
+  executionBackend:            text('execution_backend').notNull().default('legacy').$type<'legacy' | 'temporal'>(),
+  executionStatus:             text('execution_status'),
+  executionStatusDetail:       text('execution_status_detail'),
+  executionUpdatedAt:          timestamp('execution_updated_at', { withTimezone: true }),
+  temporalNamespace:           text('temporal_namespace'),
+  temporalTaskQueue:           text('temporal_task_queue'),
+  temporalWorkflowId:          text('temporal_workflow_id'),
+  temporalRunId:               text('temporal_run_id'),
+  executionContractVersion:    integer('execution_contract_version'),
 });
 
 export const workflowTasks = pgTable('workflow_task', {
@@ -170,6 +180,10 @@ export const workflowTasks = pgTable('workflow_task', {
   payload:            jsonb('payload').notNull().$type<Record<string, unknown>>().default({}),
   createdAt:          timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt:          timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  // Serialises decisions, escalation and cancellation (migration 0023).
+  revision:            integer('revision').notNull().default(0),
+  escalatedAt:         timestamp('escalated_at', { withTimezone: true }),
+  attentionReasonCode: text('attention_reason_code'),
 });
 
 export const workflowDecisionAudits = pgTable('workflow_decision_audit', {
@@ -184,6 +198,53 @@ export const workflowDecisionAudits = pgTable('workflow_decision_audit', {
   actorId:            text('actor_id').notNull().default('system'),
   metadata:           jsonb('metadata').notNull().$type<Record<string, unknown>>().default({}),
   decidedAt:          timestamp('decided_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const workflowCommands = pgTable('workflow_command', {
+  id:                 uuid('id').primaryKey().defaultRandom(),
+  tenantId:           uuid('tenant_id').notNull().references(() => tenants.id),
+  workflowInstanceId: uuid('workflow_instance_id').notNull().references(() => workflowInstances.id),
+  workflowTaskId:     uuid('workflow_task_id').references(() => workflowTasks.id),
+  taskRevision:       integer('task_revision'),
+  commandType:        text('command_type').notNull().$type<'decision' | 'cancellation'>(),
+  idempotencyKey:     text('idempotency_key').notNull(),
+  payloadHash:        text('payload_hash').notNull(),
+  decisionCode:       text('decision_code'),
+  payload:            jsonb('payload').notNull().$type<Record<string, unknown>>().default({}),
+  actorId:            text('actor_id').notNull(),
+  acceptedAt:         timestamp('accepted_at', { withTimezone: true }).notNull().defaultNow(),
+  deliveryState:      text('delivery_state').notNull().default('pending')
+    .$type<'pending' | 'delivered' | 'applied' | 'superseded' | 'failed'>(),
+  deliveryAttempts:   integer('delivery_attempts').notNull().default(0),
+  nextDeliveryAt:     timestamp('next_delivery_at', { withTimezone: true }).notNull().defaultNow(),
+  deliveredAt:        timestamp('delivered_at', { withTimezone: true }),
+  appliedAt:          timestamp('applied_at', { withTimezone: true }),
+  result:             jsonb('result').notNull().$type<Record<string, unknown>>().default({}),
+  errorCode:          text('error_code'),
+  errorDetail:        text('error_detail'),
+});
+
+export const workflowOperationReceipts = pgTable('workflow_operation_receipt', {
+  tenantId:           uuid('tenant_id').notNull().references(() => tenants.id),
+  operationKey:       text('operation_key').notNull(),
+  workflowInstanceId: uuid('workflow_instance_id').notNull().references(() => workflowInstances.id),
+  result:             jsonb('result').notNull().$type<Record<string, unknown>>().default({}),
+  createdAt:          timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [primaryKey({ columns: [t.tenantId, t.operationKey] })]);
+
+export const workflowEventOutbox = pgTable('workflow_event_outbox', {
+  id:                 uuid('id').primaryKey().defaultRandom(),
+  tenantId:           uuid('tenant_id').notNull().references(() => tenants.id),
+  eventType:          text('event_type').notNull(),
+  eventVersion:       text('event_version').notNull(),
+  correlationId:      text('correlation_id').notNull(),
+  dataClassification: text('data_classification').notNull().default('standard'),
+  payload:            jsonb('payload').notNull().$type<Record<string, unknown>>().default({}),
+  createdAt:          timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  publishedAt:        timestamp('published_at', { withTimezone: true }),
+  publishAttempts:    integer('publish_attempts').notNull().default(0),
+  nextAttemptAt:      timestamp('next_attempt_at', { withTimezone: true }).notNull().defaultNow(),
+  lastError:          text('last_error'),
 });
 
 export const featureFlags = pgTable('feature_flag', {
@@ -268,6 +329,9 @@ export type WorkflowTriggerRule = typeof workflowTriggerRules.$inferSelect;
 export type WorkflowInstance = typeof workflowInstances.$inferSelect;
 export type WorkflowTask = typeof workflowTasks.$inferSelect;
 export type WorkflowDecisionAudit = typeof workflowDecisionAudits.$inferSelect;
+export type WorkflowCommand = typeof workflowCommands.$inferSelect;
+export type WorkflowOperationReceipt = typeof workflowOperationReceipts.$inferSelect;
+export type WorkflowEventOutboxRow = typeof workflowEventOutbox.$inferSelect;
 export type FeatureFlag = typeof featureFlags.$inferSelect;
 export type FeatureFlagVariant = typeof featureFlagVariants.$inferSelect;
 export type FeatureFlagAssignment = typeof featureFlagAssignments.$inferSelect;

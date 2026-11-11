@@ -11,16 +11,16 @@
     "build":     "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "dev":       "tsc -p tsconfig.json --watch",
-    "worker":    "node --import tsx/esm src/worker.ts",
     "test":      "vitest run --reporter=verbose"
   },
   "dependencies": {
-    "@temporalio/client":  "^1.11.0",
-    "@temporalio/worker":  "^1.11.0",
-    "@temporalio/workflow": "^1.11.0",
-    "@temporalio/activity": "^1.11.0"
+    "@temporalio/client": "1.25.0",
+    "@temporalio/worker": "1.25.0",
+    "@temporalio/workflow": "1.25.0",
+    "@temporalio/activity": "1.25.0"
   },
   "devDependencies": {
+    "@temporalio/testing":     "1.25.0",
     "@revelation-srs/domain": "workspace:*",
     "@types/node":             "^22.0.0",
     "tsx":                     "^4.0.0",

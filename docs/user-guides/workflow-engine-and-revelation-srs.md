@@ -11,28 +11,26 @@
 
 ### In short: does Revelation SRS run a full production workflow?
 
-**Partially, and by design — not by omission.** Every governed decision in
-the codebase gets the full *data model* of a real workflow engine: a
-versioned definition, a running instance, a task with a deadline and an
-assignee, and an immutable decision audit. That model is real, enforced by
-the database, and covered by tests. What it does **not** yet get is *live
-Temporal execution* — no code path in the application today starts, signals,
-or queries an actual running Temporal workflow process. The platform
-services described in this guide call the same lifecycle methods a Temporal
-activity would call, directly and synchronously from a REST handler, rather
-than through Temporal's runtime.
+**Yes, for two workflow families, once a deployment turns it on.** Every
+governed decision in the codebase gets the full *data model* of a workflow
+engine: a versioned definition, a running instance, a task with a deadline
+and an assignee, and an immutable decision audit. Since November 2026
+([ADR-024](../decisions/ADR-024-live-temporal-execution.md)), two families can
+also run on **live Temporal execution**, with durable waiting, deadline
+timers that survive restarts, and retries that are safe to repeat:
 
-So: the workflow **shape** — definition, instance, task, decision audit,
-escalation policy, permission-gated human decisions — is production-grade
-and used throughout the app today, right now, by nine different platform
-services. The workflow **engine** underneath it — Temporal-managed durable
-execution, crash-survival, and live timers — is deployed, configured, and
-ready, but not yet wired into any of them. "The honest, important nuance"
-below explains the exact mechanism, why it's a deliberate staged position
-rather than a gap, and which ADRs govern it. If you'd rather see this than
-read about it, "Try it yourself" near the end of this guide is a walkthrough
-in the running app, and "Configuring a workflow" traces one real workflow
-through every file behind it.
+- reviews authored in the admin workflow builder, and
+- module registration change requests (`module-registration-change-approval`).
+
+Live execution is **off by default**. A deployment enables it with
+`TEMPORAL_EXECUTION_ENABLED=true` and a running worker, then the
+`workflow.temporal-execution` feature flag chooses which tenants and workflow
+versions use it for *new* reviews. Every other workflow family — module
+selection, legal identity change, admissions and the five regulatory
+submissions — still runs on the original in-process path, where the API calls
+the workflow lifecycle methods directly and synchronously. "Two execution
+paths" below explains both, and "Try it yourself" near the end walks through
+the app.
 
 ## Part 1 — Workflow engines as a concept
 
@@ -135,14 +133,13 @@ activity retry with backoff; native signal/query support for human tasks;
 durable, crash-proof timers for deadline enforcement; an operational UI; and
 an MIT-licensed, self-hostable server.
 
-Temporal's own infrastructure is fully deployed: `infra/compose/docker-compose.yml`
-runs a `temporalio/auto-setup` server container backed by the same
-PostgreSQL cluster the application uses (in its own schema) and a
-`temporalio/ui` container exposed locally at `http://localhost:8233`.
-`docs/architecture/deployment-architecture.md` positions Temporal Server
-(backed by PostgreSQL) as a platform service in both the single-institution
-and Kubernetes/multi-institution production topologies, and the API's
-`/ready` health check includes a Temporal-worker readiness condition.
+Locally, `infra/compose/docker-compose.yml` runs the official Temporal dev
+server (`temporalio/temporal:1.10.0`, which bundles Server 1.32.2 and the Web UI
+at `http://localhost:8233`), with its data on a named volume so waiting
+workflows survive a restart. Production uses `temporalio/server:1.32.2`
+backed by PostgreSQL (`infra/k8s/base/temporal.yaml`). The SDK is pinned at
+1.25.0. The API's `/ready` reports Temporal but does not fail because of it,
+so staff can keep using records during a workflow outage.
 
 ### The relational workflow model — `packages/db/src/schema/platform-workflow.ts`
 
@@ -184,38 +181,35 @@ was configured to do and exactly what actually happened for a given case.
 
 ### The Temporal workflow definition itself
 
-`packages/workflow/src/workflows/index.ts` contains exactly two workflow
-functions — the entire set in the codebase:
+`packages/workflow/src/workflows/index.ts` contains two workflow functions:
 
 - **`recordAuditWorkflow`** — a minimal wrapper that durably records a single
-  audit event via a retried activity; described in code as a Phase 3
-  scaffold.
-- **`genericHumanTaskWorkflow`** — the substantive one, implementing exactly
-  the human-task-with-escalation pattern from Part 1:
-  1. Registers a `completeTask` **signal** and a `state` **query** before
-     doing anything else, so external callers can always resume or inspect
-     the workflow.
-  2. Creates a `workflow_instance` row and writes a `workflow-started` audit
-     event.
-  3. Creates and assigns a `workflow_task` for the given step, computing a
-     due date from an explicit deadline or a relative offset.
-  4. Waits on `condition(() => completed, dueAfterMs)` — Temporal's durable,
-     crash-proof wait-with-timeout. If no deadline is given, it waits
-     indefinitely.
-  5. **If the deadline passes first**: escalates the task
-     (`reasonCode: 'deadline-expired'`) and ends — the workflow never reaches
-     completion.
-  6. **If the signal arrives in time**: completes the task, records a
-     decision at a `"<stepKey>:completion"` gateway (note: the generic
-     workflow always records this as `decisionCode: 'approved'` — it has no
-     concept of "reject," only "completed in time or not"; a real
-     approve/reject decision is recorded separately by the calling platform
-     service), and completes the instance.
+  audit event via a retried activity.
+- **`reviewWorkflow`** — the review workflow (execution contract version 1,
+  defined in `packages/workflow/src/contracts/review.ts`):
+  1. Starts with the IDs of a `workflow_instance` and `workflow_task` that the
+     API has already saved, the task's persisted deadline (`dueAt`), and the
+     escalation role, if any.
+  2. Registers a `submitReviewCommand` **update**, a `reviewCommandSubmitted`
+     **signal** and a `reviewState` **query**. Updates and signals carry only
+     a command ID; the decision itself is loaded from the database.
+  3. Waits for a command, or for the deadline. If the deadline has already
+     passed when it starts or resumes, it escalates straight away.
+  4. **At the deadline**: reassigns the task to the escalation role, or, if
+     there is none, flags it **Needs attention**. Either way it **keeps
+     waiting** for a decision; nothing is approved automatically. A decision
+     accepted on or before the deadline wins over the timer.
+  5. **For each command**, one at a time: applies it through the
+     `applyReviewCommand` activity, which records the *actual* outcome
+     (approved, rejected, or any configured code), closes the task and
+     instance, and runs any business change (see the registration pilot).
+     If a business rule blocks the change, the decision is kept, the task
+     reopens, and the workflow waits for a new decision.
 
-Both activity groups the workflow calls (`recordWorkflowEvent`, and the six
-workflow-lifecycle activities) are configured with a 30-second
-start-to-close timeout and up to 3 retry attempts — the concrete expression
-of "activities are unreliable and get retried automatically."
+Activities retry with backoff until they succeed. That is safe because each
+one commits its change together with an operation receipt, so a retry after a
+crash returns the first result instead of repeating it. Business-rule failures
+are returned as outcomes rather than thrown, so they never retry forever.
 
 ### The activities implementation — `WorkflowBridgeService`
 
@@ -229,42 +223,51 @@ domain event published if the event bus is connected
 (`srs.workflow.task-assigned`, `.task-completed`, `.task-escalated`,
 `.decision-recorded`, `.completed`), and a durable audit-trail entry.
 
-### The honest, important nuance: how this actually runs today
+### Two execution paths
 
-This is the fact most worth stating plainly, because the infrastructure
-above could easily be read as implying more than is currently true.
+Each `workflow_instance` records which path it runs on, in
+`execution_backend`. The choice is made when the review starts and never
+changes.
 
-**No code path in `apps/api` currently starts, signals, or queries a live
-Temporal workflow.** Instead, the nine platform services below are
-constructed with a `WorkflowBridgeService` instance and call its methods
-**directly, synchronously, inside their own HTTP request handlers** — the
-same calls `genericHumanTaskWorkflow`'s activities would make, but with no
-Temporal orchestration actually running in between. Starting a "workflow"
-means calling `startWorkflowInstance` + `assignWorkflowTask` directly;
-completing one means calling `completeWorkflowTask` + `recordWorkflowDecision`
-+ `completeWorkflowInstance` directly, from an authenticated REST endpoint —
-not sending a signal to a paused Temporal process.
+**Temporal path** (`execution_backend = 'temporal'`):
 
-This is a **deliberate, documented, staged position**, not an oversight.
-`docs/decisions/ADR-015-workflow-feature-flags-and-environment-promotion.md`
-states it directly: "Temporal remains the durable execution engine, but
-SRS-owned relational workflow records provide the inspectable configuration,
-task, decision, and audit surface." `docs/architecture/module-selection-rules.md`
-is equally explicit about one specific workflow: "not a bespoke Temporal
-workflow (no Temporal worker/client actually runs in this codebase today —
-see `WorkflowBridgeService`)." The practical effect is that Revelation SRS
-gets the *data model and auditability* of a workflow engine everywhere,
-today, while the live Temporal execution — and the crash-survival and
-durable-timer guarantees that come with actually running through it — is
-designed for and will be progressively wired in per ADR-016, not yet
-exercised end-to-end. No test in the repository (as of this guide) starts a
-real or simulated Temporal workflow, kills a worker mid-flight, or fires a
-due-date timer to observe an escalation; the existing test coverage verifies
-the relational model's shape and the Task Inbox's permission behaviour, not
-Temporal's runtime guarantees in this codebase specifically. Those
-guarantees are real properties of Temporal as a platform — just not yet
-properties this codebase's own tests demonstrate, because nothing here runs
-through it live yet.
+1. *Start.* The API saves the instance and its task in one transaction, with
+   the deadline resolved once from the database clock. It then starts the
+   Temporal execution under a stable ID (`srs:<environment>:<tenant>:<instance>`).
+   If Temporal is unreachable, the review is saved with status **Starting**,
+   and the reconciler starts it later.
+2. *Decide.* The API saves the decision as a `workflow_command` row (one per
+   task revision, so a second or conflicting decision is refused), then
+   delivers it by Temporal Update and waits briefly for the outcome. The user
+   normally gets the applied result (`200`). If the worker is down, the user
+   gets `202 Accepted`; the decision is saved, and the reconciler delivers it
+   when the worker is back.
+3. *Apply.* The worker applies the command, its audit trail and its events in
+   one transaction. Events go to `workflow_event_outbox` and are published
+   to NATS from there, so a NATS outage no longer loses them.
+
+The worker is `apps/api/src/worker.ts`. It builds the same service graph as
+the API, runs the review workflows and their activities, and every 15 seconds
+runs the reconciler (`workflow-reconciler.ts`), which starts saved reviews,
+re-delivers saved decisions and publishes saved events. It is safe to run
+on several replicas.
+
+**Legacy path** (`execution_backend = 'legacy'`, every family not yet
+migrated): the platform services below call `WorkflowBridgeService` directly
+and synchronously inside their HTTP handlers. Starting a "workflow" means
+calling `startWorkflowInstance` + `assignWorkflowTask`; deciding means calling
+`completeWorkflowTask` + `recordWorkflowDecision` + `completeWorkflowInstance`.
+Deadlines on this path are enforced only when something calls
+`POST /workflow-tasks/sweep-overdue`. Legacy workflow events now also go
+through the outbox.
+
+Test coverage for the Temporal path runs against real Temporal servers, not
+mocks: `packages/workflow/test/review-workflow.test.ts` uses the SDK's
+time-skipping server (deadlines, escalation, replay determinism), and
+`apps/api/test/temporal-execution.int.test.ts` runs the API, a real worker and
+the pinned dev server image together (worker restarts, Temporal unreachable at
+start, decisions during a worker outage, concurrent decisions, deadline races,
+forged commands, and the registration pilot).
 
 ### Who calls the workflow bridge today
 
@@ -431,15 +434,13 @@ confirmation — the completion endpoint now accepts an optional
 records a proper `workflow_decision_audit` entry, exactly like the bespoke
 services already do.
 
-**And it's the first thing in this codebase to actually enforce a
-due-date.** `POST /workflow-tasks/sweep-overdue`
-(`workflow-escalation-service.ts`) — meant to be invoked periodically by an
-external scheduler, not an in-process timer, matching the regulatory
-trigger-drain endpoints — reassigns an overdue task to its configured
-escalation role (or marks it terminally `escalated`, the same fallback
-`genericHumanTaskWorkflow` always documented) exactly once per task, since
-`escalateWorkflowTask` moving a task's status to `escalated` is itself what
-drops it out of the sweep's next pass — no separate marker needed.
+**Deadlines.** On the Temporal path, the review's own durable timer enforces
+the due date (from the step's `dueAfterHours`, resolved once at start) and
+escalates to the configured role, or flags the task **Needs attention**. On
+the legacy path, `POST /workflow-tasks/sweep-overdue`
+(`workflow-escalation-service.ts`), meant to be called by an external
+scheduler, reassigns overdue tasks once each. The sweep ignores Temporal-run
+tasks, so a task never has two deadline owners.
 
 **What this still doesn't do**, deliberately: a generic workflow is
 single-step (no sequential chains — every real bespoke workflow in the app
@@ -472,11 +473,15 @@ requests a change → `ModuleRegistrationService` starts a `workflow_instance`
 and assigns a task to the `personal-tutor` role → the task is visible both in
 the generic Task Inbox and in a dedicated **Registration requests** page →
 the tutor approves or rejects there, with a reason → `decideChangeRequest`
-records the *actual* decision code (`approved`/`rejected`, not the generic
-workflow's hardcoded `'approved'`), completes the task and instance, and —
-only if approved — re-runs the same validated registration logic staff use
-directly, because the underlying state may have drifted since the request
-was submitted. The Task Inbox, in this design, functions as a cross-cutting
+records the actual decision code (`approved`/`rejected`) and, if approved,
+re-runs the same validated registration logic staff use directly, because
+the underlying state may have drifted since the request was submitted. The
+change is applied *before* the request is closed, so if it fails (window
+closed, capacity gone, a duplicate) the request stays open and can be decided
+again. On the Temporal path the worker applies the change, with a
+registration ID derived from the decision so a retry cannot register twice,
+and a failure reports "Decision recorded, but the registration change was not
+applied". The Task Inbox, in this design, functions as a cross-cutting
 "what's outstanding and assigned to me" surface, not as the primary way
 business-critical decisions actually get made.
 
@@ -520,16 +525,24 @@ schema.
 
 ### Running it locally
 
-`docker compose up -d` (from `infra/compose/`, or with `-f
-infra/compose/docker-compose.yml` from the repo root) starts the Temporal
-server and UI alongside the rest of the stack; the UI is reachable at
-`http://localhost:8233`. `packages/workflow/src/worker.ts` exposes a
-`startWorker()` bootstrap and a directly-runnable entrypoint (`pnpm
---filter @revelation-srs/workflow worker`), configured via `TEMPORAL_ADDRESS`,
-`TEMPORAL_NAMESPACE` (intended to be per-tenant: `srs-{tenantId}`), and
-`TEMPORAL_TASK_QUEUE` environment variables — ready for a domain service to
-supply its own activity implementations and register a worker when its
-workflows are progressively wired onto live Temporal execution.
+`docker compose -f infra/compose/docker-compose.yml up -d` starts Temporal
+(UI at `http://localhost:8233`, namespace `srs-local`) with the rest of the
+stack. To use live execution:
+
+```bash
+# in .env
+TEMPORAL_EXECUTION_ENABLED=true
+TEMPORAL_NAMESPACE=srs-local
+TEMPORAL_TASK_QUEUE=srs-workflows
+
+pnpm --filter @revelation-srs/api dev       # API
+pnpm --filter @revelation-srs/api worker    # worker (separate terminal)
+pnpm --filter @revelation-srs/api workflow:smoke   # checks the worker is polling
+```
+
+Then turn on the `workflow.temporal-execution` flag for your tenant in
+**Feature flags**. Reviews started after that run on Temporal; earlier ones
+stay on the legacy path.
 
 ### Try it yourself: walk the same workflow through the running app
 
@@ -580,14 +593,12 @@ application URLs — the student portal and the admin console.
    registration is unchanged, and the reason you entered is preserved on the
    decision-audit record described earlier in this guide.
 
-**What you just exercised**: `startWorkflowInstance` + `assignWorkflowTask`
-on submission, then `completeWorkflowTask` + `recordWorkflowDecision` +
-`completeWorkflowInstance` on the admin decision — real `WorkflowBridgeService`
-calls, writing real rows to `workflow_instance`, `workflow_task`, and
-`workflow_decision_audit`, exactly as described earlier in this guide. What
-you did *not* just exercise is a live Temporal process: as "the honest,
-important nuance" explained, this flow runs entirely through direct,
-synchronous calls today, not through Temporal's runtime. If you're curious,
+**What you just exercised**: real rows in `workflow_instance`,
+`workflow_task` and `workflow_decision_audit`, written on the legacy path
+unless you enabled live execution as described in "Running it locally". With
+it enabled, the same flow runs on Temporal: open the Temporal UI, find the
+workflow `srs:<environment>:<tenant>:<instance>`, and you can watch the
+review wait, receive the decision as an Update, and complete. If you're curious,
 the same task also appears in the generic **Task inbox** in the admin
 sidebar — but, as "The Task Inbox" section explains, its own Complete action
 can't drive this particular decision; the dedicated Registration requests

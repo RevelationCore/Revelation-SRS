@@ -51,6 +51,14 @@ import { RegulatoryExchangeService } from './platform/regulatory/exchange-servic
 import { EnvironmentService } from './platform/platform-controls/environment-service.js';
 import { FeatureFlagService } from './platform/platform-controls/feature-flag-service.js';
 import { WorkflowBridgeService } from './platform/platform-controls/workflow-bridge-service.js';
+import {
+  ReviewExecutionService,
+  type TemporalExecutionSettings,
+  type TemporalGateway,
+} from './platform/platform-controls/review-execution-service.js';
+import { ReviewActivitiesService } from './platform/platform-controls/review-activities.js';
+import { SdkTemporalGateway } from './platform/platform-controls/temporal-gateway.js';
+import { WorkflowReconciler } from './platform/platform-controls/workflow-reconciler.js';
 import { WorkflowDefinitionService } from './platform/platform-controls/workflow-definition-service.js';
 import { WorkflowResponsibilityService } from './platform/platform-controls/workflow-responsibility-service.js';
 import { WorkflowBuilderService } from './platform/platform-controls/workflow-builder-service.js';
@@ -225,7 +233,7 @@ function classifyOperation(method: string, url: string): string {
  */
 export async function buildApp(
   config: Config,
-  overrides: { eventBus?: IntegrationBusPublisher } = {},
+  overrides: { eventBus?: IntegrationBusPublisher; temporalGateway?: TemporalGateway } = {},
 ): Promise<FastifyInstance> {
   const serializers = {
     req(req: { method: string; url: string; headers: Record<string, string | string[] | undefined> }) {
@@ -272,12 +280,41 @@ export async function buildApp(
   const featureFlags = new FeatureFlagService(db);
   const triggerRules = new TriggerRuleEvaluator(db, featureFlags);
   const workflowBridge = new WorkflowBridgeService(db, audit, eventBus);
+
+  // Live Temporal execution (ADR-024). Off unless TEMPORAL_EXECUTION_ENABLED
+  // is set; then the rollout flag picks which new reviews use it.
+  const temporalSettings: TemporalExecutionSettings = {
+    enabled: config.temporalExecutionEnabled ?? false,
+    namespace: config.temporalNamespace ?? 'srs-local',
+    taskQueue: config.temporalTaskQueue ?? 'srs-workflows',
+    environmentCode: config.deploymentEnvironmentCode,
+    decisionWaitMs: config.temporalDecisionWaitMs ?? 10_000,
+  };
+  const temporalGateway: TemporalGateway | null = overrides.temporalGateway
+    ?? (temporalSettings.enabled
+      ? new SdkTemporalGateway({
+          address: config.temporalAddress,
+          namespace: temporalSettings.namespace,
+          taskQueue: temporalSettings.taskQueue,
+        })
+      : null);
+  const reviewExecution = new ReviewExecutionService(
+    db, audit, workflowBridge.outbox, featureFlags, temporalSettings, temporalGateway,
+  );
+  const reviewActivities = new ReviewActivitiesService(
+    db, audit, workflowBridge.outbox, (input) => workflowBridge.recordWorkflowEvent(input),
+  );
+  const workflowReconciler = new WorkflowReconciler(db, reviewExecution, workflowBridge.outbox, {
+    graceSeconds: config.temporalReconcileGraceSeconds ?? 15,
+    batchSize: 50,
+  });
   const students   = new StudentService(db, valueSets, workflowBridge);
   const enrolments = new EnrolmentService(db, eventBus, valueSets, triggerRules);
   const catalogue  = new CatalogueService(db, eventBus, valueSets);
   const calendar   = new CalendarService(db);
   const registrationWindows = new RegistrationWindowService(db);
-  const registrations = new ModuleRegistrationService(db, eventBus, rules, registrationWindows, workflowBridge);
+  const registrations = new ModuleRegistrationService(db, eventBus, rules, registrationWindows, workflowBridge, reviewExecution);
+  registrations.registerWorkflowEffects(reviewActivities);
   const tenantAdmin = new TenantAdminService(db);
   const assessmentComponents = new AssessmentComponentService(db, valueSets);
   const moduleResults = new ModuleResultService(db, eventBus, rules);
@@ -375,6 +412,12 @@ export async function buildApp(
   fastify.decorate('workflowResponsibilityService', workflowResponsibilities);
   fastify.decorate('workflowBuilderService', workflowBuilder);
   fastify.decorate('workflowEscalationService', workflowEscalation);
+  fastify.decorate('reviewExecutionService', reviewExecution);
+  fastify.decorate('reviewActivitiesService', reviewActivities);
+  fastify.decorate('workflowReconciler', workflowReconciler);
+  fastify.addHook('onClose', async () => {
+    if (temporalGateway instanceof SdkTemporalGateway) await temporalGateway.close();
+  });
   fastify.decorate('featureFlagService', featureFlags);
   fastify.decorate('environmentService', environments);
   fastify.decorate('ucasService',        ucas);
@@ -695,6 +738,9 @@ declare module 'fastify' {
     workflowResponsibilityService: WorkflowResponsibilityService;
     workflowBuilderService: WorkflowBuilderService;
     workflowEscalationService: WorkflowEscalationService;
+    reviewExecutionService: ReviewExecutionService;
+    reviewActivitiesService: ReviewActivitiesService;
+    workflowReconciler: WorkflowReconciler;
     featureFlagService: FeatureFlagService;
     environmentService: EnvironmentService;
     ucasService:        UcasService;

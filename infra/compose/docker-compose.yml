@@ -44,41 +44,35 @@ services:
       timeout:  5s
       retries:  10
 
-  # ── Temporal (development — in-memory; data lost on restart) ─────────────────
+  # ── Temporal (development server) ─────────────────────────────────────────────
+  # The official Temporal CLI dev server: server, default namespace setup and
+  # Web UI in one process, persisted to a SQLite file on a named volume so
+  # waiting workflows survive `docker compose restart temporal`.
+  # Not production-like: production uses temporalio/server (see infra/k8s).
+  # Pinned combination: CLI 1.10.0, TypeScript SDK 1.25.0. See
+  # docs/decisions/ADR-024-live-temporal-execution.md.
   temporal:
-    image: temporalio/auto-setup:1.24
+    image: temporalio/temporal:1.10.0
     container_name: srs-temporal
     restart: unless-stopped
-    environment:
-      - DB=postgres12
-      - DB_PORT=5432
-      - POSTGRES_USER=srs
-      - POSTGRES_PWD=srs
-      - POSTGRES_SEEDS=postgres
+    command:
+      - server
+      - start-dev
+      - --ip=0.0.0.0
+      - --db-filename=/home/temporal/temporal.db
+      - --namespace=srs-local
+      - --ui-port=8233
     ports:
-      - "7233:7233"
-    depends_on:
-      postgres:
-        condition: service_healthy
+      - "7233:7233"   # gRPC frontend
+      - "8233:8233"   # Web UI
+    volumes:
+      - temporal_data:/home/temporal
     healthcheck:
-      test:     ["CMD-SHELL", "wget -qO- http://$(hostname -i):7243/api/v1/namespaces 2>/dev/null | grep -q temporal"]
+      test:     ["CMD", "temporal", "operator", "namespace", "describe", "--namespace", "srs-local", "--address", "localhost:7233"]
       interval: 10s
       timeout:  10s
       retries:  10
-      start_period: 30s
-
-  # ── Temporal Web UI ───────────────────────────────────────────────────────────
-  temporal-ui:
-    image: temporalio/ui:2.51.0
-    container_name: srs-temporal-ui
-    restart: unless-stopped
-    environment:
-      TEMPORAL_ADDRESS:  temporal:7233
-      TEMPORAL_CORS_ORIGINS: http://localhost:8080
-    ports:
-      - "8233:8080"
-    depends_on:
-      - temporal
+      start_period: 10s
 
   # ── Keycloak (Quarkus distribution) ──────────────────────────────────────────
   keycloak:
@@ -167,6 +161,7 @@ services:
 
 volumes:
   postgres_data:
+  temporal_data:
   prometheus_data:
   grafana_data:
   loki_data:

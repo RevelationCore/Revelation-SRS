@@ -428,8 +428,20 @@ export function moduleRegistrationsRoutes(fastify: FastifyInstance): void {
         params:   Type.Object({ workflowInstanceId: Type.String() }),
         body:     DecisionBody,
         response: {
-          200: Type.Object({ moduleRegistrationId: Type.Union([Type.String(), Type.Null()]) }),
-          404: ErrorSchema, 422: ErrorSchema,
+          200: Type.Object({
+            moduleRegistrationId: Type.Union([Type.String(), Type.Null()]),
+            status: Type.Optional(Type.Literal('applied')),
+            commandId: Type.Optional(Type.String()),
+          }),
+          // Temporal-run request: the decision is saved and will be applied
+          // shortly; poll GET /workflow-commands/{commandId}.
+          202: Type.Object({
+            moduleRegistrationId: Type.Null(),
+            status: Type.Literal('pending'),
+            commandId: Type.String(),
+            statusUrl: Type.String(),
+          }),
+          404: ErrorSchema, 409: ErrorSchema, 422: ErrorSchema,
         },
       },
       preHandler: [requirePermission('module-registration:decide')],
@@ -455,6 +467,15 @@ export function moduleRegistrationsRoutes(fastify: FastifyInstance): void {
         correlationId: request.id,
       });
 
+      if (result.status === 'pending') {
+        await reply.code(202).send({
+          moduleRegistrationId: null,
+          status: 'pending',
+          commandId: result.commandId!,
+          statusUrl: `/api/v1/workflow-commands/${result.commandId}`,
+        });
+        return;
+      }
       await reply.send(result);
     },
   );

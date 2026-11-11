@@ -556,6 +556,72 @@ describe('Registration/withdrawal change requests', () => {
     expect(secondDecide.statusCode).toBe(422);
   });
 
+  it('an approval whose change fails leaves the request open and retryable', async () => {
+    const moduleD = await ctx.app.inject({
+      method: 'POST', url: '/api/v1/modules', headers: { authorization: `Bearer ${regJwt}` },
+      payload: { code: 'CR104', title: 'Change Request Module D', creditValue: 20 },
+    });
+    const periods = await ctx.app.inject({
+      method: 'GET', url: '/api/v1/academic-periods?academicYear=2026-27', headers: { authorization: `Bearer ${regJwt}` },
+    });
+    const offeringD = await ctx.app.inject({
+      method: 'POST', url: '/api/v1/module-offerings', headers: { authorization: `Bearer ${regJwt}` },
+      payload: {
+        moduleId: moduleD.json<{ moduleId: string }>().moduleId,
+        academicPeriodId: periods.json<Array<{ academicPeriodId: string; periodCode: string }>>()
+          .find(p => p.periodCode === 'CR-SEM1')!.academicPeriodId,
+        deliveryModeCode: 'in-person', capacity: 20,
+      },
+    });
+    const offeringDId = offeringD.json<{ moduleOfferingId: string }>().moduleOfferingId;
+
+    const request = await ctx.app.inject({
+      method: 'POST', url: '/api/v1/module-registrations/requests', headers: { authorization: `Bearer ${studentJwt}` },
+      payload: { enrolmentId: crEnrolmentId, moduleOfferingId: offeringDId, registrationDate: '2026-10-01' },
+    });
+    const { workflowInstanceId } = request.json<{ workflowInstanceId: string }>();
+
+    // Staff register the same module directly, so approving the request now
+    // conflicts with an existing registration.
+    const direct = await ctx.app.inject({
+      method: 'POST', url: '/api/v1/module-registrations', headers: { authorization: `Bearer ${regJwt}` },
+      payload: { enrolmentId: crEnrolmentId, moduleOfferingId: offeringDId, registrationDate: '2026-10-01' },
+    });
+    expect(direct.statusCode).toBe(201);
+    const directId = direct.json<{ moduleRegistrationId: string }>().moduleRegistrationId;
+
+    const failed = await ctx.app.inject({
+      method: 'POST', url: `/api/v1/module-registration-requests/${workflowInstanceId}/decision`,
+      headers: { authorization: `Bearer ${tutorJwt}` },
+      payload: { decisionCode: 'approved' },
+    });
+    expect(failed.statusCode).toBe(409);
+
+    // The request is still pending: no decision was recorded and the
+    // workflow was not closed.
+    const pending = await ctx.app.inject({
+      method: 'GET', url: '/api/v1/module-registration-requests', headers: { authorization: `Bearer ${tutorJwt}` },
+    });
+    expect(pending.json<Array<{ workflowInstanceId: string; statusCode: string }>>())
+      .toContainEqual(expect.objectContaining({ workflowInstanceId, statusCode: 'running' }));
+
+    // Once the conflicting registration is withdrawn, the same request can be approved.
+    const withdraw = await ctx.app.inject({
+      method: 'POST', url: `/api/v1/module-registrations/${directId}/withdrawal`,
+      headers: { authorization: `Bearer ${regJwt}` },
+      payload: {},
+    });
+    expect(withdraw.statusCode).toBeLessThan(300);
+
+    const retried = await ctx.app.inject({
+      method: 'POST', url: `/api/v1/module-registration-requests/${workflowInstanceId}/decision`,
+      headers: { authorization: `Bearer ${tutorJwt}` },
+      payload: { decisionCode: 'approved' },
+    });
+    expect(retried.statusCode).toBe(200);
+    expect(retried.json<{ moduleRegistrationId: string | null }>().moduleRegistrationId).toMatch(/^[0-9a-f-]{36}$/);
+  });
+
   it('a student cannot decide a change request', async () => {
     const request = await ctx.app.inject({
       method: 'POST', url: '/api/v1/module-registrations/requests', headers: { authorization: `Bearer ${studentJwt}` },

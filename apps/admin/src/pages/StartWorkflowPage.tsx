@@ -5,6 +5,7 @@ import {
   listWorkflowDefinitions,
   listWorkflowDefinitionVersions,
   startWorkflowInstance,
+  type StartedWorkflow,
 } from '../api/workflowDefs.js';
 import { ApiError } from '../api/client.js';
 import { Spinner } from '../components/Spinner.js';
@@ -23,7 +24,7 @@ export function StartWorkflowPage() {
   const [loadError,  setLoadError]  = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error,      setError]      = useState('');
-  const [success,    setSuccess]    = useState<{ workflowInstanceId: string; workflowTaskId?: string } | null>(null);
+  const [success,    setSuccess]    = useState<StartedWorkflow | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true); setLoadError('');
@@ -115,6 +116,9 @@ export function StartWorkflowPage() {
                 Started. Workflow instance <span className="font-mono">{success.workflowInstanceId}</span>
                 {success.workflowTaskId && (
                   <> — task <span className="font-mono">{success.workflowTaskId}</span> is now assigned.</>
+                )}
+                {success.executionStatus === 'starting' && (
+                  <> The workflow service has not picked it up yet; it will start automatically. The task can already be seen in the Task Inbox.</>
                 )}
               </StatusNotice>
             )}

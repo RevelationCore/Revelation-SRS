@@ -31,6 +31,13 @@ async function applyMigration(db: Db, fileName: string): Promise<void> {
 export interface StartTestAppOptions {
   /** Inject a spy or stub event bus instead of the default disconnected NATS publisher. */
   eventBus?: IntegrationBusPublisher;
+  /** Enable live Temporal execution against this server (the rollout flag still applies). */
+  temporal?: {
+    address: string;
+    namespace: string;
+    taskQueue: string;
+    decisionWaitMs?: number;
+  };
 }
 
 /** Start a throw-away API instance backed by a fresh Testcontainers PostgreSQL. */
@@ -65,6 +72,7 @@ export async function startTestApp(opts: StartTestAppOptions = {}): Promise<Test
   await applyMigration(db, '0020_reasonable_adjustment_source_case.sql');
   await applyMigration(db, '0021_adjustment_outcome_documents.sql');
   await applyMigration(db, '0022_retire_support_outcome.sql');
+  await applyMigration(db, '0023_temporal_execution.sql');
 
   // Seed a tenant for tests
   const tenantId = '00000000-0000-0000-0000-000000000001';
@@ -84,7 +92,14 @@ export async function startTestApp(opts: StartTestAppOptions = {}): Promise<Test
     nodeEnv:          'test',
     databaseUrl:      connectionString,
     natsUrl:          'nats://localhost:4222',  // NATS not needed for these tests
-    temporalAddress:  'localhost:7233',
+    temporalAddress:  opts.temporal?.address ?? 'localhost:7233',
+    ...(opts.temporal ? {
+      temporalExecutionEnabled: true,
+      temporalNamespace: opts.temporal.namespace,
+      temporalTaskQueue: opts.temporal.taskQueue,
+      temporalDecisionWaitMs: opts.temporal.decisionWaitMs ?? 10_000,
+      temporalReconcileGraceSeconds: 0,
+    } : {}),
     deploymentEnvironmentCode: 'test',
     releaseVersion:   '0.0.0-test',
     imageDigest:      undefined,

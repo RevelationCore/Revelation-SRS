@@ -19,6 +19,25 @@ export interface WorkflowTask {
   payload:           Record<string, unknown>;
   createdAt:         string;
   outcomeOptions:    WorkflowOutcomeOption[] | null;
+  /** 'temporal' tasks are applied by the workflow service after the decision is saved. */
+  executionBackend?: 'legacy' | 'temporal';
+  revision?:         number;
+  escalatedAt?:      string | null;
+  /** Set when a deadline passed and nobody was configured to escalate to. */
+  attentionReasonCode?: string | null;
+}
+
+/** Receipt for a decision on a Temporal-run task. Legacy tasks return nothing. */
+export interface WorkflowDecisionReceipt {
+  commandId:    string;
+  workflowInstanceId: string;
+  decisionCode: string | null;
+  /** applied: done. pending: saved, will be applied shortly. */
+  status:       'applied' | 'pending' | 'failed' | 'superseded';
+  acceptedAt:   string;
+  appliedAt:    string | null;
+  errorDetail:  string | null;
+  statusUrl:    string;
 }
 
 export function listWorkflowTasks(params?: {
@@ -35,10 +54,14 @@ export function listWorkflowTasks(params?: {
 export function completeWorkflowTask(
   taskId:  string,
   opts?: { payload?: Record<string, unknown>; decisionCode?: string; note?: string },
-): Promise<void> {
-  return api.post(`/api/v1/workflow-tasks/${taskId}/completion`, {
+): Promise<WorkflowDecisionReceipt | undefined> {
+  return api.post<WorkflowDecisionReceipt | undefined>(`/api/v1/workflow-tasks/${taskId}/completion`, {
     payload: opts?.payload ?? {},
     ...(opts?.decisionCode ? { decisionCode: opts.decisionCode } : {}),
     ...(opts?.note ? { note: opts.note } : {}),
   });
+}
+
+export function getWorkflowCommand(commandId: string): Promise<WorkflowDecisionReceipt> {
+  return api.get<WorkflowDecisionReceipt>(`/api/v1/workflow-commands/${commandId}`);
 }

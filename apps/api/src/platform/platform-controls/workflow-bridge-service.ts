@@ -3,6 +3,7 @@ import {
   workflowInstances,
   workflowTasks,
   type Db,
+  type TenantScopedDb,
   withTenantContext,
 } from '@revelation-srs/db';
 import { EVENT_TYPES, NotFoundError } from '@revelation-srs/domain';
@@ -24,12 +25,26 @@ import type { AuditService } from '../audit/service.js';
 import type { IntegrationBusPublisher } from '../integration-bus/publisher.js';
 import { clockNow } from '../clock.js';
 
+import { enqueueWorkflowEvent, WorkflowEventOutbox } from './workflow-event-outbox.js';
+
+type WorkflowEventType = (typeof EVENT_TYPES)[keyof typeof EVENT_TYPES];
+
+/**
+ * Legacy (in-process) workflow persistence. Each state change and its event
+ * are saved in one transaction; the event is then published from the outbox,
+ * so a NATS outage no longer loses workflow events.
+ */
 export class WorkflowBridgeService implements WorkflowActivities {
+  readonly outbox: WorkflowEventOutbox;
+
   constructor(
     private readonly db: Db,
     private readonly audit: AuditService,
-    private readonly eventBus: IntegrationBusPublisher,
-  ) {}
+    eventBus: IntegrationBusPublisher,
+    outbox?: WorkflowEventOutbox,
+  ) {
+    this.outbox = outbox ?? new WorkflowEventOutbox(db, eventBus);
+  }
 
   async recordWorkflowEvent(input: RecordWorkflowEventInput): Promise<void> {
     await this.audit.record({
@@ -69,8 +84,9 @@ export class WorkflowBridgeService implements WorkflowActivities {
 
   async assignWorkflowTask(input: AssignWorkflowTaskActivityInput): Promise<WorkflowTaskActivityResult> {
     const statusCode = input.assigneeActorId || input.assigneeRoleCode ? 'assigned' : 'pending';
-    const rows = await withTenantContext(this.db, input.tenantId, async (tx) =>
-      tx.insert(workflowTasks).values({
+    let eventId = '';
+    const rows = await withTenantContext(this.db, input.tenantId, async (tx) => {
+      const inserted = await tx.insert(workflowTasks).values({
         tenantId: input.tenantId as `${string}-${string}-${string}-${string}-${string}`,
         workflowInstanceId: input.workflowInstanceId as `${string}-${string}-${string}-${string}-${string}`,
         stepKey: input.stepKey,
@@ -80,18 +96,19 @@ export class WorkflowBridgeService implements WorkflowActivities {
         assigneeRoleCode: input.assigneeRoleCode ?? null,
         dueAt: input.dueAt ? new Date(input.dueAt) : null,
         payload: input.payload ?? {},
-      }).returning({ id: workflowTasks.id }),
-    );
-    const workflowTaskId = rows[0]!.id;
-
-    await this.#publishWorkflowEvent(EVENT_TYPES.WORKFLOW_TASK_ASSIGNED, input.tenantId, input.workflowInstanceId, {
-      workflowInstanceId: input.workflowInstanceId,
-      workflowTaskId,
-      stepKey: input.stepKey,
-      assigneeActorId: input.assigneeActorId,
-      assigneeRoleCode: input.assigneeRoleCode,
-      dueAt: input.dueAt,
+      }).returning({ id: workflowTasks.id });
+      eventId = await this.#enqueue(tx, EVENT_TYPES.WORKFLOW_TASK_ASSIGNED, input.tenantId, input.workflowInstanceId, {
+        workflowInstanceId: input.workflowInstanceId,
+        workflowTaskId: inserted[0]!.id,
+        stepKey: input.stepKey,
+        assigneeActorId: input.assigneeActorId,
+        assigneeRoleCode: input.assigneeRoleCode,
+        dueAt: input.dueAt,
+      });
+      return inserted;
     });
+    const workflowTaskId = rows[0]!.id;
+    await this.outbox.publishNow(input.tenantId, [eventId]);
 
     await this.recordWorkflowEvent({
       tenantId: input.tenantId,
@@ -108,7 +125,7 @@ export class WorkflowBridgeService implements WorkflowActivities {
   async completeWorkflowTask(input: CompleteWorkflowTaskActivityInput): Promise<void> {
     const task = await this.#getTask(input.tenantId, input.workflowTaskId);
     const now = clockNow();
-    await withTenantContext(this.db, input.tenantId, async (tx) => {
+    const eventId = await withTenantContext(this.db, input.tenantId, async (tx) => {
       await tx.update(workflowTasks).set({
         statusCode: 'completed',
         completedBy: input.completedBy,
@@ -119,13 +136,13 @@ export class WorkflowBridgeService implements WorkflowActivities {
         eq(workflowTasks.id, input.workflowTaskId as `${string}-${string}-${string}-${string}-${string}`),
         eq(workflowTasks.tenantId, input.tenantId as `${string}-${string}-${string}-${string}-${string}`),
       ));
+      return this.#enqueue(tx, EVENT_TYPES.WORKFLOW_TASK_COMPLETED, input.tenantId, task.workflowInstanceId, {
+        workflowInstanceId: task.workflowInstanceId,
+        workflowTaskId: input.workflowTaskId,
+        completedBy: input.completedBy,
+      });
     });
-
-    await this.#publishWorkflowEvent(EVENT_TYPES.WORKFLOW_TASK_COMPLETED, input.tenantId, task.workflowInstanceId, {
-      workflowInstanceId: task.workflowInstanceId,
-      workflowTaskId: input.workflowTaskId,
-      completedBy: input.completedBy,
-    });
+    await this.outbox.publishNow(input.tenantId, [eventId]);
     await this.recordWorkflowEvent({
       tenantId: input.tenantId,
       workflowInstanceId: task.workflowInstanceId,
@@ -140,7 +157,7 @@ export class WorkflowBridgeService implements WorkflowActivities {
   async escalateWorkflowTask(input: EscalateWorkflowTaskActivityInput): Promise<void> {
     const task = await this.#getTask(input.tenantId, input.workflowTaskId);
     const now = clockNow();
-    await withTenantContext(this.db, input.tenantId, async (tx) => {
+    const eventId = await withTenantContext(this.db, input.tenantId, async (tx) => {
       await tx.update(workflowTasks).set({
         statusCode: 'escalated',
         assigneeRoleCode: input.escalatedToRoleCode ?? task.assigneeRoleCode,
@@ -149,14 +166,14 @@ export class WorkflowBridgeService implements WorkflowActivities {
         eq(workflowTasks.id, input.workflowTaskId as `${string}-${string}-${string}-${string}-${string}`),
         eq(workflowTasks.tenantId, input.tenantId as `${string}-${string}-${string}-${string}-${string}`),
       ));
+      return this.#enqueue(tx, EVENT_TYPES.WORKFLOW_TASK_ESCALATED, input.tenantId, task.workflowInstanceId, {
+        workflowInstanceId: task.workflowInstanceId,
+        workflowTaskId: input.workflowTaskId,
+        reasonCode: input.reasonCode,
+        escalatedToRoleCode: input.escalatedToRoleCode,
+      });
     });
-
-    await this.#publishWorkflowEvent(EVENT_TYPES.WORKFLOW_TASK_ESCALATED, input.tenantId, task.workflowInstanceId, {
-      workflowInstanceId: task.workflowInstanceId,
-      workflowTaskId: input.workflowTaskId,
-      reasonCode: input.reasonCode,
-      escalatedToRoleCode: input.escalatedToRoleCode,
-    });
+    await this.outbox.publishNow(input.tenantId, [eventId]);
     await this.recordWorkflowEvent({
       tenantId: input.tenantId,
       workflowInstanceId: task.workflowInstanceId,
@@ -168,7 +185,7 @@ export class WorkflowBridgeService implements WorkflowActivities {
   }
 
   async recordWorkflowDecision(input: RecordWorkflowDecisionActivityInput): Promise<void> {
-    await withTenantContext(this.db, input.tenantId, async (tx) => {
+    const eventId = await withTenantContext(this.db, input.tenantId, async (tx) => {
       await tx.insert(workflowDecisionAudits).values({
         tenantId: input.tenantId as `${string}-${string}-${string}-${string}-${string}`,
         workflowInstanceId: input.workflowInstanceId as `${string}-${string}-${string}-${string}-${string}`,
@@ -180,14 +197,14 @@ export class WorkflowBridgeService implements WorkflowActivities {
         actorId: input.actorId ?? 'system',
         metadata: input.metadata ?? {},
       });
+      return this.#enqueue(tx, EVENT_TYPES.WORKFLOW_DECISION_RECORDED, input.tenantId, input.workflowInstanceId, {
+        workflowInstanceId: input.workflowInstanceId,
+        gatewayKey: input.gatewayKey,
+        decisionCode: input.decisionCode,
+        outcomeStepKey: input.outcomeStepKey,
+      });
     });
-
-    await this.#publishWorkflowEvent(EVENT_TYPES.WORKFLOW_DECISION_RECORDED, input.tenantId, input.workflowInstanceId, {
-      workflowInstanceId: input.workflowInstanceId,
-      gatewayKey: input.gatewayKey,
-      decisionCode: input.decisionCode,
-      outcomeStepKey: input.outcomeStepKey,
-    });
+    await this.outbox.publishNow(input.tenantId, [eventId]);
     await this.recordWorkflowEvent({
       tenantId: input.tenantId,
       workflowInstanceId: input.workflowInstanceId,
@@ -201,7 +218,7 @@ export class WorkflowBridgeService implements WorkflowActivities {
 
   async completeWorkflowInstance(input: CompleteWorkflowInstanceActivityInput): Promise<void> {
     const now = clockNow();
-    await withTenantContext(this.db, input.tenantId, async (tx) => {
+    const eventId = await withTenantContext(this.db, input.tenantId, async (tx) => {
       await tx.update(workflowInstances).set({
         statusCode: input.statusCode ?? 'completed',
         completedAt: now,
@@ -209,13 +226,13 @@ export class WorkflowBridgeService implements WorkflowActivities {
         eq(workflowInstances.id, input.workflowInstanceId as `${string}-${string}-${string}-${string}-${string}`),
         eq(workflowInstances.tenantId, input.tenantId as `${string}-${string}-${string}-${string}-${string}`),
       ));
+      return this.#enqueue(tx, EVENT_TYPES.WORKFLOW_COMPLETED, input.tenantId, input.workflowInstanceId, {
+        workflowInstanceId: input.workflowInstanceId,
+        statusCode: input.statusCode ?? 'completed',
+        metadata: input.metadata ?? {},
+      });
     });
-
-    await this.#publishWorkflowEvent(EVENT_TYPES.WORKFLOW_COMPLETED, input.tenantId, input.workflowInstanceId, {
-      workflowInstanceId: input.workflowInstanceId,
-      statusCode: input.statusCode ?? 'completed',
-      metadata: input.metadata ?? {},
-    });
+    await this.outbox.publishNow(input.tenantId, [eventId]);
     await this.recordWorkflowEvent({
       tenantId: input.tenantId,
       workflowInstanceId: input.workflowInstanceId,
@@ -238,13 +255,13 @@ export class WorkflowBridgeService implements WorkflowActivities {
     return rows[0];
   }
 
-  async #publishWorkflowEvent(
-    eventType: (typeof EVENT_TYPES)[keyof typeof EVENT_TYPES],
+  #enqueue(
+    tx: TenantScopedDb,
+    eventType: WorkflowEventType,
     tenantId: string,
     correlationId: string,
     payload: Record<string, unknown>,
-  ): Promise<void> {
-    if (!this.eventBus.isConnected()) return;
-    await this.eventBus.publish(eventType, '1.0.0', tenantId, correlationId, 'standard', payload);
+  ): Promise<string> {
+    return enqueueWorkflowEvent(tx, { tenantId, eventType, correlationId, payload });
   }
 }

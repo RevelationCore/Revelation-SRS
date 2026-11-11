@@ -54,24 +54,39 @@ spec:
           type: RuntimeDefault
       containers:
         - name: worker
-          image: ghcr.io/revelation-srs/worker:latest
+          # The worker is the API image with a different entry point: it needs
+          # the same domain services, rules and database access (ADR-024).
+          image: ghcr.io/revelation-srs/api:latest
           imagePullPolicy: IfNotPresent
+          ports:
+            - name: health
+              containerPort: 9466
           env:
             - name: NODE_ENV
               value: production
             - name: TEMPORAL_ADDRESS
               value: srs-temporal:7233
+            - name: TEMPORAL_EXECUTION_ENABLED
+              value: "true"
             - name: TEMPORAL_NAMESPACE
-              value: default
+              value: srs-production
+            - name: TEMPORAL_TASK_QUEUE
+              value: srs-workflows
             - name: NATS_URL
               value: nats://srs-nats:4222
+            - name: WORKER_HEALTH_PORT
+              value: "9466"
+            - name: RECONCILE_INTERVAL_MS
+              value: "15000"
+            - name: OTEL_SERVICE_NAME
+              value: srs-api
           command:
             - /bin/sh
             - -c
             - |
               export DATABASE_URL="$(cat /vault/secrets/db)"
               export NATS_NKEY_SEED="$(cat /vault/secrets/nats)"
-              exec node dist/worker.js
+              exec node apps/api/dist/worker.js
           resources:
             requests:
               cpu: 200m
@@ -84,6 +99,19 @@ spec:
             readOnlyRootFilesystem: true
             capabilities:
               drop: [ALL]
+          # Ready only while the worker is polling its task queue.
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: health
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: health
+            initialDelaySeconds: 20
+            periodSeconds: 20
           volumeMounts:
             - name: tmp
               mountPath: /tmp
