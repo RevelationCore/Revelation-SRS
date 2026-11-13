@@ -20,13 +20,13 @@ The verification provider initially returns an inconclusive result in an excepti
 
 ### Financial readiness is a separate decision — t-3 to t-2
 
-Finance receives the course, home-fee-status decision and applicable fee-policy reference. It records the approved funding/payment arrangement for this fixture. A payment arrangement can permit registration under Northbridge's policy without pretending that the entire fee has been paid. If Sam disputes fee status, the issue returns to the Admissions owner and any resulting offer change is versioned.
+Before any enrolment exists, Registry asks Finance whether Sam is financially ready to register (A16-I03a). The request carries the registration case, the confirmed place, the home-fee-status decision and the applicable fee-policy reference. Finance records the approved funding/payment arrangement for this fixture and returns it to Registry, or returns a hold with a reason. A payment arrangement can permit registration under Northbridge's policy without pretending that the entire fee has been paid. If Sam disputes fee status, the issue returns to the Admissions owner and any resulting offer change is versioned.
 
 An eligible student-finance branch has its own evidence and authorisation. Registration in advance of the study-start date is not evidence that Sam has started attending. The officer can schedule a confirmation task, but must wait for the facts required by that particular external confirmation. Real channel and eligibility rules remain deployment decisions.
 
 ### Registry authorises the enrolment — t-2
 
-The Registry officer reviews identity, terms, the confirmed place and the approved financial arrangement. The decision creates or activates the intended enrolment record, with study starting at t and the exact approved course/route/diet binding. The decision time and effective study date are separate. No later catalogue release silently changes this binding.
+The Registry officer reviews identity, terms, the confirmed place and the approved financial arrangement. The decision creates or activates the intended enrolment record, with study starting at t and the exact approved course/route/diet binding. Registry then sends the authorised enrolment to Finance (A16-I03b), which books the dated fee liability against the arrangement it approved earlier and confirms that the two match. The decision time and effective study date are separate. No later catalogue release silently changes this binding.
 
 Sam sees “Registration approved” and the start date, with separate service statuses below it. Authorised pre-entry welcome access can begin at t-1. That entitlement is explicit, rather than obtained by backdating attendance. The six compulsory module registrations are then confirmed by AJ-18 and supplied to teaching services by AJ-20.
 
@@ -53,8 +53,8 @@ Supply the AJ-06 confirmed-place evidence, canonical/source identity links, appr
 |---|---|---|---|
 | A16-01 | t-4 | Accept the governed admissions outcome; reconcile aliases. | One prospective registration case and invitation. |
 | A16-02 | t-3 | Verify identity, personal details and terms. | Attributable verification/acceptance or an owned evidence request. |
-| A16-03 | t-3 to t-2 | Finance approves the applicable arrangement. | Separate fee/financial-readiness state, not assumed payment. |
-| A16-04 | t-2 | Registry authorises enrolment and its start date/binding. | AJ-18 may confirm registrations; entitlement distribution begins. |
+| A16-03 | t-3 to t-2 | Finance approves the applicable arrangement (A16-I03a). | Separate fee/financial-readiness state, not assumed payment. |
+| A16-04 | t-2 | Registry authorises enrolment and its start date/binding; Finance books the liability (A16-I03b). | AJ-18 may confirm registrations; entitlement distribution begins. |
 | A16-05 | t-2 to t-1 | Reconcile each consumer's applied version. | Welcome access works; missing receipts have service owners. |
 | A16-06 | t to t+1 | Record the relevant start facts and authorise eligible external notifications. | Confirmations reconcile; annual registration tasks remain separate. |
 
@@ -66,7 +66,8 @@ The [shared exchange convention](README.md#exchange-and-evidence-convention) app
 |---|---|---|---|
 | A16-I01 / A06-I08; BP-01-007 | Admissions → Registry: confirmed application/offer version, aliases, course/intake, fee-status decision and evidence references. | Application + confirmation version; Admissions owns confirmation, Registry conversion. | Canonical person/case receipt; quarantine ambiguous identity, replay existing case. |
 | A16-I02 / F-EWP-SIS-01; F-SIS-OIV-01, F-OIV-SIS-01 | Portal ↔ Registry and verification provider: validated self-service updates, terms version, verification request and scoped result. | Update/request ID + version; provider evidence plus Registry authority. | Versioned personal fact and verification decision; inconclusive result stays pending with owner. |
-| A16-I03 / F-SIS-FIN-01, F-FIN-SIS-01 | SRS ↔ Finance: authorised enrolment/fee-policy/fee-status reference, liability and arrangement/payment/hold result. | Enrolment + financial fact version; Finance owns ledger. | Reconcile arrangement versus cash received; an unexplained hold is reviewed, not an automatic withdrawal. |
+| A16-I03a / GI-11 | Registry ↔ Finance before the enrolment decision: registration case, confirmed place/offer version, fee-status decision and fee-policy reference; returned arrangement or hold with reason. No reference flow covers this step: F-SIS-FIN-01 starts from an approved enrolment. | Registration case + arrangement version; Finance owns the arrangement decision. | Arrangement receipt that Registry cites in its decision; a hold or timeout leaves registration pending with an owner, not refused. |
+| A16-I03b / F-SIS-FIN-01, F-FIN-SIS-01 | SRS ↔ Finance after the enrolment decision: authorised enrolment, effective dates and the arrangement reference from A16-I03a; returned dated liability and later payment/hold results. | Enrolment + liability version; Finance owns the ledger. | Liability matches the approved arrangement, or a mismatch task is raised; reconcile arrangement versus cash received; an unexplained hold is reviewed, not an automatic withdrawal. |
 | A16-I04 / F-SIS-IAM-01, F-IAM-SIS-01 | SRS ↔ IAM: person, scoped role/eligibility, start/end dates and registration authority; account/lock result returned. | Person + entitlement version; IAM owns credentials. | Applied role/version and account status; retain security locks and unrelated employment roles. |
 | A16-I05 / F-SIS-EWP-01, F-SIS-CRM-01, F-SIS-UCAS-01 | SRS → portal, CRM and applicable external route after authorised status: enrolment state/date/version and permitted identifiers. | Status version + recipient; Registry decision. | Portal status and external receipt reconcile; no-show/deferral needs its own governed decision. |
 | A16-I06 / F-SIS-SLC-01, F-SLC-SIS-01 | SRS ↔ eligible student-finance route: authorised confirmation with its required facts; returned entitlement/payment implications. | Confirmation type + enrolment + version; funding signatory. | Submission/application evidence through supported channel; do not equate registration with attendance or receipt with loan payment. |
@@ -81,6 +82,7 @@ Library entitlement delivery is owned by A17-I01; module confirmation by A18-I03
 | A16-AC02 | Deliver confirmed acceptance twice or nominate an ambiguous person match. | Replay reuses the case; ambiguity requires governed linkage, never a destructive automatic merge. |
 | A16-AC03 | Verification is inconclusive or inaccessible to Sam. | Accessible evidence/manual-review route with owner; no assumed pass or academic rejection. |
 | A16-AC04 | Finance has an arrangement but no full payment, or a disputed fee status. | Apply the configured registration policy; show actual financial state; route dispute to the authorised owner. |
+| A16-AC09 | Finance receives a readiness request with no enrolment yet, or the post-decision liability differs from the approved arrangement. | Readiness is keyed on the registration case, not an enrolment; a liability mismatch raises an owned task and the enrolment decision stands. |
 | A16-AC05 | Request an attendance-based funding confirmation at t-2. | Hold until required start/attendance facts exist; retain the authorised registration. |
 | A16-AC06 | Lose an IAM receipt or receive a stale entitlement after a later version. | Query/reconcile and replay safely; no duplicate account or stale role overwrite. |
 | A16-AC07 | Another tenant or an unappointed helper attempts access. | Access denied; sensitive evidence remains purpose-restricted and access logged. |
