@@ -27,6 +27,8 @@
 
 ## 2. Programme and Module Catalogue (CAT)
 
+Detailed proposed extension: [Curriculum management system requirements](curriculum-management-system.md), covering optional internal authoring and governance, course diets, version control and interchangeable external providers. CAT-001–CAT-009 remain the core catalogue baseline.
+
 | ID | Requirement | Flows | Priority |
 |---|---|---|---|
 | CAT-001 | The system shall maintain a catalogue of programmes, each with a unique code, title, qualification type, credit framework, duration, and awarding body. | F-CM-SIS-01 | M |
@@ -160,7 +162,7 @@
 | ID | Requirement | Flows | Priority |
 |---|---|---|---|
 | UCR-001 | The system shall receive and process application data, offer decisions, and clearing records from UCAS. | F-UCAS-SIS-01 | M |
-| UCR-002 | The system shall create a student record and initiate the enrolment workflow on receipt of a confirmed acceptance from UCAS. | F-UCAS-SIS-01 | M |
+| UCR-002 | On receipt of a confirmed acceptance from UCAS, the system shall create or link a prospective student record through the governed conversion boundary (BP-01-007) and initiate the registration workflow. Active enrolment shall require a separate authorised registration decision. | F-UCAS-SIS-01 | M |
 | UCR-003 | The system shall transmit enrolment confirmations, withdrawal notifications, deferral records, and no-show notifications to UCAS. | F-SIS-UCAS-01 | M |
 | UCR-004 | The system shall support UCAS Clearing, processing late applications and offers during the clearing period. | F-UCAS-SIS-01 | S |
 
