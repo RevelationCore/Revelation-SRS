@@ -1,6 +1,6 @@
 # AJ-29 — From completion to graduate
 
-Status: **Proposed narrative v0.6**, 13 November 2026 · [Document status](README.md#status-of-these-documents) · [Shared marks and rules](taught-student-fixture.md) · [Exam board](aj-25-exam-board-and-ratification.md)
+Status: **Proposed narrative v0.7**, 14 November 2026 · [Document status](README.md#status-of-these-documents) · [Shared marks and rules](taught-student-fixture.md) · [Exam board](aj-25-exam-board-and-ratification.md)
 
 **Perspective:** Sam, the awards officer, ceremony organisers, records staff and alumni team. **Boundary:** a ratified recommendation through eligibility verification, separate award conferral, document issue and governed leaver services. **Timeline:** t+140 to t+156; Ben's later conferral branch begins after supplementary publication at t+151. Use the [same t](README.md#timeline-convention).
 
@@ -43,6 +43,8 @@ The alumni team opens or updates its relationship using permitted contact and pr
 The supplementary board's published outcome now records Ben's passed, capped project result and 40 project credits counted once. The awards officer assesses his complete profile: stage-2 mean 60 and stage-3 mean 53⅓, with the project counted at its recorded, capped 40. The score is 0.3 × 60 + 0.7 × 53⅓ = 55.33, a lower second, and the award is conferred at t+152. Ben's documents can explain the effect of the cap: counted at its raw 66, the score would have been 61.40. The narrative does not borrow Sam's classification.
 
 Ben receives his own issued documents and a later ceremony opportunity. He is not retrospectively added to Sam's ceremony as if he had already qualified. In a variant where part of the profile is missing, the award case remains pending with the missing evidence and owner stated.
+
+[AJ-33](aj-33-thesis-examination-and-award.md) supplies the distinct research examination, correction, deposit and completion authority for Morgan. It reuses common award/document services without a taught classification or HEAR, and [AJ-32](aj-32-student-employment-and-payments.md) preserves Morgan’s independently valid employment rights.
 
 ## Starting pack and authority
 

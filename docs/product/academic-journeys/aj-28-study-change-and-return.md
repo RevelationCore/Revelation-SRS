@@ -1,6 +1,6 @@
 # AJ-28 — Life changes the study plan
 
-Status: **Proposed narrative v0.6**, 13 November 2026 · [Document status](README.md#status-of-these-documents) · [Extension fixture](change-and-exceptions-fixture.md) · [Engagement referral](aj-23-engagement-and-intervention.md)
+Status: **Proposed narrative v0.7**, 14 November 2026 · [Document status](README.md#status-of-these-documents) · [Extension fixture](change-and-exceptions-fixture.md) · [Engagement referral](aj-23-engagement-and-intervention.md)
 
 **Perspective:** Omar, a Registry caseworker, his programme adviser and affected service owners. **Boundary:** requested change through an effective-dated decision and reconciled services, then a separately approved return. **Timeline:** interruption t+12 to t+20, across the winter closure at t+13 to t+15; return review t+88 to t+104 and resumed teaching t+105. The [original t](README.md#timeline-convention) does not reset when Omar returns.
 

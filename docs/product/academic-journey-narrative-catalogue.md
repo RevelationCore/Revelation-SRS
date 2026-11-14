@@ -1,7 +1,7 @@
 # Academic journeys: interlocking narrative catalogue
 
-Status: **Proposed discovery baseline, v0.4 — stories to develop, not delivered functionality or executed tests.**
-Date: 13 November 2026. Suggested coordinating owner: Academic Registry, with academic, student, research and service representatives.
+Status: **Proposed discovery baseline, v0.5 — stories to develop, not delivered functionality or executed tests.**
+Date: 14 November 2026. Suggested coordinating owner: Academic Registry, with academic, student, research and service representatives.
 
 ## Purpose and reading guide
 
@@ -9,16 +9,22 @@ These independent stories describe the university from several viewpoints: an ap
 
 The initial deliverable is a **catalogue of 40 narratives**, rather than 40 fully written workflows. Each row gives the starting situation, the main events and a complication, the intended outcome, and links to other stories. A story can be developed independently using a stated starting snapshot. When stories are joined, they must share the same people, programme versions, dates, decisions and identifiers; another story's outcome becomes the next story's starting fact.
 
-Twenty-two expansions are now available as proposed narrative specifications, with readable stories, structured scenes, interactions, acceptance cases and review questions:
+Thirty-two expansions are now available as proposed narrative specifications, with readable stories, structured scenes, interactions, acceptance cases and review questions:
 
 | Expanded narrative | Document |
 |---|---|
 | AJ-01 — Academic course creation through approval and publication | [Aisha's story](academic-journeys/aj-01-course-creation-and-publication.md) |
 | AJ-02 — Shared-module change | [Expanded story](academic-journeys/aj-02-shared-module-change.md) |
 | AJ-03 — Programme review and improvement | [Expanded story](academic-journeys/aj-03-programme-review-and-improvement.md) |
+| AJ-04 — Closure and teach-out | [Expanded story](academic-journeys/aj-04-closure-and-teach-out.md) |
+| AJ-05 — Curriculum-provider switching | [Expanded story](academic-journeys/aj-05-curriculum-provider-switch.md) |
 | AJ-06 — University discovery, visit, application, results and arrival | [Sam's story](academic-journeys/aj-06-discovery-application-and-arrival.md) |
 | AJ-07 — Clearing, deferral and changed plans | [Expanded story](academic-journeys/aj-07-clearing-deferral-and-changed-plans.md) |
 | AJ-08 — Part-time entry and prior learning | [Expanded story](academic-journeys/aj-08-part-time-entry-and-prior-learning.md) |
+| AJ-09 — International postgraduate entry | [Expanded story](academic-journeys/aj-09-international-postgraduate-entry.md) |
+| AJ-11 — Apprenticeships and employer change | [Expanded story](academic-journeys/aj-11-apprenticeship-and-employer-change.md) |
+| AJ-12 — Partner delivery and award authority | [Expanded story](academic-journeys/aj-12-partner-delivery-and-award-authority.md) |
+| AJ-14 — Placements and practice learning | [Expanded story](academic-journeys/aj-14-placement-and-practice-learning.md) |
 | AJ-16 — Registration and entitlements | [Expanded story](academic-journeys/aj-16-registration-and-entitlements.md) |
 | AJ-17 — Campus, accommodation and library | [Expanded story](academic-journeys/aj-17-campus-accommodation-and-library.md) |
 | AJ-18 — Module selection and course diets | [Expanded story](academic-journeys/aj-18-module-selection-and-diets.md) |
@@ -33,13 +39,18 @@ Twenty-two expansions are now available as proposed narrative specifications, wi
 | AJ-27 — Appeals and record corrections | [Expanded story](academic-journeys/aj-27-appeals-and-record-corrections.md) |
 | AJ-28 — Study change and return | [Expanded story](academic-journeys/aj-28-study-change-and-return.md) |
 | AJ-29 — Awards, graduation and alumni transition | [Expanded story](academic-journeys/aj-29-awards-graduation-and-alumni.md) |
+| AJ-30 — Funded doctoral admission | [Expanded story](academic-journeys/aj-30-funded-doctoral-admission.md) |
+| AJ-31 — Research supervision and progress | [Expanded story](academic-journeys/aj-31-research-supervision-and-progress.md) |
+| AJ-32 — Student employment and payments | [Expanded story](academic-journeys/aj-32-student-employment-and-payments.md) |
+| AJ-33 — Thesis examination and research award | [Expanded story](academic-journeys/aj-33-thesis-examination-and-award.md) |
 | AJ-34 — Reporting and statutory returns | [Expanded story](academic-journeys/aj-34-reporting-and-statutory-returns.md) |
 | AJ-38 — Records, information rights and retention | [Expanded story](academic-journeys/aj-38-records-rights-and-retention.md) |
 | Shared fictional course, cohort, versions and hand-off | [Northbridge scenario](academic-journeys/README.md) |
 | Shared progression/assessment policies, marks and later calendar | [Taught-student continuation](academic-journeys/taught-student-fixture.md) |
 | Shared change/exception policies, new people, future release and part-time plan | [Change and exceptions extension](academic-journeys/change-and-exceptions-fixture.md) |
+| Shared research, employment, partner and placement evidence, anchors and policies | [Research and partnerships extension](academic-journeys/research-and-partnership-fixture.md) |
 
-These documents expand twenty-two of the existing 40 narratives without adding catalogue IDs. Their shared [status statement](academic-journeys/README.md#status-of-these-documents) applies to every expansion.
+These documents expand thirty-two of the existing 40 narratives without adding catalogue IDs. Their shared [status statement](academic-journeys/README.md#status-of-these-documents) applies to every expansion.
 
 Coverage is checked against the repository's [enterprise reference model v3.0](../reference/revelation-student-records-enterprise-reference-model-3.0.json): **33 systems/actors and 69 interactions**. Sections below assign every reference interaction to a narrative and separately identify interactions missing from, or insufficiently detailed in, that model. Assignment means **planned narrative coverage**, not that an integration exists, a contract has been agreed or a journey has passed a test. Further interactions will emerge during walkthroughs.
 

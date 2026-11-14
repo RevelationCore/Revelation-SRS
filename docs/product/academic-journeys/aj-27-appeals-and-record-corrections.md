@@ -1,6 +1,6 @@
 # AJ-27 — Challenging an outcome and correcting the record
 
-Status: **Proposed narrative v0.6**, 13 November 2026 · [Document status](README.md#status-of-these-documents) · [Extension fixture](change-and-exceptions-fixture.md) · [Board decisions](aj-25-exam-board-and-ratification.md)
+Status: **Proposed narrative v0.7**, 14 November 2026 · [Document status](README.md#status-of-these-documents) · [Extension fixture](change-and-exceptions-fixture.md) · [Board decisions](aj-25-exam-board-and-ratification.md)
 
 **Perspective:** Priya, an appeals officer, an independent reviewer and Registry. **Boundary:** challenge or discovered error against a published decision through authorised disposition, amendment and recipient reconciliation. **Timeline:** t+40 to t+51; the clerical branch runs t+49 to t+51; a separately supplied post-award branch can occur after t+146. Use the [shared timeline](README.md#timeline-convention).
 

@@ -1,6 +1,6 @@
 # AJ-16 — A confirmed place becomes a registered student
 
-Status: **Proposed narrative v0.6**, 13 November 2026 · [Document status](README.md#status-of-these-documents) · [Shared continuation](taught-student-fixture.md) · [AJ-06](aj-06-discovery-application-and-arrival.md)
+Status: **Proposed narrative v0.7**, 14 November 2026 · [Document status](README.md#status-of-these-documents) · [Shared continuation](taught-student-fixture.md) · [AJ-06](aj-06-discovery-application-and-arrival.md)
 
 **Perspective:** Sam, a Registry enrolment officer and a Finance adviser. **Boundary:** a governed confirmed place enters registration; the story ends with an authorised, dated enrolment and reconciled entitlements or an explicitly owned outstanding service task. Module choices belong to AJ-18. **Timeline:** t-4 to t+1; annual registration recurs before t+52 and t+104. All weeks use [t = 23 September 2030](README.md#timeline-convention).
 

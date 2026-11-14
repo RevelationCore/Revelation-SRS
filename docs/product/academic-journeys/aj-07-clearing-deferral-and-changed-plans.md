@@ -1,6 +1,6 @@
 # AJ-07 — An alternative entry route
 
-Status: **Proposed narrative v0.6**, 13 November 2026 · [Document status](README.md#status-of-these-documents) · [Extension fixture](change-and-exceptions-fixture.md) · [Original admissions journey](aj-06-discovery-application-and-arrival.md)
+Status: **Proposed narrative v0.7**, 14 November 2026 · [Document status](README.md#status-of-these-documents) · [Extension fixture](change-and-exceptions-fixture.md) · [Original admissions journey](aj-06-discovery-application-and-arrival.md)
 
 **Perspective:** Alex, a Clearing adviser and Admissions; Robin provides separate deferral/no-show branches. **Boundary:** changed applicant circumstances through an explicitly accepted place, deferral or closure and accurate external responses. **Timeline:** Alex t-6 to t-2; Robin's deferral t-8 to t-4 and next-intake recheck before t+52; no-show alternative t to t+2. Dates are [fictional weeks](README.md#timeline-convention), not published UCAS deadlines.
 

@@ -1,6 +1,6 @@
 # Expanded academic journeys
 
-Status: **Proposed narrative specifications v0.6**, 13 November 2026. See [status of these documents](#status-of-these-documents).
+Status: **Proposed narrative specifications v0.7**, 14 November 2026. See [status of these documents](#status-of-these-documents).
 
 [Narrative catalogue](../academic-journey-narrative-catalogue.md) · [Product documentation](../README.md)
 
@@ -9,9 +9,15 @@ Status: **Proposed narrative specifications v0.6**, 13 November 2026. See [statu
 | AJ-01 | [Aisha: from a course idea to an approved catalogue and prospectus](aj-01-course-creation-and-publication.md) |
 | AJ-02 | [Shared-module change](aj-02-shared-module-change.md) |
 | AJ-03 | [Programme review and improvement](aj-03-programme-review-and-improvement.md) |
+| AJ-04 | [Closure and teach-out](aj-04-closure-and-teach-out.md) |
+| AJ-05 | [Curriculum-provider switching](aj-05-curriculum-provider-switch.md) |
 | AJ-06 | [Sam: from university discovery to arrival and first teaching](aj-06-discovery-application-and-arrival.md) |
 | AJ-07 | [Clearing, deferral and changed plans](aj-07-clearing-deferral-and-changed-plans.md) |
 | AJ-08 | [Part-time entry and prior learning](aj-08-part-time-entry-and-prior-learning.md) |
+| AJ-09 | [International postgraduate entry](aj-09-international-postgraduate-entry.md) |
+| AJ-11 | [Apprenticeships and employer change](aj-11-apprenticeship-and-employer-change.md) |
+| AJ-12 | [Partner delivery and award authority](aj-12-partner-delivery-and-award-authority.md) |
+| AJ-14 | [Placements and practice learning](aj-14-placement-and-practice-learning.md) |
 | AJ-16 | [Registration and entitlements](aj-16-registration-and-entitlements.md) |
 | AJ-17 | [Campus, accommodation and library](aj-17-campus-accommodation-and-library.md) |
 | AJ-18 | [Module selection and course diets](aj-18-module-selection-and-diets.md) |
@@ -26,10 +32,14 @@ Status: **Proposed narrative specifications v0.6**, 13 November 2026. See [statu
 | AJ-27 | [Appeals and record corrections](aj-27-appeals-and-record-corrections.md) |
 | AJ-28 | [Study change and return](aj-28-study-change-and-return.md) |
 | AJ-29 | [Awards, graduation and alumni transition](aj-29-awards-graduation-and-alumni.md) |
+| AJ-30 | [Funded doctoral admission](aj-30-funded-doctoral-admission.md) |
+| AJ-31 | [Research supervision and progress](aj-31-research-supervision-and-progress.md) |
+| AJ-32 | [Student employment and payments](aj-32-student-employment-and-payments.md) |
+| AJ-33 | [Thesis examination and research award](aj-33-thesis-examination-and-award.md) |
 | AJ-34 | [Reporting and statutory returns](aj-34-reporting-and-statutory-returns.md) |
 | AJ-38 | [Records, information rights and retention](aj-38-records-rights-and-retention.md) |
 
-Twenty-two narratives are now expanded. The documents share the fictional scenario below and the [taught-student continuation](taught-student-fixture.md), which fixes the later policies, marks, roles and calendar. Each later story states its own independent starting pack and consumes preceding evidence in a connected run. The [change and exceptions extension](change-and-exceptions-fixture.md) adds the new students, policy branches, shared-module revision, future course release and Jo’s separately anchored part-time plan. Eighteen catalogue narratives remain to expand.
+Thirty-two narratives are now expanded. The documents share the fictional scenario below and the [taught-student continuation](taught-student-fixture.md), which fixes the later policies, marks, roles and calendar. Each later story states its own independent starting pack and consumes preceding evidence in a connected run. The [change and exceptions extension](change-and-exceptions-fixture.md) adds the new students, policy branches, shared-module revision, future course release and Jo’s separately anchored part-time plan. The [research and partnerships extension](research-and-partnership-fixture.md) connects provision changes, international admission, employer/partner learning and the doctoral lifecycle. Eight catalogue narratives remain to expand: AJ-10, AJ-13, AJ-15, AJ-35, AJ-36, AJ-37, AJ-39 and AJ-40.
 
 The first two documents establish the course and admissions hand-off. They are independently readable: AJ-01 begins before approval; AJ-06 begins with an approved, published release supplied as its starting fixture. In a connected walkthrough, AJ-01 must actually produce the evidence that AJ-06 assumes.
 
@@ -187,4 +197,14 @@ The v0.6 extension adds ten stories: shared-module change, programme review, alt
 The connected examples include Leah's replacement first attempt, Omar's interruption and version-1 return, Priya's distinct appeal/correction branches, Alex's Clearing place, Robin's deferred entry and Jo's 20 recognised plus 340 planned credits. AJ-02 supplies an approved module dependency to AJ-03; their 2033 release leaves existing bindings unchanged. AJ-34 and AJ-38 follow the resulting evidence into reporting and records. These documents add proposed acceptance cases; they do not claim executed application journeys.
 
 
-Authoring checks for this extension (13 November 2026): the set contains 22 stories, 147 scenes, 114 interaction specifications and 202 proposed acceptance cases. The ten new stories contribute 65 scenes, 51 interactions and 84 cases. Local links/anchors, definitions/references, requirement/process identifiers, table structure, 38 dated milestones, Jo's 14 time-anchor conversions and credit/prerequisite arithmetic were checked. The existing Sam/Ben classification calculations remain consistent. These are document checks, not execution of the acceptance cases or institutional validation.
+Historical authoring checks at v0.6 (13 November 2026): the set contained 22 stories, 147 scenes, 114 interaction specifications and 202 proposed acceptance cases. The ten new stories contribute 65 scenes, 51 interactions and 84 cases. Local links/anchors, definitions/references, requirement/process identifiers, table structure, 38 dated milestones, Jo's 14 time-anchor conversions and credit/prerequisite arithmetic were checked. The existing Sam/Ben classification calculations remain consistent. These are document checks, not execution of the acceptance cases or institutional validation.
+
+
+### Research and partnership extension
+
+Version 0.7 expands AJ-04/05/09/11/12/14 and AJ-30–33. The selection completes the funded-doctorate-to-award thread, exercises separate student/employee roles, adds international, apprenticeship, partner and placement perspectives, and defines closure and bidirectional curriculum-provider change. Each is a proposed story with its own starting pack, authority, weekly walkthrough, interactions, exception cases and review owners.
+
+The [shared fixture](research-and-partnership-fixture.md) fixes tR and tX against the original t, Morgan's funding/payments/examination, Mei/Ada/Noah/Rina's separate programmes and the provider-switch scope. AJ-04 preserves the reviewed part-time closure; AJ-05 preserves accepted curriculum history and active bindings. The remaining eight stories cover distance learning, mobility, short courses, analytics, access support, communications, integration operations and audit/recovery.
+
+
+Authoring checks at v0.7 (14 November 2026): 32 stories, 207 scenes, 164 interaction specifications and 282 proposed acceptance cases. This batch adds 60 scenes, 50 interactions and 80 cases. Repository documentation links passed; 369 local narrative links/anchors, identifiers, table structure and requirement/process references were checked. All 29 new anchor conversions, summary ordering, research authority sequence, 36-instalment stipend budget, teaching claim, placement hours and master's planned-credit arithmetic passed. The reviewed earlier policies and Sam/Ben award calculations remain unchanged. These checks do not execute application journeys or establish institutional, funding, immigration, employment or professional approval.

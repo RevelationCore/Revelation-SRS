@@ -1,6 +1,6 @@
 # AJ-38 — A record that remains explainable after the student leaves
 
-Status: **Proposed narrative v0.6**, 13 November 2026 · [Document status](README.md#status-of-these-documents) · [Extension fixture](change-and-exceptions-fixture.md) · [Awards and documents](aj-29-awards-graduation-and-alumni.md)
+Status: **Proposed narrative v0.7**, 14 November 2026 · [Document status](README.md#status-of-these-documents) · [Extension fixture](change-and-exceptions-fixture.md) · [Awards and documents](aj-29-awards-graduation-and-alumni.md)
 
 **Perspective:** Sam as a former student, an information-rights officer and a records manager. **Boundary:** a scoped request through verified identity, distributed search, reviewed disclosure and separately authorised correction/restriction; retention and disposal remain distinct decisions. **Timeline:** t+160 to t+166, then a separately supplied future retention-eligibility scenario. Use the [original anchor](README.md#timeline-convention); policy deadlines govern actual scheduling.
 

@@ -6,7 +6,7 @@
 - [Current capabilities](current-capabilities.md) — authoritative implemented/partial/proposed status.
 - [UK HE business processes](../business-processes/README.md) — researched target processes.
 - [Academic journey narrative catalogue](academic-journey-narrative-catalogue.md) — proposed high-level stories, interlocking outcomes, coverage of all reference-model systems/interactions and candidate gaps to investigate.
-- [Expanded academic journeys](academic-journeys/README.md) — twenty-two proposed stories covering curriculum creation and change, admissions and prior learning, study and support, assessment and appeals, graduation, reporting and records, with shared weekly timelines, fixtures and acceptance cases.
+- [Expanded academic journeys](academic-journeys/README.md) — thirty-two proposed stories covering curriculum governance, diverse entry and delivery routes, study and support, assessment and appeals, the research lifecycle, employment, graduation, reporting and records, with shared weekly timelines, fixtures and acceptance cases.
 - [P0 functional requirements](../requirements/business-process-p0-functional-requirements.md) — proposed priority controls.
 - [Data-model delta](../architecture/business-process-data-model-delta.md) — logical and physical changes required.
 - [Attendance and engagement vertical slice](attendance-engagement-vertical-slice.md) — first end-to-end implementation specification.

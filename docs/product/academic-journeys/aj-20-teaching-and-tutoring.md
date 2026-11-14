@@ -1,6 +1,6 @@
 # AJ-20 — Teaching a cohort and noticing individual needs
 
-Status: **Proposed narrative v0.6**, 13 November 2026 · [Document status](README.md#status-of-these-documents) · [Shared continuation](taught-student-fixture.md) · [Support](aj-21-reasonable-adjustments.md)
+Status: **Proposed narrative v0.7**, 14 November 2026 · [Document status](README.md#status-of-these-documents) · [Shared continuation](taught-student-fixture.md) · [Support](aj-21-reasonable-adjustments.md)
 
 **Perspective:** Aisha, a module lecturer, a personal tutor and Sam. **Boundary:** confirmed registrations become usable learning/attendance rosters, teaching begins and attributable learning evidence or a referral reaches its owner. AJ-24 owns formal mark intake; [AJ-23](aj-23-engagement-and-intervention.md) owns expanded engagement intervention. **Timeline:** t-1 to t+30, repeated for later offerings, using the [shared t](README.md#timeline-convention).
 

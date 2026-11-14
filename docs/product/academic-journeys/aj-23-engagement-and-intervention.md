@@ -1,6 +1,6 @@
 # AJ-23 — Understanding apparent disengagement
 
-Status: **Proposed narrative v0.6**, 13 November 2026 · [Document status](README.md#status-of-these-documents) · [Extension fixture](change-and-exceptions-fixture.md) · [Interruption and return](aj-28-study-change-and-return.md)
+Status: **Proposed narrative v0.7**, 14 November 2026 · [Document status](README.md#status-of-these-documents) · [Extension fixture](change-and-exceptions-fixture.md) · [Interruption and return](aj-28-study-change-and-return.md)
 
 **Perspective:** Omar, his tutor and an Attendance caseworker. **Boundary:** an explained engagement signal through human investigation, contact and an owned outcome; academic status and sponsor decisions remain separately authorised. **Timeline:** t+9 to t+20, with the winter closure at t+13 to t+15, under the [shared anchor](README.md#timeline-convention).
 

@@ -1,6 +1,6 @@
 # Shared extension: change, exceptions and institutional records
 
-Status: **Proposed narrative v0.6**, 13 November 2026 · [Document status](README.md#status-of-these-documents) · [Original course](README.md#shared-scenario-northbridge-entry-cohort-2030) · [Taught-student continuation](taught-student-fixture.md)
+Status: **Proposed narrative v0.7**, 14 November 2026 · [Document status](README.md#status-of-these-documents) · [Original course](README.md#shared-scenario-northbridge-entry-cohort-2030) · [Taught-student continuation](taught-student-fixture.md)
 
 This fixture connects AJ-02/03/07/08/22/23/27/28/34/38. It adds fictional decisions for discussion and future acceptance tests. It does not replace the original students' histories, approve institutional policy or create application data. An independent scene receives only evidence available at its start; a connected run must produce that evidence in its owning story.
 
@@ -76,3 +76,5 @@ Starting release `REL-EDS-PT-2031-01` supplies approved route `EDS-PT@1.0`, diet
 | 6 / stage 3 | `EDS630`, `EDS640`, `EDS660` | 60 | 360 |
 
 These are planned credits, not earned results. The route assumes future passes only when testing possible pathways; actual confirmation uses the prior ratified outcomes. First-year study plus recognition yields 80 credits, so Jo may continue within stage 1 but cannot be reported as having completed that stage. No graduation date or class is awarded by this plan.
+
+The [research and partnerships extension](research-and-partnership-fixture.md) supplies the subsequent AJ-04/05/09/11/12/14/30–33 scenarios. AJ-04 expands the closure instruction above without changing its dates or protected intakes; the new research and student routes have explicitly separate anchors, programmes and authority.

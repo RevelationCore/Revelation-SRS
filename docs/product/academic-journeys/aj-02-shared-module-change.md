@@ -1,6 +1,6 @@
 # AJ-02 — One module, several programmes
 
-Status: **Proposed narrative v0.6**, 13 November 2026 · [Document status](README.md#status-of-these-documents) · [Extension fixture](change-and-exceptions-fixture.md) · [Programme review](aj-03-programme-review-and-improvement.md)
+Status: **Proposed narrative v0.7**, 14 November 2026 · [Document status](README.md#status-of-these-documents) · [Extension fixture](change-and-exceptions-fixture.md) · [Programme review](aj-03-programme-review-and-improvement.md)
 
 **Perspective:** the Statistics module leader, Aisha and a neighbouring programme director. **Boundary:** a proposed change to a shared module through impact review, rework and an approved dependency; AJ-03 owns the complete EDS publication release. **Timeline:** t+44 to t+74, followed by AJ-03's t+86 acceptance and t+156 future applicability. Use the [original anchor](README.md#timeline-convention).
 

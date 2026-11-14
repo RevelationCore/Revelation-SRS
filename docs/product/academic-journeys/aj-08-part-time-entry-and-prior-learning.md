@@ -1,6 +1,6 @@
 # AJ-08 — Returning to education with prior learning
 
-Status: **Proposed narrative v0.6**, 13 November 2026 · [Document status](README.md#status-of-these-documents) · [Jo's route and credit plan](change-and-exceptions-fixture.md#jos-route-and-remaining-credit) · [Module selection](aj-18-module-selection-and-diets.md)
+Status: **Proposed narrative v0.7**, 14 November 2026 · [Document status](README.md#status-of-these-documents) · [Jo's route and credit plan](change-and-exceptions-fixture.md#jos-route-and-remaining-credit) · [Module selection](aj-18-module-selection-and-diets.md)
 
 **Perspective:** Jo, an admissions adviser, a recognition assessor and a part-time programme tutor. **Boundary:** direct application and evidenced prior learning through an approved remaining study plan and separately authorised registration. **Timeline:** tJ-32 to tJ+2, where **tJ = 22 September 2031 = t+52**; the later annual review is tJ+40 to tJ+52. Use the [extension's explicit conversion](change-and-exceptions-fixture.md#time-anchors-and-connected-chronology).
 

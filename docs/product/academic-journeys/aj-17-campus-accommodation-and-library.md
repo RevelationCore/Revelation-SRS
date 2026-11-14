@@ -1,6 +1,6 @@
 # AJ-17 — Becoming part of the campus
 
-Status: **Proposed narrative v0.6**, 13 November 2026 · [Document status](README.md#status-of-these-documents) · [Shared continuation](taught-student-fixture.md) · [Registration](aj-16-registration-and-entitlements.md)
+Status: **Proposed narrative v0.7**, 14 November 2026 · [Document status](README.md#status-of-these-documents) · [Shared continuation](taught-student-fixture.md) · [Registration](aj-16-registration-and-entitlements.md)
 
 **Perspective:** Sam, an accommodation officer and a librarian. **Boundary:** accommodation enquiries before entry through move-in, library use and first-year departure; final departure reconnects at AJ-29. **Timeline:** t-24 to t+40, with a final library/access review at t+145 onwards. Use the [shared anchor](README.md#timeline-convention).
 

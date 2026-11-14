@@ -1,0 +1,76 @@
+# Shared extension: research, partnerships and provision changes
+
+Status: **Proposed narrative v0.7**, 14 November 2026 · [Document status](README.md#status-of-these-documents) · [Earlier extension](change-and-exceptions-fixture.md)
+
+This extension supplies connected fictional inputs for AJ-04/05/09/11/12/14/30/31/32/33. It preserves the existing EDS versions, closure decision, students and marks. New programmes and external organisations are synthetic starting fixtures requiring approved specifications, agreements and provenance before any executable walkthrough. No national funding, visa, employment or professional-registration rule is asserted here. Applicable external rules and live channels remain deployment inputs owned by qualified institutional staff.
+
+## People and distinct records
+
+| Person / organisation | Fixture identity and purpose |
+|---|---|
+| Morgan Price | `PERSON-MORGAN-001`, application `APP-MORGAN-PGR-2031-01`, candidature `ENR-MORGAN-PGR-2031-01`: funded doctoral applicant, researcher and later teaching assistant. Distinct from Ben Morgan. |
+| Dr Leila Grant / Dr Evan Moss / Dr Imani Shaw | Principal investigator and first lead supervisor / co-supervisor / approved replacement lead. Research grant authority does not confer admissions, HR or examination authority. |
+| Mei Lin | `PERSON-MEI-001`, `APP-MEI-PGT-2032-01`, `ENR-MEI-PGT-2032-01`: international applicant to a separately approved taught master's. A fictional sponsored-study case is supplied; nationality alone never determines sponsorship need. |
+| Ada Lewis | `PERSON-ADA-001`, `ENR-ADA-APP-2032-01`: apprentice with a university plan and distinct employment/funding obligations. Main employers: fictional Westmere Analytics, then Brookfield Systems. |
+| Noah Ahmed | `PERSON-NOAH-001`, `ENR-NOAH-PARTNER-2032-01`: student taught at fictional Riverside College on a Northbridge-validated route. Partner alias `RIV-NOAH-001` is mapped, not treated as a second person. |
+| Rina Okafor | `PERSON-RINA-001`, `ENR-RINA-PRACTICE-2031-01`: continuing student on a separately approved practice-based course, with a placement at fictional Eastbank Service and a replacement at Lakeside Service. No real professional accreditation is claimed. |
+| Jo Bennett and EDS students | Their original identities and version bindings remain. AJ-04 expands the already agreed part-time entry closure; it does not close EDS full-time entry or move Jo onto a new course. |
+
+## Anchors and calendars
+
+Unqualified **t remains Monday 23 September 2030**. The [original timeline convention](README.md#timeline-convention) applies. Research uses **tR = Monday 22 September 2031 = t+52**. Mei, Ada and Noah's entry year, and Rina's placement academic year, use **tX = Monday 20 September 2032 = t+104**. Thus `tR+n = t+(52+n)` and `tX+n = t+(104+n)`. Rina's original entry was t+52; tX is explicitly the start of her placement year, not a reset of her enrolment history.
+
+For the new 2031/32 and 2032/33 calendars, teaching begins at the anchor +1. Weeks +13 to +15 have no scheduled compulsory teaching or routine panels; urgent welfare routes remain available. Research progress, employment shifts, partner terms and placement attendance use their own supplied calendars; a campus closure does not automatically pause contractual employment, stipend payments or permitted research. The same pattern applies to the 2033/34 and 2034/35 calendars, whose closures are t+169 to t+171 and tR+169 to tR+171 (18 December 2034 to 7 January 2035). The new stories place routine academic decisions, panels and verification gates outside those closure weeks. A planned technical change window may use them only when it is approved in advance, schedules no academic decision and has named approvers and owners on call; AJ-05's rehearsal and publication freeze (t+115 to t+119), which overlap the 2032/33 closure, are the one such window.
+
+| Time | Milestone |
+|---|---|
+| tR-40 to tR-2 / t+12 to t+50 | Studentship proposal, funded award, Morgan's separate admission and initial supervision approval. |
+| tR-1 to tR+1 / t+51 to t+53 | Morgan registers, starts candidature and completes induction. |
+| tR+4 to tR+12 / t+56 to t+64 | Training, ethics review, authorised fieldwork and initial progress review. |
+| tR+20 to tR+32 / t+72 to t+84 | Morgan's first teaching appointment and payment-reconciliation branch. |
+| tX-32 to tX+1 / t+72 to t+105 | Mei's international admission and readiness; Ada/Noah's separate entry routes. |
+| t+76 to t+88 | AJ-04 completes the EDS part-time closure impact/approval/channel checks within AJ-03's existing release dates. |
+| tR+40 to tR+48 / t+92 to t+100 | Annual progress review requests further work, then verifies it. |
+| tX+4 to tX+30 / t+108 to t+134 | Rina's placement allocation, interruption of unsafe delivery, replacement and assessment; moderation tX+32, ratification tX+40 and publication tX+41 (t+136, t+144, t+145). |
+| t+112 to t+122 | Curriculum-provider inventory, rehearsal and publication freeze; authority cutover t+120 and reconciliation through t+122. |
+| tR+64 to tR+70 / t+116 to t+122 | Replacement supervisor nominated, approved at tR+68, effective tR+70. |
+| tX+20 to tX+24 / t+124 to t+128 | Ada changes employer without a break in employment in the main path; break branch is separate. |
+| tX+28 to tX+41 / t+132 to t+145 | Partner mark exchange, moderation, board authority and published result. |
+| tR+92; tR+144 / t+144; t+196 | Further doctoral progress reviews on new evidence. |
+| tR+148 to tR+156 / t+200 to t+208 | Post-funded-period plan, examiner appointment and immutable thesis submission. |
+| tR+160 to tR+166 / t+212 to t+218 | Reports, viva, ratified corrections outcome and publication; Morgan's second teaching appointment is independently active. |
+| tR+172 to tR+178 / t+224 to t+230 | Corrections submitted/verified, deposit, completion, explicit award conferral and research documents. |
+| tR+184 / t+236 | Second teaching appointment ends; student and employment entitlements reconcile separately. |
+
+This table groups overlapping journeys by their starting milestone; each story's walkthrough controls its internal ordering. All same-week decisions need actual timestamps and source versions. Future outcomes are not preloaded into earlier snapshots.
+
+## Explicit scenario policies and evidence
+
+| Reference | Fictional rule / authority |
+|---|---|
+| `PGR-FUND-2031@1` | `GRANT-ENV-2031-01` funds one studentship `STUDSHIP-MORGAN-001`, with fee support and an illustrative £1,800 monthly stipend for 36 scheduled instalments. A £64,800 stipend budget does not imply all instalments have been paid or that salary is included. The funded period is 22 September 2031 through 21 September 2034 inclusive; its final date lies in week tR+156 (week commencing 18 September 2034). The 36 monthly instalments begin on 22 September 2031, with the last scheduled on 22 August 2034. A separately approved fee/access arrangement covers the subsequent examination/correction period, with no automatic stipend extension. |
+| `PGR-ADMIT-2031@1` | Separate approved programme `NBU-ENV-PHD@1.0`, route `ENV-PGR-FT@1.0` and target research award `ENV-PHD@1.0`. Admit only after verified academic eligibility, independently authorised selection, suitable supervision and confirmed funding/financial readiness. Approval of a grant is neither admission nor registration. Morgan's main fixture has verified right-to-study readiness and requires no sponsor case; a sponsored variant needs AJ-09's separate inputs. |
+| `PGR-GOV-2031@1` | PGR Director approves the effective supervisory team after HR eligibility/capacity/conflict checks. An independent progress panel of a chair and two eligible reviewers records evidence and decisions; unresolved conflicts prevent decision. More-work outcomes have explicit actions/deadlines and do not themselves withdraw candidature. Research permissions are separately issued by the ethics/safety owners. |
+| `GTA-MORGAN-2032@1` | HR approves appointment `EMP-MORGAN-001` for tR+20 to tR+32. One approved teaching claim is 12 hours at a fictional £25 gross hourly rate = £300 gross, separate from the £1,800 stipend instalment. Payroll calculates deductions under supplied rules; no net-pay or tax status is inferred. A second separately approved appointment `EMP-MORGAN-002` runs tR+160 to tR+184 and survives research completion until its own end. |
+| `PGR-EXAM-2034@1` | An external examiner from another institution and an internal examiner who has not supervised Morgan, together with an independent chair, are approved before thesis distribution. Submit tR+156; reports tR+160; viva tR+164; authorised ratification tR+165; publication tR+166. Main outcome is pass subject to specified corrections, due tR+176; that deadline already allows for the 2034/35 closure (tR+169 to tR+171), in which no verification is scheduled. Examiners verify submitted corrections at tR+174; deposit tR+175, completion tR+176, separate conferral tR+177 and documents tR+178. Missed correction/deposit gates prevent the corresponding next step; alternative outcomes require their own policy and authority. |
+| `MEI-PGT-2032@1` | Separate approved `NBU-ENVMSC@1.0`, route `ENVMSC-FT@1.0`, 180-credit taught plan and actual entry requirements. Verified qualifications, language evidence where required, fee-status decision, funding and sponsor/right-to-study evidence are supplied separately. Six 20-credit taught modules plus a 60-credit dissertation are a planning structure, not completed results or an award. `ENGAGEMENT-2030@1` from the [earlier fixture](change-and-exceptions-fixture.md#explicit-additional-policies) carries forward unchanged for 2032/33, applied to Mei's own timetable. This narrative ends at supported study; later assessment rules must be supplied before AJ-24/29 can run. |
+| `ADA-APP-2032@1` | Separate approved `NBU-DATAAPP@1.0`, route `DATAAPP-EMP@1.0` and a 360-credit multi-year academic plan. Employer, university and Ada approve learning/employment/funding responsibilities. Fictional occupational standard `OCC-DATA@1` and its assessment agreement are additional completion requirements, not invented statutory rules or a claim of real accreditation. Employment change triggers reassessment of eligibility and responsibilities before new funding claims. |
+| `PARTNER-2032@1` | Riverside's route was first validated in 2030 under `AGR-NBU-RIV-2030@1`, which governs its recruitment and offers for the 2032 intake. Renewal `AGR-NBU-RIV-2032@1`, approved at tX-20, governs delivery from 2032/33 and adds the records and mark-exchange terms below; a 2032 entrant cannot start unless it is approved. Riverside teaches and supplies verified registrations/marks; Northbridge owns the approved curriculum, canonical award-bearing enrolment, moderation/ratification and single Northbridge award. Local alias `RIV-STAT1` maps to approved level-7 module `PART710@1.0`, 20 credits, on a separate 180-credit validated master's. A source mark of 64 passes only under the supplied 50-pass module rule and moderation/board authority. No GPA conversion or joint award is inferred. |
+| `PLACEMENT-2032@1` | Rina's approved practice route includes a 20-credit placement module `PRAC520@1.0`. The fixture requires all four specified competencies plus 120 verified supervised hours; neither alone passes. Host 1 supplies 40 accepted hours; host 2 supplies 80. Only the university's authorised assessment process awards credit. Clearance checks have scope, expiry and a permitted operational status; private underlying evidence stays with its owner. |
+| `CM-SWITCH-2032@1` | Primary cutover at t+120 from `internal-cm/epoch-1` to `external-cm/epoch-2`; both implement the same canonical accepted-release contract. Rehearsal (t+115 to t+118) and freeze (t+119) overlap the 2032/33 closure (t+117 to t+119) and run as an approved quiet-period change window: the curriculum owner, integration lead and Registry cutover approver are named and on call, and no curriculum approval is scheduled in it. Freeze publication at t+119 after recording a source watermark. Previously accepted definitions, old provenance and active student bindings remain. In a separate reverse rehearsal, `external-cm/epoch-2` changes to `internal-cm/epoch-3`; no epoch is reused. Open proposals receive individual disposition. No production migration is performed by writing these narratives. |
+
+Northbridge's institutional student protection plan, `SPP-NBU@1`, is a supplied input owned by the academic registrar. It names the risks it covers, including course closure and the end of a partnership, and the measures and student communication each requires. AJ-04 and AJ-12 apply it; the fixture asserts no regulator's specific content requirements.
+
+`CLOSE-EDS-PT-2033@1` in the [earlier fixture](change-and-exceptions-fixture.md#explicit-additional-policies) remains authoritative: approval t+84, channel closure verified before publication t+88, no new part-time entry from 2033, 2031/2032 cohorts protected. AJ-04 supplies the operational story and a separate whole-programme closure variant. It does not infer that supporting multiple approved versions is prohibited.
+
+## Research ownership and dependencies
+
+Under [ADR-023](../../decisions/ADR-023-pgr-supervision-and-examination-authority.md), PGR supervision, progress, examination and completion are governed core SRS cases. HR owns employment eligibility; SRS owns authorised supervisory assignments and academic milestones; CRIS owns researcher-profile/publication activity. Incoming CRIS milestone material is evidence or reconciliation context, not authority to overwrite a ratified SRS outcome. The reference flow label is broader than this native ownership decision.
+
+The thesis repository/deposit and ethics/safety contracts are GI-12 discovery interfaces, not invented APIs. The approved repository embargo in the main path restricts public access for 12 calendar months from the actual deposit timestamp; it does not prevent a verified deposit receipt or authorised examiner access. Its precise end date is calculated when the timestamp is known. Research awards use AJ-29's common conferral/document authority but no taught classification or HEAR record.
+
+## Placement competencies and credit checks
+
+The four fictional placement competencies are: agree an appropriate work plan; perform the agreed supervised task safely; document and communicate observations accurately; recognise limits and escalate concerns. Every signed observation identifies assessor, date, setting and criterion. These are curriculum-fixture competencies, not a clinical competency standard.
+
+After 40 accepted hours at Eastbank, a supervision/safety failure stops further placement activity at tX+10. Valid prior evidence remains subject to academic review; later unsupported hours are excluded. Reassignment is approved at tX+16, delivery resumes tX+17 and completes by tX+28. The 80 subsequent hours bring the verified total to 120. A separate branch with all hours but one missing competency remains incomplete. Alternative placement attendance and holiday dates must be explicitly supplied, not borrowed from classroom attendance.

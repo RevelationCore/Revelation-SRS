@@ -1,6 +1,6 @@
 # AJ-34 — Turning lived events into accountable returns
 
-Status: **Proposed narrative v0.6**, 13 November 2026 · [Document status](README.md#status-of-these-documents) · [Extension fixture](change-and-exceptions-fixture.md) · [Record corrections](aj-27-appeals-and-record-corrections.md)
+Status: **Proposed narrative v0.7**, 14 November 2026 · [Document status](README.md#status-of-these-documents) · [Extension fixture](change-and-exceptions-fixture.md) · [Record corrections](aj-27-appeals-and-record-corrections.md)
 
 **Perspective:** a Registry reporting analyst, source-data owners and the accountable signatory. **Boundary:** a defined collection through reproducible extraction, validation, approval, submission response and controlled amendment. **Timeline:** a fictional rehearsal at t+48 to t+51; separate award-period rehearsal t+144 to t+154. These are [scenario weeks](README.md#timeline-convention), not national deadlines.
 
@@ -70,7 +70,7 @@ Apply the [shared exchange convention](README.md#exchange-and-evidence-conventio
 | A34-I02 / RSS-003/004; GI-18 | Source/mapping owners → collection: exact facts, lineage, validated mappings and issue dispositions. | Snapshot + field/rule version; respective authority. | Complete lineage and validation report; missing mandatory evidence blocks sign-off. |
 | A34-I03 / F-SIS-HESA-01, F-HESA-SIS-01 | Authorised reporting service ↔ isolated receiver: signed exact payload, response, validation and identifier references. | Collection + submission version; signatory-bound authority. | Distinct transport/acceptance evidence; query before duplicate submission after timeout. |
 | A34-I04 / RSS-011; A27-I04 | Amendment owner → reporting: authoritative source revision; reporting → receiver: renewed signed submission and predecessor reference. | Amendment + collection/submission version. | Before/after diff, response and dependent-return reconciliation; stale responses scoped to old submission. |
-| A34-I05 / F-SIS-SLC-01, F-SLC-SIS-01, F-SIS-UKVI-01, F-UKVI-SIS-01; GI-19 | Source process → relevant funding/sponsor owner and supported receiver: eligible dated decision, scheme/authority and response. | Obligation type + source decision version; separately designated signatory. | Reuse AJ-16 funding exchange; AJ-09 supplies sponsor context. Missing applicability or live contract remains pending. |
+| A34-I05 / F-SIS-SLC-01, F-SLC-SIS-01, F-SIS-UKVI-01, F-UKVI-SIS-01; GI-19 | Source process → relevant funding/sponsor owner and supported receiver: eligible dated decision, scheme/authority and response. | Obligation type + source decision version; separately designated signatory. | Reuse AJ-16 funding exchange; [AJ-09](aj-09-international-postgraduate-entry.md) supplies sponsor context. Missing applicability or live contract remains pending. |
 
 National collection variants under GI-18 use separate declared contracts; the reference model supplies no universal regulator API. They do not inherit England-only mappings by default.
 
