@@ -1,6 +1,6 @@
 # AJ-21 — Support agreed once and delivered where it is needed
 
-Status: **Proposed narrative v0.5**, 13 November 2026 · [Document status](README.md#status-of-these-documents) · [Shared continuation](taught-student-fixture.md) · [Assessment](aj-24-assessment-and-results.md)
+Status: **Proposed narrative v0.6**, 13 November 2026 · [Document status](README.md#status-of-these-documents) · [Shared continuation](taught-student-fixture.md) · [Assessment](aj-24-assessment-and-results.md)
 
 **Perspective:** Nina, a support adviser and the teaching/examination teams responsible for delivery. **Boundary:** a separate request for study support through an authorised adjustment and verified operational implementation, review or expiry. Exceptional circumstances remain AJ-22's separate process. **Timeline:** t-24 to t+51 with review at t+32; use the [shared t](README.md#timeline-convention).
 

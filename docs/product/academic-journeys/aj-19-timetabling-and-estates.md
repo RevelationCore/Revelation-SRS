@@ -1,6 +1,6 @@
 # AJ-19 — Turning demand into a workable timetable
 
-Status: **Proposed narrative v0.5**, 13 November 2026 · [Document status](README.md#status-of-these-documents) · [Shared continuation](taught-student-fixture.md) · [Module selection](aj-18-module-selection-and-diets.md)
+Status: **Proposed narrative v0.6**, 13 November 2026 · [Document status](README.md#status-of-these-documents) · [Shared continuation](taught-student-fixture.md) · [Module selection](aj-18-module-selection-and-diets.md)
 
 **Perspective:** a timetabler, Estates planner, teaching staff and affected students. **Boundary:** forecast demand through published teaching allocations and controlled changes; examination logistics are owned by AJ-24. **Timeline:** t-20 to t+3, then recurring planning for later stages. All offsets use the [shared t](README.md#timeline-convention).
 

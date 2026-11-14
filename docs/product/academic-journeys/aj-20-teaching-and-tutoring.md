@@ -1,8 +1,8 @@
 # AJ-20 — Teaching a cohort and noticing individual needs
 
-Status: **Proposed narrative v0.5**, 13 November 2026 · [Document status](README.md#status-of-these-documents) · [Shared continuation](taught-student-fixture.md) · [Support](aj-21-reasonable-adjustments.md)
+Status: **Proposed narrative v0.6**, 13 November 2026 · [Document status](README.md#status-of-these-documents) · [Shared continuation](taught-student-fixture.md) · [Support](aj-21-reasonable-adjustments.md)
 
-**Perspective:** Aisha, a module lecturer, a personal tutor and Sam. **Boundary:** confirmed registrations become usable learning/attendance rosters, teaching begins and attributable learning evidence or a referral reaches its owner. AJ-24 owns formal mark intake; AJ-23 will own expanded engagement intervention. **Timeline:** t-1 to t+30, repeated for later offerings, using the [shared t](README.md#timeline-convention).
+**Perspective:** Aisha, a module lecturer, a personal tutor and Sam. **Boundary:** confirmed registrations become usable learning/attendance rosters, teaching begins and attributable learning evidence or a referral reaches its owner. AJ-24 owns formal mark intake; [AJ-23](aj-23-engagement-and-intervention.md) owns expanded engagement intervention. **Timeline:** t-1 to t+30, repeated for later offerings, using the [shared t](README.md#timeline-convention).
 
 ## The story
 
@@ -64,7 +64,7 @@ Use the [shared exchange convention](README.md#exchange-and-evidence-convention)
 | A20-I03 / F-AM-SIS-01; GI-22 | Attendance process → core on confirmed engagement consequence: case/decision reference, permissible operational effect and dates. | Case decision version; Attendance process authority. | Core outcome receipt. The reference raw-record wording is an external-provider variant requiring explicit design, not native bulk evidence ingestion. |
 | A20-I04 / GI-20, GI-24 | Tutor → owned support/engagement referral: student identity, reason category, necessary contact/context and urgency. | Referral action/version; scoped tutor authority. | Receiving case/triage receipt with owner; sensitive narrative excluded from broad dashboards. |
 
-The VLE-to-SRS formal mark exchange is A24-I02, not another teaching-owned marks store. Adjustment delivery is A21-I03; the lecturer acknowledges the operational result through that service. Engagement analytics and student surveys remain AJ-35 responsibilities. AJ-23 is not yet expanded.
+The VLE-to-SRS formal mark exchange is A24-I02, not another teaching-owned marks store. Adjustment delivery is A21-I03; the lecturer acknowledges the operational result through that service. Engagement analytics and student surveys remain AJ-35 responsibilities. [AJ-23](aj-23-engagement-and-intervention.md) follows a corrected alert through contact and an independently authorised interruption.
 
 ## Acceptance cases
 

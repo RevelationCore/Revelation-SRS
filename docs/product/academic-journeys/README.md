@@ -1,25 +1,35 @@
 # Expanded academic journeys
 
-Status: **Proposed narrative specifications v0.5**, 13 November 2026. See [status of these documents](#status-of-these-documents).
+Status: **Proposed narrative specifications v0.6**, 13 November 2026. See [status of these documents](#status-of-these-documents).
 
 [Narrative catalogue](../academic-journey-narrative-catalogue.md) · [Product documentation](../README.md)
 
 | Narrative | Readable story and structured walkthrough |
 |---|---|
 | AJ-01 | [Aisha: from a course idea to an approved catalogue and prospectus](aj-01-course-creation-and-publication.md) |
+| AJ-02 | [Shared-module change](aj-02-shared-module-change.md) |
+| AJ-03 | [Programme review and improvement](aj-03-programme-review-and-improvement.md) |
 | AJ-06 | [Sam: from university discovery to arrival and first teaching](aj-06-discovery-application-and-arrival.md) |
+| AJ-07 | [Clearing, deferral and changed plans](aj-07-clearing-deferral-and-changed-plans.md) |
+| AJ-08 | [Part-time entry and prior learning](aj-08-part-time-entry-and-prior-learning.md) |
 | AJ-16 | [Registration and entitlements](aj-16-registration-and-entitlements.md) |
 | AJ-17 | [Campus, accommodation and library](aj-17-campus-accommodation-and-library.md) |
 | AJ-18 | [Module selection and course diets](aj-18-module-selection-and-diets.md) |
 | AJ-19 | [Timetabling and Estates](aj-19-timetabling-and-estates.md) |
 | AJ-20 | [Teaching and personal tutoring](aj-20-teaching-and-tutoring.md) |
 | AJ-21 | [Reasonable adjustments and their delivery](aj-21-reasonable-adjustments.md) |
+| AJ-22 | [Exceptional circumstances](aj-22-exceptional-circumstances.md) |
+| AJ-23 | [Engagement and intervention](aj-23-engagement-and-intervention.md) |
 | AJ-24 | [Assessment, examination operations and results](aj-24-assessment-and-results.md) |
 | AJ-25 | [Exam boards, ratification and publication](aj-25-exam-board-and-ratification.md) |
 | AJ-26 | [Progression, reassessment and repeat routes](aj-26-progression-and-reassessment.md) |
+| AJ-27 | [Appeals and record corrections](aj-27-appeals-and-record-corrections.md) |
+| AJ-28 | [Study change and return](aj-28-study-change-and-return.md) |
 | AJ-29 | [Awards, graduation and alumni transition](aj-29-awards-graduation-and-alumni.md) |
+| AJ-34 | [Reporting and statutory returns](aj-34-reporting-and-statutory-returns.md) |
+| AJ-38 | [Records, information rights and retention](aj-38-records-rights-and-retention.md) |
 
-Twelve narratives are now expanded. The documents share the fictional scenario below and the [taught-student continuation](taught-student-fixture.md), which fixes the later policies, marks, roles and calendar. Each later story states its own independent starting pack and consumes preceding evidence in a connected run.
+Twenty-two narratives are now expanded. The documents share the fictional scenario below and the [taught-student continuation](taught-student-fixture.md), which fixes the later policies, marks, roles and calendar. Each later story states its own independent starting pack and consumes preceding evidence in a connected run. The [change and exceptions extension](change-and-exceptions-fixture.md) adds the new students, policy branches, shared-module revision, future course release and Jo’s separately anchored part-time plan. Eighteen catalogue narratives remain to expand.
 
 The first two documents establish the course and admissions hand-off. They are independently readable: AJ-01 begins before approval; AJ-06 begins with an approved, published release supplied as its starting fixture. In a connected walkthrough, AJ-01 must actually produce the evidence that AJ-06 assumes.
 
@@ -167,4 +177,14 @@ Document structure, links, identifiers, the anchor-date arithmetic, simple credi
 
 Three scenario choices in AJ-01 and AJ-06 are Northbridge policy defaults, chosen to make the stories concrete and open to reversal at review: the composition of the approval panel (including external and student members), the must-pass ethics component, and no advertising or offers before approval (two separate settings).
 
-The continuation adds explicit scenario defaults for registration, selection, assessment, progression, board authority, award classification and service closure. Four of them were settled at review and can also be reversed: a capped reassessment counts at its capped mark for classification; Nina's first-year adjustment runs to the end of the academic year (t+51); exam boards receive no reasonable-adjustment information by default; and field-study capacity is added as a second field-trip cohort. They remain proposed fictional policy choices, not changes to the application or institutional approval. The unexpanded AJ-22/23/27/28/34/35/38/39 narratives remain discovery work; local hand-offs identify their required outcomes without asserting complete contracts.
+The continuation adds explicit scenario defaults for registration, selection, assessment, progression, board authority, award classification and service closure. Four of them were settled at review and can also be reversed: a capped reassessment counts at its capped mark for classification; Nina's first-year adjustment runs to the end of the academic year (t+51); exam boards receive no reasonable-adjustment information by default; and field-study capacity is added as a second field-trip cohort. They remain proposed fictional policy choices, not changes to the application or institutional approval. AJ-22/23/27/28/34/38 now have expanded hand-offs, alongside AJ-02/03/07/08. AJ-35/37/39/40 and the other unexpanded catalogue entries remain discovery work; references to them identify required inputs or outcomes without asserting complete contracts.
+
+
+### Extension review and chronology
+
+The v0.6 extension adds ten stories: shared-module change, programme review, alternative admission, part-time recognition, exceptional circumstances, engagement intervention, appeals/corrections, interruption/return, reporting and records. Its [shared chronology](change-and-exceptions-fixture.md#time-anchors-and-connected-chronology) retains t and explicitly introduces tJ for Jo. The new policies are fictional defaults requiring review by the named institutional roles.
+
+The connected examples include Leah's replacement first attempt, Omar's interruption and version-1 return, Priya's distinct appeal/correction branches, Alex's Clearing place, Robin's deferred entry and Jo's 20 recognised plus 340 planned credits. AJ-02 supplies an approved module dependency to AJ-03; their 2033 release leaves existing bindings unchanged. AJ-34 and AJ-38 follow the resulting evidence into reporting and records. These documents add proposed acceptance cases; they do not claim executed application journeys.
+
+
+Authoring checks for this extension (13 November 2026): the set contains 22 stories, 147 scenes, 114 interaction specifications and 202 proposed acceptance cases. The ten new stories contribute 65 scenes, 51 interactions and 84 cases. Local links/anchors, definitions/references, requirement/process identifiers, table structure, 38 dated milestones, Jo's 14 time-anchor conversions and credit/prerequisite arithmetic were checked. The existing Sam/Ben classification calculations remain consistent. These are document checks, not execution of the acceptance cases or institutional validation.

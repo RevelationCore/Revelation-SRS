@@ -1,6 +1,6 @@
 # Shared continuation: registration, study and graduation
 
-Status: **Proposed narrative v0.5**, 13 November 2026 · [Document status](README.md#status-of-these-documents). A fictional fixture: discussion and acceptance-test inputs, not university regulations or seed data.
+Status: **Proposed narrative v0.6**, 13 November 2026 · [Document status](README.md#status-of-these-documents). A fictional fixture: discussion and acceptance-test inputs, not university regulations or seed data.
 
 This extends the [Northbridge course and identities](README.md#shared-scenario-northbridge-entry-cohort-2030) for AJ-16–21, AJ-24–26 and AJ-29. It preserves `NBU-EDS@1.0`, `EDS-FT@1.0`, `EDS-2030@1.0`, the `SCI420`/`SCI440` shared modules and the must-pass ethics component. No new curriculum release is implied by writing these stories.
 
@@ -72,3 +72,5 @@ These marks are **future fixture inputs**, revealed only at their assessment/boa
 | Ben / award | Project counted at its recorded (capped) 40. | Stage-3 mean (40 × 40 + 80 × 60) / 120 = 53⅓; score 0.3 × 60 + 0.7 × 53⅓ = **55.33**, lower second. The cap costs Ben a class: counted at its raw 66, the score would be 61.40 (upper second); with only the component capped (module 64), 60.93 (upper second). |
 
 Every interaction table follows the [exchange and evidence convention](README.md#exchange-and-evidence-convention).
+
+The [change and exceptions extension](change-and-exceptions-fixture.md) adds separate students and policy branches for AJ-02/03/07/08/22/23/27/28/34/38. Its future curriculum release, part-time plan and correction alternatives preserve Sam, Nina and Ben’s histories above.

@@ -1,6 +1,6 @@
 # AJ-24 — From assessment entry to confirmed marks
 
-Status: **Proposed narrative v0.5**, 13 November 2026 · [Document status](README.md#status-of-these-documents) · [Shared marks and rules](taught-student-fixture.md#marks-and-results-that-interlock) · [Exam board](aj-25-exam-board-and-ratification.md)
+Status: **Proposed narrative v0.6**, 13 November 2026 · [Document status](README.md#status-of-these-documents) · [Shared marks and rules](taught-student-fixture.md#marks-and-results-that-interlock) · [Exam board](aj-25-exam-board-and-ratification.md)
 
 **Perspective:** Sam, Nina, Ben, assessors, moderators and an examinations officer. **Boundary:** approved assessment definitions and registrations become candidate attempts, examination arrangements and confirmed results for a board. Ratification/publication belong to AJ-25. **Timeline:** t+8 to t+36 for stage 1; final-year example t+132 to t+140. Use the [same t](README.md#timeline-convention).
 
@@ -32,7 +32,7 @@ Ben's aggregate looks comfortably above 40, but the approved ethics hurdle requi
 
 ### Handing over evidence, not making the board's decision
 
-The assessment owner supplies a reproducible result set: marks, attempts, policies, moderation, calculation and relevant approved case outcomes. Sam's and Ben's results are not yet labelled ratified. Any late correction creates a new set/version for AJ-25 rather than silently modifying an issued board pack. Post-ratification changes will require AJ-27's governed correction boundary, whose detailed narrative remains pending.
+The assessment owner supplies a reproducible result set: marks, attempts, policies, moderation, calculation and relevant approved case outcomes. Sam's and Ben's results are not yet labelled ratified. Any late correction creates a new set/version for AJ-25 rather than silently modifying an issued board pack. Post-ratification changes require [AJ-27’s governed correction and appeal process](aj-27-appeals-and-record-corrections.md), with exact predecessor/successor versions and recipient reconciliation.
 
 ## Starting pack and roles
 

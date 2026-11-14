@@ -1,6 +1,6 @@
 # AJ-29 — From completion to graduate
 
-Status: **Proposed narrative v0.5**, 13 November 2026 · [Document status](README.md#status-of-these-documents) · [Shared marks and rules](taught-student-fixture.md) · [Exam board](aj-25-exam-board-and-ratification.md)
+Status: **Proposed narrative v0.6**, 13 November 2026 · [Document status](README.md#status-of-these-documents) · [Shared marks and rules](taught-student-fixture.md) · [Exam board](aj-25-exam-board-and-ratification.md)
 
 **Perspective:** Sam, the awards officer, ceremony organisers, records staff and alumni team. **Boundary:** a ratified recommendation through eligibility verification, separate award conferral, document issue and governed leaver services. **Timeline:** t+140 to t+156; Ben's later conferral branch begins after supplementary publication at t+151. Use the [same t](README.md#timeline-convention).
 
@@ -74,7 +74,7 @@ Use the [shared exchange convention](README.md#exchange-and-evidence-convention)
 | A29-I05 / F-SIS-CRM-01; GI-15 | SRS → CRM/alumni on completion: confirmed outcome/status and permitted contact/preference references. | Completion version + relationship purpose; Registry source, alumni communication owner. | Linked relationship and preference acknowledgement; no assumed marketing permission from enrolment. |
 | A29-I06 / BP-02-012; GI-17 | SRS leaver decision → entitlement/service/records owners: scoped status/dates, independent-role and required-access context. | Leaver decision + target; appropriate source authority. | Reuse A16-I04 and A17-I01/I03 for actual entitlement/service changes; each returns applied state or owned exception. No blanket deletion. |
 
-AJ-34 owns later reporting collections; AJ-27 owns academic correction and AJ-38 owns records/rights lifecycle. They are not yet expanded; this hand-off supplies the award/issue/version and authority references they will need.
+[AJ-34](aj-34-reporting-and-statutory-returns.md) owns later reporting collections; [AJ-27](aj-27-appeals-and-record-corrections.md) owns academic correction and [AJ-38](aj-38-records-rights-and-retention.md) owns records/rights lifecycle. They consume the exact award, issue/version and authority references, with separate successor records for any authorised amendment.
 
 ## Acceptance cases
 

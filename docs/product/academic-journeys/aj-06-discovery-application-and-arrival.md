@@ -1,6 +1,6 @@
 # AJ-06 — Sam: from university discovery to arrival and first teaching
 
-Status: **Proposed narrative v0.5**, 13 November 2026 · [Document status](README.md#status-of-these-documents).
+Status: **Proposed narrative v0.6**, 13 November 2026 · [Document status](README.md#status-of-these-documents).
 
 [Shared scenario and course definition](README.md) · [Narrative catalogue](../academic-journey-narrative-catalogue.md) · [Preceding course-approval story](aj-01-course-creation-and-publication.md)
 
@@ -154,7 +154,7 @@ From registration onwards, AJ-06 follows outcomes that other journeys own and sp
 | First-stage module registrations | [AJ-18](aj-18-module-selection-and-diets.md#owned-interactions) | F-EWP-SIS-01 | Six compulsory modules registered through the authorised process, not created from the curriculum definition. |
 | Timetable | [AJ-19](aj-19-timetabling-and-estates.md#owned-interactions) | F-SIS-TTB-01, F-TTB-SIS-01 | Pending and final timetables are distinguished. |
 | Accommodation allocation and check-in | [AJ-17](aj-17-campus-accommodation-and-library.md#owned-interactions) | F-SIS-ACC-01, F-ACC-SIS-01 | Occupancy is reconciled independently; a room booking never confirms or withdraws enrolment. |
-| Enrolled-status notifications | [AJ-16](aj-16-registration-and-entitlements.md#owned-interactions), with AJ-07 (not yet expanded) for deferral or no-show | F-SIS-EWP-01, F-SIS-CRM-01, F-SIS-UCAS-01 | Applicant messages and enrolled status agree; a no-show or deferral needs its own decision. |
+| Enrolled-status notifications | [AJ-16](aj-16-registration-and-entitlements.md#owned-interactions), with [AJ-07](aj-07-clearing-deferral-and-changed-plans.md) for deferral or no-show | F-SIS-EWP-01, F-SIS-CRM-01, F-SIS-UCAS-01 | Applicant messages and enrolled status agree; a no-show or deferral needs its own decision. |
 
 The website does not call privileged core APIs anonymously: public content is a controlled projection. CRM/event data can exist before a canonical student record. The choice of an internal or external Admissions implementation must not change who is authorised to decide, or cause UCAS and CRM imports to create competing application copies.
 

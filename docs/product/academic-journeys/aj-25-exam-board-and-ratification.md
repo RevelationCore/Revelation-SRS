@@ -1,6 +1,6 @@
 # AJ-25 — Evidence becomes a ratified academic decision
 
-Status: **Proposed narrative v0.5**, 13 November 2026 · [Document status](README.md#status-of-these-documents) · [Shared continuation](taught-student-fixture.md) · [Progression](aj-26-progression-and-reassessment.md)
+Status: **Proposed narrative v0.6**, 13 November 2026 · [Document status](README.md#status-of-these-documents) · [Shared continuation](taught-student-fixture.md) · [Progression](aj-26-progression-and-reassessment.md)
 
 **Perspective:** the Registry board secretary, an external examiner, the chair and students awaiting results. **Boundary:** controlled assessment evidence through an authorised board, locked decisions and separately authorised publication. Award conferral is AJ-29. **Timeline:** t+36 to t+40, t+88 to t+92 and t+140 to t+144; Ben's supplementary board is t+150 with publication t+151. Use the [original t](README.md#timeline-convention).
 
@@ -28,7 +28,7 @@ At t+39 the board ratifies Sam's first-stage outcomes and progression decision a
 
 Registry authorises release at the scheduled time. Sam sees the ratified marks, progression result and next actions together. The portal cannot expose an unapproved live calculation as the official result. A failed notification has an operational owner; it does not undo the academic decision or warrant ratifying it again.
 
-A correction after ratification needs a formally authorised amendment with the original record retained. A marker, chair or operator cannot unlock the result casually to make a discrepancy disappear. AJ-27 owns the expanded correction/appeal process, still to be written; this story defines the boundary and required hand-off evidence.
+A correction after ratification needs a formally authorised amendment with the original record retained. A marker, chair or operator cannot unlock the result casually to make a discrepancy disappear. [AJ-27](aj-27-appeals-and-record-corrections.md) owns the expanded correction/appeal process and consumes this story’s exact pack, locked outcome and publication evidence.
 
 ### The final board treats Sam and Ben differently — t+140 to t+144
 
