@@ -322,7 +322,7 @@ Every contract below must be implemented with the full field set above. Where de
 
 | Contract ID | Flows | Direction | Pattern | Owner | Notes |
 |---|---|---|---|---|---|
-| `exam-scheduling-entries.v1` | F-SIS-EXAMS-01 | Outbound | Event / file | Exam Board | Exam entries, module registrations, approved physical accommodations |
+| `exam-scheduling-entries.v1` | F-SIS-EXAMS-01 | Outbound | Event / file | Exam Board | Exam entries, module registrations, approved accommodations with each exam's standard, extra and total minutes; the returned schedule acknowledges the `exams` adjustment distribution |
 | `exam-scheduling-publication.v1` | F-EXAMS-SIS-01 | Inbound | REST / file | Exam Board | Final timetable, seating plans, candidate numbers |
 
 ---

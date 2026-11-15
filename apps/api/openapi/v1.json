@@ -26117,6 +26117,7 @@
                       "title",
                       "weighting",
                       "passMarkOverride",
+                      "durationMinutes",
                       "createdAt",
                       "updatedAt"
                     ],
@@ -26140,6 +26141,16 @@
                         "anyOf": [
                           {
                             "type": "number"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "durationMinutes": {
+                        "anyOf": [
+                          {
+                            "type": "integer"
                           },
                           {
                             "type": "null"
@@ -26223,6 +26234,11 @@
                     "minimum": 0,
                     "maximum": 100,
                     "type": "number"
+                  },
+                  "durationMinutes": {
+                    "minimum": 1,
+                    "maximum": 1440,
+                    "type": "integer"
                   }
                 }
               }
@@ -26352,6 +26368,18 @@
                         "minimum": 0,
                         "maximum": 100,
                         "type": "number"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "durationMinutes": {
+                    "anyOf": [
+                      {
+                        "minimum": 1,
+                        "maximum": 1440,
+                        "type": "integer"
                       },
                       {
                         "type": "null"

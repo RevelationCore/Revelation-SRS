@@ -14,6 +14,8 @@ import {
   formatPercent,
   percentOfDuration,
 } from '../src/vle-platforms/time-accommodation.js';
+// The SRS's copy, used for exam entries (pure module, imported by path).
+import * as srsTime from '../../../packages/domain/src/adjustment-time.js';
 
 // ── Arithmetic ────────────────────────────────────────────────────────────────
 
@@ -38,6 +40,22 @@ describe('time accommodation arithmetic', () => {
     expect(extraMinutesFor(45, 25)).toBe(12);   // 11.25
     expect(extraMinutesFor(60, 41.67)).toBe(26); // 25.002
     expect(extraMinutesFor(90, 0)).toBe(0);
+  });
+
+  it('agrees with the SRS exam-entry arithmetic', () => {
+    const cases = [
+      [{ adjustmentTypeCode: 'extra-time', amount: { value: 25, unitCode: 'percent-of-duration' } }],
+      [{ adjustmentTypeCode: 'rest-breaks', amount: { value: 10, unitCode: 'minutes-per-hour' } },
+       { adjustmentTypeCode: 'extra-time',  amount: { value: 15, unitCode: 'percent-of-duration' } }],
+      [{ adjustmentTypeCode: 'reader', amount: null }],
+    ];
+    for (const adjustments of cases) {
+      const ours = combinedExtraTimePercent(adjustments.map((a, i) => ({ distributionId: String(i), ...a })));
+      expect(srsTime.combinedExtraTimePercent(adjustments)).toBe(ours);
+      for (const minutes of [45, 90, 120, 180]) {
+        expect(srsTime.extraMinutesFor(minutes, ours)).toBe(extraMinutesFor(minutes, ours));
+      }
+    }
   });
 
   it('labels percentages without trailing zeros', () => {

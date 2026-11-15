@@ -283,7 +283,11 @@ describe('Withdrawal on expiry', () => {
     await expire(adjustmentId);
 
     const after = await listDistributions(adjustmentId);
-    expect(after.map((r) => r.statusCode)).toEqual(['withdrawal-requested', 'withdrawal-requested', 'withdrawal-requested']);
+    // External targets are asked to remove it; the SRS is itself the exams
+    // target and completes that withdrawal straight away.
+    expect(Object.fromEntries(after.map((r) => [r.targetSystem, r.statusCode]))).toEqual({
+      vle: 'withdrawal-requested', attendance: 'withdrawal-requested', exams: 'withdrawn',
+    });
     for (const r of after) expect(r.withdrawalPublishedAt).not.toBeNull();
 
     const withdrawals = eventsOf(WITHDRAWAL);

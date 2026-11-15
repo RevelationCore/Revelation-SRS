@@ -79,6 +79,10 @@ export class AdjustmentDistributionDispatcher {
     return total;
   }
 
+  async tenantIds(): Promise<string[]> {
+    return (await this.db.select({ id: tenants.id }).from(tenants)).map((t) => t.id);
+  }
+
   async countUndispatched(tenantId: string): Promise<{ requests: number; withdrawals: number }> {
     return withTenantContext(this.db, tenantId, async (tx) => {
       const [row] = await tx

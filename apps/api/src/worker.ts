@@ -61,7 +61,12 @@ const reconcile = async (): Promise<void> => {
     // Adjustment instructions left unpublished (bus down, or the API stopped
     // between commit and publish) — see AdjustmentDistributionDispatcher.
     const adjustmentInstructions = await app.adjustmentDispatcher.drain();
-    const result = { ...workflows, adjustmentInstructions };
+    // The SRS is the 'exams' target; apply any withdrawals still outstanding.
+    let examWithdrawals = 0;
+    for (const tenantId of await app.adjustmentDispatcher.tenantIds()) {
+      examWithdrawals += await app.examEntryService.applyExamWithdrawals(tenantId);
+    }
+    const result = { ...workflows, adjustmentInstructions, examWithdrawals };
     lastReconcile = { at: new Date().toISOString(), ok: true, result };
   } catch (err) {
     lastReconcile = { at: new Date().toISOString(), ok: false, error: err instanceof Error ? err.message : String(err) };

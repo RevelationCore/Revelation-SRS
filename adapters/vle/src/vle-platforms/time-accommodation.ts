@@ -7,6 +7,10 @@
  * enrolment — additional time as a percentage of an assessment's duration —
  * and each platform driver turns that into whatever the platform stores.
  *
+ * The SRS computes exam-entry extra time with the same rules in
+ * packages/domain/src/adjustment-time.ts (this connector has no runtime
+ * dependency on that package); test/vle-platforms.test.ts checks they agree.
+ *
  * Several adjustments combine additively: 25% extra time plus 10 minutes per
  * hour of rest breaks is 25 + 16.67 = 41.67% of the duration. A single VLE
  * value per student per quiz cannot hold them separately, and applying only

@@ -15778,6 +15778,7 @@ export interface operations {
                         title: string;
                         weighting: number;
                         passMarkOverride: number | null;
+                        durationMinutes: number | null;
                         createdAt: string;
                         updatedAt: string;
                     }[];
@@ -15815,6 +15816,7 @@ export interface operations {
                     title: string;
                     weighting: number;
                     passMarkOverride?: number;
+                    durationMinutes?: number;
                 };
             };
         };
@@ -15877,6 +15879,7 @@ export interface operations {
                     title?: string;
                     weighting?: number;
                     passMarkOverride?: number | null;
+                    durationMinutes?: number | null;
                 };
             };
         };

@@ -180,6 +180,8 @@ The `scopeCode` value decides which target systems get a distribution record:
 | `attendance` | `attendance` |
 | `all` | `vle`, `attendance` and `exams` |
 
+The `exams` target is the SRS itself: exam entries sent to the exam timetabling system (`exam-scheduling.v1`) carry the candidate's arrangements and the minutes they are entitled to, and the returned schedule records delivery. `vle` and `attendance` are external connectors.
+
 Responses:
 
 | Status | Meaning |

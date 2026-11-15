@@ -287,6 +287,9 @@ export function adjustmentRoutes(fastify: FastifyInstance): void {
     async (request, reply) => {
       const { adjustmentId } = request.params as { adjustmentId: string };
       await fastify.adjustmentService.expireAdjustment(adjustmentId, request.tenantId, request.user.sub);
+      // The SRS is itself the 'exams' target: remove the ended arrangement
+      // from entries for exams not yet sat and confirm the withdrawal.
+      await fastify.examEntryService.applyExamWithdrawals(request.tenantId);
 
       await fastify.audit.record({
         tenantId: request.tenantId,

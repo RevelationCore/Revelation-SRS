@@ -22,6 +22,9 @@ export const assessmentComponents = pgTable('assessment_component', {
   title:             text('title').notNull(),
   weighting:         integer('weighting').notNull(),         // percentage; all components for an offering must sum to 100
   passMarkOverride:  numeric('pass_mark_override', { precision: 5, scale: 2 }), // if null, uses rules-engine pass-mark
+  // Timed length in minutes (exams, timed tests); null when untimed. Exam
+  // entries use it to state a candidate's extra time (AJ-21: 120 + 25% = 150).
+  durationMinutes:   integer('duration_minutes'),
   createdAt:         timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt:         timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });

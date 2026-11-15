@@ -58,6 +58,7 @@ export function generateComponentsForOffering(
       componentTypeCode: 'exam',
       title:             `${moduleTitle} — Examination`,
       weighting:         60,
+      durationMinutes:   120,
       createdAt,
       updatedAt:         createdAt,
     },

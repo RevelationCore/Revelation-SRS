@@ -22,6 +22,7 @@ const AssessmentComponentSchema = Type.Object({
   title: Type.String(),
   weighting: Type.Number(),
   passMarkOverride: Type.Union([Type.Number(), Type.Null()]),
+  durationMinutes: Type.Union([Type.Integer(), Type.Null()]),
   createdAt: Type.String(),
   updatedAt: Type.String(),
 });
@@ -31,6 +32,8 @@ const AssessmentComponentBody = Type.Object({
   title: Type.String({ minLength: 1 }),
   weighting: Type.Integer({ minimum: 1, maximum: 100 }),
   passMarkOverride: Type.Optional(Type.Number({ minimum: 0, maximum: 100 })),
+  /** Timed length in minutes (exams); omit for untimed components. */
+  durationMinutes: Type.Optional(Type.Integer({ minimum: 1, maximum: 1440 })),
 });
 
 const AssessmentComponentPatchBody = Type.Object({
@@ -38,6 +41,7 @@ const AssessmentComponentPatchBody = Type.Object({
   title: Type.Optional(Type.String({ minLength: 1 })),
   weighting: Type.Optional(Type.Integer({ minimum: 1, maximum: 100 })),
   passMarkOverride: Type.Optional(Type.Union([Type.Number({ minimum: 0, maximum: 100 }), Type.Null()])),
+  durationMinutes: Type.Optional(Type.Union([Type.Integer({ minimum: 1, maximum: 1440 }), Type.Null()])),
 });
 
 export function assessmentComponentRoutes(fastify: FastifyInstance): void {

@@ -317,7 +317,8 @@ describe('Reasonable adjustments', () => {
     expect(statuses).toEqual(expect.arrayContaining([
       expect.objectContaining({ targetSystem: 'vle', statusCode: 'withdrawal-requested' }),
       expect.objectContaining({ targetSystem: 'attendance', statusCode: 'withdrawal-requested' }),
-      expect.objectContaining({ targetSystem: 'exams', statusCode: 'withdrawal-requested' }),
+      // The SRS is the exams target and completes its own withdrawal.
+      expect.objectContaining({ targetSystem: 'exams', statusCode: 'withdrawn' }),
     ]));
 
     const expired = capturedEvents.find((event) => event.type === 'srs.adjustment.expired');
@@ -500,7 +501,9 @@ describe('AJ-21 A21-AC06 — expiry keeps past arrangements and the current date
 
     const after = (await listDistributions(adjustment.adjustmentId))
       .json<Array<{ statusCode: string }>>()[0]!;
-    expect(after.statusCode).toBe('withdrawal-requested');
+    // An exam-scoped adjustment's only target is the SRS's exam entries,
+    // which complete the withdrawal at expiry.
+    expect(after.statusCode).toBe('withdrawn');
   });
 
   it('expiring an already-expired adjustment records no further version', async () => {

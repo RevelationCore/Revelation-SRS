@@ -16,6 +16,7 @@ export interface CreateAssessmentComponentInput {
   title: string;
   weighting: number;
   passMarkOverride?: number;
+  durationMinutes?: number;
 }
 
 export interface UpdateAssessmentComponentInput {
@@ -23,6 +24,7 @@ export interface UpdateAssessmentComponentInput {
   title?: string;
   weighting?: number;
   passMarkOverride?: number | null;
+  durationMinutes?: number | null;
 }
 
 export interface AssessmentComponentDto {
@@ -32,6 +34,7 @@ export interface AssessmentComponentDto {
   title: string;
   weighting: number;
   passMarkOverride: number | null;
+  durationMinutes: number | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -68,6 +71,7 @@ export class AssessmentComponentService {
           title: input.title,
           weighting: input.weighting,
           passMarkOverride: input.passMarkOverride?.toFixed(2) ?? null,
+          durationMinutes: input.durationMinutes ?? null,
           createdAt: now,
           updatedAt: now,
         })
@@ -131,6 +135,7 @@ export class AssessmentComponentService {
           passMarkOverride: input.passMarkOverride === undefined
             ? (current.passMarkOverride?.toFixed(2) ?? null)
             : (input.passMarkOverride?.toFixed(2) ?? null),
+          durationMinutes: input.durationMinutes === undefined ? current.durationMinutes : input.durationMinutes,
           updatedAt: clockNow(),
         })
         .where(
@@ -275,6 +280,7 @@ function componentToDto(row: typeof assessmentComponents.$inferSelect): Assessme
     title: row.title,
     weighting: row.weighting,
     passMarkOverride: row.passMarkOverride === null ? null : Number(row.passMarkOverride),
+    durationMinutes: row.durationMinutes,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };

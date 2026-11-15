@@ -369,7 +369,7 @@ export async function buildApp(
   const ofs = new OfsService(db, eventBus, workflowBridge);
   const regulatoryCollectionService = new RegulatoryCollectionService(db);
   const foi = new FoiService(db, valueSets);
-  const examEntries = new ExamEntryService(db, eventBus, regulatoryExchanges);
+  const examEntries = new ExamEntryService(db, eventBus, regulatoryExchanges, adjustments);
   const pgrSupervision = new SupervisionService(db, businessCases, regulatoryExchanges);
   const pgrProgressReview = new ProgressReviewService(db, businessCases, regulatoryExchanges, valueSets);
   const pgrExamination = new ExaminationService(db, businessCases, valueSets);
