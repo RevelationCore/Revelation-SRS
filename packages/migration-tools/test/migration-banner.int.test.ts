@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
+
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { createDb, type Db } from '@revelation-srs/db';
@@ -11,10 +12,14 @@ import { runImport } from '../src/importer/index.js';
 
 const TENANT_ID = '00000000-0000-0000-0002-000000000001';
 
-async function applyMigration(db: Db, fileName: string): Promise<void> {
-  const dir = new URL('../../../packages/db/migrations/', import.meta.url);
-  const content = await readFile(fileURLToPath(new URL(fileName, dir)), 'utf8');
-  await db.execute(sql.raw(content));
+const MIGRATIONS_DIR = new URL('../../../packages/db/migrations/', import.meta.url);
+
+/** Apply every core migration in journal order: the importer writes to tables from any of them. */
+async function applyCoreMigrations(db: Db): Promise<void> {
+  const journal = JSON.parse(await readFile(fileURLToPath(new URL('meta/_journal.json', MIGRATIONS_DIR)), 'utf8')) as { entries: Array<{ tag: string }> };
+  for (const { tag } of journal.entries) {
+    await db.execute(sql.raw(await readFile(fileURLToPath(new URL(`${tag}.sql`, MIGRATIONS_DIR)), 'utf8')));
+  }
 }
 
 let container: StartedPostgreSqlContainer;
@@ -26,9 +31,7 @@ beforeAll(async () => {
     .start();
   db = createDb(container.getConnectionUri());
 
-  await applyMigration(db, '0000_platform_foundations.sql');
-  await applyMigration(db, '0001_platform_hardening_and_refinements.sql');
-  await applyMigration(db, '0002_demo_performance_and_seed_data.sql');
+  await applyCoreMigrations(db);
 
   await db.execute(sql`
     INSERT INTO tenant (id, code, name, active)

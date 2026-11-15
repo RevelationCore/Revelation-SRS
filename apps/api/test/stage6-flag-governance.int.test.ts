@@ -76,7 +76,7 @@ describe('Stage 6 — Flag governance', () => {
   });
 
   it('no flag remains with flag_class_code = release after migration 0017 classifies known flags', async () => {
-    // The well-known flags seeded in migrations 0009–0016 should all be classified.
+    // The well-known flags seeded by the core migrations should all be classified.
     // Only flags that might be created dynamically (not yet classified) may use 'release'.
     const knownPrefixes = [
       'admissions.',

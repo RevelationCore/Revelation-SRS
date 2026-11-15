@@ -53,7 +53,7 @@ export const integrationRegistrations = pgTable('integration_registration', {
   registeredAt:             timestamp('registered_at',  { withTimezone: true }).notNull().defaultNow(),
   lastUpdatedAt:            timestamp('last_updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
-// Note: the previous UNIQUE (tenant_id, integration_code) was dropped in 0020_phase7_contract_deprecation.sql
+// Note: the previous UNIQUE (tenant_id, integration_code) was dropped before the 2026-08-02 migration squash
 // Tenants may hold multiple registrations for the same contract type (multiple VLE instances, etc.)
 
 /**

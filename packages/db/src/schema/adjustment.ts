@@ -146,6 +146,6 @@ export type AdjustmentRequest = typeof adjustmentRequests.$inferSelect;
 // it published no domain events, and no writer ever superseded one — while
 // adjustment_distribution remained the live, tested, externally-contracted
 // path (two documented adapters, VLE and attendance, key their idempotency
-// on it). Retired in migration 0022_retire_support_outcome.sql rather than
+// on it). Retired in migration 0006_adjustments_integration_and_support.sql (section 0022_retire_support_outcome) rather than
 // finished and migrated onto, given it was unused and untested end to end.
 // See docs/user-guides/wellbeing-and-revelation-srs.md for the full account.

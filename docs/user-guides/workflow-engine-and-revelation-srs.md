@@ -294,7 +294,7 @@ the code that runs it to the screens a student and a decision-maker actually
 use. Nothing here is illustrative; every path and identifier below is real.
 
 **1. The definition, its steps, and its decision gateway are declared in a
-migration — `packages/db/migrations/0007_module_registration_change_workflow.sql`.**
+migration — `packages/db/migrations/0005_curriculum_regulatory_and_pgr.sql` (section `0007_module_registration_change_workflow`).**
 `apps/admin/src/pages/WorkflowDefsPage.tsx` (**Workflows** under Tenant Admin,
 `workflow:read`/`workflow:write`) lets an admin browse every definition, view
 a version's steps, create a new definition *shell* (code, name, description),

@@ -7,6 +7,26 @@
 
 > **Clean-build note (2026-08-01):** this document originally planned an expand–backfill–dual-read/write–cutover–contract migration sequence (numbered `0034`–`0053`+) to protect existing production data while the P0 business-process schema landed. Revelation SRS has never had a first production user, so that data-protection discipline no longer serves a purpose and added onboarding complexity for no benefit. All migration history (`packages/db/migrations/`, plus `modules/wellbeing`, `adapters/vle`) has been squashed into a small, clean set of migrations representing the current schema directly — see `packages/db/migrations/0000_platform_foundations.sql` onward. The numbered migration-sequence table that used to appear below has been removed; the sections after it are kept as a historical record of the P0 domain-by-domain design considerations (still relevant reading for anyone extending these aggregates), not as a live migration plan. Once the application has real production tenants, a fresh expand-backfill-cutover discipline should be reinstated for any further schema evolution.
 
+## Re-squashing
+
+Until there are production tenants, the core set stays small by re-squashing. `npm run check:business-process-data-model` fails when `packages/db/migrations` holds more than 10 files. Squashes so far:
+
+| Date | Result |
+|---|---|
+| 2026-08-02 | Full history squashed into `0000`–`0004` |
+| 2026-11-15 | `0005`–`0018` became `0005_curriculum_regulatory_and_pgr`; `0019`–`0032` became `0006_adjustments_integration_and_support` |
+
+To squash:
+
+1. Concatenate the migrations being squashed into one or more themed files, in order. Head each original with an `-- Originally NNNN_name.sql` line, so references to the old names can still be found. Text is kept as it was: the files contain no statement breakpoints or transaction control, so nothing needs splitting.
+2. In `meta/_journal.json`, give each squashed file the `when` of the last original it contains. Databases already at the head then see nothing new. The next new migration must have a later `when` than any before it.
+3. Run `scripts/verify-migration-squash.sh` (default ref `HEAD`). It applies the committed set and the working-tree set to two fresh PostgreSQL databases, then diffs the schema dumps and the seed-data dumps (generated ids and `now()` timestamps masked). Both must be identical.
+4. Point docs that cite old file names at the squashed file, keeping the original name as a section reference.
+
+The test helpers (`apps/api/test/helpers/test-app.ts` and `packages/demo-data/test/helpers/migrations.ts`) read the journal, so neither a squash nor a new migration needs them edited.
+
+A database part-way through the old sequence cannot be upgraded across a squash. Recreate local databases from scratch.
+
 ## Stage 1 — Shared foundations
 
 ### Expand

@@ -22,10 +22,14 @@ export interface TestApp {
   makeJwt:     (opts?: { sub?: string; roles?: string[]; tenantId?: string; srsPersonId?: string }) => Promise<string>;
 }
 
-async function applyMigration(db: Db, fileName: string): Promise<void> {
-  const dir = new URL('../../../../packages/db/migrations/', import.meta.url);
-  const sql_ = await readFile(fileURLToPath(new URL(fileName, dir)), 'utf8');
-  await db.execute(sql.raw(sql_));
+const MIGRATIONS_DIR = new URL('../../../../packages/db/migrations/', import.meta.url);
+
+/** Apply every core migration in journal order, as `npm run migrate` does. */
+async function applyCoreMigrations(db: Db): Promise<void> {
+  const journal = JSON.parse(await readFile(fileURLToPath(new URL('meta/_journal.json', MIGRATIONS_DIR)), 'utf8')) as { entries: Array<{ tag: string }> };
+  for (const { tag } of journal.entries) {
+    await db.execute(sql.raw(await readFile(fileURLToPath(new URL(`${tag}.sql`, MIGRATIONS_DIR)), 'utf8')));
+  }
 }
 
 export interface StartTestAppOptions {
@@ -48,40 +52,7 @@ export async function startTestApp(opts: StartTestAppOptions = {}): Promise<Test
   const connectionString = container.getConnectionUri();
   const db = createDb(connectionString);
 
-  // Apply the clean-build migration set in order
-  await applyMigration(db, '0000_platform_foundations.sql');
-  await applyMigration(db, '0001_platform_hardening_and_refinements.sql');
-  await applyMigration(db, '0002_demo_performance_and_seed_data.sql');
-  await applyMigration(db, '0003_engagement_and_attendance.sql');
-  await applyMigration(db, '0004_business_process_foundations.sql');
-  await applyMigration(db, '0005_module_selection_rules.sql');
-  await applyMigration(db, '0006_registration_window.sql');
-  await applyMigration(db, '0007_module_registration_change_workflow.sql');
-  await applyMigration(db, '0008_slc_submission_approval_workflow.sql');
-  await applyMigration(db, '0009_legal_identity_change_workflow.sql');
-  await applyMigration(db, '0010_hesa_submission_approval_workflow.sql');
-  await applyMigration(db, '0011_ofs_extract_generation_workflow.sql');
-  await applyMigration(db, '0012_ucas_confirmation_submission_workflow.sql');
-  await applyMigration(db, '0013_ukvi_cas_submission_workflow.sql');
-  await applyMigration(db, '0014_pgr_foundation.sql');
-  await applyMigration(db, '0015_pgr_supervision.sql');
-  await applyMigration(db, '0016_pgr_progress_review.sql');
-  await applyMigration(db, '0017_pgr_thesis_examination.sql');
-  await applyMigration(db, '0018_pgr_completion_and_research_award.sql');
-  await applyMigration(db, '0019_partner_systems_contracts.sql');
-  await applyMigration(db, '0020_reasonable_adjustment_source_case.sql');
-  await applyMigration(db, '0021_adjustment_outcome_documents.sql');
-  await applyMigration(db, '0022_retire_support_outcome.sql');
-  await applyMigration(db, '0023_temporal_execution.sql');
-  await applyMigration(db, '0024_adjustment_request_idempotency.sql');
-  await applyMigration(db, '0025_adjustment_distribution_instructions.sql');
-  await applyMigration(db, '0026_assessment_component_duration.sql');
-  await applyMigration(db, '0027_adjustment_target_fulfilment.sql');
-  await applyMigration(db, '0028_adjustment_task_overdue_notice.sql');
-  await applyMigration(db, '0029_delivery_ledger.sql');
-  await applyMigration(db, '0030_external_records.sql');
-  await applyMigration(db, '0031_inbound_flow_fields.sql');
-  await applyMigration(db, '0032_student_support_and_employment.sql');
+  await applyCoreMigrations(db);
 
   // Seed a tenant for tests
   const tenantId = '00000000-0000-0000-0000-000000000001';

@@ -318,7 +318,7 @@ the reasonable-adjustments table on the same page — genuinely confusing in
 practice, not just in the schema.
 
 `support_outcome`, its standalone routes, and that admin UI section have
-been retired (migration `0022_retire_support_outcome`) rather than finished
+been retired (migration `0006_adjustments_integration_and_support` (section `0022_retire_support_outcome`)) rather than finished
 and migrated onto — reasonable adjustments now has exactly one distribution
 mechanism, the one that was already live and tested. The underlying shared
 primitives (`business_case`, `case_decision`, `distribution_item` and

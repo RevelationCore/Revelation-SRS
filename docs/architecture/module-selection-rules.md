@@ -8,7 +8,7 @@
 
 ## Implementation status (2026-08-02)
 
-Stages 1–6 are built and tested (migration `0005_module_selection_rules.sql`,
+Stages 1–6 are built and tested (migration `0005_curriculum_regulatory_and_pgr` (section `0005_module_selection_rules`),
 `RulesEngine` extensions, `ModuleSelectionService`, portal/admin UI, demo data).
 Known gaps, tracked in BP-03-003/BP-03-004 as BR-5/BR-6 rather than silently
 assumed:
@@ -224,7 +224,7 @@ mutating the underlying rule.
 
 ## 6. Build stages (all delivered 2026-08-02)
 
-1. **Schema** ✅ — `module_group`, `module_group_member`, `enrolment_curriculum_binding`, `module_selection_proposal`, `module_selection_proposal_item`, `programme_rule_set` CRUD (migration `0005_module_selection_rules.sql`); new `rule_type_code` values.
+1. **Schema** ✅ — `module_group`, `module_group_member`, `enrolment_curriculum_binding`, `module_selection_proposal`, `module_selection_proposal_item`, `programme_rule_set` CRUD (migration `0005_curriculum_regulatory_and_pgr` (section `0005_module_selection_rules`)); new `rule_type_code` values.
 2. **Rules engine** ✅ — `getCreditLoadRequirement`, `getLevelCreditRequirement`, `getAdjacentLevelCreditLimit`, `getTimetableClashPolicy` on `RulesEngine`; diet/credit/level/relationship/capacity checks in `ModuleSelectionService#validateSelection`.
 3. **Service layer** ✅ — proposal create/add-item/remove-item/submit/decide; `module_registration` rows are created only from `#confirmProposal`, called after automatic (A4) or approved (A5) validation, reusing `ModuleRegistrationService.createRegistration` (with `skipCapacityCheck` for an authorised waitlist allocation).
 4. **Approval workflow** ✅ — not a bespoke Temporal workflow (module selection still runs on the legacy in-process path; live Temporal execution (ADR-024) covers builder reviews and module registration change requests, and module selection is listed for Stage 6a — see `WorkflowBridgeService`); instead uses the same DB-backed workflow-instance/task/decision-audit bridge every other Revelation domain workflow uses (`module-selection-approval` definition, seeded in the migration).
