@@ -180,6 +180,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/adjustment-tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getAdjustmentTasks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/adjustment-targets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getAdjustmentTargets"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/adjustment-targets/{targetSystem}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["replaceAdjustmentTargetsByTargetSystem"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/adjustments/{adjustmentId}/expire": {
         parameters: {
             query?: never;
@@ -5236,6 +5284,7 @@ export interface operations {
                         adjustmentId: string;
                         targetSystem: string;
                         statusCode: string;
+                        fulfilmentModeCode: string;
                         distributedAt: string | null;
                         failureReason: string | null;
                         requestPublishedAt: string | null;
@@ -5415,6 +5464,144 @@ export interface operations {
             };
             /** @description Default Response */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getAdjustmentTasks: {
+        parameters: {
+            query?: {
+                targetSystem?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        distributionId: string;
+                        adjustmentId: string;
+                        targetSystem: string;
+                        action: "apply" | "remove";
+                        statusCode: string;
+                        failureReason: string | null;
+                        personId: string;
+                        studentNumber: string | null;
+                        studentName: string | null;
+                        enrolmentId: string;
+                        adjustmentTypeCode: string;
+                        scopeCode: string;
+                        amount: {
+                            value: number;
+                            unitCode: string;
+                        } | null;
+                        validFrom: string;
+                        validTo: string | null;
+                        dueSince: string;
+                        ownerDescription: string | null;
+                        overdue: boolean;
+                    }[];
+                };
+            };
+        };
+    };
+    getAdjustmentTargets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        targetSystem: string;
+                        fulfilmentModeCode: string;
+                        ownerDescription: string | null;
+                        alertAfterHours: number;
+                        isDefault: boolean;
+                        updatedAt: string | null;
+                        updatedBy: string | null;
+                    }[];
+                };
+            };
+        };
+    };
+    replaceAdjustmentTargetsByTargetSystem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                targetSystem: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    fulfilmentModeCode: string;
+                    ownerDescription?: string | null;
+                    alertAfterHours?: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        targetSystem: string;
+                        fulfilmentModeCode: string;
+                        ownerDescription: string | null;
+                        alertAfterHours: number;
+                        isDefault: boolean;
+                        updatedAt: string | null;
+                        updatedBy: string | null;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

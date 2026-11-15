@@ -48,6 +48,9 @@ export const PERMISSION_ROLES = {
   'adjustment:read:own':       ['student'] as Role[],
   'adjustment:read:all':       ['registry-administrator', 'wellbeing-advisor', 'integration-service'] as Role[],
   'adjustment:write':          ['registry-administrator', 'wellbeing-advisor'] as Role[],
+  // Work the adjustment task queue: confirm, by hand, that an instruction for
+  // a target with no connected system was applied or removed.
+  'adjustment:fulfil':         ['registry-administrator', 'engagement-officer', 'tenant-administrator'] as Role[],
   // Reasonable-adjustment *case* (wellbeing-module-hosted process — referral,
   // assessment, panel, approve/reject), distinct from the `adjustment:*`
   // permissions above which gate the core-SRS *distributed outcome* record.

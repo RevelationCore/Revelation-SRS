@@ -154,6 +154,7 @@ fastify.get('/students/:id', {
 | `exam-board:ratify` | | | | ✓ | | |
 | `adjustment:read` | ✓ (own) | ✓ | | | ✓ | |
 | `adjustment:write` | | ✓ | | | ✓ | |
+| `adjustment:fulfil` (manual adjustment task queue; also engagement officers) | | ✓ | | | | ✓ |
 | `special-category:read` | | | | | ✓ | |
 | `config:write` | | | | | | ✓ |
 | `integration:manage` | | | | | | ✓ |

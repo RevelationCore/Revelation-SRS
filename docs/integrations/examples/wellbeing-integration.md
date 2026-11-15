@@ -194,6 +194,19 @@ Responses:
 
 The SRS honours `X-Idempotency-Key` (or `Idempotency-Key`) on this route, so a handoff whose response was lost can be retried safely. Use one stable key per approved case, as the wellbeing module does with `adj-handoff-{caseId}`.
 
+### How each target is fulfilled
+
+Not every institution has a system connected for every target. Each tenant sets, per target, how adjustments reach it (`GET /api/v1/adjustment-targets`; change with `PUT /api/v1/adjustment-targets/{targetSystem}` and `config:write`):
+
+| Mode | What happens | Default for |
+|---|---|---|
+| `connected` | An integration connector consumes the per-target instruction event and replies through the API. | `vle` |
+| `manual` | No event is sent. The instruction becomes a task in the admin **Adjustment tasks** queue (`GET /api/v1/adjustment-tasks`, `adjustment:fulfil`); staff apply it in whatever tool they use and confirm it, or report why they cannot, with the same reply endpoints a connector uses. Each target can name an owner and an overdue period. | `attendance` |
+| `file` | Delivered through a file exchange the SRS produces; the SRS records the outcome. | `exams` (exam entries) |
+| `not-used` | No distribution is created. | — |
+
+The mode in force is copied onto each distribution (`fulfilmentModeCode`), so a later change applies to new adjustments only. People may only reply for `manual` distributions, and their replies are audited.
+
 ### Tracking distribution
 
 The wellbeing module does not deliver or acknowledge distributions. For each distribution record, the SRS publishes an instruction to that target system alone, `srs.adjustment.distribution-requested.<target>`, carrying the type, scope, amount and dates but never the notes. Each target's connector applies it and replies with `integration:manage`: `acknowledge` when applied, or `failure` with a reason when it cannot apply it. Instructions are kept in the SRS until published, so they are not lost while the event bus is unavailable; the worker's reconcile loop sends anything outstanding.
@@ -209,7 +222,7 @@ Authorization: Bearer <wellbeing-token>
 
 | `statusCode` | Meaning |
 |---|---|
-| `pending` | Waiting for the target. `requestPublishedAt` is null until the instruction has been sent. |
+| `pending` | Waiting for the target. For a connected target, `requestPublishedAt` is null until the instruction event has been sent; manual and file targets are issued when the adjustment is recorded. |
 | `distributed` | The target confirmed it applied the adjustment (`distributedAt`). |
 | `failed` | The target reported it cannot apply it; `failureReason` says why. It can still acknowledge later. |
 | `superseded` | The adjustment ended before the instruction was sent. |

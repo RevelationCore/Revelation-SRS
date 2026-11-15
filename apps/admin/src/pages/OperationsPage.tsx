@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import type { ComponentType } from 'react';
-import { Server, Plug } from 'lucide-react';
+import { ClipboardCheck, Server, Plug } from 'lucide-react';
 import type { Permission } from '@revelation-srs/domain';
 import { useAuth } from '../auth/AuthContext.js';
 import { userHasAnyPermission } from '../auth/RequirePermission.js';
@@ -22,6 +22,13 @@ const SECTIONS: Array<{
     description: 'Connector health summaries, failed exchange log, retry/replay controls, and VLE connector residual status',
     icon:        Plug,
     permission:  'integration:read',
+  },
+  {
+    to:          '/operations/adjustment-tasks',
+    name:        'Adjustment tasks',
+    description: 'Approved adjustments to apply by hand where no system is connected, and how each target is fulfilled',
+    icon:        ClipboardCheck,
+    permission:  'adjustment:fulfil',
   },
 ];
 

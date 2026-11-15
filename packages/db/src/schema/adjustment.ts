@@ -1,4 +1,4 @@
-import { numeric, primaryKey, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { integer, numeric, primaryKey, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { pgTable } from 'drizzle-orm/pg-core';
 import { documents } from '@revelation-srs/documents';
 
@@ -88,7 +88,28 @@ export const adjustmentDistributions = pgTable('adjustment_distribution', {
   withdrawalRequestedAt: timestamp('withdrawal_requested_at', { withTimezone: true }),
   withdrawalPublishedAt: timestamp('withdrawal_published_at', { withTimezone: true }),
   withdrawnAt:           timestamp('withdrawn_at', { withTimezone: true }),
+  // How this distribution is fulfilled (copied from adjustment_target_config
+  // at creation): connected | manual | file. Only 'connected' rows are
+  // published as events; 'manual' rows are tasks in the staff queue; 'file'
+  // rows are delivered by an SRS file exchange (exam entries).
+  fulfilmentModeCode:    text('fulfilment_mode_code').notNull().default('connected'),
 });
+
+/**
+ * Per-tenant fulfilment mode for each adjustment target. No row: the
+ * platform default for that target applies (DEFAULT_FULFILMENT_MODES).
+ */
+export const adjustmentTargetConfigs = pgTable('adjustment_target_config', {
+  tenantId:           uuid('tenant_id').notNull().references(() => tenants.id),
+  targetSystem:       text('target_system').notNull(),
+  fulfilmentModeCode: text('fulfilment_mode_code').notNull(), // connected | manual | file | not-used
+  ownerDescription:   text('owner_description'),
+  alertAfterHours:    integer('alert_after_hours').notNull().default(72),
+  updatedAt:          timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedBy:          text('updated_by').notNull(),
+}, (table) => [primaryKey({ columns: [table.tenantId, table.targetSystem] })]);
+
+export type AdjustmentTargetConfig = typeof adjustmentTargetConfigs.$inferSelect;
 
 export type AdjustmentDistribution    = typeof adjustmentDistributions.$inferSelect;
 export type NewAdjustmentDistribution = typeof adjustmentDistributions.$inferInsert;

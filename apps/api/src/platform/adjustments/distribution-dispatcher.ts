@@ -28,7 +28,9 @@ const BATCH_SIZE = 100;
 
 /**
  * Publishes the per-target adjustment instructions recorded in
- * adjustment_distribution, which doubles as their outbox.
+ * adjustment_distribution, which doubles as their outbox. Only 'connected'
+ * targets are published; manual targets are tasks in the staff queue and
+ * file targets are delivered by the SRS's own exchange.
  *
  *   pending + request_published_at null           -> distribution-requested.<target>
  *   withdrawal-requested + withdrawal_published_at null -> distribution-withdrawal-requested.<target>
@@ -87,8 +89,8 @@ export class AdjustmentDistributionDispatcher {
     return withTenantContext(this.db, tenantId, async (tx) => {
       const [row] = await tx
         .select({
-          requests: sql<number>`count(*) filter (where ${adjustmentDistributions.statusCode} = 'pending' and ${adjustmentDistributions.requestPublishedAt} is null)`.mapWith(Number),
-          withdrawals: sql<number>`count(*) filter (where ${adjustmentDistributions.statusCode} = 'withdrawal-requested' and ${adjustmentDistributions.withdrawalPublishedAt} is null)`.mapWith(Number),
+          requests: sql<number>`count(*) filter (where ${adjustmentDistributions.fulfilmentModeCode} = 'connected' and ${adjustmentDistributions.statusCode} = 'pending' and ${adjustmentDistributions.requestPublishedAt} is null)`.mapWith(Number),
+          withdrawals: sql<number>`count(*) filter (where ${adjustmentDistributions.fulfilmentModeCode} = 'connected' and ${adjustmentDistributions.statusCode} = 'withdrawal-requested' and ${adjustmentDistributions.withdrawalPublishedAt} is null)`.mapWith(Number),
         })
         .from(adjustmentDistributions)
         .where(eq(adjustmentDistributions.tenantId, tenantId as Uuid));
@@ -108,6 +110,7 @@ export class AdjustmentDistributionDispatcher {
         ))
         .where(and(
           eq(adjustmentDistributions.tenantId, tenantId as Uuid),
+          eq(adjustmentDistributions.fulfilmentModeCode, 'connected'),
           eq(adjustmentDistributions.statusCode, 'pending'),
           isNull(adjustmentDistributions.requestPublishedAt),
         ))
@@ -174,6 +177,7 @@ export class AdjustmentDistributionDispatcher {
         ))
         .where(and(
           eq(adjustmentDistributions.tenantId, tenantId as Uuid),
+          eq(adjustmentDistributions.fulfilmentModeCode, 'connected'),
           eq(adjustmentDistributions.statusCode, 'withdrawal-requested'),
           isNull(adjustmentDistributions.withdrawalPublishedAt),
           isNotNull(adjustmentDistributions.withdrawalEventId),

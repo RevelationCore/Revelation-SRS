@@ -63,6 +63,17 @@ beforeAll(async () => {
   ctx = await startTestApp({ eventBus: createControllableBus() });
   jwt = await ctx.makeJwt();
   integrationJwt = await ctx.makeJwt({ roles: ['tenant-administrator'] });
+  // These tests cover publishing to connected targets, so every target is
+  // connected here (by default attendance is a manual task and exams is the
+  // SRS's own file exchange — see adjustment-target-fulfilment.int.test.ts).
+  for (const target of ['vle', 'attendance', 'exams']) {
+    const res = await ctx.app.inject({
+      method: 'PUT', url: `/api/v1/adjustment-targets/${target}`,
+      headers: { authorization: `Bearer ${integrationJwt}` },
+      payload: { fulfilmentModeCode: 'connected' },
+    });
+    expect(res.statusCode).toBe(200);
+  }
 }, 120_000);
 
 beforeEach(() => {
@@ -283,10 +294,9 @@ describe('Withdrawal on expiry', () => {
     await expire(adjustmentId);
 
     const after = await listDistributions(adjustmentId);
-    // External targets are asked to remove it; the SRS is itself the exams
-    // target and completes that withdrawal straight away.
+    // All three targets are connected here, so each is asked to remove it.
     expect(Object.fromEntries(after.map((r) => [r.targetSystem, r.statusCode]))).toEqual({
-      vle: 'withdrawal-requested', attendance: 'withdrawal-requested', exams: 'withdrawn',
+      vle: 'withdrawal-requested', attendance: 'withdrawal-requested', exams: 'withdrawal-requested',
     });
     for (const r of after) expect(r.withdrawalPublishedAt).not.toBeNull();
 

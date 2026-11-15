@@ -14,6 +14,7 @@ import type { FastifyInstance } from 'fastify';
 import type { Config } from './config.js';
 import { AdjustmentService } from './platform/adjustments/adjustment-service.js';
 import { AdjustmentDistributionDispatcher } from './platform/adjustments/distribution-dispatcher.js';
+import { AdjustmentTargetConfigService } from './platform/adjustments/target-config.js';
 import { BusinessCaseService } from './platform/cases/business-case-service.js';
 import { IdentityResolutionService } from './platform/identity/identity-resolution-service.js';
 import { SupervisionService } from './platform/pgr/supervision-service.js';
@@ -218,7 +219,7 @@ function classifyOperation(method: string, url: string): string {
   if (path.includes('/regulatory/')) return 'reporting';
 
   // Integration — surfaces for adjacent system connectivity
-  if (path.includes('/adjustments')) return 'integration';
+  if (path.includes('/adjustments') || path.includes('/adjustment-tasks') || path.includes('/adjustment-targets')) return 'integration';
   if (path.includes('/engagement-outcomes')) return 'integration';
   if (path.includes('/communication-templates') || path.includes('/communication-dispatch-log')) return 'integration';
 
@@ -324,7 +325,8 @@ export async function buildApp(
   const adjustmentDispatcher = new AdjustmentDistributionDispatcher(db, eventBus, (err, context) => {
     fastify.log.warn({ err, ...context }, 'Adjustment instruction not yet published; it stays due for the reconcile loop');
   });
-  const adjustments = new AdjustmentService(db, eventBus, valueSets, adjustmentDispatcher);
+  const adjustmentTargets = new AdjustmentTargetConfigService(db, valueSets);
+  const adjustments = new AdjustmentService(db, eventBus, valueSets, adjustmentDispatcher, adjustmentTargets);
   const businessCases = new BusinessCaseService(db);
   const auditReview = new AuditReviewService(db, businessCases);
   const identityResolution = new IdentityResolutionService(db, businessCases);
@@ -397,6 +399,7 @@ export async function buildApp(
   fastify.decorate('moderationService', moderation);
   fastify.decorate('adjustmentService', adjustments);
   fastify.decorate('adjustmentDispatcher', adjustmentDispatcher);
+  fastify.decorate('adjustmentTargetConfigService', adjustmentTargets);
   fastify.decorate('businessCaseService', businessCases);
   fastify.decorate('identityResolutionService', identityResolution);
   fastify.decorate('engagementOutcomeService', engagementOutcomes);
@@ -564,6 +567,8 @@ export async function buildApp(
     const tagMap: Array<[string, string]> = [
       // More-specific patterns must precede their containing segments
       ['/adjustments',               'adjustments'],
+      ['/adjustment-tasks',          'adjustments'],
+      ['/adjustment-targets',        'adjustments'],
       ['/engagement-outcomes',       'engagement-outcomes'],
       ['/exceptional-circumstances', 'circumstances'],
       ['/misconduct-outcomes',       'circumstances'],
@@ -724,6 +729,7 @@ declare module 'fastify' {
     moderationService: ModerationService;
     adjustmentService: AdjustmentService;
     adjustmentDispatcher: AdjustmentDistributionDispatcher;
+    adjustmentTargetConfigService: AdjustmentTargetConfigService;
     businessCaseService: BusinessCaseService;
     identityResolutionService: IdentityResolutionService;
     engagementOutcomeService: EngagementOutcomeService;

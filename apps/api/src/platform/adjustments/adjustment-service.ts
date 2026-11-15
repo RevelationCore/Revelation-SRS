@@ -5,6 +5,7 @@ import {
   adjustmentDistributions,
   adjustmentRequests,
   enrolments,
+  personIdentities,
   persons,
   reasonableAdjustments,
   type Db,
@@ -36,6 +37,40 @@ import { clockNow } from '../clock.js';
 
 import { amountFromRow, validateAmountForType } from './amount.js';
 import type { AdjustmentDistributionDispatcher } from './distribution-dispatcher.js';
+import {
+  isAdjustmentTarget,
+  type AdjustmentTargetConfigService,
+} from './target-config.js';
+
+/**
+ * Who is replying to a distribution: an integration connector (or the SRS
+ * itself, for its own file targets), or a person working the manual task
+ * queue — who may only reply for distributions whose target is 'manual'.
+ */
+export type ReplyActor = 'connector' | 'person';
+
+export interface AdjustmentTaskDto {
+  distributionId:     string;
+  adjustmentId:       string;
+  targetSystem:       string;
+  /** apply: make it so in the target system; remove: undo it (the adjustment ended). */
+  action:             'apply' | 'remove';
+  statusCode:         string;
+  failureReason:      string | null;
+  personId:           string;
+  studentNumber:      string | null;
+  studentName:        string | null;
+  enrolmentId:        string;
+  adjustmentTypeCode: string;
+  scopeCode:          string;
+  amount:             AdjustmentAmountV1 | null;
+  validFrom:          Date;
+  validTo:            Date | null;
+  /** When the task became due: created (apply) or withdrawal requested (remove). */
+  dueSince:           Date;
+  ownerDescription:   string | null;
+  overdue:            boolean;
+}
 
 export interface RecordAdjustmentInput {
   enrolmentId: string;
@@ -91,7 +126,10 @@ export interface AdjustmentDistributionDto {
   statusCode: string;
   distributedAt: Date | null;
   failureReason: string | null;
-  /** When the instruction to this target was published (null: not yet). */
+  /** connected | manual | file — how this distribution is fulfilled. */
+  fulfilmentModeCode: string;
+  /** When the instruction was issued: published as an event (connected), or
+   * created as a task / file delivery (manual, file). Null: not yet. */
   requestPublishedAt: Date | null;
   withdrawalRequestedAt: Date | null;
   withdrawalPublishedAt: Date | null;
@@ -113,6 +151,7 @@ export class AdjustmentService {
     private readonly eventBus: IntegrationBusPublisher,
     private readonly valueSets: ValueSetService,
     private readonly dispatcher: AdjustmentDistributionDispatcher,
+    private readonly targetConfig: AdjustmentTargetConfigService,
   ) {}
 
   async recordAdjustment(
@@ -188,15 +227,25 @@ export class AdjustmentService {
         amountUnitCode: input.amount?.unitCode ?? null,
       });
 
-      if (targetSystems.length > 0) {
-        await tx.insert(adjustmentDistributions).values(targetSystems.map((targetSystem) => ({
+      // One distribution per target the tenant delivers to. A 'not-used'
+      // target gets none; manual and file targets are issued straight away
+      // (a task in the queue, or the next file exchange), so only connected
+      // targets wait for the dispatcher to publish an event.
+      const modes = await this.targetConfig.modesIn(tx, tenantId);
+      const delivered = targetSystems
+        .map((targetSystem) => ({ targetSystem, mode: isAdjustmentTarget(targetSystem) ? modes[targetSystem] : 'connected' }))
+        .filter((t) => t.mode !== 'not-used');
+      if (delivered.length > 0) {
+        await tx.insert(adjustmentDistributions).values(delivered.map(({ targetSystem, mode }) => ({
           id: randomUUID(),
           tenantId: tenantId as `${string}-${string}-${string}-${string}-${string}`,
           adjustmentId,
           targetSystem,
+          fulfilmentModeCode: mode,
           statusCode: 'pending',
           distributedAt: null,
           failureReason: null,
+          requestPublishedAt: mode === 'connected' ? null : now,
           createdAt: now,
           updatedAt: now,
         })));
@@ -294,12 +343,14 @@ export class AdjustmentService {
     distributionId: string,
     tenantId: string,
     targetSystem: string,
+    actor: ReplyActor = 'connector',
   ): Promise<void> {
     const adjustment = await this.#getCurrentAdjustment(adjustmentId, tenantId);
     const distribution = await this.#getDistribution(adjustmentId, distributionId, tenantId);
     if (distribution.targetSystem !== targetSystem) {
       throw new NotFoundError('AdjustmentDistribution', distributionId);
     }
+    assertActorMayReply(distribution, actor);
 
     // A repeated acknowledgement (e.g. a consumer retrying after a lost
     // response) is a no-op: the first one already recorded and published it.
@@ -359,6 +410,83 @@ export class AdjustmentService {
   }
 
   /**
+   * The manual task queue: distributions for 'manual' targets that need a
+   * person — apply (pending, or failed and to retry) or remove (the
+   * adjustment ended). Oldest first. Carries what is needed to act in the
+   * target system — who, what, how much, from when — and nothing more: no
+   * notes, evidence or case reference.
+   */
+  async listTasks(
+    tenantId: string,
+    opts: { targetSystem?: string; now?: Date } = {},
+  ): Promise<AdjustmentTaskDto[]> {
+    const now = opts.now ?? clockNow();
+    const configs = await this.targetConfig.list(tenantId);
+    const rows = await withTenantContext(this.db, tenantId, async (tx) =>
+      tx
+        .select({
+          d: adjustmentDistributions,
+          a: reasonableAdjustments,
+          studentNumber: persons.studentNumber,
+          firstName: personIdentities.preferredName,
+          legalFirstName: personIdentities.legalFirstName,
+          familyName: personIdentities.legalFamilyName,
+        })
+        .from(adjustmentDistributions)
+        .innerJoin(reasonableAdjustments, and(
+          eq(reasonableAdjustments.id, adjustmentDistributions.adjustmentId),
+          eq(reasonableAdjustments.tenantId, adjustmentDistributions.tenantId),
+          isNull(reasonableAdjustments.recordedUntil),
+        ))
+        .leftJoin(persons, and(eq(persons.id, reasonableAdjustments.personId), eq(persons.tenantId, reasonableAdjustments.tenantId)))
+        .leftJoin(personIdentities, and(
+          eq(personIdentities.personId, reasonableAdjustments.personId),
+          eq(personIdentities.tenantId, reasonableAdjustments.tenantId),
+          isNull(personIdentities.recordedUntil),
+        ))
+        .where(and(
+          eq(adjustmentDistributions.tenantId, tenantId as Uuid),
+          eq(adjustmentDistributions.fulfilmentModeCode, 'manual'),
+          inArray(adjustmentDistributions.statusCode, ['pending', 'failed', 'withdrawal-requested']),
+          ...(opts.targetSystem ? [eq(adjustmentDistributions.targetSystem, opts.targetSystem)] : []),
+        ))
+        .orderBy(adjustmentDistributions.createdAt),
+    );
+
+    const seen = new Set<string>();
+    const tasks: AdjustmentTaskDto[] = [];
+    for (const { d, a, studentNumber, firstName, legalFirstName, familyName } of rows) {
+      if (seen.has(d.id)) continue; // one row per distribution even if identity history overlaps
+      seen.add(d.id);
+      const config = configs.find((c) => c.targetSystem === d.targetSystem);
+      const removing = d.statusCode === 'withdrawal-requested';
+      const dueSince = removing ? (d.withdrawalRequestedAt ?? d.updatedAt) : d.createdAt;
+      const alertMs = (config?.alertAfterHours ?? 72) * 3_600_000;
+      tasks.push({
+        distributionId: d.id,
+        adjustmentId: a.id,
+        targetSystem: d.targetSystem,
+        action: removing ? 'remove' : 'apply',
+        statusCode: d.statusCode,
+        failureReason: d.failureReason,
+        personId: a.personId,
+        studentNumber,
+        studentName: familyName ? `${firstName ?? legalFirstName ?? ''} ${familyName}`.trim() : null,
+        enrolmentId: a.enrolmentId,
+        adjustmentTypeCode: a.adjustmentTypeCode,
+        scopeCode: a.scopeCode,
+        amount: amountFromRow(a),
+        validFrom: a.validFrom,
+        validTo: a.validTo,
+        dueSince,
+        ownerDescription: config?.ownerDescription ?? null,
+        overdue: now.getTime() - dueSince.getTime() > alertMs,
+      });
+    }
+    return tasks;
+  }
+
+  /**
    * A target's integration layer reports that it cannot apply (or keep
    * applied) a distribution — for example a VLE time accommodation with no
    * recorded amount, a student unknown to the VLE, or an API failure it has
@@ -372,12 +500,14 @@ export class AdjustmentService {
     tenantId: string,
     targetSystem: string,
     reason: string,
+    actor: ReplyActor = 'connector',
   ): Promise<void> {
     await this.#ensureAdjustmentExists(adjustmentId, tenantId);
     const distribution = await this.#getDistribution(adjustmentId, distributionId, tenantId);
     if (distribution.targetSystem !== targetSystem) {
       throw new NotFoundError('AdjustmentDistribution', distributionId);
     }
+    assertActorMayReply(distribution, actor);
 
     const nextStatus = (() => {
       switch (distribution.statusCode) {
@@ -417,12 +547,14 @@ export class AdjustmentService {
     distributionId: string,
     tenantId: string,
     targetSystem: string,
+    actor: ReplyActor = 'connector',
   ): Promise<void> {
     await this.#ensureAdjustmentExists(adjustmentId, tenantId);
     const distribution = await this.#getDistribution(adjustmentId, distributionId, tenantId);
     if (distribution.targetSystem !== targetSystem) {
       throw new NotFoundError('AdjustmentDistribution', distributionId);
     }
+    assertActorMayReply(distribution, actor);
     if (distribution.statusCode === 'withdrawn') return;
     if (distribution.statusCode !== 'withdrawal-requested') {
       throw new ConflictError(`This distribution is ${distribution.statusCode}; no withdrawal was requested`);
@@ -819,6 +951,19 @@ export class AdjustmentService {
 
 type Uuid = `${string}-${string}-${string}-${string}-${string}`;
 
+/**
+ * People reply only for manual targets. A connected or file target's
+ * replies belong to its connector (or the SRS's own exchange); a person
+ * confirming one by hand would record a delivery no system made.
+ */
+function assertActorMayReply(distribution: { fulfilmentModeCode: string }, actor: ReplyActor): void {
+  if (actor === 'person' && distribution.fulfilmentModeCode !== 'manual') {
+    throw new ConflictError(
+      `This distribution is fulfilled by a ${distribution.fulfilmentModeCode} target; only its integration can reply`,
+    );
+  }
+}
+
 /** An acknowledgement only applies while the target is still meant to apply it. */
 function assertStillApplicable(statusCode: string): void {
   if (statusCode === 'superseded') {
@@ -860,6 +1005,7 @@ function distributionToDto(row: typeof adjustmentDistributions.$inferSelect): Ad
     statusCode: row.statusCode,
     distributedAt: row.distributedAt,
     failureReason: row.failureReason,
+    fulfilmentModeCode: row.fulfilmentModeCode,
     requestPublishedAt: row.requestPublishedAt,
     withdrawalRequestedAt: row.withdrawalRequestedAt,
     withdrawalPublishedAt: row.withdrawalPublishedAt,

@@ -18,6 +18,7 @@ import { ForbiddenPage } from './pages/ForbiddenPage.js';
 import { GlobalisationPage } from './pages/GlobalisationPage.js';
 import { HesaPage } from './pages/HesaPage.js';
 import { IntegrationOpsPage } from './pages/IntegrationOpsPage.js';
+import { AdjustmentTasksPage } from './pages/AdjustmentTasksPage.js';
 import { IntegrationsPage } from './pages/IntegrationsPage.js';
 import { LoginPage } from './pages/LoginPage.js';
 import { OfsPage } from './pages/OfsPage.js';
@@ -172,9 +173,10 @@ export function App() {
                 <Route path="governance/adjustment-cases/:caseId" element={<RequirePermission permissions={['adjustment-case:read:all']}><AdjustmentCaseDetailPage /></RequirePermission>} />
 
                 {/* Operations */}
-                <Route path="operations" element={<RequirePermission permissions={['environment:read', 'integration:read']}><OperationsPage /></RequirePermission>} />
+                <Route path="operations" element={<RequirePermission permissions={['environment:read', 'integration:read', 'adjustment:fulfil']}><OperationsPage /></RequirePermission>} />
                 <Route path="operations/environment" element={<RequirePermission permissions={['environment:read']}><EnvironmentRuntimePage /></RequirePermission>} />
                 <Route path="operations/integrations" element={<RequirePermission permissions={['integration:read']}><IntegrationOpsPage /></RequirePermission>} />
+                <Route path="operations/adjustment-tasks" element={<RequirePermission permissions={['adjustment:fulfil']}><AdjustmentTasksPage /></RequirePermission>} />
 
                 <Route path="*" element={<NotFoundPage />} />
               </Routes>

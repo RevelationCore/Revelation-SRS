@@ -1224,6 +1224,7 @@
                       "adjustmentId",
                       "targetSystem",
                       "statusCode",
+                      "fulfilmentModeCode",
                       "distributedAt",
                       "failureReason",
                       "requestPublishedAt",
@@ -1244,6 +1245,9 @@
                         "type": "string"
                       },
                       "statusCode": {
+                        "type": "string"
+                      },
+                      "fulfilmentModeCode": {
                         "type": "string"
                       },
                       "distributedAt": {
@@ -1652,6 +1656,441 @@
             }
           },
           "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/adjustment-tasks": {
+      "get": {
+        "operationId": "getAdjustmentTasks",
+        "tags": [
+          "adjustments"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "targetSystem",
+            "required": false
+          }
+        ],
+        "x-publication-class": "integration",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "distributionId",
+                      "adjustmentId",
+                      "targetSystem",
+                      "action",
+                      "statusCode",
+                      "failureReason",
+                      "personId",
+                      "studentNumber",
+                      "studentName",
+                      "enrolmentId",
+                      "adjustmentTypeCode",
+                      "scopeCode",
+                      "amount",
+                      "validFrom",
+                      "validTo",
+                      "dueSince",
+                      "ownerDescription",
+                      "overdue"
+                    ],
+                    "properties": {
+                      "distributionId": {
+                        "type": "string"
+                      },
+                      "adjustmentId": {
+                        "type": "string"
+                      },
+                      "targetSystem": {
+                        "type": "string"
+                      },
+                      "action": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "enum": [
+                              "apply"
+                            ]
+                          },
+                          {
+                            "type": "string",
+                            "enum": [
+                              "remove"
+                            ]
+                          }
+                        ]
+                      },
+                      "statusCode": {
+                        "type": "string"
+                      },
+                      "failureReason": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "personId": {
+                        "type": "string"
+                      },
+                      "studentNumber": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "studentName": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "enrolmentId": {
+                        "type": "string"
+                      },
+                      "adjustmentTypeCode": {
+                        "type": "string"
+                      },
+                      "scopeCode": {
+                        "type": "string"
+                      },
+                      "amount": {
+                        "anyOf": [
+                          {
+                            "description": "Structured amount, e.g. { value: 25, unitCode: \"percent-of-duration\" }",
+                            "type": "object",
+                            "required": [
+                              "value",
+                              "unitCode"
+                            ],
+                            "properties": {
+                              "value": {
+                                "exclusiveMinimum": 0,
+                                "maximum": 999999.99,
+                                "type": "number"
+                              },
+                              "unitCode": {
+                                "minLength": 1,
+                                "type": "string"
+                              }
+                            }
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "validFrom": {
+                        "type": "string"
+                      },
+                      "validTo": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "dueSince": {
+                        "type": "string"
+                      },
+                      "ownerDescription": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "overdue": {
+                        "type": "boolean"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/adjustment-targets": {
+      "get": {
+        "operationId": "getAdjustmentTargets",
+        "tags": [
+          "adjustments"
+        ],
+        "x-publication-class": "integration",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "targetSystem",
+                      "fulfilmentModeCode",
+                      "ownerDescription",
+                      "alertAfterHours",
+                      "isDefault",
+                      "updatedAt",
+                      "updatedBy"
+                    ],
+                    "properties": {
+                      "targetSystem": {
+                        "type": "string"
+                      },
+                      "fulfilmentModeCode": {
+                        "type": "string"
+                      },
+                      "ownerDescription": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "alertAfterHours": {
+                        "type": "integer"
+                      },
+                      "isDefault": {
+                        "type": "boolean"
+                      },
+                      "updatedAt": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "updatedBy": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/adjustment-targets/{targetSystem}": {
+      "put": {
+        "operationId": "replaceAdjustmentTargetsByTargetSystem",
+        "tags": [
+          "adjustments"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "fulfilmentModeCode"
+                ],
+                "properties": {
+                  "fulfilmentModeCode": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "ownerDescription": {
+                    "anyOf": [
+                      {
+                        "maxLength": 200,
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "alertAfterHours": {
+                    "minimum": 1,
+                    "maximum": 8760,
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "targetSystem",
+            "required": true
+          }
+        ],
+        "x-publication-class": "integration",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "targetSystem",
+                    "fulfilmentModeCode",
+                    "ownerDescription",
+                    "alertAfterHours",
+                    "isDefault",
+                    "updatedAt",
+                    "updatedBy"
+                  ],
+                  "properties": {
+                    "targetSystem": {
+                      "type": "string"
+                    },
+                    "fulfilmentModeCode": {
+                      "type": "string"
+                    },
+                    "ownerDescription": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "alertAfterHours": {
+                      "type": "integer"
+                    },
+                    "isDefault": {
+                      "type": "boolean"
+                    },
+                    "updatedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "updatedBy": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
             "description": "Default Response",
             "content": {
               "application/json": {

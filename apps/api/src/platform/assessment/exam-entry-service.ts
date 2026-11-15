@@ -350,6 +350,7 @@ export class ExamEntryService {
         .where(and(
           eq(adjustmentDistributions.tenantId, tenantId as Uuid),
           eq(adjustmentDistributions.targetSystem, 'exams'),
+          eq(adjustmentDistributions.fulfilmentModeCode, 'file'),
           eq(adjustmentDistributions.statusCode, 'withdrawal-requested'),
         )),
     );
@@ -421,6 +422,9 @@ export class ExamEntryService {
           eq(adjustmentDistributions.adjustmentId, reasonableAdjustments.id),
           eq(adjustmentDistributions.tenantId, reasonableAdjustments.tenantId),
           eq(adjustmentDistributions.targetSystem, 'exams'),
+          // The SRS acts as the exams target only in 'file' mode; a connected
+          // or manual exams target replies for itself.
+          eq(adjustmentDistributions.fulfilmentModeCode, 'file'),
           inArray(adjustmentDistributions.statusCode, ['pending', 'failed', 'distributed']),
         ))
         .where(and(

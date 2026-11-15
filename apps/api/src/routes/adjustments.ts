@@ -1,12 +1,16 @@
 import { Type } from '@sinclair/typebox';
-import { requirePermission, requireSelfOrPermission } from '@revelation-srs/auth';
-import type { FastifyInstance } from 'fastify';
+import { requireAnyPermission, requirePermission, requireSelfOrPermission } from '@revelation-srs/auth';
+import { hasPermission } from '@revelation-srs/domain';
+import type { FastifyInstance, FastifyRequest } from 'fastify';
 
 import type {
   AdjustmentDistributionDto,
   AdjustmentDto,
+  AdjustmentTaskDto,
   RecordAdjustmentInput,
+  ReplyActor,
 } from '../platform/adjustments/adjustment-service.js';
+import type { TargetConfigDto } from '../platform/adjustments/target-config.js';
 
 const ErrorSchema = Type.Object({
   type: Type.String(),
@@ -42,6 +46,7 @@ const DistributionSchema = Type.Object({
   adjustmentId: Type.String(),
   targetSystem: Type.String(),
   statusCode: Type.String(),
+  fulfilmentModeCode: Type.String(),
   distributedAt: Type.Union([Type.String(), Type.Null()]),
   failureReason: Type.Union([Type.String(), Type.Null()]),
   requestPublishedAt: Type.Union([Type.String(), Type.Null()]),
@@ -66,6 +71,73 @@ const RecordAdjustmentBody = Type.Object({
 const ListAdjustmentQuery = Type.Object({
   enrolmentId: Type.Optional(Type.String()),
 });
+
+const TaskSchema = Type.Object({
+  distributionId: Type.String(),
+  adjustmentId: Type.String(),
+  targetSystem: Type.String(),
+  action: Type.Union([Type.Literal('apply'), Type.Literal('remove')]),
+  statusCode: Type.String(),
+  failureReason: Type.Union([Type.String(), Type.Null()]),
+  personId: Type.String(),
+  studentNumber: Type.Union([Type.String(), Type.Null()]),
+  studentName: Type.Union([Type.String(), Type.Null()]),
+  enrolmentId: Type.String(),
+  adjustmentTypeCode: Type.String(),
+  scopeCode: Type.String(),
+  amount: Type.Union([AmountSchema, Type.Null()]),
+  validFrom: Type.String(),
+  validTo: Type.Union([Type.String(), Type.Null()]),
+  dueSince: Type.String(),
+  ownerDescription: Type.Union([Type.String(), Type.Null()]),
+  overdue: Type.Boolean(),
+});
+
+const TargetConfigSchema = Type.Object({
+  targetSystem: Type.String(),
+  fulfilmentModeCode: Type.String(),
+  ownerDescription: Type.Union([Type.String(), Type.Null()]),
+  alertAfterHours: Type.Integer(),
+  isDefault: Type.Boolean(),
+  updatedAt: Type.Union([Type.String(), Type.Null()]),
+  updatedBy: Type.Union([Type.String(), Type.Null()]),
+});
+
+const TargetConfigBody = Type.Object({
+  fulfilmentModeCode: Type.String({ minLength: 1 }),
+  ownerDescription: Type.Optional(Type.Union([Type.String({ maxLength: 200 }), Type.Null()])),
+  alertAfterHours: Type.Optional(Type.Integer({ minimum: 1, maximum: 8760 })),
+});
+
+/**
+ * Replies come from an integration connector (integration:manage) or from a
+ * person working the manual task queue (adjustment:fulfil), who may only reply
+ * for manual targets. A person's reply is audited.
+ */
+function replyActor(request: FastifyRequest): ReplyActor {
+  return hasPermission(request.user.roles, 'integration:manage') ? 'connector' : 'person';
+}
+
+async function auditPersonReply(
+  fastify: FastifyInstance,
+  request: FastifyRequest,
+  actor: ReplyActor,
+  distributionId: string,
+  reasonText: string,
+): Promise<void> {
+  if (actor !== 'person') return;
+  await fastify.audit.record({
+    tenantId: request.tenantId,
+    entityType: 'adjustment_distribution',
+    entityId: distributionId,
+    actionType: 'update',
+    actorType: 'user',
+    actorId: request.user.sub,
+    actorDisplayName: request.user.displayName,
+    correlationId: request.id,
+    reasonText,
+  });
+}
 
 const DistributionFailureBody = Type.Object({
   targetSystem: Type.String({ minLength: 1 }),
@@ -198,7 +270,7 @@ export function adjustmentRoutes(fastify: FastifyInstance): void {
         body: AcknowledgeDistributionBody,
         response: { 204: Type.Null(), 404: ErrorSchema, 409: ErrorSchema },
       },
-      preHandler: [requirePermission('integration:manage')],
+      preHandler: [requireAnyPermission('integration:manage', 'adjustment:fulfil')],
     },
     async (request, reply) => {
       const { adjustmentId, distributionId } = request.params as {
@@ -206,12 +278,15 @@ export function adjustmentRoutes(fastify: FastifyInstance): void {
         distributionId: string;
       };
       const body = request.body as { targetSystem: string };
+      const actor = replyActor(request);
       await fastify.adjustmentService.acknowledgeDistribution(
         adjustmentId,
         distributionId,
         request.tenantId,
         body.targetSystem,
+        actor,
       );
+      await auditPersonReply(fastify, request, actor, distributionId, 'Manual adjustment task: confirmed applied');
       await reply.code(204).send();
     },
   );
@@ -227,7 +302,7 @@ export function adjustmentRoutes(fastify: FastifyInstance): void {
         body: DistributionFailureBody,
         response: { 204: Type.Null(), 404: ErrorSchema, 409: ErrorSchema },
       },
-      preHandler: [requirePermission('integration:manage')],
+      preHandler: [requireAnyPermission('integration:manage', 'adjustment:fulfil')],
     },
     async (request, reply) => {
       const { adjustmentId, distributionId } = request.params as {
@@ -235,13 +310,16 @@ export function adjustmentRoutes(fastify: FastifyInstance): void {
         distributionId: string;
       };
       const body = request.body as { targetSystem: string; reason: string };
+      const actor = replyActor(request);
       await fastify.adjustmentService.reportDistributionFailure(
         adjustmentId,
         distributionId,
         request.tenantId,
         body.targetSystem,
         body.reason,
+        actor,
       );
+      await auditPersonReply(fastify, request, actor, distributionId, 'Manual adjustment task: reported cannot apply');
       await reply.code(204).send();
     },
   );
@@ -257,7 +335,7 @@ export function adjustmentRoutes(fastify: FastifyInstance): void {
         body: AcknowledgeDistributionBody,
         response: { 204: Type.Null(), 404: ErrorSchema, 409: ErrorSchema },
       },
-      preHandler: [requirePermission('integration:manage')],
+      preHandler: [requireAnyPermission('integration:manage', 'adjustment:fulfil')],
     },
     async (request, reply) => {
       const { adjustmentId, distributionId } = request.params as {
@@ -265,13 +343,80 @@ export function adjustmentRoutes(fastify: FastifyInstance): void {
         distributionId: string;
       };
       const body = request.body as { targetSystem: string };
+      const actor = replyActor(request);
       await fastify.adjustmentService.acknowledgeWithdrawal(
         adjustmentId,
         distributionId,
         request.tenantId,
         body.targetSystem,
+        actor,
       );
+      await auditPersonReply(fastify, request, actor, distributionId, 'Manual adjustment task: confirmed removed');
       await reply.code(204).send();
+    },
+  );
+
+  // ── Manual task queue and target fulfilment settings ─────────────────────
+
+  fastify.get(
+    '/adjustment-tasks',
+    {
+      schema: {
+        querystring: Type.Object({ targetSystem: Type.Optional(Type.String()) }),
+        response: { 200: Type.Array(TaskSchema) },
+      },
+      preHandler: [requirePermission('adjustment:fulfil')],
+    },
+    async (request, reply) => {
+      const { targetSystem } = request.query as { targetSystem?: string };
+      const tasks = await fastify.adjustmentService.listTasks(request.tenantId, targetSystem ? { targetSystem } : {});
+      await reply.send(tasks.map(taskToWire));
+    },
+  );
+
+  fastify.get(
+    '/adjustment-targets',
+    {
+      schema: { response: { 200: Type.Array(TargetConfigSchema) } },
+      preHandler: [requireAnyPermission('config:read', 'adjustment:fulfil')],
+    },
+    async (request, reply) => {
+      const configs = await fastify.adjustmentTargetConfigService.list(request.tenantId);
+      await reply.send(configs.map(targetConfigToWire));
+    },
+  );
+
+  fastify.put(
+    '/adjustment-targets/:targetSystem',
+    {
+      schema: {
+        params: Type.Object({ targetSystem: Type.String() }),
+        body: TargetConfigBody,
+        response: { 200: TargetConfigSchema, 404: ErrorSchema, 422: ErrorSchema },
+      },
+      preHandler: [requirePermission('config:write')],
+    },
+    async (request, reply) => {
+      const { targetSystem } = request.params as { targetSystem: string };
+      const body = request.body as { fulfilmentModeCode: string; ownerDescription?: string | null; alertAfterHours?: number };
+      const before = await fastify.adjustmentTargetConfigService.get(request.tenantId, targetSystem);
+      const updated = await fastify.adjustmentTargetConfigService.set(request.tenantId, targetSystem, body, request.user.sub);
+      // A tenant setting: recorded against the tenant, the target in fieldName.
+      await fastify.audit.record({
+        tenantId: request.tenantId,
+        entityType: 'adjustment_target_config',
+        entityId: request.tenantId,
+        fieldName: `${targetSystem}.fulfilment_mode_code`,
+        beforeValue: { fulfilmentModeCode: before.fulfilmentModeCode, isDefault: before.isDefault },
+        afterValue: { fulfilmentModeCode: updated.fulfilmentModeCode, ownerDescription: updated.ownerDescription, alertAfterHours: updated.alertAfterHours },
+        actionType: 'update',
+        actorType: 'user',
+        actorId: request.user.sub,
+        actorDisplayName: request.user.displayName,
+        correlationId: request.id,
+        reasonText: `Fulfilment mode set to ${body.fulfilmentModeCode}`,
+      });
+      await reply.send(targetConfigToWire(updated));
     },
   );
 
@@ -403,4 +548,17 @@ function distributionToWire(distribution: AdjustmentDistributionDto) {
     createdAt: distribution.createdAt.toISOString(),
     updatedAt: distribution.updatedAt.toISOString(),
   };
+}
+
+function taskToWire(task: AdjustmentTaskDto) {
+  return {
+    ...task,
+    validFrom: task.validFrom.toISOString(),
+    validTo: task.validTo?.toISOString() ?? null,
+    dueSince: task.dueSince.toISOString(),
+  };
+}
+
+function targetConfigToWire(config: TargetConfigDto) {
+  return { ...config, updatedAt: config.updatedAt?.toISOString() ?? null };
 }
