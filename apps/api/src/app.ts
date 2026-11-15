@@ -340,7 +340,7 @@ export async function buildApp(
   const engagementOutcomes = new EngagementOutcomeService(db, eventBus);
   const exceptionalCircumstances = new ExceptionalCircumstancesService(db, eventBus);
   const misconduct = new MisconductService(db, valueSets, eventBus);
-  const progression = new ProgressionService(db, eventBus, rules);
+  const progression = new ProgressionService(db, eventBus, rules, deliveries);
   const awards      = new AwardService(db, eventBus, rules, enrolments);
   const boards = new BoardService(db, eventBus, valueSets, awards, featureFlags);
   const boardAuthority = new BoardAuthorityService(db);

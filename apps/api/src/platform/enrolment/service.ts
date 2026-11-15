@@ -27,7 +27,7 @@ import { TriggerRuleEvaluator, type EnrolmentTriggerDecision } from '../workflow
 import { assertChangeAfterCurrentVersion } from '../bitemporal-guard.js';
 import { clockNow } from '../clock.js';
 import type { DeliveryService } from '../delivery/delivery-service.js';
-import { requestLibraryAccess } from '../delivery/producers/library.js';
+import { onEnrolmentChanged } from '../delivery/producers/enrolment-flows.js';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -147,7 +147,7 @@ export class EnrolmentService {
     private readonly eventBus: IntegrationBusPublisher,
     private readonly valueSets: ValueSetService,
     triggerRules?: TriggerRuleEvaluator,
-    /** Outbound flows that follow enrolment status (F-SIS-LIB-01). */
+    /** Outbound flows that follow the enrolment (F-SIS-LIB-01, -CRM-01, -ACC-01). */
     private readonly delivery?: DeliveryService,
   ) {
     this.transitionValidator = new TransitionValidator(valueSets);
@@ -323,12 +323,10 @@ export class EnrolmentService {
     }
 
     if (this.delivery) {
-      await requestLibraryAccess(this.delivery, this.db, tenantId, {
-        personId: input.personId,
+      await onEnrolmentChanged(this.delivery, this.db, tenantId, {
         enrolmentId,
-        statusCode: 'enrolled',
-        effectiveFrom: new Date(`${input.startDate}T00:00:00.000Z`),
         changeKey: `enrolment-created:${enrolmentId}`,
+        effectiveFrom: new Date(`${input.startDate}T00:00:00.000Z`),
       });
     }
 
@@ -604,12 +602,10 @@ export class EnrolmentService {
     });
 
     if (this.delivery) {
-      await requestLibraryAccess(this.delivery, this.db, tenantId, {
-        personId: current.personId,
+      await onEnrolmentChanged(this.delivery, this.db, tenantId, {
         enrolmentId,
-        statusCode: newStatus,
-        effectiveFrom: validFrom,
         changeKey: `enrolment-status:${enrolmentId}:${newStatus}:${validFrom.toISOString()}`,
+        effectiveFrom: validFrom,
       });
     }
 

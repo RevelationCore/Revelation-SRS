@@ -39,12 +39,14 @@ export const DELIVERY_FLOWS: readonly DeliveryFlow[] = [
   {
     flowCode: 'F-SIS-CRM-01', targetSystem: 'crm', targetLabel: 'CRM',
     name: 'Enrolment status and progression to CRM', defaultMode: 'manual', stateSync: true,
-    producer: 'none', producerNote: 'No SRS trigger yet.',
+    producer: 'implemented',
+    producerNote: 'An enrolment being created, changing status, or receiving a progression decision sends the enrolment\'s current status and latest progression.',
   },
   {
     flowCode: 'F-SIS-ACC-01', targetSystem: 'acc', targetLabel: 'accommodation system',
     name: 'Student profile and enrolment status to accommodation', defaultMode: 'manual', stateSync: true,
-    producer: 'none', producerNote: 'No SRS trigger yet.',
+    producer: 'implemented',
+    producerNote: 'An enrolment being created or changing status sends its status, mode of study, programme and start date.',
   },
   {
     flowCode: 'F-SIS-EST-01', targetSystem: 'est', targetLabel: 'estates system',

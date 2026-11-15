@@ -27,6 +27,8 @@ let registryJwt: string;
 let adminJwt: string;
 
 const LIB = 'F-SIS-LIB-01';
+const CRM = 'F-SIS-CRM-01';
+const ACC = 'F-SIS-ACC-01';
 
 beforeAll(async () => {
   ctx = await startTestApp({ eventBus: spy });
@@ -51,7 +53,7 @@ describe('Delivery flows', () => {
       'F-SIS-LIB-01', 'F-SIS-OIV-01', 'F-SIS-PAY-01', 'F-SIS-RP-01', 'F-SIS-SETS-01',
     ]);
     expect(flows.find((f) => f.flowCode === LIB)).toMatchObject({ producer: 'implemented', fulfilmentModeCode: 'manual', isDefault: true });
-    expect(flows.filter((f) => f.producer === 'implemented').map((f) => f.flowCode)).toEqual([LIB]);
+    expect(flows.filter((f) => f.producer === 'implemented').map((f) => f.flowCode).sort()).toEqual([ACC, CRM, LIB]);
   });
 
   it('validates settings and restricts them to configuration administrators', async () => {
@@ -65,7 +67,7 @@ describe('F-SIS-LIB-01 library access from enrolment status (manual by default)'
   it('an enrolment becomes a library task to grant access, with who and from when', async () => {
     const f = await fixture('LIB101');
 
-    const task = (await tasks()).find((t) => t.subjectId === f.enrolmentId);
+    const task = (await tasks()).find((t) => t.subjectId === f.enrolmentId && t.flowCode === LIB);
     expect(task).toMatchObject({
       flowCode: LIB,
       flowName: 'Library access from enrolment status',
@@ -84,7 +86,7 @@ describe('F-SIS-LIB-01 library access from enrolment status (manual by default)'
     const f = await fixture('LIB102');
     expect((await post(`/api/v1/enrolments/${f.enrolmentId}/intermit`, { reasonCode: 'health' }, registryJwt)).statusCode).toBe(204);
 
-    const open = (await tasks()).filter((t) => t.subjectId === f.enrolmentId);
+    const open = (await tasks()).filter((t) => t.subjectId === f.enrolmentId && t.flowCode === LIB);
     expect(open.map((t) => t.payload['accessAction'])).toEqual(['suspend']);
     const all = (await get(`/api/v1/delivery-items?flowCode=${LIB}&subjectId=${f.enrolmentId}`, registryJwt)).json<Array<{ statusCode: string }>>();
     expect(all.map((i) => i.statusCode)).toEqual(['superseded', 'pending']);
@@ -92,7 +94,7 @@ describe('F-SIS-LIB-01 library access from enrolment status (manual by default)'
 
   it('staff confirm a task (audited, repeat-safe), or report why they cannot', async () => {
     const f = await fixture('LIB103');
-    const task = (await tasks()).find((t) => t.subjectId === f.enrolmentId)!;
+    const task = (await tasks()).find((t) => t.subjectId === f.enrolmentId && t.flowCode === LIB)!;
 
     expect((await post(`/api/v1/delivery-items/${task.deliveryItemId}/failure`, { reason: 'Borrower record locked' }, registryJwt)).statusCode).toBe(204);
     expect((await tasks()).find((t) => t.deliveryItemId === task.deliveryItemId)).toMatchObject({ statusCode: 'failed', failureReason: 'Borrower record locked' });
@@ -107,10 +109,39 @@ describe('F-SIS-LIB-01 library access from enrolment status (manual by default)'
 
   it('a superseded item cannot be confirmed', async () => {
     const f = await fixture('LIB104');
-    const first = (await tasks()).find((t) => t.subjectId === f.enrolmentId)!;
+    const first = (await tasks()).find((t) => t.subjectId === f.enrolmentId && t.flowCode === LIB)!;
     await post(`/api/v1/enrolments/${f.enrolmentId}/withdraw`, { reasonCode: 'personal' }, registryJwt);
 
     expect((await post(`/api/v1/delivery-items/${first.deliveryItemId}/acknowledge`, {}, registryJwt)).statusCode).toBe(409);
+  });
+});
+
+describe('F-SIS-CRM-01 and F-SIS-ACC-01 follow the enrolment', () => {
+  it('an enrolment becomes a CRM task and an accommodation task, each with a snapshot', async () => {
+    const f = await fixture('ENR101');
+    const mine = (await tasks()).filter((t) => t.subjectId === f.enrolmentId);
+
+    expect(mine.find((t) => t.flowCode === CRM)).toMatchObject({
+      summary: 'Update CRM: enrolment enrolled',
+      payload: expect.objectContaining({ enrolmentStatus: 'enrolled', progression: null }) as Record<string, unknown>,
+    });
+    expect(mine.find((t) => t.flowCode === ACC)).toMatchObject({
+      summary: 'Update accommodation record: enrolment enrolled (full-time) from 2026-09-21',
+      payload: expect.objectContaining({ enrolmentStatus: 'enrolled', modeOfStudy: 'full-time', startDate: '2026-09-21' }) as Record<string, unknown>,
+    });
+  });
+
+  it('a progression decision updates CRM only, replacing the undelivered snapshot', async () => {
+    const f = await fixture('ENR102');
+    const evaluated = await post(`/api/v1/enrolments/${f.enrolmentId}/progression`, { academicYear: '2026-27' }, registryJwt);
+    expect(evaluated.statusCode, evaluated.body).toBe(201);
+
+    const crm = (await tasks()).filter((t) => t.subjectId === f.enrolmentId && t.flowCode === CRM);
+    expect(crm).toHaveLength(1);
+    expect(crm[0]!.payload['progression']).toMatchObject({ academicYear: '2026-27', ratified: false });
+    expect(crm[0]!.summary).toMatch(/^Update CRM: enrolment enrolled; progression 2026-27 [a-z-]+ \(provisional\)$/);
+    // Library and accommodation are unaffected by progression.
+    expect((await tasks()).filter((t) => t.subjectId === f.enrolmentId && t.flowCode !== CRM).map((t) => t.flowCode).sort()).toEqual([ACC, LIB]);
   });
 });
 
@@ -119,7 +150,7 @@ describe('Connected and not-used flows', () => {
     await put(`/api/v1/delivery-flows/${LIB}`, { fulfilmentModeCode: 'connected' }, adminJwt);
     try {
       const f = await fixture('LIB201');
-      const event = bus.events.find((e) => e.type === 'srs.delivery.requested' && e.payload['subjectId'] === f.enrolmentId);
+      const event = bus.events.find((e) => e.type === 'srs.delivery.requested' && e.payload['subjectId'] === f.enrolmentId && e.payload['flowCode'] === LIB);
       expect(event?.options.subjectSuffix).toBe('f-sis-lib-01');
       expect(event?.payload).toMatchObject({ flowCode: LIB, targetSystem: 'lib', payload: expect.objectContaining({ accessAction: 'grant' }) as Record<string, unknown> });
       const itemId = String(event!.payload['deliveryItemId']);
@@ -141,10 +172,10 @@ describe('Connected and not-used flows', () => {
 
       bus.connected = true;
       expect(await ctx.app.deliveryService.drain()).toBeGreaterThanOrEqual(1);
-      expect(bus.events.filter((e) => e.payload['subjectId'] === f.enrolmentId)).toHaveLength(1);
+      expect(bus.events.filter((e) => e.payload['subjectId'] === f.enrolmentId && e.payload['flowCode'] === LIB)).toHaveLength(1);
       bus.events.length = 0;
       await ctx.app.deliveryService.drain();
-      expect(bus.events.filter((e) => e.payload['subjectId'] === f.enrolmentId)).toHaveLength(0);
+      expect(bus.events.filter((e) => e.payload['subjectId'] === f.enrolmentId && e.payload['flowCode'] === LIB)).toHaveLength(0);
     } finally {
       await put(`/api/v1/delivery-flows/${LIB}`, { fulfilmentModeCode: 'manual' }, adminJwt);
     }
@@ -154,7 +185,7 @@ describe('Connected and not-used flows', () => {
     await put(`/api/v1/delivery-flows/${LIB}`, { fulfilmentModeCode: 'not-used' }, adminJwt);
     try {
       const f = await fixture('LIB203');
-      const items = (await get(`/api/v1/delivery-items?subjectId=${f.enrolmentId}`, registryJwt)).json<unknown[]>();
+      const items = (await get(`/api/v1/delivery-items?flowCode=${LIB}&subjectId=${f.enrolmentId}`, registryJwt)).json<unknown[]>();
       expect(items).toEqual([]);
     } finally {
       await put(`/api/v1/delivery-flows/${LIB}`, { fulfilmentModeCode: 'manual' }, adminJwt);

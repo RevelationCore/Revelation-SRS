@@ -19,6 +19,8 @@ import { assertNotLocked } from '../assessment/lock.js';
 import type { IntegrationBusPublisher } from '../integration-bus/publisher.js';
 import type { RulesEngine } from '../rules-engine/engine.js';
 import { clockNow } from '../clock.js';
+import type { DeliveryService } from '../delivery/delivery-service.js';
+import { onEnrolmentChanged } from '../delivery/producers/enrolment-flows.js';
 
 export interface EvaluateProgressionInput {
   academicYear: string;
@@ -72,6 +74,8 @@ export class ProgressionService {
     private readonly db: Db,
     private readonly eventBus: IntegrationBusPublisher,
     private readonly rules: RulesEngine,
+    /** F-SIS-CRM-01 carries the latest progression decision. */
+    private readonly delivery?: DeliveryService,
   ) {}
 
   async evaluateProgression(
@@ -122,6 +126,13 @@ export class ProgressionService {
     });
 
     await this.#writeProgressionEvidence(tenantId, progressionDecisionId, academicYear, rules, evidence);
+
+    if (this.delivery) {
+      await onEnrolmentChanged(this.delivery, this.db, tenantId, {
+        enrolmentId,
+        changeKey: `progression:${progressionDecisionId}:${academicYear}:${decisionCode}:${now.toISOString()}`,
+      }, { library: false, crm: true, accommodation: false });
+    }
 
     if (this.eventBus.isConnected()) {
       const payload: ProgressionDecidedV1Payload = {

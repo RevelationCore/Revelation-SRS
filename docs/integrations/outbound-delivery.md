@@ -22,8 +22,8 @@ Reasonable adjustments use the same modes on their own ledger, with a withdrawal
 | Flow | Target | SRS trigger |
 |---|---|---|
 | F-SIS-LIB-01 | Library | **Implemented**: an enrolment being created or changing status grants, suspends or revokes access |
-| F-SIS-CRM-01 | CRM | Not yet |
-| F-SIS-ACC-01 | Accommodation | Not yet |
+| F-SIS-CRM-01 | CRM | **Implemented**: an enrolment being created, changing status or receiving a progression decision sends its current status and latest progression |
+| F-SIS-ACC-01 | Accommodation | **Implemented**: an enrolment being created or changing status sends its status, mode of study, programme and start date |
 | F-SIS-EST-01 | Estates | Not yet |
 | F-SIS-OIV-01 | Identity verification | Not yet |
 | F-SIS-SETS-01 | Survey system | Not yet |
@@ -58,3 +58,15 @@ A connector replies with `integration:manage`. A person replies with `delivery:f
 ```
 
 `accessAction`: `grant` (enrolled), `suspend` (intermitting, suspended), `revoke` (withdrawn, graduated).
+
+### F-SIS-CRM-01 and F-SIS-ACC-01 payloads
+
+Both carry a snapshot of the enrolment's current state, so a later item can replace an undelivered earlier one without losing anything.
+
+```json
+{ "personId": "…", "studentNumber": "S1234567", "enrolmentId": "…", "programmeId": "…",
+  "enrolmentStatus": "enrolled",
+  "progression": { "academicYear": "2026-27", "yearOfStudy": "1", "decisionCode": "progress", "ratified": false } }
+```
+
+`progression` is the latest decision (`null` if none); `ratified` is false until an exam board locks it. The accommodation payload has `modeOfStudy` and `startDate` instead of `progression`.
