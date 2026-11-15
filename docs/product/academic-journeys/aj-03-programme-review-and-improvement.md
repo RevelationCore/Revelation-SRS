@@ -1,6 +1,6 @@
 # AJ-03 — Evidence becomes improvement
 
-Status: **Proposed narrative v0.7**, 14 November 2026 · [Document status](README.md#status-of-these-documents) · [Extension fixture](change-and-exceptions-fixture.md) · [Shared-module change](aj-02-shared-module-change.md)
+Status: **Proposed narrative v0.8**, 14 November 2026 · [Document status](README.md#status-of-these-documents) · [Extension fixture](change-and-exceptions-fixture.md) · [Shared-module change](aj-02-shared-module-change.md)
 
 **Perspective:** Aisha, student representatives, the external examiner and a quality-review panel. **Boundary:** period-specific evidence through a reasoned improvement proposal, approved future release and later effectiveness review. **Timeline:** first-year review t+40 to t+88 for entry 2033 at t+156; first-graduate review t+144 to t+160. All weeks retain the [2030 anchor](README.md#timeline-convention).
 

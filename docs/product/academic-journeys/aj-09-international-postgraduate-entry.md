@@ -1,6 +1,6 @@
 # AJ-09 — From overseas offer to supported study
 
-Status: **Proposed narrative v0.7**, 14 November 2026 · [Document status](README.md#status-of-these-documents) · [Mei's fixture](research-and-partnership-fixture.md) · [Registration](aj-16-registration-and-entitlements.md)
+Status: **Proposed narrative v0.8**, 14 November 2026 · [Document status](README.md#status-of-these-documents) · [Mei's fixture](research-and-partnership-fixture.md) · [Registration](aj-16-registration-and-entitlements.md)
 
 **Perspective:** Mei, an international admissions adviser, an authorised sponsor-compliance officer and Registry. **Boundary:** direct taught-postgraduate application through separately evidenced admission, sponsorship/right-to-study and registration, then supported arrival and engagement. **Timeline:** tX-32 to tX+6, where tX = 20 September 2032 = t+104. All deadlines and external eligibility rules are supplied policy inputs, not legal guidance in this fiction.
 

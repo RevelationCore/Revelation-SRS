@@ -1,15 +1,15 @@
 # Academic journeys: interlocking narrative catalogue
 
-Status: **Proposed discovery baseline, v0.5 — stories to develop, not delivered functionality or executed tests.**
+Status: **Proposed discovery baseline, v0.6 — stories to develop, not delivered functionality or executed tests.**
 Date: 14 November 2026. Suggested coordinating owner: Academic Registry, with academic, student, research and service representatives.
 
 ## Purpose and reading guide
 
 These independent stories describe the university from several viewpoints: an applicant choosing a university, a lecturer creating a module, a researcher completing a doctorate, and the teams that make each journey possible. Together they follow provision from its first proposal through recruitment, study, awards, review and eventual closure. They also follow the records, decisions and services that connect those experiences.
 
-The initial deliverable is a **catalogue of 40 narratives**, rather than 40 fully written workflows. Each row gives the starting situation, the main events and a complication, the intended outcome, and links to other stories. A story can be developed independently using a stated starting snapshot. When stories are joined, they must share the same people, programme versions, dates, decisions and identifiers; another story's outcome becomes the next story's starting fact.
+The catalogue contains **40 narratives**, all now expanded as proposed story specifications, not executable workflows. Each row gives the starting situation, the main events and a complication, the intended outcome, and links to other stories. A story can be developed independently using a stated starting snapshot. When stories are joined, they must share the same people, programme versions, dates, decisions and identifiers; another story's outcome becomes the next story's starting fact.
 
-Thirty-two expansions are now available as proposed narrative specifications, with readable stories, structured scenes, interactions, acceptance cases and review questions:
+All forty expansions are now available as proposed narrative specifications, with readable stories, structured scenes, interactions, acceptance cases and review questions:
 
 | Expanded narrative | Document |
 |---|---|
@@ -22,9 +22,12 @@ Thirty-two expansions are now available as proposed narrative specifications, wi
 | AJ-07 — Clearing, deferral and changed plans | [Expanded story](academic-journeys/aj-07-clearing-deferral-and-changed-plans.md) |
 | AJ-08 — Part-time entry and prior learning | [Expanded story](academic-journeys/aj-08-part-time-entry-and-prior-learning.md) |
 | AJ-09 — International postgraduate entry | [Expanded story](academic-journeys/aj-09-international-postgraduate-entry.md) |
+| AJ-10 — Distance learning and online support | [Expanded story](academic-journeys/aj-10-distance-learning-and-online-support.md) |
 | AJ-11 — Apprenticeships and employer change | [Expanded story](academic-journeys/aj-11-apprenticeship-and-employer-change.md) |
 | AJ-12 — Partner delivery and award authority | [Expanded story](academic-journeys/aj-12-partner-delivery-and-award-authority.md) |
+| AJ-13 — Mobility and credit recognition | [Expanded story](academic-journeys/aj-13-mobility-and-credit-recognition.md) |
 | AJ-14 — Placements and practice learning | [Expanded story](academic-journeys/aj-14-placement-and-practice-learning.md) |
+| AJ-15 — Short courses and credit stacking | [Expanded story](academic-journeys/aj-15-short-courses-and-credit-stacking.md) |
 | AJ-16 — Registration and entitlements | [Expanded story](academic-journeys/aj-16-registration-and-entitlements.md) |
 | AJ-17 — Campus, accommodation and library | [Expanded story](academic-journeys/aj-17-campus-accommodation-and-library.md) |
 | AJ-18 — Module selection and course diets | [Expanded story](academic-journeys/aj-18-module-selection-and-diets.md) |
@@ -44,13 +47,19 @@ Thirty-two expansions are now available as proposed narrative specifications, wi
 | AJ-32 — Student employment and payments | [Expanded story](academic-journeys/aj-32-student-employment-and-payments.md) |
 | AJ-33 — Thesis examination and research award | [Expanded story](academic-journeys/aj-33-thesis-examination-and-award.md) |
 | AJ-34 — Reporting and statutory returns | [Expanded story](academic-journeys/aj-34-reporting-and-statutory-returns.md) |
+| AJ-35 — Analytics, feedback and improvement | [Expanded story](academic-journeys/aj-35-analytics-feedback-and-improvement.md) |
+| AJ-36 — Access and service support | [Expanded story](academic-journeys/aj-36-access-and-service-support.md) |
+| AJ-37 — Publication and communications | [Expanded story](academic-journeys/aj-37-publication-and-communications.md) |
 | AJ-38 — Records, information rights and retention | [Expanded story](academic-journeys/aj-38-records-rights-and-retention.md) |
+| AJ-39 — Integration failure and reconciliation | [Expanded story](academic-journeys/aj-39-integration-failure-and-reconciliation.md) |
+| AJ-40 — Audit, continuity and recovery | [Expanded story](academic-journeys/aj-40-audit-continuity-and-recovery.md) |
 | Shared fictional course, cohort, versions and hand-off | [Northbridge scenario](academic-journeys/README.md) |
 | Shared progression/assessment policies, marks and later calendar | [Taught-student continuation](academic-journeys/taught-student-fixture.md) |
 | Shared change/exception policies, new people, future release and part-time plan | [Change and exceptions extension](academic-journeys/change-and-exceptions-fixture.md) |
 | Shared research, employment, partner and placement evidence, anchors and policies | [Research and partnerships extension](academic-journeys/research-and-partnership-fixture.md) |
+| Shared online, mobility, short-course and service/continuity inputs | [Flexible learning and services extension](academic-journeys/flexible-learning-and-service-fixture.md) |
 
-These documents expand thirty-two of the existing 40 narratives without adding catalogue IDs. Their shared [status statement](academic-journeys/README.md#status-of-these-documents) applies to every expansion.
+These documents expand all 40 narratives without adding catalogue IDs. Their shared [status statement](academic-journeys/README.md#status-of-these-documents) applies to every expansion.
 
 Coverage is checked against the repository's [enterprise reference model v3.0](../reference/revelation-student-records-enterprise-reference-model-3.0.json): **33 systems/actors and 69 interactions**. Sections below assign every reference interaction to a narrative and separately identify interactions missing from, or insufficiently detailed in, that model. Assignment means **planned narrative coverage**, not that an integration exists, a contract has been agreed or a journey has passed a test. Further interactions will emerge during walkthroughs.
 
@@ -214,7 +223,7 @@ Walk through the scenes with students, academic owners, Registry and service own
 | Failure and recovery | Reject/rework, missed deadlines, holds, service outage, safe retry and approved correction preserve both history and a clear next action. |
 | Acceptance | Each expanded story has owner review, traceable decisions and observable pass/fail outcomes. Automated test or demo status is recorded separately from narrative completeness and institutional sign-off. |
 
-AJ-01, AJ-06, AJ-16–21, AJ-24–26 and AJ-29 now have expanded proposed stories. Suggested next expansions are AJ-22/23/27 for circumstances, engagement intervention and corrections, plus the AJ-30–33 research sequence. Develop AJ-34–40 alongside them so reporting, records and recovery are considered in every phase. Keep implementation prioritisation separate from narrative completeness.
+All AJ-01–40 now have expanded proposed stories. Next, assign institutional reviewers, agree unresolved policy/contract choices and turn selected starting packs and acceptance cases into executable walkthroughs. Reporting, records and recovery remain part of each connected journey. Keep implementation prioritisation and acceptance evidence separate from narrative completeness.
 
 ## Reference-model coverage registers
 

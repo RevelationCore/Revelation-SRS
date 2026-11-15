@@ -1,6 +1,6 @@
 # AJ-30 — A funded project creates a doctoral opportunity
 
-Status: **Proposed narrative v0.7**, 14 November 2026 · [Document status](README.md#status-of-these-documents) · [Research fixture](research-and-partnership-fixture.md) · [Supervision and progress](aj-31-research-supervision-and-progress.md)
+Status: **Proposed narrative v0.8**, 14 November 2026 · [Document status](README.md#status-of-these-documents) · [Research fixture](research-and-partnership-fixture.md) · [Supervision and progress](aj-31-research-supervision-and-progress.md)
 
 **Perspective:** Leila as principal investigator, Morgan as applicant, a funding officer and Research Admissions. **Boundary:** project proposal and studentship funding through separately authorised admission, supervision and registration readiness. **Timeline:** tR-40 to tR+1, where **tR = 22 September 2031 = t+52**. Dates are fictional institutional planning windows.
 

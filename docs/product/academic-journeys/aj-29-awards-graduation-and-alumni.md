@@ -1,6 +1,6 @@
 # AJ-29 — From completion to graduate
 
-Status: **Proposed narrative v0.7**, 14 November 2026 · [Document status](README.md#status-of-these-documents) · [Shared marks and rules](taught-student-fixture.md) · [Exam board](aj-25-exam-board-and-ratification.md)
+Status: **Proposed narrative v0.8**, 14 November 2026 · [Document status](README.md#status-of-these-documents) · [Shared marks and rules](taught-student-fixture.md) · [Exam board](aj-25-exam-board-and-ratification.md)
 
 **Perspective:** Sam, the awards officer, ceremony organisers, records staff and alumni team. **Boundary:** a ratified recommendation through eligibility verification, separate award conferral, document issue and governed leaver services. **Timeline:** t+140 to t+156; Ben's later conferral branch begins after supplementary publication at t+151. Use the [same t](README.md#timeline-convention).
 

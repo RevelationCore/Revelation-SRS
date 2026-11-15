@@ -1,6 +1,6 @@
 # AJ-34 — Turning lived events into accountable returns
 
-Status: **Proposed narrative v0.7**, 14 November 2026 · [Document status](README.md#status-of-these-documents) · [Extension fixture](change-and-exceptions-fixture.md) · [Record corrections](aj-27-appeals-and-record-corrections.md)
+Status: **Proposed narrative v0.8**, 14 November 2026 · [Document status](README.md#status-of-these-documents) · [Extension fixture](change-and-exceptions-fixture.md) · [Record corrections](aj-27-appeals-and-record-corrections.md)
 
 **Perspective:** a Registry reporting analyst, source-data owners and the accountable signatory. **Boundary:** a defined collection through reproducible extraction, validation, approval, submission response and controlled amendment. **Timeline:** a fictional rehearsal at t+48 to t+51; separate award-period rehearsal t+144 to t+154. These are [scenario weeks](README.md#timeline-convention), not national deadlines.
 

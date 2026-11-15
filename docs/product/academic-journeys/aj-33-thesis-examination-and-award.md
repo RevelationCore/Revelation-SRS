@@ -1,6 +1,6 @@
 # AJ-33 — Thesis, viva, corrections and award
 
-Status: **Proposed narrative v0.7**, 14 November 2026 · [Document status](README.md#status-of-these-documents) · [Research fixture](research-and-partnership-fixture.md) · [Common award services](aj-29-awards-graduation-and-alumni.md)
+Status: **Proposed narrative v0.8**, 14 November 2026 · [Document status](README.md#status-of-these-documents) · [Research fixture](research-and-partnership-fixture.md) · [Common award services](aj-29-awards-graduation-and-alumni.md)
 
 **Perspective:** Morgan, an external and an internal examiner with an independent chair, Research Registry and repository staff. **Boundary:** examination readiness through immutable thesis submission, ratified outcome, verified corrections/deposit and separate research award conferral. **Timeline:** tR+148 to tR+178; employment reconciliation continues to tR+184. tR = 22 September 2031 = t+52.
 

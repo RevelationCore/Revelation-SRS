@@ -1,6 +1,6 @@
 # AJ-22 — A disruption to a particular assessment
 
-Status: **Proposed narrative v0.7**, 14 November 2026 · [Document status](README.md#status-of-these-documents) · [Extension fixture](change-and-exceptions-fixture.md) · [Reasonable adjustments](aj-21-reasonable-adjustments.md)
+Status: **Proposed narrative v0.8**, 14 November 2026 · [Document status](README.md#status-of-these-documents) · [Extension fixture](change-and-exceptions-fixture.md) · [Reasonable adjustments](aj-21-reasonable-adjustments.md)
 
 **Perspective:** Leah, a specialist case adviser, an independent approver and the board secretary. **Boundary:** a time-bound claim through a reasoned determination, separately authorised academic effect and acknowledged assessment arrangements. **Timeline:** t+29 to t+51, using [t = 23 September 2030](README.md#timeline-convention).
 

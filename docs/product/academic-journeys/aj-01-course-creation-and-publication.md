@@ -1,6 +1,6 @@
 # AJ-01 — Aisha: from a course idea to an approved catalogue and prospectus
 
-Status: **Proposed narrative v0.7**, 14 November 2026 · [Document status](README.md#status-of-these-documents).
+Status: **Proposed narrative v0.8**, 14 November 2026 · [Document status](README.md#status-of-these-documents).
 
 [Shared scenario and course definition](README.md) · [Narrative catalogue](../academic-journey-narrative-catalogue.md) · [Next connected story: Sam](aj-06-discovery-application-and-arrival.md)
 

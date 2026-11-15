@@ -1,6 +1,6 @@
 # AJ-05 — Changing the curriculum-management provider
 
-Status: **Proposed narrative v0.7**, 14 November 2026 · [Document status](README.md#status-of-these-documents) · [Switch fixture](research-and-partnership-fixture.md) · [Accepted curriculum](README.md#shared-scenario-northbridge-entry-cohort-2030)
+Status: **Proposed narrative v0.8**, 14 November 2026 · [Document status](README.md#status-of-these-documents) · [Switch fixture](research-and-partnership-fixture.md) · [Accepted curriculum](README.md#shared-scenario-northbridge-entry-cohort-2030)
 
 **Perspective:** the curriculum owner, integration lead, Registry and authorised migration reviewers. **Boundary:** a governed provider switch through reconciled authority transfer, preserved history and a demonstrable rollback decision. **Timeline:** t+112 to t+122; the reverse-direction rehearsal uses an isolated copy of the same snapshot. Use the [original t](README.md#timeline-convention).
 
@@ -69,7 +69,7 @@ Apply the [shared exchange convention](README.md#exchange-and-evidence-conventio
 | A05-I04 / F-CM-SIS-01; A01-I03 | New provider → SRS: approved exact release under canonical semantics. | Provider epoch + release + digest. | Atomic accepted receipt or quarantine; IDs/bindings remain stable. |
 | A05-I05 / CM-MIG-008/009; GI-22 | Recovery owner → affected services: approved rollback/corrective releases and reverse-switch scope. | Recovery decision + operation/target. | Reconciled consumed effects and new authority receipt; no blind snapshot restore. |
 
-AJ-39/40 remain unexpanded operational/audit stories. Their required exchange history and reconstruction inputs are defined here, not claimed to be a complete incident or disaster-recovery procedure. An optional ESB transports messages without owning academic or publisher authority.
+[AJ-39](aj-39-integration-failure-and-reconciliation.md) and [AJ-40](aj-40-audit-continuity-and-recovery.md) expand the operational and audit/recovery stories using the exchange history and reconstruction inputs defined here. They remain proposed exercises, not executed incident or disaster-recovery procedures. An optional ESB transports messages without owning academic or publisher authority.
 
 ## Acceptance cases
 

@@ -1,6 +1,6 @@
 # Shared continuation: registration, study and graduation
 
-Status: **Proposed narrative v0.7**, 14 November 2026 · [Document status](README.md#status-of-these-documents). A fictional fixture: discussion and acceptance-test inputs, not university regulations or seed data.
+Status: **Proposed narrative v0.8**, 14 November 2026 · [Document status](README.md#status-of-these-documents). A fictional fixture: discussion and acceptance-test inputs, not university regulations or seed data.
 
 This extends the [Northbridge course and identities](README.md#shared-scenario-northbridge-entry-cohort-2030) for AJ-16–21, AJ-24–26 and AJ-29. It preserves `NBU-EDS@1.0`, `EDS-FT@1.0`, `EDS-2030@1.0`, the `SCI420`/`SCI440` shared modules and the must-pass ethics component. No new curriculum release is implied by writing these stories.
 

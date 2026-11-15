@@ -1,6 +1,6 @@
 # Shared extension: research, partnerships and provision changes
 
-Status: **Proposed narrative v0.7**, 14 November 2026 · [Document status](README.md#status-of-these-documents) · [Earlier extension](change-and-exceptions-fixture.md)
+Status: **Proposed narrative v0.8**, 14 November 2026 · [Document status](README.md#status-of-these-documents) · [Earlier extension](change-and-exceptions-fixture.md)
 
 This extension supplies connected fictional inputs for AJ-04/05/09/11/12/14/30/31/32/33. It preserves the existing EDS versions, closure decision, students and marks. New programmes and external organisations are synthetic starting fixtures requiring approved specifications, agreements and provenance before any executable walkthrough. No national funding, visa, employment or professional-registration rule is asserted here. Applicable external rules and live channels remain deployment inputs owned by qualified institutional staff.
 

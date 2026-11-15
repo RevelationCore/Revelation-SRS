@@ -1,6 +1,6 @@
 # AJ-24 — From assessment entry to confirmed marks
 
-Status: **Proposed narrative v0.7**, 14 November 2026 · [Document status](README.md#status-of-these-documents) · [Shared marks and rules](taught-student-fixture.md#marks-and-results-that-interlock) · [Exam board](aj-25-exam-board-and-ratification.md)
+Status: **Proposed narrative v0.8**, 14 November 2026 · [Document status](README.md#status-of-these-documents) · [Shared marks and rules](taught-student-fixture.md#marks-and-results-that-interlock) · [Exam board](aj-25-exam-board-and-ratification.md)
 
 **Perspective:** Sam, Nina, Ben, assessors, moderators and an examinations officer. **Boundary:** approved assessment definitions and registrations become candidate attempts, examination arrangements and confirmed results for a board. Ratification/publication belong to AJ-25. **Timeline:** t+8 to t+36 for stage 1; final-year example t+132 to t+140. Use the [same t](README.md#timeline-convention).
 

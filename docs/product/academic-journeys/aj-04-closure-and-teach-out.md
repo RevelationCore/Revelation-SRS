@@ -1,6 +1,6 @@
 # AJ-04 — Closing recruitment while honouring existing commitments
 
-Status: **Proposed narrative v0.7**, 14 November 2026 · [Document status](README.md#status-of-these-documents) · [Established closure policy](change-and-exceptions-fixture.md#explicit-additional-policies) · [Programme review](aj-03-programme-review-and-improvement.md)
+Status: **Proposed narrative v0.8**, 14 November 2026 · [Document status](README.md#status-of-these-documents) · [Established closure policy](change-and-exceptions-fixture.md#explicit-additional-policies) · [Programme review](aj-03-programme-review-and-improvement.md)
 
 **Perspective:** the faculty dean, Jo, Admissions and the programme delivery team. **Boundary:** a closure proposal through authorised intake closure, individual commitments and maintained completion provision; historic academic records remain available. **Timeline:** t+76 to t+88, new-entry effect from t+156, and continuing annual review until every affected commitment is resolved. Use [t = 23 September 2030](README.md#timeline-convention).
 

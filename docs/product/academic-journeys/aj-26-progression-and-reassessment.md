@@ -1,6 +1,6 @@
 # AJ-26 — Progressing, resitting or repeating
 
-Status: **Proposed narrative v0.7**, 14 November 2026 · [Document status](README.md#status-of-these-documents) · [Shared rules and marks](taught-student-fixture.md) · [Award completion](aj-29-awards-graduation-and-alumni.md)
+Status: **Proposed narrative v0.8**, 14 November 2026 · [Document status](README.md#status-of-these-documents) · [Shared rules and marks](taught-student-fixture.md) · [Award completion](aj-29-awards-graduation-and-alumni.md)
 
 **Perspective:** Sam, Ben, a progression adviser and Registry. **Boundary:** a ratified academic decision becomes an understandable, authorised next-study or reassessment plan. Annual registration, actual selection and later ratification remain separate actions. **Timeline:** t+40 to t+51, t+92 to t+103, and Ben's t+144 to t+151 branch. Use the [shared t](README.md#timeline-convention).
 

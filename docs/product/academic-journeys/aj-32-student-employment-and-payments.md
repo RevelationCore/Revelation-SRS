@@ -1,6 +1,6 @@
 # AJ-32 — One person, distinct student and employee obligations
 
-Status: **Proposed narrative v0.7**, 14 November 2026 · [Document status](README.md#status-of-these-documents) · [Research fixture](research-and-partnership-fixture.md) · [Research award](aj-33-thesis-examination-and-award.md)
+Status: **Proposed narrative v0.8**, 14 November 2026 · [Document status](README.md#status-of-these-documents) · [Research fixture](research-and-partnership-fixture.md) · [Research award](aj-33-thesis-examination-and-award.md)
 
 **Perspective:** Morgan, a teaching coordinator, HR, Finance and Payroll. **Boundary:** approved teaching employment and separately eligible student support through verified payment and purpose-specific role closure. **Timeline:** first appointment tR+20 to tR+32; second appointment tR+160 to tR+184. Here tR = 22 September 2031 = t+52.
 
@@ -36,7 +36,7 @@ Morgan receives an explanation, owner and expected next action. Payroll's paymen
 
 At the appointment end, HR confirms the employment status and IAM removes only expired employee entitlements. Research study, supervision and eligible student services continue. Teaching evidence and payment history follow their own retention controls. A later replay of the appointment-start event cannot restore an ended role.
 
-A security lock remains independently effective; neither current student status nor a salary instruction is permission to override it. The service desk route is the still-unexpanded AJ-36 boundary, with explicit source and recovery evidence required.
+A security lock remains independently effective; neither current student status nor a salary instruction is permission to override it. [AJ-36](aj-36-access-and-service-support.md) supplies the service-desk route, with explicit source and recovery evidence required.
 
 ### Completion reverses the direction of the test — tR+160 to tR+184
 

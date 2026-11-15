@@ -1,6 +1,6 @@
 # Shared extension: change, exceptions and institutional records
 
-Status: **Proposed narrative v0.7**, 14 November 2026 · [Document status](README.md#status-of-these-documents) · [Original course](README.md#shared-scenario-northbridge-entry-cohort-2030) · [Taught-student continuation](taught-student-fixture.md)
+Status: **Proposed narrative v0.8**, 14 November 2026 · [Document status](README.md#status-of-these-documents) · [Original course](README.md#shared-scenario-northbridge-entry-cohort-2030) · [Taught-student continuation](taught-student-fixture.md)
 
 This fixture connects AJ-02/03/07/08/22/23/27/28/34/38. It adds fictional decisions for discussion and future acceptance tests. It does not replace the original students' histories, approve institutional policy or create application data. An independent scene receives only evidence available at its start; a connected run must produce that evidence in its owning story.
 

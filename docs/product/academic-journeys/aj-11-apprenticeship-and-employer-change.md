@@ -1,6 +1,6 @@
 # AJ-11 — Learning across employment and university
 
-Status: **Proposed narrative v0.7**, 14 November 2026 · [Document status](README.md#status-of-these-documents) · [Ada's fixture](research-and-partnership-fixture.md) · [Study changes](aj-28-study-change-and-return.md)
+Status: **Proposed narrative v0.8**, 14 November 2026 · [Document status](README.md#status-of-these-documents) · [Ada's fixture](research-and-partnership-fixture.md) · [Study changes](aj-28-study-change-and-return.md)
 
 **Perspective:** Ada, an employer mentor, the apprenticeship administrator and the academic programme lead. **Boundary:** agreed learning/employment/funding responsibilities through university study, employer change and separately evidenced academic and occupational completion. **Timeline:** entry tX-16 to tX+1; employer change tX+20 to tX+24; later completion uses a separately supplied final-stage snapshot. tX = 20 September 2032 = t+104.
 

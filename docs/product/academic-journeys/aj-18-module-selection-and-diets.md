@@ -1,6 +1,6 @@
 # AJ-18 — Building a valid individual course diet
 
-Status: **Proposed narrative v0.7**, 14 November 2026 · [Document status](README.md#status-of-these-documents) · [Shared continuation](taught-student-fixture.md) · [Timetabling](aj-19-timetabling-and-estates.md)
+Status: **Proposed narrative v0.8**, 14 November 2026 · [Document status](README.md#status-of-these-documents) · [Shared continuation](taught-student-fixture.md) · [Timetabling](aj-19-timetabling-and-estates.md)
 
 **Perspective:** Sam, an academic adviser and a module-capacity owner. **Boundary:** draft study choices through confirmed, versioned registrations and consumer acknowledgements. Academic definition belongs to CM; enrolment to AJ-16; delivery allocations to AJ-19. **Timeline:** t-3 to t+2, then t+40 to t+50 and t+92 to t+102. The [original t anchor](README.md#timeline-convention) never resets.
 

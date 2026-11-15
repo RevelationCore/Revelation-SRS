@@ -1,6 +1,6 @@
 # Expanded academic journeys
 
-Status: **Proposed narrative specifications v0.7**, 14 November 2026. See [status of these documents](#status-of-these-documents).
+Status: **Proposed narrative specifications v0.8**, 14 November 2026. See [status of these documents](#status-of-these-documents).
 
 [Narrative catalogue](../academic-journey-narrative-catalogue.md) · [Product documentation](../README.md)
 
@@ -15,9 +15,12 @@ Status: **Proposed narrative specifications v0.7**, 14 November 2026. See [statu
 | AJ-07 | [Clearing, deferral and changed plans](aj-07-clearing-deferral-and-changed-plans.md) |
 | AJ-08 | [Part-time entry and prior learning](aj-08-part-time-entry-and-prior-learning.md) |
 | AJ-09 | [International postgraduate entry](aj-09-international-postgraduate-entry.md) |
+| AJ-10 | [Distance learning and online support](aj-10-distance-learning-and-online-support.md) |
 | AJ-11 | [Apprenticeships and employer change](aj-11-apprenticeship-and-employer-change.md) |
 | AJ-12 | [Partner delivery and award authority](aj-12-partner-delivery-and-award-authority.md) |
+| AJ-13 | [Mobility and credit recognition](aj-13-mobility-and-credit-recognition.md) |
 | AJ-14 | [Placements and practice learning](aj-14-placement-and-practice-learning.md) |
+| AJ-15 | [Short courses and credit stacking](aj-15-short-courses-and-credit-stacking.md) |
 | AJ-16 | [Registration and entitlements](aj-16-registration-and-entitlements.md) |
 | AJ-17 | [Campus, accommodation and library](aj-17-campus-accommodation-and-library.md) |
 | AJ-18 | [Module selection and course diets](aj-18-module-selection-and-diets.md) |
@@ -37,9 +40,14 @@ Status: **Proposed narrative specifications v0.7**, 14 November 2026. See [statu
 | AJ-32 | [Student employment and payments](aj-32-student-employment-and-payments.md) |
 | AJ-33 | [Thesis examination and research award](aj-33-thesis-examination-and-award.md) |
 | AJ-34 | [Reporting and statutory returns](aj-34-reporting-and-statutory-returns.md) |
+| AJ-35 | [Analytics, feedback and improvement](aj-35-analytics-feedback-and-improvement.md) |
+| AJ-36 | [Access and service support](aj-36-access-and-service-support.md) |
+| AJ-37 | [Publication and communications](aj-37-publication-and-communications.md) |
 | AJ-38 | [Records, information rights and retention](aj-38-records-rights-and-retention.md) |
+| AJ-39 | [Integration failure and reconciliation](aj-39-integration-failure-and-reconciliation.md) |
+| AJ-40 | [Audit, continuity and recovery](aj-40-audit-continuity-and-recovery.md) |
 
-Thirty-two narratives are now expanded. The documents share the fictional scenario below and the [taught-student continuation](taught-student-fixture.md), which fixes the later policies, marks, roles and calendar. Each later story states its own independent starting pack and consumes preceding evidence in a connected run. The [change and exceptions extension](change-and-exceptions-fixture.md) adds the new students, policy branches, shared-module revision, future course release and Jo’s separately anchored part-time plan. The [research and partnerships extension](research-and-partnership-fixture.md) connects provision changes, international admission, employer/partner learning and the doctoral lifecycle. Eight catalogue narratives remain to expand: AJ-10, AJ-13, AJ-15, AJ-35, AJ-36, AJ-37, AJ-39 and AJ-40.
+All forty catalogue narratives are now expanded. The documents share the fictional scenario below and the [taught-student continuation](taught-student-fixture.md), which fixes the later policies, marks, roles and calendar. Each later story states its own independent starting pack and consumes preceding evidence in a connected run. The [change and exceptions extension](change-and-exceptions-fixture.md) adds the new students, policy branches, shared-module revision, future course release and Jo’s separately anchored part-time plan. The [research and partnerships extension](research-and-partnership-fixture.md) connects provision changes, international admission, employer/partner learning and the doctoral lifecycle. The [flexible-learning and service extension](flexible-learning-and-service-fixture.md) adds distance learning, mobility, short courses, analytics, access support, communications, integration operations and audit/recovery.
 
 The first two documents establish the course and admissions hand-off. They are independently readable: AJ-01 begins before approval; AJ-06 begins with an approved, published release supplied as its starting fixture. In a connected walkthrough, AJ-01 must actually produce the evidence that AJ-06 assumes.
 
@@ -187,7 +195,7 @@ Document structure, links, identifiers, the anchor-date arithmetic, simple credi
 
 Three scenario choices in AJ-01 and AJ-06 are Northbridge policy defaults, chosen to make the stories concrete and open to reversal at review: the composition of the approval panel (including external and student members), the must-pass ethics component, and no advertising or offers before approval (two separate settings).
 
-The continuation adds explicit scenario defaults for registration, selection, assessment, progression, board authority, award classification and service closure. Four of them were settled at review and can also be reversed: a capped reassessment counts at its capped mark for classification; Nina's first-year adjustment runs to the end of the academic year (t+51); exam boards receive no reasonable-adjustment information by default; and field-study capacity is added as a second field-trip cohort. They remain proposed fictional policy choices, not changes to the application or institutional approval. AJ-22/23/27/28/34/38 now have expanded hand-offs, alongside AJ-02/03/07/08. AJ-35/37/39/40 and the other unexpanded catalogue entries remain discovery work; references to them identify required inputs or outcomes without asserting complete contracts.
+The continuation adds explicit scenario defaults for registration, selection, assessment, progression, board authority, award classification and service closure. Four of them were settled at review and can also be reversed: a capped reassessment counts at its capped mark for classification; Nina's first-year adjustment runs to the end of the academic year (t+51); exam boards receive no reasonable-adjustment information by default; and field-study capacity is added as a second field-trip cohort. They remain proposed fictional policy choices, not changes to the application or institutional approval. AJ-22/23/27/28/34/38 now have expanded hand-offs, alongside AJ-02/03/07/08. The remaining catalogue entries are now expanded at v0.8, including AJ-35/37/39/40. Their interactions are proposed contracts requiring review, not delivered integrations.
 
 
 ### Extension review and chronology
@@ -204,7 +212,18 @@ Historical authoring checks at v0.6 (13 November 2026): the set contained 22 sto
 
 Version 0.7 expands AJ-04/05/09/11/12/14 and AJ-30–33. The selection completes the funded-doctorate-to-award thread, exercises separate student/employee roles, adds international, apprenticeship, partner and placement perspectives, and defines closure and bidirectional curriculum-provider change. Each is a proposed story with its own starting pack, authority, weekly walkthrough, interactions, exception cases and review owners.
 
-The [shared fixture](research-and-partnership-fixture.md) fixes tR and tX against the original t, Morgan's funding/payments/examination, Mei/Ada/Noah/Rina's separate programmes and the provider-switch scope. AJ-04 preserves the reviewed part-time closure; AJ-05 preserves accepted curriculum history and active bindings. The remaining eight stories cover distance learning, mobility, short courses, analytics, access support, communications, integration operations and audit/recovery.
+The [shared fixture](research-and-partnership-fixture.md) fixes tR and tX against the original t, Morgan's funding/payments/examination, Mei/Ada/Noah/Rina's separate programmes and the provider-switch scope. AJ-04 preserves the reviewed part-time closure; AJ-05 preserves accepted curriculum history and active bindings. The final eight stories are added in the v0.8 extension below.
 
 
-Authoring checks at v0.7 (14 November 2026): 32 stories, 207 scenes, 164 interaction specifications and 282 proposed acceptance cases. This batch adds 60 scenes, 50 interactions and 80 cases. Repository documentation links passed; 369 local narrative links/anchors, identifiers, table structure and requirement/process references were checked. All 29 new anchor conversions, summary ordering, research authority sequence, 36-instalment stipend budget, teaching claim, placement hours and master's planned-credit arithmetic passed. The reviewed earlier policies and Sam/Ben award calculations remain unchanged. These checks do not execute application journeys or establish institutional, funding, immigration, employment or professional approval.
+Historical authoring checks at v0.7 (14 November 2026): 32 stories, 207 scenes, 164 interaction specifications and 282 proposed acceptance cases. This batch adds 60 scenes, 50 interactions and 80 cases. Repository documentation links passed; 369 local narrative links/anchors, identifiers, table structure and requirement/process references were checked. All 29 new anchor conversions, summary ordering, research authority sequence, 36-instalment stipend budget, teaching claim, placement hours and master's planned-credit arithmetic passed. The reviewed earlier policies and Sam/Ben award calculations remain unchanged. These checks do not execute application journeys or establish institutional, funding, immigration, employment or professional approval.
+
+
+### Flexible learning and service continuity extension
+
+Version 0.8 completes the catalogue with AJ-10/13/15/35/36/37/39/40. The [shared fixture](flexible-learning-and-service-fixture.md) introduces Farah's online master's, Luca's outbound mobility, Tessa's visiting study and Dev's short-course-to-award application, each with separate records and approval gates. It also fixes the survey denominators, notice versions, isolated integration exercises and proposed recovery objectives. Existing t, tR and tX anchors and the reviewed earlier histories are retained.
+
+The service stories supply AJ-03's feedback pack, consume its approved public release, restore Farah's learning access, preserve Morgan's independent employee role, recover Nina's examination-service receipt and reconstruct Priya's distinct correction history. Internal and optional ESB routes share the same domain authority. AJ-40 distinguishes currently supported Temporal processes from other execution models and requires reconciliation of workflow state, security/records controls and external effects before recovered service is accepted.
+
+Authoring checks at v0.8 (14 November 2026): 40 stories, 255 scenes, 204 interaction specifications and 346 proposed acceptance cases; this batch adds 48 scenes, 40 interactions and 64 cases. The 474 local narrative links/anchors, identifiers, table structure, reference-flow and requirement/process references, 19 explicit new-fixture anchor conversions and the stated credit/payment/survey arithmetic were checked. Repository documentation link checks passed across 260 Markdown files. The catalogue retains 40 narrative IDs, 24 candidate interaction gaps and primary assignments for all 69 reference-model interactions across 33 systems/actors. These are document consistency checks, not executed acceptance cases, measured recovery results, implemented integrations or institutional approval.
+
+No catalogue story remains unwritten. Next work is owner review of the proposed policies/contracts, conversion of selected starting packs into executable fixtures, implementation-gap prioritisation and then evidence-producing walkthroughs. Additional real-world interactions may still emerge; completing the catalogue does not prove exhaustive operational coverage.

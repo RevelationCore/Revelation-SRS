@@ -1,6 +1,6 @@
 # AJ-14 — Learning in practice
 
-Status: **Proposed narrative v0.7**, 14 November 2026 · [Document status](README.md#status-of-these-documents) · [Placement fixture](research-and-partnership-fixture.md) · [Assessment](aj-24-assessment-and-results.md)
+Status: **Proposed narrative v0.8**, 14 November 2026 · [Document status](README.md#status-of-these-documents) · [Placement fixture](research-and-partnership-fixture.md) · [Assessment](aj-24-assessment-and-results.md)
 
 **Perspective:** Rina, a placement coordinator, a host supervisor and the university's practice-learning lead. **Boundary:** approved placement and readiness through supervised evidence, replacement when delivery fails, and a separately authorised academic result. **Timeline:** tX+4 to tX+30, with moderation at tX+32, ratification at tX+40 and publication at tX+41, where tX = 20 September 2032 = t+104 is Rina's placement-year anchor. Her original entry at t+52 remains in her enrolment history.
 

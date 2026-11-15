@@ -1,6 +1,6 @@
 # AJ-28 — Life changes the study plan
 
-Status: **Proposed narrative v0.7**, 14 November 2026 · [Document status](README.md#status-of-these-documents) · [Extension fixture](change-and-exceptions-fixture.md) · [Engagement referral](aj-23-engagement-and-intervention.md)
+Status: **Proposed narrative v0.8**, 14 November 2026 · [Document status](README.md#status-of-these-documents) · [Extension fixture](change-and-exceptions-fixture.md) · [Engagement referral](aj-23-engagement-and-intervention.md)
 
 **Perspective:** Omar, a Registry caseworker, his programme adviser and affected service owners. **Boundary:** requested change through an effective-dated decision and reconciled services, then a separately approved return. **Timeline:** interruption t+12 to t+20, across the winter closure at t+13 to t+15; return review t+88 to t+104 and resumed teaching t+105. The [original t](README.md#timeline-convention) does not reset when Omar returns.
 
@@ -20,7 +20,7 @@ The academic authority withdraws the affected unfinished attempts without assign
 
 ### Services act on the same dated decision — t+18 to t+20
 
-Attendance updates future expectations; teaching systems end or limit the relevant memberships; IAM applies the specified entitlement dates. Housing reviews its contract and library services apply their own rules. A change in academic status is not permission to delete Omar's account, terminate an accommodation agreement without review or remove an independent employee role.
+Attendance updates future expectations; teaching systems end or limit the relevant memberships; IAM applies the specified entitlement dates. CRM receives the minimum dated lifecycle change so routine active-student messages stop or change appropriately; [AJ-37](aj-37-publication-and-communications.md) governs the recipient-specific communication. Housing reviews its contract and library services apply their own rules. A change in academic status is not permission to delete Omar's account, terminate an accommodation agreement without review or remove an independent employee role.
 
 Each receiver acknowledges the version it applied. If a housing receipt is lost, the operator queries the booking state and retries safely. Registry shows the valid interruption alongside outstanding service work. Any applicable student-finance or sponsor notification needs its own eligibility and signatory; Omar is not assumed to require either route.
 
@@ -66,7 +66,7 @@ Apply the [shared exchange convention](README.md#exchange-and-evidence-conventio
 |---|---|---|---|
 | A28-I01 / F-EWP-SIS-01; BP-02-006–009 | Student → Registry: requested change, current enrolment version, dates and restricted evidence references. | Request revision; own-record authority. | Owned case and impact review; stale enrolment basis reconciled. |
 | A28-I02 / BP-02-007/008; GI-22 | Authorised Registry command → core: decision, effect/recorded dates, academic plan and permitted consequences. | Case decision + expected enrolment version. | New dated status with predecessor retained; retry returns same decision. |
-| A28-I03 / A16-I03b, A16-I04, A17-I01, A17-I03, A20-I01 | Core → Finance, IAM, library, housing and teaching owners: minimum status/registration changes. | Status/registration version + destination. | Per-service applied state; failed recipient does not undo academic authority. |
+| A28-I03 / F-SIS-CRM-01; A16-I03b, A16-I04, A17-I01, A17-I03, A20-I01 | Core → CRM, Finance, IAM, library, housing and teaching owners: minimum status/registration changes. | Status/registration version + destination. | Per-service applied state; failed recipient does not undo academic authority. |
 | A28-I04 / A18-I02/I03; CM-VER-009 | Registry ↔ academic/selection owners: retained binding, attempts, equivalence if needed, capacity and return plan. | Return-plan revision; academic then registration authority. | Approved feasible plan and confirmed registrations; missing delivery blocks readiness. |
 | A28-I05 / A34-I05; ENR-006 | Registry → reporting owner where applicable: authorised dated status, scheme/sponsor context and source reference. | Change version + reporting obligation. | Eligible signatory-controlled notification/receipt; no automatic sponsor action. |
 

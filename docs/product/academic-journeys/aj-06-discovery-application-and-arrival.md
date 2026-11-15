@@ -1,6 +1,6 @@
 # AJ-06 — Sam: from university discovery to arrival and first teaching
 
-Status: **Proposed narrative v0.7**, 14 November 2026 · [Document status](README.md#status-of-these-documents).
+Status: **Proposed narrative v0.8**, 14 November 2026 · [Document status](README.md#status-of-these-documents).
 
 [Shared scenario and course definition](README.md) · [Narrative catalogue](../academic-journey-narrative-catalogue.md) · [Preceding course-approval story](aj-01-course-creation-and-publication.md)
 

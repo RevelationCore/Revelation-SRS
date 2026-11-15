@@ -1,6 +1,6 @@
 # AJ-31 — Sustaining a research project over several years
 
-Status: **Proposed narrative v0.7**, 14 November 2026 · [Document status](README.md#status-of-these-documents) · [Research fixture](research-and-partnership-fixture.md) · [Thesis examination](aj-33-thesis-examination-and-award.md)
+Status: **Proposed narrative v0.8**, 14 November 2026 · [Document status](README.md#status-of-these-documents) · [Research fixture](research-and-partnership-fixture.md) · [Thesis examination](aj-33-thesis-examination-and-award.md)
 
 **Perspective:** Morgan, the supervisors, a PGR administrator and independent progress reviewers. **Boundary:** approved supervision and research context through evidenced progress, corrective actions and versioned team changes. **Timeline:** tR-6 to tR+156, with tR = 22 September 2031 = t+52. The original candidature anchor never resets at an annual review.
 

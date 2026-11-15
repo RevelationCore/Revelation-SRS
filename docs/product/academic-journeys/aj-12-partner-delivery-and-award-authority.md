@@ -1,6 +1,6 @@
 # AJ-12 — One course across institutional boundaries
 
-Status: **Proposed narrative v0.7**, 14 November 2026 · [Document status](README.md#status-of-these-documents) · [Partner fixture](research-and-partnership-fixture.md) · [Assessment](aj-24-assessment-and-results.md)
+Status: **Proposed narrative v0.8**, 14 November 2026 · [Document status](README.md#status-of-these-documents) · [Partner fixture](research-and-partnership-fixture.md) · [Assessment](aj-24-assessment-and-results.md)
 
 **Perspective:** Noah, Riverside College's registrar, Northbridge's partnership manager and the academic board. **Boundary:** approved collaborative responsibilities through reconciled registrations, assessed evidence and correctly authorised award decisions. **Timeline:** tX-20 to tX+41 for entry and first results; a later completion snapshot is separately supplied. tX = 20 September 2032 = t+104.
 

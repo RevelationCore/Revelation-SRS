@@ -1,6 +1,6 @@
 # AJ-25 — Evidence becomes a ratified academic decision
 
-Status: **Proposed narrative v0.7**, 14 November 2026 · [Document status](README.md#status-of-these-documents) · [Shared continuation](taught-student-fixture.md) · [Progression](aj-26-progression-and-reassessment.md)
+Status: **Proposed narrative v0.8**, 14 November 2026 · [Document status](README.md#status-of-these-documents) · [Shared continuation](taught-student-fixture.md) · [Progression](aj-26-progression-and-reassessment.md)
 
 **Perspective:** the Registry board secretary, an external examiner, the chair and students awaiting results. **Boundary:** controlled assessment evidence through an authorised board, locked decisions and separately authorised publication. Award conferral is AJ-29. **Timeline:** t+36 to t+40, t+88 to t+92 and t+140 to t+144; Ben's supplementary board is t+150 with publication t+151. Use the [original t](README.md#timeline-convention).
 
