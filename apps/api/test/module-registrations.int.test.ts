@@ -112,6 +112,27 @@ describe('Module registrations', () => {
       ]);
   });
 
+  it('rejects a transition dated on or before the registration became valid', async () => {
+    const moduleId = await createModule('REG102C', 'Backdated Transition Module');
+    const moduleOfferingId = await createOffering(moduleId, 20);
+    const moduleRegistrationId = await createRegistration(enrolmentId, moduleOfferingId);
+
+    const withdraw = await ctx.app.inject({
+      method: 'POST',
+      url: `/api/v1/module-registrations/${moduleRegistrationId}/withdrawal`,
+      headers: { authorization: `Bearer ${jwt}` },
+      payload: { validFrom: '2026-09-15T00:00:00.000Z' },
+    });
+    expect(withdraw.statusCode).toBe(422);
+
+    const get = await ctx.app.inject({
+      method: 'GET',
+      url: `/api/v1/module-registrations/${moduleRegistrationId}`,
+      headers: { authorization: `Bearer ${jwt}` },
+    });
+    expect(get.json<{ statusCode: string }>().statusCode).toBe('registered');
+  });
+
   it('rejects transitions once a module registration is no longer registered', async () => {
     const moduleId = await createModule('REG102B', 'Closed Registration Module');
     const moduleOfferingId = await createOffering(moduleId, 20);
@@ -701,6 +722,9 @@ async function createRegistration(enrolmentId_: string, moduleOfferingId: string
       enrolmentId: enrolmentId_,
       moduleOfferingId,
       registrationDate: '2026-10-01',
+      // Explicit so later backdated transitions (e.g. 1 November) fall after
+      // the registration's own start whatever today's date is.
+      validFrom: '2026-10-01T00:00:00.000Z',
     },
   });
   expect(res.statusCode).toBe(201);

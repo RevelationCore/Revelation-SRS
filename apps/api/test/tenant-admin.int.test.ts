@@ -141,6 +141,8 @@ describe('Academic rules', () => {
         ruleValue: { mark: 40 },
         description: 'Default undergraduate pass mark',
         appliesToLevel: 4,
+        // Before the 1 September change below, whatever today's date is.
+        validFrom: '2026-08-01T00:00:00.000Z',
       },
     });
     expect(create.statusCode).toBe(201);
@@ -190,6 +192,17 @@ describe('Academic rules', () => {
         { ruleValue: { mark: 40 } },
         { ruleValue: { mark: 45 }, recordedUntil: null },
       ]);
+  });
+
+  it('rejects an academic rule change dated on or before the current version began', async () => {
+    const jwt = await ctx.makeJwt({ roles: ['tenant-administrator'] });
+    const patch = await ctx.app.inject({
+      method: 'PATCH',
+      url: `/api/v1/academic-rules/${academicRuleId}`,
+      headers: { authorization: `Bearer ${jwt}` },
+      payload: { ruleValue: { mark: 50 }, validFrom: '2026-08-15T00:00:00.000Z' },
+    });
+    expect(patch.statusCode).toBe(422);
   });
 
   it('does not expose academic rules to a different tenant', async () => {

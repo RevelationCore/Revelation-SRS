@@ -368,6 +368,7 @@ describe('Module registration events', () => {
         enrolmentId:      regEnrolmentId,
         moduleOfferingId,
         registrationDate: '2026-10-01',
+        validFrom:        '2026-10-01T00:00:00.000Z',
       },
     });
     expect(res.statusCode).toBe(201);
@@ -418,6 +419,7 @@ describe('Module registration events', () => {
         enrolmentId:      regEnrolmentId,
         moduleOfferingId,
         registrationDate: '2026-10-01',
+        validFrom:        '2026-10-01T00:00:00.000Z',
       },
     });
     expect(regRes.statusCode).toBe(201);

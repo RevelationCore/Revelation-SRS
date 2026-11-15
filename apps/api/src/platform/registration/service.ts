@@ -685,6 +685,13 @@ export class ModuleRegistrationService {
     if (current.statusCode !== 'registered') {
       throw new ValidationError(`Cannot transition module registration from '${current.statusCode}' to '${newStatus}'`);
     }
+    // The current version's valid period ends where the new status begins, so
+    // the transition cannot take effect on or before that version's own start.
+    if (validFrom <= current.validFrom) {
+      throw new ValidationError(
+        `validFrom must be after the current version's validFrom (${current.validFrom.toISOString()})`,
+      );
+    }
 
     const now = clockNow();
     await withTenantContext(this.db, tenantId, async (tx) => {

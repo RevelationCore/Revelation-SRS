@@ -8,7 +8,7 @@ import {
   type Db,
   withTenantContext,
 } from '@revelation-srs/db';
-import { ConflictError, NotFoundError } from '@revelation-srs/domain';
+import { ConflictError, NotFoundError, ValidationError } from '@revelation-srs/domain';
 
 import { clockNow } from '../clock.js';
 
@@ -209,6 +209,13 @@ export class TenantAdminService {
 
       const now = clockNow();
       const validFrom = input.validFrom ?? now;
+      // The current version's valid period ends where the new one begins, so
+      // the change cannot take effect on or before that version's own start.
+      if (validFrom <= current.validFrom) {
+        throw new ValidationError(
+          `validFrom must be after the current version's validFrom (${current.validFrom.toISOString()})`,
+        );
+      }
       await tx
         .update(academicRules)
         .set({ recordedUntil: now, validTo: validFrom })

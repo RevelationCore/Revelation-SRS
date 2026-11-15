@@ -302,7 +302,7 @@ export function tenantAdminRoutes(fastify: FastifyInstance): void {
       schema: {
         params: Type.Object({ academicRuleId: Type.String() }),
         body: AcademicRulePatchBody,
-        response: { 204: Type.Null(), 404: ErrorSchema },
+        response: { 204: Type.Null(), 404: ErrorSchema, 422: ErrorSchema },
       },
       preHandler: [requirePermission('rule:write')],
     },
