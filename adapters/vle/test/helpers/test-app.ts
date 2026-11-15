@@ -89,6 +89,7 @@ export async function startTestApp(): Promise<TestVleApp> {
     vleEndpointUrl:            stubVleBaseUrl,
     vlePlatform:               'stub',
     vleApiToken:               undefined,
+    moodleStrategy:            'groups',
     consumerEnabled:           false,
     reconcileIntervalMs:       0,
     endpointSafetyClass:       'simulator',

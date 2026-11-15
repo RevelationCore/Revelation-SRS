@@ -84,6 +84,33 @@ $instance = $DB->get_record('enrol', ['courseid' => $course->id, 'enrol' => 'man
 $studentRole = $DB->get_field('role', 'id', ['shortname' => 'student'], MUST_EXIST);
 enrol_get_plugin('manual')->enrol_user($instance, $user->id, $studentRole);
 
+// Quizzes for the quiz-override strategy: a 60-minute timed quiz, an untimed
+// quiz, and a 30-minute quiz on which staff already have an override for
+// the student (which the driver must leave alone).
+$functions2 = ['mod_quiz_get_quizzes_by_courses', 'mod_quiz_get_overrides', 'mod_quiz_save_overrides', 'mod_quiz_delete_overrides'];
+foreach ($functions2 as $f) {
+    if (!$DB->record_exists('external_services_functions', ['externalserviceid' => $service->id, 'functionname' => $f])) {
+        $DB->insert_record('external_services_functions', (object) ['externalserviceid' => $service->id, 'functionname' => $f]);
+    }
+}
+require_once($CFG->libdir . '/testing/generator/lib.php');
+$generator = new testing_data_generator();
+$quizzes = [];
+foreach ([['SRS timed quiz (60 min)', 3600], ['SRS untimed quiz', 0], ['SRS quiz with staff override (30 min)', 1800]] as [$name, $limit]) {
+    $quiz = $DB->get_record('quiz', ['course' => $course->id, 'name' => $name]);
+    if (!$quiz) {
+        $quiz = $generator->create_module('quiz', ['course' => $course->id, 'name' => $name, 'timelimit' => $limit]);
+    }
+    $quizzes[$name] = (int) $quiz->id;
+}
+$staffQuiz = $quizzes['SRS quiz with staff override (30 min)'];
+if (!$DB->record_exists('quiz_overrides', ['quiz' => $staffQuiz, 'userid' => $user->id])) {
+    $DB->insert_record('quiz_overrides', (object) [
+        'quiz' => $staffQuiz, 'userid' => $user->id, 'timeclose' => time() + 30 * 86400,
+        'reason' => 'Staff: deadline extension', 'reasonformat' => FORMAT_PLAIN,
+    ]);
+}
+
 echo json_encode([
     'release' => $CFG->release,
     'token' => $token,
@@ -91,4 +118,9 @@ echo json_encode([
     'personId' => $personId,
     'userId' => (int) $user->id,
     'probe' => $probe,
+    'quizzes' => [
+        'timed' => $quizzes['SRS timed quiz (60 min)'],
+        'untimed' => $quizzes['SRS untimed quiz'],
+        'staffOverride' => $staffQuiz,
+    ],
 ]), "\n";

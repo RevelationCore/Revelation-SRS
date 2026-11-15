@@ -8,7 +8,7 @@
  */
 import { describe, expect, it } from 'vitest';
 
-import { MoodleDriver, SRS_TIME_GROUP_PREFIX } from '../src/vle-platforms/moodle-driver.js';
+import { MoodleDriver, SRS_OVERRIDE_REASON, SRS_TIME_GROUP_PREFIX } from '../src/vle-platforms/moodle-driver.js';
 
 const url = process.env['MOODLE_URL'];
 const token = process.env['MOODLE_TOKEN'];
@@ -77,5 +77,56 @@ describe.skipIf(!configured)('MoodleDriver against a real Moodle', () => {
   it('rejects an unknown student as a driver error', async () => {
     await expect(driver.setTimeAccommodation({ vleCourseId: courseId!, personId: '00000000-0000-4000-8000-000000000000' }, 25))
       .rejects.toThrow(/no user/);
+  });
+});
+
+describe.skipIf(!configured)('MoodleDriver quiz-overrides strategy against a real Moodle', () => {
+  const driver = new MoodleDriver(url!, token!, fetch, 'quiz-overrides');
+  const target = { vleCourseId: courseId!, personId: personId! };
+
+  interface Override { id: number; userid: number | null; timelimit: number | null; timeclose: number | null; reason: string | null }
+
+  async function quizzesByName(): Promise<Record<string, { id: number; timelimit: number }>> {
+    const { quizzes } = await ws<{ quizzes: Array<{ id: number; name: string; timelimit: number }> }>('mod_quiz_get_quizzes_by_courses', { 'courseids[0]': courseId! });
+    return Object.fromEntries(quizzes.map((q) => [q.name, { id: q.id, timelimit: q.timelimit }]));
+  }
+
+  async function overrideFor(quizId: number): Promise<Override | undefined> {
+    const [user] = await ws<Array<{ id: number }>>('core_user_get_users_by_field', { field: 'idnumber', 'values[0]': personId! });
+    const { overrides } = await ws<{ overrides: Override[] }>('mod_quiz_get_overrides', { quizid: quizId });
+    return overrides.find((o) => o.userid === user!.id);
+  }
+
+  it('gives the student the extra time on each timed quiz (60 min + 25% = 75)', async () => {
+    await driver.setTimeAccommodation(target, 0);
+    const result = await driver.setTimeAccommodation(target, 25);
+    const q = await quizzesByName();
+
+    const timed = await overrideFor(q['SRS timed quiz (60 min)']!.id);
+    expect(timed).toMatchObject({ timelimit: 4500, reason: SRS_OVERRIDE_REASON });
+    expect(await overrideFor(q['SRS untimed quiz']!.id)).toBeUndefined();
+    expect(result.warnings).toEqual([expect.stringContaining('staff override')]);
+  });
+
+  it('leaves a staff override untouched', async () => {
+    const q = await quizzesByName();
+    const staff = await overrideFor(q['SRS quiz with staff override (30 min)']!.id);
+    expect(staff).toMatchObject({ reason: 'Staff: deadline extension', timelimit: null });
+    expect(staff!.timeclose).toBeGreaterThan(0);
+  });
+
+  it('is idempotent, and updates the limit when the entitlement changes (41.67% of 60 = +26)', async () => {
+    expect((await driver.setTimeAccommodation(target, 25)).changes).toBe(0);
+
+    await driver.setTimeAccommodation(target, 41.67);
+    const q = await quizzesByName();
+    expect((await overrideFor(q['SRS timed quiz (60 min)']!.id))?.timelimit).toBe(3600 + 26 * 60);
+  });
+
+  it('deletes only its own overrides at 0', async () => {
+    await driver.setTimeAccommodation(target, 0);
+    const q = await quizzesByName();
+    expect(await overrideFor(q['SRS timed quiz (60 min)']!.id)).toBeUndefined();
+    expect(await overrideFor(q['SRS quiz with staff override (30 min)']!.id)).toMatchObject({ reason: 'Staff: deadline extension' });
   });
 });

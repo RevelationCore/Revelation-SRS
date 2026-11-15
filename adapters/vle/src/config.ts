@@ -13,6 +13,8 @@ export interface Config {
   vlePlatform:               'stub' | 'canvas' | 'moodle';
   /** Canvas access token or Moodle web-service token (not used by stub). */
   vleApiToken:               string | undefined;
+  /** Moodle only: quiz-overrides (default; Moodle 5.3+) or groups. */
+  moodleStrategy:            'groups' | 'quiz-overrides';
   /** Start the NATS consumer (off for tests that call dispatch() directly). */
   consumerEnabled:           boolean;
   /** Interval for adjustment acknowledgement and coverage reconciliation; 0 disables. */
@@ -45,8 +47,13 @@ export function loadConfig(): Config {
   if (platform === 'stub' && safetyClass === 'live') {
     throw new Error('VLE_PLATFORM=stub cannot be used with ENDPOINT_SAFETY_CLASS=live');
   }
+  const moodleStrategy = process.env['MOODLE_ADJUSTMENT_STRATEGY'] ?? 'quiz-overrides';
+  if (moodleStrategy !== 'groups' && moodleStrategy !== 'quiz-overrides') {
+    throw new Error(`Invalid MOODLE_ADJUSTMENT_STRATEGY: ${moodleStrategy}`);
+  }
   return {
     vlePlatform:             platform,
+    moodleStrategy,
     vleApiToken:             process.env['VLE_API_TOKEN'],
     consumerEnabled:         (process.env['VLE_CONSUMER_ENABLED'] ?? 'true') !== 'false',
     reconcileIntervalMs:     optionalInt('RECONCILE_INTERVAL_MS', 300_000),

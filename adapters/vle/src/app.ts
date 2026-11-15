@@ -78,7 +78,7 @@ export async function buildApp(
   fastify.decorate('vleClient', effectiveVleClient);
   fastify.decorate(
     'platformDriver',
-    opts.platformDriver ?? createPlatformDriver(config.vlePlatform, config.vleEndpointUrl, config.vleApiToken),
+    opts.platformDriver ?? createPlatformDriver(config.vlePlatform, config.vleEndpointUrl, config.vleApiToken, { moodleStrategy: config.moodleStrategy }),
   );
 
   // Load registration from SRS on startup.

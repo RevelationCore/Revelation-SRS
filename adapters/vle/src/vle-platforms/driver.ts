@@ -30,6 +30,8 @@ export interface PersonInCourse {
 export interface AccommodationResult {
   /** Platform writes made (quizzes updated, group memberships changed). */
   changes: number;
+  /** Where the platform could not hold the accommodation, and why (no personal data). */
+  warnings?: string[];
 }
 
 export interface VlePlatformDriver {

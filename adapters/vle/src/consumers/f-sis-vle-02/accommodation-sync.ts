@@ -7,6 +7,8 @@ import { findActiveCoursesForPerson, findInForceAdjustments, type AdjustmentMapR
 export interface SyncSummary {
   courses: number;
   changes: number;
+  /** Where the VLE could not hold the accommodation (e.g. a staff override). */
+  warnings: string[];
 }
 
 /**
@@ -35,14 +37,16 @@ export async function syncPersonAccommodations(
 
   let changes = 0;
   let synced = 0;
+  const warnings: string[] = [];
   for (const course of courses) {
     if (onlyVleCourseId && course.vleCourseId !== onlyVleCourseId) continue;
     const percent = combinedExtraTimePercent(adjustments.filter((a) => a.enrolmentId === course.enrolmentId));
     const result = await driver.setTimeAccommodation({ vleCourseId: course.vleCourseId, personId }, percent);
     changes += result.changes;
+    warnings.push(...(result.warnings ?? []));
     synced += 1;
   }
-  return { courses: synced, changes };
+  return { courses: synced, changes, warnings };
 }
 
 function inValidPeriod(a: AdjustmentMapRow, now: Date): boolean {

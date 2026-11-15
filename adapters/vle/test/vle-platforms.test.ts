@@ -6,7 +6,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { CanvasDriver, canvasObjectId, nextLink } from '../src/vle-platforms/canvas-driver.js';
-import { MoodleDriver } from '../src/vle-platforms/moodle-driver.js';
+import { MoodleDriver, SRS_OVERRIDE_REASON } from '../src/vle-platforms/moodle-driver.js';
 import { createPlatformDriver } from '../src/vle-platforms/index.js';
 import {
   combinedExtraTimePercent,
@@ -272,6 +272,57 @@ describe('MoodleDriver', () => {
     const { impl } = moodle({ groups: [], members: {} });
     await expect(new MoodleDriver(MOODLE, 'wstok', impl).setTimeAccommodation({ vleCourseId: '12', personId: 'nobody' }, 25))
       .rejects.toThrow(/no user/);
+  });
+});
+
+describe('MoodleDriver quiz-overrides strategy', () => {
+  function moodleQuizzes(overrides: Record<number, Array<{ id: number; userid: number; timelimit: number | null; reason: string | null }>>) {
+    return fakeFetch((c) => {
+      const p = c.body as Record<string, string>;
+      switch (p['wsfunction']) {
+        case 'core_user_get_users_by_field': return { body: [{ id: 77 }] };
+        case 'mod_quiz_get_quizzes_by_courses':
+          return { body: { quizzes: [{ id: 1, timelimit: 3600 }, { id: 2, timelimit: 0 }, { id: 3, timelimit: 1800 }] } };
+        case 'mod_quiz_get_overrides': return { body: { overrides: overrides[Number(p['quizid'])] ?? [] } };
+        case 'mod_quiz_save_overrides': return { body: { ids: [500] } };
+        case 'mod_quiz_delete_overrides': return { body: { status: true } };
+        default: return undefined;
+      }
+    });
+  }
+  const writes = (calls: Call[]) => calls
+    .map((c) => c.body as Record<string, string>)
+    .filter((b) => b['wsfunction'] === 'mod_quiz_save_overrides' || b['wsfunction'] === 'mod_quiz_delete_overrides')
+    .map(({ wstoken: _t, moodlewsrestformat: _f, ...rest }) => rest);
+
+  it('creates an owned override on each timed quiz, skipping untimed ones and staff overrides', async () => {
+    const { impl, calls } = moodleQuizzes({ 3: [{ id: 9, userid: 77, timelimit: null, reason: 'Staff: extension' }] });
+    const result = await new MoodleDriver(MOODLE, 'wstok', impl, 'quiz-overrides')
+      .setTimeAccommodation({ vleCourseId: '12', personId: 'person-1' }, 25);
+
+    expect(writes(calls)).toEqual([{
+      wsfunction: 'mod_quiz_save_overrides',
+      'data[quizid]': '1',
+      'data[overrides][0][userid]': '77',
+      'data[overrides][0][timelimit]': '4500',
+      'data[overrides][0][reason]': SRS_OVERRIDE_REASON,
+    }]);
+    expect(result).toEqual({ changes: 1, warnings: [expect.stringContaining('Quiz 3')] });
+  });
+
+  it('updates its own override in place, and deletes it at 0', async () => {
+    const owned = { 1: [{ id: 41, userid: 77, timelimit: 4500, reason: SRS_OVERRIDE_REASON }] };
+    const update = moodleQuizzes(owned);
+    await new MoodleDriver(MOODLE, 'wstok', update.impl, 'quiz-overrides').setTimeAccommodation({ vleCourseId: '12', personId: 'person-1' }, 50);
+    // Quiz 1: its own override updated in place. Quiz 3 (30 min, no override here): created.
+    expect(writes(update.calls)).toEqual([
+      expect.objectContaining({ 'data[quizid]': '1', 'data[overrides][0][id]': '41', 'data[overrides][0][timelimit]': '5400' }),
+      expect.objectContaining({ 'data[quizid]': '3', 'data[overrides][0][timelimit]': '2700' }),
+    ]);
+
+    const clear = moodleQuizzes(owned);
+    await new MoodleDriver(MOODLE, 'wstok', clear.impl, 'quiz-overrides').setTimeAccommodation({ vleCourseId: '12', personId: 'person-1' }, 0);
+    expect(writes(clear.calls)).toEqual([{ wsfunction: 'mod_quiz_delete_overrides', 'data[quizid]': '1', 'data[ids][0]': '41' }]);
   });
 });
 

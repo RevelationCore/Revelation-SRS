@@ -95,7 +95,10 @@ export async function handleDistributionRequested(
   const now = new Date();
   if (platformDriver && isTimeAdjustment(p.adjustmentTypeCode)) {
     const summary = await syncPersonAccommodations(tx, tenantId, p.personId, platformDriver, now);
-    log.debug({ ...ids, ...summary }, 'F-SIS-VLE-02: VLE accommodations synced');
+    log.debug({ ...ids, courses: summary.courses, changes: summary.changes }, 'F-SIS-VLE-02: VLE accommodations synced');
+    if (summary.warnings.length > 0) {
+      log.warn({ ...ids, warnings: summary.warnings }, 'F-SIS-VLE-02: VLE could not hold the accommodation everywhere');
+    }
   }
   await setMappingStatus(tx, tenantId, p.distributionId, 'applied', { appliedAt: now, errorDetail: null });
 

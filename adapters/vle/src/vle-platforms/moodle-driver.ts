@@ -1,4 +1,4 @@
-import { formatPercent } from './time-accommodation.js';
+import { extraMinutesFor, formatPercent } from './time-accommodation.js';
 import {
   VlePlatformError,
   type AccommodationResult,
@@ -8,6 +8,19 @@ import {
 } from './driver.js';
 
 export const SRS_TIME_GROUP_PREFIX = 'srs-extra-time-';
+/** The reason on every quiz override the SRS creates; it owns only those. */
+export const SRS_OVERRIDE_REASON = 'SRS reasonable adjustment (managed automatically; do not edit)';
+
+/**
+ * groups         — SRS-managed "Extra time +N%" groups; staff add a group
+ *                  override to each timed quiz. Works on any Moodle with the
+ *                  core_group web services.
+ * quiz-overrides — the SRS writes a user override on every timed quiz
+ *                  (time limit + the student's extra time), so nothing is left
+ *                  to staff. Needs mod_quiz_get_quizzes_by_courses and the
+ *                  mod_quiz_*_overrides web services (present in Moodle 5.3.1).
+ */
+export type MoodleStrategy = 'groups' | 'quiz-overrides';
 
 /**
  * Moodle driver: SRS-managed extra-time groups.
@@ -49,11 +62,71 @@ export class MoodleDriver implements VlePlatformDriver {
     private readonly baseUrl: string,
     private readonly token: string,
     private readonly fetchImpl: FetchLike = fetch,
+    readonly strategy: MoodleStrategy = 'groups',
   ) {}
 
   async setTimeAccommodation(target: PersonInCourse, extraTimePercent: number): Promise<AccommodationResult> {
     const userId = await this.#resolveUserId(target.personId);
-    const courseId = target.vleCourseId;
+    return this.strategy === 'quiz-overrides'
+      ? this.#syncQuizOverrides(userId, target.vleCourseId, extraTimePercent)
+      : this.#syncGroups(userId, target.vleCourseId, extraTimePercent);
+  }
+
+  /**
+   * One user override per timed quiz with time limit = limit + extra time
+   * (rounded up to the minute). Moodle holds one user override per quiz per
+   * student, and saving one sets every field, so the driver only ever writes
+   * overrides it owns (reason = SRS_OVERRIDE_REASON). If staff already have
+   * an override for the student on a quiz, theirs takes precedence: it is
+   * left untouched and reported as a warning, so staff can include the extra
+   * time in it. At 0 the SRS's own overrides are deleted.
+   */
+  async #syncQuizOverrides(userId: number, courseId: string, extraTimePercent: number): Promise<AccommodationResult> {
+    const { quizzes } = await this.#call<{ quizzes: Array<{ id: number; timelimit?: number | null }> }>(
+      'mod_quiz_get_quizzes_by_courses', { 'courseids[0]': courseId },
+    );
+    let changes = 0;
+    const warnings: string[] = [];
+
+    for (const quiz of quizzes) {
+      const limit = quiz.timelimit ?? 0;
+      const { overrides } = await this.#call<{ overrides: MoodleQuizOverride[] }>('mod_quiz_get_overrides', { quizid: quiz.id });
+      const mine = overrides.find((o) => o.userid === userId);
+      const owned = mine?.reason === SRS_OVERRIDE_REASON;
+
+      if (mine && !owned) {
+        if (extraTimePercent > 0 && limit > 0) {
+          warnings.push(`Quiz ${quiz.id} already has a staff override for this student; extra time not applied there`);
+        }
+        continue;
+      }
+
+      const wanted = limit > 0 && extraTimePercent > 0
+        ? limit + extraMinutesFor(limit / 60, extraTimePercent) * 60
+        : null;
+
+      if (wanted === null) {
+        if (mine) {
+          await this.#call('mod_quiz_delete_overrides', { 'data[quizid]': quiz.id, 'data[ids][0]': mine.id });
+          changes += 1;
+        }
+        continue;
+      }
+      if (mine?.timelimit === wanted) continue;
+
+      await this.#call('mod_quiz_save_overrides', {
+        'data[quizid]': quiz.id,
+        ...(mine ? { 'data[overrides][0][id]': mine.id } : {}),
+        'data[overrides][0][userid]': userId,
+        'data[overrides][0][timelimit]': wanted,
+        'data[overrides][0][reason]': SRS_OVERRIDE_REASON,
+      });
+      changes += 1;
+    }
+    return warnings.length > 0 ? { changes, warnings } : { changes };
+  }
+
+  async #syncGroups(userId: number, courseId: string, extraTimePercent: number): Promise<AccommodationResult> {
     const wantedIdNumber = extraTimePercent > 0 ? `${SRS_TIME_GROUP_PREFIX}${formatPercent(extraTimePercent)}` : null;
     let changes = 0;
 
@@ -131,3 +204,4 @@ export class MoodleDriver implements VlePlatformDriver {
 }
 
 interface MoodleGroup { id: number; courseid: number; name: string; idnumber?: string }
+interface MoodleQuizOverride { id: number; quiz: number; userid: number | null; groupid: number | null; timelimit: number | null; reason: string | null }
