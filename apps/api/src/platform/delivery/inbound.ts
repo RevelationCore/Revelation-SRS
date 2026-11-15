@@ -76,10 +76,16 @@ export const INBOUND_FLOWS: readonly InboundFlow[] = [
     fields: [
       { name: 'paymentReference', label: 'Payment reference', type: 'text', required: true },
       { name: 'paymentType', label: 'Payment type', type: 'code', required: true, valueSet: { entity: 'external_record_payroll', field: 'payment_type' } },
-      { name: 'amountPence', label: 'Amount (pence)', type: 'integer', required: true, min: 0 },
-      { name: 'paidOn', label: 'Paid on', type: 'date', required: true },
+      // The SRS instruction (F-SIS-PAY-01 operation id) this answers, if any.
+      { name: 'instructionId', label: 'SRS instruction (operation id)', type: 'text', required: false },
+      { name: 'paymentStatus', label: 'Outcome', type: 'code', required: false, valueSet: { entity: 'external_record_payroll', field: 'payment_status' } },
+      { name: 'amountPence', label: 'Amount (pence)', type: 'integer', required: false, min: 0 },
+      { name: 'paidOn', label: 'Paid on', type: 'date', required: false },
+      { name: 'rejectionReason', label: 'Rejection reason', type: 'text', required: false },
     ],
-    summarise: (p) => `${text(p['paymentType'])} payment ${text(p['paymentReference'])}: ${pence(p['amountPence'])} paid ${text(p['paidOn'])}`,
+    summarise: (p) => p['paymentStatus'] === 'rejected'
+      ? `${text(p['paymentType'])} payment ${text(p['paymentReference'])} rejected${p['rejectionReason'] ? `: ${text(p['rejectionReason'])}` : ''}`
+      : `${text(p['paymentType'])} payment ${text(p['paymentReference'])}: ${pence(p['amountPence'])} paid${p['paidOn'] ? ` ${text(p['paidOn'])}` : ''}`,
   },
   {
     flowCode: 'F-RP-SIS-01', sourceSystem: 'rp', sourceLabel: 'Research portal',
@@ -157,11 +163,20 @@ export interface ExternalRecordDto {
  * Records adjacent systems report about a student, from a connector or
  * entered by staff. Informational only: nothing here changes academic status.
  */
+export type InboundListener = (tenantId: string, record: ExternalRecordDto) => Promise<void>;
+
 export class InboundRecordService {
+  readonly #listeners: InboundListener[] = [];
+
   constructor(
     private readonly db: Db,
     private readonly valueSets: ValueSetService,
   ) {}
+
+  /** Act on a newly stored record (e.g. reconcile a payroll confirmation with its instruction). */
+  onReceived(listener: InboundListener): void {
+    this.#listeners.push(listener);
+  }
 
   async receive(
     tenantId: string,
@@ -207,7 +222,9 @@ export class InboundRecordService {
     });
 
     const all = await this.listForPerson(tenantId, result.row.personId);
-    return { record: all.find((r) => r.externalRecordId === result.row.id)!, replayed: result.replayed };
+    const record = all.find((r) => r.externalRecordId === result.row.id)!;
+    if (!result.replayed) for (const listener of this.#listeners) await listener(tenantId, record);
+    return { record, replayed: result.replayed };
   }
 
   /** Newest first; `current` marks the latest observation of each record. */

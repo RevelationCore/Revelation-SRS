@@ -31,9 +31,41 @@ Reasonable adjustments use the same modes on their own ledger, with a withdrawal
 | F-SIS-EST-01 | Estates | **Run per academic period**: registered students against capacity, per module offering |
 | F-SIS-SETS-01 | Survey system | **Run per academic period**: roster of registered students (student numbers), per module offering |
 | F-SIS-CM-01 | Curriculum management | **Run per academic period**: registration and result counts, per module offering |
-| F-SIS-PAY-01 | Payroll | None: the SRS holds no bursary eligibility or GTA employment data to send |
+| F-SIS-PAY-01 | Payroll | A student support instalment is approved: one payment instruction per instalment (see below). GTA teaching pay is not sent: HR and payroll own it |
+| F-SIS-HR-01 | HR | A student with current university employment interrupts, is suspended, withdraws or completes: one item per student asking HR to review the roles (HR references, role, new status) |
 
 Event-driven flows are state-sync snapshots except OIV, where each check is its own request. The three extracts run from **Operations → Integration tasks → Other systems** or `POST /api/v1/delivery-flows/{flowCode}/run { "academicPeriodId": "…" }` (`config:write` or `delivery:fulfil`, audited). They produce one item per offering; an offering whose figures are unchanged since its latest item is not re-sent, and a changed one supersedes an undelivered earlier item. Adding a producer is one call to `DeliveryService.request()` (see `producers/`).
+
+## Student support payments (F-SIS-PAY-01 ↔ F-PAY-SIS-01)
+
+Student support (studentship stipends, bursaries, scholarships, hardship awards) is an entitlement the SRS decides; payroll only pays it. Employment pay (GTA, demonstrating) is a contract HR and payroll own, and the SRS refuses it as support (`422`). Migration `0032_student_support_and_employment`.
+
+1. Staff with `support:write` record a `support_award` and its `support_instalment` schedule on the student's **Support & employment** tab.
+2. Someone else with `support:approve` approves the award, then each instalment. Whoever recorded it cannot approve it (`409`).
+3. Approving an instalment creates one F-SIS-PAY-01 item. Its operation id is the instalment id:
+
+```json
+{ "operationId": "…", "personId": "…", "studentNumber": "S1234567", "awardReference": "UKRI-123", "awardTypeCode": "studentship",
+  "funder": "UKRI", "paymentTypeCode": "stipend", "currencyCode": "GBP", "amountMinorUnits": 180000, "periodStart": "2026-10-01", "periodEnd": "2026-10-31", "dueDate": "2026-10-25" }
+```
+
+4. Payroll acknowledging the item only means it accepted the instruction. The instalment stays `approved` ("awaiting payroll").
+5. Payroll's F-PAY-SIS-01 report with `instructionId` = the operation id marks the instalment `paid` (with reference, date and amount) or `rejected` (with the reason), and closes the item. A report naming an instruction for a different student is stored but reconciles nothing.
+
+Only planned instalments can be cancelled. Corrections after instruction go through payroll.
+
+## Employed students and work limits
+
+HR holds the appointment, contract and pay. The SRS keeps only a `student_employment_link` per HR employment reference: role (`employment-role-type-code`), dates, weekly hours, modules taught, and whether the supervisor agreed. It is written by an HR connector (`integration:manage`) or by staff (`employment-link:write`) with `PUT /api/v1/students/{personId}/employment-links/{hrEmploymentReference}`. One HR reference belongs to one student.
+
+It is used for two things:
+
+- **Work-limit warnings**, recalculated when read. University employment only; the SRS cannot see other jobs. Limits are per tenant in `work_limit_rule` (`GET`/`PUT /api/v1/work-limits/{ruleCode}`, `config:write`). The starting values should be checked against the institution's policy and the current Home Office guidance:
+  - `student-visa-term-time`, 20 h/week: a student with a current CAS or visa record, in an academic period that overlaps the roles.
+  - `studentship`, 6 h/week: a student with an approved studentship. Each role without supervisor agreement is also flagged.
+- **F-SIS-HR-01**, so HR can review roles when the student's study status changes.
+
+Warnings are advisory. The SRS does not block employment, which is HR's decision.
 
 ## Items, supersession and replies
 
@@ -87,7 +119,7 @@ POST /api/v1/inbound/F-LIB-SIS-01
 |---|---|
 | F-LIB-SIS-01 Library | `accountStatus` (value set `library-account-status-code`), `loansOnIssue`, `overdueItems`, `outstandingBalancePence` |
 | F-ACC-SIS-01 Accommodation | `bookingReference`, `bookingStatus` (value set `accommodation-booking-status-code`), `roomReference`, `startDate`, `endDate` |
-| F-PAY-SIS-01 Payroll | `paymentReference`, `paymentType` (`payment-type-code`: bursary, stipend, GTA pay), `amountPence`, `paidOn` |
+| F-PAY-SIS-01 Payroll | `paymentReference`, `paymentType` (`payment-type-code`: bursary, stipend, GTA pay), `instructionId` (the F-SIS-PAY-01 operation id, if it answers one), `paymentStatus` (`payment-status-code`: paid, rejected), `amountPence`, `paidOn`, `rejectionReason` |
 | F-RP-SIS-01 Research portal | `awardReference`, `funder`, `awardStatus` (`studentship-status-code`), `startDate`, `endDate` |
 | F-ITSM-SIS-01 IT service desk | `ticketReference`, `outcome` (`service-request-outcome-code`), `closedOn` |
 

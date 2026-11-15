@@ -436,6 +436,150 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/students/{personId}/support-awards": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getStudentsByPersonIdSupportAwards"];
+        put?: never;
+        post: operations["createStudentsByPersonIdSupportAwards"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/support-awards/{awardId}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createSupportAwardsByAwardIdApprove"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/support-awards/{awardId}/instalments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createSupportAwardsByAwardIdInstalments"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/support-instalments/{instalmentId}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createSupportInstalmentsByInstalmentIdApprove"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/support-instalments/{instalmentId}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createSupportInstalmentsByInstalmentIdCancel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/students/{personId}/employment-links": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getStudentsByPersonIdEmploymentLinks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/students/{personId}/employment-links/{hrEmploymentReference}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["replaceStudentsByPersonIdEmploymentLinksByHrEmploymentReference"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/work-limits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getWorkLimits"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/work-limits/{ruleCode}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["replaceWorkLimitsByRuleCode"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/students/{personId}/engagement-outcomes": {
         parameters: {
             query?: never;
@@ -6502,6 +6646,676 @@ export interface operations {
                         receivedAt: string;
                         receivedVia: string;
                         current: boolean;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getStudentsByPersonIdSupportAwards: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        awardId: string;
+                        personId: string;
+                        enrolmentId: string;
+                        awardTypeCode: string;
+                        awardReference: string;
+                        funder: string;
+                        startDate: string;
+                        endDate: string | null;
+                        statusCode: string;
+                        createdBy: string;
+                        approvedBy: string | null;
+                        approvedAt: string | null;
+                        instalments: {
+                            instalmentId: string;
+                            awardId: string;
+                            paymentTypeCode: string;
+                            currencyCode: string;
+                            amountMinorUnits: number;
+                            periodStart: string;
+                            periodEnd: string;
+                            dueDate: string;
+                            statusCode: string;
+                            approvedBy: string | null;
+                            approvedAt: string | null;
+                            paymentReference: string | null;
+                            paidOn: string | null;
+                            paidAmountMinorUnits: number | null;
+                            rejectionReason: string | null;
+                            createdBy: string;
+                        }[];
+                    }[];
+                };
+            };
+        };
+    };
+    createStudentsByPersonIdSupportAwards: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    enrolmentId: string;
+                    awardTypeCode: string;
+                    awardReference: string;
+                    funder: string;
+                    startDate: string;
+                    endDate?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        awardId: string;
+                        personId: string;
+                        enrolmentId: string;
+                        awardTypeCode: string;
+                        awardReference: string;
+                        funder: string;
+                        startDate: string;
+                        endDate: string | null;
+                        statusCode: string;
+                        createdBy: string;
+                        approvedBy: string | null;
+                        approvedAt: string | null;
+                        instalments: {
+                            instalmentId: string;
+                            awardId: string;
+                            paymentTypeCode: string;
+                            currencyCode: string;
+                            amountMinorUnits: number;
+                            periodStart: string;
+                            periodEnd: string;
+                            dueDate: string;
+                            statusCode: string;
+                            approvedBy: string | null;
+                            approvedAt: string | null;
+                            paymentReference: string | null;
+                            paidOn: string | null;
+                            paidAmountMinorUnits: number | null;
+                            rejectionReason: string | null;
+                            createdBy: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createSupportAwardsByAwardIdApprove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                awardId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        awardId: string;
+                        personId: string;
+                        enrolmentId: string;
+                        awardTypeCode: string;
+                        awardReference: string;
+                        funder: string;
+                        startDate: string;
+                        endDate: string | null;
+                        statusCode: string;
+                        createdBy: string;
+                        approvedBy: string | null;
+                        approvedAt: string | null;
+                        instalments: {
+                            instalmentId: string;
+                            awardId: string;
+                            paymentTypeCode: string;
+                            currencyCode: string;
+                            amountMinorUnits: number;
+                            periodStart: string;
+                            periodEnd: string;
+                            dueDate: string;
+                            statusCode: string;
+                            approvedBy: string | null;
+                            approvedAt: string | null;
+                            paymentReference: string | null;
+                            paidOn: string | null;
+                            paidAmountMinorUnits: number | null;
+                            rejectionReason: string | null;
+                            createdBy: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createSupportAwardsByAwardIdInstalments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                awardId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    paymentTypeCode: string;
+                    /** @description Amount in pence (GBP minor units) */
+                    amountMinorUnits: number;
+                    periodStart: string;
+                    periodEnd: string;
+                    dueDate: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        instalmentId: string;
+                        awardId: string;
+                        paymentTypeCode: string;
+                        currencyCode: string;
+                        amountMinorUnits: number;
+                        periodStart: string;
+                        periodEnd: string;
+                        dueDate: string;
+                        statusCode: string;
+                        approvedBy: string | null;
+                        approvedAt: string | null;
+                        paymentReference: string | null;
+                        paidOn: string | null;
+                        paidAmountMinorUnits: number | null;
+                        rejectionReason: string | null;
+                        createdBy: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createSupportInstalmentsByInstalmentIdApprove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                instalmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        instalmentId: string;
+                        awardId: string;
+                        paymentTypeCode: string;
+                        currencyCode: string;
+                        amountMinorUnits: number;
+                        periodStart: string;
+                        periodEnd: string;
+                        dueDate: string;
+                        statusCode: string;
+                        approvedBy: string | null;
+                        approvedAt: string | null;
+                        paymentReference: string | null;
+                        paidOn: string | null;
+                        paidAmountMinorUnits: number | null;
+                        rejectionReason: string | null;
+                        createdBy: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createSupportInstalmentsByInstalmentIdCancel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                instalmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        instalmentId: string;
+                        awardId: string;
+                        paymentTypeCode: string;
+                        currencyCode: string;
+                        amountMinorUnits: number;
+                        periodStart: string;
+                        periodEnd: string;
+                        dueDate: string;
+                        statusCode: string;
+                        approvedBy: string | null;
+                        approvedAt: string | null;
+                        paymentReference: string | null;
+                        paidOn: string | null;
+                        paidAmountMinorUnits: number | null;
+                        rejectionReason: string | null;
+                        createdBy: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getStudentsByPersonIdEmploymentLinks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        links: {
+                            linkId: string;
+                            personId: string;
+                            hrEmploymentReference: string;
+                            roleTypeCode: string;
+                            startDate: string;
+                            endDate: string | null;
+                            weeklyHours: number;
+                            moduleOfferingIds: string[];
+                            supervisorAgreedAt: string | null;
+                            sourceCode: string;
+                        }[];
+                        warnings: {
+                            ruleCode: string;
+                            message: string;
+                        }[];
+                    };
+                };
+            };
+        };
+    };
+    replaceStudentsByPersonIdEmploymentLinksByHrEmploymentReference: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personId: string;
+                hrEmploymentReference: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    roleTypeCode: string;
+                    startDate: string;
+                    endDate?: string | null;
+                    weeklyHours: number;
+                    moduleOfferingIds?: string[];
+                    supervisorAgreedAt?: string | null;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        link: {
+                            linkId: string;
+                            personId: string;
+                            hrEmploymentReference: string;
+                            roleTypeCode: string;
+                            startDate: string;
+                            endDate: string | null;
+                            weeklyHours: number;
+                            moduleOfferingIds: string[];
+                            supervisorAgreedAt: string | null;
+                            sourceCode: string;
+                        };
+                        warnings: {
+                            ruleCode: string;
+                            message: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getWorkLimits: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        ruleCode: string;
+                        maxWeeklyHours: number;
+                        description: string;
+                        isDefault: boolean;
+                    }[];
+                };
+            };
+        };
+    };
+    replaceWorkLimitsByRuleCode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ruleCode: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    maxWeeklyHours: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        ruleCode: string;
+                        maxWeeklyHours: number;
+                        description: string;
+                        isDefault: boolean;
                     };
                 };
             };

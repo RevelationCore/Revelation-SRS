@@ -73,13 +73,14 @@ import { useValueSet } from '../hooks/useValueSet.js';
 import { useAuth } from '../auth/AuthContext.js';
 import { userHasAnyPermission } from '../auth/RequirePermission.js';
 import { ExternalRecordsTab } from './ExternalRecordsTab.js';
+import { SupportEmploymentTab } from './SupportEmploymentTab.js';
 import {
   PageHeader, Card, CardHeader, CardBody, Button, Input, Select, Textarea, LabelledField,
   Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, Dialog, DialogClose,
   Tabs, TabsList, TabsTrigger, TabsContent,
 } from '@revelation-srs/ui';
 
-type Tab = 'identity' | 'enrolments' | 'registrations' | 'assessment' | 'history' | 'wellbeing' | 'corrections' | 'cas' | 'communications' | 'other-systems';
+type Tab = 'identity' | 'enrolments' | 'registrations' | 'assessment' | 'history' | 'wellbeing' | 'corrections' | 'cas' | 'communications' | 'other-systems' | 'support';
 
 export function StudentDetailPage() {
   const { roles } = useAuth();
@@ -134,6 +135,7 @@ export function StudentDetailPage() {
     ...(canReadDisability || canReadAdjustments || canReadCircumstances ? ['wellbeing'] as Tab[] : []),
     ...(canReadNotifications ? ['communications'] as Tab[] : []),
     ...(userHasAnyPermission(roles, ['external-record:read']) ? ['other-systems'] as Tab[] : []),
+    ...(userHasAnyPermission(roles, ['support:read', 'employment-link:read']) ? ['support'] as Tab[] : []),
   ];
 
   return (
@@ -148,10 +150,13 @@ export function StudentDetailPage() {
       <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)}>
         <TabsList className="mb-6">
           {tabs.map((t) => (
-            <TabsTrigger key={t} value={t} className="capitalize">{t === 'cas' ? 'CAS' : t === 'other-systems' ? 'Other systems' : t}</TabsTrigger>
+            <TabsTrigger key={t} value={t} className="capitalize">{t === 'cas' ? 'CAS' : t === 'other-systems' ? 'Other systems' : t === 'support' ? 'Support & employment' : t}</TabsTrigger>
           ))}
         </TabsList>
 
+        <TabsContent value="support">
+          {personId && <SupportEmploymentTab personId={personId} />}
+        </TabsContent>
         <TabsContent value="other-systems">
           {personId && <ExternalRecordsTab personId={personId} canWrite={userHasAnyPermission(roles, ['external-record:write'])} />}
         </TabsContent>

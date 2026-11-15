@@ -34,7 +34,7 @@ const libraryTask = {
 
 const flows = [
   { flowCode: 'F-SIS-LIB-01', targetSystem: 'lib', targetLabel: 'library system', name: 'Library access from enrolment status', producer: 'implemented', producerNote: '', fulfilmentModeCode: 'manual', ownerDescription: 'Library team', alertAfterHours: 72, notifyEmail: null, lastOverdueNoticeAt: null, isDefault: false },
-  { flowCode: 'F-SIS-PAY-01', targetSystem: 'pay', targetLabel: 'payroll system', name: 'Bursary eligibility and GTA payment authorisations', producer: 'none', producerNote: 'No SRS trigger.', fulfilmentModeCode: 'manual', ownerDescription: null, alertAfterHours: 72, notifyEmail: null, lastOverdueNoticeAt: null, isDefault: true },
+  { flowCode: 'F-SIS-PAY-01', targetSystem: 'pay', targetLabel: 'payroll system', name: 'Student support payment instructions', producer: 'none', producerNote: 'No SRS trigger.', fulfilmentModeCode: 'manual', ownerDescription: null, alertAfterHours: 72, notifyEmail: null, lastOverdueNoticeAt: null, isDefault: true },
   { flowCode: 'F-SIS-EST-01', targetSystem: 'est', targetLabel: 'estates system', name: 'Enrolment volumes and occupancy forecasts to estates', producer: 'extract', producerNote: '', fulfilmentModeCode: 'manual', ownerDescription: null, alertAfterHours: 72, notifyEmail: null, lastOverdueNoticeAt: null, isDefault: true },
 ];
 
@@ -82,7 +82,7 @@ describe('integration tasks', () => {
     server.use(...handlers({ tasks: [] }));
     renderWithProviders(<IntegrationTasksPage />, { roles: ['registry-administrator'], route: '/operations/integration-tasks?tab=systems' });
 
-    await screen.findByText('Bursary eligibility and GTA payment authorisations');
+    await screen.findByText('Student support payment instructions');
     expect(screen.getAllByText('No SRS trigger yet')).toHaveLength(1);
   });
 

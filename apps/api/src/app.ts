@@ -114,6 +114,9 @@ import { valueSetsRoutes } from './routes/value-sets.js';
 import { globalisationRoutes } from './routes/globalisation.js';
 import { adjustmentRoutes } from './routes/adjustments.js';
 import { deliveryRoutes, inboundRoutes } from './routes/delivery.js';
+import { supportRoutes } from './routes/support.js';
+import { SupportService } from './platform/support/support-service.js';
+import { EmploymentService } from './platform/support/employment-service.js';
 import { InboundRecordService } from './platform/delivery/inbound.js';
 import { engagementOutcomeRoutes } from './routes/engagement-outcomes.js';
 import { engagementProxyRoutes } from './routes/engagement-proxy.js';
@@ -411,7 +414,25 @@ export async function buildApp(
   fastify.decorate('adjustmentTargetConfigService', adjustmentTargets);
   fastify.decorate('adjustmentTaskNoticeService', adjustmentTaskNotices);
   fastify.decorate('deliveryService', deliveries);
-  fastify.decorate('inboundRecordService', new InboundRecordService(db, valueSets));
+  const inboundRecords = new InboundRecordService(db, valueSets);
+  const support = new SupportService(db, valueSets, deliveries);
+  const employment = new EmploymentService(db, valueSets, support);
+  // A payroll confirmation that names an SRS instruction reconciles it.
+  inboundRecords.onReceived(async (tenantId, record) => {
+    if (record.flowCode !== 'F-PAY-SIS-01' || typeof record.payload['instructionId'] !== 'string') return;
+    const p = record.payload;
+    await support.reconcilePayment(tenantId, record.personId, {
+      instructionId: p['instructionId'] as string,
+      paymentReference: String(p['paymentReference']),
+      paymentStatus: p['paymentStatus'] === 'rejected' ? 'rejected' : 'paid',
+      ...(typeof p['amountPence'] === 'number' ? { amountPence: p['amountPence'] } : {}),
+      ...(typeof p['paidOn'] === 'string' ? { paidOn: p['paidOn'] } : {}),
+      ...(typeof p['rejectionReason'] === 'string' ? { rejectionReason: p['rejectionReason'] } : {}),
+    });
+  });
+  fastify.decorate('inboundRecordService', inboundRecords);
+  fastify.decorate('supportService', support);
+  fastify.decorate('employmentService', employment);
   fastify.decorate('businessCaseService', businessCases);
   fastify.decorate('identityResolutionService', identityResolution);
   fastify.decorate('engagementOutcomeService', engagementOutcomes);
@@ -583,6 +604,8 @@ export async function buildApp(
       ['/adjustment-targets',        'adjustments'],
       ['/delivery-',                 'integration-registry'],
       ['/inbound',                   'integration-registry'],
+      ['/support-',                  'students'],
+      ['/work-limits',               'tenant-admin'],
       ['/external-records',          'integration-registry'],
       ['/engagement-outcomes',       'engagement-outcomes'],
       ['/exceptional-circumstances', 'circumstances'],
@@ -671,6 +694,7 @@ export async function buildApp(
   await fastify.register(adjustmentRoutes,          { prefix: '/api/v1' });
   await fastify.register(deliveryRoutes,            { prefix: '/api/v1' });
   await fastify.register(inboundRoutes,             { prefix: '/api/v1' });
+  await fastify.register(supportRoutes,             { prefix: '/api/v1' });
   await fastify.register(engagementOutcomeRoutes,   { prefix: '/api/v1' });
   await fastify.register(engagementProxyRoutes,     { prefix: '/api/v1' });
   await fastify.register(circumstancesRoutes,       { prefix: '/api/v1' });
@@ -750,6 +774,8 @@ declare module 'fastify' {
     adjustmentTaskNoticeService: AdjustmentTaskNoticeService;
     deliveryService: DeliveryService;
     inboundRecordService: InboundRecordService;
+    supportService: SupportService;
+    employmentService: EmploymentService;
     businessCaseService: BusinessCaseService;
     identityResolutionService: IdentityResolutionService;
     engagementOutcomeService: EngagementOutcomeService;

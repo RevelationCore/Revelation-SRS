@@ -16,6 +16,7 @@ export * from './module-selection.js';
 export * from './assessment.js';
 export * from './adjustment.js';
 export * from './delivery.js';
+export * from './support.js';
 export * from './circumstances.js';
 export * from './governance.js';
 export * from './progression.js';

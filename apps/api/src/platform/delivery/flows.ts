@@ -72,9 +72,9 @@ export const DELIVERY_FLOWS: readonly DeliveryFlow[] = [
   },
   {
     flowCode: 'F-SIS-PAY-01', targetSystem: 'pay', targetLabel: 'payroll system',
-    name: 'Bursary eligibility and GTA payment authorisations', defaultMode: 'manual', stateSync: false,
-    producer: 'none',
-    producerNote: 'No SRS trigger: the SRS holds no bursary eligibility or GTA employment data to send.',
+    name: 'Student support payment instructions', defaultMode: 'manual', stateSync: false,
+    producer: 'implemented',
+    producerNote: 'Approving a student support instalment sends payroll the instruction (operation id = instalment id); payroll\'s confirmation marks it paid. GTA teaching pay is not sent: HR and payroll own it.',
   },
   {
     flowCode: 'F-SIS-RP-01', targetSystem: 'rp', targetLabel: 'research portal',
@@ -93,6 +93,12 @@ export const DELIVERY_FLOWS: readonly DeliveryFlow[] = [
     name: 'Student identity and account data for incident context', defaultMode: 'manual', stateSync: true,
     producer: 'implemented',
     producerNote: 'A person being created, their identity changing, or an enrolment changing sends their service-desk snapshot.',
+  },
+  {
+    flowCode: 'F-SIS-HR-01', targetSystem: 'hr', targetLabel: 'HR system',
+    name: 'Employed student: study status change for review', defaultMode: 'manual', stateSync: true,
+    producer: 'implemented',
+    producerNote: 'A student with university employment interrupting, being suspended, withdrawing or completing asks HR to review the roles; HR decides.',
   },
   {
     flowCode: 'F-SIS-CM-01', targetSystem: 'cm', targetLabel: 'curriculum management system',

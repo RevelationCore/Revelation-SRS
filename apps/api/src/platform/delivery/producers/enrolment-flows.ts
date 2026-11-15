@@ -3,6 +3,7 @@ import {
   enrolments,
   persons,
   progressionDecisions,
+  studentEmploymentLinks,
   type Db,
   withTenantContext,
 } from '@revelation-srs/db';
@@ -17,6 +18,7 @@ type Uuid = `${string}-${string}-${string}-${string}-${string}`;
 export const CRM_FLOW = 'F-SIS-CRM-01';
 export const ACCOMMODATION_FLOW = 'F-SIS-ACC-01';
 export const CMS_FLOW = 'F-SIS-CMS-01';
+export const HR_FLOW = 'F-SIS-HR-01';
 
 export interface EnrolmentChange {
   enrolmentId: string;
@@ -98,6 +100,35 @@ export async function onEnrolmentChanged(
       },
       summary: `Update content audience: ${snapshot.modeOfStudy} student, enrolment ${snapshot.enrolmentStatus}${snapshot.progression ? `, year ${snapshot.progression.yearOfStudy}` : ''}`,
     });
+  }
+
+  // F-SIS-HR-01: an employed student's study status changed. HR reviews the
+  // roles under its own policy; the SRS does not end employment.
+  if (flows.accommodation && snapshot.enrolmentStatus !== 'enrolled') {
+    const today = new Date().toISOString().slice(0, 10);
+    const links = await withTenantContext(db, tenantId, (tx) =>
+      tx.select({ ref: studentEmploymentLinks.hrEmploymentReference, role: studentEmploymentLinks.roleTypeCode, endDate: studentEmploymentLinks.endDate })
+        .from(studentEmploymentLinks)
+        .where(and(eq(studentEmploymentLinks.tenantId, tenantId as Uuid), eq(studentEmploymentLinks.personId, snapshot.personId as Uuid))),
+    );
+    const active = links.filter((l) => l.endDate === null || l.endDate >= today);
+    if (active.length > 0) {
+      await delivery.request(tenantId, {
+        flowCode: HR_FLOW,
+        subjectType: 'person',
+        subjectId: snapshot.personId,
+        personId: snapshot.personId,
+        idempotencyKey: change.changeKey,
+        payload: {
+          personId: snapshot.personId,
+          studentNumber: snapshot.studentNumber,
+          enrolmentId: change.enrolmentId,
+          enrolmentStatus: snapshot.enrolmentStatus,
+          hrEmploymentReferences: active.map((l) => l.ref),
+        },
+        summary: `Review employment ${active.map((l) => `${l.ref} (${l.role})`).join(', ')}: study status now ${snapshot.enrolmentStatus}`,
+      });
+    }
   }
 
   if (flows.itsm ?? flows.accommodation) {

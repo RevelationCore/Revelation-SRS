@@ -58,6 +58,14 @@ export const PERMISSION_ROLES = {
   // read on the student record, and entered by hand where no connector exists.
   'external-record:read':      ['registry-administrator', 'tenant-administrator', 'personal-tutor'] as Role[],
   'external-record:write':     ['registry-administrator', 'tenant-administrator'] as Role[],
+  // Student support schedules (AJ-32): staff record awards and instalments;
+  // the award owner approves them, which sends payroll the instruction.
+  'support:read':              ['registry-administrator', 'finance-administrator', 'pgr-administrator', 'pgr-director'] as Role[],
+  'support:write':             ['registry-administrator', 'finance-administrator', 'pgr-administrator'] as Role[],
+  'support:approve':           ['finance-administrator', 'pgr-director'] as Role[],
+  // Student employment links (not appointments: HR owns those) and work limits.
+  'employment-link:read':      ['registry-administrator', 'pgr-administrator', 'pgr-director', 'research-supervisor'] as Role[],
+  'employment-link:write':     ['registry-administrator', 'pgr-administrator'] as Role[],
   // Reasonable-adjustment *case* (wellbeing-module-hosted process — referral,
   // assessment, panel, approve/reject), distinct from the `adjustment:*`
   // permissions above which gate the core-SRS *distributed outcome* record.

@@ -158,6 +158,11 @@ fastify.get('/students/:id', {
 | `delivery:fulfil` (integration task queue for other outbound flows) | | ✓ | | | | ✓ |
 | `external-record:read` (what other systems report about a student; also personal tutors) | | ✓ | | | | ✓ |
 | `external-record:write` (enter such a record by hand) | | ✓ | | | | ✓ |
+| `support:read` (student support awards and instalments; also finance administrators, PGR administrators and directors) | | ✓ | | | | |
+| `support:write` (record awards and instalments; also finance and PGR administrators) | | ✓ | | | | |
+| `support:approve` (approve awards and instalments, which instructs payroll; finance administrators and PGR directors only, never the recorder) | | | | | | |
+| `employment-link:read` (university employment and work-limit warnings; also PGR administrators, directors and research supervisors) | | ✓ | | | | |
+| `employment-link:write` (record an employment link; also PGR administrators; HR connectors use `integration:manage`) | | ✓ | | | | |
 | `special-category:read` | | | | | ✓ | |
 | `config:write` | | | | | | ✓ |
 | `integration:manage` | | | | | | ✓ |

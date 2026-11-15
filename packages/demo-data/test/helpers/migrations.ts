@@ -48,6 +48,7 @@ export async function applyAllMigrations(db: Db): Promise<void> {
   await applyMigration(db, '0029_delivery_ledger.sql');
   await applyMigration(db, '0030_external_records.sql');
   await applyMigration(db, '0031_inbound_flow_fields.sql');
+  await applyMigration(db, '0032_student_support_and_employment.sql');
 
   // Wellbeing module schema (separate pgSchema 'wellbeing' in same database)
   await applyMigration(db, '0000_wellbeing_foundations.sql', WELLBEING_MIGRATIONS_DIR);
