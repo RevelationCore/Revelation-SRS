@@ -29,6 +29,22 @@
         "scopeCode": {
           "type": "string"
         },
+        "amount": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "number"
+            },
+            "unitCode": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "value",
+            "unitCode"
+          ],
+          "additionalProperties": false
+        },
         "validFrom": {
           "type": "string"
         },

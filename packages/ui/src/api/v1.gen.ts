@@ -148,6 +148,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/adjustments/{adjustmentId}/distributions/{distributionId}/failure": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createAdjustmentsByAdjustmentIdDistributionsByDistributionIdFailure"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/adjustments/{adjustmentId}/distributions/{distributionId}/withdrawal/acknowledge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createAdjustmentsByAdjustmentIdDistributionsByDistributionIdWithdrawalAcknowledge"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/adjustments/{adjustmentId}/expire": {
         parameters: {
             query?: never;
@@ -4998,6 +5030,10 @@ export interface operations {
                         personId: string;
                         adjustmentTypeCode: string;
                         scopeCode: string;
+                        amount: {
+                            value: number;
+                            unitCode: string;
+                        } | null;
                         notes: string | null;
                         actorId: string;
                         validFrom: string;
@@ -5047,6 +5083,11 @@ export interface operations {
                     validFrom: string;
                     /** Format: date-time */
                     validTo?: string;
+                    /** @description Structured amount, e.g. { value: 25, unitCode: "percent-of-duration" } */
+                    amount?: {
+                        value: number;
+                        unitCode: string;
+                    };
                     notes?: string;
                     sourceCaseId?: string;
                 };
@@ -5142,6 +5183,10 @@ export interface operations {
                         personId: string;
                         adjustmentTypeCode: string;
                         scopeCode: string;
+                        amount: {
+                            value: number;
+                            unitCode: string;
+                        } | null;
                         notes: string | null;
                         actorId: string;
                         validFrom: string;
@@ -5193,6 +5238,10 @@ export interface operations {
                         statusCode: string;
                         distributedAt: string | null;
                         failureReason: string | null;
+                        requestPublishedAt: string | null;
+                        withdrawalRequestedAt: string | null;
+                        withdrawalPublishedAt: string | null;
+                        withdrawnAt: string | null;
                         createdAt: string;
                         updatedAt: string;
                     }[];
@@ -5215,6 +5264,117 @@ export interface operations {
         };
     };
     createAdjustmentsByAdjustmentIdDistributionsByDistributionIdAcknowledge: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                adjustmentId: string;
+                distributionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    targetSystem: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createAdjustmentsByAdjustmentIdDistributionsByDistributionIdFailure: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                adjustmentId: string;
+                distributionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    targetSystem: string;
+                    reason: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createAdjustmentsByAdjustmentIdDistributionsByDistributionIdWithdrawalAcknowledge: {
         parameters: {
             query?: never;
             header?: never;

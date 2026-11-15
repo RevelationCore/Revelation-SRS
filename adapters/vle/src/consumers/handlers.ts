@@ -1,6 +1,7 @@
 import type { DomainEventEnvelope } from '@revelation-srs/domain';
 import type {
-  AdjustmentDistributedV1Payload,
+  AdjustmentDistributionRequestedV1Payload,
+  AdjustmentDistributionWithdrawalRequestedV1Payload,
   AssessmentModuleResultRatifiedV1Payload,
   CatalogueModuleUpdatedV1Payload,
   EnrolmentModuleRegisteredV1Payload,
@@ -14,6 +15,7 @@ import type { Logger } from 'pino';
 import type { VleTx } from '../db/client.js';
 import type { SrsAcknowledgementClient } from '../srs-client/acknowledgement-client.js';
 import type { VleClient } from '../vle-client/client.js';
+import type { VlePlatformDriver } from '../vle-platforms/driver.js';
 
 import {
   handleModuleRegistered,
@@ -24,7 +26,10 @@ import {
   handleStudentStatusChanged,
 } from './f-sis-vle-01/handlers.js';
 import { handleModuleResultRatified } from './f-vle-sis-01/handlers.js';
-import { handleAdjustmentDistributed } from './f-sis-vle-02/handlers.js';
+import {
+  handleDistributionRequested,
+  handleDistributionWithdrawalRequested,
+} from './f-sis-vle-02/handlers.js';
 
 export const VLE_SUBSCRIBED_SUBJECTS = [
   'srs.catalogue.programme-updated',
@@ -36,7 +41,11 @@ export const VLE_SUBSCRIBED_SUBJECTS = [
   'srs.enrolment.module-registration-withdrawn',
   'srs.enrolment.module-registration-completed',
   'srs.assessment.module-result-ratified',
-  'srs.adjustment.distributed',
+  // Per-target instructions: the SRS appends the target system as the final
+  // subject token, so the connector is only sent (and only authorised for)
+  // its own. The envelope type omits the suffix.
+  'srs.adjustment.distribution-requested.vle',
+  'srs.adjustment.distribution-withdrawal-requested.vle',
 ] as const;
 
 export type VleEventSubject = (typeof VLE_SUBSCRIBED_SUBJECTS)[number];
@@ -46,6 +55,7 @@ export interface HandlerContext {
   tenantId:     string;
   vleClient:    VleClient | undefined;
   srsAckClient: SrsAcknowledgementClient | undefined;
+  platformDriver: VlePlatformDriver | undefined;
   log:          Logger;
 }
 
@@ -115,9 +125,16 @@ export async function routeToHandler(
       );
       return 'handled';
 
-    case 'srs.adjustment.distributed':
-      await handleAdjustmentDistributed(
-        envelope as DomainEventEnvelope<AdjustmentDistributedV1Payload>,
+    case 'srs.adjustment.distribution-requested':
+      await handleDistributionRequested(
+        envelope as DomainEventEnvelope<AdjustmentDistributionRequestedV1Payload>,
+        ctx,
+      );
+      return 'handled';
+
+    case 'srs.adjustment.distribution-withdrawal-requested':
+      await handleDistributionWithdrawalRequested(
+        envelope as DomainEventEnvelope<AdjustmentDistributionWithdrawalRequestedV1Payload>,
         ctx,
       );
       return 'handled';

@@ -16,7 +16,16 @@ export interface PublishOptions {
   eventId?: string;
   /** When the fact occurred, if earlier than publication (outbox relay). */
   occurredAt?: Date;
+  /**
+   * Extra final subject token for events addressed to one consumer, e.g. the
+   * target system of an adjustment distribution instruction: the message goes
+   * to `${type}.${subjectSuffix}` so each consumer can subscribe to (and be
+   * authorised for) only its own. The envelope type is unchanged.
+   */
+  subjectSuffix?: string;
 }
+
+const SUBJECT_TOKEN = /^[a-z0-9][a-z0-9-]*$/;
 
 /**
  * Publishes domain events to NATS JetStream using the standard envelope.
@@ -66,6 +75,10 @@ export class IntegrationBusPublisher {
     options:            PublishOptions = {},
   ): Promise<void> {
     if (!this.js) throw new Error('IntegrationBusPublisher is not connected');
+    if (options.subjectSuffix !== undefined && !SUBJECT_TOKEN.test(options.subjectSuffix)) {
+      throw new Error(`Invalid subject suffix '${options.subjectSuffix}'`);
+    }
+    const subject = options.subjectSuffix ? `${type}.${options.subjectSuffix}` : type;
 
     const now = clockNow().toISOString();
     const envelope: DomainEventEnvelope<TPayload> = {
@@ -91,7 +104,7 @@ export class IntegrationBusPublisher {
     });
 
     // msgID lets JetStream drop duplicates inside its de-duplication window.
-    await this.js.publish(type, this.jc.encode(envelope), {
+    await this.js.publish(subject, this.jc.encode(envelope), {
       headers: hdrs,
       ...(options.eventId ? { msgID: options.eventId } : {}),
     });

@@ -1,6 +1,9 @@
 /**
  * VleClient — thin HTTP adapter for writing to the VLE.
  *
+ * Adjustments are written through a platform driver (src/vle-platforms),
+ * since each VLE stores them differently.
+ *
  * The connector only ever writes to the VLE (courses, enrolments); it never
  * reads back, so the interface is command-only.  All methods are idempotent
  * on the VLE side (upsert semantics), making them safe to retry inside a DB
@@ -28,17 +31,6 @@ export interface VleUpdateEnrolmentStatusParams {
   statusCode:           'active' | 'suspended' | 'withdrawn' | 'completed';
 }
 
-export interface VleApplyAdjustmentParams {
-  adjustmentId:       string;
-  distributionId:     string;
-  personId:           string;
-  enrolmentId:        string;
-  adjustmentTypeCode: string;
-  scopeCode:          string;
-  validFrom:          string;
-  validTo:            string | null;
-}
-
 export interface VleSetRatifiedResultParams {
   moduleRegistrationId: string;
   aggregateMark:        number;
@@ -50,7 +42,6 @@ export interface VleClient {
   upsertCourse(params: VleUpsertCourseParams): Promise<{ vleCourseId: string }>;
   upsertEnrolment(params: VleUpsertEnrolmentParams): Promise<{ vleEnrolmentId: string }>;
   updateEnrolmentStatus(params: VleUpdateEnrolmentStatusParams): Promise<void>;
-  applyAdjustment(params: VleApplyAdjustmentParams): Promise<void>;
   setRatifiedResult(params: VleSetRatifiedResultParams): Promise<void>;
 }
 
@@ -120,19 +111,6 @@ export class HttpVleClient implements VleClient {
 
     if (!res.ok) {
       throw new VleHttpError(`VLE updateEnrolmentStatus failed: ${res.statusText}`, url, res.status);
-    }
-  }
-
-  async applyAdjustment(params: VleApplyAdjustmentParams): Promise<void> {
-    const url = `${this.baseUrl}/stub/adjustments`;
-    const res = await fetch(url, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify(params),
-    });
-
-    if (!res.ok && res.status !== 409) {
-      throw new VleHttpError(`VLE applyAdjustment failed: ${res.statusText}`, url, res.status);
     }
   }
 

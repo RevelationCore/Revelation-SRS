@@ -11,7 +11,7 @@
 A VLE integration with Revelation SRS has two main jobs:
 
 1. **Course provisioning** (F-SIS-VLE-01): create and update VLE course shells when programmes and modules change in the SRS; enrol students when they register on modules; apply access suspensions and withdrawals from status-change events.
-2. **Adjustment distribution** (F-SIS-VLE-02): receive approved adjustment outcomes (extra time, extended deadlines, alternative formats) via distribution events and apply them in the VLE; acknowledge receipt to SRS.
+2. **Adjustment distribution** (F-SIS-VLE-02): receive the SRS's instructions to apply, and later withdraw, approved reasonable adjustments; turn them into the VLE's own mechanism (per-quiz extra time, group overrides); and report back to the SRS.
 3. **Mark submission** (F-VLE-SIS-01): push assessment results from the VLE back into the SRS after online assessments and portfolio submissions.
 
 The VLE is an external integration — it uses only published event subjects and public REST endpoints. It does not have access to special-category or internal-only data beyond what is explicitly included in published events.
@@ -34,8 +34,13 @@ Subjects:
   srs.enrolment.module-registration-withdrawn
   srs.enrolment.module-registration-completed
   srs.assessment.module-result-ratified
-  srs.adjustment.distributed
+  srs.adjustment.distribution-requested.vle
+  srs.adjustment.distribution-withdrawal-requested.vle
 ```
+
+The two adjustment subjects end in your target system (`vle`): the SRS publishes one instruction per target, so a VLE connector receives, and can be authorised for, only its own. The envelope `type` omits the suffix (`srs.adjustment.distribution-requested`).
+
+Do **not** wait for `srs.adjustment.distributed`. It is a confirmation the SRS publishes *after* a target acknowledges; a connector that waited for it would never apply anything.
 
 See [`event-consumer-guide.md`](../event-consumer-guide.md) for connection details, envelope structure, and consumer group configuration.
 
@@ -136,42 +141,86 @@ Map `newStatus` values: `student` → active, `interrupted` / `suspended` → su
 
 ### Event payloads for adjustment distribution (F-SIS-VLE-02)
 
-**`srs.adjustment.distributed`** — apply an approved adjustment in the VLE:
+**`srs.adjustment.distribution-requested.vle`** — apply an approved adjustment:
 
 ```json
 {
+  "id": "2b0d…",
+  "type": "srs.adjustment.distribution-requested",
+  "dataClassification": "sensitive",
   "payload": {
-    "adjustmentId": "adj-001",
     "distributionId": "dist-001",
+    "adjustmentId": "adj-001",
     "targetSystem": "vle",
-    "distributedAt": "2026-10-01T09:00:00.000Z",
     "personId": "stu-001",
     "enrolmentId": "enr-def456",
     "adjustmentTypeCode": "extra-time",
     "scopeCode": "all",
+    "amount": { "value": 25, "unitCode": "percent-of-duration" },
     "validFrom": "2026-09-01T00:00:00.000Z",
-    "validTo": "2027-07-31T00:00:00.000Z"
+    "validTo": "2027-07-31T00:00:00.000Z",
+    "requestedAt": "2026-08-20T10:15:00.000Z"
   }
 }
 ```
 
-Only process events where `targetSystem === "vle"`. After applying the adjustment in the VLE, acknowledge it to SRS (see Adjustment Acknowledgement below). Ignore `srs.adjustment.approved` — the connector acts only on `srs.adjustment.distributed`.
+| Field | Notes |
+|---|---|
+| `distributionId` | Your idempotency key. The SRS republishes an instruction until it is recorded as published, always with the same envelope `id`, so expect duplicates. |
+| `adjustmentTypeCode` | `extra-time`, `rest-breaks`, `deadline-extension`, `separate-room`, `reader`, `scribe`, or a tenant-added code. |
+| `amount` | Structured amount; absent when the type has none or none was recorded. `unitCode` is `percent-of-duration` (25 = 25% of the assessment's duration), `minutes-per-hour` (15 = 15 minutes per hour), or `days`. |
+| `validFrom`, `validTo` | The adjustment's valid period. Apply it only while it is in force. |
+| Notes | Never included. Target systems, and the staff who use them, see only what they need to act. |
+
+**`srs.adjustment.distribution-withdrawal-requested.vle`** — remove an adjustment you were told to apply, because it has ended:
+
+```json
+{
+  "payload": {
+    "distributionId": "dist-001",
+    "adjustmentId": "adj-001",
+    "targetSystem": "vle",
+    "personId": "stu-001",
+    "enrolmentId": "enr-def456",
+    "endedAt": "2027-03-14T12:00:00.000Z",
+    "reasonCode": "expired",
+    "requestedAt": "2027-03-14T12:00:00.000Z"
+  }
+}
+```
+
+It is sent whenever the instruction was published, whether or not you acknowledged it, since you may have applied it without the acknowledgement arriving. VLE overrides do not lapse on their own, so this is the only removal signal.
+
+### Applying adjustments in the VLE
+
+A VLE stores extra time per assessment, not per student, so a connector should keep a *desired state* per student per course and make the VLE match it, rather than translate each event into one write:
+
+1. **Combine.** Add a student's time adjustments (`extra-time`, `rest-breaks`) on the same enrolment into one percentage: 25% extra time plus 10 minutes per hour of rest breaks is 25 + 16.67 = 41.67%. A VLE holds one value per student per quiz, so applying only the latest adjustment would silently drop the other.
+2. **Compute per assessment.** Extra minutes = limit × percentage, rounded up (25% of 45 minutes = 12), so the student is never short.
+3. **Keep it current.** Re-apply when the student joins a course, when staff add timed assessments, and when an adjustment's valid period starts or ends. Each write states the full value (0 = none), so repeating it is harmless.
+
+How each platform holds it (the reference connector in `adapters/vle/src/vle-platforms` implements these):
+
+| Platform | Mechanism |
+|---|---|
+| Canvas | Per-quiz extra minutes for the student: Classic Quizzes `POST /api/v1/courses/:course_id/quizzes/:quiz_id/extensions` with `quiz_extensions[].extra_time`; New Quizzes `POST /api/quiz/v1/courses/:course_id/quizzes/:assignment_id/accommodations` with `extra_time`. Canvas's course-level New Quizzes accommodation takes one number of minutes for every quiz, so it cannot express a percentage. Canvas does not document how to clear an accommodation; the reference connector writes `extra_time: 0`. Verify both points on a test instance. |
+| Moodle | An SRS-managed group per entitlement in each course ("Extra time +25% (SRS)", ID number `srs-extra-time-25`), maintained with `core_group_*` web services. Course staff give that group an override (time limit × 1.25) on each timed quiz. The reference connector does not write per-user quiz overrides. |
+
+Types without a time amount (`separate-room`, `reader`, `scribe`) need no VLE write. A `deadline-extension` records that the student is *eligible*; whether a particular deadline moves is decided per assessment, so the reference connector does not move deadlines automatically.
 
 ---
 
-## Adjustment Acknowledgement
+## Replying to the SRS
 
-After processing an adjustment distribution event, acknowledge it to SRS:
+Reply to each instruction with one of these calls, all with `Authorization: Bearer <integration-service-token>` and `integration:manage`:
 
-```http
-POST /api/v1/adjustments/{adjustmentId}/distributions/{distributionId}/acknowledge
-Authorization: Bearer <integration-service-token>
-Content-Type: application/json
+| When | Call | Body |
+|---|---|---|
+| Applied (or nothing to apply in the VLE) | `POST /api/v1/adjustments/{adjustmentId}/distributions/{distributionId}/acknowledge` | `{ "targetSystem": "vle" }` |
+| You cannot apply it (no amount for a time adjustment; student unknown to the VLE; you have stopped retrying) | `POST /api/v1/adjustments/{adjustmentId}/distributions/{distributionId}/failure` | `{ "targetSystem": "vle", "reason": "…" }` |
+| Withdrawn | `POST /api/v1/adjustments/{adjustmentId}/distributions/{distributionId}/withdrawal/acknowledge` | `{ "targetSystem": "vle" }` |
 
-{ "targetSystem": "vle" }
-```
-
-Response: `204 No Content`. If the VLE call fails before you can acknowledge, retry until the VLE call succeeds, then acknowledge. Do not acknowledge before the VLE has accepted the adjustment — SRS tracks pending distributions and will not report the adjustment as distributed until acknowledgement is received.
+All three return `204 No Content` and are safe to repeat. Do not acknowledge before the VLE has accepted the change. `409 Conflict` from `acknowledge` means the adjustment has ended and a withdrawal instruction is on its way. A failure report is shown to staff on the distribution record, and you can still acknowledge later once the cause is fixed (for example, after an amount is recorded).
 
 ---
 
@@ -272,7 +321,7 @@ The VLE connector service account requires the `integration-service` role. This 
 | `module-registration:read:all` | Read registration details for reconciliation |
 | `mark:write` | Submit assessment marks |
 | `adjustment:read:all` | Verify adjustment details before applying |
-| `integration:manage` | Acknowledge adjustment distributions |
+| `integration:manage` | Acknowledge, report failure on, and confirm withdrawal of adjustment distributions |
 
 ---
 
@@ -301,4 +350,4 @@ Run a nightly reconciliation pass:
    { "fromDate": "2026-09-01T00:00:00Z" }
    ```
 4. For any mark submitted but not confirmed, re-submit with the same `sourceReference` — the SRS will deduplicate.
-5. For any `srs.adjustment.distributed` event that is unacknowledged in SRS distributions (`GET /api/v1/adjustments/{adjustmentId}/distributions`), re-apply and acknowledge.
+5. Re-apply each student's adjustments in every active course (desired state, as above), so assessments created since are covered. Then, for any distribution that is still `pending` or `withdrawal-requested` in `GET /api/v1/adjustments/{adjustmentId}/distributions`, apply or remove it and reply.

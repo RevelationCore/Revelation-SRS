@@ -361,6 +361,8 @@ All 46 published events by domain:
 | Subject | Version | Data class | Partition key |
 |---|---|---|---|
 | `srs.adjustment.approved` | 1.0.0 | sensitive | enrolmentId |
+| `srs.adjustment.distribution-requested` (subject `….<targetSystem>`) | 1.0.0 | sensitive | distributionId |
+| `srs.adjustment.distribution-withdrawal-requested` (subject `….<targetSystem>`) | 1.0.0 | sensitive | distributionId |
 | `srs.adjustment.distributed` | 1.0.0 | sensitive | adjustmentId |
 | `srs.adjustment.expired` | 1.0.0 | sensitive | enrolmentId |
 

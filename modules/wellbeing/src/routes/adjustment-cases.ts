@@ -499,6 +499,10 @@ export async function adjustmentCaseRoutes(
       validFrom:             string;
       validTo?:              string;
       notes?:                string;
+      /** Structured amount passed to the SRS, e.g. { value: 25,
+       * unitCode: 'percent-of-duration' } for 25% extra time. Target systems
+       * such as a VLE need it to compute per-assessment values. */
+      amount?:               { value: number; unitCode: string };
       forceApprove?:         boolean;
     };
   }>('/api/v1/adjustment-cases/:caseId/approve', {
@@ -568,6 +572,7 @@ export async function adjustmentCaseRoutes(
         };
         if (body.validTo !== undefined) payload['validTo'] = body.validTo;
         if (body.notes   !== undefined) payload['notes']   = body.notes;
+        if (body.amount  !== undefined) payload['amount']  = body.amount;
 
         await enqueueHandoff(tx, tenantId, caseId, personId, payload);
 
@@ -618,6 +623,7 @@ export async function adjustmentCaseRoutes(
         sourceCaseId:       caseId,
         ...(body.validTo !== undefined ? { validTo: body.validTo } : {}),
         ...(body.notes   !== undefined ? { notes:   body.notes }   : {}),
+        ...(body.amount  !== undefined ? { amount:  body.amount }  : {}),
       });
 
       await markHandoffSent(request.server.wellbeingDb, outboxId, { adjustmentId: result.adjustmentId });

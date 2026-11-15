@@ -5,7 +5,7 @@ import { v } from './event-ledger.js';
 export const reconciliationRun = v.table('vle_reconciliation_run', {
   id:           uuid('id').primaryKey().defaultRandom(),
   tenantId:     uuid('tenant_id').notNull(),
-  runType:      text('run_type').notNull(), // roster | adjustments | marks
+  runType:      text('run_type').notNull(), // roster | adjustments | adjustment-coverage | marks
   startedAt:    timestamp('started_at',   { withTimezone: true }).notNull().defaultNow(),
   completedAt:  timestamp('completed_at', { withTimezone: true }),
   driftCount:   integer('drift_count').notNull().default(0),

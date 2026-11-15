@@ -115,6 +115,8 @@ export function approveAdjustmentCase(caseId: string, input: {
   validFrom: string;
   validTo?: string;
   notes?: string;
+  /** Structured amount forwarded to the SRS, e.g. { value: 25, unitCode: 'percent-of-duration' }. */
+  amount?: { value: number; unitCode: string };
   forceApprove?: boolean;
 }): Promise<{ status: string; adjustmentId?: string }> {
   return wellbeingApi.post(`/api/v1/adjustment-cases/${caseId}/approve`, input);

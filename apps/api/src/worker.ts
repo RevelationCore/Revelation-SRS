@@ -13,8 +13,9 @@ import { loadConfig } from './config.js';
  * Temporal worker for Revelation SRS (ADR-024).
  *
  * Runs the review workflows and their database-backed activities, and the
- * reconciler that starts saved reviews, re-delivers saved decisions and
- * publishes saved workflow events. It builds the same service graph as the
+ * reconciler that starts saved reviews, re-delivers saved decisions,
+ * publishes saved workflow events and publishes any adjustment distribution
+ * instructions still due. It builds the same service graph as the
  * API (so activities use the same domain services and rules) but does not
  * serve HTTP requests, apart from a small health endpoint.
  *
@@ -56,7 +57,11 @@ const reconcile = async (): Promise<void> => {
   if (reconciling) return;
   reconciling = true;
   try {
-    const result = await app.workflowReconciler.runOnce();
+    const workflows = await app.workflowReconciler.runOnce();
+    // Adjustment instructions left unpublished (bus down, or the API stopped
+    // between commit and publish) — see AdjustmentDistributionDispatcher.
+    const adjustmentInstructions = await app.adjustmentDispatcher.drain();
+    const result = { ...workflows, adjustmentInstructions };
     lastReconcile = { at: new Date().toISOString(), ok: true, result };
   } catch (err) {
     lastReconcile = { at: new Date().toISOString(), ok: false, error: err instanceof Error ? err.message : String(err) };

@@ -368,6 +368,7 @@ describe('Stage 4 — POST /api/v1/adjustment-cases/:caseId/approve (SRS handoff
         scopeCode:             'all-modules',
         recommendedAdjustment: '25% extra time in all examinations',
         validFrom:             '2026-09-01T00:00:00Z',
+        amount:                { value: 25, unitCode: 'percent-of-duration' },
       },
     });
 
@@ -384,6 +385,9 @@ describe('Stage 4 — POST /api/v1/adjustment-cases/:caseId/approve (SRS handoff
     expect(sub.scopeCode).toBe('all-modules');
     expect(sub.enrolmentId).toBe(ENROLMENT_ID);
     expect(sub.idempotencyKey).toBe(`adj-handoff-${adjustmentCaseId}`);
+    // The structured amount reaches the SRS so target systems can compute
+    // per-assessment values (AJ-21 finding 1).
+    expect(sub.amount).toEqual({ value: 25, unitCode: 'percent-of-duration' });
   });
 
   it('outbox record is marked sent', async () => {

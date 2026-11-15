@@ -295,7 +295,7 @@ Every contract below must be implemented with the full field set above. Where de
 |---|---|---|---|---|---|
 | `attendance-roster-feed.v1` | F-SIS-AM-01 | Outbound | Event + file | Enrolment | Module rosters, academic calendar, adjustment distribution |
 | `attendance-records-alerts.v1` | F-AM-SIS-01 | Inbound | REST / event | Student Identity | Attendance events and absence alerts; `ukviRelevant` flag required |
-| `attendance-adjustments.v1` | F-SIS-AM-02 | Outbound | Event (`srs.adjustment.distributed`) | Assessment | Approved attendance adjustments from SIS only |
+| `attendance-adjustments.v1` | F-SIS-AM-02 | Outbound | Event (`srs.adjustment.distribution-requested.attendance`, `…distribution-withdrawal-requested.attendance`) | Assessment | Approved attendance adjustments from SIS only. No attendance consumer acts on them yet |
 
 ---
 
@@ -305,7 +305,7 @@ Every contract below must be implemented with the full field set above. Where de
 |---|---|---|---|---|---|
 | `vle-course-provisioning.v1` | F-SIS-VLE-01 | Outbound | Event | Enrolment | `srs.student.enrolled`, `srs.enrolment.module-registered`, `srs.student.status-changed` |
 | `vle-assessment-results.v1` | F-VLE-SIS-01 | Inbound | REST POST | Assessment | Marks, completion status, academic alerts; idempotency key = VLE submission reference |
-| `vle-adjustments.v1` | F-SIS-VLE-02 | Outbound | Event (`srs.adjustment.distributed`) | Assessment | Approved adjustments from SIS only; VLE must not receive directly from Wellbeing |
+| `vle-adjustments.v1` | F-SIS-VLE-02 | Outbound | Event (`srs.adjustment.distribution-requested.vle`, `…distribution-withdrawal-requested.vle`) | Assessment | Approved adjustments from SIS only; VLE must not receive directly from Wellbeing |
 
 ---
 

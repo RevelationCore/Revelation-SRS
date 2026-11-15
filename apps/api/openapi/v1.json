@@ -640,6 +640,25 @@
                     "format": "date-time",
                     "type": "string"
                   },
+                  "amount": {
+                    "description": "Structured amount, e.g. { value: 25, unitCode: \"percent-of-duration\" }",
+                    "type": "object",
+                    "required": [
+                      "value",
+                      "unitCode"
+                    ],
+                    "properties": {
+                      "value": {
+                        "exclusiveMinimum": 0,
+                        "maximum": 999999.99,
+                        "type": "number"
+                      },
+                      "unitCode": {
+                        "minLength": 1,
+                        "type": "string"
+                      }
+                    }
+                  },
                   "notes": {
                     "type": "string"
                   },
@@ -847,6 +866,7 @@
                       "personId",
                       "adjustmentTypeCode",
                       "scopeCode",
+                      "amount",
                       "notes",
                       "actorId",
                       "validFrom",
@@ -871,6 +891,32 @@
                       },
                       "scopeCode": {
                         "type": "string"
+                      },
+                      "amount": {
+                        "anyOf": [
+                          {
+                            "description": "Structured amount, e.g. { value: 25, unitCode: \"percent-of-duration\" }",
+                            "type": "object",
+                            "required": [
+                              "value",
+                              "unitCode"
+                            ],
+                            "properties": {
+                              "value": {
+                                "exclusiveMinimum": 0,
+                                "maximum": 999999.99,
+                                "type": "number"
+                              },
+                              "unitCode": {
+                                "minLength": 1,
+                                "type": "string"
+                              }
+                            }
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
                       },
                       "notes": {
                         "anyOf": [
@@ -999,6 +1045,7 @@
                     "personId",
                     "adjustmentTypeCode",
                     "scopeCode",
+                    "amount",
                     "notes",
                     "actorId",
                     "validFrom",
@@ -1023,6 +1070,32 @@
                     },
                     "scopeCode": {
                       "type": "string"
+                    },
+                    "amount": {
+                      "anyOf": [
+                        {
+                          "description": "Structured amount, e.g. { value: 25, unitCode: \"percent-of-duration\" }",
+                          "type": "object",
+                          "required": [
+                            "value",
+                            "unitCode"
+                          ],
+                          "properties": {
+                            "value": {
+                              "exclusiveMinimum": 0,
+                              "maximum": 999999.99,
+                              "type": "number"
+                            },
+                            "unitCode": {
+                              "minLength": 1,
+                              "type": "string"
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     },
                     "notes": {
                       "anyOf": [
@@ -1153,6 +1226,10 @@
                       "statusCode",
                       "distributedAt",
                       "failureReason",
+                      "requestPublishedAt",
+                      "withdrawalRequestedAt",
+                      "withdrawalPublishedAt",
+                      "withdrawnAt",
                       "createdAt",
                       "updatedAt"
                     ],
@@ -1180,6 +1257,46 @@
                         ]
                       },
                       "failureReason": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "requestPublishedAt": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "withdrawalRequestedAt": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "withdrawalPublishedAt": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "withdrawnAt": {
                         "anyOf": [
                           {
                             "type": "string"
@@ -1236,6 +1353,230 @@
     "/api/v1/adjustments/{adjustmentId}/distributions/{distributionId}/acknowledge": {
       "post": {
         "operationId": "createAdjustmentsByAdjustmentIdDistributionsByDistributionIdAcknowledge",
+        "tags": [
+          "adjustments"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "targetSystem"
+                ],
+                "properties": {
+                  "targetSystem": {
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "adjustmentId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "distributionId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "204": {
+            "description": "Default Response"
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/adjustments/{adjustmentId}/distributions/{distributionId}/failure": {
+      "post": {
+        "operationId": "createAdjustmentsByAdjustmentIdDistributionsByDistributionIdFailure",
+        "tags": [
+          "adjustments"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "targetSystem",
+                  "reason"
+                ],
+                "properties": {
+                  "targetSystem": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "reason": {
+                    "minLength": 1,
+                    "maxLength": 2000,
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "adjustmentId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "distributionId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "integration",
+        "responses": {
+          "204": {
+            "description": "Default Response"
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/adjustments/{adjustmentId}/distributions/{distributionId}/withdrawal/acknowledge": {
+      "post": {
+        "operationId": "createAdjustmentsByAdjustmentIdDistributionsByDistributionIdWithdrawalAcknowledge",
         "tags": [
           "adjustments"
         ],

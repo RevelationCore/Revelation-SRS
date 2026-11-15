@@ -14,6 +14,7 @@ import { HealthReporter } from './registry/health-reporter.js';
 import { RegistrationLoader } from './registry/loader.js';
 import { healthRoutes } from './routes/health.js';
 import { HttpVleClient, type VleClient } from './vle-client/client.js';
+import { createPlatformDriver, type VlePlatformDriver } from './vle-platforms/index.js';
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -22,6 +23,7 @@ declare module 'fastify' {
     registrationLoader:  RegistrationLoader;
     healthReporter:      HealthReporter;
     vleClient:           VleClient;
+    platformDriver:      VlePlatformDriver;
   }
 }
 
@@ -30,6 +32,8 @@ export interface BuildAppOptions {
   registryClient?: SrsRegistryClient;
   /** Override the VLE HTTP client — used in tests to point at the stub VLE. */
   vleClient?: VleClient;
+  /** Override the platform driver for adjustments — used in tests. */
+  platformDriver?: VlePlatformDriver;
 }
 
 export async function buildApp(
@@ -72,6 +76,10 @@ export async function buildApp(
 
   const effectiveVleClient = opts.vleClient ?? new HttpVleClient(config.vleEndpointUrl);
   fastify.decorate('vleClient', effectiveVleClient);
+  fastify.decorate(
+    'platformDriver',
+    opts.platformDriver ?? createPlatformDriver(config.vlePlatform, config.vleEndpointUrl, config.vleApiToken),
+  );
 
   // Load registration from SRS on startup.
   fastify.addHook('onReady', async () => {

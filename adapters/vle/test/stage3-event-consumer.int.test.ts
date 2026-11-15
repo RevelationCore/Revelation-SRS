@@ -209,12 +209,15 @@ describe('Stage 3 — dispatch() correct-tenant processing', () => {
     'srs.enrolment.module-registration-withdrawn',
     'srs.enrolment.module-registration-completed',
     'srs.assessment.module-result-ratified',
-    'srs.adjustment.distributed',
+    'srs.adjustment.distribution-requested.vle',
+    'srs.adjustment.distribution-withdrawal-requested.vle',
   ] as const;
 
   it.each(VLE_SUBJECTS)('3.x dispatch() records "processed" for %s', async (subject) => {
     const consumer = new VleEventConsumer('nats://unused', ctx.db, TENANT, log);
-    const envelope = makeEnvelope({ type: subject, tenantId: TENANT });
+    // Per-target subjects carry the target as a final token; the envelope
+    // type does not.
+    const envelope = makeEnvelope({ type: subject.replace(/\.vle$/, ''), tenantId: TENANT });
 
     await consumer.dispatch(envelope);
 

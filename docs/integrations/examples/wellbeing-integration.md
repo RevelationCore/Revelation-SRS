@@ -137,7 +137,8 @@ Content-Type: application/json
   "scopeCode": "exam",
   "validFrom": "2026-09-01T00:00:00.000Z",
   "validTo": "2027-07-31T00:00:00.000Z",
-  "notes": "25% additional time on timed written examinations",
+  "amount": { "value": 25, "unitCode": "percent-of-duration" },
+  "notes": "Timed written examinations",
   "sourceCaseId": "0b8e4f2a-7c19-4d6e-a3b5-91f04c2d7e68"
 }
 ```
@@ -149,10 +150,20 @@ Content-Type: application/json
 | `scopeCode` | Yes | A code from the `adjustment-scope-code` value set. It decides which target systems receive the adjustment (see below). |
 | `validFrom` | Yes | ISO 8601 date-time when the adjustment starts. |
 | `validTo` | No | ISO 8601 date-time when it ends; must be after `validFrom`. Omit it for an open-ended adjustment. |
+| `amount` | No | Structured amount: `{ "value": <number>, "unitCode": <code> }`, with `value` greater than 0 and at most two decimal places. `unitCode` comes from the `adjustment-amount-unit-code` value set (see below). Send it whenever the adjustment has a quantity: target systems such as a VLE need it to compute per-assessment extra time, and report a failure without it. |
 | `notes` | No | Free text recorded on the SRS adjustment. It is not included in domain events, but anyone who can read the adjustment can read it, so keep it to the operational instruction and never put evidence or diagnosis here. |
 | `sourceCaseId` | No | The wellbeing module's adjustment-case ID, kept as an opaque reference back to the originating case. |
 
-The seeded `adjustment-type-code` values are `extra-time`, `separate-room`, `deadline-extension`, `reader`, `scribe` and `rest-breaks`; a tenant may configure others. The SRS has no structured field for the amount of an adjustment, such as the extra-time percentage. State it in `notes`, or attach an outcome document with `POST /api/v1/students/{personId}/adjustments/{adjustmentId}/outcome-document`.
+The seeded `adjustment-type-code` values are `extra-time`, `separate-room`, `deadline-extension`, `reader`, `scribe` and `rest-breaks`; a tenant may configure others. Each seeded type accepts these amount units:
+
+| Type | `amount.unitCode` |
+|---|---|
+| `extra-time` | `percent-of-duration` (25 = 25% of the assessment's duration) or `minutes-per-hour` (15 = 15 minutes per hour) |
+| `rest-breaks` | `minutes-per-hour` |
+| `deadline-extension` | `days` (the most a deadline may be extended by) |
+| `separate-room`, `reader`, `scribe` | none; sending an amount returns `422` |
+
+A tenant-added type accepts any unit in the value set. Detail the coded fields cannot hold, such as a seating or software specification, belongs in an outcome document (`POST /api/v1/students/{personId}/adjustments/{adjustmentId}/outcome-document`). In the wellbeing module, pass `amount` in the body of `POST /api/v1/adjustment-cases/{caseId}/approve`; it is forwarded unchanged.
 
 The `scopeCode` value decides which target systems get a distribution record:
 
@@ -167,17 +178,19 @@ Responses:
 
 | Status | Meaning |
 |---|---|
-| `201` | Recorded. Body: `{ "adjustmentId": "<uuid>" }`. The SRS creates one `pending` distribution per target system and publishes `srs.adjustment.approved`. |
+| `201` | Recorded. Body: `{ "adjustmentId": "<uuid>" }`. The SRS creates one `pending` distribution per target system, publishes `srs.adjustment.approved`, and sends each target its instruction (below). |
 | `200` | A retry of a request already recorded with this idempotency key and the same body. Body: the original `{ "adjustmentId" }`; nothing new is recorded or published. |
 | `404` | The person or enrolment was not found, or the enrolment belongs to someone else. |
 | `409` | The idempotency key was already used for a different body. |
-| `422` | A code is not active in its value set, or `validTo` is not after `validFrom`. |
+| `422` | A code is not active in its value set, `validTo` is not after `validFrom`, or the amount does not suit the type. |
 
 The SRS honours `X-Idempotency-Key` (or `Idempotency-Key`) on this route, so a handoff whose response was lost can be retried safely. Use one stable key per approved case, as the wellbeing module does with `adj-handoff-{caseId}`.
 
 ### Tracking distribution
 
-The wellbeing module does not acknowledge distributions. Each target system's connector applies the adjustment and acknowledges its own distribution record, using the `integration:manage` permission and a body of `{ "targetSystem": "<vle|attendance|exams>" }`. A repeated acknowledgement is accepted without effect; acknowledging a distribution that was superseded by an expiry returns `409`.
+The wellbeing module does not deliver or acknowledge distributions. For each distribution record, the SRS publishes an instruction to that target system alone, `srs.adjustment.distribution-requested.<target>`, carrying the type, scope, amount and dates but never the notes. Each target's connector applies it and replies with `integration:manage`: `acknowledge` when applied, or `failure` with a reason when it cannot apply it. Instructions are kept in the SRS until published, so they are not lost while the event bus is unavailable; the worker's reconcile loop sends anything outstanding.
+
+When an adjustment expires, every target whose instruction was already published is sent `srs.adjustment.distribution-withdrawal-requested.<target>`, and confirms removal with `POST /api/v1/adjustments/{adjustmentId}/distributions/{distributionId}/withdrawal/acknowledge`. Instructions that were never published are marked `superseded` instead.
 
 To see how far an adjustment has reached, read its distribution records:
 
@@ -186,7 +199,16 @@ GET /api/v1/adjustments/{adjustmentId}/distributions
 Authorization: Bearer <wellbeing-token>
 ```
 
-Each record has a `targetSystem` and a `statusCode` of `pending`, `distributed`, `failed` or `superseded`. `srs.adjustment.distributed` is published when a target acknowledges, and `srs.adjustment.expired` when the adjustment is expired; an expired adjustment stays on the student's record with its end date.
+| `statusCode` | Meaning |
+|---|---|
+| `pending` | Waiting for the target. `requestPublishedAt` is null until the instruction has been sent. |
+| `distributed` | The target confirmed it applied the adjustment (`distributedAt`). |
+| `failed` | The target reported it cannot apply it; `failureReason` says why. It can still acknowledge later. |
+| `superseded` | The adjustment ended before the instruction was sent. |
+| `withdrawal-requested` | The adjustment ended; the target has been (or is about to be) told to remove it. `failureReason` is set if removal failed. |
+| `withdrawn` | The target confirmed removal (`withdrawnAt`). |
+
+`srs.adjustment.distributed` is published when a target acknowledges, and `srs.adjustment.expired` when the adjustment is expired; an expired adjustment stays on the student's record with its end date.
 
 ---
 

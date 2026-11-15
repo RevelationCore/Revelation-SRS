@@ -30,6 +30,9 @@ import { and, eq } from 'drizzle-orm';
 import type { VleTx } from '../../db/client.js';
 import { enrolmentMap } from '../../db/schema/enrolment-map.js';
 import type { VleClient } from '../../vle-client/client.js';
+import type { VlePlatformDriver } from '../../vle-platforms/driver.js';
+import { syncPersonAccommodations } from '../f-sis-vle-02/accommodation-sync.js';
+import { personHasMappedAdjustments } from '../f-sis-vle-02/adjustment-map-repository.js';
 
 import { toVleAccessState } from './access-state.js';
 import { getCourseMapping, upsertCourseMapping } from './course-map-repository.js';
@@ -40,6 +43,7 @@ export interface HandlerContext {
   tx:        VleTx;
   tenantId:  string;
   vleClient: VleClient | undefined;
+  platformDriver?: VlePlatformDriver | undefined;
   log:       Logger;
 }
 
@@ -168,6 +172,15 @@ export async function handleModuleRegistered(
       { moduleRegistrationId, vleEnrolmentId: result.vleEnrolmentId },
       'F-SIS-VLE-01: module-registered → VLE enrolment created',
     );
+
+    // A student who already has adjustments in force gets them in the new
+    // course too; otherwise they would only arrive at the next coverage run.
+    if (ctx.platformDriver && await personHasMappedAdjustments(tx, tenantId, personId)) {
+      const summary = await syncPersonAccommodations(
+        tx, tenantId, personId, ctx.platformDriver, new Date(), courseMapping.vleCourseId,
+      );
+      log.debug({ moduleRegistrationId, ...summary }, 'F-SIS-VLE-01: adjustments applied in new course');
+    }
   } else {
     await upsertEnrolmentMapping(tx, tenantId, {
       moduleRegistrationId,

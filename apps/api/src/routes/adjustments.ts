@@ -15,12 +15,18 @@ const ErrorSchema = Type.Object({
   detail: Type.Optional(Type.String()),
 });
 
+const AmountSchema = Type.Object({
+  value: Type.Number({ exclusiveMinimum: 0, maximum: 999999.99 }),
+  unitCode: Type.String({ minLength: 1 }),
+}, { description: 'Structured amount, e.g. { value: 25, unitCode: "percent-of-duration" }' });
+
 const AdjustmentSchema = Type.Object({
   adjustmentId: Type.String(),
   enrolmentId: Type.String(),
   personId: Type.String(),
   adjustmentTypeCode: Type.String(),
   scopeCode: Type.String(),
+  amount: Type.Union([AmountSchema, Type.Null()]),
   notes: Type.Union([Type.String(), Type.Null()]),
   actorId: Type.String(),
   validFrom: Type.String(),
@@ -38,6 +44,10 @@ const DistributionSchema = Type.Object({
   statusCode: Type.String(),
   distributedAt: Type.Union([Type.String(), Type.Null()]),
   failureReason: Type.Union([Type.String(), Type.Null()]),
+  requestPublishedAt: Type.Union([Type.String(), Type.Null()]),
+  withdrawalRequestedAt: Type.Union([Type.String(), Type.Null()]),
+  withdrawalPublishedAt: Type.Union([Type.String(), Type.Null()]),
+  withdrawnAt: Type.Union([Type.String(), Type.Null()]),
   createdAt: Type.String(),
   updatedAt: Type.String(),
 });
@@ -48,12 +58,18 @@ const RecordAdjustmentBody = Type.Object({
   scopeCode: Type.String({ minLength: 1 }),
   validFrom: Type.String({ format: 'date-time' }),
   validTo: Type.Optional(Type.String({ format: 'date-time' })),
+  amount: Type.Optional(AmountSchema),
   notes: Type.Optional(Type.String()),
   sourceCaseId: Type.Optional(Type.String()),
 });
 
 const ListAdjustmentQuery = Type.Object({
   enrolmentId: Type.Optional(Type.String()),
+});
+
+const DistributionFailureBody = Type.Object({
+  targetSystem: Type.String({ minLength: 1 }),
+  reason: Type.String({ minLength: 1, maxLength: 2000 }),
 });
 
 const AcknowledgeDistributionBody = Type.Object({
@@ -201,6 +217,65 @@ export function adjustmentRoutes(fastify: FastifyInstance): void {
   );
 
   fastify.post(
+    '/adjustments/:adjustmentId/distributions/:distributionId/failure',
+    {
+      schema: {
+        params: Type.Object({
+          adjustmentId: Type.String(),
+          distributionId: Type.String(),
+        }),
+        body: DistributionFailureBody,
+        response: { 204: Type.Null(), 404: ErrorSchema, 409: ErrorSchema },
+      },
+      preHandler: [requirePermission('integration:manage')],
+    },
+    async (request, reply) => {
+      const { adjustmentId, distributionId } = request.params as {
+        adjustmentId: string;
+        distributionId: string;
+      };
+      const body = request.body as { targetSystem: string; reason: string };
+      await fastify.adjustmentService.reportDistributionFailure(
+        adjustmentId,
+        distributionId,
+        request.tenantId,
+        body.targetSystem,
+        body.reason,
+      );
+      await reply.code(204).send();
+    },
+  );
+
+  fastify.post(
+    '/adjustments/:adjustmentId/distributions/:distributionId/withdrawal/acknowledge',
+    {
+      schema: {
+        params: Type.Object({
+          adjustmentId: Type.String(),
+          distributionId: Type.String(),
+        }),
+        body: AcknowledgeDistributionBody,
+        response: { 204: Type.Null(), 404: ErrorSchema, 409: ErrorSchema },
+      },
+      preHandler: [requirePermission('integration:manage')],
+    },
+    async (request, reply) => {
+      const { adjustmentId, distributionId } = request.params as {
+        adjustmentId: string;
+        distributionId: string;
+      };
+      const body = request.body as { targetSystem: string };
+      await fastify.adjustmentService.acknowledgeWithdrawal(
+        adjustmentId,
+        distributionId,
+        request.tenantId,
+        body.targetSystem,
+      );
+      await reply.code(204).send();
+    },
+  );
+
+  fastify.post(
     '/adjustments/:adjustmentId/expire',
     {
       schema: {
@@ -318,6 +393,10 @@ function distributionToWire(distribution: AdjustmentDistributionDto) {
   return {
     ...distribution,
     distributedAt: distribution.distributedAt?.toISOString() ?? null,
+    requestPublishedAt: distribution.requestPublishedAt?.toISOString() ?? null,
+    withdrawalRequestedAt: distribution.withdrawalRequestedAt?.toISOString() ?? null,
+    withdrawalPublishedAt: distribution.withdrawalPublishedAt?.toISOString() ?? null,
+    withdrawnAt: distribution.withdrawnAt?.toISOString() ?? null,
     createdAt: distribution.createdAt.toISOString(),
     updatedAt: distribution.updatedAt.toISOString(),
   };

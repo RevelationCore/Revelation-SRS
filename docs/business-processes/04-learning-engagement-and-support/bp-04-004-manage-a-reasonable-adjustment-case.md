@@ -27,7 +27,7 @@
 | Reference-model flows | F-WELL-SIS-01 (adjustment handoff); F-WELL-SIS-02 (assessment venue). See integration contract catalogue; confirm detailed F-number mapping during architecture review |
 | Functional requirements | See functional requirements; detailed mapping remains an SME/architecture review action |
 | Data entities | `wellbeing.adjustment_case`, `adjustment_assessment`, `adjustment_panel_decision`, `adjustment_case_evidence` (module-owned process); `reasonable_adjustment`, `adjustment_distribution` (core-SRS-owned distributed outcome, linked back to the case via `source_case_id`) |
-| Domain events | `srs.adjustment.approved`, `srs.adjustment.distributed`, `srs.adjustment.expired` (published by core SRS on the distributed-outcome record; the module-owned case process itself has no event stream — see Change history v0.2) |
+| Domain events | `srs.adjustment.approved`, `srs.adjustment.distribution-requested.<target>`, `srs.adjustment.distribution-withdrawal-requested.<target>`, `srs.adjustment.distributed`, `srs.adjustment.expired` (published by core SRS on the distributed-outcome record; the module-owned case process itself has no event stream — see Change history v0.2) |
 | Integration contracts | Case system → SRS; SRS → exam/VLE/attendance |
 
 ## Purpose and outcome

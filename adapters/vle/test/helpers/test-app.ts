@@ -52,6 +52,7 @@ export async function startTestApp(): Promise<TestVleApp> {
 
   const migrationsDir = join(__dirname, '../../migrations');
   await applySql(db, join(migrationsDir, '0000_vle_foundations.sql'));
+  await applySql(db, join(migrationsDir, '0001_adjustment_instructions.sql'));
 
   const tenantId       = '00000000-0000-0000-0000-000000000001';
   const registrationId = '00000000-0000-0000-0000-000000000099';
@@ -86,6 +87,10 @@ export async function startTestApp(): Promise<TestVleApp> {
     integrationRegistrationId: registrationId,
     serviceAccountToken:       'test-token',
     vleEndpointUrl:            stubVleBaseUrl,
+    vlePlatform:               'stub',
+    vleApiToken:               undefined,
+    consumerEnabled:           false,
+    reconcileIntervalMs:       0,
     endpointSafetyClass:       'simulator',
     retryMaxAttempts:          3,
     retryBackoffMs:            50,

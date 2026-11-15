@@ -47,7 +47,8 @@
 | `progression_decision` recorded | `srs.progression.decided` | EWP, VLE, CRM | Only after ratification. |
 | `award` conferred | `srs.award.conferred`, `srs.student.graduated` | EWP, EDRMS, CRIS, IAM, CRM | `student.graduated` closes lifecycle. |
 | `reasonable_adjustment` approved/expired | `srs.adjustment.approved`, `srs.adjustment.expired` | Internal, VLE, AM, EXAMS | Special-category payload minimised. |
-| `adjustment_distribution` succeeds/fails | `srs.adjustment.distributed`, `srs.adjustment.distribution-failed` | Target system, integration dashboard, Registry | One event per target. |
+| `adjustment_distribution` created / adjustment expired | `srs.adjustment.distribution-requested.<target>`, `srs.adjustment.distribution-withdrawal-requested.<target>` | The one target system | Instruction per target; the distribution row is the outbox, so unpublished instructions are republished. Failure is reported by the target via `POST …/distributions/:id/failure` (a recorded status, not an event). |
+| `adjustment_distribution` acknowledged | `srs.adjustment.distributed` | Wellbeing, integration dashboard, Registry | Confirmation only; targets must not wait for it. |
 | `exceptional_circumstances` recorded/updated | `srs.exceptional-circumstances.flagged`, `srs.exceptional-circumstances.updated` | Exam Board tooling | Special-category depending on reason/evidence. |
 | `misconduct_outcome` recorded/updated | `srs.misconduct.outcome-recorded`, `srs.misconduct.outcome-updated` | EWP, Exam Board tooling, DW | Penalty effects queryable via related table. |
 | `exam_entry` created | `srs.exam.entry-created` | EXAMS | Includes assessment component and enrolment. |

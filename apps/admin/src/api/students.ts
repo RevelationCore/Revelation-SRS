@@ -123,6 +123,8 @@ export interface Adjustment {
   personId:           string;
   adjustmentTypeCode: string;
   scopeCode:          string;
+  /** Structured amount, e.g. { value: 25, unitCode: 'percent-of-duration' }. */
+  amount:             { value: number; unitCode: string } | null;
   notes:              string | null;
   actorId:            string;
   validFrom:          string;

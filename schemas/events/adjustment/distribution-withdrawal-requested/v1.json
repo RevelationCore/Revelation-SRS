@@ -1,0 +1,50 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/AdjustmentDistributionWithdrawalRequestedV1Payload",
+  "definitions": {
+    "AdjustmentDistributionWithdrawalRequestedV1Payload": {
+      "type": "object",
+      "properties": {
+        "distributionId": {
+          "type": "string"
+        },
+        "adjustmentId": {
+          "type": "string"
+        },
+        "targetSystem": {
+          "type": "string"
+        },
+        "personId": {
+          "type": "string"
+        },
+        "enrolmentId": {
+          "type": "string"
+        },
+        "endedAt": {
+          "type": "string"
+        },
+        "reasonCode": {
+          "type": "string",
+          "const": "expired"
+        },
+        "requestedAt": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "distributionId",
+        "adjustmentId",
+        "targetSystem",
+        "personId",
+        "enrolmentId",
+        "endedAt",
+        "reasonCode",
+        "requestedAt"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$id": "https://schemas.revelation-srs.io/events/adjustment/distribution-withdrawal-requested/v1.json",
+  "title": "AdjustmentDistributionWithdrawalRequestedV1Payload",
+  "description": "Payload schema for srs.adjustment.distribution-withdrawal-requested v1.0.0"
+}

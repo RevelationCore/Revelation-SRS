@@ -4,6 +4,9 @@ import type { VleDb } from '../db/client.js';
 import type { SrsAcknowledgementClient } from '../srs-client/acknowledgement-client.js';
 import type { SrsMarkClient }            from '../srs-client/mark-client.js';
 import type { VleClient }                from '../vle-client/client.js';
+import type { VlePlatformDriver }        from '../vle-platforms/driver.js';
+import { syncPersonAccommodations } from '../consumers/f-sis-vle-02/accommodation-sync.js';
+import { findPersonsWithInForceAdjustments } from '../consumers/f-sis-vle-02/adjustment-map-repository.js';
 
 import {
   completeReconciliationRun,
@@ -32,6 +35,7 @@ export class ReconciliationService {
     private readonly srsAckClient:   SrsAcknowledgementClient | undefined,
     private readonly srsMarkClient:  SrsMarkClient | undefined,
     private readonly log:            Logger,
+    private readonly platformDriver?: VlePlatformDriver,
   ) {}
 
   async reconcileRoster(): Promise<ReconciliationResult> {
@@ -83,6 +87,36 @@ export class ReconciliationService {
 
     await completeReconciliationRun(this.db, runId, { driftCount, repairedCount });
     return { runId, runType: 'adjustments', driftCount, repairedCount };
+  }
+
+  /**
+   * Re-assert every student's time accommodations in every active course.
+   *
+   * VLE accommodations attach to individual assessments, so one written when
+   * an instruction arrived does not cover a quiz staff create later. This run
+   * re-derives each student's desired state and pushes it again (idempotent),
+   * which also applies adjustments whose valid period has since started and
+   * clears those whose period has ended. driftCount = students checked;
+   * repairedCount = students whose VLE state needed a write.
+   */
+  async reconcileAdjustmentCoverage(now: Date = new Date()): Promise<ReconciliationResult> {
+    const runId = await insertReconciliationRun(this.db, this.tenantId, 'adjustment-coverage');
+    const persons = this.platformDriver ? await findPersonsWithInForceAdjustments(this.db, this.tenantId) : [];
+    let repairedCount = 0;
+
+    for (const personId of persons) {
+      try {
+        const summary = await this.db.transaction((tx) =>
+          syncPersonAccommodations(tx, this.tenantId, personId, this.platformDriver!, now),
+        );
+        if (summary.changes > 0) repairedCount++;
+      } catch (err) {
+        this.log.warn({ personId, err }, 'reconcileAdjustmentCoverage: sync failed');
+      }
+    }
+
+    await completeReconciliationRun(this.db, runId, { driftCount: persons.length, repairedCount });
+    return { runId, runType: 'adjustment-coverage', driftCount: persons.length, repairedCount };
   }
 
   async reconcileMarks(): Promise<ReconciliationResult> {

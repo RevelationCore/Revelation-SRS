@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "generated": "2026-08-17T13:35:04.554Z",
+  "generated": "2026-11-15T11:58:59.520Z",
   "description": "Machine-readable registry of all Revelation SRS domain events.",
   "schemaUriBase": "https://schemas.revelation-srs.io/events",
   "events": [
@@ -302,7 +302,7 @@
       "dataClass": "sensitive",
       "partitionKey": "adjustmentId",
       "consumers": [
-        "assessment-venue-adapter"
+        "wellbeing-module"
       ],
       "status": "published"
     },
@@ -316,6 +316,32 @@
       "consumers": [
         "assessment-venue-adapter",
         "wellbeing-module"
+      ],
+      "status": "published"
+    },
+    {
+      "subject": "srs.adjustment.distribution-requested",
+      "subjectSuffix": "{targetSystem}",
+      "version": "1.0.0",
+      "schemaRef": "https://schemas.revelation-srs.io/events/adjustment/distribution-requested/v1.json",
+      "schemaPath": "schemas/events/adjustment/distribution-requested/v1.json",
+      "dataClass": "sensitive",
+      "partitionKey": "distributionId",
+      "consumers": [
+        "vle-adapter"
+      ],
+      "status": "published"
+    },
+    {
+      "subject": "srs.adjustment.distribution-withdrawal-requested",
+      "subjectSuffix": "{targetSystem}",
+      "version": "1.0.0",
+      "schemaRef": "https://schemas.revelation-srs.io/events/adjustment/distribution-withdrawal-requested/v1.json",
+      "schemaPath": "schemas/events/adjustment/distribution-withdrawal-requested/v1.json",
+      "dataClass": "sensitive",
+      "partitionKey": "distributionId",
+      "consumers": [
+        "vle-adapter"
       ],
       "status": "published"
     },

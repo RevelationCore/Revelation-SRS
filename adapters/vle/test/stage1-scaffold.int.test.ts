@@ -192,46 +192,37 @@ describe('Stage 1 — Connector Scaffold and Stub VLE', () => {
 
   // ── Stub VLE adjustments ─────────────────────────────────────────────────────
 
-  describe('Stub VLE — adjustments', () => {
+  describe('Stub VLE — time accommodations', () => {
     beforeAll(async () => {
       await ctx.stubVle.inject({ method: 'DELETE', url: '/stub/reset' });
     });
 
-    it('POST /stub/adjustments records an applied adjustment', async () => {
+    it('PUT sets a student\'s additional time in a course', async () => {
       const res = await ctx.stubVle.inject({
-        method:  'POST',
-        url:     '/stub/adjustments',
-        payload: {
-          adjustmentId:       'adj-001',
-          distributionId:     'dist-001',
-          personId:           'person-001',
-          enrolmentId:        'enr-001',
-          adjustmentTypeCode: 'extra-time',
-          scopeCode:          'all',
-          validFrom:          '2026-09-01T00:00:00Z',
-        },
+        method:  'PUT',
+        url:     '/stub/courses/vle-course-1/time-accommodations/person-001',
+        payload: { extraTimePercent: 25 },
       });
-      expect(res.statusCode).toBe(201);
-      const body = res.json<{ adjustmentTypeCode: string; appliedAt: string }>();
-      expect(body.adjustmentTypeCode).toBe('extra-time');
-      expect(body.appliedAt).toBeTruthy();
-    });
-
-    it('GET /stub/adjustments lists all adjustments', async () => {
-      const res   = await ctx.stubVle.inject({ method: 'GET', url: '/stub/adjustments' });
-      const items = res.json<{ items: unknown[] }>().items;
-      expect(items).toHaveLength(1);
-    });
-
-    it('GET /stub/adjustments/:id returns the adjustment', async () => {
-      const res = await ctx.stubVle.inject({ method: 'GET', url: '/stub/adjustments/adj-001' });
       expect(res.statusCode).toBe(200);
-      expect(res.json<{ adjustmentId: string }>().adjustmentId).toBe('adj-001');
+      expect(res.json<{ extraTimePercent: number }>().extraTimePercent).toBe(25);
     });
 
-    it('GET /stub/adjustments/:id returns 404 for unknown id', async () => {
-      const res = await ctx.stubVle.inject({ method: 'GET', url: '/stub/adjustments/unknown' });
-      expect(res.statusCode).toBe(404);
+    it('PUT again replaces the value rather than adding to it', async () => {
+      await ctx.stubVle.inject({
+        method:  'PUT',
+        url:     '/stub/courses/vle-course-1/time-accommodations/person-001',
+        payload: { extraTimePercent: 40 },
+      });
+      const res   = await ctx.stubVle.inject({ method: 'GET', url: '/stub/time-accommodations' });
+      const items = res.json<{ items: Array<{ extraTimePercent: number }> }>().items;
+      expect(items).toHaveLength(1);
+      expect(items[0]?.extraTimePercent).toBe(40);
+    });
+
+    it('DELETE removes it, and 404s when there is none', async () => {
+      const url = '/stub/courses/vle-course-1/time-accommodations/person-001';
+      expect((await ctx.stubVle.inject({ method: 'DELETE', url })).statusCode).toBe(204);
+      expect((await ctx.stubVle.inject({ method: 'DELETE', url })).statusCode).toBe(404);
     });
   });
 

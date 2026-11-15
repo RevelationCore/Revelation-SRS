@@ -24,6 +24,7 @@ import {
   ValidationError,
 } from '@revelation-srs/domain';
 import type {
+  AdjustmentAmountV1,
   AdjustmentApprovedV1Payload,
   AdjustmentDistributedV1Payload,
   AdjustmentExpiredV1Payload,
@@ -33,6 +34,9 @@ import type { IntegrationBusPublisher } from '../integration-bus/publisher.js';
 import type { ValueSetService } from '../value-sets/service.js';
 import { clockNow } from '../clock.js';
 
+import { amountFromRow, validateAmountForType } from './amount.js';
+import type { AdjustmentDistributionDispatcher } from './distribution-dispatcher.js';
+
 export interface RecordAdjustmentInput {
   enrolmentId: string;
   adjustmentTypeCode: string;
@@ -40,6 +44,9 @@ export interface RecordAdjustmentInput {
   validFrom: string;
   validTo?: string;
   notes?: string;
+  /** Structured amount, e.g. { value: 25, unitCode: 'percent-of-duration' }.
+   * Target systems that compute per-assessment values need it. */
+  amount?: AdjustmentAmountV1;
   /** Wellbeing module adjustment_case logical id, when this record
    * originated from that module's referral -> assessment -> approve
    * workflow rather than a direct registry-administrator entry. Opaque
@@ -60,6 +67,7 @@ export interface AdjustmentDto {
   personId: string;
   adjustmentTypeCode: string;
   scopeCode: string;
+  amount: AdjustmentAmountV1 | null;
   notes: string | null;
   actorId: string;
   validFrom: Date;
@@ -83,6 +91,11 @@ export interface AdjustmentDistributionDto {
   statusCode: string;
   distributedAt: Date | null;
   failureReason: string | null;
+  /** When the instruction to this target was published (null: not yet). */
+  requestPublishedAt: Date | null;
+  withdrawalRequestedAt: Date | null;
+  withdrawalPublishedAt: Date | null;
+  withdrawnAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -99,6 +112,7 @@ export class AdjustmentService {
     private readonly db: Db,
     private readonly eventBus: IntegrationBusPublisher,
     private readonly valueSets: ValueSetService,
+    private readonly dispatcher: AdjustmentDistributionDispatcher,
   ) {}
 
   async recordAdjustment(
@@ -122,6 +136,7 @@ export class AdjustmentService {
       scopeCode: input.scopeCode,
       validFrom: validFrom.toISOString(),
       validTo: validTo ? validTo.toISOString() : null,
+      amount: input.amount ? { value: input.amount.value, unitCode: input.amount.unitCode } : null,
       notes: input.notes ?? null,
       sourceCaseId: input.sourceCaseId ?? null,
     });
@@ -169,6 +184,8 @@ export class AdjustmentService {
         recordedAt: now,
         recordedUntil: null,
         sourceCaseId: input.sourceCaseId ?? null,
+        amountValue: input.amount ? input.amount.value.toFixed(2) : null,
+        amountUnitCode: input.amount?.unitCode ?? null,
       });
 
       if (targetSystems.length > 0) {
@@ -188,7 +205,11 @@ export class AdjustmentService {
       return { adjustmentId, replayed: false };
     });
 
-    if (result.replayed) return result;
+    if (result.replayed) {
+      // The original attempt may have stopped before dispatching.
+      await this.dispatcher.dispatchTenant(tenantId);
+      return result;
+    }
     const { adjustmentId } = result;
 
     if (this.eventBus.isConnected()) {
@@ -198,6 +219,7 @@ export class AdjustmentService {
         personId,
         adjustmentTypeCode: input.adjustmentTypeCode,
         scopeCode: input.scopeCode,
+        ...(input.amount ? { amount: { value: input.amount.value, unitCode: input.amount.unitCode } } : {}),
         validFrom: validFrom.toISOString(),
         ...(validTo ? { validTo: validTo.toISOString() } : {}),
       };
@@ -210,6 +232,10 @@ export class AdjustmentService {
         payload,
       );
     }
+
+    // Instruct each target. Failures leave the rows due; the worker's
+    // reconcile loop republishes them.
+    await this.dispatcher.dispatchTenant(tenantId);
 
     return result;
   }
@@ -278,9 +304,7 @@ export class AdjustmentService {
     // A repeated acknowledgement (e.g. a consumer retrying after a lost
     // response) is a no-op: the first one already recorded and published it.
     if (distribution.statusCode === 'distributed') return;
-    if (distribution.statusCode === 'superseded') {
-      throw new ConflictError('This distribution was superseded and can no longer be acknowledged');
-    }
+    assertStillApplicable(distribution.statusCode);
 
     const now = clockNow();
     const updated = await withTenantContext(this.db, tenantId, async (tx) =>
@@ -305,9 +329,7 @@ export class AdjustmentService {
     // Lost a race with a concurrent acknowledgement or expiry.
     if (updated.length === 0) {
       const latest = await this.#getDistribution(adjustmentId, distributionId, tenantId);
-      if (latest.statusCode === 'superseded') {
-        throw new ConflictError('This distribution was superseded and can no longer be acknowledged');
-      }
+      assertStillApplicable(latest.statusCode);
       return;
     }
 
@@ -321,6 +343,7 @@ export class AdjustmentService {
         enrolmentId:        adjustment.enrolmentId,
         adjustmentTypeCode: adjustment.adjustmentTypeCode,
         scopeCode:          adjustment.scopeCode,
+        ...(adjustment.amount ? { amount: adjustment.amount } : {}),
         validFrom:          adjustment.validFrom.toISOString(),
         ...(adjustment.validTo ? { validTo: adjustment.validTo.toISOString() } : {}),
       };
@@ -336,6 +359,89 @@ export class AdjustmentService {
   }
 
   /**
+   * A target's integration layer reports that it cannot apply (or keep
+   * applied) a distribution — for example a VLE time accommodation with no
+   * recorded amount, a student unknown to the VLE, or an API failure it has
+   * stopped retrying. Recorded on the row for staff to act on; the target may
+   * still acknowledge later. During withdrawal the reason is recorded and the
+   * row stays 'withdrawal-requested', since the removal is still outstanding.
+   */
+  async reportDistributionFailure(
+    adjustmentId: string,
+    distributionId: string,
+    tenantId: string,
+    targetSystem: string,
+    reason: string,
+  ): Promise<void> {
+    await this.#ensureAdjustmentExists(adjustmentId, tenantId);
+    const distribution = await this.#getDistribution(adjustmentId, distributionId, tenantId);
+    if (distribution.targetSystem !== targetSystem) {
+      throw new NotFoundError('AdjustmentDistribution', distributionId);
+    }
+
+    const nextStatus = (() => {
+      switch (distribution.statusCode) {
+        case 'pending':
+        case 'failed':               return 'failed';
+        case 'withdrawal-requested': return 'withdrawal-requested';
+        case 'distributed':
+          throw new ConflictError('This distribution was acknowledged as applied; it cannot now be reported as failed');
+        default:
+          throw new ConflictError(`This distribution is ${distribution.statusCode} and needs no further action`);
+      }
+    })();
+
+    const now = clockNow();
+    const updated = await withTenantContext(this.db, tenantId, async (tx) =>
+      tx
+        .update(adjustmentDistributions)
+        .set({ statusCode: nextStatus, failureReason: reason, updatedAt: now })
+        .where(and(
+          eq(adjustmentDistributions.id, distributionId as Uuid),
+          eq(adjustmentDistributions.tenantId, tenantId as Uuid),
+          eq(adjustmentDistributions.statusCode, distribution.statusCode),
+        ))
+        .returning({ id: adjustmentDistributions.id }),
+    );
+    if (updated.length === 0) {
+      throw new ConflictError('This distribution changed while the failure was being recorded; retry');
+    }
+  }
+
+  /**
+   * A target confirms it removed an adjustment it had been told to withdraw.
+   * Repeating the confirmation has no effect.
+   */
+  async acknowledgeWithdrawal(
+    adjustmentId: string,
+    distributionId: string,
+    tenantId: string,
+    targetSystem: string,
+  ): Promise<void> {
+    await this.#ensureAdjustmentExists(adjustmentId, tenantId);
+    const distribution = await this.#getDistribution(adjustmentId, distributionId, tenantId);
+    if (distribution.targetSystem !== targetSystem) {
+      throw new NotFoundError('AdjustmentDistribution', distributionId);
+    }
+    if (distribution.statusCode === 'withdrawn') return;
+    if (distribution.statusCode !== 'withdrawal-requested') {
+      throw new ConflictError(`This distribution is ${distribution.statusCode}; no withdrawal was requested`);
+    }
+
+    const now = clockNow();
+    await withTenantContext(this.db, tenantId, async (tx) =>
+      tx
+        .update(adjustmentDistributions)
+        .set({ statusCode: 'withdrawn', withdrawnAt: now, failureReason: null, updatedAt: now })
+        .where(and(
+          eq(adjustmentDistributions.id, distributionId as Uuid),
+          eq(adjustmentDistributions.tenantId, tenantId as Uuid),
+          eq(adjustmentDistributions.statusCode, 'withdrawal-requested'),
+        )),
+    );
+  }
+
+  /**
    * End an adjustment's valid period now (or immediately after it starts,
    * if it has not started yet).
    *
@@ -348,6 +454,13 @@ export class AdjustmentService {
    * already ended keeps its recorded end date and gains no new version.
    * The expired event is still published, as before: there is no scheduler
    * that announces a natural end, so this call may be consumers' only signal.
+   *
+   * Distributions: a row whose instruction was never published is simply
+   * superseded. A row whose instruction was published — acknowledged or not,
+   * since the target may have applied it without the acknowledgement arriving
+   * — moves to 'withdrawal-requested' and its target is sent a withdrawal
+   * instruction. The rows are locked first, so a dispatcher mid-publish
+   * finishes (and stamps request_published_at) before this decides.
    */
   async expireAdjustment(adjustmentId: string, tenantId: string, actorId: string): Promise<void> {
     const now = clockNow();
@@ -389,16 +502,39 @@ export class AdjustmentService {
         });
       }
 
-      await tx
-        .update(adjustmentDistributions)
-        .set({ statusCode: 'superseded', updatedAt: now })
-        .where(
-          and(
-            eq(adjustmentDistributions.adjustmentId, adjustmentId as `${string}-${string}-${string}-${string}-${string}`),
-            eq(adjustmentDistributions.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
-            eq(adjustmentDistributions.statusCode, 'pending'),
-          ),
-        );
+      const distributions = await tx
+        .select({
+          id: adjustmentDistributions.id,
+          statusCode: adjustmentDistributions.statusCode,
+          requestPublishedAt: adjustmentDistributions.requestPublishedAt,
+        })
+        .from(adjustmentDistributions)
+        .where(and(
+          eq(adjustmentDistributions.adjustmentId, adjustmentId as Uuid),
+          eq(adjustmentDistributions.tenantId, tenantId as Uuid),
+        ))
+        .for('update');
+
+      for (const d of distributions) {
+        if (!['pending', 'distributed', 'failed'].includes(d.statusCode)) continue;
+        if (d.requestPublishedAt === null && d.statusCode !== 'distributed') {
+          await tx
+            .update(adjustmentDistributions)
+            .set({ statusCode: 'superseded', updatedAt: now })
+            .where(eq(adjustmentDistributions.id, d.id));
+        } else {
+          await tx
+            .update(adjustmentDistributions)
+            .set({
+              statusCode: 'withdrawal-requested',
+              withdrawalEventId: randomUUID(),
+              withdrawalRequestedAt: now,
+              failureReason: null,
+              updatedAt: now,
+            })
+            .where(eq(adjustmentDistributions.id, d.id));
+        }
+      }
 
       return {
         current,
@@ -422,6 +558,8 @@ export class AdjustmentService {
         payload,
       );
     }
+
+    await this.dispatcher.dispatchTenant(tenantId);
   }
 
   /**
@@ -544,6 +682,10 @@ export class AdjustmentService {
 
     await this.#validateFieldValue(tenantId, 'reasonable_adjustment', 'adjustment_type_code', input.adjustmentTypeCode);
     await this.#validateFieldValue(tenantId, 'reasonable_adjustment', 'scope_code', input.scopeCode);
+    if (input.amount) {
+      await this.#validateFieldValue(tenantId, 'reasonable_adjustment', 'amount_unit_code', input.amount.unitCode);
+    }
+    validateAmountForType(input.adjustmentTypeCode, input.amount);
   }
 
   async #validateFieldValue(
@@ -675,6 +817,18 @@ export class AdjustmentService {
   }
 }
 
+type Uuid = `${string}-${string}-${string}-${string}-${string}`;
+
+/** An acknowledgement only applies while the target is still meant to apply it. */
+function assertStillApplicable(statusCode: string): void {
+  if (statusCode === 'superseded') {
+    throw new ConflictError('This distribution was superseded and can no longer be acknowledged');
+  }
+  if (statusCode === 'withdrawal-requested' || statusCode === 'withdrawn') {
+    throw new ConflictError('This adjustment has ended and its withdrawal was requested; remove it rather than acknowledge it');
+  }
+}
+
 function hashRequest(value: unknown): string {
   return createHash('sha256').update(JSON.stringify(value)).digest('hex');
 }
@@ -686,6 +840,7 @@ function adjustmentToDto(row: typeof reasonableAdjustments.$inferSelect): Adjust
     personId: row.personId,
     adjustmentTypeCode: row.adjustmentTypeCode,
     scopeCode: row.scopeCode,
+    amount: amountFromRow(row),
     notes: row.notes,
     actorId: row.actorId,
     validFrom: row.validFrom,
@@ -705,6 +860,10 @@ function distributionToDto(row: typeof adjustmentDistributions.$inferSelect): Ad
     statusCode: row.statusCode,
     distributedAt: row.distributedAt,
     failureReason: row.failureReason,
+    requestPublishedAt: row.requestPublishedAt,
+    withdrawalRequestedAt: row.withdrawalRequestedAt,
+    withdrawalPublishedAt: row.withdrawalPublishedAt,
+    withdrawnAt: row.withdrawnAt,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };

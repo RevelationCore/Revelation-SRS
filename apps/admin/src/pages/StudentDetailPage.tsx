@@ -1813,6 +1813,7 @@ function WellbeingTab({
   const { members: declarationStatuses }  = useValueSet('disability_declaration', 'declaration_status_code');
   const { members: adjustmentTypes }      = useValueSet('reasonable_adjustment',  'adjustment_type_code');
   const { members: adjustmentScopes }     = useValueSet('reasonable_adjustment',  'scope_code');
+  const { members: amountUnits }          = useValueSet('reasonable_adjustment',  'amount_unit_code');
   const { members: ecOutcomes }           = useValueSet('exceptional_circumstances', 'outcome_code');
 
   useEffect(() => {
@@ -1879,6 +1880,7 @@ function WellbeingTab({
                 <tr>
                   <TableHeaderCell>Type</TableHeaderCell>
                   <TableHeaderCell>Scope</TableHeaderCell>
+                  <TableHeaderCell>Amount</TableHeaderCell>
                   <TableHeaderCell>Valid From</TableHeaderCell>
                   <TableHeaderCell>Valid To</TableHeaderCell>
                   <TableHeaderCell>Notes</TableHeaderCell>
@@ -1890,6 +1892,7 @@ function WellbeingTab({
                   <TableRow key={a.adjustmentId}>
                     <TableCell className="text-neutral-800">{label(adjustmentTypes, a.adjustmentTypeCode)}</TableCell>
                     <TableCell>{label(adjustmentScopes, a.scopeCode)}</TableCell>
+                    <TableCell>{a.amount ? `${a.amount.value} ${label(amountUnits, a.amount.unitCode).toLowerCase()}` : '—'}</TableCell>
                     <TableCell>{new Date(a.validFrom).toLocaleDateString('en-GB')}</TableCell>
                     <TableCell>{a.validTo ? new Date(a.validTo).toLocaleDateString('en-GB') : 'Open-ended'}</TableCell>
                     <TableCell className="text-neutral-500">{a.notes ?? '—'}</TableCell>

@@ -269,7 +269,7 @@ describe('Reasonable adjustments', () => {
     });
   });
 
-  it('expires the adjustment as a new version ending its valid period, and supersedes pending distributions', async () => {
+  it('expires the adjustment as a new version ending its valid period, and requests withdrawal from every instructed target', async () => {
     const fixture = await createAdjustmentFixture('ADJ103');
     const adjustment = await createAdjustment(fixture, {
       adjustmentTypeCode: 'extra-time',
@@ -310,10 +310,14 @@ describe('Reasonable adjustments', () => {
 
     const after = await listDistributions(adjustment.adjustmentId);
     const statuses = after.json<Array<{ targetSystem: string; statusCode: string }>>();
-    expect(statuses).toContainEqual(expect.objectContaining({ targetSystem: 'vle', statusCode: 'distributed' }));
+    // Every target was instructed when the adjustment was recorded (the spy
+    // bus is connected), so each may have applied it — acknowledged or not —
+    // and each is told to remove it. Never-sent instructions are superseded
+    // instead; see adjustment-distribution-instructions.int.test.ts.
     expect(statuses).toEqual(expect.arrayContaining([
-      expect.objectContaining({ targetSystem: 'attendance', statusCode: 'superseded' }),
-      expect.objectContaining({ targetSystem: 'exams', statusCode: 'superseded' }),
+      expect.objectContaining({ targetSystem: 'vle', statusCode: 'withdrawal-requested' }),
+      expect.objectContaining({ targetSystem: 'attendance', statusCode: 'withdrawal-requested' }),
+      expect.objectContaining({ targetSystem: 'exams', statusCode: 'withdrawal-requested' }),
     ]));
 
     const expired = capturedEvents.find((event) => event.type === 'srs.adjustment.expired');
@@ -470,7 +474,7 @@ describe('AJ-21 A21-AC06 — expiry keeps past arrangements and the current date
     expect(new Date(rows[1]!.valid_to!).getTime()).toBeLessThan(Date.parse('2099-07-31T00:00:00.000Z'));
   });
 
-  it('a superseded distribution cannot be acknowledged afterwards', async () => {
+  it('a distribution cannot be acknowledged as applied after expiry', async () => {
     const fixture = await createAdjustmentFixture('ADJ302');
     const adjustment = await createAdjustment(fixture, {
       adjustmentTypeCode: 'reader',
@@ -496,7 +500,7 @@ describe('AJ-21 A21-AC06 — expiry keeps past arrangements and the current date
 
     const after = (await listDistributions(adjustment.adjustmentId))
       .json<Array<{ statusCode: string }>>()[0]!;
-    expect(after.statusCode).toBe('superseded');
+    expect(after.statusCode).toBe('withdrawal-requested');
   });
 
   it('expiring an already-expired adjustment records no further version', async () => {

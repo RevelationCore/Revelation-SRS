@@ -1,20 +1,14 @@
 /**
- * Stage 5 — Adjustment Distribution Flow (F-SIS-VLE-02).
+ * Stage 5 — Adjustment Distribution Flow (F-SIS-VLE-02), instruction-driven.
  *
- * Verifies:
- * - targetSystem filtering: only 'vle' distributions are applied.
- * - VLE adjustment write: correct fields posted to stub VLE.
- * - SRS acknowledgement: correct adjustmentId/distributionId/targetSystem sent.
- * - Adjustment map: DB row records status 'applied' or 'acknowledged'.
- * - Idempotency: duplicate distribution event is silently skipped.
- * - No-client mode: vleClient/srsAckClient optional — partial processing only.
- * - Special-category: payload must not appear in handler-level log calls.
- * - Error propagation: VLE failure records 'failed' in ledger.
- * - Cross-tenant: events for a different tenant are silently dropped.
+ * The connector acts on srs.adjustment.distribution-requested.vle and
+ * ...distribution-withdrawal-requested.vle (AJ-21 finding 1). For each it
+ * records the instruction, re-derives the student's desired VLE state (one
+ * combined extra-time percentage per enrolment, per active course) and makes
+ * the VLE match through the platform driver, then replies to the SRS.
  *
- * NATS is not started — dispatch() is called directly.
- * VLE HTTP calls target the in-process stub VLE.
- * SRS acknowledgement calls target the in-process StubSrsAckServer.
+ * NATS is not started — dispatch() is called directly. VLE writes go to the
+ * in-process stub VLE through StubVleDriver; SRS replies go to StubSrsAckServer.
  */
 
 import { randomUUID } from 'node:crypto';
@@ -22,47 +16,59 @@ import { randomUUID } from 'node:crypto';
 import { and, eq } from 'drizzle-orm';
 import { pino } from 'pino';
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
-import type { DomainEventEnvelope } from '@revelation-srs/domain';
-import type { AdjustmentDistributedV1Payload } from '@revelation-srs/domain';
+import type {
+  AdjustmentDistributionRequestedV1Payload,
+  AdjustmentDistributionWithdrawalRequestedV1Payload,
+  CatalogueModuleUpdatedV1Payload,
+  DomainEventEnvelope,
+  EnrolmentModuleRegisteredV1Payload,
+  StudentEnrolledV1Payload,
+} from '@revelation-srs/domain';
 
-import { getAdjustmentMapping } from '../src/consumers/f-sis-vle-02/adjustment-map-repository.js';
 import { VleEventConsumer } from '../src/consumers/vle-event-consumer.js';
 import { adjustmentMap } from '../src/db/schema/adjustment-map.js';
+import { courseMap } from '../src/db/schema/course-map.js';
+import { enrolmentMap } from '../src/db/schema/enrolment-map.js';
 import { eventLedger } from '../src/db/schema/event-ledger.js';
+import { reconciliationRun } from '../src/db/schema/reconciliation.js';
+import { studentEnrolmentMap } from '../src/db/schema/student-enrolment-map.js';
+import { ReconciliationService } from '../src/reliability/reconciliation-service.js';
 import { HttpSrsAcknowledgementClient } from '../src/srs-client/acknowledgement-client.js';
-import { HttpVleClient, type VleClient } from '../src/vle-client/client.js';
+import { HttpVleClient } from '../src/vle-client/client.js';
+import type { VlePlatformDriver } from '../src/vle-platforms/driver.js';
+import { StubVleDriver } from '../src/vle-platforms/stub-driver.js';
 
 import { startTestApp, type TestVleApp } from './helpers/test-app.js';
 
 const log = pino({ level: 'silent' });
+const TENANT = '00000000-0000-0000-0000-000000000001';
+
+let ctx: TestVleApp;
+
+beforeAll(async () => {
+  ctx = await startTestApp();
+}, 120_000);
+
+afterAll(async () => {
+  await ctx?.teardown();
+});
+
+beforeEach(async () => {
+  for (const table of [eventLedger, courseMap, enrolmentMap, studentEnrolmentMap, adjustmentMap, reconciliationRun]) {
+    await ctx.db.delete(table).where(eq(table.tenantId, TENANT));
+  }
+  ctx.stubVle.stubStore.reset();
+  ctx.stubSrsAck.reset();
+});
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-const TENANT = '00000000-0000-0000-0000-000000000001';
-const OTHER  = '00000000-0000-0000-0000-000000000002';
-
-function makeAdjustmentEnvelope(
-  overrides: Partial<AdjustmentDistributedV1Payload> = {},
-  envelopeOverrides: Partial<DomainEventEnvelope<AdjustmentDistributedV1Payload>> = {},
-): DomainEventEnvelope<AdjustmentDistributedV1Payload> {
-  const payload: AdjustmentDistributedV1Payload = {
-    adjustmentId:       overrides.adjustmentId       ?? randomUUID(),
-    distributionId:     overrides.distributionId     ?? randomUUID(),
-    targetSystem:       overrides.targetSystem       ?? 'vle',
-    distributedAt:      overrides.distributedAt      ?? new Date().toISOString(),
-    personId:           overrides.personId           ?? randomUUID(),
-    enrolmentId:        overrides.enrolmentId        ?? randomUUID(),
-    adjustmentTypeCode: overrides.adjustmentTypeCode ?? 'EXTRA_TIME',
-    scopeCode:          overrides.scopeCode          ?? 'ALL_ASSESSMENTS',
-    validFrom:          overrides.validFrom          ?? '2025-09-01T00:00:00.000Z',
-    ...(overrides.validTo !== undefined ? { validTo: overrides.validTo } : {}),
-  };
-
+function envelope<T>(type: string, payload: T): DomainEventEnvelope<T> {
   return {
     id:                 randomUUID(),
-    type:               'srs.adjustment.distributed',
+    type,
     version:            '1.0.0',
-    schemaRef:          'https://srs.example.com/schemas/srs.adjustment.distributed.json',
+    schemaRef:          `https://srs.example.com/schemas/events/${type.replace(/\./g, '/')}/1.0.0.json`,
     tenantId:           TENANT,
     occurredAt:         new Date().toISOString(),
     publishedAt:        new Date().toISOString(),
@@ -72,480 +78,346 @@ function makeAdjustmentEnvelope(
     source:             'srs-core',
     dataClassification: 'sensitive',
     payload,
-    ...envelopeOverrides,
   };
 }
 
-function makeConsumer(
-  ctx: TestVleApp,
-  opts: { withVle?: boolean; withSrsAck?: boolean; vleClient?: VleClient } = {},
-): VleEventConsumer {
-  const vleClient = opts.vleClient
-    ?? (opts.withVle ? new HttpVleClient(ctx.stubVleBaseUrl) : undefined);
-  const srsAckClient = opts.withSrsAck
-    ? new HttpSrsAcknowledgementClient(ctx.stubSrsAckBaseUrl, 'test-token')
-    : undefined;
-
-  return new VleEventConsumer(
-    'nats://unused',
-    ctx.db,
-    TENANT,
-    log,
-    { vleClient, srsAckClient },
-  );
+function consumer(opts: { driver?: VlePlatformDriver | null; logger?: typeof log } = {}): VleEventConsumer {
+  return new VleEventConsumer('nats://unused', ctx.db, TENANT, opts.logger ?? log, {
+    vleClient:    new HttpVleClient(ctx.stubVleBaseUrl),
+    srsAckClient: new HttpSrsAcknowledgementClient(ctx.stubSrsAckBaseUrl, 'test-token'),
+    ...(opts.driver === null ? {} : { platformDriver: opts.driver ?? new StubVleDriver(ctx.stubVleBaseUrl) }),
+  });
 }
 
-async function clearTables(ctx: TestVleApp): Promise<void> {
-  await ctx.db.delete(eventLedger).where(eq(eventLedger.tenantId, TENANT));
-  await ctx.db.delete(adjustmentMap).where(eq(adjustmentMap.tenantId, TENANT));
-  ctx.stubVle.stubStore.reset();
-  ctx.stubSrsAck.reset();
+interface Student { personId: string; enrolmentId: string }
+
+async function enrolStudent(c: VleEventConsumer): Promise<Student> {
+  const s = { personId: randomUUID(), enrolmentId: randomUUID() };
+  await c.dispatch(envelope('srs.student.enrolled', {
+    ...s, academicYear: '2026/27', modeOfStudy: 'full-time',
+  } satisfies StudentEnrolledV1Payload));
+  return s;
 }
 
-// ── Suite 1: targetSystem filtering ──────────────────────────────────────────
+/** Create a VLE course for a module and register the student on it; returns the VLE course id. */
+async function registerOnNewCourse(c: VleEventConsumer, s: Student, code: string): Promise<string> {
+  const moduleId = randomUUID();
+  await c.dispatch(envelope('srs.catalogue.module-updated', {
+    moduleId, code, title: `${code} module`, creditValue: 20, effectiveDate: '2026-09-01',
+  } satisfies CatalogueModuleUpdatedV1Payload));
+  await c.dispatch(envelope('srs.enrolment.module-registered', {
+    enrolmentId: s.enrolmentId, moduleRegistrationId: randomUUID(), moduleId,
+    moduleOfferingId: randomUUID(), academicPeriodId: randomUUID(), registrationDate: '2026-09-20',
+  } satisfies EnrolmentModuleRegisteredV1Payload));
+  const [row] = await ctx.db.select({ vleCourseId: courseMap.vleCourseId }).from(courseMap)
+    .where(and(eq(courseMap.tenantId, TENANT), eq(courseMap.moduleId, moduleId)));
+  return row!.vleCourseId;
+}
 
-describe('Stage 5 — targetSystem filtering', () => {
-  let ctx: TestVleApp;
+function requested(
+  s: Student,
+  overrides: Partial<AdjustmentDistributionRequestedV1Payload> = {},
+): AdjustmentDistributionRequestedV1Payload {
+  return {
+    adjustmentId:       randomUUID(),
+    distributionId:     randomUUID(),
+    targetSystem:       'vle',
+    personId:           s.personId,
+    enrolmentId:        s.enrolmentId,
+    adjustmentTypeCode: 'extra-time',
+    scopeCode:          'all',
+    amount:             { value: 25, unitCode: 'percent-of-duration' },
+    validFrom:          '2026-01-01T00:00:00.000Z',
+    requestedAt:        new Date().toISOString(),
+    ...overrides,
+  };
+}
 
-  beforeAll(async () => {
-    ctx = await startTestApp();
-  }, 120_000);
+function withdrawal(r: AdjustmentDistributionRequestedV1Payload): AdjustmentDistributionWithdrawalRequestedV1Payload {
+  return {
+    distributionId: r.distributionId,
+    adjustmentId:   r.adjustmentId,
+    targetSystem:   'vle',
+    personId:       r.personId,
+    enrolmentId:    r.enrolmentId,
+    endedAt:        new Date().toISOString(),
+    reasonCode:     'expired',
+    requestedAt:    new Date().toISOString(),
+  };
+}
 
-  afterAll(() => ctx.teardown());
-  beforeEach(() => clearTables(ctx));
+const REQUESTED = 'srs.adjustment.distribution-requested';
+const WITHDRAWAL = 'srs.adjustment.distribution-withdrawal-requested';
 
-  it('1.1 event with targetSystem=vle is applied to the stub VLE', async () => {
-    const consumer = makeConsumer(ctx, { withVle: true });
-    await consumer.dispatch(makeAdjustmentEnvelope({ targetSystem: 'vle' }));
+function vlePercent(vleCourseId: string, personId: string): number | undefined {
+  return ctx.stubVle.stubStore.timeAccommodations.get(`${vleCourseId}:${personId}`)?.extraTimePercent;
+}
 
-    const items = ctx.stubVle.stubStore.adjustments;
-    expect(items.size).toBe(1);
+async function mapRow(distributionId: string) {
+  const [row] = await ctx.db.select().from(adjustmentMap)
+    .where(and(eq(adjustmentMap.tenantId, TENANT), eq(adjustmentMap.distributionId, distributionId)));
+  return row;
+}
+
+// ── 1. Applying an instruction ───────────────────────────────────────────────
+
+describe('Stage 5 — applying distribution-requested', () => {
+  it('1.1 sets the time accommodation in every active course, acknowledges, and records the amount', async () => {
+    const c = consumer();
+    const s = await enrolStudent(c);
+    const courseA = await registerOnNewCourse(c, s, 'HIS101');
+    const courseB = await registerOnNewCourse(c, s, 'HIS102');
+    const r = requested(s);
+
+    await c.dispatch(envelope(REQUESTED, r));
+
+    expect(vlePercent(courseA, s.personId)).toBe(25);
+    expect(vlePercent(courseB, s.personId)).toBe(25);
+    expect(ctx.stubSrsAck.getAckCalls()).toEqual([{ adjustmentId: r.adjustmentId, distributionId: r.distributionId, targetSystem: 'vle' }]);
+    const row = await mapRow(r.distributionId);
+    expect(row).toMatchObject({ statusCode: 'acknowledged', amountUnitCode: 'percent-of-duration' });
+    expect(Number(row!.amountValue)).toBe(25);
   });
 
-  it('1.2 event with targetSystem=library is NOT sent to VLE', async () => {
-    const consumer = makeConsumer(ctx, { withVle: true });
-    await consumer.dispatch(makeAdjustmentEnvelope({ targetSystem: 'library' }));
+  it('1.2 combines a student\'s time adjustments into one figure (25% + 10 min/hour = 41.67%)', async () => {
+    const c = consumer();
+    const s = await enrolStudent(c);
+    const course = await registerOnNewCourse(c, s, 'CHE101');
 
-    const items = ctx.stubVle.stubStore.adjustments;
-    expect(items.size).toBe(0);
+    await c.dispatch(envelope(REQUESTED, requested(s)));
+    await c.dispatch(envelope(REQUESTED, requested(s, {
+      adjustmentTypeCode: 'rest-breaks', amount: { value: 10, unitCode: 'minutes-per-hour' },
+    })));
+
+    expect(vlePercent(course, s.personId)).toBe(41.67);
   });
 
-  it('1.3 event with targetSystem=library is still recorded as processed in ledger', async () => {
-    const consumer = makeConsumer(ctx, { withVle: true });
-    const envelope = makeAdjustmentEnvelope({ targetSystem: 'library' });
+  it('1.3 applies an adjustment only to courses of the enrolment it was recorded on', async () => {
+    const c = consumer();
+    const s = await enrolStudent(c);
+    const course = await registerOnNewCourse(c, s, 'MAT101');
+    const other: Student = { personId: s.personId, enrolmentId: randomUUID() };
+    await c.dispatch(envelope('srs.student.enrolled', {
+      ...other, academicYear: '2026/27', modeOfStudy: 'part-time',
+    } satisfies StudentEnrolledV1Payload));
+    const otherCourse = await registerOnNewCourse(c, other, 'MAT900');
 
-    await consumer.dispatch(envelope);
+    await c.dispatch(envelope(REQUESTED, requested(s)));
 
-    const rows = await ctx.db
-      .select({ statusCode: eventLedger.statusCode })
-      .from(eventLedger)
-      .where(eq(eventLedger.eventId, envelope.id));
-
-    expect(rows[0]?.statusCode).toBe('processed');
+    expect(vlePercent(course, s.personId)).toBe(25);
+    expect(vlePercent(otherCourse, s.personId)).toBeUndefined();
   });
 
-  it('1.4 event with targetSystem=library does NOT create an adjustment map row', async () => {
-    const consumer = makeConsumer(ctx, { withVle: true });
-    const { payload } = makeAdjustmentEnvelope({ targetSystem: 'library' });
-    await consumer.dispatch(makeAdjustmentEnvelope({ ...payload, targetSystem: 'library' }));
+  it('1.4 reports a failure, and writes nothing, for a time adjustment with no amount', async () => {
+    const c = consumer();
+    const s = await enrolStudent(c);
+    const course = await registerOnNewCourse(c, s, 'BIO101');
+    const r = requested(s);
+    delete r.amount;
 
-    const rows = await ctx.db
-      .select()
-      .from(adjustmentMap)
-      .where(eq(adjustmentMap.tenantId, TENANT));
+    await c.dispatch(envelope(REQUESTED, r));
 
-    expect(rows).toHaveLength(0);
-  });
-});
-
-// ── Suite 2: VLE adjustment content ──────────────────────────────────────────
-
-describe('Stage 5 — VLE adjustment content', () => {
-  let ctx: TestVleApp;
-
-  beforeAll(async () => {
-    ctx = await startTestApp();
-  }, 120_000);
-
-  afterAll(() => ctx.teardown());
-  beforeEach(() => clearTables(ctx));
-
-  it('2.1 stub VLE receives the correct adjustment fields', async () => {
-    const consumer      = makeConsumer(ctx, { withVle: true });
-    const adjustmentId  = randomUUID();
-    const distributionId = randomUUID();
-    const personId      = randomUUID();
-    const enrolmentId   = randomUUID();
-
-    await consumer.dispatch(makeAdjustmentEnvelope({
-      adjustmentId,
-      distributionId,
-      personId,
-      enrolmentId,
-      adjustmentTypeCode: 'READER',
-      scopeCode:          'EXAMS',
-      validFrom:          '2025-09-01T00:00:00.000Z',
-    }));
-
-    const stored = ctx.stubVle.stubStore.adjustments.get(distributionId);
-    expect(stored).toBeDefined();
-    expect(stored?.adjustmentId).toBe(adjustmentId);
-    expect(stored?.distributionId).toBe(distributionId);
-    expect(stored?.personId).toBe(personId);
-    expect(stored?.enrolmentId).toBe(enrolmentId);
-    expect(stored?.adjustmentTypeCode).toBe('READER');
-    expect(stored?.scopeCode).toBe('EXAMS');
-    expect(stored?.validFrom).toBe('2025-09-01T00:00:00.000Z');
+    expect(vlePercent(course, s.personId)).toBeUndefined();
+    expect(ctx.stubSrsAck.getAckCalls()).toHaveLength(0);
+    const [failure] = ctx.stubSrsAck.getFailureCalls();
+    expect(failure).toMatchObject({ distributionId: r.distributionId, targetSystem: 'vle' });
+    expect(failure!.reason).toMatch(/amount/i);
+    expect((await mapRow(r.distributionId))?.statusCode).toBe('failed');
   });
 
-  it('2.2 adjustment without validTo applies null validTo', async () => {
-    const consumer       = makeConsumer(ctx, { withVle: true });
-    const distributionId = randomUUID();
+  it('1.5 acknowledges a non-time adjustment without an automatic VLE write', async () => {
+    const c = consumer();
+    const s = await enrolStudent(c);
+    const course = await registerOnNewCourse(c, s, 'ENG101');
+    const r = requested(s, { adjustmentTypeCode: 'deadline-extension', scopeCode: 'coursework', amount: { value: 7, unitCode: 'days' } });
 
-    await consumer.dispatch(makeAdjustmentEnvelope({ distributionId }));
+    await c.dispatch(envelope(REQUESTED, r));
 
-    const stored = ctx.stubVle.stubStore.adjustments.get(distributionId);
-    expect(stored?.validTo).toBeNull();
+    expect(vlePercent(course, s.personId)).toBeUndefined();
+    expect(ctx.stubSrsAck.getAckCalls()).toHaveLength(1);
+    expect((await mapRow(r.distributionId))?.statusCode).toBe('acknowledged');
   });
 
-  it('2.3 adjustment with validTo passes the date string through', async () => {
-    const consumer       = makeConsumer(ctx, { withVle: true });
-    const distributionId = randomUUID();
+  it('1.6 does not apply an adjustment before its valid period starts', async () => {
+    const c = consumer();
+    const s = await enrolStudent(c);
+    const course = await registerOnNewCourse(c, s, 'PHY101');
 
-    await consumer.dispatch(makeAdjustmentEnvelope({
-      distributionId,
-      validTo: '2026-07-31T23:59:59.000Z',
-    }));
+    await c.dispatch(envelope(REQUESTED, requested(s, { validFrom: '2099-01-01T00:00:00.000Z' })));
 
-    const stored = ctx.stubVle.stubStore.adjustments.get(distributionId);
-    expect(stored?.validTo).toBe('2026-07-31T23:59:59.000Z');
-  });
-});
-
-// ── Suite 3: SRS acknowledgement ─────────────────────────────────────────────
-
-describe('Stage 5 — SRS acknowledgement', () => {
-  let ctx: TestVleApp;
-
-  beforeAll(async () => {
-    ctx = await startTestApp();
-  }, 120_000);
-
-  afterAll(() => ctx.teardown());
-  beforeEach(() => clearTables(ctx));
-
-  it('3.1 SRS acknowledge endpoint receives the correct adjustmentId and distributionId', async () => {
-    const consumer      = makeConsumer(ctx, { withVle: true, withSrsAck: true });
-    const adjustmentId  = randomUUID();
-    const distributionId = randomUUID();
-
-    await consumer.dispatch(makeAdjustmentEnvelope({ adjustmentId, distributionId }));
-
-    const calls = ctx.stubSrsAck.getAckCalls();
-    expect(calls).toHaveLength(1);
-    expect(calls[0]?.adjustmentId).toBe(adjustmentId);
-    expect(calls[0]?.distributionId).toBe(distributionId);
+    expect(vlePercent(course, s.personId)).toBeUndefined();
+    expect(ctx.stubSrsAck.getAckCalls()).toHaveLength(1);
   });
 
-  it('3.2 SRS acknowledge endpoint receives targetSystem=vle', async () => {
-    const consumer = makeConsumer(ctx, { withVle: true, withSrsAck: true });
+  it('1.7 handles a redelivered instruction once', async () => {
+    const c = consumer();
+    const s = await enrolStudent(c);
+    await registerOnNewCourse(c, s, 'GEO101');
+    const r = requested(s);
 
-    await consumer.dispatch(makeAdjustmentEnvelope());
+    await c.dispatch(envelope(REQUESTED, r));
+    // Same instruction, new envelope id (the ledger would catch a repeated id).
+    await c.dispatch(envelope(REQUESTED, r));
 
-    const calls = ctx.stubSrsAck.getAckCalls();
-    expect(calls[0]?.targetSystem).toBe('vle');
+    expect(ctx.stubSrsAck.getAckCalls()).toHaveLength(1);
   });
 
-  it('3.3 SRS is NOT called when targetSystem is not vle', async () => {
-    const consumer = makeConsumer(ctx, { withVle: true, withSrsAck: true });
+  it('1.8 ignores an instruction addressed to another target', async () => {
+    const c = consumer();
+    const s = await enrolStudent(c);
+    const r = requested(s, { targetSystem: 'attendance' });
 
-    await consumer.dispatch(makeAdjustmentEnvelope({ targetSystem: 'moodle' }));
+    await c.dispatch(envelope(REQUESTED, r));
 
-    const calls = ctx.stubSrsAck.getAckCalls();
-    expect(calls).toHaveLength(0);
-  });
-
-  it('3.4 SRS is NOT called when no srsAckClient is configured', async () => {
-    const consumer = makeConsumer(ctx, { withVle: true, withSrsAck: false });
-
-    await consumer.dispatch(makeAdjustmentEnvelope());
-
-    const calls = ctx.stubSrsAck.getAckCalls();
-    expect(calls).toHaveLength(0);
-  });
-});
-
-// ── Suite 4: adjustment map state ────────────────────────────────────────────
-
-describe('Stage 5 — adjustment map state', () => {
-  let ctx: TestVleApp;
-
-  beforeAll(async () => {
-    ctx = await startTestApp();
-  }, 120_000);
-
-  afterAll(() => ctx.teardown());
-  beforeEach(() => clearTables(ctx));
-
-  it('4.1 full flow records statusCode=acknowledged in adjustment map', async () => {
-    const consumer       = makeConsumer(ctx, { withVle: true, withSrsAck: true });
-    const distributionId = randomUUID();
-
-    await consumer.dispatch(makeAdjustmentEnvelope({ distributionId }));
-
-    const row = await getAdjustmentMapping(ctx.db, TENANT, distributionId);
-    expect(row?.statusCode).toBe('acknowledged');
-  });
-
-  it('4.2 without srsAckClient, statusCode=applied in adjustment map', async () => {
-    const consumer       = makeConsumer(ctx, { withVle: true, withSrsAck: false });
-    const distributionId = randomUUID();
-
-    await consumer.dispatch(makeAdjustmentEnvelope({ distributionId }));
-
-    const row = await getAdjustmentMapping(ctx.db, TENANT, distributionId);
-    expect(row?.statusCode).toBe('applied');
-  });
-
-  it('4.3 adjustment map row stores correct adjustment metadata', async () => {
-    const consumer       = makeConsumer(ctx, { withVle: true, withSrsAck: true });
-    const adjustmentId   = randomUUID();
-    const distributionId = randomUUID();
-    const personId       = randomUUID();
-    const enrolmentId    = randomUUID();
-
-    await consumer.dispatch(makeAdjustmentEnvelope({
-      adjustmentId, distributionId, personId, enrolmentId,
-      adjustmentTypeCode: 'EXTRA_TIME_25',
-      scopeCode:          'COURSEWORK',
-      validFrom:          '2025-09-01T00:00:00.000Z',
-      validTo:            '2026-06-30T00:00:00.000Z',
-    }));
-
-    const rows = await ctx.db
-      .select()
-      .from(adjustmentMap)
-      .where(
-        and(
-          eq(adjustmentMap.tenantId,       TENANT),
-          eq(adjustmentMap.distributionId, distributionId),
-        ),
-      );
-
-    const row = rows[0];
-    expect(row).toBeDefined();
-    expect(row?.adjustmentId).toBe(adjustmentId);
-    expect(row?.personId).toBe(personId);
-    expect(row?.enrolmentId).toBe(enrolmentId);
-    expect(row?.adjustmentTypeCode).toBe('EXTRA_TIME_25');
-    expect(row?.scopeCode).toBe('COURSEWORK');
-    expect(row?.appliedAt).toBeTruthy();
-    expect(row?.acknowledgedAt).toBeTruthy();
-  });
-});
-
-// ── Suite 5: idempotency ──────────────────────────────────────────────────────
-
-describe('Stage 5 — idempotency', () => {
-  let ctx: TestVleApp;
-
-  beforeAll(async () => {
-    ctx = await startTestApp();
-  }, 120_000);
-
-  afterAll(() => ctx.teardown());
-  beforeEach(() => clearTables(ctx));
-
-  it('5.1 same event dispatched twice is only processed once (ledger idempotency)', async () => {
-    const consumer = makeConsumer(ctx, { withVle: true, withSrsAck: true });
-    const envelope = makeAdjustmentEnvelope();
-
-    await consumer.dispatch(envelope);
-    await consumer.dispatch(envelope); // same event ID — skipped by ledger
-
-    const calls = ctx.stubSrsAck.getAckCalls();
-    expect(calls).toHaveLength(1);
-    expect(ctx.stubVle.stubStore.adjustments.size).toBe(1);
-  });
-
-  it('5.2 different events for same distributionId: second is skipped by handler idempotency', async () => {
-    const consumer       = makeConsumer(ctx, { withVle: true, withSrsAck: true });
-    const distributionId = randomUUID();
-
-    const envelope1 = makeAdjustmentEnvelope({ distributionId });
-    const envelope2 = makeAdjustmentEnvelope({ distributionId }); // different event ID, same distributionId
-
-    await consumer.dispatch(envelope1);
-    await consumer.dispatch(envelope2);
-
-    // SRS ack is only called once (second call skipped by adjustment map check).
-    const calls = ctx.stubSrsAck.getAckCalls();
-    expect(calls).toHaveLength(1);
-  });
-
-  it('5.3 idempotency skip: ledger records processed for the duplicate event', async () => {
-    const consumer = makeConsumer(ctx, { withVle: true, withSrsAck: true });
-    const envelope = makeAdjustmentEnvelope();
-
-    await consumer.dispatch(envelope);
-    await consumer.dispatch(envelope);
-
-    const ledgerRows = await ctx.db
-      .select()
-      .from(eventLedger)
-      .where(eq(eventLedger.eventId, envelope.id));
-
-    // First dispatch records 'processed'; second dispatch is silently skipped (no second row).
-    expect(ledgerRows).toHaveLength(1);
-    expect(ledgerRows[0]?.statusCode).toBe('processed');
-  });
-});
-
-// ── Suite 6: no-client and error handling ─────────────────────────────────────
-
-describe('Stage 5 — no-client and error handling', () => {
-  let ctx: TestVleApp;
-
-  beforeAll(async () => {
-    ctx = await startTestApp();
-  }, 120_000);
-
-  afterAll(() => ctx.teardown());
-  beforeEach(() => clearTables(ctx));
-
-  it('6.1 without vleClient or srsAckClient — event is still processed and recorded as applied', async () => {
-    const consumer       = makeConsumer(ctx, { withVle: false, withSrsAck: false });
-    const distributionId = randomUUID();
-
-    await consumer.dispatch(makeAdjustmentEnvelope({ distributionId }));
-
-    // Ledger records 'processed'
-    const ledgerRows = await ctx.db
-      .select({ statusCode: eventLedger.statusCode })
-      .from(eventLedger)
-      .where(eq(eventLedger.tenantId, TENANT));
-    expect(ledgerRows[0]?.statusCode).toBe('processed');
-
-    // Adjustment map records 'applied' (no srsAckClient means no ack)
-    const row = await getAdjustmentMapping(ctx.db, TENANT, distributionId);
-    expect(row?.statusCode).toBe('applied');
-
-    // VLE and SRS stubs were NOT called
-    expect(ctx.stubVle.stubStore.adjustments.size).toBe(0);
+    expect(await mapRow(r.distributionId)).toBeUndefined();
     expect(ctx.stubSrsAck.getAckCalls()).toHaveLength(0);
   });
 
-  it('6.2 VLE HTTP failure records failed in ledger and throws', async () => {
-    // Inject a VleClient that throws on applyAdjustment.
-    const brokenVleClient: VleClient = {
-      // eslint-disable-next-line @typescript-eslint/require-await
-      upsertCourse:         async () => ({ vleCourseId: '' }),
-      // eslint-disable-next-line @typescript-eslint/require-await
-      upsertEnrolment:      async () => ({ vleEnrolmentId: '' }),
-      updateEnrolmentStatus: async () => { /* no-op */ },
-      // eslint-disable-next-line @typescript-eslint/require-await
-      applyAdjustment: async () => {
-        throw new Error('VLE connection refused');
-      },
+  it('1.9 a VLE failure fails the event, acknowledges nothing, and leaves no map row', async () => {
+    const failing: VlePlatformDriver = {
+      platform: 'stub',
+      setTimeAccommodation: () => Promise.reject(new Error('VLE unavailable')),
     };
+    const setup = consumer();
+    const s = await enrolStudent(setup);
+    await registerOnNewCourse(setup, s, 'ART101');
+    const r = requested(s);
+    const env = envelope(REQUESTED, r);
 
-    const consumer = new VleEventConsumer(
-      'nats://unused', ctx.db, TENANT, log,
-      {
-        vleClient: brokenVleClient,
-        srsAckClient: new HttpSrsAcknowledgementClient(ctx.stubSrsAckBaseUrl, 'test-token'),
-      },
-    );
+    await expect(consumer({ driver: failing }).dispatch(env)).rejects.toThrow('VLE unavailable');
 
-    const envelope = makeAdjustmentEnvelope();
-    await expect(consumer.dispatch(envelope)).rejects.toThrow('VLE connection refused');
-
-    const rows = await ctx.db
-      .select({ statusCode: eventLedger.statusCode })
-      .from(eventLedger)
-      .where(eq(eventLedger.eventId, envelope.id));
-    expect(rows[0]?.statusCode).toBe('failed');
-
-    // SRS was NOT called (VLE failed before the ack).
     expect(ctx.stubSrsAck.getAckCalls()).toHaveLength(0);
+    expect(await mapRow(r.distributionId)).toBeUndefined();
+    const [ledger] = await ctx.db.select().from(eventLedger).where(eq(eventLedger.eventId, env.id));
+    expect(ledger?.statusCode).toBe('failed');
   });
 
-  it('6.3 cross-tenant event is silently dropped — no VLE write, no adjustment map row', async () => {
-    const consumer = makeConsumer(ctx, { withVle: true, withSrsAck: true });
+  it('1.10 never logs the personId or the amount', async () => {
+    const lines: string[] = [];
+    const capturing = pino({ level: 'debug' }, { write: (line: string) => { lines.push(line); } });
+    const setup = consumer();
+    const s = await enrolStudent(setup);
+    await registerOnNewCourse(setup, s, 'LOG101');
+    lines.length = 0;
 
-    // tenantId mismatch
-    await consumer.dispatch(
-      makeAdjustmentEnvelope({}, { tenantId: OTHER }),
-    );
+    await consumer({ logger: capturing }).dispatch(envelope(REQUESTED, requested(s, {
+      amount: { value: 33.5, unitCode: 'percent-of-duration' },
+    })));
 
-    expect(ctx.stubVle.stubStore.adjustments.size).toBe(0);
-    expect(ctx.stubSrsAck.getAckCalls()).toHaveLength(0);
-
-    const adjRows = await ctx.db
-      .select()
-      .from(adjustmentMap)
-      .where(eq(adjustmentMap.tenantId, TENANT));
-    expect(adjRows).toHaveLength(0);
+    const output = lines.join('\n');
+    expect(output.length).toBeGreaterThan(0);
+    expect(output).not.toContain(s.personId);
+    expect(output).not.toContain('33.5');
   });
 });
 
-// ── Suite 7: full end-to-end dispatch ────────────────────────────────────────
+// ── 2. Withdrawal ────────────────────────────────────────────────────────────
 
-describe('Stage 5 — end-to-end dispatch', () => {
-  let ctx: TestVleApp;
+describe('Stage 5 — distribution-withdrawal-requested', () => {
+  it('2.1 removes the accommodation, confirms the withdrawal, and records it', async () => {
+    const c = consumer();
+    const s = await enrolStudent(c);
+    const course = await registerOnNewCourse(c, s, 'WD101');
+    const r = requested(s);
+    await c.dispatch(envelope(REQUESTED, r));
+    expect(vlePercent(course, s.personId)).toBe(25);
 
-  beforeAll(async () => {
-    ctx = await startTestApp();
-  }, 120_000);
+    await c.dispatch(envelope(WITHDRAWAL, withdrawal(r)));
 
-  afterAll(() => ctx.teardown());
-  beforeEach(() => clearTables(ctx));
-
-  it('7.1 full lifecycle: dispatch → VLE applied → SRS acknowledged → map acknowledged', async () => {
-    const consumer       = makeConsumer(ctx, { withVle: true, withSrsAck: true });
-    const adjustmentId   = randomUUID();
-    const distributionId = randomUUID();
-    const personId       = randomUUID();
-
-    await consumer.dispatch(makeAdjustmentEnvelope({ adjustmentId, distributionId, personId }));
-
-    // VLE stub has the adjustment
-    const stored = ctx.stubVle.stubStore.adjustments.get(distributionId);
-    expect(stored?.adjustmentId).toBe(adjustmentId);
-    expect(stored?.personId).toBe(personId);
-
-    // SRS ack was called once
-    const acks = ctx.stubSrsAck.getAckCalls();
-    expect(acks).toHaveLength(1);
-    expect(acks[0]?.adjustmentId).toBe(adjustmentId);
-
-    // Adjustment map is 'acknowledged'
-    const mapRow = await getAdjustmentMapping(ctx.db, TENANT, distributionId);
-    expect(mapRow?.statusCode).toBe('acknowledged');
-
-    // Ledger records 'processed'
-    const ledger = await ctx.db
-      .select({ statusCode: eventLedger.statusCode })
-      .from(eventLedger)
-      .where(eq(eventLedger.tenantId, TENANT));
-    expect(ledger[0]?.statusCode).toBe('processed');
+    expect(vlePercent(course, s.personId)).toBeUndefined();
+    expect(ctx.stubSrsAck.getWithdrawalAckCalls()).toEqual([{ adjustmentId: r.adjustmentId, distributionId: r.distributionId, targetSystem: 'vle' }]);
+    const row = await mapRow(r.distributionId);
+    expect(row?.statusCode).toBe('withdrawn');
+    expect(row?.withdrawnAt).not.toBeNull();
+    expect(row?.withdrawalAcknowledgedAt).not.toBeNull();
   });
 
-  it('7.2 multiple adjustments for different distributions accumulate independently', async () => {
-    const consumer = makeConsumer(ctx, { withVle: true, withSrsAck: true });
+  it('2.2 keeps the remaining adjustments when one is withdrawn', async () => {
+    const c = consumer();
+    const s = await enrolStudent(c);
+    const course = await registerOnNewCourse(c, s, 'WD102');
+    const extra = requested(s);
+    const breaks = requested(s, { adjustmentTypeCode: 'rest-breaks', amount: { value: 15, unitCode: 'minutes-per-hour' } });
+    await c.dispatch(envelope(REQUESTED, extra));
+    await c.dispatch(envelope(REQUESTED, breaks));
+    expect(vlePercent(course, s.personId)).toBe(50);
 
-    await consumer.dispatch(makeAdjustmentEnvelope({ adjustmentTypeCode: 'EXTRA_TIME' }));
-    await consumer.dispatch(makeAdjustmentEnvelope({ adjustmentTypeCode: 'READER' }));
-    await consumer.dispatch(makeAdjustmentEnvelope({ adjustmentTypeCode: 'SCRIBE' }));
+    await c.dispatch(envelope(WITHDRAWAL, withdrawal(extra)));
 
-    expect(ctx.stubVle.stubStore.adjustments.size).toBe(3);
-    expect(ctx.stubSrsAck.getAckCalls()).toHaveLength(3);
+    expect(vlePercent(course, s.personId)).toBe(25);
+  });
 
-    const mapRows = await ctx.db
-      .select()
-      .from(adjustmentMap)
-      .where(eq(adjustmentMap.tenantId, TENANT));
-    expect(mapRows).toHaveLength(3);
-    expect(mapRows.every(r => r.statusCode === 'acknowledged')).toBe(true);
+  it('2.3 confirms a withdrawal even if the instruction never arrived', async () => {
+    const c = consumer();
+    const s = await enrolStudent(c);
+    await registerOnNewCourse(c, s, 'WD103');
+    const r = requested(s);
+
+    await c.dispatch(envelope(WITHDRAWAL, withdrawal(r)));
+
+    expect(ctx.stubSrsAck.getWithdrawalAckCalls()).toHaveLength(1);
+    expect(await mapRow(r.distributionId)).toBeUndefined();
+  });
+
+  it('2.4 a late instruction after its withdrawal is not re-applied', async () => {
+    const c = consumer();
+    const s = await enrolStudent(c);
+    const course = await registerOnNewCourse(c, s, 'WD104');
+    const r = requested(s);
+    await c.dispatch(envelope(REQUESTED, r));
+    await c.dispatch(envelope(WITHDRAWAL, withdrawal(r)));
+
+    await c.dispatch(envelope(REQUESTED, r));
+
+    expect(vlePercent(course, s.personId)).toBeUndefined();
+    expect(ctx.stubSrsAck.getAckCalls()).toHaveLength(1);
+  });
+});
+
+// ── 3. Keeping coverage current ──────────────────────────────────────────────
+
+describe('Stage 5 — coverage as courses and assessments change', () => {
+  it('3.1 a course the student joins later gets their adjustments at registration', async () => {
+    const c = consumer();
+    const s = await enrolStudent(c);
+    await registerOnNewCourse(c, s, 'COV101');
+    await c.dispatch(envelope(REQUESTED, requested(s)));
+
+    const later = await registerOnNewCourse(c, s, 'COV102');
+
+    expect(vlePercent(later, s.personId)).toBe(25);
+  });
+
+  it('3.2 reconciliation re-asserts accommodations the VLE has lost', async () => {
+    const c = consumer();
+    const s = await enrolStudent(c);
+    const course = await registerOnNewCourse(c, s, 'COV201');
+    await c.dispatch(envelope(REQUESTED, requested(s)));
+    ctx.stubVle.stubStore.clearTimeAccommodation(course, s.personId);
+
+    const service = new ReconciliationService(ctx.db, TENANT, undefined, undefined, undefined, log, new StubVleDriver(ctx.stubVleBaseUrl));
+    const result = await service.reconcileAdjustmentCoverage();
+
+    expect(result).toMatchObject({ runType: 'adjustment-coverage', driftCount: 1, repairedCount: 1 });
+    expect(vlePercent(course, s.personId)).toBe(25);
+  });
+
+  it('3.3 reconciliation clears an accommodation once its valid period has ended', async () => {
+    const c = consumer();
+    const s = await enrolStudent(c);
+    const course = await registerOnNewCourse(c, s, 'COV301');
+    await c.dispatch(envelope(REQUESTED, requested(s, { validTo: '2099-07-31T00:00:00.000Z' })));
+    expect(vlePercent(course, s.personId)).toBe(25);
+
+    const service = new ReconciliationService(ctx.db, TENANT, undefined, undefined, undefined, log, new StubVleDriver(ctx.stubVleBaseUrl));
+    await service.reconcileAdjustmentCoverage(new Date('2099-08-01T00:00:00.000Z'));
+
+    expect(vlePercent(course, s.personId)).toBeUndefined();
+  });
+
+  it('3.4 reconciliation without a platform driver checks nobody', async () => {
+    const service = new ReconciliationService(ctx.db, TENANT, undefined, undefined, undefined, log);
+    const result = await service.reconcileAdjustmentCoverage();
+    expect(result).toMatchObject({ driftCount: 0, repairedCount: 0 });
   });
 });

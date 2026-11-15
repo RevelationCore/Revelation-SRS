@@ -13,6 +13,7 @@ import type { FastifyInstance } from 'fastify';
 
 import type { Config } from './config.js';
 import { AdjustmentService } from './platform/adjustments/adjustment-service.js';
+import { AdjustmentDistributionDispatcher } from './platform/adjustments/distribution-dispatcher.js';
 import { BusinessCaseService } from './platform/cases/business-case-service.js';
 import { IdentityResolutionService } from './platform/identity/identity-resolution-service.js';
 import { SupervisionService } from './platform/pgr/supervision-service.js';
@@ -320,7 +321,10 @@ export async function buildApp(
   const moduleResults = new ModuleResultService(db, eventBus, rules);
   const marks = new MarkService(db, eventBus, rules, moduleResults, featureFlags);
   const moderation = new ModerationService(db);
-  const adjustments = new AdjustmentService(db, eventBus, valueSets);
+  const adjustmentDispatcher = new AdjustmentDistributionDispatcher(db, eventBus, (err, context) => {
+    fastify.log.warn({ err, ...context }, 'Adjustment instruction not yet published; it stays due for the reconcile loop');
+  });
+  const adjustments = new AdjustmentService(db, eventBus, valueSets, adjustmentDispatcher);
   const businessCases = new BusinessCaseService(db);
   const auditReview = new AuditReviewService(db, businessCases);
   const identityResolution = new IdentityResolutionService(db, businessCases);
@@ -392,6 +396,7 @@ export async function buildApp(
   fastify.decorate('markService', marks);
   fastify.decorate('moderationService', moderation);
   fastify.decorate('adjustmentService', adjustments);
+  fastify.decorate('adjustmentDispatcher', adjustmentDispatcher);
   fastify.decorate('businessCaseService', businessCases);
   fastify.decorate('identityResolutionService', identityResolution);
   fastify.decorate('engagementOutcomeService', engagementOutcomes);
@@ -718,6 +723,7 @@ declare module 'fastify' {
     markService: MarkService;
     moderationService: ModerationService;
     adjustmentService: AdjustmentService;
+    adjustmentDispatcher: AdjustmentDistributionDispatcher;
     businessCaseService: BusinessCaseService;
     identityResolutionService: IdentityResolutionService;
     engagementOutcomeService: EngagementOutcomeService;

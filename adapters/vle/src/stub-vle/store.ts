@@ -23,16 +23,12 @@ export interface StubEnrolment {
   updatedAt:            string;
 }
 
-export interface StubAdjustment {
-  adjustmentId:       string;
-  distributionId:     string;
-  personId:           string;
-  enrolmentId:        string;
-  adjustmentTypeCode: string;
-  scopeCode:          string;
-  validFrom:          string;
-  validTo:            string | null;
-  appliedAt:          string;
+/** A student's additional time in one course, as the stub VLE holds it. */
+export interface StubTimeAccommodation {
+  vleCourseId:      string;
+  personId:         string;
+  extraTimePercent: number;
+  updatedAt:        string;
 }
 
 export interface StubMark {
@@ -54,14 +50,14 @@ export interface StubResult {
 export class StubVleStore {
   courses     = new Map<string, StubCourse>();     // moduleId → course
   enrolments  = new Map<string, StubEnrolment>(); // moduleRegistrationId → enrolment
-  adjustments = new Map<string, StubAdjustment>(); // distributionId → adjustment
+  timeAccommodations = new Map<string, StubTimeAccommodation>(); // `${vleCourseId}:${personId}` → accommodation
   marks       = new Map<string, StubMark>();       // markId → mark
   results     = new Map<string, StubResult>();     // moduleRegistrationId → result
 
   reset(): void {
     this.courses.clear();
     this.enrolments.clear();
-    this.adjustments.clear();
+    this.timeAccommodations.clear();
     this.marks.clear();
     this.results.clear();
   }
@@ -90,10 +86,14 @@ export class StubVleStore {
     return updated;
   }
 
-  addAdjustment(adjustment: Omit<StubAdjustment, 'appliedAt'>): StubAdjustment {
-    const record: StubAdjustment = { ...adjustment, appliedAt: new Date().toISOString() };
-    this.adjustments.set(adjustment.distributionId, record);
+  setTimeAccommodation(vleCourseId: string, personId: string, extraTimePercent: number): StubTimeAccommodation {
+    const record: StubTimeAccommodation = { vleCourseId, personId, extraTimePercent, updatedAt: new Date().toISOString() };
+    this.timeAccommodations.set(`${vleCourseId}:${personId}`, record);
     return record;
+  }
+
+  clearTimeAccommodation(vleCourseId: string, personId: string): boolean {
+    return this.timeAccommodations.delete(`${vleCourseId}:${personId}`);
   }
 
   addMark(mark: Omit<StubMark, 'markId' | 'submittedAt'>): StubMark {

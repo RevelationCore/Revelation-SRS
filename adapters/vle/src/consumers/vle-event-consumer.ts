@@ -2,7 +2,7 @@
  * VleEventConsumer — NATS JetStream consumer for SRS events flowing to the VLE.
  *
  * Connects to NATS, subscribes to SRS_EVENTS with a durable push consumer
- * filtered to the ten VLE-relevant subjects, and dispatches messages to
+ * filtered to the VLE-relevant subjects, and dispatches messages to
  * routeToHandler.  Each message is processed inside a database transaction
  * that also records the event in vle_event_ledger for idempotency.
  *
@@ -28,6 +28,7 @@ import type { Logger } from 'pino';
 import type { VleDb } from '../db/client.js';
 import type { SrsAcknowledgementClient } from '../srs-client/acknowledgement-client.js';
 import type { VleClient } from '../vle-client/client.js';
+import type { VlePlatformDriver } from '../vle-platforms/driver.js';
 
 import {
   consumerGroupFor,
@@ -43,6 +44,7 @@ const STREAM_NAME = 'SRS_EVENTS';
 export interface VleEventConsumerOptions {
   vleClient?:    VleClient;
   srsAckClient?: SrsAcknowledgementClient;
+  platformDriver?: VlePlatformDriver;
   maxAttempts?:  number;
 }
 
@@ -52,6 +54,7 @@ export class VleEventConsumer {
   private readonly jc = JSONCodec<DomainEventEnvelope<unknown>>();
   private readonly vleClient:    VleClient | undefined;
   private readonly srsAckClient: SrsAcknowledgementClient | undefined;
+  private readonly platformDriver: VlePlatformDriver | undefined;
   private readonly maxAttempts:  number;
 
   constructor(
@@ -63,6 +66,7 @@ export class VleEventConsumer {
   ) {
     this.vleClient    = opts.vleClient;
     this.srsAckClient = opts.srsAckClient;
+    this.platformDriver = opts.platformDriver;
     this.maxAttempts  = opts.maxAttempts ?? 5;
   }
 
@@ -173,6 +177,7 @@ export class VleEventConsumer {
           tenantId:     this.tenantId,
           vleClient:    this.vleClient,
           srsAckClient: this.srsAckClient,
+          platformDriver: this.platformDriver,
           log:          this.log,
         };
         const outcome    = await routeToHandler(envelope, this.log, ctx);

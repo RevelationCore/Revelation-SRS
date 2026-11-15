@@ -101,7 +101,9 @@ interface DomainEventEnvelope<T> {
 | Subject | Data Class | Partition Key | Consumers |
 |---|---|---|---|
 | `srs.adjustment.approved` | sensitive | `enrolmentId` | assessment-venue-adapter, wellbeing-module |
-| `srs.adjustment.distributed` | sensitive | `adjustmentId` | assessment-venue-adapter |
+| `srs.adjustment.distribution-requested` (subject suffix `.<targetSystem>`) | sensitive | `distributionId` | vle-adapter |
+| `srs.adjustment.distribution-withdrawal-requested` (subject suffix `.<targetSystem>`) | sensitive | `distributionId` | vle-adapter |
+| `srs.adjustment.distributed` | sensitive | `adjustmentId` | wellbeing-module |
 | `srs.adjustment.expired` | sensitive | `enrolmentId` | assessment-venue-adapter, wellbeing-module |
 
 ### Circumstances (`srs.circumstances.*`)

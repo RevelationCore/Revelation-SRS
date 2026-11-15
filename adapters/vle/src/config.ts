@@ -9,6 +9,14 @@ export interface Config {
   integrationRegistrationId: string;
   serviceAccountToken:       string;
   vleEndpointUrl:            string;
+  /** Which platform driver writes adjustments: stub | canvas | moodle. */
+  vlePlatform:               'stub' | 'canvas' | 'moodle';
+  /** Canvas access token or Moodle web-service token (not used by stub). */
+  vleApiToken:               string | undefined;
+  /** Start the NATS consumer (off for tests that call dispatch() directly). */
+  consumerEnabled:           boolean;
+  /** Interval for adjustment acknowledgement and coverage reconciliation; 0 disables. */
+  reconcileIntervalMs:       number;
   endpointSafetyClass:       'simulator' | 'external-test' | 'live';
   retryMaxAttempts:          number;
   retryBackoffMs:            number;
@@ -30,7 +38,18 @@ export function loadConfig(): Config {
   if (safetyClass !== 'simulator' && safetyClass !== 'external-test' && safetyClass !== 'live') {
     throw new Error(`Invalid ENDPOINT_SAFETY_CLASS: ${safetyClass}`);
   }
+  const platform = process.env['VLE_PLATFORM'] ?? 'stub';
+  if (platform !== 'stub' && platform !== 'canvas' && platform !== 'moodle') {
+    throw new Error(`Invalid VLE_PLATFORM: ${platform}`);
+  }
+  if (platform === 'stub' && safetyClass === 'live') {
+    throw new Error('VLE_PLATFORM=stub cannot be used with ENDPOINT_SAFETY_CLASS=live');
+  }
   return {
+    vlePlatform:             platform,
+    vleApiToken:             process.env['VLE_API_TOKEN'],
+    consumerEnabled:         (process.env['VLE_CONSUMER_ENABLED'] ?? 'true') !== 'false',
+    reconcileIntervalMs:     optionalInt('RECONCILE_INTERVAL_MS', 300_000),
     port:                    optionalInt('PORT', 3002),
     logLevel:                process.env['LOG_LEVEL'] ?? 'info',
     nodeEnv:                 process.env['NODE_ENV'] ?? 'development',

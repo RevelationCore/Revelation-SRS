@@ -34,6 +34,12 @@ interface EventDef {
   dataClass:   'standard' | 'personal' | 'sensitive' | 'special-category' | 'regulatory';
   partitionKey: string; // primary field for message ordering
   consumers:   string[];
+  /**
+   * Final subject token appended at publish time for events addressed to one
+   * consumer: published on `${subject}.${value}`. The envelope type, and this
+   * registry's `subject`, omit it.
+   */
+  subjectSuffix?: string;
 }
 
 export const PUBLISHED_EVENTS: EventDef[] = [
@@ -248,7 +254,7 @@ export const PUBLISHED_EVENTS: EventDef[] = [
     schemaPath: 'adjustment/distributed',
     dataClass: 'sensitive',
     partitionKey: 'adjustmentId',
-    consumers: ['assessment-venue-adapter'],
+    consumers: ['wellbeing-module'],
   },
   {
     typeName: 'AdjustmentExpiredV1Payload',
@@ -258,6 +264,26 @@ export const PUBLISHED_EVENTS: EventDef[] = [
     dataClass: 'sensitive',
     partitionKey: 'enrolmentId',
     consumers: ['assessment-venue-adapter', 'wellbeing-module'],
+  },
+  {
+    typeName: 'AdjustmentDistributionRequestedV1Payload',
+    file: 'adjustment/distribution-requested.v1.ts',
+    subject: 'srs.adjustment.distribution-requested',
+    subjectSuffix: '{targetSystem}',
+    schemaPath: 'adjustment/distribution-requested',
+    dataClass: 'sensitive',
+    partitionKey: 'distributionId',
+    consumers: ['vle-adapter'], // attendance and exams targets have no consumer yet
+  },
+  {
+    typeName: 'AdjustmentDistributionWithdrawalRequestedV1Payload',
+    file: 'adjustment/distribution-withdrawal-requested.v1.ts',
+    subject: 'srs.adjustment.distribution-withdrawal-requested',
+    subjectSuffix: '{targetSystem}',
+    schemaPath: 'adjustment/distribution-withdrawal-requested',
+    dataClass: 'sensitive',
+    partitionKey: 'distributionId',
+    consumers: ['vle-adapter'], // attendance and exams targets have no consumer yet
   },
   // ── Attendance and engagement ───────────────────────────────────────────
   {
@@ -673,6 +699,7 @@ for (const event of PUBLISHED_EVENTS) {
 
     registryEntries.push({
       subject:      event.subject,
+      ...(event.subjectSuffix ? { subjectSuffix: event.subjectSuffix } : {}),
       version:      '1.0.0',
       schemaRef:    schemaId,
       schemaPath:   `schemas/events/${event.schemaPath}/v1.json`,

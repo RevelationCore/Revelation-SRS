@@ -141,7 +141,9 @@ Data classification: **standard** = non-personal operational, **personal** = per
 | `srs.assessment.module-result-calculated` | 1.0.0 | standard | BI, Transcript | `schemas/events/assessment/module-result-calculated.v1.json` |
 | `srs.assessment.module-result-ratified` | 1.0.0 | standard | BI, Transcript, HEAR | `schemas/events/assessment/module-result-ratified.v1.json` |
 | `srs.adjustment.approved` | 1.0.0 | sensitive | Venue, Wellbeing | `schemas/events/adjustment/approved.v1.json` |
-| `srs.adjustment.distributed` | 1.0.0 | sensitive | Venue | `schemas/events/adjustment/distributed.v1.json` |
+| `srs.adjustment.distribution-requested` (published on `….<targetSystem>`) | 1.0.0 | sensitive | VLE | `schemas/events/adjustment/distribution-requested/v1.json` |
+| `srs.adjustment.distribution-withdrawal-requested` (published on `….<targetSystem>`) | 1.0.0 | sensitive | VLE | `schemas/events/adjustment/distribution-withdrawal-requested/v1.json` |
+| `srs.adjustment.distributed` (confirmation after a target acknowledges) | 1.0.0 | sensitive | Wellbeing | `schemas/events/adjustment/distributed.v1.json` |
 | `srs.adjustment.expired` | 1.0.0 | sensitive | Venue, Wellbeing | `schemas/events/adjustment/expired.v1.json` |
 | `srs.circumstances.exceptional-circumstances-flagged` | 1.0.0 | sensitive | Wellbeing, BI | `schemas/events/circumstances/exceptional-circumstances-flagged.v1.json` |
 | `srs.circumstances.exceptional-circumstances-updated` | 1.0.0 | sensitive | Wellbeing, BI | `schemas/events/circumstances/exceptional-circumstances-updated.v1.json` |

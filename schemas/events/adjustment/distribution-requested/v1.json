@@ -1,0 +1,72 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/AdjustmentDistributionRequestedV1Payload",
+  "definitions": {
+    "AdjustmentDistributionRequestedV1Payload": {
+      "type": "object",
+      "properties": {
+        "distributionId": {
+          "type": "string"
+        },
+        "adjustmentId": {
+          "type": "string"
+        },
+        "targetSystem": {
+          "type": "string"
+        },
+        "personId": {
+          "type": "string"
+        },
+        "enrolmentId": {
+          "type": "string"
+        },
+        "adjustmentTypeCode": {
+          "type": "string"
+        },
+        "scopeCode": {
+          "type": "string"
+        },
+        "amount": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "number"
+            },
+            "unitCode": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "value",
+            "unitCode"
+          ],
+          "additionalProperties": false
+        },
+        "validFrom": {
+          "type": "string"
+        },
+        "validTo": {
+          "type": "string"
+        },
+        "requestedAt": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "distributionId",
+        "adjustmentId",
+        "targetSystem",
+        "personId",
+        "enrolmentId",
+        "adjustmentTypeCode",
+        "scopeCode",
+        "validFrom",
+        "requestedAt"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$id": "https://schemas.revelation-srs.io/events/adjustment/distribution-requested/v1.json",
+  "title": "AdjustmentDistributionRequestedV1Payload",
+  "description": "Payload schema for srs.adjustment.distribution-requested v1.0.0"
+}

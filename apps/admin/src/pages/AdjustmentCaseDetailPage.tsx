@@ -13,6 +13,7 @@ import {
 } from '../api/adjustmentCases.js';
 import { uploadEvidence, downloadEvidence, ApiError } from '../api/wellbeingModule.js';
 import { useAuth } from '../auth/AuthContext.js';
+import { useValueSet } from '../hooks/useValueSet.js';
 import { userHasAnyPermission } from '../auth/RequirePermission.js';
 
 const STATUS_LABELS: Record<string, string> = {
@@ -346,6 +347,11 @@ function ApproveRejectForm({ caseId, onDone }: { caseId: string; onDone: () => v
   const [validFrom, setValidFrom]     = useState(new Date().toISOString().slice(0, 10));
   const [rationale, setRationale]     = useState('');
   const [forceApprove, setForceApprove] = useState(false);
+  // Structured amount: target systems (e.g. a VLE computing per-quiz extra
+  // time) need a number, not prose in the recommendation.
+  const [amountValue, setAmountValue] = useState('');
+  const [amountUnitCode, setAmountUnitCode] = useState('');
+  const { members: amountUnits } = useValueSet('reasonable_adjustment', 'amount_unit_code');
   const [submitting, setSubmitting]   = useState(false);
   const [error, setError]             = useState('');
   const [result, setResult]           = useState('');
@@ -358,11 +364,17 @@ function ApproveRejectForm({ caseId, onDone }: { caseId: string; onDone: () => v
         await rejectAdjustmentCase(caseId, rationale.trim());
         setResult('Case rejected.');
       } else {
+        const amount = amountValue.trim() === '' ? undefined : Number(amountValue);
+        if (amount !== undefined && (!Number.isFinite(amount) || amount <= 0 || !amountUnitCode)) {
+          setError('Enter a positive amount and choose its unit, or leave the amount blank.');
+          return;
+        }
         const res = await approveAdjustmentCase(caseId, {
           enrolmentId: enrolmentId.trim(),
           scopeCode,
           recommendedAdjustment: recommendedAdjustment.trim(),
           validFrom: new Date(validFrom).toISOString(),
+          ...(amount !== undefined ? { amount: { value: amount, unitCode: amountUnitCode } } : {}),
           forceApprove,
         });
         setResult(res.status === 'already_sent' ? 'Already distributed to SRS.' : 'Approved and submitted to SRS.');
@@ -404,6 +416,26 @@ function ApproveRejectForm({ caseId, onDone }: { caseId: string; onDone: () => v
                   <Input id="approve-recommended" value={recommendedAdjustment} onChange={(e) => setRecommendedAdjustment(e.target.value)} />
                 </LabelledField>
               </div>
+              <LabelledField label="Amount" htmlFor="approve-amount-value">
+                <Input
+                  id="approve-amount-value"
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  inputMode="decimal"
+                  placeholder="e.g. 25"
+                  value={amountValue}
+                  onChange={(e) => setAmountValue(e.target.value)}
+                />
+              </LabelledField>
+              <LabelledField label="Amount unit" htmlFor="approve-amount-unit">
+                <Select id="approve-amount-unit" value={amountUnitCode} onChange={(e) => setAmountUnitCode(e.target.value)}>
+                  <option value="">None</option>
+                  {amountUnits.map((u) => (
+                    <option key={u.code} value={u.code}>{u.displayLabel}</option>
+                  ))}
+                </Select>
+              </LabelledField>
               <LabelledField label="Valid from" htmlFor="approve-valid-from">
                 <Input id="approve-valid-from" type="date" value={validFrom} onChange={(e) => setValidFrom(e.target.value)} />
               </LabelledField>

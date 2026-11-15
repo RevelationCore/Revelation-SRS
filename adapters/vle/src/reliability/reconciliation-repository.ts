@@ -146,7 +146,7 @@ export async function updateMarkReceiptId(
 
 // ─── Reconciliation run ───────────────────────────────────────────────────────
 
-export type ReconciliationRunType = 'roster' | 'adjustments' | 'marks';
+export type ReconciliationRunType = 'roster' | 'adjustments' | 'adjustment-coverage' | 'marks';
 
 export async function insertReconciliationRun(
   db:       VleDb,

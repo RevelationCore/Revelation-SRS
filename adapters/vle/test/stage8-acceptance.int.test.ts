@@ -24,7 +24,7 @@ import { pino }    from 'pino';
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import type { DomainEventEnvelope } from '@revelation-srs/domain';
 import type {
-  AdjustmentDistributedV1Payload,
+  AdjustmentDistributionRequestedV1Payload,
   AssessmentModuleResultRatifiedV1Payload,
   CatalogueModuleUpdatedV1Payload,
   EnrolmentModuleRegisteredV1Payload,
@@ -47,6 +47,7 @@ import { HttpSrsAcknowledgementClient } from '../src/srs-client/acknowledgement-
 import { HttpSrsMarkClient }            from '../src/srs-client/mark-client.js';
 import { MarkSubmissionService }        from '../src/services/mark-submission-service.js';
 import { HttpVleClient }               from '../src/vle-client/client.js';
+import { StubVleDriver }               from '../src/vle-platforms/stub-driver.js';
 
 import { startTestApp, type TestVleApp } from './helpers/test-app.js';
 
@@ -86,8 +87,33 @@ function makeFullConsumer(ctx: TestVleApp): VleEventConsumer {
     {
       vleClient:    new HttpVleClient(ctx.stubVleBaseUrl),
       srsAckClient: new HttpSrsAcknowledgementClient(ctx.stubSrsAckBaseUrl, 'test-token'),
+      platformDriver: new StubVleDriver(ctx.stubVleBaseUrl),
     },
   );
+}
+
+/** Course + student + module registration, so the student has an active VLE course. */
+async function provisionStudentInCourse(
+  consumer: VleEventConsumer,
+  ctx:      TestVleApp,
+  code:     string,
+): Promise<{ personId: string; enrolmentId: string; moduleId: string; vleCourseId: string }> {
+  const personId = crypto.randomUUID();
+  const enrolmentId = crypto.randomUUID();
+  const moduleId = crypto.randomUUID();
+  await consumer.dispatch(makeEnvelope('srs.catalogue.module-updated', {
+    moduleId, code, title: `${code} module`, creditValue: 20, effectiveDate: '2026-09-01',
+  } satisfies CatalogueModuleUpdatedV1Payload));
+  await consumer.dispatch(makeEnvelope('srs.student.enrolled', {
+    personId, enrolmentId, academicYear: '2026/27', modeOfStudy: 'full-time',
+  } satisfies StudentEnrolledV1Payload));
+  await consumer.dispatch(makeEnvelope('srs.enrolment.module-registered', {
+    enrolmentId, moduleRegistrationId: crypto.randomUUID(), moduleId,
+    moduleOfferingId: crypto.randomUUID(), academicPeriodId: crypto.randomUUID(), registrationDate: '2026-09-20',
+  } satisfies EnrolmentModuleRegisteredV1Payload));
+  const [row] = await ctx.db.select({ vleCourseId: courseMap.vleCourseId }).from(courseMap)
+    .where(and(eq(courseMap.tenantId, TENANT), eq(courseMap.moduleId, moduleId)));
+  return { personId, enrolmentId, moduleId, vleCourseId: row!.vleCourseId };
 }
 
 async function clearAllTables(ctx: TestVleApp): Promise<void> {
@@ -164,19 +190,24 @@ const STAGE_0_SUBJECTS = [
   'srs.enrolment.module-registration-withdrawn',
   'srs.enrolment.module-registration-completed',
   'srs.assessment.module-result-ratified',
-  'srs.adjustment.distributed',
+  // Replaced srs.adjustment.distributed (AJ-21 finding 1): that event is a
+  // confirmation published after a target acknowledges, so waiting for it
+  // meant nothing was ever applied.
+  'srs.adjustment.distribution-requested.vle',
+  'srs.adjustment.distribution-withdrawal-requested.vle',
 ] as const;
 
 describe('Stage 8 — event contract compliance (static)', () => {
-  it('2.1 VLE_SUBSCRIBED_SUBJECTS contains all 10 subjects from Stage 0 baseline', () => {
+  it('2.1 VLE_SUBSCRIBED_SUBJECTS contains exactly the contracted subjects', () => {
     for (const subject of STAGE_0_SUBJECTS) {
       expect(VLE_SUBSCRIBED_SUBJECTS).toContain(subject);
     }
     expect(VLE_SUBSCRIBED_SUBJECTS).toHaveLength(STAGE_0_SUBJECTS.length);
   });
 
-  it('2.2 srs.adjustment.approved is NOT in VLE_SUBSCRIBED_SUBJECTS', () => {
+  it('2.2 srs.adjustment.approved and .distributed are NOT in VLE_SUBSCRIBED_SUBJECTS', () => {
     expect(VLE_SUBSCRIBED_SUBJECTS).not.toContain('srs.adjustment.approved');
+    expect(VLE_SUBSCRIBED_SUBJECTS).not.toContain('srs.adjustment.distributed');
   });
 });
 
@@ -202,20 +233,21 @@ describe('Stage 8 — event contract compliance (dispatch)', () => {
     expect(rows[0]?.statusCode).toBe('skipped');
   });
 
-  it('2.4 dispatching srs.adjustment.distributed with non-VLE targetSystem creates no adjustment_map row', async () => {
+  it('2.4 a misrouted instruction for another target creates no adjustment_map row', async () => {
     const consumer = new VleEventConsumer('nats://unused', ctx.db, TENANT, log, {});
-    const payload: AdjustmentDistributedV1Payload = {
+    const payload: AdjustmentDistributionRequestedV1Payload = {
       adjustmentId:       crypto.randomUUID(),
       distributionId:     crypto.randomUUID(),
-      targetSystem:       'library-system', // not 'vle'
-      distributedAt:      new Date().toISOString(),
+      targetSystem:       'attendance', // not 'vle'
       personId:           crypto.randomUUID(),
       enrolmentId:        crypto.randomUUID(),
-      adjustmentTypeCode: 'EXTRA_TIME',
-      scopeCode:          'MODULE',
+      adjustmentTypeCode: 'extra-time',
+      scopeCode:          'all',
+      amount:             { value: 25, unitCode: 'percent-of-duration' },
       validFrom:          '2026-01-01T00:00:00.000Z',
+      requestedAt:        new Date().toISOString(),
     };
-    await consumer.dispatch(makeEnvelope('srs.adjustment.distributed', payload));
+    await consumer.dispatch(makeEnvelope('srs.adjustment.distribution-requested', payload));
 
     const rows = await ctx.db.select().from(adjustmentMap).where(eq(adjustmentMap.tenantId, TENANT));
     expect(rows).toHaveLength(0);
@@ -277,25 +309,25 @@ describe('Stage 8 — golden-path scenarios', () => {
     expect(rows).toHaveLength(3);
   });
 
-  it('3.2 F-SIS-VLE-02: adjustment-distributed → VLE applied → SRS acknowledged', async () => {
+  it('3.2 F-SIS-VLE-02: distribution-requested → VLE accommodation set → SRS acknowledged', async () => {
     const consumer = makeFullConsumer(ctx);
+    const { personId, enrolmentId, vleCourseId } = await provisionStudentInCourse(consumer, ctx, 'PSY201');
     const adjustmentId   = crypto.randomUUID();
     const distributionId = crypto.randomUUID();
 
-    const payload: AdjustmentDistributedV1Payload = {
+    await consumer.dispatch(makeEnvelope('srs.adjustment.distribution-requested', {
       adjustmentId, distributionId,
       targetSystem:       'vle',
-      distributedAt:      new Date().toISOString(),
-      personId:           crypto.randomUUID(),
-      enrolmentId:        crypto.randomUUID(),
-      adjustmentTypeCode: 'EXTRA_TIME',
-      scopeCode:          'ALL_ASSESSMENTS',
+      personId, enrolmentId,
+      adjustmentTypeCode: 'extra-time',
+      scopeCode:          'all',
+      amount:             { value: 25, unitCode: 'percent-of-duration' },
       validFrom:          '2026-01-01T00:00:00.000Z',
-    };
-    await consumer.dispatch(makeEnvelope('srs.adjustment.distributed', payload));
+      requestedAt:        new Date().toISOString(),
+    } satisfies AdjustmentDistributionRequestedV1Payload));
 
-    // VLE received the adjustment
-    expect(ctx.stubVle.stubStore.adjustments.has(distributionId)).toBe(true);
+    // VLE holds the accommodation for this student in this course
+    expect(ctx.stubVle.stubStore.timeAccommodations.get(`${vleCourseId}:${personId}`)?.extraTimePercent).toBe(25);
 
     // SRS was acknowledged
     const ackCalls = ctx.stubSrsAck.getAckCalls();
@@ -382,17 +414,20 @@ describe('Stage 8 — golden-path scenarios', () => {
     expect(ctx.stubVle.stubStore.enrolments.has(moduleRegistrationId)).toBe(true);
 
     // F-SIS-VLE-02 — adjustment
-    await consumer.dispatch(makeEnvelope('srs.adjustment.distributed', {
+    await consumer.dispatch(makeEnvelope('srs.adjustment.distribution-requested', {
       adjustmentId, distributionId,
       targetSystem:       'vle',
-      distributedAt:      new Date().toISOString(),
       personId, enrolmentId,
-      adjustmentTypeCode: 'EXTRA_TIME',
-      scopeCode:          'ALL_ASSESSMENTS',
+      adjustmentTypeCode: 'extra-time',
+      scopeCode:          'all',
+      amount:             { value: 15, unitCode: 'minutes-per-hour' },
       validFrom:          '2026-01-01T00:00:00.000Z',
-    } satisfies AdjustmentDistributedV1Payload));
+      requestedAt:        new Date().toISOString(),
+    } satisfies AdjustmentDistributionRequestedV1Payload));
 
-    expect(ctx.stubVle.stubStore.adjustments.has(distributionId)).toBe(true);
+    const [vleCourse] = await ctx.db.select({ vleCourseId: courseMap.vleCourseId }).from(courseMap)
+      .where(and(eq(courseMap.tenantId, TENANT), eq(courseMap.moduleId, moduleId)));
+    expect(ctx.stubVle.stubStore.timeAccommodations.get(`${vleCourse!.vleCourseId}:${personId}`)?.extraTimePercent).toBe(25);
     expect(ctx.stubSrsAck.getAckCalls()).toHaveLength(1);
 
     // F-VLE-SIS-01 outbound — mark submission
@@ -423,7 +458,7 @@ describe('Stage 8 — golden-path scenarios', () => {
       .from(eventLedger)
       .where(eq(eventLedger.tenantId, TENANT));
     expect(ledgerRows.every(r => r.statusCode === 'processed')).toBe(true);
-    // 5 events: module-updated, student-enrolled, module-registered, adjustment-distributed, ratified
+    // 5 events: module-updated, student-enrolled, module-registered, distribution-requested, ratified
     expect(ledgerRows).toHaveLength(5);
   });
 
