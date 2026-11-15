@@ -1,9 +1,12 @@
+import { randomUUID } from 'node:crypto';
+
 import { Type } from '@sinclair/typebox';
 import { requireAnyPermission, requirePermission } from '@revelation-srs/auth';
 import { hasPermission } from '@revelation-srs/domain';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 
 import type { DeliveryItemDto, DeliveryReplyActor, DeliveryTaskDto, FlowConfigDto } from '../platform/delivery/delivery-service.js';
+import { INBOUND_FLOWS, type ExternalRecordDto } from '../platform/delivery/inbound.js';
 
 const ErrorSchema = Type.Object({
   type: Type.String(),
@@ -57,6 +60,36 @@ const FlowBody = Type.Object({
   ownerDescription: Type.Optional(Type.Union([Type.String({ maxLength: 200 }), Type.Null()])),
   alertAfterHours: Type.Optional(Type.Integer({ minimum: 1, maximum: 8760 })),
   notifyEmail: Type.Optional(Type.Union([Type.String({ maxLength: 254 }), Type.Null()])),
+});
+
+const ExternalRecordSchema = Type.Object({
+  externalRecordId: Type.String(),
+  flowCode: Type.String(),
+  flowName: Type.String(),
+  sourceLabel: Type.String(),
+  personId: Type.String(),
+  recordKey: Type.String(),
+  payload: Type.Record(Type.String(), Type.Unknown()),
+  summary: Type.String(),
+  observedAt: Type.String(),
+  receivedAt: Type.String(),
+  receivedVia: Type.String(),
+  current: Type.Boolean(),
+});
+const InboundFlowSchema = Type.Object({
+  flowCode: Type.String(),
+  sourceSystem: Type.String(),
+  sourceLabel: Type.String(),
+  name: Type.String(),
+  defined: Type.Boolean(),
+  fields: Type.Array(Type.Object({
+    name: Type.String(),
+    label: Type.String(),
+    type: Type.String(),
+    required: Type.Boolean(),
+    valueSet: Type.Optional(Type.Object({ entity: Type.String(), field: Type.String() })),
+    min: Type.Optional(Type.Number()),
+  })),
 });
 
 function actorOf(request: FastifyRequest): DeliveryReplyActor {
@@ -161,6 +194,84 @@ export function deliveryRoutes(fastify: FastifyInstance): void {
     await auditPerson(fastify, request, actor, deliveryItemId, 'Integration task: reported cannot apply');
     await reply.code(204).send();
   });
+}
+
+/**
+ * Inbound: what adjacent systems report about a student (F-LIB-SIS-01,
+ * F-ACC-SIS-01, ...). Informational only — never changes academic status.
+ */
+export function inboundRoutes(fastify: FastifyInstance): void {
+  fastify.get('/inbound-flows', {
+    schema: { response: { 200: Type.Array(InboundFlowSchema) } },
+    preHandler: [requireAnyPermission('external-record:read', 'integration:manage')],
+  }, async (_request, reply) => {
+    await reply.send(INBOUND_FLOWS.map(({ summarise: _s, recordKeyField: _k, ...flow }) => ({ ...flow, defined: flow.fields.length > 0 })));
+  });
+
+  fastify.post('/inbound/:flowCode', {
+    schema: {
+      params: Type.Object({ flowCode: Type.String() }),
+      body: Type.Object({
+        personId: Type.Optional(Type.String()),
+        studentNumber: Type.Optional(Type.String()),
+        payload: Type.Record(Type.String(), Type.Unknown()),
+        observedAt: Type.Optional(Type.String({ format: 'date-time' })),
+        idempotencyKey: Type.String({ minLength: 1, maxLength: 200 }),
+      }),
+      response: { 200: ExternalRecordSchema, 201: ExternalRecordSchema, 404: ErrorSchema, 422: ErrorSchema },
+    },
+    preHandler: [requirePermission('integration:manage')],
+  }, async (request, reply) => {
+    const { flowCode } = request.params as { flowCode: string };
+    const body = request.body as { personId?: string; studentNumber?: string; payload: Record<string, unknown>; observedAt?: string; idempotencyKey: string };
+    const { record, replayed } = await fastify.inboundRecordService.receive(request.tenantId, flowCode, body, 'connector', request.user.sub);
+    await reply.code(replayed ? 200 : 201).send(recordToWire(record));
+  });
+
+  fastify.get('/students/:personId/external-records', {
+    schema: {
+      params: Type.Object({ personId: Type.String() }),
+      response: { 200: Type.Array(ExternalRecordSchema) },
+    },
+    preHandler: [requirePermission('external-record:read')],
+  }, async (request, reply) => {
+    const { personId } = request.params as { personId: string };
+    await reply.send((await fastify.inboundRecordService.listForPerson(request.tenantId, personId)).map(recordToWire));
+  });
+
+  fastify.post('/students/:personId/external-records/:flowCode', {
+    schema: {
+      params: Type.Object({ personId: Type.String(), flowCode: Type.String() }),
+      body: Type.Object({
+        payload: Type.Record(Type.String(), Type.Unknown()),
+        observedAt: Type.Optional(Type.String({ format: 'date-time' })),
+      }),
+      response: { 201: ExternalRecordSchema, 404: ErrorSchema, 422: ErrorSchema },
+    },
+    preHandler: [requirePermission('external-record:write')],
+  }, async (request, reply) => {
+    const { personId, flowCode } = request.params as { personId: string; flowCode: string };
+    const body = request.body as { payload: Record<string, unknown>; observedAt?: string };
+    const { record } = await fastify.inboundRecordService.receive(request.tenantId, flowCode, {
+      personId, payload: body.payload, ...(body.observedAt ? { observedAt: body.observedAt } : {}), idempotencyKey: `manual:${randomUUID()}`,
+    }, 'person', request.user.sub);
+    await fastify.audit.record({
+      tenantId: request.tenantId,
+      entityType: 'external_record',
+      entityId: record.externalRecordId,
+      actionType: 'create',
+      actorType: 'user',
+      actorId: request.user.sub,
+      actorDisplayName: request.user.displayName,
+      correlationId: request.id,
+      reasonText: `Entered by hand: ${flowCode}`,
+    });
+    await reply.code(201).send(recordToWire(record));
+  });
+}
+
+function recordToWire(record: ExternalRecordDto) {
+  return { ...record, observedAt: record.observedAt.toISOString(), receivedAt: record.receivedAt.toISOString() };
 }
 
 async function auditPerson(fastify: FastifyInstance, request: FastifyRequest, actor: DeliveryReplyActor, id: string, reasonText: string): Promise<void> {

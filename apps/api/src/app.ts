@@ -113,7 +113,8 @@ import { tenantAdminRoutes } from './routes/tenant-admin.js';
 import { valueSetsRoutes } from './routes/value-sets.js';
 import { globalisationRoutes } from './routes/globalisation.js';
 import { adjustmentRoutes } from './routes/adjustments.js';
-import { deliveryRoutes } from './routes/delivery.js';
+import { deliveryRoutes, inboundRoutes } from './routes/delivery.js';
+import { InboundRecordService } from './platform/delivery/inbound.js';
 import { engagementOutcomeRoutes } from './routes/engagement-outcomes.js';
 import { engagementProxyRoutes } from './routes/engagement-proxy.js';
 import { communicationRoutes } from './routes/communications.js';
@@ -223,7 +224,7 @@ function classifyOperation(method: string, url: string): string {
 
   // Integration — surfaces for adjacent system connectivity
   if (path.includes('/adjustments') || path.includes('/adjustment-tasks') || path.includes('/adjustment-targets')) return 'integration';
-  if (path.includes('/delivery-')) return 'integration';
+  if (path.includes('/delivery-') || path.includes('/inbound') || path.includes('/external-records')) return 'integration';
   if (path.includes('/engagement-outcomes')) return 'integration';
   if (path.includes('/communication-templates') || path.includes('/communication-dispatch-log')) return 'integration';
 
@@ -410,6 +411,7 @@ export async function buildApp(
   fastify.decorate('adjustmentTargetConfigService', adjustmentTargets);
   fastify.decorate('adjustmentTaskNoticeService', adjustmentTaskNotices);
   fastify.decorate('deliveryService', deliveries);
+  fastify.decorate('inboundRecordService', new InboundRecordService(db, valueSets));
   fastify.decorate('businessCaseService', businessCases);
   fastify.decorate('identityResolutionService', identityResolution);
   fastify.decorate('engagementOutcomeService', engagementOutcomes);
@@ -580,6 +582,8 @@ export async function buildApp(
       ['/adjustment-tasks',          'adjustments'],
       ['/adjustment-targets',        'adjustments'],
       ['/delivery-',                 'integration-registry'],
+      ['/inbound',                   'integration-registry'],
+      ['/external-records',          'integration-registry'],
       ['/engagement-outcomes',       'engagement-outcomes'],
       ['/exceptional-circumstances', 'circumstances'],
       ['/misconduct-outcomes',       'circumstances'],
@@ -666,6 +670,7 @@ export async function buildApp(
   await fastify.register(valueSetsRoutes,           { prefix: '/api/v1' });
   await fastify.register(adjustmentRoutes,          { prefix: '/api/v1' });
   await fastify.register(deliveryRoutes,            { prefix: '/api/v1' });
+  await fastify.register(inboundRoutes,             { prefix: '/api/v1' });
   await fastify.register(engagementOutcomeRoutes,   { prefix: '/api/v1' });
   await fastify.register(engagementProxyRoutes,     { prefix: '/api/v1' });
   await fastify.register(circumstancesRoutes,       { prefix: '/api/v1' });
@@ -744,6 +749,7 @@ declare module 'fastify' {
     adjustmentTargetConfigService: AdjustmentTargetConfigService;
     adjustmentTaskNoticeService: AdjustmentTaskNoticeService;
     deliveryService: DeliveryService;
+    inboundRecordService: InboundRecordService;
     businessCaseService: BusinessCaseService;
     identityResolutionService: IdentityResolutionService;
     engagementOutcomeService: EngagementOutcomeService;

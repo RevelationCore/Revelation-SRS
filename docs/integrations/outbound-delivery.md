@@ -70,3 +70,23 @@ Both carry a snapshot of the enrolment's current state, so a later item can repl
 ```
 
 `progression` is the latest decision (`null` if none); `ratified` is false until an exam board locks it. The accommodation payload has `modeOfStudy` and `startDate` instead of `progression`.
+
+## Inbound: what other systems report back
+
+The reverse direction is a store of what adjacent systems report about a student (migration `0030_external_records`). A connector posts with `integration:manage`; where none exists, staff with `external-record:write` enter it on the student record (**Other systems** tab), and each entry is audited. Staff with `external-record:read` (registry administrators, tenant administrators, personal tutors) see current records and, on request, earlier ones.
+
+```http
+POST /api/v1/inbound/F-LIB-SIS-01
+{ "studentNumber": "S1234567", "observedAt": "2026-10-08T09:00:00Z", "idempotencyKey": "lib-2026-10-08-S1234567",
+  "payload": { "accountStatus": "active", "loansOnIssue": 2, "overdueItems": 0, "outstandingBalancePence": 0 } }
+```
+
+`personId` may be given instead of `studentNumber`. A repeat of the same `idempotencyKey` returns `200` with the original record. Records are append-only; the latest observation of each record (the library account; each accommodation booking by `bookingReference`) is current.
+
+| Flow | Fields |
+|---|---|
+| F-LIB-SIS-01 Library | `accountStatus` (value set `library-account-status-code`), `loansOnIssue`, `overdueItems`, `outstandingBalancePence` |
+| F-ACC-SIS-01 Accommodation | `bookingReference`, `bookingStatus` (value set `accommodation-booking-status-code`), `roomReference`, `startDate`, `endDate` |
+| F-CRM/EST/OIV/SETS/PAY/RP/CMS/ITSM/CM-SIS-01 | Registered, fields not defined yet: a report is rejected with `422` |
+
+These records are for information only and never change academic status. Under AJ-17 a library fine does not block results or an award, and Registry relies on its own enrolment, not a housing check-in.

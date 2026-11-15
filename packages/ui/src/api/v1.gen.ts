@@ -356,6 +356,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/inbound-flows": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getInboundFlows"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/inbound/{flowCode}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createInboundByFlowCode"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/students/{personId}/external-records": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getStudentsByPersonIdExternalRecords"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/students/{personId}/external-records/{flowCode}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createStudentsByPersonIdExternalRecordsByFlowCode"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/students/{personId}/engagement-outcomes": {
         parameters: {
             query?: never;
@@ -6125,6 +6189,258 @@ export interface operations {
             };
             /** @description Default Response */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getInboundFlows: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        flowCode: string;
+                        sourceSystem: string;
+                        sourceLabel: string;
+                        name: string;
+                        defined: boolean;
+                        fields: {
+                            name: string;
+                            label: string;
+                            type: string;
+                            required: boolean;
+                            valueSet?: {
+                                entity: string;
+                                field: string;
+                            };
+                            min?: number;
+                        }[];
+                    }[];
+                };
+            };
+        };
+    };
+    createInboundByFlowCode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                flowCode: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    personId?: string;
+                    studentNumber?: string;
+                    payload: {
+                        [key: string]: unknown;
+                    };
+                    /** Format: date-time */
+                    observedAt?: string;
+                    idempotencyKey: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        externalRecordId: string;
+                        flowCode: string;
+                        flowName: string;
+                        sourceLabel: string;
+                        personId: string;
+                        recordKey: string;
+                        payload: {
+                            [key: string]: unknown;
+                        };
+                        summary: string;
+                        observedAt: string;
+                        receivedAt: string;
+                        receivedVia: string;
+                        current: boolean;
+                    };
+                };
+            };
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        externalRecordId: string;
+                        flowCode: string;
+                        flowName: string;
+                        sourceLabel: string;
+                        personId: string;
+                        recordKey: string;
+                        payload: {
+                            [key: string]: unknown;
+                        };
+                        summary: string;
+                        observedAt: string;
+                        receivedAt: string;
+                        receivedVia: string;
+                        current: boolean;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getStudentsByPersonIdExternalRecords: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        externalRecordId: string;
+                        flowCode: string;
+                        flowName: string;
+                        sourceLabel: string;
+                        personId: string;
+                        recordKey: string;
+                        payload: {
+                            [key: string]: unknown;
+                        };
+                        summary: string;
+                        observedAt: string;
+                        receivedAt: string;
+                        receivedVia: string;
+                        current: boolean;
+                    }[];
+                };
+            };
+        };
+    };
+    createStudentsByPersonIdExternalRecordsByFlowCode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personId: string;
+                flowCode: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    payload: {
+                        [key: string]: unknown;
+                    };
+                    /** Format: date-time */
+                    observedAt?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        externalRecordId: string;
+                        flowCode: string;
+                        flowName: string;
+                        sourceLabel: string;
+                        personId: string;
+                        recordKey: string;
+                        payload: {
+                            [key: string]: unknown;
+                        };
+                        summary: string;
+                        observedAt: string;
+                        receivedAt: string;
+                        receivedVia: string;
+                        current: boolean;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -72,13 +72,14 @@ import { Spinner } from '../components/Spinner.js';
 import { useValueSet } from '../hooks/useValueSet.js';
 import { useAuth } from '../auth/AuthContext.js';
 import { userHasAnyPermission } from '../auth/RequirePermission.js';
+import { ExternalRecordsTab } from './ExternalRecordsTab.js';
 import {
   PageHeader, Card, CardHeader, CardBody, Button, Input, Select, Textarea, LabelledField,
   Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, Dialog, DialogClose,
   Tabs, TabsList, TabsTrigger, TabsContent,
 } from '@revelation-srs/ui';
 
-type Tab = 'identity' | 'enrolments' | 'registrations' | 'assessment' | 'history' | 'wellbeing' | 'corrections' | 'cas' | 'communications';
+type Tab = 'identity' | 'enrolments' | 'registrations' | 'assessment' | 'history' | 'wellbeing' | 'corrections' | 'cas' | 'communications' | 'other-systems';
 
 export function StudentDetailPage() {
   const { roles } = useAuth();
@@ -132,6 +133,7 @@ export function StudentDetailPage() {
     ...(canReadAssessment ? ['assessment'] as Tab[] : []),
     ...(canReadDisability || canReadAdjustments || canReadCircumstances ? ['wellbeing'] as Tab[] : []),
     ...(canReadNotifications ? ['communications'] as Tab[] : []),
+    ...(userHasAnyPermission(roles, ['external-record:read']) ? ['other-systems'] as Tab[] : []),
   ];
 
   return (
@@ -146,10 +148,13 @@ export function StudentDetailPage() {
       <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)}>
         <TabsList className="mb-6">
           {tabs.map((t) => (
-            <TabsTrigger key={t} value={t} className="capitalize">{t === 'cas' ? 'CAS' : t}</TabsTrigger>
+            <TabsTrigger key={t} value={t} className="capitalize">{t === 'cas' ? 'CAS' : t === 'other-systems' ? 'Other systems' : t}</TabsTrigger>
           ))}
         </TabsList>
 
+        <TabsContent value="other-systems">
+          {personId && <ExternalRecordsTab personId={personId} canWrite={userHasAnyPermission(roles, ['external-record:write'])} />}
+        </TabsContent>
         <TabsContent value="identity">
           <IdentityTab student={student} onUpdated={reload} canWrite={canWriteStudent} />
         </TabsContent>

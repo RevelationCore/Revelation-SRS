@@ -44,3 +44,26 @@ export const deliveryItems = pgTable('delivery_item', {
 
 export type DeliveryItem       = typeof deliveryItems.$inferSelect;
 export type DeliveryFlowConfig = typeof deliveryFlowConfigs.$inferSelect;
+
+/**
+ * Records other systems report about a student (migration 0030): the
+ * inbound half of the adjacent-system pattern. Append-only; the latest
+ * observation per (flow, record key) is current. Informational only — never
+ * changes academic status.
+ */
+export const externalRecords = pgTable('external_record', {
+  id:             uuid('id').primaryKey().defaultRandom(),
+  tenantId:       uuid('tenant_id').notNull().references(() => tenants.id),
+  flowCode:       text('flow_code').notNull(),
+  personId:       uuid('person_id').notNull(),
+  recordKey:      text('record_key').notNull(),
+  payload:        jsonb('payload').notNull().$type<Record<string, unknown>>(),
+  summary:        text('summary').notNull(),
+  observedAt:     timestamp('observed_at', { withTimezone: true }).notNull(),
+  receivedAt:     timestamp('received_at', { withTimezone: true }).notNull().defaultNow(),
+  receivedVia:    text('received_via').notNull(), // connector | person
+  actorId:        text('actor_id').notNull(),
+  idempotencyKey: text('idempotency_key').notNull(),
+}, (table) => [unique().on(table.tenantId, table.flowCode, table.idempotencyKey)]);
+
+export type ExternalRecord = typeof externalRecords.$inferSelect;

@@ -3212,6 +3212,599 @@
         }
       }
     },
+    "/api/v1/inbound-flows": {
+      "get": {
+        "operationId": "getInboundFlows",
+        "tags": [
+          "integration-registry"
+        ],
+        "x-publication-class": "integration",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "flowCode",
+                      "sourceSystem",
+                      "sourceLabel",
+                      "name",
+                      "defined",
+                      "fields"
+                    ],
+                    "properties": {
+                      "flowCode": {
+                        "type": "string"
+                      },
+                      "sourceSystem": {
+                        "type": "string"
+                      },
+                      "sourceLabel": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "defined": {
+                        "type": "boolean"
+                      },
+                      "fields": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "required": [
+                            "name",
+                            "label",
+                            "type",
+                            "required"
+                          ],
+                          "properties": {
+                            "name": {
+                              "type": "string"
+                            },
+                            "label": {
+                              "type": "string"
+                            },
+                            "type": {
+                              "type": "string"
+                            },
+                            "required": {
+                              "type": "boolean"
+                            },
+                            "valueSet": {
+                              "type": "object",
+                              "required": [
+                                "entity",
+                                "field"
+                              ],
+                              "properties": {
+                                "entity": {
+                                  "type": "string"
+                                },
+                                "field": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "min": {
+                              "type": "number"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/inbound/{flowCode}": {
+      "post": {
+        "operationId": "createInboundByFlowCode",
+        "tags": [
+          "integration-registry"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "payload",
+                  "idempotencyKey"
+                ],
+                "properties": {
+                  "personId": {
+                    "type": "string"
+                  },
+                  "studentNumber": {
+                    "type": "string"
+                  },
+                  "payload": {
+                    "type": "object",
+                    "additionalProperties": {}
+                  },
+                  "observedAt": {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  "idempotencyKey": {
+                    "minLength": 1,
+                    "maxLength": 200,
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "flowCode",
+            "required": true
+          }
+        ],
+        "x-publication-class": "integration",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "externalRecordId",
+                    "flowCode",
+                    "flowName",
+                    "sourceLabel",
+                    "personId",
+                    "recordKey",
+                    "payload",
+                    "summary",
+                    "observedAt",
+                    "receivedAt",
+                    "receivedVia",
+                    "current"
+                  ],
+                  "properties": {
+                    "externalRecordId": {
+                      "type": "string"
+                    },
+                    "flowCode": {
+                      "type": "string"
+                    },
+                    "flowName": {
+                      "type": "string"
+                    },
+                    "sourceLabel": {
+                      "type": "string"
+                    },
+                    "personId": {
+                      "type": "string"
+                    },
+                    "recordKey": {
+                      "type": "string"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "additionalProperties": {}
+                    },
+                    "summary": {
+                      "type": "string"
+                    },
+                    "observedAt": {
+                      "type": "string"
+                    },
+                    "receivedAt": {
+                      "type": "string"
+                    },
+                    "receivedVia": {
+                      "type": "string"
+                    },
+                    "current": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "externalRecordId",
+                    "flowCode",
+                    "flowName",
+                    "sourceLabel",
+                    "personId",
+                    "recordKey",
+                    "payload",
+                    "summary",
+                    "observedAt",
+                    "receivedAt",
+                    "receivedVia",
+                    "current"
+                  ],
+                  "properties": {
+                    "externalRecordId": {
+                      "type": "string"
+                    },
+                    "flowCode": {
+                      "type": "string"
+                    },
+                    "flowName": {
+                      "type": "string"
+                    },
+                    "sourceLabel": {
+                      "type": "string"
+                    },
+                    "personId": {
+                      "type": "string"
+                    },
+                    "recordKey": {
+                      "type": "string"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "additionalProperties": {}
+                    },
+                    "summary": {
+                      "type": "string"
+                    },
+                    "observedAt": {
+                      "type": "string"
+                    },
+                    "receivedAt": {
+                      "type": "string"
+                    },
+                    "receivedVia": {
+                      "type": "string"
+                    },
+                    "current": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/students/{personId}/external-records": {
+      "get": {
+        "operationId": "getStudentsByPersonIdExternalRecords",
+        "tags": [
+          "integration-registry"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "personId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "integration",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "externalRecordId",
+                      "flowCode",
+                      "flowName",
+                      "sourceLabel",
+                      "personId",
+                      "recordKey",
+                      "payload",
+                      "summary",
+                      "observedAt",
+                      "receivedAt",
+                      "receivedVia",
+                      "current"
+                    ],
+                    "properties": {
+                      "externalRecordId": {
+                        "type": "string"
+                      },
+                      "flowCode": {
+                        "type": "string"
+                      },
+                      "flowName": {
+                        "type": "string"
+                      },
+                      "sourceLabel": {
+                        "type": "string"
+                      },
+                      "personId": {
+                        "type": "string"
+                      },
+                      "recordKey": {
+                        "type": "string"
+                      },
+                      "payload": {
+                        "type": "object",
+                        "additionalProperties": {}
+                      },
+                      "summary": {
+                        "type": "string"
+                      },
+                      "observedAt": {
+                        "type": "string"
+                      },
+                      "receivedAt": {
+                        "type": "string"
+                      },
+                      "receivedVia": {
+                        "type": "string"
+                      },
+                      "current": {
+                        "type": "boolean"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/students/{personId}/external-records/{flowCode}": {
+      "post": {
+        "operationId": "createStudentsByPersonIdExternalRecordsByFlowCode",
+        "tags": [
+          "integration-registry"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "payload"
+                ],
+                "properties": {
+                  "payload": {
+                    "type": "object",
+                    "additionalProperties": {}
+                  },
+                  "observedAt": {
+                    "format": "date-time",
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "personId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "flowCode",
+            "required": true
+          }
+        ],
+        "x-publication-class": "integration",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "externalRecordId",
+                    "flowCode",
+                    "flowName",
+                    "sourceLabel",
+                    "personId",
+                    "recordKey",
+                    "payload",
+                    "summary",
+                    "observedAt",
+                    "receivedAt",
+                    "receivedVia",
+                    "current"
+                  ],
+                  "properties": {
+                    "externalRecordId": {
+                      "type": "string"
+                    },
+                    "flowCode": {
+                      "type": "string"
+                    },
+                    "flowName": {
+                      "type": "string"
+                    },
+                    "sourceLabel": {
+                      "type": "string"
+                    },
+                    "personId": {
+                      "type": "string"
+                    },
+                    "recordKey": {
+                      "type": "string"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "additionalProperties": {}
+                    },
+                    "summary": {
+                      "type": "string"
+                    },
+                    "observedAt": {
+                      "type": "string"
+                    },
+                    "receivedAt": {
+                      "type": "string"
+                    },
+                    "receivedVia": {
+                      "type": "string"
+                    },
+                    "current": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/students/{personId}/engagement-outcomes": {
       "post": {
         "operationId": "createStudentsByPersonIdEngagementOutcomes",
