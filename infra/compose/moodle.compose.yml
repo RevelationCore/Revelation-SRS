@@ -1,0 +1,59 @@
+# Local Moodle for testing the VLE connector's Moodle driver
+# (adapters/vle/src/vle-platforms/moodle-driver.ts) against a real Moodle.
+#
+# Opt-in and separate from the main stack:
+#   docker compose -f infra/compose/moodle.compose.yml up -d
+#   infra/compose/moodle/setup.sh          # web services, token, test course
+#
+# Moodle: http://localhost:8090 (admin / see MOODLE_PASSWORD below).
+# Development only: fixed credentials, no TLS, site-admin web-service token.
+name: srs-moodle
+
+services:
+  moodle-db:
+    image: postgres:17-alpine   # Moodle 5.3 requires PostgreSQL 17+
+    environment:
+      POSTGRES_DB: moodle
+      POSTGRES_USER: moodle
+      POSTGRES_PASSWORD: moodle
+    volumes:
+      - moodle_db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U moodle -d moodle"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  moodle:
+    image: erseco/alpine-moodle:latest
+    depends_on:
+      moodle-db:
+        condition: service_healthy
+    ports:
+      - "8090:8080"
+    environment:
+      SITE_URL: http://localhost:8090
+      DB_TYPE: pgsql
+      DB_HOST: moodle-db
+      DB_PORT: "5432"
+      DB_NAME: moodle
+      DB_USER: moodle
+      DB_PASS: moodle
+      MOODLE_USERNAME: admin
+      MOODLE_PASSWORD: SrsMoodle1!
+      MOODLE_EMAIL: admin@example.test
+      MOODLE_SITENAME: SRS_Moodle_dev   # no spaces: the image passes it unquoted to the installer
+      AUTO_UPDATE_MOODLE: "false"
+      # The container's nginx listens on 8080 and reports that port to PHP
+      # unless an X-Forwarded-Port header is sent, so with the 8090 host port
+      # Moodle's wwwroot check redirects every request to itself. Treating it
+      # as behind a reverse proxy skips that check (development only).
+      REVERSEPROXY: "true"
+    volumes:
+      - moodle_data:/var/www/moodledata
+      - moodle_html:/var/www/html
+
+volumes:
+  moodle_db:
+  moodle_data:
+  moodle_html:

@@ -15,6 +15,8 @@ import type { Config } from './config.js';
 import { AdjustmentService } from './platform/adjustments/adjustment-service.js';
 import { AdjustmentDistributionDispatcher } from './platform/adjustments/distribution-dispatcher.js';
 import { AdjustmentTargetConfigService } from './platform/adjustments/target-config.js';
+import { AdjustmentTaskNoticeService } from './platform/adjustments/task-notices.js';
+import { DeliveryService } from './platform/delivery/delivery-service.js';
 import { BusinessCaseService } from './platform/cases/business-case-service.js';
 import { IdentityResolutionService } from './platform/identity/identity-resolution-service.js';
 import { SupervisionService } from './platform/pgr/supervision-service.js';
@@ -111,6 +113,7 @@ import { tenantAdminRoutes } from './routes/tenant-admin.js';
 import { valueSetsRoutes } from './routes/value-sets.js';
 import { globalisationRoutes } from './routes/globalisation.js';
 import { adjustmentRoutes } from './routes/adjustments.js';
+import { deliveryRoutes } from './routes/delivery.js';
 import { engagementOutcomeRoutes } from './routes/engagement-outcomes.js';
 import { engagementProxyRoutes } from './routes/engagement-proxy.js';
 import { communicationRoutes } from './routes/communications.js';
@@ -220,6 +223,7 @@ function classifyOperation(method: string, url: string): string {
 
   // Integration — surfaces for adjacent system connectivity
   if (path.includes('/adjustments') || path.includes('/adjustment-tasks') || path.includes('/adjustment-targets')) return 'integration';
+  if (path.includes('/delivery-')) return 'integration';
   if (path.includes('/engagement-outcomes')) return 'integration';
   if (path.includes('/communication-templates') || path.includes('/communication-dispatch-log')) return 'integration';
 
@@ -311,7 +315,10 @@ export async function buildApp(
     batchSize: 50,
   });
   const students   = new StudentService(db, valueSets, workflowBridge);
-  const enrolments = new EnrolmentService(db, eventBus, valueSets, triggerRules);
+  const deliveries = new DeliveryService(db, eventBus, valueSets, (err, context) => {
+    fastify.log.warn({ err, ...context }, 'Delivery item not yet published; it stays due for the reconcile loop');
+  });
+  const enrolments = new EnrolmentService(db, eventBus, valueSets, triggerRules, deliveries);
   const catalogue  = new CatalogueService(db, eventBus, valueSets);
   const calendar   = new CalendarService(db);
   const registrationWindows = new RegistrationWindowService(db);
@@ -363,6 +370,7 @@ export async function buildApp(
   const localeService   = new LocaleService(db, audit);
   const currencyService = new CurrencyService(db, audit);
   const communications  = new CommunicationService(db, localeService, featureFlags);
+  const adjustmentTaskNotices = new AdjustmentTaskNoticeService(db, adjustments, adjustmentTargets, communications, config.adminAppUrl, deliveries);
   const ucas = new UcasService(db, valueSets, eventBus, enrolments, regulatoryExchanges, admissions, featureFlags, workflowBridge);
   const hesa = new HesaService(db, eventBus, students, regulatoryExchanges, workflowBridge);
   const slc = new SlcService(db, eventBus, valueSets, enrolments, regulatoryExchanges, workflowBridge);
@@ -400,6 +408,8 @@ export async function buildApp(
   fastify.decorate('adjustmentService', adjustments);
   fastify.decorate('adjustmentDispatcher', adjustmentDispatcher);
   fastify.decorate('adjustmentTargetConfigService', adjustmentTargets);
+  fastify.decorate('adjustmentTaskNoticeService', adjustmentTaskNotices);
+  fastify.decorate('deliveryService', deliveries);
   fastify.decorate('businessCaseService', businessCases);
   fastify.decorate('identityResolutionService', identityResolution);
   fastify.decorate('engagementOutcomeService', engagementOutcomes);
@@ -569,6 +579,7 @@ export async function buildApp(
       ['/adjustments',               'adjustments'],
       ['/adjustment-tasks',          'adjustments'],
       ['/adjustment-targets',        'adjustments'],
+      ['/delivery-',                 'integration-registry'],
       ['/engagement-outcomes',       'engagement-outcomes'],
       ['/exceptional-circumstances', 'circumstances'],
       ['/misconduct-outcomes',       'circumstances'],
@@ -654,6 +665,7 @@ export async function buildApp(
   await fastify.register(healthRoutes);
   await fastify.register(valueSetsRoutes,           { prefix: '/api/v1' });
   await fastify.register(adjustmentRoutes,          { prefix: '/api/v1' });
+  await fastify.register(deliveryRoutes,            { prefix: '/api/v1' });
   await fastify.register(engagementOutcomeRoutes,   { prefix: '/api/v1' });
   await fastify.register(engagementProxyRoutes,     { prefix: '/api/v1' });
   await fastify.register(circumstancesRoutes,       { prefix: '/api/v1' });
@@ -730,6 +742,8 @@ declare module 'fastify' {
     adjustmentService: AdjustmentService;
     adjustmentDispatcher: AdjustmentDistributionDispatcher;
     adjustmentTargetConfigService: AdjustmentTargetConfigService;
+    adjustmentTaskNoticeService: AdjustmentTaskNoticeService;
+    deliveryService: DeliveryService;
     businessCaseService: BusinessCaseService;
     identityResolutionService: IdentityResolutionService;
     engagementOutcomeService: EngagementOutcomeService;

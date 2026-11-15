@@ -1889,6 +1889,8 @@
                       "fulfilmentModeCode",
                       "ownerDescription",
                       "alertAfterHours",
+                      "notifyEmail",
+                      "lastOverdueNoticeAt",
                       "isDefault",
                       "updatedAt",
                       "updatedBy"
@@ -1912,6 +1914,26 @@
                       },
                       "alertAfterHours": {
                         "type": "integer"
+                      },
+                      "notifyEmail": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "lastOverdueNoticeAt": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
                       },
                       "isDefault": {
                         "type": "boolean"
@@ -1980,6 +2002,17 @@
                     "minimum": 1,
                     "maximum": 8760,
                     "type": "integer"
+                  },
+                  "notifyEmail": {
+                    "anyOf": [
+                      {
+                        "maxLength": 254,
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
                   }
                 }
               }
@@ -2009,6 +2042,8 @@
                     "fulfilmentModeCode",
                     "ownerDescription",
                     "alertAfterHours",
+                    "notifyEmail",
+                    "lastOverdueNoticeAt",
                     "isDefault",
                     "updatedAt",
                     "updatedBy"
@@ -2032,6 +2067,26 @@
                     },
                     "alertAfterHours": {
                       "type": "integer"
+                    },
+                    "notifyEmail": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "lastOverdueNoticeAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     },
                     "isDefault": {
                       "type": "boolean"
@@ -2338,6 +2393,794 @@
         "x-publication-class": "integration",
         "responses": {
           "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/delivery-flows": {
+      "get": {
+        "operationId": "getDeliveryFlows",
+        "tags": [
+          "integration-registry"
+        ],
+        "x-publication-class": "integration",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "flowCode",
+                      "targetSystem",
+                      "targetLabel",
+                      "name",
+                      "producer",
+                      "producerNote",
+                      "fulfilmentModeCode",
+                      "ownerDescription",
+                      "alertAfterHours",
+                      "notifyEmail",
+                      "lastOverdueNoticeAt",
+                      "isDefault"
+                    ],
+                    "properties": {
+                      "flowCode": {
+                        "type": "string"
+                      },
+                      "targetSystem": {
+                        "type": "string"
+                      },
+                      "targetLabel": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "producer": {
+                        "type": "string"
+                      },
+                      "producerNote": {
+                        "type": "string"
+                      },
+                      "fulfilmentModeCode": {
+                        "type": "string"
+                      },
+                      "ownerDescription": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "alertAfterHours": {
+                        "type": "integer"
+                      },
+                      "notifyEmail": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "lastOverdueNoticeAt": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "isDefault": {
+                        "type": "boolean"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/delivery-flows/{flowCode}": {
+      "put": {
+        "operationId": "replaceDeliveryFlowsByFlowCode",
+        "tags": [
+          "integration-registry"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "fulfilmentModeCode"
+                ],
+                "properties": {
+                  "fulfilmentModeCode": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "ownerDescription": {
+                    "anyOf": [
+                      {
+                        "maxLength": 200,
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "alertAfterHours": {
+                    "minimum": 1,
+                    "maximum": 8760,
+                    "type": "integer"
+                  },
+                  "notifyEmail": {
+                    "anyOf": [
+                      {
+                        "maxLength": 254,
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "flowCode",
+            "required": true
+          }
+        ],
+        "x-publication-class": "integration",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "flowCode",
+                    "targetSystem",
+                    "targetLabel",
+                    "name",
+                    "producer",
+                    "producerNote",
+                    "fulfilmentModeCode",
+                    "ownerDescription",
+                    "alertAfterHours",
+                    "notifyEmail",
+                    "lastOverdueNoticeAt",
+                    "isDefault"
+                  ],
+                  "properties": {
+                    "flowCode": {
+                      "type": "string"
+                    },
+                    "targetSystem": {
+                      "type": "string"
+                    },
+                    "targetLabel": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "producer": {
+                      "type": "string"
+                    },
+                    "producerNote": {
+                      "type": "string"
+                    },
+                    "fulfilmentModeCode": {
+                      "type": "string"
+                    },
+                    "ownerDescription": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "alertAfterHours": {
+                      "type": "integer"
+                    },
+                    "notifyEmail": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "lastOverdueNoticeAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "isDefault": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/delivery-tasks": {
+      "get": {
+        "operationId": "getDeliveryTasks",
+        "tags": [
+          "integration-registry"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "flowCode",
+            "required": false
+          }
+        ],
+        "x-publication-class": "integration",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "deliveryItemId",
+                      "flowCode",
+                      "targetSystem",
+                      "subjectType",
+                      "subjectId",
+                      "personId",
+                      "payload",
+                      "summary",
+                      "fulfilmentModeCode",
+                      "statusCode",
+                      "failureReason",
+                      "requestPublishedAt",
+                      "deliveredAt",
+                      "createdAt",
+                      "flowName",
+                      "targetLabel",
+                      "studentNumber",
+                      "studentName",
+                      "ownerDescription",
+                      "overdue"
+                    ],
+                    "properties": {
+                      "deliveryItemId": {
+                        "type": "string"
+                      },
+                      "flowCode": {
+                        "type": "string"
+                      },
+                      "targetSystem": {
+                        "type": "string"
+                      },
+                      "subjectType": {
+                        "type": "string"
+                      },
+                      "subjectId": {
+                        "type": "string"
+                      },
+                      "personId": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "payload": {
+                        "type": "object",
+                        "additionalProperties": {}
+                      },
+                      "summary": {
+                        "type": "string"
+                      },
+                      "fulfilmentModeCode": {
+                        "type": "string"
+                      },
+                      "statusCode": {
+                        "type": "string"
+                      },
+                      "failureReason": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "requestPublishedAt": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "deliveredAt": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "createdAt": {
+                        "type": "string"
+                      },
+                      "flowName": {
+                        "type": "string"
+                      },
+                      "targetLabel": {
+                        "type": "string"
+                      },
+                      "studentNumber": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "studentName": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "ownerDescription": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "overdue": {
+                        "type": "boolean"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/delivery-items": {
+      "get": {
+        "operationId": "getDeliveryItems",
+        "tags": [
+          "integration-registry"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "flowCode",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "subjectId",
+            "required": false
+          }
+        ],
+        "x-publication-class": "integration",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "deliveryItemId",
+                      "flowCode",
+                      "targetSystem",
+                      "subjectType",
+                      "subjectId",
+                      "personId",
+                      "payload",
+                      "summary",
+                      "fulfilmentModeCode",
+                      "statusCode",
+                      "failureReason",
+                      "requestPublishedAt",
+                      "deliveredAt",
+                      "createdAt"
+                    ],
+                    "properties": {
+                      "deliveryItemId": {
+                        "type": "string"
+                      },
+                      "flowCode": {
+                        "type": "string"
+                      },
+                      "targetSystem": {
+                        "type": "string"
+                      },
+                      "subjectType": {
+                        "type": "string"
+                      },
+                      "subjectId": {
+                        "type": "string"
+                      },
+                      "personId": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "payload": {
+                        "type": "object",
+                        "additionalProperties": {}
+                      },
+                      "summary": {
+                        "type": "string"
+                      },
+                      "fulfilmentModeCode": {
+                        "type": "string"
+                      },
+                      "statusCode": {
+                        "type": "string"
+                      },
+                      "failureReason": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "requestPublishedAt": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "deliveredAt": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "createdAt": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/delivery-items/{deliveryItemId}/acknowledge": {
+      "post": {
+        "operationId": "createDeliveryItemsByDeliveryItemIdAcknowledge",
+        "tags": [
+          "integration-registry"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "deliveryItemId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "204": {
+            "description": "Default Response"
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/delivery-items/{deliveryItemId}/failure": {
+      "post": {
+        "operationId": "createDeliveryItemsByDeliveryItemIdFailure",
+        "tags": [
+          "integration-registry"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "reason"
+                ],
+                "properties": {
+                  "reason": {
+                    "minLength": 1,
+                    "maxLength": 2000,
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "deliveryItemId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "integration",
+        "responses": {
+          "204": {
+            "description": "Default Response"
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
             "description": "Default Response",
             "content": {
               "application/json": {

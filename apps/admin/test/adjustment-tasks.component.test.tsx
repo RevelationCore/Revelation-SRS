@@ -31,9 +31,9 @@ const applyTask = {
 };
 
 const targets = [
-  { targetSystem: 'vle', fulfilmentModeCode: 'connected', ownerDescription: null, alertAfterHours: 72, isDefault: true, updatedAt: null, updatedBy: null },
-  { targetSystem: 'attendance', fulfilmentModeCode: 'manual', ownerDescription: 'Attendance team', alertAfterHours: 72, isDefault: false, updatedAt: null, updatedBy: null },
-  { targetSystem: 'exams', fulfilmentModeCode: 'file', ownerDescription: null, alertAfterHours: 72, isDefault: true, updatedAt: null, updatedBy: null },
+  { targetSystem: 'vle', fulfilmentModeCode: 'connected', ownerDescription: null, alertAfterHours: 72, notifyEmail: null, lastOverdueNoticeAt: null, isDefault: true, updatedAt: null, updatedBy: null },
+  { targetSystem: 'attendance', fulfilmentModeCode: 'manual', ownerDescription: 'Attendance team', alertAfterHours: 72, notifyEmail: null, lastOverdueNoticeAt: null, isDefault: false, updatedAt: null, updatedBy: null },
+  { targetSystem: 'exams', fulfilmentModeCode: 'file', ownerDescription: null, alertAfterHours: 72, notifyEmail: null, lastOverdueNoticeAt: null, isDefault: true, updatedAt: null, updatedBy: null },
 ];
 
 const modes = {
@@ -134,6 +134,6 @@ describe('adjustment task queue', () => {
     const form = select.closest('form')!;
     await userEvent.click(within(form).getByRole('button', { name: 'Save' }));
 
-    await expect.poll(() => saved).toEqual({ fulfilmentModeCode: 'not-used', ownerDescription: 'Attendance team', alertAfterHours: 72 });
+    await expect.poll(() => saved).toEqual({ fulfilmentModeCode: 'not-used', ownerDescription: 'Attendance team', alertAfterHours: 72, notifyEmail: null });
   });
 });

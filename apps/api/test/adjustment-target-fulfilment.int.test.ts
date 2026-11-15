@@ -190,6 +190,47 @@ describe('Manual task queue', () => {
     }
   });
 
+  it('sends a team mailbox one overdue digest a day, with counts and no student details', async () => {
+    await put('/api/v1/adjustment-targets/attendance', {
+      fulfilmentModeCode: 'manual', alertAfterHours: 1, notifyEmail: 'attendance-team@example.test',
+    }, adminJwt);
+    try {
+      const f = await fixture('TQ107');
+      const { adjustmentId } = await adjust(f, 'attendance');
+      const task = (await tasks()).find((t) => t.adjustmentId === adjustmentId)!;
+      await ctx.db.execute(sql`
+        UPDATE adjustment_distribution SET created_at = now() - interval '3 hours' WHERE id = ${task.distributionId}
+      `);
+
+      const now = new Date();
+      const first = await ctx.app.adjustmentTaskNoticeService.sendOverdueNotices(ctx.tenantId, now);
+      expect(first).toEqual([expect.objectContaining({ targetSystem: 'attendance', overdueCount: expect.any(Number) as number })]);
+      // The email channel is off by default: recorded, not sent.
+      expect(first[0]!.statusCode).toBe('suppressed');
+
+      const log = await ctx.db.execute(sql`
+        SELECT recipient_ref, payload FROM communication_dispatch_log
+        WHERE template_key = 'adjustment-tasks.overdue' ORDER BY dispatched_at DESC LIMIT 1
+      `);
+      expect(log[0]?.['recipient_ref']).toBe('attendance-team@example.test');
+      const payload = JSON.stringify(log[0]?.['payload']);
+      expect(payload).toContain('/operations/integration-tasks?tab=adjustments');
+      expect(payload).not.toContain(f.personId);
+      expect(payload).not.toContain('TQ107');
+
+      // Not again within a day; again after one.
+      expect(await ctx.app.adjustmentTaskNoticeService.sendOverdueNotices(ctx.tenantId, new Date(now.getTime() + 3_600_000))).toEqual([]);
+      expect(await ctx.app.adjustmentTaskNoticeService.sendOverdueNotices(ctx.tenantId, new Date(now.getTime() + 25 * 3_600_000))).toHaveLength(1);
+    } finally {
+      await put('/api/v1/adjustment-targets/attendance', { fulfilmentModeCode: 'manual' }, adminJwt);
+    }
+  });
+
+  it('rejects a notify mailbox that is not an email address', async () => {
+    const res = await put('/api/v1/adjustment-targets/attendance', { fulfilmentModeCode: 'manual', notifyEmail: 'attendance team' }, adminJwt);
+    expect(res.statusCode).toBe(422);
+  });
+
   it('is limited to staff who fulfil adjustments', async () => {
     const student = await ctx.makeJwt({ roles: ['student'] });
     expect((await get('/api/v1/adjustment-tasks', student)).statusCode).toBe(403);

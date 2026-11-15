@@ -197,6 +197,20 @@
       "when": 1785000027000,
       "tag": "0027_adjustment_target_fulfilment",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1785000028000,
+      "tag": "0028_adjustment_task_overdue_notice",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1785000029000,
+      "tag": "0029_delivery_ledger",
+      "breakpoints": true
     }
   ]
 }

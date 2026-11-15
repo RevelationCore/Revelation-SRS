@@ -260,6 +260,102 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/delivery-flows": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getDeliveryFlows"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/delivery-flows/{flowCode}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["replaceDeliveryFlowsByFlowCode"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/delivery-tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getDeliveryTasks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/delivery-items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getDeliveryItems"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/delivery-items/{deliveryItemId}/acknowledge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createDeliveryItemsByDeliveryItemIdAcknowledge"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/delivery-items/{deliveryItemId}/failure": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createDeliveryItemsByDeliveryItemIdFailure"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/students/{personId}/engagement-outcomes": {
         parameters: {
             query?: never;
@@ -5542,6 +5638,8 @@ export interface operations {
                         fulfilmentModeCode: string;
                         ownerDescription: string | null;
                         alertAfterHours: number;
+                        notifyEmail: string | null;
+                        lastOverdueNoticeAt: string | null;
                         isDefault: boolean;
                         updatedAt: string | null;
                         updatedBy: string | null;
@@ -5565,6 +5663,7 @@ export interface operations {
                     fulfilmentModeCode: string;
                     ownerDescription?: string | null;
                     alertAfterHours?: number;
+                    notifyEmail?: string | null;
                 };
             };
         };
@@ -5580,6 +5679,8 @@ export interface operations {
                         fulfilmentModeCode: string;
                         ownerDescription: string | null;
                         alertAfterHours: number;
+                        notifyEmail: string | null;
+                        lastOverdueNoticeAt: string | null;
                         isDefault: boolean;
                         updatedAt: string | null;
                         updatedBy: string | null;
@@ -5732,6 +5833,298 @@ export interface operations {
             };
             /** @description Default Response */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getDeliveryFlows: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        flowCode: string;
+                        targetSystem: string;
+                        targetLabel: string;
+                        name: string;
+                        producer: string;
+                        producerNote: string;
+                        fulfilmentModeCode: string;
+                        ownerDescription: string | null;
+                        alertAfterHours: number;
+                        notifyEmail: string | null;
+                        lastOverdueNoticeAt: string | null;
+                        isDefault: boolean;
+                    }[];
+                };
+            };
+        };
+    };
+    replaceDeliveryFlowsByFlowCode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                flowCode: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    fulfilmentModeCode: string;
+                    ownerDescription?: string | null;
+                    alertAfterHours?: number;
+                    notifyEmail?: string | null;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        flowCode: string;
+                        targetSystem: string;
+                        targetLabel: string;
+                        name: string;
+                        producer: string;
+                        producerNote: string;
+                        fulfilmentModeCode: string;
+                        ownerDescription: string | null;
+                        alertAfterHours: number;
+                        notifyEmail: string | null;
+                        lastOverdueNoticeAt: string | null;
+                        isDefault: boolean;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getDeliveryTasks: {
+        parameters: {
+            query?: {
+                flowCode?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        deliveryItemId: string;
+                        flowCode: string;
+                        targetSystem: string;
+                        subjectType: string;
+                        subjectId: string;
+                        personId: string | null;
+                        payload: {
+                            [key: string]: unknown;
+                        };
+                        summary: string;
+                        fulfilmentModeCode: string;
+                        statusCode: string;
+                        failureReason: string | null;
+                        requestPublishedAt: string | null;
+                        deliveredAt: string | null;
+                        createdAt: string;
+                        flowName: string;
+                        targetLabel: string;
+                        studentNumber: string | null;
+                        studentName: string | null;
+                        ownerDescription: string | null;
+                        overdue: boolean;
+                    }[];
+                };
+            };
+        };
+    };
+    getDeliveryItems: {
+        parameters: {
+            query?: {
+                flowCode?: string;
+                subjectId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        deliveryItemId: string;
+                        flowCode: string;
+                        targetSystem: string;
+                        subjectType: string;
+                        subjectId: string;
+                        personId: string | null;
+                        payload: {
+                            [key: string]: unknown;
+                        };
+                        summary: string;
+                        fulfilmentModeCode: string;
+                        statusCode: string;
+                        failureReason: string | null;
+                        requestPublishedAt: string | null;
+                        deliveredAt: string | null;
+                        createdAt: string;
+                    }[];
+                };
+            };
+        };
+    };
+    createDeliveryItemsByDeliveryItemIdAcknowledge: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                deliveryItemId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createDeliveryItemsByDeliveryItemIdFailure: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                deliveryItemId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    reason: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

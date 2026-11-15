@@ -155,6 +155,7 @@ fastify.get('/students/:id', {
 | `adjustment:read` | ✓ (own) | ✓ | | | ✓ | |
 | `adjustment:write` | | ✓ | | | ✓ | |
 | `adjustment:fulfil` (manual adjustment task queue; also engagement officers) | | ✓ | | | | ✓ |
+| `delivery:fulfil` (integration task queue for other outbound flows) | | ✓ | | | | ✓ |
 | `special-category:read` | | | | | ✓ | |
 | `config:write` | | | | | | ✓ |
 | `integration:manage` | | | | | | ✓ |

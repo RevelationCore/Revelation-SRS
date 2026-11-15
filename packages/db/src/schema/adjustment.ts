@@ -105,6 +105,9 @@ export const adjustmentTargetConfigs = pgTable('adjustment_target_config', {
   fulfilmentModeCode: text('fulfilment_mode_code').notNull(), // connected | manual | file | not-used
   ownerDescription:   text('owner_description'),
   alertAfterHours:    integer('alert_after_hours').notNull().default(72),
+  // Team mailbox sent an overdue digest (at most daily); null: no notices.
+  notifyEmail:        text('notify_email'),
+  lastOverdueNoticeAt: timestamp('last_overdue_notice_at', { withTimezone: true }),
   updatedAt:          timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   updatedBy:          text('updated_by').notNull(),
 }, (table) => [primaryKey({ columns: [table.tenantId, table.targetSystem] })]);

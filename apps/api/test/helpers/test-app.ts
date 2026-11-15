@@ -77,6 +77,8 @@ export async function startTestApp(opts: StartTestAppOptions = {}): Promise<Test
   await applyMigration(db, '0025_adjustment_distribution_instructions.sql');
   await applyMigration(db, '0026_assessment_component_duration.sql');
   await applyMigration(db, '0027_adjustment_target_fulfilment.sql');
+  await applyMigration(db, '0028_adjustment_task_overdue_notice.sql');
+  await applyMigration(db, '0029_delivery_ledger.sql');
 
   // Seed a tenant for tests
   const tenantId = '00000000-0000-0000-0000-000000000001';

@@ -26,6 +26,8 @@ import { TransitionValidator, type TransitionValidationResult } from '../workflo
 import { TriggerRuleEvaluator, type EnrolmentTriggerDecision } from '../workflow/trigger-rule-service.js';
 import { assertChangeAfterCurrentVersion } from '../bitemporal-guard.js';
 import { clockNow } from '../clock.js';
+import type { DeliveryService } from '../delivery/delivery-service.js';
+import { requestLibraryAccess } from '../delivery/producers/library.js';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -145,6 +147,8 @@ export class EnrolmentService {
     private readonly eventBus: IntegrationBusPublisher,
     private readonly valueSets: ValueSetService,
     triggerRules?: TriggerRuleEvaluator,
+    /** Outbound flows that follow enrolment status (F-SIS-LIB-01). */
+    private readonly delivery?: DeliveryService,
   ) {
     this.transitionValidator = new TransitionValidator(valueSets);
     this.triggerRules = triggerRules ?? new TriggerRuleEvaluator();
@@ -316,6 +320,16 @@ export class EnrolmentService {
           payload,
         );
       }
+    }
+
+    if (this.delivery) {
+      await requestLibraryAccess(this.delivery, this.db, tenantId, {
+        personId: input.personId,
+        enrolmentId,
+        statusCode: 'enrolled',
+        effectiveFrom: new Date(`${input.startDate}T00:00:00.000Z`),
+        changeKey: `enrolment-created:${enrolmentId}`,
+      });
     }
 
     return enrolmentId;
@@ -588,6 +602,16 @@ export class EnrolmentService {
 
       await this.#updatePersonStatusFromEnrolments(current.personId, tenantId, tx);
     });
+
+    if (this.delivery) {
+      await requestLibraryAccess(this.delivery, this.db, tenantId, {
+        personId: current.personId,
+        enrolmentId,
+        statusCode: newStatus,
+        effectiveFrom: validFrom,
+        changeKey: `enrolment-status:${enrolmentId}:${newStatus}:${validFrom.toISOString()}`,
+      });
+    }
 
     if (this.eventBus.isConnected()) {
       const payload: StudentStatusChangedV1Payload = {

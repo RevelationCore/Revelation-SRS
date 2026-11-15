@@ -1,0 +1,49 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/DeliveryRequestedV1Payload",
+  "definitions": {
+    "DeliveryRequestedV1Payload": {
+      "type": "object",
+      "properties": {
+        "deliveryItemId": {
+          "type": "string"
+        },
+        "flowCode": {
+          "type": "string"
+        },
+        "targetSystem": {
+          "type": "string"
+        },
+        "subjectType": {
+          "type": "string"
+        },
+        "subjectId": {
+          "type": "string"
+        },
+        "personId": {
+          "type": "string"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": {}
+        },
+        "requestedAt": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "deliveryItemId",
+        "flowCode",
+        "targetSystem",
+        "subjectType",
+        "subjectId",
+        "payload",
+        "requestedAt"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$id": "https://schemas.revelation-srs.io/events/delivery/requested/v1.json",
+  "title": "DeliveryRequestedV1Payload",
+  "description": "Payload schema for srs.delivery.requested v1.0.0"
+}

@@ -66,7 +66,11 @@ const reconcile = async (): Promise<void> => {
     for (const tenantId of await app.adjustmentDispatcher.tenantIds()) {
       examWithdrawals += await app.examEntryService.applyExamWithdrawals(tenantId);
     }
-    const result = { ...workflows, adjustmentInstructions, examWithdrawals };
+    // Daily overdue digests for manual adjustment task queues.
+    const overdueNotices = (await app.adjustmentTaskNoticeService.sendAll()).length;
+    // Connected delivery-ledger items not yet published.
+    const deliveryItems = await app.deliveryService.drain();
+    const result = { ...workflows, adjustmentInstructions, examWithdrawals, overdueNotices, deliveryItems };
     lastReconcile = { at: new Date().toISOString(), ok: true, result };
   } catch (err) {
     lastReconcile = { at: new Date().toISOString(), ok: false, error: err instanceof Error ? err.message : String(err) };

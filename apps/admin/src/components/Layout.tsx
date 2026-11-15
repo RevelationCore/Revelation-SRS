@@ -106,7 +106,7 @@ function Sidebar({ onLogout, displayName, roles }: { onLogout: () => void; displ
     'integration:read',
     'audit-log:read',
   );
-  const canViewOperations = can('environment:read', 'integration:read', 'adjustment:fulfil');
+  const canViewOperations = can('environment:read', 'integration:read', 'adjustment:fulfil', 'delivery:fulfil');
   const canViewModeration = can('mark:write');
   const canViewRegulatoryCollections = can('regulatory:write');
   const canViewIdentityResolution = can('identity:manage');
@@ -191,7 +191,7 @@ function Sidebar({ onLogout, displayName, roles }: { onLogout: () => void; displ
           <SectionNavLink to="/operations" icon={Server}>Operations</SectionNavLink>
           {can('environment:read') && <SubItem to="/operations/environment" label="Environment" />}
           {can('integration:read') && <SubItem to="/operations/integrations" label="Integrations" />}
-          {can('adjustment:fulfil') && <SubItem to="/operations/adjustment-tasks" label="Adjustment tasks" />}
+          {can('adjustment:fulfil', 'delivery:fulfil') && <SubItem to="/operations/integration-tasks" label="Integration tasks" />}
         </>}
       </nav>
 

@@ -21,6 +21,8 @@ export interface Config {
   migrationVersion: string;
   jwtSecret:    string;
   keycloakJwksUrl: string | undefined;
+  /** Public URL of the admin app, for links in staff notices (e.g. the adjustment task queue). */
+  adminAppUrl?:   string | undefined;
   corsOrigins:  string[];
   otelEndpoint: string | undefined;
   otelServiceName: string;
@@ -61,6 +63,7 @@ export function loadConfig(): Config {
     migrationVersion: process.env['SRS_MIGRATION_VERSION'] ?? '0004_business_process_foundations',
     jwtSecret:       process.env['JWT_SECRET'] ?? 'dev-secret-replace-in-production',
     keycloakJwksUrl: optional('KEYCLOAK_JWKS_URL'),
+    adminAppUrl:     optional('ADMIN_APP_URL'),
     corsOrigins:     (process.env['CORS_ORIGINS'] ?? 'http://localhost:5173').split(','),
     otelEndpoint:    optional('OTEL_EXPORTER_OTLP_ENDPOINT'),
     otelServiceName: process.env['OTEL_SERVICE_NAME'] ?? 'srs-api',

@@ -285,6 +285,17 @@ export const PUBLISHED_EVENTS: EventDef[] = [
     partitionKey: 'distributionId',
     consumers: ['vle-adapter'], // attendance and exams targets have no consumer yet
   },
+  // ── Platform delivery ledger ────────────────────────────────────────────
+  {
+    typeName: 'DeliveryRequestedV1Payload',
+    file: 'delivery/requested.v1.ts',
+    subject: 'srs.delivery.requested',
+    subjectSuffix: '{flowCode}',
+    schemaPath: 'delivery/requested',
+    dataClass: 'personal',
+    partitionKey: 'deliveryItemId',
+    consumers: ['delivery-connector'], // one per flow per institution; none in this repository yet (manual by default)
+  },
   // ── Attendance and engagement ───────────────────────────────────────────
   {
     typeName: 'EngagementExpectedEventCreatedV1Payload',

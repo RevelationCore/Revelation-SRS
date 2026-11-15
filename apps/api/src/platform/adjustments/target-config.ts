@@ -34,6 +34,9 @@ export interface TargetConfigDto {
   fulfilmentModeCode: FulfilmentMode;
   ownerDescription:   string | null;
   alertAfterHours:    number;
+  /** Team mailbox sent a daily overdue digest; null: none. */
+  notifyEmail:        string | null;
+  lastOverdueNoticeAt: Date | null;
   /** True when no tenant setting exists and the platform default applies. */
   isDefault:          boolean;
   updatedAt:          Date | null;
@@ -44,6 +47,7 @@ export interface SetTargetConfigInput {
   fulfilmentModeCode: string;
   ownerDescription?:  string | null;
   alertAfterHours?:   number;
+  notifyEmail?:       string | null;
 }
 
 export function isAdjustmentTarget(value: string): value is AdjustmentTarget {
@@ -81,6 +85,9 @@ export class AdjustmentTargetConfigService {
         { field: 'fulfilmentModeCode', message: 'Value is not active in the configured value set' },
       ]);
     }
+    if (input.notifyEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.notifyEmail.trim())) {
+      throw new ValidationError('notifyEmail must be an email address', [{ field: 'notifyEmail', message: 'Must be an email address' }]);
+    }
     const now = clockNow();
     const values = {
       tenantId:           tenantId as Uuid,
@@ -88,6 +95,7 @@ export class AdjustmentTargetConfigService {
       fulfilmentModeCode: input.fulfilmentModeCode,
       ownerDescription:   input.ownerDescription ?? null,
       alertAfterHours:    input.alertAfterHours ?? DEFAULT_ALERT_AFTER_HOURS,
+      notifyEmail:        input.notifyEmail?.trim() || null,
       updatedAt:          now,
       updatedBy:          actorId,
     };
@@ -98,6 +106,7 @@ export class AdjustmentTargetConfigService {
           fulfilmentModeCode: values.fulfilmentModeCode,
           ownerDescription:   values.ownerDescription,
           alertAfterHours:    values.alertAfterHours,
+          notifyEmail:        values.notifyEmail,
           updatedAt:          values.updatedAt,
           updatedBy:          values.updatedBy,
         },
@@ -114,6 +123,15 @@ export class AdjustmentTargetConfigService {
     ) as Record<AdjustmentTarget, FulfilmentMode>;
   }
 
+  /** Record that an overdue notice went out (an existing tenant row only). */
+  async markOverdueNoticeSent(tenantId: string, targetSystem: string, at: Date): Promise<void> {
+    await withTenantContext(this.db, tenantId, (tx) =>
+      tx.update(adjustmentTargetConfigs)
+        .set({ lastOverdueNoticeAt: at })
+        .where(and(eq(adjustmentTargetConfigs.tenantId, tenantId as Uuid), eq(adjustmentTargetConfigs.targetSystem, targetSystem))),
+    );
+  }
+
   #rows(tx: Tx, tenantId: string) {
     return tx.select().from(adjustmentTargetConfigs).where(and(eq(adjustmentTargetConfigs.tenantId, tenantId as Uuid)));
   }
@@ -126,6 +144,8 @@ function toDto(target: AdjustmentTarget, row: typeof adjustmentTargetConfigs.$in
       fulfilmentModeCode: DEFAULT_FULFILMENT_MODES[target],
       ownerDescription: null,
       alertAfterHours: DEFAULT_ALERT_AFTER_HOURS,
+      notifyEmail: null,
+      lastOverdueNoticeAt: null,
       isDefault: true,
       updatedAt: null,
       updatedBy: null,
@@ -136,6 +156,8 @@ function toDto(target: AdjustmentTarget, row: typeof adjustmentTargetConfigs.$in
     fulfilmentModeCode: row.fulfilmentModeCode as FulfilmentMode,
     ownerDescription: row.ownerDescription,
     alertAfterHours: row.alertAfterHours,
+    notifyEmail: row.notifyEmail,
+    lastOverdueNoticeAt: row.lastOverdueNoticeAt,
     isDefault: false,
     updatedAt: row.updatedAt,
     updatedBy: row.updatedBy,

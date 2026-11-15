@@ -1,4 +1,5 @@
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   PageHeader, Card, CardHeader, CardBody, Button, Input, Select, LabelledField, Badge, Spinner,
   Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
@@ -23,9 +24,25 @@ const TARGET_LABELS: Record<string, string> = { vle: 'VLE', attendance: 'Attenda
  * approved adjustment never waits silently for a system that does not exist.
  */
 export function AdjustmentTasksPage() {
+  return (
+    <div>
+      <PageHeader
+        title="Adjustment tasks"
+        description="Approved adjustments for systems with no connected integration. Apply each one, then confirm it here."
+      />
+      <AdjustmentTasksPanel />
+    </div>
+  );
+}
+
+/** The adjustment queue and target settings, without a page header (a tab of Integration tasks). */
+export function AdjustmentTasksPanel() {
   const { roles } = useAuth();
   const canConfigure = userHasAnyPermission(roles, ['config:write']);
-  const [targetFilter, setTargetFilter] = useState('');
+  // ?target=attendance — the link in an overdue digest opens the right queue.
+  const [searchParams] = useSearchParams();
+  const initialTarget = searchParams.get('target') ?? '';
+  const [targetFilter, setTargetFilter] = useState(initialTarget in TARGET_LABELS ? initialTarget : '');
   const [tasks, setTasks] = useState<AdjustmentTask[] | null>(null);
   const [error, setError] = useState('');
 
@@ -44,11 +61,6 @@ export function AdjustmentTasksPage() {
 
   return (
     <div>
-      <PageHeader
-        title="Adjustment tasks"
-        description="Approved adjustments for systems with no connected integration. Apply each one, then confirm it here."
-      />
-
       {error && <p className="mb-4 text-sm text-danger-600" role="alert">{error}</p>}
 
       <Card className="mb-6">
@@ -187,7 +199,8 @@ function TargetSettings({ canConfigure, onChanged }: { canConfigure: boolean; on
         <p className="mb-4 text-sm text-neutral-600">
           Connected: an integration applies adjustments automatically. Manual: they appear in this task list.
           File: delivered through a file exchange the SRS produces. Not used: no adjustments are sent.
-          A change applies to adjustments approved from now on.
+          A change applies to adjustments approved from now on. A manual target with a mailbox is sent one
+          digest a day while tasks are overdue — counts and a link only, no student details.
         </p>
         {error && <p className="mb-3 text-sm text-danger-600" role="alert">{error}</p>}
         {configs === null ? <Spinner /> : (
@@ -219,6 +232,7 @@ function TargetSettingRow({
   const [mode, setMode] = useState(config.fulfilmentModeCode);
   const [owner, setOwner] = useState(config.ownerDescription ?? '');
   const [hours, setHours] = useState(String(config.alertAfterHours));
+  const [email, setEmail] = useState(config.notifyEmail ?? '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const label = TARGET_LABELS[config.targetSystem] ?? config.targetSystem;
@@ -237,6 +251,7 @@ function TargetSettingRow({
         fulfilmentModeCode: mode,
         ownerDescription: owner.trim() || null,
         alertAfterHours,
+        notifyEmail: email.trim() || null,
       });
       onSaved();
     } catch (err) {
@@ -247,7 +262,7 @@ function TargetSettingRow({
   }
 
   return (
-    <form onSubmit={(e) => void save(e)} className="grid grid-cols-1 items-end gap-3 md:grid-cols-5">
+    <form onSubmit={(e) => void save(e)} className="grid grid-cols-1 items-end gap-3 md:grid-cols-6">
       <div className="font-medium text-neutral-800">
         {label}
         {config.isDefault && <span className="ml-2 text-xs text-neutral-500">(default)</span>}
@@ -262,6 +277,9 @@ function TargetSettingRow({
       </LabelledField>
       <LabelledField label={`${label} overdue after (hours)`} htmlFor={`${id}-hours`}>
         <Input id={`${id}-hours`} type="number" min="1" value={hours} disabled={!canConfigure} onChange={(e) => setHours(e.target.value)} />
+      </LabelledField>
+      <LabelledField label={`${label} overdue notices to`} htmlFor={`${id}-email`}>
+        <Input id={`${id}-email`} type="email" value={email} disabled={!canConfigure} placeholder="team mailbox (optional)" onChange={(e) => setEmail(e.target.value)} />
       </LabelledField>
       <div>
         {canConfigure && <Button type="submit" size="sm" disabled={saving}>{saving ? 'Saving…' : 'Save'}</Button>}

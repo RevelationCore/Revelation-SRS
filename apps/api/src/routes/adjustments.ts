@@ -98,6 +98,8 @@ const TargetConfigSchema = Type.Object({
   fulfilmentModeCode: Type.String(),
   ownerDescription: Type.Union([Type.String(), Type.Null()]),
   alertAfterHours: Type.Integer(),
+  notifyEmail: Type.Union([Type.String(), Type.Null()]),
+  lastOverdueNoticeAt: Type.Union([Type.String(), Type.Null()]),
   isDefault: Type.Boolean(),
   updatedAt: Type.Union([Type.String(), Type.Null()]),
   updatedBy: Type.Union([Type.String(), Type.Null()]),
@@ -107,6 +109,8 @@ const TargetConfigBody = Type.Object({
   fulfilmentModeCode: Type.String({ minLength: 1 }),
   ownerDescription: Type.Optional(Type.Union([Type.String({ maxLength: 200 }), Type.Null()])),
   alertAfterHours: Type.Optional(Type.Integer({ minimum: 1, maximum: 8760 })),
+  /** Team mailbox sent a daily digest while tasks are overdue. */
+  notifyEmail: Type.Optional(Type.Union([Type.String({ maxLength: 254 }), Type.Null()])),
 });
 
 /**
@@ -398,7 +402,7 @@ export function adjustmentRoutes(fastify: FastifyInstance): void {
     },
     async (request, reply) => {
       const { targetSystem } = request.params as { targetSystem: string };
-      const body = request.body as { fulfilmentModeCode: string; ownerDescription?: string | null; alertAfterHours?: number };
+      const body = request.body as { fulfilmentModeCode: string; ownerDescription?: string | null; alertAfterHours?: number; notifyEmail?: string | null };
       const before = await fastify.adjustmentTargetConfigService.get(request.tenantId, targetSystem);
       const updated = await fastify.adjustmentTargetConfigService.set(request.tenantId, targetSystem, body, request.user.sub);
       // A tenant setting: recorded against the tenant, the target in fieldName.
@@ -408,7 +412,7 @@ export function adjustmentRoutes(fastify: FastifyInstance): void {
         entityId: request.tenantId,
         fieldName: `${targetSystem}.fulfilment_mode_code`,
         beforeValue: { fulfilmentModeCode: before.fulfilmentModeCode, isDefault: before.isDefault },
-        afterValue: { fulfilmentModeCode: updated.fulfilmentModeCode, ownerDescription: updated.ownerDescription, alertAfterHours: updated.alertAfterHours },
+        afterValue: { fulfilmentModeCode: updated.fulfilmentModeCode, ownerDescription: updated.ownerDescription, alertAfterHours: updated.alertAfterHours, notifyEmail: updated.notifyEmail },
         actionType: 'update',
         actorType: 'user',
         actorId: request.user.sub,
@@ -560,5 +564,9 @@ function taskToWire(task: AdjustmentTaskDto) {
 }
 
 function targetConfigToWire(config: TargetConfigDto) {
-  return { ...config, updatedAt: config.updatedAt?.toISOString() ?? null };
+  return {
+    ...config,
+    updatedAt: config.updatedAt?.toISOString() ?? null,
+    lastOverdueNoticeAt: config.lastOverdueNoticeAt?.toISOString() ?? null,
+  };
 }

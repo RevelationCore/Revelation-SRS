@@ -26,6 +26,7 @@ export * from './adjustment/distribution-requested.v1.js';
 export * from './adjustment/distribution-withdrawal-requested.v1.js';
 export * from './adjustment/distributed.v1.js';
 export * from './adjustment/expired.v1.js';
+export * from './delivery/requested.v1.js';
 export * from './circumstances/exceptional-circumstances-flagged.v1.js';
 export * from './circumstances/exceptional-circumstances-updated.v1.js';
 export * from './circumstances/misconduct-outcome-recorded.v1.js';
@@ -92,6 +93,7 @@ export const EVENT_TYPES = {
   ADJUSTMENT_EXPIRED:                       'srs.adjustment.expired',
   ADJUSTMENT_DISTRIBUTION_REQUESTED:        'srs.adjustment.distribution-requested',
   ADJUSTMENT_DISTRIBUTION_WITHDRAWAL_REQUESTED: 'srs.adjustment.distribution-withdrawal-requested',
+  DELIVERY_REQUESTED:                       'srs.delivery.requested',
   CIRCUMSTANCES_EC_FLAGGED:                 'srs.circumstances.exceptional-circumstances-flagged',
   CIRCUMSTANCES_EC_UPDATED:                 'srs.circumstances.exceptional-circumstances-updated',
   CIRCUMSTANCES_MISCONDUCT_OUTCOME_RECORDED: 'srs.circumstances.misconduct-outcome-recorded',

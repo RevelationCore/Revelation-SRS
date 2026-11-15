@@ -13,10 +13,12 @@ export const SRS_TIME_GROUP_PREFIX = 'srs-extra-time-';
  * Moodle driver: SRS-managed extra-time groups.
  *
  * Moodle stores extra time as a quiz override (a replacement time limit) for a
- * user or a group. The driver does not write quiz overrides: Moodle's core
- * web-service catalogue does not document override functions in the
- * versions we could verify, and a per-user override must be re-created for
- * every quiz staff add. It keeps each student in the group for their
+ * user or a group. The driver does not write per-user quiz overrides: one
+ * must be re-created for every quiz staff add, and the override web services
+ * (mod_quiz_save_overrides, mod_quiz_get_overrides, mod_quiz_delete_overrides)
+ * are absent from Moodle's published function list — though present in
+ * Moodle 5.3.1, so a per-quiz driver is possible there. It keeps each student
+ * in the group for their
  * entitlement instead — "Extra time +25% (SRS)", idnumber srs-extra-time-25 —
  * and course staff give that group an override on each timed quiz (time
  * limit x 1.25), the arrangement many UK institutions already use. New quizzes
@@ -35,6 +37,9 @@ export const SRS_TIME_GROUP_PREFIX = 'srs-extra-time-';
  * manage groups in the course. Moodle reports web-service errors as HTTP 200
  * with an { exception, errorcode, message } body, which this treats as a
  * failure.
+ *
+ * Verified against Moodle 5.3.1 (infra/compose/moodle.compose.yml,
+ * test/moodle-live.int.test.ts).
  */
 export class MoodleDriver implements VlePlatformDriver {
   readonly platform = 'moodle' as const;
