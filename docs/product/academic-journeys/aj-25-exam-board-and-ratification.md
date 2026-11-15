@@ -1,6 +1,6 @@
 # AJ-25 — Evidence becomes a ratified academic decision
 
-Status: **Proposed narrative v0.8**, 14 November 2026 · [Document status](README.md#status-of-these-documents) · [Shared continuation](taught-student-fixture.md) · [Progression](aj-26-progression-and-reassessment.md)
+Status: **Proposed narrative v0.9**, 15 November 2026 (board packs include adjustment indicators) · [Document status](README.md#status-of-these-documents) · [Shared continuation](taught-student-fixture.md) · [Progression](aj-26-progression-and-reassessment.md)
 
 **Perspective:** the Registry board secretary, an external examiner, the chair and students awaiting results. **Boundary:** controlled assessment evidence through an authorised board, locked decisions and separately authorised publication. Award conferral is AJ-29. **Timeline:** t+36 to t+40, t+88 to t+92 and t+140 to t+144; Ben's supplementary board is t+150 with publication t+151. Use the [original t](README.md#timeline-convention).
 
@@ -10,7 +10,7 @@ Status: **Proposed narrative v0.8**, 14 November 2026 · [Document status](READM
 
 The secretary assembles results from AJ-24, the applicable curriculum/rule versions, candidate profiles and relevant approved case outcomes. Each source is identified at the cut-off time. The board pack has a version and content digest, so everyone knows which evidence is being considered.
 
-Sam's first-stage profile has six passed 20-credit modules. The displayed recommendation is to progress under the fixture rule, not a decision already made. A different candidate with unresolved evidence is clearly marked. The pack contains no reasonable-adjustment information by default: Nina's adjustment was applied when she sat her exam, and the board has no decision to make about it. An exceptional-circumstances variant must supply a genuine authorised AJ-22 outcome, not infer one from a support flag.
+Sam's first-stage profile has six passed 20-credit modules. The displayed recommendation is to progress under the fixture rule, not a decision already made. A different candidate with unresolved evidence is clearly marked. For each reasonable adjustment in force on the board's context date, the pack shows an indicator: its type, its scope and whether each target system confirmed delivery. For Nina that is extra time, for examinations, delivered. The indicator carries no notes, amount, evidence, diagnosis or case reference. The board does not re-decide the adjustment; the indicator lets it check that an approved adjustment actually reached the assessment, so a delivery that failed or never happened is visible before results are ratified. An exceptional-circumstances variant must supply a genuine authorised AJ-22 outcome, not infer one from a support flag.
 
 ### The external examiner has time to scrutinise — t+37
 
@@ -38,7 +38,7 @@ Before this board, the external examiner asks whether the ethics hurdle is enfor
 
 ## Starting pack and roles
 
-Supply the exact assessment snapshots, registration/credit histories, pinned rule manifest, membership/delegations, declared conflicts, required external review and applicable exceptional-circumstances and integrity outcomes. Reasonable-adjustment information is excluded by default. First-stage and final-stage snapshots are separate; do not expose future marks in the early board. A reproduction must regenerate the same profile from its stated sources.
+Supply the exact assessment snapshots, registration/credit histories, pinned rule manifest, membership/delegations, declared conflicts, required external review and applicable exceptional-circumstances and integrity outcomes. Include an indicator for each adjustment in force on the board context date: type, scope and per-target delivery status only. First-stage and final-stage snapshots are separate; do not expose future marks in the early board. A reproduction must regenerate the same profile from its stated sources.
 
 Registry prepares and publishes under authority; the chair/board make and ratify academic decisions; the external examiner provides required scrutiny; students receive only their permitted outcomes. Integration operators can recover publication, not substitute academic decisions. Approval-panel membership from AJ-01 grants no exam-board role by itself.
 
@@ -60,7 +60,7 @@ Apply the [shared exchange convention](README.md#exchange-and-evidence-conventio
 
 | Interaction / reference | Trigger, direction and payload | Key / authority | Applied-state evidence / recovery |
 |---|---|---|---|
-| A25-I01 / F-SIS-EXAMBOARD-01 | SRS → board on pack issue: candidate profiles, source/rule manifest, calculations, approved exceptional-circumstances and integrity outcomes (no adjustment information by default) and unresolved items. | Board + pack version; authorised preparation. | Issued pack/digest and review access; replacement/addendum preserves predecessor and renewed review. |
+| A25-I01 / F-SIS-EXAMBOARD-01 | SRS → board on pack issue: candidate profiles, source/rule manifest, calculations, approved exceptional-circumstances and integrity outcomes, adjustment indicators (type, scope and per-target delivery status; no notes, amount or evidence) and unresolved items. | Board + pack version; authorised preparation. | Issued pack/digest and review access; replacement/addendum preserves predecessor and renewed review. |
 | A25-I02 / F-SIS-EXTEX-01, F-EXTEX-EXAMBOARD-01 | SRS → external examiner: permitted pack/sample access; examiner → board: review questions, assurance and source-pack reference. | Reviewer + pack version + review action; appointed examiner. | Attributable assurance/response; unanswered required concerns prevent the relevant gate. |
 | A25-I03 / F-EXAMBOARD-SIS-01 | Board → SRS on ratification: decisions, scope, pack/version, authority, quorum/conflict record and rationale. | Board decision operation + candidate/scope revision; chair/board authority. | Atomic ratification/lock receipt; retries cannot create a second decision, stale pack decisions rejected. |
 | A25-I04 / F-SIS-EWP-01; ABR-013 | SRS → portal/communications after release authority: ratified outcome/version, permitted explanation and next-action reference. | Outcome + release version + channel; separate publisher authority. | Applied portal state and delivery evidence; failed delivery leaves the ratified fact intact. |
@@ -78,7 +78,7 @@ Apply the [shared exchange convention](README.md#exchange-and-evidence-conventio
 | A25-AC06 | One candidate's evidence is incomplete. | Explicit scoped deferral under policy; neither fake zero nor unratified result shown as final. |
 | A25-AC07 | Late mark correction after ratification. | Governed AJ-27 amendment hand-off; locked original retained. |
 | A25-AC08 | Student/examiner requests unrelated candidate or clinical evidence. | Scoped access and minimised pack enforce privacy; access is attributable. |
-| A25-AC09 | Pack generation includes Nina's reasonable-adjustment record. | Excluded by default; inclusion needs a documented, board-specific justification and is logged. |
+| A25-AC09 | Generate the pack for Nina's board. | The pack shows her extra-time indicator: type, scope and the delivery status of each target, as at the board context date. It contains no notes, amount, evidence or wellbeing case reference, and an adjustment outside that date is not shown. |
 
 ## Traceability, implementation and review
 

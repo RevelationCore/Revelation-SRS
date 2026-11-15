@@ -81,6 +81,13 @@ describe('Exam boards and data packs', () => {
       adjustmentTypeCode: 'extra-time',
       scopeCode: 'exam',
     }));
+    // AJ-25 A25-AC09: an indicator only — type, scope and per-target delivery
+    // status. No notes, amount, evidence or wellbeing case reference.
+    for (const indicator of profileData.adjustments) {
+      expect(Object.keys(indicator).sort()).toEqual(['adjustmentId', 'adjustmentTypeCode', 'distributionStatuses', 'scopeCode']);
+    }
+    expect(profile.body).not.toContain('BOARD-PRIVATE-NOTE');
+    expect(profile.body).not.toContain('percent-of-duration');
     expect(profileData.exceptionalCircumstances).toContainEqual(expect.objectContaining({
       outcomeCode: 'defer',
       moduleOfferingId: fixture.moduleOfferingId,
@@ -463,6 +470,8 @@ async function createAdjustment(fixture: BoardFixture): Promise<void> {
       adjustmentTypeCode: 'extra-time',
       scopeCode: 'exam',
       validFrom: '2027-09-01T00:00:00.000Z',
+      amount: { value: 25, unitCode: 'percent-of-duration' },
+      notes: 'BOARD-PRIVATE-NOTE: must never reach a board pack',
     },
   });
   expect(adjustment.statusCode).toBe(201);

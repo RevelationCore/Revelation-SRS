@@ -1,6 +1,6 @@
 # AJ-21 — Support agreed once and delivered where it is needed
 
-Status: **Proposed narrative v0.8**, 14 November 2026 · [Document status](README.md#status-of-these-documents) · [Shared continuation](taught-student-fixture.md) · [Assessment](aj-24-assessment-and-results.md)
+Status: **Proposed narrative v0.9**, 15 November 2026 (board packs include adjustment indicators) · [Document status](README.md#status-of-these-documents) · [Shared continuation](taught-student-fixture.md) · [Assessment](aj-24-assessment-and-results.md)
 
 **Perspective:** Nina, a support adviser and the teaching/examination teams responsible for delivery. **Boundary:** a separate request for study support through an authorised adjustment and verified operational implementation, review or expiry. Exceptional circumstances remain AJ-22's separate process. **Timeline:** t-24 to t+51 with review at t+32; use the [shared t](README.md#timeline-convention).
 
@@ -64,7 +64,7 @@ Apply the [shared exchange convention](README.md#exchange-and-evidence-conventio
 | A21-I03 / F-SIS-VLE-02, F-SIS-AM-02, F-SIS-EXAMS-01 | SRS → necessary consumers on outcome/change: target-specific operational instructions and applicable student/assessment scope. | Outcome version + target; SRS distribution authority. | Applied instruction/version; main path excludes unwarranted attendance treatment. Retry/reconcile safely; downstream services receive no direct Wellbeing evidence feed. |
 | A21-I04 / F-SIS-EWP-01; GI-20 | SRS/case owner → authorised student/status view: approved effect, recipient readiness and action/contact route. | Outcome/status version + audience; scoped publishing authority. | Accessible visible status; delivery is distinct from approval and from actual implementation. |
 
-AJ-24 owns the examination entry and allocation created using A21-I03's instruction; it returns delivery evidence to that distribution process. AJ-25 receives no adjustment information by default: adjustments are applied when the assessment is sat, so the board has nothing to decide about them. A board-level exception needs its own documented justification. F-WELL-SIS-02 belongs to exceptional circumstances and is not repurposed here.
+AJ-24 owns the examination entry and allocation created using A21-I03's instruction; it returns delivery evidence to that distribution process. AJ-25 receives an indicator for each adjustment in force on the board's context date: type, scope and per-target delivery status, with no notes, amount, evidence or case reference. The board has nothing to decide about the adjustment itself; the indicator lets it see whether delivery was confirmed before it ratifies results. F-WELL-SIS-02 belongs to exceptional circumstances and is not repurposed here.
 
 ## Acceptance cases
 
