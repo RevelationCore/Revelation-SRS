@@ -292,6 +292,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/delivery-flows/{flowCode}/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createDeliveryFlowsByFlowCodeRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/delivery-tasks": {
         parameters: {
             query?: never;
@@ -6016,6 +6032,68 @@ export interface operations {
             };
         };
     };
+    createDeliveryFlowsByFlowCodeRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                flowCode: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    academicPeriodId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        flowCode: string;
+                        periodCode: string;
+                        offerings: number;
+                        created: number;
+                        unchanged: number;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
     getDeliveryTasks: {
         parameters: {
             query?: {
@@ -6223,6 +6301,8 @@ export interface operations {
                         sourceSystem: string;
                         sourceLabel: string;
                         name: string;
+                        handling: string;
+                        handlingNote?: string;
                         defined: boolean;
                         fields: {
                             name: string;

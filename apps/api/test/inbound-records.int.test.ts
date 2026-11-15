@@ -31,10 +31,31 @@ const ACC = 'F-ACC-SIS-01';
 const libraryAccount = { accountStatus: 'active', loansOnIssue: 3, overdueItems: 1, outstandingBalancePence: 250 };
 
 describe('Inbound flows', () => {
-  it('registers the inbound flows, with fields defined for library and accommodation', async () => {
-    const flows = (await get('/api/v1/inbound-flows', tutorJwt)).json<Array<{ flowCode: string; defined: boolean }>>();
-    expect(flows.filter((f) => f.defined).map((f) => f.flowCode)).toEqual([LIB, ACC]);
-    expect(flows.length).toBe(11);
+  it('registers every inbound flow and says how each is handled', async () => {
+    const flows = (await get('/api/v1/inbound-flows', tutorJwt)).json<Array<{ flowCode: string; handling: string; handlingNote?: string }>>();
+    const by = (h: string) => flows.filter((f) => f.handling === h).map((f) => f.flowCode).sort();
+    expect(by('record')).toEqual(['F-ACC-SIS-01', 'F-ITSM-SIS-01', 'F-LIB-SIS-01', 'F-PAY-SIS-01', 'F-RP-SIS-01']);
+    expect(by('dedicated')).toEqual(['F-CM-SIS-01', 'F-CRM-SIS-01', 'F-OIV-SIS-01']);
+    expect(by('not-per-student')).toEqual(['F-CMS-SIS-01', 'F-EST-SIS-01', 'F-SETS-SIS-01']);
+    expect(flows.find((f) => f.flowCode === 'F-OIV-SIS-01')?.handlingNote).toContain('identity-verifications');
+  });
+
+  it('records payroll, studentship and service-desk reports with their value sets', async () => {
+    const f = await fixture('IN107');
+    const pay = await post('/api/v1/inbound/F-PAY-SIS-01', { personId: f.personId, idempotencyKey: 'pay-1',
+      payload: { paymentReference: 'PAY-9', paymentType: 'bursary', amountPence: 50_000, paidOn: '2026-10-31' } }, connectorJwt);
+    expect(pay.statusCode, pay.body).toBe(201);
+    expect(pay.json<{ summary: string }>().summary).toBe('bursary payment PAY-9: £500.00 paid 2026-10-31');
+
+    const rp = await post('/api/v1/inbound/F-RP-SIS-01', { personId: f.personId, idempotencyKey: 'rp-1',
+      payload: { awardReference: 'EPSRC-1', funder: 'EPSRC', awardStatus: 'active', startDate: '2026-10-01' } }, connectorJwt);
+    expect(rp.statusCode, rp.body).toBe(201);
+
+    const itsm = await post('/api/v1/inbound/F-ITSM-SIS-01', { personId: f.personId, idempotencyKey: 'it-1',
+      payload: { ticketReference: 'INC-42', outcome: 'account-unlocked' } }, connectorJwt);
+    expect(itsm.statusCode, itsm.body).toBe(201);
+    expect((await post('/api/v1/inbound/F-ITSM-SIS-01', { personId: f.personId, idempotencyKey: 'it-2',
+      payload: { ticketReference: 'INC-43', outcome: 'rebooted' } }, connectorJwt)).statusCode).toBe(422);
   });
 
   it('a connector reports a library account by student number; a repeat is recognised', async () => {
@@ -60,7 +81,9 @@ describe('Inbound flows', () => {
     expect((await send({ ...libraryAccount, accountStatus: 'frozen' })).statusCode).toBe(422);
     expect((await send({ ...libraryAccount, outstandingBalancePence: -5 })).statusCode).toBe(422);
     expect((await send({ accountStatus: 'active' })).statusCode).toBe(422);
-    expect((await send({ anything: 1 }, 'F-CRM-SIS-01')).statusCode).toBe(422);
+    const dedicated = await send({ anything: 1 }, 'F-CRM-SIS-01');
+    expect(dedicated.statusCode).toBe(422);
+    expect(dedicated.body).toContain('admissions');
     expect((await post(`/api/v1/inbound/${LIB}`, { studentNumber: 'NOPE', payload: libraryAccount, idempotencyKey: 'x' }, connectorJwt)).statusCode).toBe(404);
   });
 

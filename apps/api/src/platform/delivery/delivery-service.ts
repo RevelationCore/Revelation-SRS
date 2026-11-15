@@ -226,6 +226,29 @@ export class DeliveryService {
     );
   }
 
+  /**
+   * The SRS itself records that a flow's item was fulfilled — e.g. an
+   * identity check completed through its own endpoint answers the OIV
+   * request. Marks open items for the subject delivered; never throws.
+   */
+  async completeForSubject(tenantId: string, flowCode: string, subjectId: string): Promise<void> {
+    const now = clockNow();
+    try {
+      await withTenantContext(this.db, tenantId, (tx) =>
+        tx.update(deliveryItems)
+          .set({ statusCode: 'delivered', deliveredAt: now, failureReason: null, updatedAt: now })
+          .where(and(
+            eq(deliveryItems.tenantId, tenantId as Uuid),
+            eq(deliveryItems.flowCode, flowCode),
+            eq(deliveryItems.subjectId, subjectId as Uuid),
+            inArray(deliveryItems.statusCode, ['pending', 'failed']),
+          )),
+      );
+    } catch (err) {
+      this.onError(err, { tenantId, flowCode, subjectId, stage: 'complete-for-subject' });
+    }
+  }
+
   async reportFailure(tenantId: string, itemId: string, reason: string, actor: DeliveryReplyActor): Promise<void> {
     const item = await this.#get(tenantId, itemId);
     assertActor(item, actor);

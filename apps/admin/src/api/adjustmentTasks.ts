@@ -93,7 +93,8 @@ export interface DeliveryFlowConfig {
   targetSystem:        string;
   targetLabel:         string;
   name:                string;
-  producer:            'implemented' | 'none';
+  /** implemented: follows SRS events; extract: run per academic period; none: no SRS trigger. */
+  producer:            'implemented' | 'extract' | 'none';
   producerNote:        string;
   fulfilmentModeCode:  string;
   ownerDescription:    string | null;
@@ -114,6 +115,13 @@ export function confirmDelivered(task: DeliveryTask): Promise<void> {
 
 export function reportDeliveryFailure(task: DeliveryTask, reason: string): Promise<void> {
   return api.post(`/api/v1/delivery-items/${task.deliveryItemId}/failure`, { reason });
+}
+
+export interface ExtractRunResult { flowCode: string; periodCode: string; offerings: number; created: number; unchanged: number }
+
+/** Produce an aggregate flow's items for an academic period (one per module offering). */
+export function runDeliveryExtract(flowCode: string, academicPeriodId: string): Promise<ExtractRunResult> {
+  return api.post<ExtractRunResult>(`/api/v1/delivery-flows/${encodeURIComponent(flowCode)}/run`, { academicPeriodId });
 }
 
 export function listDeliveryFlows(): Promise<DeliveryFlowConfig[]> {

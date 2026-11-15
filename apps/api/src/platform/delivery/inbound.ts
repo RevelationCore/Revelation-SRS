@@ -27,6 +27,13 @@ export interface InboundFlow {
   sourceSystem: string;
   sourceLabel:  string;
   name:         string;
+  /**
+   * record          — stored here as an external_record (has fields)
+   * dedicated       — has its own SRS route (handlingNote says which)
+   * not-per-student — not about one student, so not stored on a student record
+   */
+  handling:     'record' | 'dedicated' | 'not-per-student';
+  handlingNote?: string;
   /** Payload field that identifies the record (e.g. a booking); absent: one record per student. */
   recordKeyField?: string;
   fields:       InboundField[];
@@ -40,7 +47,7 @@ const text = (v: unknown): string => (typeof v === 'string' || typeof v === 'num
 export const INBOUND_FLOWS: readonly InboundFlow[] = [
   {
     flowCode: 'F-LIB-SIS-01', sourceSystem: 'lib', sourceLabel: 'Library',
-    name: 'Library account: loans, overdue items and fines',
+    name: 'Library account: loans, overdue items and fines', handling: 'record',
     fields: [
       { name: 'accountStatus', label: 'Account status', type: 'code', required: true, valueSet: { entity: 'external_record_library', field: 'account_status' } },
       { name: 'loansOnIssue', label: 'Loans on issue', type: 'integer', required: true, min: 0 },
@@ -51,7 +58,7 @@ export const INBOUND_FLOWS: readonly InboundFlow[] = [
   },
   {
     flowCode: 'F-ACC-SIS-01', sourceSystem: 'acc', sourceLabel: 'Accommodation',
-    name: 'Accommodation booking: allocation and check-in/out',
+    name: 'Accommodation booking: allocation and check-in/out', handling: 'record',
     recordKeyField: 'bookingReference',
     fields: [
       { name: 'bookingReference', label: 'Booking reference', type: 'text', required: true },
@@ -62,18 +69,57 @@ export const INBOUND_FLOWS: readonly InboundFlow[] = [
     ],
     summarise: (p) => `Booking ${text(p['bookingReference'])} ${text(p['bookingStatus'])}${p['roomReference'] ? `, room ${text(p['roomReference'])}` : ''}${p['startDate'] ? ` from ${text(p['startDate'])}` : ''}${p['endDate'] ? ` to ${text(p['endDate'])}` : ''}`,
   },
+  {
+    flowCode: 'F-PAY-SIS-01', sourceSystem: 'pay', sourceLabel: 'Payroll',
+    name: 'Bursary and stipend payment confirmations', handling: 'record',
+    recordKeyField: 'paymentReference',
+    fields: [
+      { name: 'paymentReference', label: 'Payment reference', type: 'text', required: true },
+      { name: 'paymentType', label: 'Payment type', type: 'code', required: true, valueSet: { entity: 'external_record_payroll', field: 'payment_type' } },
+      { name: 'amountPence', label: 'Amount (pence)', type: 'integer', required: true, min: 0 },
+      { name: 'paidOn', label: 'Paid on', type: 'date', required: true },
+    ],
+    summarise: (p) => `${text(p['paymentType'])} payment ${text(p['paymentReference'])}: ${pence(p['amountPence'])} paid ${text(p['paidOn'])}`,
+  },
+  {
+    flowCode: 'F-RP-SIS-01', sourceSystem: 'rp', sourceLabel: 'Research portal',
+    name: 'Funded studentship awards', handling: 'record',
+    recordKeyField: 'awardReference',
+    fields: [
+      { name: 'awardReference', label: 'Award reference', type: 'text', required: true },
+      { name: 'funder', label: 'Funder', type: 'text', required: true },
+      { name: 'awardStatus', label: 'Status', type: 'code', required: true, valueSet: { entity: 'external_record_research', field: 'award_status' } },
+      { name: 'startDate', label: 'From', type: 'date', required: false },
+      { name: 'endDate', label: 'To', type: 'date', required: false },
+    ],
+    summarise: (p) => `Studentship ${text(p['awardReference'])} (${text(p['funder'])}) ${text(p['awardStatus'])}${p['startDate'] ? ` from ${text(p['startDate'])}` : ''}${p['endDate'] ? ` to ${text(p['endDate'])}` : ''}`,
+  },
+  {
+    flowCode: 'F-ITSM-SIS-01', sourceSystem: 'itsm', sourceLabel: 'IT service desk',
+    name: 'Service request outcomes affecting the student account', handling: 'record',
+    recordKeyField: 'ticketReference',
+    fields: [
+      { name: 'ticketReference', label: 'Ticket reference', type: 'text', required: true },
+      { name: 'outcome', label: 'Outcome', type: 'code', required: true, valueSet: { entity: 'external_record_itsm', field: 'outcome' } },
+      { name: 'closedOn', label: 'Closed on', type: 'date', required: false },
+    ],
+    summarise: (p) => `Service request ${text(p['ticketReference'])}: ${text(p['outcome'])}${p['closedOn'] ? ` on ${text(p['closedOn'])}` : ''}`,
+  },
   ...([
-    ['F-CRM-SIS-01', 'crm', 'CRM', 'Applicant, offer and admissions decisions'],
-    ['F-EST-SIS-01', 'est', 'Estates', 'Room allocation confirmations and availability'],
-    ['F-OIV-SIS-01', 'oiv', 'Identity verification', 'Verification outcome, confidence and fraud flags'],
-    ['F-SETS-SIS-01', 'sets', 'Survey system', 'Survey completion and aggregated feedback'],
-    ['F-PAY-SIS-01', 'pay', 'Payroll', 'Bursary and stipend payment confirmations'],
-    ['F-RP-SIS-01', 'rp', 'Research portal', 'Funded studentship awards'],
-    ['F-CMS-SIS-01', 'cms', 'Content management', 'Published regulatory and policy notifications'],
-    ['F-ITSM-SIS-01', 'itsm', 'IT service management', 'Service request outcomes affecting student accounts'],
-    ['F-CM-SIS-01', 'cm', 'Curriculum management', 'Programme and module catalogue updates'],
-  ] as const).map(([flowCode, sourceSystem, sourceLabel, name]) => ({
-    flowCode, sourceSystem, sourceLabel, name, fields: [], summarise: () => '',
+    ['F-OIV-SIS-01', 'oiv', 'Identity verification', 'Verification outcome, confidence and fraud flags', 'dedicated',
+      'Recorded on the identity verification check: POST /students/{id}/identity-verifications/{checkId}/completion (it also completes the F-SIS-OIV-01 request).'],
+    ['F-CRM-SIS-01', 'crm', 'CRM', 'Applicant, offer and admissions decisions', 'dedicated',
+      'Admissions data arrives through the admissions hand-off and the UCAS integration, not as a student record.'],
+    ['F-CM-SIS-01', 'cm', 'Curriculum management', 'Programme and module catalogue updates', 'dedicated',
+      'Catalogue changes go through the programme and module catalogue API (/programmes, /modules).'],
+    ['F-EST-SIS-01', 'est', 'Estates', 'Room allocation confirmations and availability', 'not-per-student',
+      'About rooms and timetable slots, not one student; needs a rooms/timetabling model the SRS does not have.'],
+    ['F-SETS-SIS-01', 'sets', 'Survey system', 'Survey completion and aggregated feedback', 'not-per-student',
+      'Aggregated per module, not per student; belongs with module evaluation and analytics.'],
+    ['F-CMS-SIS-01', 'cms', 'Content management', 'Published regulatory and policy notifications', 'not-per-student',
+      'Institution-wide notices, not about one student; belongs with communications.'],
+  ] as const).map(([flowCode, sourceSystem, sourceLabel, name, handling, handlingNote]) => ({
+    flowCode, sourceSystem, sourceLabel, name, handling, handlingNote, fields: [], summarise: () => '',
   })),
 ];
 
@@ -126,8 +172,8 @@ export class InboundRecordService {
   ): Promise<{ record: ExternalRecordDto; replayed: boolean }> {
     const flow = findInboundFlow(flowCode);
     if (!flow) throw new NotFoundError('InboundFlow', flowCode);
-    if (flow.fields.length === 0) {
-      throw new ValidationError(`${flowCode} is registered but its fields are not defined yet, so it cannot be recorded`);
+    if (flow.handling !== 'record') {
+      throw new ValidationError(`${flowCode} is not stored as a student record: ${flow.handlingNote ?? ''}`.trim());
     }
     const payload = await this.#validate(tenantId, flow, input.payload);
     const personId = await this.#resolvePerson(tenantId, input);

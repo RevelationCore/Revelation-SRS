@@ -53,7 +53,10 @@ describe('Delivery flows', () => {
       'F-SIS-LIB-01', 'F-SIS-OIV-01', 'F-SIS-PAY-01', 'F-SIS-RP-01', 'F-SIS-SETS-01',
     ]);
     expect(flows.find((f) => f.flowCode === LIB)).toMatchObject({ producer: 'implemented', fulfilmentModeCode: 'manual', isDefault: true });
-    expect(flows.filter((f) => f.producer === 'implemented').map((f) => f.flowCode).sort()).toEqual([ACC, CRM, LIB]);
+    expect(flows.filter((f) => f.producer === 'implemented').map((f) => f.flowCode).sort())
+      .toEqual([ACC, 'F-SIS-CMS-01', CRM, 'F-SIS-ITSM-01', LIB, 'F-SIS-OIV-01', 'F-SIS-RP-01']);
+    expect(flows.filter((f) => f.producer === 'extract').map((f) => f.flowCode).sort()).toEqual(['F-SIS-CM-01', 'F-SIS-EST-01', 'F-SIS-SETS-01']);
+    expect(flows.filter((f) => f.producer === 'none').map((f) => f.flowCode)).toEqual(['F-SIS-PAY-01']);
   });
 
   it('validates settings and restricts them to configuration administrators', async () => {
@@ -131,7 +134,7 @@ describe('F-SIS-CRM-01 and F-SIS-ACC-01 follow the enrolment', () => {
     });
   });
 
-  it('a progression decision updates CRM only, replacing the undelivered snapshot', async () => {
+  it('a progression decision updates CRM and the content audience, replacing undelivered snapshots', async () => {
     const f = await fixture('ENR102');
     const evaluated = await post(`/api/v1/enrolments/${f.enrolmentId}/progression`, { academicYear: '2026-27' }, registryJwt);
     expect(evaluated.statusCode, evaluated.body).toBe(201);
@@ -140,8 +143,8 @@ describe('F-SIS-CRM-01 and F-SIS-ACC-01 follow the enrolment', () => {
     expect(crm).toHaveLength(1);
     expect(crm[0]!.payload['progression']).toMatchObject({ academicYear: '2026-27', ratified: false });
     expect(crm[0]!.summary).toMatch(/^Update CRM: enrolment enrolled; progression 2026-27 [a-z-]+ \(provisional\)$/);
-    // Library and accommodation are unaffected by progression.
-    expect((await tasks()).filter((t) => t.subjectId === f.enrolmentId && t.flowCode !== CRM).map((t) => t.flowCode).sort()).toEqual([ACC, LIB]);
+    // One open item per flow for the enrolment; library and accommodation are unaffected by progression.
+    expect((await tasks()).filter((t) => t.subjectId === f.enrolmentId && t.flowCode !== CRM).map((t) => t.flowCode).sort()).toEqual([ACC, 'F-SIS-CMS-01', LIB]);
   });
 });
 

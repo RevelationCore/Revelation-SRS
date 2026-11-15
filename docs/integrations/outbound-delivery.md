@@ -21,19 +21,19 @@ Reasonable adjustments use the same modes on their own ledger, with a withdrawal
 
 | Flow | Target | SRS trigger |
 |---|---|---|
-| F-SIS-LIB-01 | Library | **Implemented**: an enrolment being created or changing status grants, suspends or revokes access |
-| F-SIS-CRM-01 | CRM | **Implemented**: an enrolment being created, changing status or receiving a progression decision sends its current status and latest progression |
-| F-SIS-ACC-01 | Accommodation | **Implemented**: an enrolment being created or changing status sends its status, mode of study, programme and start date |
-| F-SIS-EST-01 | Estates | Not yet |
-| F-SIS-OIV-01 | Identity verification | Not yet |
-| F-SIS-SETS-01 | Survey system | Not yet |
-| F-SIS-PAY-01 | Payroll | Not yet |
-| F-SIS-RP-01 | Research portal | Not yet |
-| F-SIS-CMS-01 | Content management | Not yet |
-| F-SIS-ITSM-01 | IT service management | Not yet |
-| F-SIS-CM-01 | Curriculum management | Not yet |
+| F-SIS-LIB-01 | Library | An enrolment is created or changes status: grant, suspend or revoke access |
+| F-SIS-CRM-01 | CRM | An enrolment is created, changes status, or gets a progression decision: current status and latest progression |
+| F-SIS-ACC-01 | Accommodation | An enrolment is created or changes status: status, mode, programme, start date |
+| F-SIS-CMS-01 | Content management | Same triggers as CRM: programme, mode, status and year of study for content personalisation |
+| F-SIS-ITSM-01 | IT service management | A person is created, their identity changes, or an enrolment changes: a per-person service-desk snapshot (no date of birth, gender or nationality) |
+| F-SIS-OIV-01 | Identity verification | An identity verification check is requested: one item per check with the identity data the provider needs; completing the check marks it delivered |
+| F-SIS-RP-01 | Research portal | Supervisors are approved, or the team is closed: the current supervisory team |
+| F-SIS-EST-01 | Estates | **Run per academic period**: registered students against capacity, per module offering |
+| F-SIS-SETS-01 | Survey system | **Run per academic period**: roster of registered students (student numbers), per module offering |
+| F-SIS-CM-01 | Curriculum management | **Run per academic period**: registration and result counts, per module offering |
+| F-SIS-PAY-01 | Payroll | None: the SRS holds no bursary eligibility or GTA employment data to send |
 
-A flow with no trigger is listed so the gap is visible: nothing reaches that system from the SRS today. Adding a trigger is one call to `DeliveryService.request()` with a minimal payload and a one-line summary (see `producers/library.ts`).
+Event-driven flows are state-sync snapshots except OIV, where each check is its own request. The three extracts run from **Operations → Integration tasks → Other systems** or `POST /api/v1/delivery-flows/{flowCode}/run { "academicPeriodId": "…" }` (`config:write` or `delivery:fulfil`, audited). They produce one item per offering; an offering whose figures are unchanged since its latest item is not re-sent, and a changed one supersedes an undelivered earlier item. Adding a producer is one call to `DeliveryService.request()` (see `producers/`).
 
 ## Items, supersession and replies
 
@@ -87,6 +87,19 @@ POST /api/v1/inbound/F-LIB-SIS-01
 |---|---|
 | F-LIB-SIS-01 Library | `accountStatus` (value set `library-account-status-code`), `loansOnIssue`, `overdueItems`, `outstandingBalancePence` |
 | F-ACC-SIS-01 Accommodation | `bookingReference`, `bookingStatus` (value set `accommodation-booking-status-code`), `roomReference`, `startDate`, `endDate` |
-| F-CRM/EST/OIV/SETS/PAY/RP/CMS/ITSM/CM-SIS-01 | Registered, fields not defined yet: a report is rejected with `422` |
+| F-PAY-SIS-01 Payroll | `paymentReference`, `paymentType` (`payment-type-code`: bursary, stipend, GTA pay), `amountPence`, `paidOn` |
+| F-RP-SIS-01 Research portal | `awardReference`, `funder`, `awardStatus` (`studentship-status-code`), `startDate`, `endDate` |
+| F-ITSM-SIS-01 IT service desk | `ticketReference`, `outcome` (`service-request-outcome-code`), `closedOn` |
+
+Six inbound flows are not stored here, and a report to them is rejected with `422` saying where it belongs:
+
+| Flow | Handling |
+|---|---|
+| F-OIV-SIS-01 | Dedicated: the identity verification check's completion endpoint (which also closes the F-SIS-OIV-01 request) |
+| F-CRM-SIS-01 | Dedicated: the admissions hand-off and UCAS integration |
+| F-CM-SIS-01 | Dedicated: the programme and module catalogue API |
+| F-EST-SIS-01 | Not per student: rooms and timetable slots; needs a rooms model the SRS does not have |
+| F-SETS-SIS-01 | Not per student: aggregated per module; belongs with module evaluation |
+| F-CMS-SIS-01 | Not per student: institution-wide notices; belongs with communications |
 
 These records are for information only and never change academic status. Under AJ-17 a library fine does not block results or an award, and Registry relies on its own enrolment, not a housing check-in.

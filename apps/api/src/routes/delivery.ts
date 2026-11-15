@@ -7,6 +7,7 @@ import type { FastifyInstance, FastifyRequest } from 'fastify';
 
 import type { DeliveryItemDto, DeliveryReplyActor, DeliveryTaskDto, FlowConfigDto } from '../platform/delivery/delivery-service.js';
 import { INBOUND_FLOWS, type ExternalRecordDto } from '../platform/delivery/inbound.js';
+import { runExtract } from '../platform/delivery/producers/extracts.js';
 
 const ErrorSchema = Type.Object({
   type: Type.String(),
@@ -81,6 +82,8 @@ const InboundFlowSchema = Type.Object({
   sourceSystem: Type.String(),
   sourceLabel: Type.String(),
   name: Type.String(),
+  handling: Type.String(),
+  handlingNote: Type.Optional(Type.String()),
   defined: Type.Boolean(),
   fields: Type.Array(Type.Object({
     name: Type.String(),
@@ -136,6 +139,37 @@ export function deliveryRoutes(fastify: FastifyInstance): void {
       reasonText: `Delivery flow ${flowCode} set to ${body.fulfilmentModeCode}`,
     });
     await reply.send(flowToWire(updated));
+  });
+
+  fastify.post('/delivery-flows/:flowCode/run', {
+    schema: {
+      params: Type.Object({ flowCode: Type.String() }),
+      body: Type.Object({ academicPeriodId: Type.String() }),
+      response: {
+        200: Type.Object({
+          flowCode: Type.String(), periodCode: Type.String(),
+          offerings: Type.Integer(), created: Type.Integer(), unchanged: Type.Integer(),
+        }),
+        404: ErrorSchema, 422: ErrorSchema,
+      },
+    },
+    preHandler: [requireAnyPermission('config:write', 'delivery:fulfil')],
+  }, async (request, reply) => {
+    const { flowCode } = request.params as { flowCode: string };
+    const { academicPeriodId } = request.body as { academicPeriodId: string };
+    const result = await runExtract(fastify.deliveryService, fastify.db, request.tenantId, flowCode, academicPeriodId);
+    await fastify.audit.record({
+      tenantId: request.tenantId,
+      entityType: 'delivery_flow_config',
+      entityId: academicPeriodId,
+      actionType: 'create',
+      actorType: 'user',
+      actorId: request.user.sub,
+      actorDisplayName: request.user.displayName,
+      correlationId: request.id,
+      reasonText: `Ran ${flowCode} for ${result.periodCode}: ${result.created} item(s), ${result.unchanged} unchanged`,
+    });
+    await reply.send(result);
   });
 
   fastify.get('/delivery-tasks', {
@@ -205,7 +239,7 @@ export function inboundRoutes(fastify: FastifyInstance): void {
     schema: { response: { 200: Type.Array(InboundFlowSchema) } },
     preHandler: [requireAnyPermission('external-record:read', 'integration:manage')],
   }, async (_request, reply) => {
-    await reply.send(INBOUND_FLOWS.map(({ summarise: _s, recordKeyField: _k, ...flow }) => ({ ...flow, defined: flow.fields.length > 0 })));
+    await reply.send(INBOUND_FLOWS.map(({ summarise: _s, recordKeyField: _k, ...flow }) => ({ ...flow, defined: flow.handling === 'record' })));
   });
 
   fastify.post('/inbound/:flowCode', {

@@ -131,7 +131,7 @@ export class ProgressionService {
       await onEnrolmentChanged(this.delivery, this.db, tenantId, {
         enrolmentId,
         changeKey: `progression:${progressionDecisionId}:${academicYear}:${decisionCode}:${now.toISOString()}`,
-      }, { library: false, crm: true, accommodation: false });
+      }, { library: false, crm: true, accommodation: false, cms: true, itsm: false });
     }
 
     if (this.eventBus.isConnected()) {

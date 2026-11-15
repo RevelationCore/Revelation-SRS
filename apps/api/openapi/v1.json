@@ -2729,6 +2729,137 @@
         }
       }
     },
+    "/api/v1/delivery-flows/{flowCode}/run": {
+      "post": {
+        "operationId": "createDeliveryFlowsByFlowCodeRun",
+        "tags": [
+          "integration-registry"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "academicPeriodId"
+                ],
+                "properties": {
+                  "academicPeriodId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "flowCode",
+            "required": true
+          }
+        ],
+        "x-publication-class": "integration",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "flowCode",
+                    "periodCode",
+                    "offerings",
+                    "created",
+                    "unchanged"
+                  ],
+                  "properties": {
+                    "flowCode": {
+                      "type": "string"
+                    },
+                    "periodCode": {
+                      "type": "string"
+                    },
+                    "offerings": {
+                      "type": "integer"
+                    },
+                    "created": {
+                      "type": "integer"
+                    },
+                    "unchanged": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/delivery-tasks": {
       "get": {
         "operationId": "getDeliveryTasks",
@@ -3233,6 +3364,7 @@
                       "sourceSystem",
                       "sourceLabel",
                       "name",
+                      "handling",
                       "defined",
                       "fields"
                     ],
@@ -3247,6 +3379,12 @@
                         "type": "string"
                       },
                       "name": {
+                        "type": "string"
+                      },
+                      "handling": {
+                        "type": "string"
+                      },
+                      "handlingNote": {
                         "type": "string"
                       },
                       "defined": {

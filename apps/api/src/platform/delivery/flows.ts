@@ -23,8 +23,12 @@ export interface DeliveryFlow {
   defaultMode:  FulfilmentMode;
   /** True: a later item for the same subject supersedes an undelivered earlier one. */
   stateSync:    boolean;
-  /** Whether anything in the SRS creates items for this flow yet. */
-  producer:     'implemented' | 'none';
+  /**
+   * implemented — SRS events create items as things change
+   * extract     — run per academic period (an aggregate, one item per offering)
+   * none        — nothing in the SRS creates items yet
+   */
+  producer:     'implemented' | 'extract' | 'none';
   /** What creates items, or what is missing. */
   producerNote: string;
 }
@@ -50,43 +54,51 @@ export const DELIVERY_FLOWS: readonly DeliveryFlow[] = [
   },
   {
     flowCode: 'F-SIS-EST-01', targetSystem: 'est', targetLabel: 'estates system',
-    name: 'Enrolment volumes and occupancy forecasts to estates', defaultMode: 'manual', stateSync: false,
-    producer: 'none', producerNote: 'No SRS trigger yet (an aggregate extract, likely a file).',
+    name: 'Enrolment volumes and occupancy forecasts to estates', defaultMode: 'manual', stateSync: true,
+    producer: 'extract',
+    producerNote: 'Run per academic period: registered students against capacity for each module offering.',
   },
   {
     flowCode: 'F-SIS-OIV-01', targetSystem: 'oiv', targetLabel: 'identity verification service',
     name: 'Identity verification requests', defaultMode: 'manual', stateSync: false,
-    producer: 'none', producerNote: 'No SRS trigger yet.',
+    producer: 'implemented',
+    producerNote: 'Requesting an identity verification check sends the identity data the provider needs; completing the check marks it done.',
   },
   {
     flowCode: 'F-SIS-SETS-01', targetSystem: 'sets', targetLabel: 'survey system',
-    name: 'Module rosters for evaluation surveys', defaultMode: 'manual', stateSync: false,
-    producer: 'none', producerNote: 'No SRS trigger yet (a roster extract, likely a file).',
+    name: 'Module rosters for evaluation surveys', defaultMode: 'manual', stateSync: true,
+    producer: 'extract',
+    producerNote: 'Run per academic period: the roster of registered students for each module offering.',
   },
   {
     flowCode: 'F-SIS-PAY-01', targetSystem: 'pay', targetLabel: 'payroll system',
     name: 'Bursary eligibility and GTA payment authorisations', defaultMode: 'manual', stateSync: false,
-    producer: 'none', producerNote: 'No SRS trigger yet.',
+    producer: 'none',
+    producerNote: 'No SRS trigger: the SRS holds no bursary eligibility or GTA employment data to send.',
   },
   {
     flowCode: 'F-SIS-RP-01', targetSystem: 'rp', targetLabel: 'research portal',
     name: 'Researcher eligibility and supervisor assignments', defaultMode: 'manual', stateSync: true,
-    producer: 'none', producerNote: 'No SRS trigger yet.',
+    producer: 'implemented',
+    producerNote: 'Approving supervisors, or closing the team, sends the research student\'s current supervisory team.',
   },
   {
     flowCode: 'F-SIS-CMS-01', targetSystem: 'cms', targetLabel: 'content management system',
     name: 'Cohort and programme data for content personalisation', defaultMode: 'manual', stateSync: true,
-    producer: 'none', producerNote: 'No SRS trigger yet.',
+    producer: 'implemented',
+    producerNote: 'An enrolment being created, changing status or receiving a progression decision sends cohort and programme data.',
   },
   {
     flowCode: 'F-SIS-ITSM-01', targetSystem: 'itsm', targetLabel: 'IT service management',
     name: 'Student identity and account data for incident context', defaultMode: 'manual', stateSync: true,
-    producer: 'none', producerNote: 'No SRS trigger yet.',
+    producer: 'implemented',
+    producerNote: 'A person being created, their identity changing, or an enrolment changing sends their service-desk snapshot.',
   },
   {
     flowCode: 'F-SIS-CM-01', targetSystem: 'cm', targetLabel: 'curriculum management system',
-    name: 'Enrolment, completion and performance metrics to curriculum management', defaultMode: 'manual', stateSync: false,
-    producer: 'none', producerNote: 'No SRS trigger yet.',
+    name: 'Enrolment, completion and performance metrics to curriculum management', defaultMode: 'manual', stateSync: true,
+    producer: 'extract',
+    producerNote: 'Run per academic period: registration and result counts for each module offering.',
   },
 ];
 

@@ -34,7 +34,8 @@ const libraryTask = {
 
 const flows = [
   { flowCode: 'F-SIS-LIB-01', targetSystem: 'lib', targetLabel: 'library system', name: 'Library access from enrolment status', producer: 'implemented', producerNote: '', fulfilmentModeCode: 'manual', ownerDescription: 'Library team', alertAfterHours: 72, notifyEmail: null, lastOverdueNoticeAt: null, isDefault: false },
-  { flowCode: 'F-SIS-ACC-01', targetSystem: 'acc', targetLabel: 'accommodation system', name: 'Student profile and enrolment status to accommodation', producer: 'none', producerNote: 'No SRS trigger yet.', fulfilmentModeCode: 'manual', ownerDescription: null, alertAfterHours: 72, notifyEmail: null, lastOverdueNoticeAt: null, isDefault: true },
+  { flowCode: 'F-SIS-PAY-01', targetSystem: 'pay', targetLabel: 'payroll system', name: 'Bursary eligibility and GTA payment authorisations', producer: 'none', producerNote: 'No SRS trigger.', fulfilmentModeCode: 'manual', ownerDescription: null, alertAfterHours: 72, notifyEmail: null, lastOverdueNoticeAt: null, isDefault: true },
+  { flowCode: 'F-SIS-EST-01', targetSystem: 'est', targetLabel: 'estates system', name: 'Enrolment volumes and occupancy forecasts to estates', producer: 'extract', producerNote: '', fulfilmentModeCode: 'manual', ownerDescription: null, alertAfterHours: 72, notifyEmail: null, lastOverdueNoticeAt: null, isDefault: true },
 ];
 
 const modes = {
@@ -50,6 +51,9 @@ const modes = {
 function handlers(state: { tasks: unknown[] }) {
   return [
     http.get(`${API}/api/v1/delivery-tasks`, () => HttpResponse.json(state.tasks)),
+    http.get(`${API}/api/v1/academic-periods`, () => HttpResponse.json([
+      { academicPeriodId: 'p1', academicYear: '2026-27', periodCode: 'SEM1', periodTypeCode: 'semester', startDate: '2026-09-21', endDate: '2027-01-15' },
+    ])),
     http.get(`${API}/api/v1/delivery-flows`, () => HttpResponse.json(flows)),
     http.get(`${API}/api/v1/fields/delivery_flow_config/fulfilment_mode_code/value-set`, () => HttpResponse.json(modes)),
     http.get(`${API}/api/v1/adjustment-tasks`, () => HttpResponse.json([])),
@@ -78,8 +82,28 @@ describe('integration tasks', () => {
     server.use(...handlers({ tasks: [] }));
     renderWithProviders(<IntegrationTasksPage />, { roles: ['registry-administrator'], route: '/operations/integration-tasks?tab=systems' });
 
-    await screen.findByText('Student profile and enrolment status to accommodation');
+    await screen.findByText('Bursary eligibility and GTA payment authorisations');
     expect(screen.getAllByText('No SRS trigger yet')).toHaveLength(1);
+  });
+
+  it('runs an aggregate flow for a period', async () => {
+    let body: unknown = null;
+    server.use(
+      ...handlers({ tasks: [] }),
+      http.post(`${API}/api/v1/delivery-flows/F-SIS-EST-01/run`, async ({ request }) => {
+        body = await request.json();
+        return HttpResponse.json({ flowCode: 'F-SIS-EST-01', periodCode: '2026-27 SEM1', offerings: 4, created: 3, unchanged: 1 });
+      }),
+    );
+    renderWithProviders(<IntegrationTasksPage />, { roles: ['registry-administrator'], route: '/operations/integration-tasks?tab=systems' });
+
+    const select = await screen.findByRole('combobox', { name: 'Run Enrolment volumes and occupancy forecasts to estates for' });
+    await within(select).findByRole('option', { name: '2026-27 SEM1' });
+    await userEvent.selectOptions(select, 'p1');
+    await userEvent.click(screen.getByRole('button', { name: 'Run' }));
+
+    expect(await screen.findByText('2026-27 SEM1: 3 sent, 1 unchanged (4 offerings)')).toBeInTheDocument();
+    expect(body).toEqual({ academicPeriodId: 'p1' });
   });
 
   it('confirming a library task sends the reply and refreshes the queue', async () => {

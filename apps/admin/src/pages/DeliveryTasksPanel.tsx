@@ -8,8 +8,9 @@ import {
 import {
   type DeliveryFlowConfig,
   type DeliveryTask,
-  confirmDelivered, listDeliveryFlows, listDeliveryTasks, reportDeliveryFailure, setDeliveryFlow,
+  confirmDelivered, listDeliveryFlows, listDeliveryTasks, reportDeliveryFailure, runDeliveryExtract, setDeliveryFlow,
 } from '../api/adjustmentTasks.js';
+import { type AcademicPeriod, listAcademicPeriods } from '../api/academicPeriods.js';
 import { ApiError } from '../api/client.js';
 import { useAuth } from '../auth/AuthContext.js';
 import { userHasAnyPermission } from '../auth/RequirePermission.js';
@@ -54,7 +55,7 @@ export function DeliveryTasksPanel() {
           actions={(
             <Select aria-label="Filter by flow" value={flowFilter} onChange={(e) => setFlowFilter(e.target.value)}>
               <option value="">All flows</option>
-              {(flows ?? []).filter((f) => f.producer === 'implemented').map((f) => (
+              {(flows ?? []).filter((f) => f.producer !== 'none').map((f) => (
                 <option key={f.flowCode} value={f.flowCode}>{f.name}</option>
               ))}
             </Select>
@@ -149,6 +150,8 @@ function DeliveryTaskRow({ task, onDone }: { task: DeliveryTask; onDone: () => v
 
 function FlowSettings({ flows, canConfigure, onSaved }: { flows: DeliveryFlowConfig[] | null; canConfigure: boolean; onSaved: () => void }) {
   const { members: modes } = useValueSet('delivery_flow_config', 'fulfilment_mode_code');
+  const [periods, setPeriods] = useState<AcademicPeriod[]>([]);
+  useEffect(() => { listAcademicPeriods().then(setPeriods).catch(() => setPeriods([])); }, []);
   return (
     <Card>
       <CardHeader title="Outbound flows to other systems" />
@@ -160,7 +163,10 @@ function FlowSettings({ flows, canConfigure, onSaved }: { flows: DeliveryFlowCon
         {flows === null ? <Spinner /> : (
           <div className="flex flex-col gap-5">
             {flows.map((flow) => (
-              <FlowSettingRow key={flow.flowCode} flow={flow} modes={modes} canConfigure={canConfigure} onSaved={onSaved} />
+              <div key={flow.flowCode} className="flex flex-col gap-2">
+                <FlowSettingRow flow={flow} modes={modes} canConfigure={canConfigure} onSaved={onSaved} />
+                {flow.producer === 'extract' && <ExtractRun flow={flow} periods={periods} onRan={onSaved} />}
+              </div>
             ))}
           </div>
         )}
@@ -216,6 +222,7 @@ function FlowSettingRow({
         <div className="text-xs text-neutral-500">
           {flow.flowCode} · {flow.targetLabel}
           {flow.producer === 'none' && <> · <span className="text-warning-700">No SRS trigger yet</span></>}
+          {flow.producer === 'extract' && <> · Run per academic period</>}
         </div>
       </div>
       <LabelledField label={`${label} fulfilment`} htmlFor={`${id}-mode`}>
@@ -236,6 +243,42 @@ function FlowSettingRow({
         {canConfigure && <Button type="submit" size="sm" disabled={saving}>{saving ? 'Saving…' : 'Save'}</Button>}
         {error && <p className="mt-1 text-xs text-danger-600" role="alert">{error}</p>}
       </div>
+    </form>
+  );
+}
+
+/** An aggregate flow (estates, surveys, curriculum) is produced on demand for a period. */
+function ExtractRun({ flow, periods, onRan }: { flow: DeliveryFlowConfig; periods: AcademicPeriod[]; onRan: () => void }) {
+  const [periodId, setPeriodId] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState('');
+  const id = `run-${flow.flowCode.toLowerCase()}`;
+
+  async function run(e: FormEvent) {
+    e.preventDefault();
+    if (!periodId) return;
+    setBusy(true); setMessage('');
+    try {
+      const r = await runDeliveryExtract(flow.flowCode, periodId);
+      setMessage(`${r.periodCode}: ${r.created} sent, ${r.unchanged} unchanged (${r.offerings} offerings)`);
+      onRan();
+    } catch (err) {
+      setMessage(err instanceof ApiError ? (err.detail ?? err.message) : 'Run failed');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <form onSubmit={(e) => void run(e)} className="flex flex-wrap items-end gap-2 pl-1">
+      <LabelledField label={`Run ${flow.name} for`} htmlFor={id}>
+        <Select id={id} value={periodId} onChange={(e) => setPeriodId(e.target.value)}>
+          <option value="">Choose a period…</option>
+          {periods.map((p) => <option key={p.academicPeriodId} value={p.academicPeriodId}>{p.academicYear} {p.periodCode}</option>)}
+        </Select>
+      </LabelledField>
+      <Button type="submit" size="sm" variant="secondary" disabled={busy || !periodId}>{busy ? 'Running…' : 'Run'}</Button>
+      {message && <span className="text-xs text-neutral-600" role="status">{message}</span>}
     </form>
   );
 }

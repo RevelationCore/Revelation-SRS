@@ -20,6 +20,8 @@ import type { WorkflowBridgeService } from '../platform-controls/workflow-bridge
 import type { ValueSetService } from '../value-sets/service.js';
 import { assertChangeAfterCurrentVersion } from '../bitemporal-guard.js';
 import { clockNow } from '../clock.js';
+import type { DeliveryService } from '../delivery/delivery-service.js';
+import { OIV_FLOW, requestIdentityVerification, requestItsmSnapshot } from '../delivery/producers/person-flows.js';
 
 type Uuid = `${string}-${string}-${string}-${string}-${string}`;
 
@@ -161,6 +163,8 @@ export class StudentService {
     private readonly db: Db,
     private readonly valueSets: ValueSetService,
     private readonly workflowBridge?: WorkflowBridgeService,
+    /** F-SIS-ITSM-01 and F-SIS-OIV-01 follow the person. */
+    private readonly delivery?: DeliveryService,
   ) {}
 
   async #validateFieldValue(
@@ -211,7 +215,7 @@ export class StudentService {
     await this.#validateFieldValue(tenantId, 'person_identity', 'nationality_code', input.nationalityCode);
     await this.#validateFieldValue(tenantId, 'person_identity', 'domicile_code', input.domicileCode);
 
-    return withTenantContext(this.db, tenantId, async (tx) => {
+    const created = await withTenantContext(this.db, tenantId, async (tx) => {
       const sequenceRows = await tx.execute(
         sql`SELECT nextval('student_number_seq') AS nextval`,
       ) as unknown as Array<{ nextval: string }>;
@@ -258,6 +262,13 @@ export class StudentService {
 
       return { personId, studentNumber };
     });
+    await this.#afterPersonCreated(tenantId, created.personId);
+    return created;
+  }
+
+  /** createPerson, then tell the service desk (F-SIS-ITSM-01). */
+  async #afterPersonCreated(tenantId: string, personId: string): Promise<void> {
+    if (this.delivery) await requestItsmSnapshot(this.delivery, this.db, tenantId, personId, `person-created:${personId}`);
   }
 
   /**
@@ -429,17 +440,10 @@ export class StudentService {
         recordedUntil:  null,
       });
     });
+    if (this.delivery) {
+      await requestItsmSnapshot(this.delivery, this.db, tenantId, personId, `identity-updated:${personId}:${validFrom.toISOString()}:${clockNow().toISOString()}`);
+    }
   }
-
-  // ── Legal identity change requests (workflow-gated) ─────────────────────────
-  // PATCH /students/:personId/identity has no field-level restriction — it
-  // accepts genderCode/nationalityCode from anyone who can call it, including
-  // a student acting on themselves. The portal UI simply never exposed those
-  // fields, but the API never enforced that. These methods, plus the route-
-  // level block on genderCode/nationalityCode from self-service callers (see
-  // routes/students.ts), are the actual gate: a student's request goes
-  // through a personal-tutor/registry-administrator approval step before
-  // updatePersonIdentity is ever called for these two fields.
 
   async requestIdentityChange(
     tenantId: string,
@@ -947,7 +951,7 @@ export class StudentService {
   ): Promise<string> {
     await this.#ensurePersonExists(personId, tenantId);
 
-    return withTenantContext(this.db, tenantId, async (tx) => {
+    const verificationCheckId = await withTenantContext(this.db, tenantId, async (tx) => {
       const now = clockNow();
       const verificationCheckId = randomUUID();
 
@@ -970,6 +974,9 @@ export class StudentService {
 
       return verificationCheckId;
     });
+    // F-SIS-OIV-01: ask the verification provider (manual by default).
+    if (this.delivery) await requestIdentityVerification(this.delivery, this.db, tenantId, personId, verificationCheckId);
+    return verificationCheckId;
   }
 
   async completeIdentityVerification(
@@ -1027,6 +1034,8 @@ export class StudentService {
         recordedUntil:     null,
       });
     });
+    // The provider's outcome answers the F-SIS-OIV-01 request.
+    if (this.delivery) await this.delivery.completeForSubject(tenantId, OIV_FLOW, verificationCheckId);
   }
 
   async updatePersonStatus(

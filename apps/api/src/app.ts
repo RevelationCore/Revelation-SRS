@@ -315,10 +315,10 @@ export async function buildApp(
     graceSeconds: config.temporalReconcileGraceSeconds ?? 15,
     batchSize: 50,
   });
-  const students   = new StudentService(db, valueSets, workflowBridge);
   const deliveries = new DeliveryService(db, eventBus, valueSets, (err, context) => {
     fastify.log.warn({ err, ...context }, 'Delivery item not yet published; it stays due for the reconcile loop');
   });
+  const students   = new StudentService(db, valueSets, workflowBridge, deliveries);
   const enrolments = new EnrolmentService(db, eventBus, valueSets, triggerRules, deliveries);
   const catalogue  = new CatalogueService(db, eventBus, valueSets);
   const calendar   = new CalendarService(db);
@@ -381,7 +381,7 @@ export async function buildApp(
   const regulatoryCollectionService = new RegulatoryCollectionService(db);
   const foi = new FoiService(db, valueSets);
   const examEntries = new ExamEntryService(db, eventBus, regulatoryExchanges, adjustments);
-  const pgrSupervision = new SupervisionService(db, businessCases, regulatoryExchanges);
+  const pgrSupervision = new SupervisionService(db, businessCases, regulatoryExchanges, deliveries);
   const pgrProgressReview = new ProgressReviewService(db, businessCases, regulatoryExchanges, valueSets);
   const pgrExamination = new ExaminationService(db, businessCases, valueSets);
   const pgrCompletion = new CompletionService(db, businessCases, pgrExamination, pgrSupervision, awards, regulatoryExchanges);

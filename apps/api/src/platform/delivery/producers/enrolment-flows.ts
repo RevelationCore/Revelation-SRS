@@ -10,11 +10,13 @@ import {
 import type { DeliveryService } from '../delivery-service.js';
 
 import { requestLibraryAccess } from './library.js';
+import { requestItsmSnapshot } from './person-flows.js';
 
 type Uuid = `${string}-${string}-${string}-${string}-${string}`;
 
 export const CRM_FLOW = 'F-SIS-CRM-01';
 export const ACCOMMODATION_FLOW = 'F-SIS-ACC-01';
+export const CMS_FLOW = 'F-SIS-CMS-01';
 
 export interface EnrolmentChange {
   enrolmentId: string;
@@ -33,6 +35,8 @@ export interface EnrolmentChange {
  *   F-SIS-LIB-01  library access: grant / suspend / revoke
  *   F-SIS-CRM-01  enrolment status and latest progression decision
  *   F-SIS-ACC-01  enrolment status, mode of study and programme
+ *   F-SIS-CMS-01  cohort and programme for content personalisation
+ *   F-SIS-ITSM-01 the person's service-desk snapshot (their enrolments changed)
  */
 export async function onEnrolmentChanged(
   delivery: DeliveryService,
@@ -40,7 +44,7 @@ export async function onEnrolmentChanged(
   tenantId: string,
   change: EnrolmentChange,
   /** Which flows changed: enrolment status affects all three; progression only CRM. */
-  flows: { library: boolean; crm: boolean; accommodation: boolean } = { library: true, crm: true, accommodation: true },
+  flows: { library: boolean; crm: boolean; accommodation: boolean; cms?: boolean; itsm?: boolean } = { library: true, crm: true, accommodation: true },
 ): Promise<void> {
   const snapshot = await loadSnapshot(db, tenantId, change.enrolmentId);
   if (!snapshot) return;
@@ -75,6 +79,29 @@ export async function onEnrolmentChanged(
       },
       summary: `Update CRM: enrolment ${snapshot.enrolmentStatus}${progression}`,
     });
+  }
+
+  if (flows.cms ?? flows.accommodation) {
+    await delivery.request(tenantId, {
+      flowCode: CMS_FLOW,
+      subjectType: 'enrolment',
+      subjectId: change.enrolmentId,
+      personId: snapshot.personId,
+      idempotencyKey: change.changeKey,
+      payload: {
+        personId: snapshot.personId,
+        enrolmentId: change.enrolmentId,
+        programmeId: snapshot.programmeId,
+        enrolmentStatus: snapshot.enrolmentStatus,
+        modeOfStudy: snapshot.modeOfStudy,
+        yearOfStudy: snapshot.progression?.yearOfStudy ?? null,
+      },
+      summary: `Update content audience: ${snapshot.modeOfStudy} student, enrolment ${snapshot.enrolmentStatus}${snapshot.progression ? `, year ${snapshot.progression.yearOfStudy}` : ''}`,
+    });
+  }
+
+  if (flows.itsm ?? flows.accommodation) {
+    await requestItsmSnapshot(delivery, db, tenantId, snapshot.personId, change.changeKey);
   }
 
   if (flows.accommodation) {

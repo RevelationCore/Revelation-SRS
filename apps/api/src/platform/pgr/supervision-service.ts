@@ -10,8 +10,10 @@ import {
 } from '@revelation-srs/db';
 import { NotFoundError, ValidationError } from '@revelation-srs/domain';
 
-import { BusinessCaseService } from '../cases/business-case-service.js';
+import type { BusinessCaseService } from '../cases/business-case-service.js';
 import { clockNow } from '../clock.js';
+import type { DeliveryService } from '../delivery/delivery-service.js';
+import { requestResearchPortalSnapshot } from '../delivery/producers/research-flows.js';
 import type { RegulatoryExchangeService } from '../regulatory/exchange-service.js';
 
 type Uuid = `${string}-${string}-${string}-${string}-${string}`;
@@ -96,6 +98,8 @@ export class SupervisionService {
     private readonly db: Db,
     private readonly businessCases: BusinessCaseService,
     private readonly exchanges: RegulatoryExchangeService,
+    /** F-SIS-RP-01 carries the current supervisory team. */
+    private readonly delivery?: DeliveryService,
   ) {}
 
   async openSupervisionCase(tenantId: string, input: OpenSupervisionCaseInput, actorId: string): Promise<string> {
@@ -267,6 +271,10 @@ export class SupervisionService {
         });
       }
     });
+    if (this.delivery) {
+      await requestResearchPortalSnapshot(this.delivery, this.db, tenantId, supervisionCase.enrolmentId,
+        `supervision-approved:${supervisionCaseId}`);
+    }
   }
 
   /**
@@ -310,6 +318,10 @@ export class SupervisionService {
           isNull(staffAssignments.recordedUntil),
         ));
     });
+    if (this.delivery) {
+      await requestResearchPortalSnapshot(this.delivery, this.db, tenantId, enrolmentId,
+        `supervision-closed:${enrolmentId}:${now.toISOString()}`);
+    }
   }
 
   async getSupervisionCase(tenantId: string, supervisionCaseId: string): Promise<SupervisionCaseDto> {
