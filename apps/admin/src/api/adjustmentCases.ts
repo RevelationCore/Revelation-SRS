@@ -110,6 +110,8 @@ export function recordPanelDecision(caseId: string, input: {
 
 export function approveAdjustmentCase(caseId: string, input: {
   enrolmentId: string;
+  /** SRS adjustment-type-code value (e.g. extra-time) — not the case type. */
+  adjustmentTypeCode: string;
   scopeCode: string;
   recommendedAdjustment: string;
   validFrom: string;

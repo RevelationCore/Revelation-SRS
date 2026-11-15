@@ -342,7 +342,13 @@ function PanelDecisionForm({ caseId, onRecorded }: { caseId: string; onRecorded:
 function ApproveRejectForm({ caseId, onDone }: { caseId: string; onDone: () => void }) {
   const [mode, setMode] = useState<'approve' | 'reject'>('approve');
   const [enrolmentId, setEnrolmentId] = useState('');
+  // The SRS adjustment being approved. Its type is chosen here, from the SRS
+  // value set: the case's own type (exam-time, venue, ...) is a category of
+  // need in the wellbeing module and the SRS does not accept it.
+  const [adjustmentTypeCode, setAdjustmentTypeCode] = useState('');
   const [scopeCode, setScopeCode]     = useState('all');
+  const { members: adjustmentTypes } = useValueSet('reasonable_adjustment', 'adjustment_type_code');
+  const { members: adjustmentScopes } = useValueSet('reasonable_adjustment', 'scope_code');
   const [recommendedAdjustment, setRecommendedAdjustment] = useState('');
   const [validFrom, setValidFrom]     = useState(new Date().toISOString().slice(0, 10));
   const [rationale, setRationale]     = useState('');
@@ -364,6 +370,10 @@ function ApproveRejectForm({ caseId, onDone }: { caseId: string; onDone: () => v
         await rejectAdjustmentCase(caseId, rationale.trim());
         setResult('Case rejected.');
       } else {
+        if (!adjustmentTypeCode) {
+          setError('Choose the SRS adjustment type being approved.');
+          return;
+        }
         const amount = amountValue.trim() === '' ? undefined : Number(amountValue);
         if (amount !== undefined && (!Number.isFinite(amount) || amount <= 0 || !amountUnitCode)) {
           setError('Enter a positive amount and choose its unit, or leave the amount blank.');
@@ -371,6 +381,7 @@ function ApproveRejectForm({ caseId, onDone }: { caseId: string; onDone: () => v
         }
         const res = await approveAdjustmentCase(caseId, {
           enrolmentId: enrolmentId.trim(),
+          adjustmentTypeCode,
           scopeCode,
           recommendedAdjustment: recommendedAdjustment.trim(),
           validFrom: new Date(validFrom).toISOString(),
@@ -405,10 +416,17 @@ function ApproveRejectForm({ caseId, onDone }: { caseId: string; onDone: () => v
               </LabelledField>
               <LabelledField label="Scope" htmlFor="approve-scope">
                 <Select id="approve-scope" value={scopeCode} onChange={(e) => setScopeCode(e.target.value)}>
-                  <option value="all">All</option>
-                  <option value="exam">Exam</option>
-                  <option value="coursework">Coursework</option>
-                  <option value="attendance">Attendance</option>
+                  {adjustmentScopes.map((m) => (
+                    <option key={m.code} value={m.code}>{m.displayLabel}</option>
+                  ))}
+                </Select>
+              </LabelledField>
+              <LabelledField label="SRS adjustment type" htmlFor="approve-type" required>
+                <Select id="approve-type" value={adjustmentTypeCode} onChange={(e) => setAdjustmentTypeCode(e.target.value)}>
+                  <option value="">Choose…</option>
+                  {adjustmentTypes.map((m) => (
+                    <option key={m.code} value={m.code}>{m.displayLabel}</option>
+                  ))}
                 </Select>
               </LabelledField>
               <div className="col-span-2">

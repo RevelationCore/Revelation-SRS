@@ -260,6 +260,7 @@ describe('Stage 8 — End-to-End Acceptance Review', () => {
         headers: { authorization: `Bearer ${panelJwt}` },
         payload: {
           enrolmentId:           ENROLMENT_ID,
+          adjustmentTypeCode:    'extra-time',
           scopeCode:             'all-assessments',
           recommendedAdjustment: '25% extra time in all invigilated assessments',
           validFrom:             '2026-09-01T00:00:00Z',
@@ -274,7 +275,8 @@ describe('Stage 8 — End-to-End Acceptance Review', () => {
 
       // SRS API client received exactly one new submission
       expect(srsAdj.submissions.length).toBe(submissionsBefore + 1);
-      expect(srsAdj.submissions.at(-1)?.adjustmentTypeCode).toBe('exam-time');
+      // The approver's SRS adjustment type, not the case type (exam-time).
+      expect(srsAdj.submissions.at(-1)?.adjustmentTypeCode).toBe('extra-time');
       expect(srsAdj.submissions.at(-1)?.idempotencyKey).toBe(`adj-handoff-${adjustmentCaseId}`);
     });
 
@@ -687,6 +689,7 @@ describe('Stage 8 — End-to-End Acceptance Review', () => {
         headers: { authorization: `Bearer ${panelJwt}` },
         payload: {
           enrolmentId:           ENROLMENT_ID,
+          adjustmentTypeCode:    'extra-time',
           scopeCode:             'specific-module',
           recommendedAdjustment: 'Quiet room for all examinations',
           validFrom:             '2026-09-01T00:00:00Z',
@@ -705,6 +708,7 @@ describe('Stage 8 — End-to-End Acceptance Review', () => {
         headers: { authorization: `Bearer ${panelJwt}` },
         payload: {
           enrolmentId:           ENROLMENT_ID,
+          adjustmentTypeCode:    'extra-time',
           scopeCode:             'specific-module',
           recommendedAdjustment: 'Quiet room for all examinations',
           validFrom:             '2026-09-01T00:00:00Z',
@@ -783,6 +787,7 @@ describe('Stage 8 — End-to-End Acceptance Review', () => {
         headers: { authorization: `Bearer ${panelJwt}` },
         payload: {
           enrolmentId:           ENROLMENT_RETRY,
+          adjustmentTypeCode:    'extra-time',
           scopeCode:             'all-assessments',
           recommendedAdjustment: '25% extra time',
           validFrom:             '2026-09-01T00:00:00Z',
@@ -813,6 +818,7 @@ describe('Stage 8 — End-to-End Acceptance Review', () => {
         headers: { authorization: `Bearer ${panelJwt}` },
         payload: {
           enrolmentId:           ENROLMENT_RETRY,
+          adjustmentTypeCode:    'extra-time',
           scopeCode:             'all-assessments',
           recommendedAdjustment: '25% extra time',
           validFrom:             '2026-09-01T00:00:00Z',
@@ -879,6 +885,7 @@ describe('Stage 8 — End-to-End Acceptance Review', () => {
         headers: { authorization: `Bearer ${panelJwt}` },
         payload: {
           enrolmentId:           ENROLMENT_ID,
+          adjustmentTypeCode:    'extra-time',
           scopeCode:             'all-assessments',
           recommendedAdjustment: 'Extended deadline',
           validFrom:             '2026-09-01T00:00:00Z',
@@ -1026,6 +1033,7 @@ describe('Stage 8 — End-to-End Acceptance Review', () => {
         headers: { authorization: `Bearer ${advisorJwt}` },
         payload: {
           enrolmentId:           ENROLMENT_ID,
+          adjustmentTypeCode:    'extra-time',
           scopeCode:             'all-assessments',
           recommendedAdjustment: 'x',
           validFrom:             '2026-09-01T00:00:00Z',

@@ -33,6 +33,20 @@ export interface SubmitAdjustmentResult {
   adjustmentId: string;
 }
 
+/**
+ * The SRS refused the request (4xx other than 401/403/429): retrying the same
+ * body cannot succeed. Distinct from transport errors and 5xx, which may.
+ */
+export class SrsHandoffRejectedError extends Error {
+  constructor(
+    public readonly status: number,
+    public readonly detail: string,
+  ) {
+    super(`SRS F-WELL-SIS-01 handoff rejected: ${status} — ${detail}`);
+    this.name = 'SrsHandoffRejectedError';
+  }
+}
+
 export interface SrsAdjustmentClient {
   submitAdjustment(input: SubmitAdjustmentInput): Promise<SubmitAdjustmentResult>;
 }
@@ -70,6 +84,9 @@ export class SrsAdjustmentHttpClient implements SrsAdjustmentClient {
 
     if (!res.ok) {
       const text = await res.text().catch(() => '');
+      if (res.status >= 400 && res.status < 500 && ![401, 403, 408, 429].includes(res.status)) {
+        throw new SrsHandoffRejectedError(res.status, srsErrorDetail(text));
+      }
       throw new Error(`SRS F-WELL-SIS-01 handoff failed: ${res.status} ${res.statusText} — ${text}`);
     }
 
@@ -78,13 +95,35 @@ export class SrsAdjustmentHttpClient implements SrsAdjustmentClient {
   }
 }
 
+/** The SRS returns RFC 7807 problem details; prefer `detail`, fall back to the raw body. */
+function srsErrorDetail(body: string): string {
+  try {
+    const parsed = JSON.parse(body) as { detail?: unknown; title?: unknown };
+    if (typeof parsed.detail === 'string') return parsed.detail;
+    if (typeof parsed.title === 'string') return parsed.title;
+  } catch {
+    // not JSON
+  }
+  return body.slice(0, 500);
+}
+
 // ── Stub for development and tests ────────────────────────────────────────────
 
 export class SrsAdjustmentStubClient implements SrsAdjustmentClient {
   readonly submissions: SubmitAdjustmentInput[] = [];
+  /** SRS adjustment types the stub accepts, as the real SRS value set would. */
+  acceptedTypeCodes: readonly string[] = ['extra-time', 'separate-room', 'deadline-extension', 'reader', 'scribe', 'rest-breaks'];
+  /** SRS adjustment scopes the stub accepts (adjustment-scope-code). */
+  acceptedScopeCodes: readonly string[] = ['all', 'exam', 'coursework', 'attendance'];
 
   // eslint-disable-next-line @typescript-eslint/require-await
   async submitAdjustment(input: SubmitAdjustmentInput): Promise<SubmitAdjustmentResult> {
+    if (!this.acceptedTypeCodes.includes(input.adjustmentTypeCode)) {
+      throw new SrsHandoffRejectedError(422, `Invalid value '${input.adjustmentTypeCode}' for reasonable_adjustment.adjustment_type_code`);
+    }
+    if (!this.acceptedScopeCodes.includes(input.scopeCode)) {
+      throw new SrsHandoffRejectedError(422, `Invalid value '${input.scopeCode}' for reasonable_adjustment.scope_code`);
+    }
     this.submissions.push(input);
     return { adjustmentId: `stub-adj-${input.idempotencyKey}` };
   }

@@ -215,7 +215,8 @@ describe('Stage 7 — Security, Privacy, Audit, and Retention Hardening', () => 
         headers: { authorization: `Bearer ${advisorJwt}` },
         payload: {
           enrolmentId:           '22222222-0000-0000-0000-000000000010',
-          scopeCode:             'all-modules',
+          adjustmentTypeCode:    'extra-time',
+          scopeCode:             'all',
           recommendedAdjustment: 'Extra time',
           validFrom:             '2026-09-01T00:00:00Z',
         },
@@ -531,7 +532,8 @@ describe('Stage 7 — Security, Privacy, Audit, and Retention Hardening', () => 
         headers: { authorization: `Bearer ${mhJwt}` },
         payload: {
           enrolmentId:           '22222222-0000-0000-0000-000000000010',
-          scopeCode:             'all-modules',
+          adjustmentTypeCode:    'extra-time',
+          scopeCode:             'all',
           recommendedAdjustment: 'Extra time',
           validFrom:             '2026-09-01T00:00:00Z',
         },

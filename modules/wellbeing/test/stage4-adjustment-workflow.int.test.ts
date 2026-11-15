@@ -365,7 +365,8 @@ describe('Stage 4 — POST /api/v1/adjustment-cases/:caseId/approve (SRS handoff
       headers: { authorization: `Bearer ${panelJwt}` },
       payload: {
         enrolmentId:           ENROLMENT_ID,
-        scopeCode:             'all-modules',
+        adjustmentTypeCode:    'extra-time',
+        scopeCode:             'all',
         recommendedAdjustment: '25% extra time in all examinations',
         validFrom:             '2026-09-01T00:00:00Z',
         amount:                { value: 25, unitCode: 'percent-of-duration' },
@@ -381,8 +382,9 @@ describe('Stage 4 — POST /api/v1/adjustment-cases/:caseId/approve (SRS handoff
   it('SRS stub received exactly one submission', () => {
     expect(srsStub.submissions.length).toBe(stubSubmissionsBefore + 1);
     const sub = srsStub.submissions.at(-1)!;
-    expect(sub.adjustmentTypeCode).toBe('exam-time');
-    expect(sub.scopeCode).toBe('all-modules');
+    // The approver's SRS adjustment type, not the case type (exam-time).
+    expect(sub.adjustmentTypeCode).toBe('extra-time');
+    expect(sub.scopeCode).toBe('all');
     expect(sub.enrolmentId).toBe(ENROLMENT_ID);
     expect(sub.idempotencyKey).toBe(`adj-handoff-${adjustmentCaseId}`);
     // The structured amount reaches the SRS so target systems can compute
@@ -429,7 +431,8 @@ describe('Stage 4 — approve idempotency: calling approve twice does not double
       headers: { authorization: `Bearer ${panelJwt}` },
       payload: {
         enrolmentId:           ENROLMENT_ID,
-        scopeCode:             'all-modules',
+        adjustmentTypeCode:    'extra-time',
+        scopeCode:             'all',
         recommendedAdjustment: '25% extra time in all examinations',
         validFrom:             '2026-09-01T00:00:00Z',
       },
@@ -474,7 +477,7 @@ describe('Stage 4 — approve requires a determination (precondition)', () => {
       url:     `/api/v1/adjustment-cases/${freshCaseId}/approve`,
       headers: { authorization: `Bearer ${panelJwt}` },
       payload: {
-        enrolmentId: ENROLMENT_ID, scopeCode: 'all-modules',
+        enrolmentId: ENROLMENT_ID, adjustmentTypeCode: 'extra-time', scopeCode: 'all',
         recommendedAdjustment: '25% extra time', validFrom: '2026-09-01T00:00:00Z',
         forceApprove: true, // proves this 409 is the determination check, not the module-registration one
       },
@@ -498,11 +501,94 @@ describe('Stage 4 — approve requires a determination (precondition)', () => {
       url:     `/api/v1/adjustment-cases/${freshCaseId}/approve`,
       headers: { authorization: `Bearer ${panelJwt}` },
       payload: {
-        enrolmentId: ENROLMENT_ID, scopeCode: 'all-modules',
+        enrolmentId: ENROLMENT_ID, adjustmentTypeCode: 'extra-time', scopeCode: 'all',
         recommendedAdjustment: '25% extra time', validFrom: '2026-09-01T00:00:00Z', forceApprove: true,
       },
     });
     expect(res.statusCode).toBe(409);
+  });
+});
+
+describe('Stage 4 — approve sends the SRS adjustment type, not the case type', () => {
+  /** A case with a recommending assessment, ready to approve. */
+  async function approvableCase(): Promise<string> {
+    const res = await ctx.app.inject({
+      method:  'POST',
+      url:     '/api/v1/adjustment-cases',
+      headers: { authorization: `Bearer ${ctx.makeJwt()}` },
+      payload: { wellbeingCaseId, disabilitySupportCaseId: disabilityCaseId, personId: PERSON_ID, adjustmentTypeCode: 'exam-time' },
+    });
+    const id = res.json<{ id: string }>().id;
+    await ctx.app.inject({
+      method: 'POST', url: `/api/v1/adjustment-cases/${id}/start-assessment`,
+      headers: { authorization: `Bearer ${ctx.makeJwt()}` },
+    });
+    await ctx.app.inject({
+      method: 'POST', url: `/api/v1/adjustment-cases/${id}/assessments`,
+      headers: { authorization: `Bearer ${ctx.makeJwt()}` },
+      payload: { assessorId: 'x', assessedAt: '2026-06-15T10:00:00Z', outcomeCode: 'recommended' },
+    });
+    return id;
+  }
+
+  function approve(caseId: string, extra: Record<string, unknown>) {
+    return ctx.app.inject({
+      method:  'POST',
+      url:     `/api/v1/adjustment-cases/${caseId}/approve`,
+      headers: { authorization: `Bearer ${panelJwt}` },
+      payload: {
+        enrolmentId: ENROLMENT_ID, scopeCode: 'exam',
+        recommendedAdjustment: '25% extra time', validFrom: '2026-09-01T00:00:00Z', forceApprove: true,
+        ...extra,
+      },
+    });
+  }
+
+  async function caseStatus(caseId: string): Promise<string> {
+    const res = await ctx.app.inject({
+      method: 'GET', url: `/api/v1/adjustment-cases/${caseId}`,
+      headers: { authorization: `Bearer ${ctx.makeJwt()}` },
+    });
+    return res.json<{ statusCode: string }>().statusCode;
+  }
+
+  it('rejects an approval without adjustmentTypeCode and leaves the case unapproved', async () => {
+    const caseId = await approvableCase();
+    const before = srsStub.submissions.length;
+
+    const res = await approve(caseId, {});
+
+    expect(res.statusCode).toBe(422);
+    expect(res.body).toContain('adjustmentTypeCode');
+    expect(await caseStatus(caseId)).not.toBe('approved');
+    expect(srsStub.submissions.length).toBe(before);
+  });
+
+  it('reports an SRS rejection as 422 with its reason, and accepts a corrected re-approval', async () => {
+    const caseId = await approvableCase();
+
+    // The case's own type is not an SRS adjustment type.
+    const rejected = await approve(caseId, { adjustmentTypeCode: 'exam-time' });
+    expect(rejected.statusCode).toBe(422);
+    expect(rejected.json<{ detail: string; srsStatus: number }>()).toMatchObject({ srsStatus: 422 });
+    expect(rejected.json<{ detail: string }>().detail).toContain('adjustment_type_code');
+
+    const outbox = await ctx.db.execute(sql`
+      SELECT status_code FROM wellbeing.srs_handoff_outbox WHERE adjustment_case_id = ${caseId}::uuid
+    `);
+    expect(outbox[0]?.['status_code']).toBe('failed');
+
+    const corrected = await approve(caseId, {
+      adjustmentTypeCode: 'extra-time',
+      amount: { value: 25, unitCode: 'percent-of-duration' },
+    });
+    expect(corrected.statusCode).toBe(202);
+    expect(srsStub.submissions.at(-1)).toMatchObject({
+      adjustmentTypeCode: 'extra-time',
+      scopeCode: 'exam',
+      sourceCaseId: caseId,
+      amount: { value: 25, unitCode: 'percent-of-duration' },
+    });
   });
 });
 
@@ -555,7 +641,8 @@ describe('Stage 4 — approve validates active module registrations', () => {
       headers: { authorization: `Bearer ${panelJwt}` },
       payload: {
         enrolmentId:           ENROLMENT_ID,
-        scopeCode:             'all-modules',
+        adjustmentTypeCode:    'extra-time',
+        scopeCode:             'all',
         recommendedAdjustment: '25% extra time',
         validFrom:             '2026-09-01T00:00:00Z',
       },
@@ -570,7 +657,8 @@ describe('Stage 4 — approve validates active module registrations', () => {
       headers: { authorization: `Bearer ${panelJwt}` },
       payload: {
         enrolmentId:           ENROLMENT_ID,
-        scopeCode:             'all-modules',
+        adjustmentTypeCode:    'extra-time',
+        scopeCode:             'all',
         recommendedAdjustment: '25% extra time',
         validFrom:             '2026-09-01T00:00:00Z',
         forceApprove:          true,

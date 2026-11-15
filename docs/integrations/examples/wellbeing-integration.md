@@ -163,7 +163,13 @@ The seeded `adjustment-type-code` values are `extra-time`, `separate-room`, `dea
 | `deadline-extension` | `days` (the most a deadline may be extended by) |
 | `separate-room`, `reader`, `scribe` | none; sending an amount returns `422` |
 
-A tenant-added type accepts any unit in the value set. Detail the coded fields cannot hold, such as a seating or software specification, belongs in an outcome document (`POST /api/v1/students/{personId}/adjustments/{adjustmentId}/outcome-document`). In the wellbeing module, pass `amount` in the body of `POST /api/v1/adjustment-cases/{caseId}/approve`; it is forwarded unchanged.
+A tenant-added type accepts any unit in the value set. Detail the coded fields cannot hold, such as a seating or software specification, belongs in an outcome document (`POST /api/v1/students/{personId}/adjustments/{adjustmentId}/outcome-document`). In the wellbeing module, the body of `POST /api/v1/adjustment-cases/{caseId}/approve` carries the SRS fields, which are forwarded unchanged:
+
+- `adjustmentTypeCode` (required): the SRS adjustment type being approved, from `adjustment-type-code`. It is not the case's own type (`exam-time`, `venue`, `coursework`, `placement`, `other`), which is a category of need in the wellbeing module; one case can lead to different provisions, and the SRS rejects codes outside its value set.
+- `scopeCode`: from `adjustment-scope-code`.
+- `amount` (optional): as above.
+
+Approval returns `422` without `adjustmentTypeCode`. If the SRS rejects the hand-off (for example, an invalid code), approval returns `422` with the SRS's reason in `detail` and `srsStatus`; correct the body and approve again, and the same idempotency key is reused. A transport failure or SRS `5xx` returns `502` and can be retried unchanged.
 
 The `scopeCode` value decides which target systems get a distribution record:
 

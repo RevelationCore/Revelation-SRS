@@ -10,7 +10,7 @@ import { hasPermission, type Permission } from '@revelation-srs/domain';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 
 import { withWellbeingTenantContext } from '../db/client.js';
-import type { SrsAdjustmentClient } from '../srs/srs-adjustment-client.js';
+import { SrsHandoffRejectedError, type SrsAdjustmentClient } from '../srs/srs-adjustment-client.js';
 import {
   createAdjustmentCase,
   findCurrentAdjustmentCase,
@@ -489,11 +489,20 @@ export async function adjustmentCaseRoutes(
   // Precondition: approval requires either a recommending needs assessment
   // or an upheld/modified panel decision — referral information alone is
   // not sufficient (hasApprovableDetermination).
+  //
+  // adjustmentTypeCode is the SRS adjustment type being approved (a code in
+  // the SRS adjustment-type-code value set, e.g. extra-time), chosen by the
+  // approver. It is NOT the case's own type (exam-time, venue, ...): that is a
+  // category of need in this module, one case can lead to different
+  // provisions, and the SRS rejects codes outside its value set. A retry
+  // after a failed delivery reuses the type stored with the first approval
+  // unless the body supplies a corrected one.
 
   fastify.post<{
     Params: { caseId: string };
     Body: {
       enrolmentId:           string;
+      adjustmentTypeCode?:   string;
       scopeCode:             string;
       recommendedAdjustment: string;
       validFrom:             string;
@@ -539,6 +548,13 @@ export async function adjustmentCaseRoutes(
           return; // do not create a second outbox record
         }
 
+        if (!body.adjustmentTypeCode?.trim()) {
+          throw Object.assign(
+            new Error('adjustmentTypeCode is required: the SRS adjustment type being approved (e.g. extra-time), not the case type'),
+            { statusCode: 422 },
+          );
+        }
+
         if (!await hasApprovableDetermination(tx, tenantId, caseId)) {
           throw Object.assign(new ApprovalPreconditionError(), { statusCode: 409 });
         }
@@ -564,7 +580,8 @@ export async function adjustmentCaseRoutes(
           tenantId,
           personId,
           enrolmentId:        body.enrolmentId,
-          adjustmentTypeCode: c.adjustmentTypeCode,
+          adjustmentTypeCode: body.adjustmentTypeCode,
+          caseTypeCode:       c.adjustmentTypeCode,
           scopeCode:          body.scopeCode,
           validFrom:          body.validFrom,
           recommendedAdjustment: body.recommendedAdjustment,
@@ -608,16 +625,22 @@ export async function adjustmentCaseRoutes(
     // Even if this process crashes here, a retry will find the pending outbox
     // record and re-attempt delivery without creating a duplicate.
 
+    const outboxRow = await findHandoffForCase(request.server.wellbeingDb, caseId);
+    const storedType = outboxRow?.payload['adjustmentTypeCode'];
+    const adjustmentTypeCode = body.adjustmentTypeCode?.trim()
+      || (typeof storedType === 'string' ? storedType : '');
+    if (!adjustmentTypeCode) {
+      return reply.code(422).send({
+        error: 'adjustmentTypeCode is required: the SRS adjustment type being approved (e.g. extra-time), not the case type',
+      });
+    }
+
     try {
       const result = await srsClient.submitAdjustment({
         idempotencyKey:     `adj-handoff-${caseId}`,
         personId,
         enrolmentId:        body.enrolmentId,
-        adjustmentTypeCode: (await withWellbeingTenantContext(
-          request.server.wellbeingDb,
-          tenantId,
-          (tx) => findCurrentAdjustmentCase(tx, tenantId, caseId).then((c) => c?.adjustmentTypeCode ?? ''),
-        )),
+        adjustmentTypeCode,
         scopeCode:          body.scopeCode,
         validFrom:          body.validFrom,
         sourceCaseId:       caseId,
@@ -641,6 +664,16 @@ export async function adjustmentCaseRoutes(
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       await markHandoffFailed(request.server.wellbeingDb, outboxId, msg);
+      // The SRS refused the request itself (e.g. a code outside its value
+      // sets, or an amount the type does not take). Retrying the same body
+      // cannot succeed, so say so: correct it and approve again.
+      if (err instanceof SrsHandoffRejectedError) {
+        return reply.code(422).send({
+          error:  'The SRS rejected this adjustment — correct it and approve again',
+          detail: err.detail,
+          srsStatus: err.status,
+        });
+      }
       return reply.code(502).send({ error: 'SRS handoff failed — will be retried', detail: msg });
     }
   });
