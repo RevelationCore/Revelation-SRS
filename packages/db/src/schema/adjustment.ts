@@ -1,4 +1,4 @@
-import { text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { primaryKey, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { pgTable } from 'drizzle-orm/pg-core';
 import { documents } from '@revelation-srs/documents';
 
@@ -66,6 +66,26 @@ export const adjustmentDistributions = pgTable('adjustment_distribution', {
 
 export type AdjustmentDistribution    = typeof adjustmentDistributions.$inferSelect;
 export type NewAdjustmentDistribution = typeof adjustmentDistributions.$inferInsert;
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Accepted adjustment-recording requests, keyed by the caller's idempotency
+ * key. A retry with the same key and payload returns the original adjustment
+ * (for example after the response to the wellbeing module's handoff was
+ * lost); the same key with a different payload is a conflict. Kept apart
+ * from reasonable_adjustment because the key belongs to the logical
+ * request, not to any one bitemporal version.
+ */
+export const adjustmentRequests = pgTable('adjustment_request', {
+  tenantId:       uuid('tenant_id').notNull().references(() => tenants.id),
+  idempotencyKey: text('idempotency_key').notNull(),
+  payloadHash:    text('payload_hash').notNull(),
+  adjustmentId:   uuid('adjustment_id').notNull(),
+  createdAt:      timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [primaryKey({ columns: [table.tenantId, table.idempotencyKey] })]);
+
+export type AdjustmentRequest = typeof adjustmentRequests.$inferSelect;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // BPR-D09 note: an earlier `support_outcome`/shared distribution_item table

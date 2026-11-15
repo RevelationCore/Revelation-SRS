@@ -1,8 +1,9 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
 import {
   adjustmentDistributions,
+  adjustmentRequests,
   enrolments,
   persons,
   reasonableAdjustments,
@@ -17,6 +18,7 @@ import {
   type RetrievedDocument,
 } from '@revelation-srs/documents';
 import {
+  ConflictError,
   EVENT_TYPES,
   NotFoundError,
   ValidationError,
@@ -43,6 +45,13 @@ export interface RecordAdjustmentInput {
    * workflow rather than a direct registry-administrator entry. Opaque
    * cross-service reference, not validated against anything in this DB. */
   sourceCaseId?: string;
+}
+
+export interface RecordAdjustmentResult {
+  adjustmentId: string;
+  /** True when an earlier request with the same idempotency key and payload
+   * already recorded this adjustment; nothing new was written or published. */
+  replayed: boolean;
 }
 
 export interface AdjustmentDto {
@@ -97,17 +106,54 @@ export class AdjustmentService {
     personId: string,
     input: RecordAdjustmentInput,
     actorId: string,
-  ): Promise<string> {
+    idempotencyKey?: string,
+  ): Promise<RecordAdjustmentResult> {
     await this.#ensureEnrolmentBelongsToPerson(input.enrolmentId, personId, tenantId);
     await this.#validateInput(tenantId, input);
 
-    const adjustmentId = randomUUID();
     const now = clockNow();
     const validFrom = new Date(input.validFrom);
     const validTo = input.validTo ? new Date(input.validTo) : null;
     const targetSystems = this.#targetSystemsForScope(input.scopeCode);
+    const payloadHash = hashRequest({
+      personId,
+      enrolmentId: input.enrolmentId,
+      adjustmentTypeCode: input.adjustmentTypeCode,
+      scopeCode: input.scopeCode,
+      validFrom: validFrom.toISOString(),
+      validTo: validTo ? validTo.toISOString() : null,
+      notes: input.notes ?? null,
+      sourceCaseId: input.sourceCaseId ?? null,
+    });
 
-    await withTenantContext(this.db, tenantId, async (tx) => {
+    const result = await withTenantContext(this.db, tenantId, async (tx): Promise<RecordAdjustmentResult> => {
+      const adjustmentId = randomUUID();
+
+      // Claim the key first. A concurrent request with the same key waits on
+      // the primary key until this transaction ends, then finds the row.
+      if (idempotencyKey) {
+        const claimed = await tx.insert(adjustmentRequests).values({
+          tenantId: tenantId as `${string}-${string}-${string}-${string}-${string}`,
+          idempotencyKey,
+          payloadHash,
+          adjustmentId,
+          createdAt: now,
+        }).onConflictDoNothing().returning();
+
+        if (claimed.length === 0) {
+          const existing = await tx.select().from(adjustmentRequests).where(and(
+            eq(adjustmentRequests.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
+            eq(adjustmentRequests.idempotencyKey, idempotencyKey),
+          )).limit(1);
+          const prior = existing[0];
+          if (!prior) throw new ConflictError('This idempotency key is in use by a request that did not complete');
+          if (prior.payloadHash !== payloadHash) {
+            throw new ConflictError('This idempotency key was already used for a different adjustment request');
+          }
+          return { adjustmentId: prior.adjustmentId, replayed: true };
+        }
+      }
+
       await tx.insert(reasonableAdjustments).values({
         versionId: randomUUID(),
         id: adjustmentId,
@@ -138,7 +184,12 @@ export class AdjustmentService {
           updatedAt: now,
         })));
       }
+
+      return { adjustmentId, replayed: false };
     });
+
+    if (result.replayed) return result;
+    const { adjustmentId } = result;
 
     if (this.eventBus.isConnected()) {
       const payload: AdjustmentApprovedV1Payload = {
@@ -160,7 +211,7 @@ export class AdjustmentService {
       );
     }
 
-    return adjustmentId;
+    return result;
   }
 
   async listAdjustments(
@@ -224,9 +275,16 @@ export class AdjustmentService {
       throw new NotFoundError('AdjustmentDistribution', distributionId);
     }
 
+    // A repeated acknowledgement (e.g. a consumer retrying after a lost
+    // response) is a no-op: the first one already recorded and published it.
+    if (distribution.statusCode === 'distributed') return;
+    if (distribution.statusCode === 'superseded') {
+      throw new ConflictError('This distribution was superseded and can no longer be acknowledged');
+    }
+
     const now = clockNow();
-    await withTenantContext(this.db, tenantId, async (tx) => {
-      await tx
+    const updated = await withTenantContext(this.db, tenantId, async (tx) =>
+      tx
         .update(adjustmentDistributions)
         .set({
           statusCode: 'distributed',
@@ -238,9 +296,20 @@ export class AdjustmentService {
             eq(adjustmentDistributions.id, distributionId as `${string}-${string}-${string}-${string}-${string}`),
             eq(adjustmentDistributions.adjustmentId, adjustmentId as `${string}-${string}-${string}-${string}-${string}`),
             eq(adjustmentDistributions.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
+            inArray(adjustmentDistributions.statusCode, ['pending', 'failed']),
           ),
-        );
-    });
+        )
+        .returning({ id: adjustmentDistributions.id }),
+    );
+
+    // Lost a race with a concurrent acknowledgement or expiry.
+    if (updated.length === 0) {
+      const latest = await this.#getDistribution(adjustmentId, distributionId, tenantId);
+      if (latest.statusCode === 'superseded') {
+        throw new ConflictError('This distribution was superseded and can no longer be acknowledged');
+      }
+      return;
+    }
 
     if (this.eventBus.isConnected()) {
       const payload: AdjustmentDistributedV1Payload = {
@@ -266,24 +335,59 @@ export class AdjustmentService {
     }
   }
 
+  /**
+   * End an adjustment's valid period now (or immediately after it starts,
+   * if it has not started yet).
+   *
+   * A bitemporal update, like attachOutcomeDocument: the current version is
+   * closed in transaction time and a successor is recorded with the new
+   * validTo. The closed version keeps its original validTo, so a query
+   * "as recorded before the expiry" still shows what was then believed, and
+   * the expired adjustment stays visible (with its end date) for history,
+   * board packs and later reconstruction. An adjustment whose period has
+   * already ended keeps its recorded end date and gains no new version.
+   * The expired event is still published, as before: there is no scheduler
+   * that announces a natural end, so this call may be consumers' only signal.
+   */
   async expireAdjustment(adjustmentId: string, tenantId: string, actorId: string): Promise<void> {
-    const current = await this.#getCurrentAdjustment(adjustmentId, tenantId);
     const now = clockNow();
-    const validTo = now > current.validFrom
-      ? now
-      : new Date(current.validFrom.getTime() + 1);
 
-    await withTenantContext(this.db, tenantId, async (tx) => {
-      await tx
-        .update(reasonableAdjustments)
-        .set({ validTo, recordedUntil: now })
+    const outcome = await withTenantContext(this.db, tenantId, async (tx) => {
+      const rows = await tx
+        .select()
+        .from(reasonableAdjustments)
         .where(
           and(
             eq(reasonableAdjustments.id, adjustmentId as `${string}-${string}-${string}-${string}-${string}`),
             eq(reasonableAdjustments.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
             isNull(reasonableAdjustments.recordedUntil),
           ),
-        );
+        )
+        .for('update')
+        .limit(1);
+      const current = rows[0];
+      if (!current) throw new NotFoundError('ReasonableAdjustment', adjustmentId);
+
+      const endAt = now > current.validFrom
+        ? now
+        : new Date(current.validFrom.getTime() + 1);
+      const alreadyEnded = current.validTo !== null && current.validTo <= endAt;
+
+      if (!alreadyEnded) {
+        await tx
+          .update(reasonableAdjustments)
+          .set({ recordedUntil: now })
+          .where(eq(reasonableAdjustments.versionId, current.versionId));
+
+        await tx.insert(reasonableAdjustments).values({
+          ...current,
+          versionId:     randomUUID(),
+          validTo:       endAt,
+          actorId,
+          recordedAt:    now,
+          recordedUntil: null,
+        });
+      }
 
       await tx
         .update(adjustmentDistributions)
@@ -295,14 +399,19 @@ export class AdjustmentService {
             eq(adjustmentDistributions.statusCode, 'pending'),
           ),
         );
+
+      return {
+        current,
+        endedAt: alreadyEnded ? current.validTo! : endAt,
+      };
     });
 
     if (this.eventBus.isConnected()) {
       const payload: AdjustmentExpiredV1Payload = {
         adjustmentId,
-        enrolmentId: current.enrolmentId,
-        personId: current.personId,
-        expiredAt: now.toISOString(),
+        enrolmentId: outcome.current.enrolmentId,
+        personId: outcome.current.personId,
+        expiredAt: outcome.endedAt.toISOString(),
       };
       await this.eventBus.publish(
         EVENT_TYPES.ADJUSTMENT_EXPIRED,
@@ -564,6 +673,10 @@ export class AdjustmentService {
   #targetSystemsForScope(scopeCode: string): string[] {
     return TARGET_SYSTEMS_BY_SCOPE[scopeCode] ?? ['vle', 'attendance', 'exams'];
   }
+}
+
+function hashRequest(value: unknown): string {
+  return createHash('sha256').update(JSON.stringify(value)).digest('hex');
 }
 
 function adjustmentToDto(row: typeof reasonableAdjustments.$inferSelect): AdjustmentDto {

@@ -123,52 +123,70 @@ Use this to trigger an immigration advice appointment workflow.
 
 ## Posting Adjustments
 
-When a DSA assessment or wellbeing panel approves an assessment adjustment:
+When a wellbeing panel approves an adjustment case, record the approved outcome in the SRS. The caller needs the `adjustment:write` permission.
 
 ```http
-POST /api/v1/students/{studentId}/adjustments
+POST /api/v1/students/{personId}/adjustments
 Authorization: Bearer <wellbeing-token>
-Idempotency-Key: adj-{studentId}-{panelRef}-{adjustmentTypeCode}
+X-Idempotency-Key: adj-handoff-{caseId}
 Content-Type: application/json
 
 {
+  "enrolmentId": "6f1c2b9e-4d3a-4e8b-9c1f-2a7d5e8b3c41",
   "adjustmentTypeCode": "extra-time",
-  "adjustmentValue": "25%",
-  "evidenceRef": "DSA-ASSESS-2026-4521",
-  "effectiveFrom": "2026-09-01",
-  "effectiveTo": "2027-07-31",
-  "applicableModuleCodes": ["CS3010", "CS3020", "CS3030"],
-  "approvedBy": "wellbeing-panel",
-  "approvedAt": "2026-09-15T14:00:00.000Z"
+  "scopeCode": "exam",
+  "validFrom": "2026-09-01T00:00:00.000Z",
+  "validTo": "2027-07-31T00:00:00.000Z",
+  "notes": "25% additional time on timed written examinations",
+  "sourceCaseId": "0b8e4f2a-7c19-4d6e-a3b5-91f04c2d7e68"
 }
 ```
 
-`adjustmentTypeCode` values (from the `adjustment-type` value set): `extra-time`, `reader`, `scribe`, `rest-breaks`, `separate-room`, `word-processor`, `coloured-paper`, `enlarged-print`, `oral-exam`.
+| Field | Required | Meaning |
+|---|---|---|
+| `enrolmentId` | Yes | The enrolment the adjustment applies to. It must belong to `personId`, or the SRS returns `404`. |
+| `adjustmentTypeCode` | Yes | A code from the tenant's `adjustment-type-code` value set. |
+| `scopeCode` | Yes | A code from the `adjustment-scope-code` value set. It decides which target systems receive the adjustment (see below). |
+| `validFrom` | Yes | ISO 8601 date-time when the adjustment starts. |
+| `validTo` | No | ISO 8601 date-time when it ends; must be after `validFrom`. Omit it for an open-ended adjustment. |
+| `notes` | No | Free text recorded on the SRS adjustment. It is not included in domain events, but anyone who can read the adjustment can read it, so keep it to the operational instruction and never put evidence or diagnosis here. |
+| `sourceCaseId` | No | The wellbeing module's adjustment-case ID, kept as an opaque reference back to the originating case. |
 
-`adjustmentValue` semantics depend on `adjustmentTypeCode`:
-- `extra-time`: percentage string (e.g. `"25%"`, `"50%"`)
-- `reader`, `scribe`, `separate-room`, etc.: `"true"`
-- `word-processor`: software name or `"true"`
+The seeded `adjustment-type-code` values are `extra-time`, `separate-room`, `deadline-extension`, `reader`, `scribe` and `rest-breaks`; a tenant may configure others. The SRS has no structured field for the amount of an adjustment, such as the extra-time percentage. State it in `notes`, or attach an outcome document with `POST /api/v1/students/{personId}/adjustments/{adjustmentId}/outcome-document`.
 
-**Scope `applicableModuleCodes`** to only the modules the student is currently registered on (from your local copy maintained via `srs.enrolment.module-registered` events). Passing all modules is valid but causes unnecessary distribution work.
+The `scopeCode` value decides which target systems get a distribution record:
 
-The SRS responds with the created adjustment, including `adjustmentId` and `status: pending-workflow`. The adjustment enters a workflow for approval and distribution.
+| `scopeCode` | Target systems |
+|---|---|
+| `exam` | `exams` |
+| `coursework` | `vle` |
+| `attendance` | `attendance` |
+| `all` | `vle`, `attendance` and `exams` |
 
-### Acknowledging distributions
+Responses:
 
-When the SRS notifies you via `srs.adjustment.distributed` that an adjustment has been sent to a target system, acknowledge receipt to close the distribution loop:
+| Status | Meaning |
+|---|---|
+| `201` | Recorded. Body: `{ "adjustmentId": "<uuid>" }`. The SRS creates one `pending` distribution per target system and publishes `srs.adjustment.approved`. |
+| `200` | A retry of a request already recorded with this idempotency key and the same body. Body: the original `{ "adjustmentId" }`; nothing new is recorded or published. |
+| `404` | The person or enrolment was not found, or the enrolment belongs to someone else. |
+| `409` | The idempotency key was already used for a different body. |
+| `422` | A code is not active in its value set, or `validTo` is not after `validFrom`. |
+
+The SRS honours `X-Idempotency-Key` (or `Idempotency-Key`) on this route, so a handoff whose response was lost can be retried safely. Use one stable key per approved case, as the wellbeing module does with `adj-handoff-{caseId}`.
+
+### Tracking distribution
+
+The wellbeing module does not acknowledge distributions. Each target system's connector applies the adjustment and acknowledges its own distribution record, using the `integration:manage` permission and a body of `{ "targetSystem": "<vle|attendance|exams>" }`. A repeated acknowledgement is accepted without effect; acknowledging a distribution that was superseded by an expiry returns `409`.
+
+To see how far an adjustment has reached, read its distribution records:
 
 ```http
-POST /api/v1/adjustments/{adjustmentId}/distributions/{distributionId}/acknowledge
+GET /api/v1/adjustments/{adjustmentId}/distributions
 Authorization: Bearer <wellbeing-token>
-Content-Type: application/json
-
-{
-  "acknowledgedBy": "wellbeing-module",
-  "acknowledgedAt": "2026-09-16T10:00:00Z",
-  "notes": "Adjustment received and configured in exam management system"
-}
 ```
+
+Each record has a `targetSystem` and a `statusCode` of `pending`, `distributed`, `failed` or `superseded`. `srs.adjustment.distributed` is published when a target acknowledges, and `srs.adjustment.expired` when the adjustment is expired; an expired adjustment stays on the student's record with its end date.
 
 ---
 

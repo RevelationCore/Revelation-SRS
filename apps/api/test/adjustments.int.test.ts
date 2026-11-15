@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import type { IntegrationBusPublisher } from '../src/platform/integration-bus/publisher.js';
@@ -268,7 +269,7 @@ describe('Reasonable adjustments', () => {
     });
   });
 
-  it('expires the current adjustment version and supersedes pending distributions', async () => {
+  it('expires the adjustment as a new version ending its valid period, and supersedes pending distributions', async () => {
     const fixture = await createAdjustmentFixture('ADJ103');
     const adjustment = await createAdjustment(fixture, {
       adjustmentTypeCode: 'extra-time',
@@ -300,8 +301,12 @@ describe('Reasonable adjustments', () => {
       url: `/api/v1/students/${fixture.personId}/adjustments`,
       headers: { authorization: `Bearer ${jwt}` },
     });
-    expect(list.json<Array<{ adjustmentId: string }>>())
-      .not.toContainEqual(expect.objectContaining({ adjustmentId: adjustment.adjustmentId }));
+    // Still visible, now with an end date: expiry ends the valid period, it
+    // does not erase the adjustment from the record.
+    const listed = list.json<Array<{ adjustmentId: string; validTo: string | null }>>()
+      .find((row) => row.adjustmentId === adjustment.adjustmentId);
+    expect(listed).toBeDefined();
+    expect(listed?.validTo).not.toBeNull();
 
     const after = await listDistributions(adjustment.adjustmentId);
     const statuses = after.json<Array<{ targetSystem: string; statusCode: string }>>();
@@ -336,6 +341,185 @@ describe('Reasonable adjustments', () => {
       headers: { authorization: `Bearer ${otherTenantJwt}` },
     });
     expect(list.statusCode).toBe(404);
+  });
+});
+
+describe('AJ-21 A21-AC04 — a lost response or repeated acknowledgement creates no duplicate', () => {
+  it('a retry with the same idempotency key and payload returns the original adjustment', async () => {
+    const fixture = await createAdjustmentFixture('ADJ201');
+    const payload = {
+      enrolmentId: fixture.enrolmentId,
+      adjustmentTypeCode: 'extra-time',
+      scopeCode: 'exam',
+      validFrom: '2027-09-01T00:00:00.000Z',
+      validTo: '2028-07-31T00:00:00.000Z',
+    };
+    const send = () => ctx.app.inject({
+      method: 'POST',
+      url: `/api/v1/students/${fixture.personId}/adjustments`,
+      headers: { authorization: `Bearer ${jwt}`, 'x-idempotency-key': 'handoff-ADJ201' },
+      payload,
+    });
+
+    const first = await send();
+    expect(first.statusCode).toBe(201);
+    const second = await send();
+    expect(second.statusCode).toBe(200);
+    expect(second.json<{ adjustmentId: string }>().adjustmentId)
+      .toBe(first.json<{ adjustmentId: string }>().adjustmentId);
+
+    const list = await ctx.app.inject({
+      method: 'GET',
+      url: `/api/v1/students/${fixture.personId}/adjustments`,
+      headers: { authorization: `Bearer ${jwt}` },
+    });
+    expect(list.json<unknown[]>()).toHaveLength(1);
+
+    const distributions = await listDistributions(first.json<{ adjustmentId: string }>().adjustmentId);
+    expect(distributions.json<unknown[]>()).toHaveLength(1);
+    expect(capturedEvents.filter((event) => event.type === 'srs.adjustment.approved')).toHaveLength(1);
+  });
+
+  it('reusing an idempotency key for a different request is a conflict', async () => {
+    const fixture = await createAdjustmentFixture('ADJ202');
+    const send = (scopeCode: string) => ctx.app.inject({
+      method: 'POST',
+      url: `/api/v1/students/${fixture.personId}/adjustments`,
+      headers: { authorization: `Bearer ${jwt}`, 'idempotency-key': 'handoff-ADJ202' },
+      payload: {
+        enrolmentId: fixture.enrolmentId,
+        adjustmentTypeCode: 'extra-time',
+        scopeCode,
+        validFrom: '2027-09-01T00:00:00.000Z',
+      },
+    });
+
+    expect((await send('exam')).statusCode).toBe(201);
+    expect((await send('coursework')).statusCode).toBe(409);
+  });
+
+  it('requests without an idempotency key are recorded separately, as before', async () => {
+    const fixture = await createAdjustmentFixture('ADJ203');
+    const payload = { adjustmentTypeCode: 'reader', scopeCode: 'exam', validFrom: '2027-09-01T00:00:00.000Z' };
+    const first = await createAdjustment(fixture, payload);
+    const second = await createAdjustment(fixture, payload);
+    expect(second.adjustmentId).not.toBe(first.adjustmentId);
+  });
+
+  it('a repeated acknowledgement is accepted once and publishes one distributed event', async () => {
+    const fixture = await createAdjustmentFixture('ADJ204');
+    const adjustment = await createAdjustment(fixture, {
+      adjustmentTypeCode: 'deadline-extension',
+      scopeCode: 'coursework',
+      validFrom: '2027-09-01T00:00:00.000Z',
+    });
+    const distribution = (await listDistributions(adjustment.adjustmentId))
+      .json<Array<{ distributionId: string; targetSystem: string; distributedAt: string | null }>>()[0]!;
+    const acknowledge = () => ctx.app.inject({
+      method: 'POST',
+      url: `/api/v1/adjustments/${adjustment.adjustmentId}/distributions/${distribution.distributionId}/acknowledge`,
+      headers: { authorization: `Bearer ${integrationJwt}` },
+      payload: { targetSystem: distribution.targetSystem },
+    });
+
+    expect((await acknowledge()).statusCode).toBe(204);
+    const firstAt = (await listDistributions(adjustment.adjustmentId))
+      .json<Array<{ distributedAt: string | null }>>()[0]!.distributedAt;
+    expect((await acknowledge()).statusCode).toBe(204);
+    const secondAt = (await listDistributions(adjustment.adjustmentId))
+      .json<Array<{ distributedAt: string | null }>>()[0]!.distributedAt;
+
+    expect(secondAt).toBe(firstAt);
+    expect(capturedEvents.filter((event) => event.type === 'srs.adjustment.distributed')).toHaveLength(1);
+  });
+});
+
+describe('AJ-21 A21-AC06 — expiry keeps past arrangements and the current dated state wins', () => {
+  it('the version recorded before expiry keeps its original end date', async () => {
+    const fixture = await createAdjustmentFixture('ADJ301');
+    const adjustment = await createAdjustment(fixture, {
+      adjustmentTypeCode: 'extra-time',
+      scopeCode: 'exam',
+      validFrom: '2027-09-01T00:00:00.000Z',
+      validTo: '2099-07-31T00:00:00.000Z',
+    });
+
+    const expire = await ctx.app.inject({
+      method: 'POST',
+      url: `/api/v1/adjustments/${adjustment.adjustmentId}/expire`,
+      headers: { authorization: `Bearer ${jwt}` },
+    });
+    expect(expire.statusCode).toBe(204);
+
+    const versions = await ctx.db.execute<{ valid_to: Date | string | null; recorded_until: Date | string | null }>(sql`
+      SELECT valid_to, recorded_until FROM reasonable_adjustment
+      WHERE id = ${adjustment.adjustmentId}
+      ORDER BY recorded_at
+    `);
+    const rows = (Array.isArray(versions) ? versions : (versions as { rows: unknown[] }).rows) as Array<{
+      valid_to: Date | string | null;
+      recorded_until: Date | string | null;
+    }>;
+
+    expect(rows).toHaveLength(2);
+    // Original belief, closed in transaction time but not rewritten.
+    expect(new Date(rows[0]!.valid_to!).toISOString()).toBe('2099-07-31T00:00:00.000Z');
+    expect(rows[0]!.recorded_until).not.toBeNull();
+    // Current belief: the period ended at the expiry.
+    expect(rows[1]!.recorded_until).toBeNull();
+    expect(new Date(rows[1]!.valid_to!).getTime()).toBeLessThan(Date.parse('2099-07-31T00:00:00.000Z'));
+  });
+
+  it('a superseded distribution cannot be acknowledged afterwards', async () => {
+    const fixture = await createAdjustmentFixture('ADJ302');
+    const adjustment = await createAdjustment(fixture, {
+      adjustmentTypeCode: 'reader',
+      scopeCode: 'exam',
+      validFrom: '2027-09-01T00:00:00.000Z',
+    });
+    const distribution = (await listDistributions(adjustment.adjustmentId))
+      .json<Array<{ distributionId: string; targetSystem: string }>>()[0]!;
+
+    await ctx.app.inject({
+      method: 'POST',
+      url: `/api/v1/adjustments/${adjustment.adjustmentId}/expire`,
+      headers: { authorization: `Bearer ${jwt}` },
+    });
+
+    const lateAck = await ctx.app.inject({
+      method: 'POST',
+      url: `/api/v1/adjustments/${adjustment.adjustmentId}/distributions/${distribution.distributionId}/acknowledge`,
+      headers: { authorization: `Bearer ${integrationJwt}` },
+      payload: { targetSystem: distribution.targetSystem },
+    });
+    expect(lateAck.statusCode).toBe(409);
+
+    const after = (await listDistributions(adjustment.adjustmentId))
+      .json<Array<{ statusCode: string }>>()[0]!;
+    expect(after.statusCode).toBe('superseded');
+  });
+
+  it('expiring an already-expired adjustment records no further version', async () => {
+    const fixture = await createAdjustmentFixture('ADJ303');
+    const adjustment = await createAdjustment(fixture, {
+      adjustmentTypeCode: 'extra-time',
+      scopeCode: 'exam',
+      validFrom: '2027-09-01T00:00:00.000Z',
+    });
+    const expire = () => ctx.app.inject({
+      method: 'POST',
+      url: `/api/v1/adjustments/${adjustment.adjustmentId}/expire`,
+      headers: { authorization: `Bearer ${jwt}` },
+    });
+
+    expect((await expire()).statusCode).toBe(204);
+    expect((await expire()).statusCode).toBe(204);
+
+    const versions = await ctx.db.execute(sql`
+      SELECT 1 FROM reasonable_adjustment WHERE id = ${adjustment.adjustmentId}
+    `);
+    const count = Array.isArray(versions) ? versions.length : (versions as { rows: unknown[] }).rows.length;
+    expect(count).toBe(2);
   });
 });
 

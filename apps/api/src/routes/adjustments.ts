@@ -67,9 +67,15 @@ export function adjustmentRoutes(fastify: FastifyInstance): void {
       schema: {
         params: Type.Object({ personId: Type.String() }),
         body: RecordAdjustmentBody,
+        headers: Type.Object({
+          'x-idempotency-key': Type.Optional(Type.String({ minLength: 1, maxLength: 200 })),
+          'idempotency-key':   Type.Optional(Type.String({ minLength: 1, maxLength: 200 })),
+        }),
         response: {
+          200: Type.Object({ adjustmentId: Type.String() }),
           201: Type.Object({ adjustmentId: Type.String() }),
           404: ErrorSchema,
+          409: ErrorSchema,
           422: ErrorSchema,
         },
       },
@@ -78,12 +84,23 @@ export function adjustmentRoutes(fastify: FastifyInstance): void {
     async (request, reply) => {
       const { personId } = request.params as { personId: string };
       const body = request.body as RecordAdjustmentInput;
-      const adjustmentId = await fastify.adjustmentService.recordAdjustment(
+      // The wellbeing module sends x-idempotency-key; the platform-controls
+      // routes use idempotency-key. Accept either.
+      const headers = request.headers as Record<string, string | undefined>;
+      const idempotencyKey = headers['x-idempotency-key'] ?? headers['idempotency-key'];
+      const { adjustmentId, replayed } = await fastify.adjustmentService.recordAdjustment(
         request.tenantId,
         personId,
         body,
         request.user.sub,
+        idempotencyKey,
       );
+
+      // A replay recorded nothing new, so there is nothing new to audit.
+      if (replayed) {
+        await reply.code(200).send({ adjustmentId });
+        return;
+      }
 
       await fastify.audit.record({
         tenantId: request.tenantId,
@@ -163,7 +180,7 @@ export function adjustmentRoutes(fastify: FastifyInstance): void {
           distributionId: Type.String(),
         }),
         body: AcknowledgeDistributionBody,
-        response: { 204: Type.Null(), 404: ErrorSchema },
+        response: { 204: Type.Null(), 404: ErrorSchema, 409: ErrorSchema },
       },
       preHandler: [requirePermission('integration:manage')],
     },
