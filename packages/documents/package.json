@@ -23,7 +23,6 @@
     "drizzle-orm": "^0.45.4"
   },
   "devDependencies": {
-    "@revelation-srs/testing": "workspace:*",
     "@testcontainers/postgresql": "^12.2.1",
     "@types/node": "^22.20.5",
     "postgres": "^3.4.9",

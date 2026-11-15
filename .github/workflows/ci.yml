@@ -31,6 +31,10 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      # Packages type-check against each other's built declarations.
+      - name: Build packages
+        run: pnpm build
+
       - name: Type-check all packages
         run: pnpm typecheck
 

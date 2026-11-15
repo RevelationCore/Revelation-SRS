@@ -31,6 +31,7 @@
     "postgres": "^3.4.9"
   },
   "devDependencies": {
+    "@revelation-srs/domain": "workspace:*",
     "@testcontainers/postgresql": "^12.2.1",
     "@types/node": "^22.20.5",
     "pino-pretty": "^13.2.0",
