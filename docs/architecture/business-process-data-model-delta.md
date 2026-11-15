@@ -1,61 +1,68 @@
 # Business Process Data-Model Delta Assessment
 
-> Status: Proposed target-model assessment
-> Date: 2026-07-27
+> Status: Living assessment, re-baselined against the schema
+> Originally assessed: 2026-07-27 · Re-baselined: 2026-11-15
 > Scope: BPR-D01–BPR-D19
 
-[Current logical model](data-model.md) · [Target model](business-process-target-data-model.md) · [Migration plan](business-process-data-migration-plan.md) · [Source backlog](../business-processes/revelation-change-backlog.md)
+[Current logical model](data-model.md) · [Target model](business-process-target-data-model.md) · [Migration plan](business-process-data-migration-plan.md) · [Source backlog](../business-processes/revelation-change-backlog.md) · [Current capabilities](../product/current-capabilities.md)
 
 ## Executive result
 
 | Primary disposition | Count | Meaning |
 |---|---:|---|
-| Existing sufficient | 0 | No BPR-D capability is complete in both the documented logical and implemented physical model |
-| Extend existing aggregate | 8 | A suitable implemented aggregate exists but requires fields, child entities or stronger semantics |
-| Partial implementation | 3 | The authoritative aggregate now exists but services/APIs/workflows or portal-facing surfaces remain incomplete |
-| New aggregate | 8 | No implemented authoritative aggregate covers the process outcome |
+| Existing sufficient | 0 | No BPR-D capability is complete in both the data model and the services, APIs and UI that use it |
+| Partial implementation | 12 | The authoritative aggregate (the first table the target model names) exists; remaining work is tracked as limitations in [current capabilities](../product/current-capabilities.md) |
+| Extend existing aggregate | 2 | A suitable implemented aggregate exists outside the target tables, which are still to be added |
+| New aggregate | 4 | No implemented authoritative aggregate covers the process outcome |
+| Resolved — no extension planned | 1 | The existing model was confirmed as the target and nothing further is planned |
 
 “New aggregate” does not mean every supporting table is absent. It means the authoritative process outcome cannot be represented faithfully by extending one existing root alone.
+
+`npm run check:business-process-data-model` keeps this table honest. It reads the tables each row names in the [target model](business-process-target-data-model.md), and finds which of them the core, module and adapter migrations create. A row marked New aggregate or Extend whose tables all exist fails, as does a Partial implementation row whose root table does not exist.
+
+### Re-baseline, 2026-11-15
+
+The original assessment (2026-07-27) predated the 2026-08-02 migration squash, which carried most of the P0 data model into the baseline. Until 2026-11-15 the assessment was not updated to match, and the check enforced the old counts. Ten rows marked New aggregate or Extend already had every target table. The re-baseline moved D03, D06, D10, D11, D13 and D16–D19 to Partial implementation. Two target-table names were also corrected to match what was built: D05 (`enrolment_curriculum_binding`) and D06 (`module_selection_proposal_item`).
 
 ## Assessment method
 
 Each item was checked against:
 
 1. entity definitions in [data-model.md](data-model.md);
-2. Drizzle schemas under `packages/db/src/schema`;
-3. SQL migrations `0000`–`0033`;
-4. the P0 requirements and ADR-016–ADR-022; and
+2. Drizzle schemas under `packages/db/src/schema` and the module schemas;
+3. SQL migrations under `packages/db/migrations`, `modules/*/migrations` and `adapters/*/migrations`;
+4. the P0 requirements and ADR-016–ADR-023; and
 5. lifecycle, temporal, authority and integration evidence required by its BP pages.
 
 ## Capability assessment
 
-| ID | Priority | Logical model today | Physical model today | Disposition | Required delta |
+| ID | Priority | Logical model today | Physical model today | Disposition | Remaining delta |
 |---|---:|---|---|---|---|
 | BPR-D01 | P1 | `student_application` contains working application facts | `ucas_application` only; raw UCAS payload but no channel-neutral intake or assessment | **New aggregate** | Add `application_received_payload`, channel-neutral `student_application` root and `application_assessment`; bridge existing UCAS IDs/payloads |
-| BPR-D02 | P1 | `admissions_offer` exists conceptually | No Drizzle `admissions_offer` or condition tables | **New aggregate** | Add bitemporal offer, versioned conditions, evidence/result mapping, waiver and confirmation decision |
-| BPR-D03 | P0 | `cas_request`, `cas_assignment`, `ukvi_compliance_case` are described | `ukvi_cas_request` is narrow; no assignment version/check/evidence relationship | **Extend** | Evolve request into `cas_case`; add eligibility checks, approval, guidance version and immutable assignment/report versions |
-| BPR-D04 | P1 | Enrolment, transitions and exchange work are described | `enrolment`, `enrolment_status_transition`, `enrolment_downstream_trigger` exist | **New aggregate** | Add governed `student_status_case`, evidence/decision/condition children and target work linked to existing transition |
-| BPR-D05 | P1 | Programme route/rule sets exist | Route/rule tables exist, but enrolment has no explicit effective binding/publication root | **Extend** | Add `curriculum_publication`, `enrolment_rule_binding`, recognised-credit and authorised rule-exception records |
-| BPR-D06 | P1 | `module_registration` represents confirmed registration | Physical registration goes directly to `registered`/withdrawn/completed | **New aggregate** | Add `module_selection_proposal`, choices/preferences, validation results, approvals/exceptions, waitlist/capacity hold and atomic change set |
-| BPR-D07 | P1 | `staff_assignment` and `research_milestone` are described | Migrations `0015`-`0016` and Drizzle schema implement `pgr_supervision_case`/`pgr_supervisor_nomination`/`staff_assignment` (BP-03-007) and `pgr_progress_review`/`pgr_review_member`/`research_milestone` (BP-04-003), each rooted on `business_case` per ADR-023, with full `SupervisionService`/`ProgressReviewService` APIs and admin UI | **Partial implementation** | No portal-facing student/supervisor views yet; HR/CRIS exchanges are recorded but not integrated with a live external system |
-| BPR-D08 | P0 | Attendance, absence alert and engagement summary are described | Migration `0037` and Drizzle schema implement policy, expected event, observation/correction, alert, intervention, contact, action and referral storage | **Partial implementation** | Add services/APIs/workflows and extend shared exchange reconciliation; retain judgement separately from evidence |
-| BPR-D09 | P0 | Adjustment and per-target distribution are described | `adjustment_distribution` (flat per-target status) is the live, tested path with a real acknowledge/reconcile flow, expiry-cascade and domain events, plus two documented external adapter contracts (VLE, attendance). A `support_outcome`/shared `distribution_item` alternative (2026-08-17, migration `0022_retire_support_outcome`) was retired rather than extended to parity — it never gained an acknowledge path, events, or supersede handling, and had no caller in the real workflow | **Resolved — no extension planned** | None. `business_case`/`distribution_item`/`distribution_attempt`/`distribution_acknowledgement` remain available as shared primitives for other domains (used today by BPR-D13 corrections); reasonable-adjustments distribution is not a target consumer of them |
-| BPR-D10 | P0 | Assessment patterns/components/submissions/marks/results exist | Implemented, but attempt is embedded on mark and moderation is workflow/audit only | **Extend** | Add candidate attempt, mark-set, moderation sample/decision, rule-version binding and calculation evidence relationships |
-| BPR-D11 | P0 | Board, pack, profile, attendance and sign-off exist | Implemented with source time/version; no pack hash, rule manifest, conflict/quorum decision, board-decision row or publication lock | **Extend** | Add pack hash/manifest, member conflicts, quorum decision, structured board decision and ratification/publication records |
-| BPR-D12 | P1 | Research milestones only | Migrations `0017`-`0018` and Drizzle schema implement `pgr_examination_case`/`thesis_submission`/`examiner_appointment`/`examiner_report`/`viva_event`/`pgr_examination_outcome`/`thesis_correction_requirement` (BP-05-010) and `pgr_completion_case`/`final_thesis_deposit` (BP-06-006), following ADR-020's staged-authority pattern, with full `ExaminationService`/`CompletionService` APIs and admin UI; `award` additively relaxed for research-award conferral | **Partial implementation** | No portal-facing student/examiner views yet; no live repository integration for thesis deposit |
-| BPR-D13 | P0 | Post-ratification case/amendment exists | Implemented but amendment lacks explicit superseded/result versions and per-consumer republication | **Extend** | Add error/evidence/authority fields, before/after version references and correction distribution |
+| BPR-D02 | P1 | `admissions_offer` exists conceptually | No offer or condition tables | **New aggregate** | Add bitemporal offer, versioned conditions, evidence/result mapping, waiver and confirmation decision |
+| BPR-D03 | P0 | `cas_request`, `cas_assignment`, `ukvi_compliance_case` are described | `cas_case`, `cas_eligibility_check`, `cas_assignment_version`, `sponsor_report_version` exist beside the older `ukvi_cas_request` | **Partial implementation** | Bridge `cas_case` and `ukvi_cas_request` (the UKVI page's CAS tab still uses the latter) |
+| BPR-D04 | P1 | Enrolment, transitions and exchange work are described | `enrolment`, `enrolment_status_transition`, `enrolment_downstream_trigger` and shared `distribution_item` exist | **New aggregate** | Add governed `student_status_case` and `status_case_condition` linked to the existing transition; transfer, return, non-registration and leaver closure cases |
+| BPR-D05 | P1 | Programme route/rule sets exist | Route/rule tables and `enrolment_curriculum_binding` exist; no publication root | **Extend** | Add `curriculum_publication` (atomic multi-entity release), recognised-credit and authorised rule-exception records |
+| BPR-D06 | P1 | `module_registration` represents confirmed registration | `module_selection_proposal` and `module_selection_proposal_item` (choices with preference rank and per-item validation state), decision authority on the proposal, approval through the workflow bridge | **Partial implementation** | Add `module_capacity_hold` and `registration_change_set`; ranked oversubscription allocation, selection windows, timetable clash |
+| BPR-D07 | P1 | `staff_assignment` and `research_milestone` are described | `pgr_supervision_case`/`pgr_supervisor_nomination`/`staff_assignment` (BP-03-007) and `pgr_progress_review`/`pgr_review_member`/`research_milestone` (BP-04-003), rooted on `business_case` per ADR-023, with services, APIs and admin UI | **Partial implementation** | No portal-facing student/supervisor views yet; HR/CRIS exchanges are recorded but not integrated with a live external system |
+| BPR-D08 | P0 | Attendance, absence alert and engagement summary are described | The attendance module (`modules/attendance`, schema `attendance`) implements policy, expected event, observation and revision, alert, intervention, contact, action and referral storage, with services, APIs and admin workspaces | **Partial implementation** | Institution-specific policy, authority, retention and live UKVI transport approval remain deployment responsibilities |
+| BPR-D09 | P0 | Adjustment and per-target distribution are described | `adjustment_distribution` (per-target status) is the live, tested path: per-target instructions, acknowledge/failure/withdrawal replies, fulfilment modes and a manual queue, expiry cascade and domain events. A `support_outcome`/shared `distribution_item` alternative was retired (2026-08-17) rather than extended to parity: it never gained an acknowledge path, events or supersede handling, and had no caller in the real workflow | **Resolved — no extension planned** | None. `business_case`/`distribution_item`/`distribution_attempt`/`distribution_acknowledgement` remain available as shared primitives for other domains (used today by BPR-D13 corrections); reasonable-adjustments distribution is not a target consumer of them |
+| BPR-D10 | P0 | Assessment patterns/components/submissions/marks/results exist | `assessment_candidate_attempt`, `mark_set`, `mark_set_member`, `moderation_review`, `moderation_sample` exist | **Partial implementation** | Complete rule-version explanation for calculation |
+| BPR-D11 | P0 | Board, pack, profile, attendance and sign-off exist | `board_member_conflict`, `board_quorum_decision`, `exam_board_decision`, `ratification_record`, `result_publication` exist; pack `pack_hash`/`rule_manifest_ref` columns exist | **Partial implementation** | Populate `pack_hash` and `rule_manifest_ref` during pack generation |
+| BPR-D12 | P1 | Research milestones only | `pgr_examination_case`/`thesis_submission`/`examiner_appointment`/`examiner_report`/`viva_event`/`pgr_examination_outcome`/`thesis_correction_requirement` (BP-05-010) and `pgr_completion_case`/`final_thesis_deposit` (BP-06-006), following ADR-020's staged-authority pattern, with services, APIs and admin UI; `award` additively relaxed for research-award conferral | **Partial implementation** | No portal-facing student/examiner views yet; no live repository integration for thesis deposit |
+| BPR-D13 | P0 | Post-ratification case/amendment exists | Case and amendment carry error category, evidence and authority; correction distribution uses `distribution_item` | **Partial implementation** | Populate before/after version references from `source_version_reference` rows |
 | BPR-D14 | P1 | Progression decision and award exist | Implemented; no reusable reassessment plan, board recommendation/conferment separation or explanation manifest | **Extend** | Add `reassessment_plan`, progression evidence binding, award recommendation and immutable conferment event |
-| BPR-D15 | P1 | `student_document` and archive acknowledgement are described | No document tables in Drizzle; HEAR is JSON on `award`; no ceremony model | **New aggregate** | Add issued document/version/revocation/verification and graduation cycle/invitation/attendance/allocation |
-| BPR-D16 | P0 | HESA-specific return/submission/issue entities exist | HESA tables implemented; OfS is flat; no generic collection, field lineage, sign-off or SFC/Medr/DfE models | **New aggregate** | Add regulator-neutral collection/snapshot/lineage/validation/sign-off/submission model and adapt HESA/national returns |
-| BPR-D17 | P0 | Person/identity/verification and bitemporal correction primitives exist | Implemented; no identity-resolution/correction case, survivor/link or propagation model | **New aggregate** | Add `identity_resolution_case`, candidate/decision/link/redirect and `data_correction_case` |
-| BPR-D18 | P0 | No general rights/retention/hold/disposal model | FOI and person anonymisation timestamp only | **New aggregate** | Add rights request/decision/search/disclosure, processing restriction, retention schedule/assignment, hold and disposition certificate |
-| BPR-D19 | P0 | Append-only `audit_record` described | Implemented but lacks role/purpose/request metadata, hash chaining/seal and review case | **Extend** | Extend audit metadata; add partition/seal verification and `audit_review_case`/finding |
+| BPR-D15 | P1 | `student_document` and archive acknowledgement are described | No document-issue tables (the `packages/documents` evidence store is not an issued-document model); HEAR is JSON on `award`; no ceremony model | **New aggregate** | Add issued document/version/revocation/verification and graduation cycle/invitation/attendance/allocation |
+| BPR-D16 | P0 | HESA-specific return/submission/issue entities exist | Regulator-neutral `regulatory_collection`, `collection_snapshot`, `regulatory_record`, `regulatory_field_lineage`, `regulatory_validation_issue`, `regulatory_signoff`, `regulatory_submission` exist beside the HESA tables | **Partial implementation** | Adapt HESA and the other national returns onto the neutral model; SFC/Medr/DfE specifics |
+| BPR-D17 | P0 | Person/identity/verification and bitemporal correction primitives exist | `identity_resolution_case`, candidate, decision, `person_identity_link`, `identity_redirect` and `data_correction_case` exist with service and admin UI | **Partial implementation** | Propagate a merge decision to dependent records (the redirect row is created but nothing consumes it yet) |
+| BPR-D18 | P0 | No general rights/retention/hold/disposal model | Rights request, scope, search manifest, decision, processing restriction, retention schedule/assignment, record hold and disposition exist | **Partial implementation** | Connect the retention-anonymisation worker to retention schedules (no historical backfill) |
+| BPR-D19 | P0 | Append-only `audit_record` described | `audit_record` extended with hash chaining; `audit_partition_seal`, `audit_review_case`, `audit_review_finding` exist | **Partial implementation** | Audit rows written before hash chaining have no hash and are not retroactively covered by tamper evidence (by design) |
 
 ## Principal model findings
 
 ### Logical model ahead of implementation
 
-Staff assignment, research milestone, student document and archive-confirmation entities appear in `data-model.md` but not in the Drizzle schema or migrations. Attendance/engagement storage is now partially implemented by migration `0037`, but it is not an end-to-end capability.
+Student document and archive-confirmation entities, admissions offers and student status cases appear in `data-model.md` but not in the schema. (Staff assignment, research milestone and attendance/engagement storage, listed here originally, have since been built.)
 
 ### Physical model ahead of business semantics
 
@@ -83,4 +90,4 @@ Workflow configuration and several assessment/regulatory tables are implemented,
 
 ## Decision required
 
-ADR-016, ADR-017, ADR-019 and ADR-022 are accepted for generic product implementation. The remaining ADRs retain their domain-specific gates. Migration `0037` establishes storage names but does not make its proposed service/API contracts implemented.
+ADR-016, ADR-017, ADR-019 and ADR-022 are accepted for generic product implementation. The remaining ADRs retain their domain-specific gates.

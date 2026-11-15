@@ -58,6 +58,9 @@ jobs:
       - name: Validate principal journey metadata
         run: pnpm check:journey-metadata
 
+      - name: Business-process data model matches the schema; core migrations squashed
+        run: pnpm check:business-process-data-model
+
       - name: Clock-use check (no raw new Date / Date.now in api/src)
         run: |
           if grep -rn --include='*.ts' 'new Date()\|Date\.now()' apps/api/src/ | grep -v '// clock:allow' | grep -v 'src/platform/clock\.ts'; then

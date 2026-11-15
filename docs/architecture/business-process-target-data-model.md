@@ -50,8 +50,8 @@ erDiagram
 | BPR-D02 | `admissions_offer`, `offer_condition`, `condition_evidence`, `offer_confirmation_decision` |
 | BPR-D03 | `cas_case`, `cas_eligibility_check`, `cas_assignment_version`, `sponsor_report_version` |
 | BPR-D04 | `student_status_case`, `status_case_condition`, `enrolment_status_transition`, `distribution_item` |
-| BPR-D05 | `curriculum_publication`, `curriculum_publication_item`, `enrolment_rule_binding`, `recognised_credit`, `rule_exception` |
-| BPR-D06 | `module_selection_proposal`, `module_selection_choice`, `selection_validation_result`, `selection_approval`, `module_capacity_hold`, `registration_change_set` |
+| BPR-D05 | `curriculum_publication`, `curriculum_publication_item`, `enrolment_curriculum_binding`, `recognised_credit`, `rule_exception` |
+| BPR-D06 | `module_selection_proposal`, `module_selection_proposal_item` (choices, preference rank and per-item validation state; approval is recorded on the proposal), `module_capacity_hold`, `registration_change_set` |
 | BPR-D07 | `pgr_supervision_case`, `staff_assignment`, `pgr_progress_review`, `pgr_review_member`, `research_milestone` |
 
 ```mermaid
