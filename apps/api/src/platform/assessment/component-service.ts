@@ -114,7 +114,13 @@ export class AssessmentComponentService {
     if (expectedModuleOfferingId && current.moduleOfferingId !== expectedModuleOfferingId) {
       throw new NotFoundError('AssessmentComponent', componentId);
     }
-    await this.#ensureNoCurrentMarks(componentId, tenantId);
+    // A duration-only change does not affect how marks are calculated, so it
+    // is allowed after marks exist (e.g. recording an exam's length so entries
+    // can state candidates' extra time). Anything else is blocked as before.
+    const durationOnly = input.durationMinutes !== undefined
+      && input.componentTypeCode === undefined && input.title === undefined
+      && input.weighting === undefined && input.passMarkOverride === undefined;
+    if (!durationOnly) await this.#ensureNoCurrentMarks(componentId, tenantId);
     await this.#validateComponentInput(tenantId, input);
 
     const nextWeighting = input.weighting ?? current.weighting;

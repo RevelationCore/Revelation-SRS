@@ -136,6 +136,7 @@ function Sidebar({ onLogout, displayName, roles }: { onLogout: () => void; displ
         {canViewModuleRegistrationRequests && <NavItem to="/module-registration-requests" label="Registration requests" end icon={ListChecks} />}
         {canViewIdentityChangeRequests && <NavItem to="/identity-change-requests" label="Identity change requests" end icon={ListChecks} />}
         {canViewExamBoards && <NavItem to="/exam-boards" label="Exam boards" icon={GraduationCap} />}
+        {can('catalogue:write') && <NavItem to="/exam-timings" label="Exam timings" icon={Clock} />}
         {canViewEngagement && <NavItem to="/engagement" label="Engagement" icon={Activity} />}
 
         {canViewRegulatory && <>

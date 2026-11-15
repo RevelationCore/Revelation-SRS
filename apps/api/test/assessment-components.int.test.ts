@@ -133,6 +133,27 @@ describe('Assessment components', () => {
     expect(update.statusCode).toBe(422);
   });
 
+  it('records an exam\'s duration even after marks exist, and nothing else', async () => {
+    const moduleOfferingId = await createModuleOffering('ASS107');
+    const assessmentComponentId = await createComponent(moduleOfferingId, {
+      componentTypeCode: 'exam',
+      title: 'Marked Exam',
+      weighting: 100,
+    });
+    await insertCurrentMark(assessmentComponentId);
+    const url = `/api/v1/module-offerings/${moduleOfferingId}/components/${assessmentComponentId}`;
+
+    const duration = await ctx.app.inject({ method: 'PATCH', url, headers: { authorization: `Bearer ${jwt}` }, payload: { durationMinutes: 120 } });
+    expect(duration.statusCode).toBe(204);
+    const mixed = await ctx.app.inject({ method: 'PATCH', url, headers: { authorization: `Bearer ${jwt}` }, payload: { durationMinutes: 90, weighting: 50 } });
+    expect(mixed.statusCode).toBe(422);
+
+    const list = await ctx.app.inject({
+      method: 'GET', url: `/api/v1/module-offerings/${moduleOfferingId}/components`, headers: { authorization: `Bearer ${jwt}` },
+    });
+    expect(list.json<Array<{ durationMinutes: number | null; weighting: number }>>()[0]).toMatchObject({ durationMinutes: 120, weighting: 100 });
+  });
+
   it('does not expose components through another tenant', async () => {
     const moduleOfferingId = await createModuleOffering('ASS106');
     await createComponent(moduleOfferingId, {

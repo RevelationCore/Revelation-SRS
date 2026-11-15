@@ -26,6 +26,8 @@ export interface AssessmentComponent {
   title:                 string;
   weighting:             number;
   passMarkOverride:      number | null;
+  /** Timed length in minutes (exams); null when untimed or not recorded. */
+  durationMinutes:       number | null;
   createdAt:             string;
   updatedAt:             string;
 }
@@ -81,4 +83,9 @@ export function getModuleResult(moduleRegistrationId: string): Promise<ModuleRes
 
 export function getModuleResultHistory(moduleRegistrationId: string): Promise<ModuleResult[]> {
   return api.get<ModuleResult[]>(`/api/v1/module-registrations/${moduleRegistrationId}/result/history`);
+}
+
+/** Record (or clear) an exam's duration. Allowed after marks exist. */
+export function setComponentDuration(moduleOfferingId: string, assessmentComponentId: string, durationMinutes: number | null): Promise<void> {
+  return api.patch(`/api/v1/module-offerings/${moduleOfferingId}/components/${assessmentComponentId}`, { durationMinutes });
 }

@@ -19,6 +19,7 @@ import { GlobalisationPage } from './pages/GlobalisationPage.js';
 import { HesaPage } from './pages/HesaPage.js';
 import { IntegrationOpsPage } from './pages/IntegrationOpsPage.js';
 import { IntegrationTasksPage } from './pages/IntegrationTasksPage.js';
+import { ExamTimingsPage } from './pages/ExamTimingsPage.js';
 import { IntegrationsPage } from './pages/IntegrationsPage.js';
 import { LoginPage } from './pages/LoginPage.js';
 import { OfsPage } from './pages/OfsPage.js';
@@ -100,6 +101,7 @@ export function App() {
                 <Route path="students/:personId" element={<RequirePermission permissions={['student:read:all']}><StudentDetailPage /></RequirePermission>} />
                 <Route path="exam-boards" element={<RequirePermission permissions={['exam-board:read']}><ExamBoardsPage /></RequirePermission>} />
                 <Route path="exam-boards/:boardId" element={<RequirePermission permissions={['exam-board:read']}><ExamBoardDetailPage /></RequirePermission>} />
+                <Route path="exam-timings" element={<RequirePermission permissions={['catalogue:write']}><ExamTimingsPage /></RequirePermission>} />
                 <Route path="engagement" element={<RequireRole roles={ENGAGEMENT_ROLES}><EngagementPage /></RequireRole>} />
                 <Route path="engagement/cases/:caseId" element={<RequireRole roles={ENGAGEMENT_ROLES}><EngagementCasePage /></RequireRole>} />
                 <Route path="regulatory" element={<RequirePermission permissions={['regulatory:read']}><RegulatoryPage /></RequirePermission>} />
