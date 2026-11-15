@@ -5028,7 +5028,10 @@ export interface operations {
     createStudentsByPersonIdAdjustments: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "x-idempotency-key"?: string;
+                "idempotency-key"?: string;
+            };
             path: {
                 personId: string;
             };
@@ -5051,6 +5054,17 @@ export interface operations {
         };
         responses: {
             /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        adjustmentId: string;
+                    };
+                };
+            };
+            /** @description Default Response */
             201: {
                 headers: {
                     [name: string]: unknown;
@@ -5063,6 +5077,20 @@ export interface operations {
             };
             /** @description Default Response */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5213,6 +5241,20 @@ export interface operations {
             };
             /** @description Default Response */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -13106,6 +13148,20 @@ export interface operations {
                     };
                 };
             };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
         };
     };
     getStudentsByPersonIdIdentityHistory: {
@@ -13387,6 +13443,20 @@ export interface operations {
                 content: {
                     "application/json": {
                         addressId: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
                     };
                 };
             };
@@ -18207,6 +18277,20 @@ export interface operations {
             };
             /** @description Default Response */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

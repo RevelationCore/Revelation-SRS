@@ -196,6 +196,24 @@ describe('Status transitions', () => {
     enrolmentId = res.json<{ enrolmentId: string }>().enrolmentId;
   });
 
+  it('rejects a transition dated on or before the current version began', async () => {
+    const jwt = await ctx.makeJwt();
+    const backdated = await ctx.app.inject({
+      method:  'POST',
+      url:     `/api/v1/enrolments/${enrolmentId}/intermit`,
+      headers: { authorization: `Bearer ${jwt}` },
+      payload: { validFrom: '2020-01-01T00:00:00.000Z', reasonCode: 'health' },
+    });
+    expect(backdated.statusCode).toBe(422);
+
+    const check = await ctx.app.inject({
+      method:  'GET',
+      url:     `/api/v1/enrolments/${enrolmentId}`,
+      headers: { authorization: `Bearer ${jwt}` },
+    });
+    expect(check.json<{ statusCode: string }>().statusCode).toBe('enrolled');
+  });
+
   it('POST /intermit returns 204 and status changes to intermitting', async () => {
     const jwt = await ctx.makeJwt();
     const intermit = await ctx.app.inject({

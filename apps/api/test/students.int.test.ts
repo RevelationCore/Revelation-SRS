@@ -409,6 +409,67 @@ describe('Identity verification checks', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
+describe('Backdated identity and address changes', () => {
+  let personId: string;
+
+  beforeAll(async () => {
+    const jwt = await ctx.makeJwt();
+    const res = await ctx.app.inject({
+      method:  'POST',
+      url:     '/api/v1/students',
+      headers: { authorization: `Bearer ${jwt}` },
+      payload: { legalFirstName: 'Erin', legalFamilyName: 'Hall' },
+    });
+    personId = res.json<{ personId: string }>().personId;
+  });
+
+  it('rejects an identity change dated on or before the current version began', async () => {
+    const jwt = await ctx.makeJwt();
+    const res = await ctx.app.inject({
+      method:  'PATCH',
+      url:     `/api/v1/students/${personId}/identity`,
+      headers: { authorization: `Bearer ${jwt}` },
+      payload: { preferredName: 'Ez', validFrom: '2020-01-01T00:00:00.000Z' },
+    });
+    expect(res.statusCode).toBe(422);
+
+    const history = await ctx.app.inject({
+      method:  'GET',
+      url:     `/api/v1/students/${personId}/identity-history`,
+      headers: { authorization: `Bearer ${jwt}` },
+    });
+    expect(history.json<unknown[]>()).toHaveLength(1);
+  });
+
+  it('rejects a replacement address dated on or before the current address began', async () => {
+    const jwt = await ctx.makeJwt();
+    const first = await ctx.app.inject({
+      method:  'POST',
+      url:     `/api/v1/students/${personId}/addresses`,
+      headers: { authorization: `Bearer ${jwt}` },
+      payload: { addressTypeCode: 'home', line1: '1 First Street', city: 'Leeds' },
+    });
+    expect(first.statusCode).toBe(201);
+
+    const backdated = await ctx.app.inject({
+      method:  'POST',
+      url:     `/api/v1/students/${personId}/addresses`,
+      headers: { authorization: `Bearer ${jwt}` },
+      payload: { addressTypeCode: 'home', line1: '2 Second Street', validFrom: '2020-01-01T00:00:00.000Z' },
+    });
+    expect(backdated.statusCode).toBe(422);
+
+    const list = await ctx.app.inject({
+      method:  'GET',
+      url:     `/api/v1/students/${personId}/addresses`,
+      headers: { authorization: `Bearer ${jwt}` },
+    });
+    expect(list.json<Array<{ line1: string }>>().map((a) => a.line1)).toEqual(['1 First Street']);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 describe('POST /api/v1/students/:id/addresses', () => {
   let personId: string;
 

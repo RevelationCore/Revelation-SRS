@@ -18,6 +18,7 @@ import { NotFoundError, ValidationError } from '@revelation-srs/domain';
 
 import type { WorkflowBridgeService } from '../platform-controls/workflow-bridge-service.js';
 import type { ValueSetService } from '../value-sets/service.js';
+import { assertChangeAfterCurrentVersion } from '../bitemporal-guard.js';
 import { clockNow } from '../clock.js';
 
 type Uuid = `${string}-${string}-${string}-${string}-${string}`;
@@ -395,6 +396,7 @@ export class StudentService {
       }
 
       const existing = current[0]!;
+      assertChangeAfterCurrentVersion(existing.validFrom, validFrom);
       const now = clockNow();
 
       // Close current version (both record-time and valid-time axes)
@@ -663,6 +665,19 @@ export class StudentService {
     return withTenantContext(this.db, tenantId, async (tx) => {
       const now      = clockNow();
       const validFrom = input.validFrom ?? now;
+
+      const currentOfType = await tx
+        .select({ validFrom: studentAddresses.validFrom })
+        .from(studentAddresses)
+        .where(
+          and(
+            eq(studentAddresses.personId, personId as `${string}-${string}-${string}-${string}-${string}`),
+            eq(studentAddresses.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
+            eq(studentAddresses.addressTypeCode, input.addressTypeCode),
+            isNull(studentAddresses.recordedUntil),
+          ),
+        );
+      for (const row of currentOfType) assertChangeAfterCurrentVersion(row.validFrom, validFrom);
 
       // Close any existing current address of this type
       await tx

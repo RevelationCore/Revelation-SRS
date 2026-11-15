@@ -23,6 +23,7 @@ import type {
 
 import type { IntegrationBusPublisher } from '../integration-bus/publisher.js';
 import type { ValueSetService } from '../value-sets/service.js';
+import { assertChangeAfterCurrentVersion } from '../bitemporal-guard.js';
 import { clockNow } from '../clock.js';
 
 export interface CreateProgrammeInput {
@@ -245,6 +246,7 @@ export class CatalogueService {
 
       const now = clockNow();
       validFrom = input.validFrom ?? now;
+      assertChangeAfterCurrentVersion(current.validFrom, validFrom);
       newCode   = input.code  ?? current.code;
       newTitle  = input.title ?? current.title;
 
@@ -403,6 +405,7 @@ export class CatalogueService {
 
       const now = clockNow();
       validFrom      = input.validFrom   ?? now;
+      assertChangeAfterCurrentVersion(current.validFrom, validFrom);
       newCode        = input.code        ?? current.code;
       newTitle       = input.title       ?? current.title;
       newCreditValue = input.creditValue ?? current.creditValue;

@@ -32,6 +32,7 @@ import type { WorkflowBridgeService } from '../platform-controls/workflow-bridge
 import type { ReviewActivitiesService } from '../platform-controls/review-activities.js';
 import type { ReviewExecutionService } from '../platform-controls/review-execution-service.js';
 import type { RulesEngine } from '../rules-engine/engine.js';
+import { assertChangeAfterCurrentVersion } from '../bitemporal-guard.js';
 import { clockNow } from '../clock.js';
 
 import type { RegistrationWindowService } from './window-service.js';
@@ -685,13 +686,7 @@ export class ModuleRegistrationService {
     if (current.statusCode !== 'registered') {
       throw new ValidationError(`Cannot transition module registration from '${current.statusCode}' to '${newStatus}'`);
     }
-    // The current version's valid period ends where the new status begins, so
-    // the transition cannot take effect on or before that version's own start.
-    if (validFrom <= current.validFrom) {
-      throw new ValidationError(
-        `validFrom must be after the current version's validFrom (${current.validFrom.toISOString()})`,
-      );
-    }
+    assertChangeAfterCurrentVersion(current.validFrom, validFrom);
 
     const now = clockNow();
     await withTenantContext(this.db, tenantId, async (tx) => {

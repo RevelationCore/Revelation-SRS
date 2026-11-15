@@ -24,6 +24,7 @@ import type { IntegrationBusPublisher } from '../integration-bus/publisher.js';
 import type { ValueSetService } from '../value-sets/service.js';
 import { TransitionValidator, type TransitionValidationResult } from '../workflow/transition-service.js';
 import { TriggerRuleEvaluator, type EnrolmentTriggerDecision } from '../workflow/trigger-rule-service.js';
+import { assertChangeAfterCurrentVersion } from '../bitemporal-guard.js';
 import { clockNow } from '../clock.js';
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -503,6 +504,8 @@ export class EnrolmentService {
     if (!current) {
       throw new NotFoundError('Enrolment', enrolmentId);
     }
+
+    assertChangeAfterCurrentVersion(current.validFrom, validFrom);
 
     const from = current.statusCode as EnrolmentStatusCode;
     const transitionDecision = await this.transitionValidator.assertAllowed({

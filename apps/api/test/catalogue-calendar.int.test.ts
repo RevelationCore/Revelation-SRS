@@ -68,6 +68,17 @@ describe('Programme catalogue', () => {
     });
   });
 
+  it('rejects a programme change dated on or before the current version began', async () => {
+    const jwt = await ctx.makeJwt();
+    const update = await ctx.app.inject({
+      method:  'PATCH',
+      url:     `/api/v1/programmes/${programmeId}`,
+      headers: { authorization: `Bearer ${jwt}` },
+      payload: { title: 'Backdated title', validFrom: '2020-01-01T00:00:00.000Z' },
+    });
+    expect(update.statusCode).toBe(422);
+  });
+
   it('does not expose a programme to a different tenant', async () => {
     const jwt = await ctx.makeJwt({ tenantId: ctx.secondTenantId });
     const res = await ctx.app.inject({
@@ -178,6 +189,17 @@ describe('Module catalogue', () => {
     expect(list.json<Array<{ moduleId: string; outcomeCode: string }>>()).toMatchObject([
       { moduleId, outcomeCode: 'LO1' },
     ]);
+  });
+
+  it('rejects a module change dated on or before the current version began', async () => {
+    const jwt = await ctx.makeJwt();
+    const update = await ctx.app.inject({
+      method:  'PATCH',
+      url:     `/api/v1/modules/${moduleId}`,
+      headers: { authorization: `Bearer ${jwt}` },
+      payload: { title: 'Backdated title', validFrom: '2020-01-01T00:00:00.000Z' },
+    });
+    expect(update.statusCode).toBe(422);
   });
 
   it('does not expose a module to a different tenant', async () => {
