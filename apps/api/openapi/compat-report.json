@@ -1,29 +1,36 @@
 {
-  "generatedAt": "2026-06-15T13:05:13.102Z",
+  "generatedAt": "2026-11-15T23:28:03.704Z",
   "openApi": {
     "version": "1.0.0",
-    "totalOperations": 202,
+    "totalOperations": 400,
     "byPublicationClass": {
-      "admin": 31,
-      "integration": 7,
-      "workflow": 31,
-      "public": 78,
-      "reporting": 21,
+      "admin": 34,
+      "integration": 26,
+      "workflow": 74,
+      "public": 179,
+      "reporting": 47,
       "private": 2,
-      "system": 32
+      "system": 38
     },
     "tags": [
+      "Admin",
+      "Audit",
+      "Privacy",
+      "Reporting",
       "adjustments",
       "assessment",
       "calendar",
       "catalogue",
       "circumstances",
       "communications",
+      "engagement-outcomes",
       "enrolments",
       "globalisation",
       "governance",
       "integration-registry",
       "module-registrations",
+      "module-selection",
+      "pgr",
       "platform-controls",
       "progression",
       "regulatory",
@@ -33,29 +40,36 @@
     ]
   },
   "events": {
-    "total": 52,
-    "published": 46,
+    "total": 67,
+    "published": 61,
     "internal": 6,
     "byDataClass": {
-      "personal": 8,
+      "personal": 10,
       "special-category": 1,
       "regulatory": 12,
-      "standard": 19,
-      "sensitive": 6
+      "standard": 21,
+      "sensitive": 17
     },
     "consumers": [
       "admissions-adapter",
       "alumni-service",
       "assessment-venue-adapter",
+      "attendance-adapter",
       "bi-adapter",
       "curriculum-adapter",
+      "delivery-connector",
       "disability-service",
+      "engagement-service",
       "exam-board-portal",
       "finance-adapter",
       "hear-service",
       "identity-service",
+      "integration-operations",
+      "personal-tutor-portal",
       "prospectus-adapter",
+      "registry-workflow",
       "regulatory-reporting-adapter",
+      "sponsor-compliance-service",
       "timetabling-adapter",
       "transcript-service",
       "ukvi-adapter",
@@ -89,9 +103,9 @@
     "note": "Integration contract counts are stored in the database; run GET /api/v1/integration-contracts at runtime for the live list."
   },
   "summary": [
-    "REST API: 202 operations across 158 paths",
-    "Events: 46 published, 6 internal",
+    "REST API: 400 operations across 319 paths",
+    "Events: 61 published, 6 internal",
     "File schemas: 10 schemas across 5 families (exam, hesa, slc, ucas, ukvi)",
-    "Event consumers: 17 declared (admissions-adapter, alumni-service, assessment-venue-adapter, bi-adapter, curriculum-adapter, disability-service, exam-board-portal, finance-adapter, hear-service, identity-service, prospectus-adapter, regulatory-reporting-adapter, timetabling-adapter, transcript-service, ukvi-adapter, vle-adapter, wellbeing-module)"
+    "Event consumers: 24 declared (admissions-adapter, alumni-service, assessment-venue-adapter, attendance-adapter, bi-adapter, curriculum-adapter, delivery-connector, disability-service, engagement-service, exam-board-portal, finance-adapter, hear-service, identity-service, integration-operations, personal-tutor-portal, prospectus-adapter, registry-workflow, regulatory-reporting-adapter, sponsor-compliance-service, timetabling-adapter, transcript-service, ukvi-adapter, vle-adapter, wellbeing-module)"
   ]
 }

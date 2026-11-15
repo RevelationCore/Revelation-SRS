@@ -1267,7 +1267,7 @@ export class ModuleSelectionService {
       preferenceRank: row.item.preferenceRank,
       sourceCode: row.item.sourceCode,
       validationStateCode: row.item.validationStateCode,
-      validationMessages: (row.item.validationMessages ?? []) as ValidationMessage[],
+      validationMessages: (row.item.validationMessages ?? []),
     }));
   }
 

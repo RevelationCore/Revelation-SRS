@@ -9,25 +9,25 @@
   "exports": {
     ".": {
       "import": "./dist/index.js",
-      "types":  "./dist/index.d.ts"
+      "types": "./dist/index.d.ts"
     }
   },
   "scripts": {
-    "build":    "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test:int": "vitest run --reporter=verbose --config vitest.int.config.ts",
     "migrate:import": "node --import tsx/esm src/cli.ts"
   },
   "dependencies": {
     "@revelation-srs/db": "workspace:*",
-    "drizzle-orm": "^0.36.0"
+    "drizzle-orm": "^0.45.4"
   },
   "devDependencies": {
-    "@testcontainers/postgresql": "^12.0.1",
-    "@types/node": "^22.0.0",
-    "testcontainers": "^10.0.0",
-    "tsx": "^4.0.0",
-    "typescript": "^6.0.0",
-    "vitest": "^2.0.0"
+    "@testcontainers/postgresql": "^12.2.1",
+    "@types/node": "^22.20.5",
+    "testcontainers": "^12.2.1",
+    "tsx": "^4.23.15",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.12"
   }
 }

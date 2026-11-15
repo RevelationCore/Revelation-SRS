@@ -111,7 +111,7 @@ describe('Stage 1 — expected events and observations', () => {
       },
     });
     expect(res.statusCode).toBe(201);
-    expectedEventId = res.json().expectedEventId;
+    expectedEventId = res.json<{ expectedEventId: string }>().expectedEventId;
     expect(expectedEventId).toBeTruthy();
   });
 
@@ -159,7 +159,7 @@ describe('Stage 1 — policy evaluation and SRS outcome handoff', () => {
       },
     });
     expect(res.statusCode).toBe(201);
-    policyVersionId = res.json().policyVersionId;
+    policyVersionId = res.json<{ policyVersionId: string }>().policyVersionId;
   });
 
   it('evaluates the policy, raises an alert, and hands the outcome off to SRS', async () => {
@@ -176,7 +176,7 @@ describe('Stage 1 — policy evaluation and SRS outcome handoff', () => {
       },
     });
     expect(res.statusCode).toBe(201);
-    const body = res.json();
+    const body = res.json<{ alertCreated: boolean; alert: { alertId: string } }>();
     expect(body.alertCreated).toBe(true);
     alertId = body.alert.alertId;
 
@@ -206,14 +206,14 @@ describe('Stage 1 — intervention casework', () => {
       },
     });
     expect(res.statusCode).toBe(201);
-    caseId = res.json().interventionCaseId;
+    caseId = res.json<{ interventionCaseId: string }>().interventionCaseId;
 
     const detail = await ctx.app.inject({
       method: 'GET',
       url: `/api/v1/engagement/cases/${caseId}`,
       headers: { authorization: `Bearer ${ctx.makeJwt({ roles: ['engagement-officer'] })}` },
     });
-    expectedVersionId = detail.json().intervention.versionId;
+    expectedVersionId = detail.json<{ intervention: { versionId: string } }>().intervention.versionId;
   });
 
   it('closes the case and hands the closure outcome off to SRS', async () => {
@@ -232,7 +232,7 @@ describe('Stage 1 — intervention casework', () => {
       },
     });
     expect(res.statusCode).toBe(201);
-    expect(res.json().statusCode).toBe('closed');
+    expect(res.json<{ statusCode: string }>().statusCode).toBe('closed');
 
     expect(outcomeClient.submissions.some((s) => s.idempotencyKey === `${caseId}-closed` && s.outcomeCode === 'engagement-restored')).toBe(true);
   });

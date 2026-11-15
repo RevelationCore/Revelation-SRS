@@ -14,6 +14,7 @@
 
 import { describe, test, expect, beforeAll, afterAll } from 'vitest';
 import { sql } from 'drizzle-orm';
+
 import { startTestApp, type TestApp } from './helpers/test-app.js';
 
 let ctx: TestApp;
@@ -133,7 +134,7 @@ describe('error sanitisation (NFR-SEC-011)', () => {
     });
 
     expect(response.statusCode).toBe(404);
-    const body = JSON.parse(response.body);
+    const body = JSON.parse(response.body) as Record<string, unknown>;
     expect(body).not.toHaveProperty('stack');
     expect(JSON.stringify(body)).not.toMatch(/\bSELECT\b/i);
     expect(JSON.stringify(body)).not.toMatch(/\bFROM\b.*\bWHERE\b/i);
@@ -149,7 +150,7 @@ describe('error sanitisation (NFR-SEC-011)', () => {
     });
 
     expect([400, 422]).toContain(response.statusCode);
-    const body = JSON.parse(response.body);
+    const body = JSON.parse(response.body) as Record<string, unknown>;
     expect(body).not.toHaveProperty('stack');
     expect(JSON.stringify(body)).not.toMatch(/at Object\./);
     expect(JSON.stringify(body)).not.toMatch(/node_modules/);
@@ -162,7 +163,7 @@ describe('error sanitisation (NFR-SEC-011)', () => {
     });
 
     expect(response.statusCode).toBe(401);
-    const body = JSON.parse(response.body);
+    const body = JSON.parse(response.body) as Record<string, unknown>;
     expect(body).not.toHaveProperty('stack');
     expect(JSON.stringify(body)).not.toMatch(/node_modules/);
   });
@@ -229,7 +230,7 @@ describe('retention enforcement (NFR-PRIV-003)', () => {
     });
 
     expect(response.statusCode).toBe(200);
-    const body = JSON.parse(response.body);
+    const body = JSON.parse(response.body) as { dryRun: boolean; details: unknown };
     expect(body.dryRun).toBe(true);
     expect(body).toHaveProperty('eligible');
     expect(body).toHaveProperty('anonymised');
@@ -265,7 +266,7 @@ describe('retention enforcement (NFR-PRIV-003)', () => {
     });
 
     expect(response.statusCode).toBe(200);
-    const body = JSON.parse(response.body);
+    const body = JSON.parse(response.body) as { eligible: number; details: unknown };
     expect(body.eligible).toBeGreaterThanOrEqual(1);
 
     const found = (body.details as Array<{ personId: string }>).find((d) => d.personId === personId);
@@ -297,7 +298,7 @@ describe('retention enforcement (NFR-PRIV-003)', () => {
     });
 
     expect(applyResponse.statusCode).toBe(200);
-    const applyBody = JSON.parse(applyResponse.body);
+    const applyBody = JSON.parse(applyResponse.body) as { dryRun: boolean; details: unknown };
     expect(applyBody.dryRun).toBe(false);
 
     const detail = (applyBody.details as Array<{ personId: string; action: string }>)
@@ -343,8 +344,8 @@ describe('retention enforcement (NFR-PRIV-003)', () => {
     expect(firstRun.statusCode).toBe(200);
     expect(secondRun.statusCode).toBe(200);
 
-    const first  = JSON.parse(firstRun.body);
-    const second = JSON.parse(secondRun.body);
+    const first  = JSON.parse(firstRun.body) as { eligible: number };
+    const second = JSON.parse(secondRun.body) as { eligible: number };
 
     // Back-to-back dry runs on the same state must be idempotent
     expect(second.eligible).toBe(first.eligible);

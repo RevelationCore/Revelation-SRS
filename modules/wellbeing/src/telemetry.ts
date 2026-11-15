@@ -5,7 +5,7 @@
 
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
-import { Resource } from '@opentelemetry/resources';
+import { resourceFromAttributes } from '@opentelemetry/resources';
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import { SimpleSpanProcessor } from '@opentelemetry/sdk-trace-node';
 import { SEMRESATTRS_SERVICE_NAME, SEMRESATTRS_SERVICE_VERSION, SEMRESATTRS_DEPLOYMENT_ENVIRONMENT } from '@opentelemetry/semantic-conventions';
@@ -16,21 +16,20 @@ const environment    = process.env['NODE_ENV']              ?? 'development';
 const otlpEndpoint   = process.env['OTEL_EXPORTER_OTLP_ENDPOINT'];
 
 const sdk = new NodeSDK({
-  resource: new Resource({
+  resource: resourceFromAttributes({
     [SEMRESATTRS_SERVICE_NAME]:           serviceName,
     [SEMRESATTRS_SERVICE_VERSION]:        serviceVersion,
     [SEMRESATTRS_DEPLOYMENT_ENVIRONMENT]: environment,
   }),
   ...(otlpEndpoint
     ? {
-        spanProcessor: new SimpleSpanProcessor(
+        spanProcessors: [new SimpleSpanProcessor(
           new OTLPTraceExporter({ url: `${otlpEndpoint}/v1/traces` }),
-        ),
+        )],
       }
     : {}),
   instrumentations: [
     getNodeAutoInstrumentations({
-      '@opentelemetry/instrumentation-fastify': { enabled: true },
       '@opentelemetry/instrumentation-pg':      {
         enabled: true,
         requestHook: (span, { query }) => {

@@ -14,7 +14,7 @@ import {
 } from '@revelation-srs/db';
 import { NotFoundError, ValidationError } from '@revelation-srs/domain';
 
-import { BusinessCaseService } from '../cases/business-case-service.js';
+import type { BusinessCaseService } from '../cases/business-case-service.js';
 import { clockNow } from '../clock.js';
 import type { ValueSetService } from '../value-sets/service.js';
 
@@ -168,7 +168,7 @@ export class ExaminationService {
       await tx.insert(thesisSubmissions).values({
         id:                    submissionId,
         tenantId:              tenantId as Uuid,
-        examinationCaseId:     examinationCaseId as Uuid,
+        examinationCaseId:     examinationCaseId,
         versionNumber:         1,
         formatCode:            input.formatCode,
         declarationConfirmed:  input.declarationConfirmed,
@@ -395,7 +395,7 @@ export class ExaminationService {
         await tx.insert(thesisCorrectionRequirements).values({
           id:           randomUUID(),
           tenantId:     tenantId as Uuid,
-          outcomeId:    outcomeId as Uuid,
+          outcomeId:    outcomeId,
           deadlineDate: input.correctionsDeadline!,
           completedAt:  null,
           completedBy:  null,

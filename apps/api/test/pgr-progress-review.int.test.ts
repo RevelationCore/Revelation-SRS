@@ -121,7 +121,7 @@ describe('PGR progress review and milestones (BP-04-003)', () => {
     });
     expect(milestones.statusCode).toBe(200);
     expect(milestones.json<Array<{ milestoneTypeCode: string; publishedAt: string | null }>>())
-      .toContainEqual(expect.objectContaining({ milestoneTypeCode: 'upgrade', publishedAt: expect.any(String) }));
+      .toContainEqual(expect.objectContaining({ milestoneTypeCode: 'upgrade', publishedAt: expect.any(String) as unknown }));
   });
 
   it('rejects an outcome when no evidence has been recorded', async () => {

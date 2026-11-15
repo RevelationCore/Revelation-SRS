@@ -45,7 +45,7 @@ export class RegistrationWindowService {
     const id = randomUUID();
     await withTenantContext(this.db, tenantId, async (tx) => {
       await tx.insert(registrationWindows).values({
-        id:               id as Uuid,
+        id:               id,
         tenantId:         tenantId as Uuid,
         academicPeriodId: input.academicPeriodId as Uuid,
         opensAt:          input.opensAt,

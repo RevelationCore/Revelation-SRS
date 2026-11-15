@@ -104,7 +104,7 @@ test.describe('Admin — authenticated page rendering and axe scans', () => {
     await page.goto(`${ADMIN}/dashboard`);
 
     await expect(page.getByRole('link', { name: 'Students' })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Tasks' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Tasks', exact: true })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Exam boards' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Regulatory', exact: true })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Administration', exact: true })).toBeVisible();

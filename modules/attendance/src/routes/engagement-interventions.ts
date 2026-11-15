@@ -3,7 +3,7 @@ import { Type } from '@sinclair/typebox';
 import type { FastifyInstance } from 'fastify';
 
 import type {
-  AddActionInput, RecordContactInput, ReviewCaseInput, TriageAlertInput,
+  AddActionInput, EngagementInterventionService, RecordContactInput, ReviewCaseInput, TriageAlertInput,
 } from '../services/engagement-intervention-service.js';
 
 const ErrorSchema = Type.Object({
@@ -138,6 +138,6 @@ export function engagementInterventionRoutes(fastify: FastifyInstance): void {
 
 declare module 'fastify' {
   interface FastifyInstance {
-    engagementInterventionService: import('../services/engagement-intervention-service.js').EngagementInterventionService;
+    engagementInterventionService: EngagementInterventionService;
   }
 }

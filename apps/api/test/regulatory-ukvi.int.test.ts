@@ -264,7 +264,7 @@ describe('UKVI compliance exchange', () => {
       UPDATE ukvi_engagement_evidence_snapshot
       SET evidence_quality_code = 'reconciliation-required'
       WHERE id = ${snapshot.snapshotId}
-    `)).rejects.toThrow(/append-only/);
+    `)).rejects.toMatchObject({ cause: { message: expect.stringMatching(/append-only/) as unknown } });
   });
 
   it('requires separate human authorisation before producing a sponsor report', async () => {

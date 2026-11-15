@@ -10,7 +10,7 @@ import {
 import { NotFoundError, ValidationError } from '@revelation-srs/domain';
 
 import type { AwardService } from '../progression/award-service.js';
-import { BusinessCaseService } from '../cases/business-case-service.js';
+import type { BusinessCaseService } from '../cases/business-case-service.js';
 import { clockNow } from '../clock.js';
 import type { RegulatoryExchangeService } from '../regulatory/exchange-service.js';
 

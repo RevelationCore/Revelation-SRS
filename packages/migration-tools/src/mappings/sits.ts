@@ -28,7 +28,6 @@ import type {
   ImportModuleOffering,
   ImportModuleRegistration,
   ImportMark,
-  ImportAward,
 } from '../contracts/index.js';
 
 // ── SITS-style source types ────────────────────────────────────────────────

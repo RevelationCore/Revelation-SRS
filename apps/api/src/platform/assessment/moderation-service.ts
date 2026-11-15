@@ -65,7 +65,7 @@ export class ModerationService {
     await withTenantContext(this.db, tenantId, async (tx) => {
       await tx.insert(assessmentCandidateAttempts).values({
         versionId:              randomUUID(),
-        id:                     id as Uuid,
+        id:                     id,
         tenantId:               tenantId as Uuid,
         moduleRegistrationId:   input.moduleRegistrationId as Uuid,
         assessmentComponentId:  input.assessmentComponentId as Uuid,
@@ -119,7 +119,7 @@ export class ModerationService {
         await tx.insert(markSetMembers).values({
           id:                 randomUUID(),
           tenantId:           tenantId as Uuid,
-          markSetId:          markSetId as Uuid,
+          markSetId:          markSetId,
           markId:             markId as Uuid,
           candidateAttemptId: attemptId as Uuid,
         });

@@ -6,25 +6,30 @@
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "exports": { ".": { "import": "./dist/index.js", "types": "./dist/index.d.ts" } },
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
   "scripts": {
-    "build":     "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "dev":       "tsc -p tsconfig.json --watch",
-    "test":      "vitest run --reporter=verbose"
+    "dev": "tsc -p tsconfig.json --watch",
+    "test": "vitest run --reporter=verbose"
   },
   "dependencies": {
+    "@temporalio/activity": "1.25.0",
     "@temporalio/client": "1.25.0",
     "@temporalio/worker": "1.25.0",
-    "@temporalio/workflow": "1.25.0",
-    "@temporalio/activity": "1.25.0"
+    "@temporalio/workflow": "1.25.0"
   },
   "devDependencies": {
-    "@temporalio/testing":     "1.25.0",
     "@revelation-srs/domain": "workspace:*",
-    "@types/node":             "^22.0.0",
-    "tsx":                     "^4.0.0",
-    "typescript": "^6.0.0",
-    "vitest":                  "^2.0.0"
+    "@temporalio/testing": "1.25.0",
+    "@types/node": "^22.20.5",
+    "tsx": "^4.23.15",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.12"
   }
 }

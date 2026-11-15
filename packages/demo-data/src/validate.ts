@@ -3,7 +3,6 @@ import {
   awards,
   enrolments,
   examBoards,
-  exceptionalCircumstances,
   hesaStudentReturns,
   integrationRegistrations,
   marks,
@@ -271,7 +270,7 @@ function checkStoryMarkersExist(manifest: ScenarioManifest): Check {
 
     const found = new Set(rows.map(r => r.id));
     const missing = expectedIds
-      .filter((id, i) => !found.has(id))
+      .filter((id) => !found.has(id))
       .map((_id, i) => manifest.storyMarkers[i]);
 
     return missing.length > 0

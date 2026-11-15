@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto';
 
 import { and, eq, isNull } from 'drizzle-orm';
+import type { ExtractTablesWithRelations } from 'drizzle-orm';
 import type { PgDatabase, PgQueryResultHKT, PgTransaction } from 'drizzle-orm/pg-core';
 
 import {
@@ -20,8 +21,8 @@ import { documents, documentAccessLog } from './schema.js';
 // database handle or a transaction from any service that has installed
 // this package's tables alongside its own (e.g. the wellbeing module) —
 // without this package needing to depend on that service's schema type.
-type Db<TSchema extends Record<string, unknown> = Record<string, never>> =
-  PgDatabase<PgQueryResultHKT, TSchema> | PgTransaction<PgQueryResultHKT, TSchema>;
+type Db<TSchema extends Record<string, unknown>, H extends PgQueryResultHKT> =
+  PgDatabase<H, TSchema> | PgTransaction<H, TSchema, ExtractTablesWithRelations<TSchema>>;
 
 const DEFAULT_MAX_BYTES = 15 * 1024 * 1024; // 15MB — generous for a scanned letter/report, not arbitrary binaries
 
@@ -39,8 +40,8 @@ export interface PostgresDocumentAdapterOptions {
   allowedMimeTypes?:   Set<string>;
 }
 
-async function writeAccessLog<TSchema extends Record<string, unknown>>(
-  db: Db<TSchema>,
+async function writeAccessLog<TSchema extends Record<string, unknown>, H extends PgQueryResultHKT>(
+  db: Db<TSchema, H>,
   input: { documentId: string; tenantId: string; actorId: string; action: 'store' | 'retrieve' | 'delete' },
 ): Promise<void> {
   await db.insert(documentAccessLog).values({
@@ -74,8 +75,8 @@ function toMetadata(row: typeof documents.$inferSelect): DocumentMetadata {
  * in Postgres as bytea. See adapter.ts for the interface contract and
  * schema.ts for the table shapes this reads/writes.
  */
-export function createPostgresDocumentAdapter<TSchema extends Record<string, unknown>>(
-  db: Db<TSchema>,
+export function createPostgresDocumentAdapter<TSchema extends Record<string, unknown>, H extends PgQueryResultHKT>(
+  db: Db<TSchema, H>,
   options: PostgresDocumentAdapterOptions = {},
 ): DocumentStorageAdapter {
   const scanner          = options.scanner ?? new NoopScanner();

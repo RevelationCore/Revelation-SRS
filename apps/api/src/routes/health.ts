@@ -24,7 +24,7 @@ async function tcpCheck(address: string, defaultPort: number): Promise<CheckResu
       resolve({ status: 'ok', latencyMs: Date.now() - t0 });  // clock:allow
     });
 
-    socket.once('error', (err) => {
+    socket.once('error', (err: Error) => {
       clearTimeout(timeout);
       resolve({ status: 'error', error: err.message });
     });

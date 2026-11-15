@@ -505,14 +505,14 @@ export class UkviService {
     };
   }
 
-  async generateAttendanceReport(
+  generateAttendanceReport(
     _tenantId: string,
     _academicPeriodId: string,
     _actorId: string,
   ): Promise<{ reportId: string; payload: UkviAttendanceReportPayload }> {
-    throw new ValidationError(
+    return Promise.reject(new ValidationError(
       'Direct attendance-report generation is retired; create an engagement evidence snapshot, record a human sponsor decision and obtain independent authorisation',
-    );
+    ));
   }
 
   async processVisaStatusUpdate(

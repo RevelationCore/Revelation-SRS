@@ -7,12 +7,14 @@ import type {
   CreateExpectedEventInput,
   EngagementEventDto,
   EngagementObservationDto,
+  EngagementService,
   RecordObservationInput,
 } from '../services/engagement-service.js';
 import type {
   CreateEngagementPolicyInput,
   EngagementAlertDto,
   EngagementPolicyDto,
+  EngagementPolicyService,
   EvaluateEngagementInput,
 } from '../services/engagement-policy-service.js';
 
@@ -414,7 +416,7 @@ function alertToWire(alert: EngagementAlertDto) {
 
 declare module 'fastify' {
   interface FastifyInstance {
-    engagementService: import('../services/engagement-service.js').EngagementService;
-    engagementPolicyService: import('../services/engagement-policy-service.js').EngagementPolicyService;
+    engagementService: EngagementService;
+    engagementPolicyService: EngagementPolicyService;
   }
 }

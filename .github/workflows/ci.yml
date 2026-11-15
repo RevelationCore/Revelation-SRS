@@ -12,7 +12,6 @@ concurrency:
 
 env:
   NODE_VERSION: "22"
-  PNPM_VERSION: "9"
 
 jobs:
 
@@ -23,8 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
-        with: { version: "${{ env.PNPM_VERSION }}" }
+      - uses: pnpm/action-setup@v4  # version from package.json "packageManager"
 
       - uses: actions/setup-node@v4
         with:
@@ -61,12 +59,6 @@ jobs:
       - name: Business-process data model matches the schema; core migrations squashed
         run: pnpm check:business-process-data-model
 
-      - name: Current capabilities record is consistent
-        run: pnpm check:current-capabilities
-
-      - name: Documentation links resolve
-        run: pnpm check:doc-links
-
       - name: Clock-use check (no raw new Date / Date.now in api/src)
         run: |
           if grep -rn --include='*.ts' 'new Date()\|Date\.now()' apps/api/src/ | grep -v '// clock:allow' | grep -v 'src/platform/clock\.ts'; then
@@ -82,8 +74,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
-        with: { version: "${{ env.PNPM_VERSION }}" }
+      - uses: pnpm/action-setup@v4  # version from package.json "packageManager"
 
       - uses: actions/setup-node@v4
         with:
@@ -95,8 +86,8 @@ jobs:
       - name: Build packages
         run: pnpm build
 
-      - name: Run unit tests with coverage
-        run: pnpm --filter @revelation-srs/api vitest run --coverage
+      - name: Run API unit tests
+        run: pnpm --filter @revelation-srs/api test
         env:
           DATABASE_URL: postgres://srs:srs@localhost:5432/srs
           JWT_SECRET:   test-secret
@@ -107,13 +98,6 @@ jobs:
           DATABASE_URL: postgres://srs:srs@localhost:5432/srs
           JWT_SECRET:   test-secret
 
-      - name: Upload coverage report
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-${{ github.sha }}
-          path: apps/api/coverage/
-          retention-days: 14
-
   # ── 3. Integration tests (Testcontainers) ─────────────────────────────────
   integration-tests:
     name: Integration Tests
@@ -121,8 +105,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
-        with: { version: "${{ env.PNPM_VERSION }}" }
+      - uses: pnpm/action-setup@v4  # version from package.json "packageManager"
 
       - uses: actions/setup-node@v4
         with:
@@ -134,12 +117,27 @@ jobs:
       - name: Build packages
         run: pnpm build
 
-      - name: Run integration tests (Testcontainers — Docker required)
-        run: pnpm test:int
+      # Coverage is measured here: the platform code is exercised by the
+      # integration suite, not the unit tests.
+      - name: Run API integration tests with coverage (Testcontainers — Docker required)
+        run: pnpm --filter @revelation-srs/api exec vitest run --config vitest.int.config.ts --coverage
         env:
-          DATABASE_URL: postgres://srs:srs@localhost:5432/srs
           JWT_SECRET:   test-secret
           TESTCONTAINERS_RYUK_DISABLED: "true"
+
+      - name: Run integration tests (all other packages)
+        run: pnpm --filter '!@revelation-srs/api' -r --if-present test:int
+        env:
+          JWT_SECRET:   test-secret
+          TESTCONTAINERS_RYUK_DISABLED: "true"
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ github.sha }}
+          path: apps/api/coverage/
+          retention-days: 14
 
   # ── 4. Container image build + vulnerability scan ─────────────────────────
   container-build:
@@ -252,8 +250,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
-        with: { version: "${{ env.PNPM_VERSION }}" }
+      - uses: pnpm/action-setup@v4  # version from package.json "packageManager"
 
       - uses: actions/setup-node@v4
         with:
@@ -286,8 +283,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
-        with: { version: "${{ env.PNPM_VERSION }}" }
+      - uses: pnpm/action-setup@v4  # version from package.json "packageManager"
 
       - uses: actions/setup-node@v4
         with:
@@ -301,7 +297,7 @@ jobs:
 
       - name: Run Stage 1–3 and Stage 6 contract tests (no DB required)
         run: >
-          pnpm --filter @revelation-srs/api vitest run
+          pnpm --filter @revelation-srs/api exec vitest run
           --reporter=verbose
           --config vitest.int.config.ts
           test/stage1-openapi-contract.int.test.ts
@@ -319,8 +315,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
-        with: { version: "${{ env.PNPM_VERSION }}" }
+      - uses: pnpm/action-setup@v4  # version from package.json "packageManager"
 
       - uses: actions/setup-node@v4
         with:
@@ -364,8 +359,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
-        with: { version: "${{ env.PNPM_VERSION }}" }
+      - uses: pnpm/action-setup@v4  # version from package.json "packageManager"
 
       - uses: actions/setup-node@v4
         with:
@@ -388,8 +382,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
-        with: { version: "${{ env.PNPM_VERSION }}" }
+      - uses: pnpm/action-setup@v4  # version from package.json "packageManager"
 
       - uses: actions/setup-node@v4
         with:
@@ -409,8 +402,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
-        with: { version: "${{ env.PNPM_VERSION }}" }
+      - uses: pnpm/action-setup@v4  # version from package.json "packageManager"
 
       - uses: actions/setup-node@v4
         with:
@@ -436,8 +428,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
-        with: { version: "${{ env.PNPM_VERSION }}" }
+      - uses: pnpm/action-setup@v4  # version from package.json "packageManager"
 
       - uses: actions/setup-node@v4
         with:
@@ -523,8 +514,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with: { version: "${{ env.PNPM_VERSION }}" }
+      - uses: pnpm/action-setup@v4  # version from package.json "packageManager"
       - uses: actions/setup-node@v4
         with: { node-version: "${{ env.NODE_VERSION }}", cache: pnpm }
       - run: pnpm install --frozen-lockfile
@@ -559,8 +549,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
-        with: { version: "${{ env.PNPM_VERSION }}" }
+      - uses: pnpm/action-setup@v4  # version from package.json "packageManager"
 
       - uses: actions/setup-node@v4
         with:

@@ -59,7 +59,6 @@ export const manifest: ScenarioManifest = {
 
 const ACTOR       = 'demo-data:pgr-lifecycle';
 const OWNER       = 'demo-pgr-admin';
-const ACADEMIC_YEAR = '2028-29';
 const VALID_FROM  = new Date('2027-09-20T00:00:00Z');
 
 const PROGRAMME_CODE = 'PHDCS';
@@ -197,19 +196,19 @@ function personRef(tenantId: string, seq: number): string {
 
 async function loadPgr(db: Db, tenantId: string): Promise<void> {
   const now = new Date(manifest.referenceDate + 'T09:00:00Z');
-  const priya  = STUDENTS[0]!;
-  const jordan = STUDENTS[1]!;
-  const taylor = STUDENTS[2]!;
-  const morgan = STUDENTS[3]!;
-  const avery  = STUDENTS[4]!;
-  const sam    = STUDENTS[5]!;
+  const priya  = STUDENTS[0];
+  const jordan = STUDENTS[1];
+  const taylor = STUDENTS[2];
+  const morgan = STUDENTS[3];
+  const avery  = STUDENTS[4];
+  const sam    = STUDENTS[5];
 
-  const helena = STAFF[0]!;
-  const marcus = STAFF[1]!;
-  const elena  = STAFF[2]!;
-  const david  = STAFF[3]!;
-  const fiona  = STAFF[4]!;
-  const samuel = STAFF[5]!;
+  const helena = STAFF[0];
+  const marcus = STAFF[1];
+  const elena  = STAFF[2];
+  const david  = STAFF[3];
+  const fiona  = STAFF[4];
+  const samuel = STAFF[5];
 
   // ── Supervision cases (one per student except Sam's is 'returned') ─────────
   const supervisionCaseIds = new Map<number, string>();

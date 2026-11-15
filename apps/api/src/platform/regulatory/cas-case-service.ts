@@ -68,7 +68,7 @@ export class CasCaseService {
     await withTenantContext(this.db, tenantId, async (tx) => {
       await tx.insert(casCases).values({
         versionId:           randomUUID(),
-        id:                  caseId as Uuid,
+        id:                  caseId,
         tenantId:            tenantId as Uuid,
         enrolmentId:         input.enrolmentId as Uuid,
         casReference:        input.casReference ?? null,

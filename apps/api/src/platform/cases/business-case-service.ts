@@ -99,7 +99,7 @@ export class BusinessCaseService {
     await withTenantContext(this.db, tenantId, async (tx) => {
       await tx.insert(businessCases).values({
         versionId:    randomUUID(),
-        id:           caseId as Uuid,
+        id:           caseId,
         tenantId:     tenantId as Uuid,
         subjectType:  input.subjectType,
         subjectId:    input.subjectId as Uuid,

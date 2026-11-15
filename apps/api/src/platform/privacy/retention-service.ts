@@ -16,14 +16,14 @@
  * Retention policy source: docs/requirements/data-subject-register.md
  */
 
-import { and, eq, isNull, lt, sql } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import {
-  enrolments,
   personIdentities,
   persons,
   studentAddresses,
   type Db,
 } from '@revelation-srs/db';
+
 import { clockNow } from '../clock.js';
 import type { AuditService } from '../audit/service.js';
 

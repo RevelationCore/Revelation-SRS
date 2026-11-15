@@ -16,6 +16,7 @@ import { sql } from 'drizzle-orm';
 import type { Db } from '@revelation-srs/db';
 
 import { GOLDEN_IDS } from '../golden-ids.js';
+
 import { deterministicId } from './ids.js';
 
 // ─── Minimal attendance schema stubs ──────────────────────────────────────────
@@ -203,8 +204,8 @@ export async function loadEngagementDemo(db: Db, tenantId: string): Promise<void
       actorId: ACTOR, validFrom: AT, recordedAt: AT,
     }).onConflictDoNothing();
   }
-  await loadAlert(db, tenantId, policyVersionId, people[2]!, 'suspended-reconciliation', true);
-  const sustainedAlertId = await loadAlert(db, tenantId, policyVersionId, people[3]!, 'intervention-opened', false);
+  await loadAlert(db, tenantId, policyVersionId, people[2], 'suspended-reconciliation', true);
+  const sustainedAlertId = await loadAlert(db, tenantId, policyVersionId, people[3], 'intervention-opened', false);
   const caseId = deterministicId('engagement-case', tenantId, people[3][0]);
   await db.insert(engagementInterventionCasesTable).values({
     id: caseId, versionId: deterministicId('engagement-case-version', caseId), tenantId,

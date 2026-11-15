@@ -21,7 +21,6 @@ concurrency:
 
 env:
   NODE_VERSION: "22"
-  PNPM_VERSION: "9"
   K6_VERSION:   "0.52.0"
 
 jobs:
@@ -38,8 +37,7 @@ jobs:
           curl -sL https://github.com/grafana/k6/releases/download/v${{ env.K6_VERSION }}/k6-v${{ env.K6_VERSION }}-linux-amd64.tar.gz \
             | tar xz --strip-components=1 -C /usr/local/bin k6-v${{ env.K6_VERSION }}-linux-amd64/k6
 
-      - uses: pnpm/action-setup@v4
-        with: { version: "${{ env.PNPM_VERSION }}" }
+      - uses: pnpm/action-setup@v4  # version from package.json "packageManager"
 
       - uses: actions/setup-node@v4
         with:
@@ -114,8 +112,7 @@ jobs:
           curl -sL https://github.com/grafana/k6/releases/download/v${{ env.K6_VERSION }}/k6-v${{ env.K6_VERSION }}-linux-amd64.tar.gz \
             | tar xz --strip-components=1 -C /usr/local/bin k6-v${{ env.K6_VERSION }}-linux-amd64/k6
 
-      - uses: pnpm/action-setup@v4
-        with: { version: "${{ env.PNPM_VERSION }}" }
+      - uses: pnpm/action-setup@v4  # version from package.json "packageManager"
 
       - uses: actions/setup-node@v4
         with:

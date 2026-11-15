@@ -97,7 +97,7 @@ describe('PGR supervision and research context (BP-03-007)', () => {
     });
     expect(nominations.statusCode).toBe(200);
     expect(nominations.json<Array<{ nominationId: string; eligibilityCheckedAt: string | null }>>())
-      .toContainEqual(expect.objectContaining({ nominationId, eligibilityCheckedAt: expect.any(String) }));
+      .toContainEqual(expect.objectContaining({ nominationId, eligibilityCheckedAt: expect.any(String) as unknown }));
 
     const decide = await ctx.app.inject({
       method: 'POST',

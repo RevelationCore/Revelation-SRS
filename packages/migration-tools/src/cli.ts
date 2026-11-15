@@ -11,7 +11,9 @@
  */
 
 import { readFile } from 'node:fs/promises';
+
 import { createDb } from '@revelation-srs/db';
+
 import { mapSitsToImportPayload } from './mappings/sits.js';
 import { mapBannerToImportPayload } from './mappings/banner.js';
 import type { ImportPayload } from './contracts/payload.js';

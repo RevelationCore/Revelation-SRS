@@ -480,7 +480,7 @@ interface Fixture {
  * srs.student.enrolled event, replacing the original test's calls to core's
  * /students and /enrolments endpoints (this module has no access to those).
  */
-async function createFixture(code: string): Promise<Fixture> {
+async function createFixture(_code: string): Promise<Fixture> {
   const personId = randomUUID();
   const enrolmentId = randomUUID();
   await consumer.dispatch(makeEnvelope(

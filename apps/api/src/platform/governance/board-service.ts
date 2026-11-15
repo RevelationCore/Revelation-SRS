@@ -211,7 +211,7 @@ export class BoardService {
         ))
         .orderBy(examBoards.createdAt),
     );
-    return rows.map(r => boardToDto(r as BoardRow));
+    return rows.map(r => boardToDto(r));
   }
 
   async getExamBoard(examBoardId: string, tenantId: string): Promise<ExamBoardDto> {
@@ -960,7 +960,7 @@ export class BoardService {
         .limit(1),
     );
     if (!rows[0]) throw new NotFoundError('ExamBoard', examBoardId);
-    return rows[0] as BoardRow;
+    return rows[0];
   }
 
   async #getLatestExternalExaminerSignoffAt(examBoardId: string, tenantId: string): Promise<Date | null> {

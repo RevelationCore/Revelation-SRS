@@ -148,7 +148,7 @@ export class BoardAuthorityService {
       await tx.insert(resultPublications).values({
         id:                     randomUUID(),
         tenantId:               tenantId as Uuid,
-        ratificationRecordId:   recordId as Uuid,
+        ratificationRecordId:   recordId,
         statusCode:             'locked',
         publishedAt:            null,
         publishedBy:            null,

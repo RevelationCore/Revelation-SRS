@@ -2,12 +2,11 @@ import { randomUUID } from 'node:crypto';
 
 import type { FastifyInstance } from 'fastify';
 import { Type } from '@sinclair/typebox';
-
 import { requirePermission } from '@revelation-srs/auth';
 
 const ErrorSchema = Type.Object({ title: Type.String(), detail: Type.Optional(Type.String()) });
 
-export async function notificationRoutes(fastify: FastifyInstance): Promise<void> {
+export function notificationRoutes(fastify: FastifyInstance): void {
   // ── GET /notifications/stream — SSE long-poll ────────────────────────────
   // Authenticated; emits `data: <json>\n\n` events as notifications arrive.
   fastify.get('/notifications/stream', {

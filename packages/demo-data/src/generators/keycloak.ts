@@ -166,7 +166,7 @@ async function patchUserAttributes(
   });
   if (!res.ok) return;
   const user = await res.json() as Record<string, unknown> & { attributes?: Record<string, string[]> };
-  const existingAttrs = (user.attributes as Record<string, string[]> | undefined) ?? {};
+  const existingAttrs = (user.attributes) ?? {};
 
   const desiredAttrs: Record<string, string[]> = {
     tenant_id: [cfg.tenantId],

@@ -9,7 +9,7 @@ import {
 } from '@revelation-srs/db';
 import { NotFoundError } from '@revelation-srs/domain';
 
-import { BusinessCaseService } from '../cases/business-case-service.js';
+import type { BusinessCaseService } from '../cases/business-case-service.js';
 import { clockNow } from '../clock.js';
 
 type Uuid = `${string}-${string}-${string}-${string}-${string}`;

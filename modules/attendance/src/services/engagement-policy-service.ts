@@ -7,6 +7,7 @@ import { withAttendanceTenantContext } from '../db/client.js';
 import { engagementAlerts, engagementObservations, engagementPolicyVersions, expectedEngagementEvents } from '../db/schema/index.js';
 import { findPersonIdByEnrolmentId } from '../repositories/projection-repository.js';
 import type { SrsEngagementOutcomeClient } from '../srs/srs-engagement-outcome-client.js';
+
 import { NotFoundError, ValidationError } from './engagement-service.js';
 import type { LocalEventSink } from './engagement-service.js';
 

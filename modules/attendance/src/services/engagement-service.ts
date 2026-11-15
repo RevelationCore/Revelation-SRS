@@ -541,8 +541,9 @@ export class EngagementService {
   }
 
   #rethrowUnique(error: unknown, message: string): never {
-    if (typeof error === 'object' && error !== null && 'code' in error && error.code === '23505') {
-      throw new ConflictError(message);
+    // drizzle-orm wraps driver errors (DrizzleQueryError); the Postgres error is its cause.
+    for (let e: unknown = error; typeof e === 'object' && e !== null; e = (e as { cause?: unknown }).cause) {
+      if ('code' in e && e.code === '23505') throw new ConflictError(message);
     }
     throw error;
   }
