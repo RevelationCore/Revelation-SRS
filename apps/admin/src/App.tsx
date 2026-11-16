@@ -23,6 +23,7 @@ const HesaPage = lazy(() => import('./pages/HesaPage.js').then((m) => ({ default
 const IntegrationOpsPage = lazy(() => import('./pages/IntegrationOpsPage.js').then((m) => ({ default: m.IntegrationOpsPage })));
 const IntegrationTasksPage = lazy(() => import('./pages/IntegrationTasksPage.js').then((m) => ({ default: m.IntegrationTasksPage })));
 const ExamTimingsPage = lazy(() => import('./pages/ExamTimingsPage.js').then((m) => ({ default: m.ExamTimingsPage })));
+const AssessmentStructuresPage = lazy(() => import('./pages/AssessmentStructuresPage.js').then((m) => ({ default: m.AssessmentStructuresPage })));
 const IntegrationsPage = lazy(() => import('./pages/IntegrationsPage.js').then((m) => ({ default: m.IntegrationsPage })));
 const OfsPage = lazy(() => import('./pages/OfsPage.js').then((m) => ({ default: m.OfsPage })));
 const OperationsPage = lazy(() => import('./pages/OperationsPage.js').then((m) => ({ default: m.OperationsPage })));
@@ -125,6 +126,7 @@ export function App() {
                 <Route path="students/:personId" element={<RequirePermission permissions={['student:read:all']}><StudentDetailPage /></RequirePermission>} />
                 <Route path="exam-boards" element={<RequirePermission permissions={['exam-board:read']}><ExamBoardsPage /></RequirePermission>} />
                 <Route path="exam-boards/:boardId" element={<RequirePermission permissions={['exam-board:read']}><ExamBoardDetailPage /></RequirePermission>} />
+                <Route path="assessment-structures" element={<RequirePermission permissions={['catalogue:read']}><AssessmentStructuresPage /></RequirePermission>} />
                 <Route path="exam-timings" element={<RequirePermission permissions={['catalogue:write']}><ExamTimingsPage /></RequirePermission>} />
                 <Route path="engagement" element={<RequireRole roles={ENGAGEMENT_ROLES}><EngagementPage /></RequireRole>} />
                 <Route path="engagement/cases/:caseId" element={<RequireRole roles={ENGAGEMENT_ROLES}><EngagementCasePage /></RequireRole>} />

@@ -17,9 +17,9 @@ How far each academic-journey process (areas 01–06) can be carried out in the 
 
 | Coverage | Processes |
 |---|---|
-| On screen | 37 |
+| On screen | 38 |
 | Partly built | 7 |
-| API only | 2 |
+| API only | 1 |
 | Not built | 3 |
 
 | Process | Coverage | Staff screen | Student portal | Gap |
@@ -56,7 +56,7 @@ How far each academic-journey process (areas 01–06) can be carried out in the 
 | [BP-04-004](04-learning-engagement-and-support/bp-04-004-manage-a-reasonable-adjustment-case.md) Manage a reasonable adjustment case | On screen | Adjustment cases; student record Wellbeing tab | Adjustments | No independent review of the case workflow yet |
 | [BP-04-005](04-learning-engagement-and-support/bp-04-005-manage-exceptional-circumstances.md) Manage exceptional circumstances | On screen | Student record: exceptional circumstances | Circumstances | — |
 | [BP-04-006](04-learning-engagement-and-support/bp-04-006-distribute-an-approved-support-outcome.md) Distribute an approved support outcome | On screen | Operations: adjustment and delivery tasks | — | — |
-| [BP-05-001](05-assessment-and-results/bp-05-001-establish-assessment-structures.md) Establish assessment structures | API only | Exam timings: component durations only | — | Assessment patterns and components are created through the API |
+| [BP-05-001](05-assessment-and-results/bp-05-001-establish-assessment-structures.md) Establish assessment structures | On screen | Assessment structures: components, weightings, pass marks, durations | — | Reusable assessment patterns (`assessment_pattern`) have no service or API; components cannot change once marks exist (except duration) |
 | [BP-05-002](05-assessment-and-results/bp-05-002-create-examination-entries-and-accommodations.md) Create examination entries and accommodations | On screen | Exam timings; exam board: exam entries | Exams | — |
 | [BP-05-003](05-assessment-and-results/bp-05-003-receive-or-enter-marks.md) Receive or enter marks | On screen | Student record Assessment tab: marks | Results | — |
 | [BP-05-004](05-assessment-and-results/bp-05-004-moderate-and-confirm-marks.md) Moderate and confirm marks | On screen | Moderation | — | — |

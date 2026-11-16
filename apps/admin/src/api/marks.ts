@@ -89,3 +89,16 @@ export function getModuleResultHistory(moduleRegistrationId: string): Promise<Mo
 export function setComponentDuration(moduleOfferingId: string, assessmentComponentId: string, durationMinutes: number | null): Promise<void> {
   return api.patch(`/api/v1/module-offerings/${moduleOfferingId}/components/${assessmentComponentId}`, { durationMinutes });
 }
+
+/** Assessment structure (BP-05-001): the API refuses changes other than duration once marks exist, and a total weighting over 100. */
+export function createComponent(moduleOfferingId: string, body: {
+  componentTypeCode: string; title: string; weighting: number; passMarkOverride?: number; durationMinutes?: number;
+}): Promise<{ assessmentComponentId: string }> {
+  return api.post(`/api/v1/module-offerings/${moduleOfferingId}/components`, body);
+}
+
+export function updateComponent(moduleOfferingId: string, assessmentComponentId: string, body: {
+  componentTypeCode?: string; title?: string; weighting?: number; passMarkOverride?: number | null; durationMinutes?: number | null;
+}): Promise<void> {
+  return api.patch(`/api/v1/module-offerings/${moduleOfferingId}/components/${assessmentComponentId}`, body);
+}
