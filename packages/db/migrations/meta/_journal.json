@@ -61,15 +61,15 @@
     {
       "idx": 8,
       "version": "7",
-      "when": 1785000038000,
-      "tag": "0008_exception_values_and_credit_years",
+      "when": 1785000039000,
+      "tag": "0008_rule_exceptions_and_ucas_bridge",
       "breakpoints": true
     },
     {
       "idx": 9,
       "version": "7",
-      "when": 1785000039000,
-      "tag": "0009_ucas_application_bridge",
+      "when": 1785000040000,
+      "tag": "0009_person_foreign_key_indexes",
       "breakpoints": true
     }
   ]

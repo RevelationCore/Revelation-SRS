@@ -25,6 +25,8 @@ pnpm demo:reset <slug>
 
 Wait for the "loaded successfully" message. Refresh your browser.
 
+A reset first wipes everything recorded for the demo tenant, including what was done during a previous demo (applications, offers, credit, exceptions, awards, documents, tasks), then loads the scenario. It keeps only reference data, configuration and the audit trail: the catalogue, calendar, rules, value sets, tenant settings and workflow definitions. The kept tables are listed, with a reason for each, in `PRESERVED_TENANT_TABLES` in `packages/demo-data/src/reset.ts`; any table not listed there is wiped.
+
 The amber banner at the top of each app confirms the active scenario.
 
 **3. Log in with the appropriate demo account**

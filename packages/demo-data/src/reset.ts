@@ -27,131 +27,129 @@ const SCENARIO_LOADERS: Record<string, (db: Db, tenantId: string, phase: string,
   'pgr-lifecycle':        pgrLifecycleLoad,
 };
 
-async function wipeTenantScenarioData(db: Db, tenantId: string): Promise<void> {
-  // Delete in dependency order (children before parents).
-  // Reference data (programmes, modules, value_sets, etc.) is intentionally preserved.
+/**
+ * Tenant tables a demo reset keeps: reference data the scenarios build on
+ * (catalogue, calendar, rules, value sets), tenant configuration, workflow
+ * definitions, demo bookkeeping, and the audit trail. Every other table with
+ * a tenant_id is scenario data and is wiped, so a table added later is wiped
+ * by default rather than leaking between resets.
+ */
+export const PRESERVED_TENANT_TABLES: ReadonlyMap<string, string> = new Map([
+  // Catalogue and calendar: reference data the scenarios load idempotently.
+  ['public.programme', 'catalogue'], ['public.programme_route', 'catalogue'], ['public.programme_rule_set', 'catalogue'],
+  ['public.module', 'catalogue'], ['public.module_offering', 'catalogue'], ['public.module_relationship', 'catalogue'],
+  ['public.module_group', 'catalogue'], ['public.module_group_member', 'catalogue'], ['public.learning_outcome', 'catalogue'],
+  ['public.assessment_pattern', 'catalogue'], ['public.awarding_body', 'catalogue'],
+  ['public.academic_period', 'calendar'], ['public.registration_window', 'calendar'], ['public.reenrolment_period', 'calendar'],
+  // Rules, value sets and tenant configuration.
+  ['public.academic_rule', 'rules'], ['public.work_limit_rule', 'rules'], ['public.value_set_member', 'value sets'],
+  ['public.tenant_currency_config', 'configuration'], ['public.tenant_locale_config', 'configuration'],
+  ['public.environment_configuration', 'configuration'], ['public.environment_promotion_record', 'configuration'],
+  ['public.feature_flag_assignment', 'configuration'], ['public.feature_flag_evaluation_log', 'configuration'],
+  ['public.communication_template', 'configuration'], ['public.delivery_flow_config', 'configuration'],
+  ['public.adjustment_target_config', 'configuration'], ['public.retention_schedule', 'configuration'],
+  ['attendance.engagement_policy_version', 'configuration'],
+  // Workflow definitions and routing (instances and tasks are scenario data).
+  ['public.workflow_definition', 'workflow definitions'], ['public.workflow_assignment_rule', 'workflow definitions'],
+  ['public.workflow_trigger_rule', 'workflow definitions'],
+  // Demo bookkeeping.
+  ['public.demo_status', 'demo bookkeeping'], ['public.demo_load_checkpoint', 'demo bookkeeping'],
+  // The audit trail outlives resets: a reset is itself an audited event.
+  ['public.audit_record', 'audit trail'], ['public.audit_partition_seal', 'audit trail'], ['wellbeing.audit_log', 'audit trail'],
+]);
 
-  // Wellbeing schema — only delete if the schema exists
-  const [wellbeingSchemaRow] = await db.execute(
-    sql`SELECT 1 FROM information_schema.schemata WHERE schema_name = 'wellbeing' LIMIT 1`,
-  );
-  if (wellbeingSchemaRow) {
-    await db.execute(sql`DELETE FROM wellbeing.ec_determination       WHERE tenant_id = ${tenantId}`);
-    await db.execute(sql`DELETE FROM wellbeing.ec_evidence_review     WHERE tenant_id = ${tenantId}`);
-    await db.execute(sql`DELETE FROM wellbeing.ec_claim               WHERE tenant_id = ${tenantId}`);
-    await db.execute(sql`DELETE FROM wellbeing.adjustment_panel_decision WHERE tenant_id = ${tenantId}`);
-    await db.execute(sql`DELETE FROM wellbeing.adjustment_assessment  WHERE tenant_id = ${tenantId}`);
-    await db.execute(sql`DELETE FROM wellbeing.adjustment_case        WHERE tenant_id = ${tenantId}`);
-    await db.execute(sql`DELETE FROM wellbeing.dsa_entitlement        WHERE tenant_id = ${tenantId}`);
-    await db.execute(sql`DELETE FROM wellbeing.disability_support_case WHERE tenant_id = ${tenantId}`);
-    await db.execute(sql`DELETE FROM wellbeing.intervention_plan      WHERE tenant_id = ${tenantId}`);
-    await db.execute(sql`DELETE FROM wellbeing.mental_health_case     WHERE tenant_id = ${tenantId}`);
-    await db.execute(sql`DELETE FROM wellbeing.early_warning_alert    WHERE tenant_id = ${tenantId}`);
-    await db.execute(sql`DELETE FROM wellbeing.srs_context_projection WHERE tenant_id = ${tenantId}`);
-    await db.execute(sql`DELETE FROM wellbeing.wellbeing_case         WHERE tenant_id = ${tenantId}`);
+interface TenantTable { name: string; deleteTriggers: string[] }
+
+/**
+ * Wipes a demo tenant's scenario data in one transaction: every tenant table
+ * except PRESERVED_TENANT_TABLES, children before parents (ordered from the
+ * database's foreign keys). Row-level security is satisfied by setting the
+ * tenant for the transaction. Append-only guard triggers are suspended only
+ * inside the transaction, and only this demo tenant's rows are deleted;
+ * assertResetAllowed has already checked the tenant is in demo mode.
+ */
+export async function wipeTenantScenarioData(db: Db, tenantId: string): Promise<void> {
+  await db.transaction(async (tx) => {
+    await tx.execute(sql`SELECT set_config('app.current_tenant_id', ${tenantId}, true)`);
+    const tables = await tenantTablesToWipe(tx as unknown as Db);
+
+    // HESA child tables have no tenant_id: delete through hesa_student_return first.
+    for (const child of ['hesa_validation_issue']) {
+      await tx.execute(sql`
+        DELETE FROM ${sql.identifier(child)} WHERE hesa_validation_report_id IN (
+          SELECT id FROM hesa_validation_report WHERE hesa_student_return_id IN (SELECT id FROM hesa_student_return WHERE tenant_id = ${tenantId}))
+      `);
+    }
+    for (const child of ['hesa_validation_report', 'hesa_identifier_assignment', 'hesa_submission', 'hesa_student_return_record']) {
+      await tx.execute(sql`
+        DELETE FROM ${sql.identifier(child)} WHERE hesa_student_return_id IN (SELECT id FROM hesa_student_return WHERE tenant_id = ${tenantId})
+      `);
+    }
+
+    for (const table of tables) {
+      const [schema, name] = table.name.split('.') as [string, string];
+      const target = sql`${sql.identifier(schema)}.${sql.identifier(name)}`;
+      for (const trigger of table.deleteTriggers) await tx.execute(sql`ALTER TABLE ${target} DISABLE TRIGGER ${sql.identifier(trigger)}`);
+      await tx.execute(sql`DELETE FROM ${target} WHERE tenant_id = ${tenantId}`);
+      for (const trigger of table.deleteTriggers) await tx.execute(sql`ALTER TABLE ${target} ENABLE TRIGGER ${sql.identifier(trigger)}`);
+    }
+  });
+}
+
+/** Tenant tables outside PRESERVED_TENANT_TABLES, ordered so every child is deleted before its parent. */
+export async function tenantTablesToWipe(db: Db): Promise<TenantTable[]> {
+  const tableRows = (await db.execute(sql`
+    SELECT n.nspname || '.' || c.relname AS name, c.oid::bigint AS oid
+    FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    JOIN pg_attribute a ON a.attrelid = c.oid AND a.attname = 'tenant_id' AND NOT a.attisdropped
+    WHERE c.relkind IN ('r', 'p') AND NOT c.relispartition
+      AND n.nspname NOT IN ('pg_catalog', 'information_schema') AND c.relname <> 'tenant'
+  `)) as unknown as Array<{ name: string; oid: string }>;
+  const fkRows = (await db.execute(sql`
+    SELECT con.conrelid::bigint AS child, con.confrelid::bigint AS parent
+    FROM pg_constraint con WHERE con.contype = 'f' AND con.conrelid <> con.confrelid
+  `)) as unknown as Array<{ child: string; parent: string }>;
+  const triggerRows = (await db.execute(sql`
+    SELECT tg.tgrelid::bigint AS oid, tg.tgname AS name
+    FROM pg_trigger tg WHERE NOT tg.tgisinternal AND (tg.tgtype & 8) <> 0
+  `)) as unknown as Array<{ oid: string; name: string }>;
+
+  const byOid = new Map(tableRows.map((t) => [String(t.oid), t.name]));
+  const wiped = new Set(tableRows.map((t) => t.name).filter((n) => !PRESERVED_TENANT_TABLES.has(n)));
+
+  // A preserved table that references a wiped one would block the wipe: fail loudly instead.
+  for (const fk of fkRows) {
+    const child = byOid.get(String(fk.child));
+    const parent = byOid.get(String(fk.parent));
+    if (child && parent && PRESERVED_TENANT_TABLES.has(child) && wiped.has(parent)) {
+      throw new Error(`Preserved table ${child} references wiped table ${parent}; preserve ${parent} too or stop preserving ${child}`);
+    }
   }
 
-  // Public schema — leaf tables first
-  await db.execute(sql`DELETE FROM post_ratification_amendment WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM post_ratification_case      WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM exceptional_circumstances_board_visibility WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM exceptional_circumstances   WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM misconduct_penalty_effect   WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM misconduct_outcome          WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM misconduct_case_reference   WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM mark                        WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM module_result               WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM assessment_submission        WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM exam_entry                  WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM exam_timetable_receipt      WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM assessment_component        WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM reasonable_adjustment       WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM disability_declaration      WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM external_examiner_signoff   WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM exam_board_member_attendance WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM exam_board_candidate_profile WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM award                       WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM progression_decision        WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM exam_board_data_pack        WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM exam_board                  WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM module_registration         WHERE tenant_id = ${tenantId}`);
+  // Children first: repeatedly take tables no remaining table depends on.
+  const childrenOf = new Map<string, Set<string>>([...wiped].map((n) => [n, new Set<string>()]));
+  for (const fk of fkRows) {
+    const child = byOid.get(String(fk.child));
+    const parent = byOid.get(String(fk.parent));
+    if (child && parent && wiped.has(child) && wiped.has(parent)) {
+      childrenOf.get(parent)!.add(child);
+    }
+  }
+  const ordered: string[] = [];
+  const remaining = new Set(wiped);
+  while (remaining.size > 0) {
+    const leaves = [...remaining].filter((n) => [...childrenOf.get(n)!].every((c) => !remaining.has(c))).sort();
+    if (leaves.length === 0) throw new Error(`Foreign-key cycle among demo tables: ${[...remaining].sort().join(', ')}`);
+    for (const leaf of leaves) { ordered.push(leaf); remaining.delete(leaf); }
+  }
 
-  // HESA child tables have no tenant_id — delete via correlated subquery through hesa_student_return.
-  // Must come BEFORE integration_exchange, which hesa_validation_report optionally references.
-  await db.execute(sql`
-    DELETE FROM hesa_validation_issue
-    WHERE hesa_validation_report_id IN (
-      SELECT id FROM hesa_validation_report
-      WHERE hesa_student_return_id IN (SELECT id FROM hesa_student_return WHERE tenant_id = ${tenantId})
-    )
-  `);
-  await db.execute(sql`
-    DELETE FROM hesa_validation_report
-    WHERE hesa_student_return_id IN (SELECT id FROM hesa_student_return WHERE tenant_id = ${tenantId})
-  `);
-  await db.execute(sql`
-    DELETE FROM hesa_identifier_assignment
-    WHERE hesa_student_return_id IN (SELECT id FROM hesa_student_return WHERE tenant_id = ${tenantId})
-  `);
-  await db.execute(sql`
-    DELETE FROM hesa_submission
-    WHERE hesa_student_return_id IN (SELECT id FROM hesa_student_return WHERE tenant_id = ${tenantId})
-  `);
-  await db.execute(sql`
-    DELETE FROM hesa_student_return_record
-    WHERE hesa_student_return_id IN (SELECT id FROM hesa_student_return WHERE tenant_id = ${tenantId})
-  `);
-  await db.execute(sql`DELETE FROM hesa_student_return         WHERE tenant_id = ${tenantId}`);
-
-  await db.execute(sql`DELETE FROM integration_exchange        WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM integration_registration    WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM reenrolment_confirmation    WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM enrolment_status_transition WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM enrolment_downstream_trigger WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM fee_liability               WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM slc_notification           WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM student_regulatory_profile  WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM ukvi_attendance_report      WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM ukvi_cas_request            WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM ukvi_compliance_alert       WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM ukvi_visa_status            WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM ofs_extract                 WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM ucas_application            WHERE tenant_id = ${tenantId}`);
-  // foi_extract has a logical FK to foi_request — delete child before parent
-  await db.execute(sql`DELETE FROM foi_extract                 WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM foi_request                 WHERE tenant_id = ${tenantId}`);
-
-  // PGR (BP-03-007–BP-06-006) — leaf tables first; several hard-reference
-  // person(id), so this entire block must precede the person delete below.
-  await db.execute(sql`DELETE FROM thesis_correction_requirement WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM examiner_report               WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM final_thesis_deposit          WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM pgr_examination_outcome       WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM viva_event                    WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM examiner_appointment          WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM thesis_submission             WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM pgr_completion_case           WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM pgr_examination_case          WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM research_milestone            WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM pgr_review_member              WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM pgr_progress_review            WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM staff_assignment               WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM pgr_supervisor_nomination      WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM pgr_supervision_case           WHERE tenant_id = ${tenantId}`);
-  // Shared business-case primitive (BPR-D01–D19) — safe to wipe per tenant;
-  // no PGR table (or any other current demo scenario) hard-references these.
-  await db.execute(sql`DELETE FROM case_evidence_reference       WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM case_decision                 WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM business_case                 WHERE tenant_id = ${tenantId}`);
-
-  await db.execute(sql`DELETE FROM enrolment                   WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM identity_verification_check WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM person_identity             WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM student_address             WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM student_contact_method      WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM notification                WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM communication_dispatch_log  WHERE tenant_id = ${tenantId}`);
-  await db.execute(sql`DELETE FROM person                      WHERE tenant_id = ${tenantId}`);
+  const triggersByName = new Map<string, string[]>();
+  for (const t of triggerRows) {
+    const name = byOid.get(String(t.oid));
+    if (name) triggersByName.set(name, [...(triggersByName.get(name) ?? []), t.name]);
+  }
+  return ordered.map((name) => ({ name, deleteTriggers: triggersByName.get(name) ?? [] }));
 }
 
 export async function resetScenario(opts: {
