@@ -639,6 +639,7 @@ export async function buildApp(
       ['/status-case',               'enrolments'],
       ['/curriculum-publications',   'catalogue'],
       ['/recognised-credits',        'enrolments'],
+      ['/academic-exceptions',       'enrolments'],
       ['/rule-exceptions',           'enrolments'],
       ['/award-recommendations',     'progression'],
       ['/document-issues',           'progression'],

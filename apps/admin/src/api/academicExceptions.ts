@@ -77,3 +77,12 @@ export const revokeRuleException = (id: string, reason: string) =>
 
 export interface ModuleSummary { moduleId: string; code: string; title: string; creditValue: number | null }
 export const listModules = () => api.get<ModuleSummary[]>('/api/v1/modules');
+
+/** Who a pending proposal is about. */
+export interface PendingSubject { personId: string; studentNumber: string; studentName: string; programmeCode: string | null; programmeTitle: string | null }
+export interface PendingApprovals {
+  credits: Array<RecognisedCredit & { subject: PendingSubject }>;
+  exceptions: Array<RuleException & { subject: PendingSubject }>;
+}
+/** Every proposal awaiting a decision, oldest first (academic-exception:approve). */
+export const listPendingApprovals = () => api.get<PendingApprovals>('/api/v1/academic-exceptions/pending');

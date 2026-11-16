@@ -14,11 +14,11 @@ import { useAuth } from '../auth/AuthContext.js';
 import { EnrolmentScoped } from '../components/EnrolmentScoped.js';
 import { useValueSet } from '../hooks/useValueSet.js';
 
-function message(err: unknown, fallback: string): string {
+export function message(err: unknown, fallback: string): string {
   return err instanceof ApiError ? (err.detail ?? err.message) : fallback;
 }
 
-const ruleLabel = (code: string) => ENROLMENT_RULES.find((r) => r.code === code)?.label ?? code;
+export const ruleLabel = (code: string) => ENROLMENT_RULES.find((r) => r.code === code)?.label ?? code;
 
 /**
  * Recognised credit and rule exceptions for one of the student's enrolments
@@ -163,7 +163,7 @@ function EnrolmentExceptions({ enrolmentId, canPropose, canApprove }: { enrolmen
 }
 
 /** Approve or reject with a reason; the proposer is told someone else must decide. */
-function DecideControl({ subject, ownProposal, onDecide }: {
+export function DecideControl({ subject, ownProposal, onDecide }: {
   subject: string; ownProposal: boolean; onDecide: (code: 'approved' | 'rejected', reason: string) => Promise<boolean>;
 }) {
   const [open, setOpen] = useState(false);

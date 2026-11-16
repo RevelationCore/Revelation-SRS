@@ -151,3 +151,36 @@ describe('recognised credit and rule exceptions', () => {
     expect((await call('POST', `/rule-exceptions/${id}/revocation`, approverJwt, { reason: 'Student changed route' })).json<{ statusCode: string }>().statusCode).toBe('revoked');
   });
 });
+
+describe('approver worklist', () => {
+  it('lists every pending proposal with its student, and a decided one leaves the list', async () => {
+    const person = await call('POST', '/students', registryJwt, { legalFirstName: 'Pending', legalFamilyName: 'Approval' });
+    const personId = person.json<{ personId: string }>().personId;
+    const enrolmentId = (await call('POST', '/enrolments', registryJwt, {
+      personId, modeOfStudyCode: 'full-time', academicYearOfEntry: '2026-27', startDate: '2026-09-21',
+    })).json<{ enrolmentId: string }>().enrolmentId;
+    const credit = (await call('POST', `/enrolments/${enrolmentId}/recognised-credits`, registryJwt, {
+      recognitionTypeCode: 'rpcl', sourceDescription: 'Pending HND', creditValue: 60,
+    })).json<{ recognisedCreditId: string }>().recognisedCreditId;
+    const exception = (await call('POST', `/enrolments/${enrolmentId}/rule-exceptions`, registryJwt, {
+      ruleCode: 'max-credits-per-period', exceptionTypeCode: 'waiver', description: 'Pending waiver', validFrom: '2026-09-01',
+    })).json<{ ruleExceptionId: string }>().ruleExceptionId;
+
+    type Pending = { credits: Array<{ recognisedCreditId: string; subject: { personId: string; studentName: string } }>; exceptions: Array<{ ruleExceptionId: string }> };
+    const pending = (await call('GET', '/academic-exceptions/pending', approverJwt)).json<Pending>();
+    expect(pending.credits.find((c) => c.recognisedCreditId === credit)?.subject).toMatchObject({ personId, studentName: 'Pending Approval' });
+    expect(pending.exceptions.map((x) => x.ruleExceptionId)).toContain(exception);
+
+    await call('POST', `/rule-exceptions/${exception}/decision`, approverJwt, { decisionCode: 'approved', reason: 'Justified' });
+    const after = (await call('GET', '/academic-exceptions/pending', approverJwt)).json<Pending>();
+    expect(after.exceptions.map((x) => x.ruleExceptionId)).not.toContain(exception);
+    expect(after.credits.map((c) => c.recognisedCreditId)).toContain(credit);
+
+    // Reading is not approving; another tenant sees none of these.
+    const tutorJwt = await ctx.makeJwt({ sub: 'tutor-1', roles: ['personal-tutor'] });
+    expect((await call('GET', '/academic-exceptions/pending', tutorJwt)).statusCode).toBe(403);
+    const otherTenant = await ctx.makeJwt({ sub: 'approver-2', roles: ['programme-approver'], tenantId: ctx.secondTenantId });
+    expect((await call('GET', '/academic-exceptions/pending', otherTenant)).json<Pending>().credits.map((c) => c.recognisedCreditId)).not.toContain(credit);
+  });
+});
+

@@ -756,6 +756,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/academic-exceptions/pending": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getAcademicExceptionsPending"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/enrolments/{enrolmentId}/recognised-credits": {
         parameters: {
             query?: never;
@@ -9451,6 +9467,79 @@ export interface operations {
                         title: string;
                         status: number;
                         detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getAcademicExceptionsPending: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        credits: {
+                            recognisedCreditId: string;
+                            enrolmentId: string;
+                            recognitionTypeCode: string;
+                            sourceDescription: string;
+                            creditValue: number;
+                            fheqLevel: number | null;
+                            moduleId: string | null;
+                            statusCaseId: string | null;
+                            evidenceRef: string | null;
+                            academicYear: string | null;
+                            statusCode: string;
+                            createdBy: string;
+                            createdAt: string;
+                            decidedBy: string | null;
+                            decidedAt: string | null;
+                            decisionReason: string | null;
+                            subject: {
+                                personId: string;
+                                studentNumber: string;
+                                studentName: string;
+                                programmeCode: string | null;
+                                programmeTitle: string | null;
+                            };
+                        }[];
+                        exceptions: {
+                            ruleExceptionId: string;
+                            enrolmentId: string;
+                            programmeRuleSetId: string | null;
+                            ruleCode: string;
+                            exceptionTypeCode: string;
+                            description: string;
+                            validFrom: string;
+                            validTo: string | null;
+                            authorityRef: string | null;
+                            variationValue: {
+                                [key: string]: number | null;
+                            } | null;
+                            statusCode: string;
+                            createdBy: string;
+                            createdAt: string;
+                            decidedBy: string | null;
+                            decidedAt: string | null;
+                            decisionReason: string | null;
+                            subject: {
+                                personId: string;
+                                studentNumber: string;
+                                studentName: string;
+                                programmeCode: string | null;
+                                programmeTitle: string | null;
+                            };
+                        }[];
                     };
                 };
             };

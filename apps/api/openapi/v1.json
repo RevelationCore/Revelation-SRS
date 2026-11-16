@@ -11546,6 +11546,380 @@
         }
       }
     },
+    "/api/v1/academic-exceptions/pending": {
+      "get": {
+        "operationId": "getAcademicExceptionsPending",
+        "tags": [
+          "enrolments"
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "credits",
+                    "exceptions"
+                  ],
+                  "properties": {
+                    "credits": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "recognisedCreditId",
+                          "enrolmentId",
+                          "recognitionTypeCode",
+                          "sourceDescription",
+                          "creditValue",
+                          "fheqLevel",
+                          "moduleId",
+                          "statusCaseId",
+                          "evidenceRef",
+                          "academicYear",
+                          "statusCode",
+                          "createdBy",
+                          "createdAt",
+                          "decidedBy",
+                          "decidedAt",
+                          "decisionReason",
+                          "subject"
+                        ],
+                        "properties": {
+                          "recognisedCreditId": {
+                            "type": "string"
+                          },
+                          "enrolmentId": {
+                            "type": "string"
+                          },
+                          "recognitionTypeCode": {
+                            "type": "string"
+                          },
+                          "sourceDescription": {
+                            "type": "string"
+                          },
+                          "creditValue": {
+                            "type": "integer"
+                          },
+                          "fheqLevel": {
+                            "anyOf": [
+                              {
+                                "type": "integer"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "moduleId": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "statusCaseId": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "evidenceRef": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "academicYear": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "statusCode": {
+                            "type": "string"
+                          },
+                          "createdBy": {
+                            "type": "string"
+                          },
+                          "createdAt": {
+                            "type": "string"
+                          },
+                          "decidedBy": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "decidedAt": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "decisionReason": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "subject": {
+                            "type": "object",
+                            "required": [
+                              "personId",
+                              "studentNumber",
+                              "studentName",
+                              "programmeCode",
+                              "programmeTitle"
+                            ],
+                            "properties": {
+                              "personId": {
+                                "type": "string"
+                              },
+                              "studentNumber": {
+                                "type": "string"
+                              },
+                              "studentName": {
+                                "type": "string"
+                              },
+                              "programmeCode": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "programmeTitle": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "exceptions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "ruleExceptionId",
+                          "enrolmentId",
+                          "programmeRuleSetId",
+                          "ruleCode",
+                          "exceptionTypeCode",
+                          "description",
+                          "validFrom",
+                          "validTo",
+                          "authorityRef",
+                          "variationValue",
+                          "statusCode",
+                          "createdBy",
+                          "createdAt",
+                          "decidedBy",
+                          "decidedAt",
+                          "decisionReason",
+                          "subject"
+                        ],
+                        "properties": {
+                          "ruleExceptionId": {
+                            "type": "string"
+                          },
+                          "enrolmentId": {
+                            "type": "string"
+                          },
+                          "programmeRuleSetId": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "ruleCode": {
+                            "type": "string"
+                          },
+                          "exceptionTypeCode": {
+                            "type": "string"
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "validFrom": {
+                            "type": "string"
+                          },
+                          "validTo": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "authorityRef": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "variationValue": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "additionalProperties": {
+                                  "anyOf": [
+                                    {
+                                      "type": "number"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                }
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "statusCode": {
+                            "type": "string"
+                          },
+                          "createdBy": {
+                            "type": "string"
+                          },
+                          "createdAt": {
+                            "type": "string"
+                          },
+                          "decidedBy": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "decidedAt": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "decisionReason": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "subject": {
+                            "type": "object",
+                            "required": [
+                              "personId",
+                              "studentNumber",
+                              "studentName",
+                              "programmeCode",
+                              "programmeTitle"
+                            ],
+                            "properties": {
+                              "personId": {
+                                "type": "string"
+                              },
+                              "studentNumber": {
+                                "type": "string"
+                              },
+                              "studentName": {
+                                "type": "string"
+                              },
+                              "programmeCode": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "programmeTitle": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/enrolments/{enrolmentId}/recognised-credits": {
       "get": {
         "operationId": "getEnrolmentsByEnrolmentIdRecognisedCredits",

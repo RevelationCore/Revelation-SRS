@@ -46,6 +46,10 @@ const ExceptionSchema = Type.Object({
   statusCode: Type.String(), createdBy: Type.String(), createdAt: Type.String(),
   decidedBy: Nullable(Type.String()), decidedAt: Nullable(Type.String()), decisionReason: Nullable(Type.String()),
 });
+const SubjectSchema = Type.Object({
+  personId: Type.String(), studentNumber: Type.String(), studentName: Type.String(),
+  programmeCode: Nullable(Type.String()), programmeTitle: Nullable(Type.String()),
+});
 const DecisionBody = Type.Object({
   decisionCode: Type.Union([Type.Literal('approved'), Type.Literal('rejected')]), reason: Type.String({ minLength: 1, maxLength: 2000 }),
 });
@@ -99,6 +103,24 @@ export function curriculumPublicationRoutes(fastify: FastifyInstance): void {
     const applied = await fastify.curriculumPublicationService.apply(request.tenantId, publicationId, request.user.sub);
     await audit(fastify, request, 'curriculum_publication', publicationId, 'update', 'Applied curriculum publication');
     await reply.send(publicationToWire(applied));
+  });
+
+  // ── Approver worklist ────────────────────────────────────────────────────
+
+  fastify.get('/academic-exceptions/pending', {
+    schema: {
+      response: { 200: Type.Object({
+        credits: Type.Array(Type.Composite([CreditSchema, Type.Object({ subject: SubjectSchema })])),
+        exceptions: Type.Array(Type.Composite([ExceptionSchema, Type.Object({ subject: SubjectSchema })])),
+      }) },
+    },
+    preHandler: [requirePermission('academic-exception:approve')],
+  }, async (request, reply) => {
+    const { credits, exceptions } = await fastify.academicExceptionService.pendingApprovals(request.tenantId);
+    await reply.send({
+      credits: credits.map(({ subject, ...c }) => ({ ...creditToWire(c), subject })),
+      exceptions: exceptions.map(({ subject, ...x }) => ({ ...exceptionToWire(x), subject })),
+    });
   });
 
   // ── Recognised credit ────────────────────────────────────────────────────
