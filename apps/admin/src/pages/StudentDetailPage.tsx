@@ -75,13 +75,14 @@ import { userHasAnyPermission } from '../auth/RequirePermission.js';
 import { ExternalRecordsTab } from './ExternalRecordsTab.js';
 import { SupportEmploymentTab } from './SupportEmploymentTab.js';
 import { AcademicExceptionsTab } from './AcademicExceptionsTab.js';
+import { AwardsTab } from './AwardsTab.js';
 import {
   PageHeader, Card, CardHeader, CardBody, Button, Input, Select, Textarea, LabelledField,
   Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, Dialog, DialogClose,
   Tabs, TabsList, TabsTrigger, TabsContent,
 } from '@revelation-srs/ui';
 
-type Tab = 'identity' | 'enrolments' | 'credit' | 'registrations' | 'assessment' | 'history' | 'wellbeing' | 'corrections' | 'cas' | 'communications' | 'other-systems' | 'support';
+type Tab = 'identity' | 'enrolments' | 'credit' | 'awards' | 'registrations' | 'assessment' | 'history' | 'wellbeing' | 'corrections' | 'cas' | 'communications' | 'other-systems' | 'support';
 
 export function StudentDetailPage() {
   const { roles } = useAuth();
@@ -127,10 +128,12 @@ export function StudentDetailPage() {
   const canReadCircumstances = userHasAnyPermission(roles, ['circumstances:read']);
   const canReadNotifications = userHasAnyPermission(roles, ['notifications:read']);
   const canReadExceptions = userHasAnyPermission(roles, ['academic-exception:read']);
+  const canReadProgression = userHasAnyPermission(roles, ['progression:read']);
   const tabs: Tab[] = [
     'identity',
     ...(canReadEnrolments ? ['enrolments', 'history'] as Tab[] : []),
     ...(canReadEnrolments && canReadExceptions ? ['credit'] as Tab[] : []),
+    ...(canReadEnrolments && canReadProgression ? ['awards'] as Tab[] : []),
     ...(canReadEnrolments && canReadCorrections ? ['corrections'] as Tab[] : []),
     ...(canReadEnrolments && canReadCas ? ['cas'] as Tab[] : []),
     ...(canReadRegistrations ? ['registrations'] as Tab[] : []),
@@ -157,6 +160,20 @@ export function StudentDetailPage() {
           ))}
         </TabsList>
 
+        <TabsContent value="awards">
+          {personId && (
+            <AwardsTab
+              personId={personId}
+              permissions={{
+                canRecommend: userHasAnyPermission(roles, ['award:recommend']),
+                canConfer: userHasAnyPermission(roles, ['award:confer']),
+                canReadPlans: userHasAnyPermission(roles, ['reassessment:read']),
+                canWritePlans: userHasAnyPermission(roles, ['reassessment:write']),
+                canReadBoards: userHasAnyPermission(roles, ['exam-board:read']),
+              }}
+            />
+          )}
+        </TabsContent>
         <TabsContent value="credit">
           {personId && (
             <AcademicExceptionsTab

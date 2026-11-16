@@ -10,8 +10,8 @@ import {
   listRecognisedCredits, proposeRecognisedCredit, decideRecognisedCredit,
   listRuleExceptions, proposeRuleException, decideRuleException, revokeRuleException, listModules,
 } from '../api/academicExceptions.js';
-import { type Enrolment, listStudentEnrolments } from '../api/enrolments.js';
 import { useAuth } from '../auth/AuthContext.js';
+import { EnrolmentScoped } from '../components/EnrolmentScoped.js';
 import { useValueSet } from '../hooks/useValueSet.js';
 
 function message(err: unknown, fallback: string): string {
@@ -27,38 +27,10 @@ const ruleLabel = (code: string) => ENROLMENT_RULES.find((r) => r.code === code)
  * module selection and progression.
  */
 export function AcademicExceptionsTab({ personId, canPropose, canApprove }: { personId: string; canPropose: boolean; canApprove: boolean }) {
-  const [enrolments, setEnrolments] = useState<Enrolment[] | null>(null);
-  const [enrolmentId, setEnrolmentId] = useState('');
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    let cancelled = false;
-    listStudentEnrolments(personId)
-      .then((list) => { if (!cancelled) { setEnrolments(list); setEnrolmentId(list[0]?.enrolmentId ?? ''); } })
-      .catch((err: unknown) => { if (!cancelled) setError(message(err, 'Failed to load enrolments')); });
-    return () => { cancelled = true; };
-  }, [personId]);
-
-  if (error) return <p className="text-sm text-danger-600" role="alert">{error}</p>;
-  if (!enrolments) return <div className="flex justify-center py-8"><Spinner /></div>;
-  if (enrolments.length === 0) return <p className="text-sm text-neutral-600">This student has no enrolments.</p>;
-
   return (
-    <div className="flex flex-col gap-6">
-      {enrolments.length > 1 && (
-        <div className="flex items-center gap-3">
-          <label htmlFor="exceptions-enrolment" className="text-sm text-neutral-500">Enrolment:</label>
-          <Select id="exceptions-enrolment" value={enrolmentId} onChange={(e) => setEnrolmentId(e.target.value)} className="w-auto">
-            {enrolments.map((e) => (
-              <option key={e.enrolmentId} value={e.enrolmentId}>
-                {e.programmeCode ?? 'Programme'} — {e.academicYearOfEntry} ({e.statusCode})
-              </option>
-            ))}
-          </Select>
-        </div>
-      )}
-      {enrolmentId && <EnrolmentExceptions key={enrolmentId} enrolmentId={enrolmentId} canPropose={canPropose} canApprove={canApprove} />}
-    </div>
+    <EnrolmentScoped personId={personId} idPrefix="exceptions">
+      {(enrolment) => <EnrolmentExceptions enrolmentId={enrolment.enrolmentId} canPropose={canPropose} canApprove={canApprove} />}
+    </EnrolmentScoped>
   );
 }
 
