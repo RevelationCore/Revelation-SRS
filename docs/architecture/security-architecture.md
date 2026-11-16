@@ -171,6 +171,9 @@ fastify.get('/students/:id', {
 | `curriculum-publication:read` / `:receive` (the curriculum connector sends; also registry) | | ✓ | | | | ✓ |
 | `curriculum-publication:apply` (apply a validated publication) | | ✓ | | | | ✓ |
 | `academic-exception:read` / `:propose` / `:approve` (recognised credit and rule exceptions; also programme approvers; never the proposer) | | ✓ | | | | |
+| `award:recommend` (record a board's award recommendation) | | ✓ | | ✓ | | |
+| `award:confer` (confer a recommended award as delegated authority; never the recommender) | | ✓ | | | | ✓ |
+| `reassessment:read` / `:write` (reassessment plans; read also for board members and tutors) | | ✓ | | ✓ | | |
 | `special-category:read` | | | | | ✓ | |
 | `config:write` | | | | | | ✓ |
 | `integration:manage` | | | | | | ✓ |

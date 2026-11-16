@@ -131,8 +131,46 @@ export class AwardService {
       throw new ValidationError(`Enrolment '${enrolmentId}' already has a conferred award`);
     }
 
+    return this.#recordAward(enrolmentId, enrolment, tenantId, input, actorId, recommendation);
+  }
+
+
+  /**
+   * Records an award conferred from a board recommendation (BPR-D14).
+   * The recommendation and conferment are recorded by the caller; this
+   * writes the award, graduates the enrolment and publishes the event.
+   * Safe to repeat: an award already recorded with the same ID is returned.
+   */
+  async recordConferredAward(
+    enrolmentId: string,
+    tenantId: string,
+    input: Omit<ConferAwardInput, 'examBoardId'> & { examBoardId: string | null; awardId: string },
+    actorId: string,
+    recommendation: ClassificationRecommendation | null,
+  ): Promise<string> {
+    const existing = await this.#getCurrentAward(enrolmentId, tenantId);
+    if (existing?.awardId === input.awardId) return input.awardId;
+    if (existing) throw new ValidationError(`Enrolment '${enrolmentId}' already has a conferred award`);
+    const enrolment = await this.#getEnrolment(enrolmentId, tenantId);
+    return this.#recordAward(enrolmentId, enrolment, tenantId, input, actorId, recommendation, input.awardId);
+  }
+
+  /** Throws unless the exam board is ratified and covers the enrolment. */
+  async assertRatifiedBoardCoversEnrolment(examBoardId: string, enrolmentId: string, tenantId: string): Promise<void> {
+    await this.#ensureRatifiedBoardCoversEnrolment(examBoardId, enrolmentId, tenantId);
+  }
+
+  async #recordAward(
+    enrolmentId: string,
+    enrolment: { personId: string; statusCode: string },
+    tenantId: string,
+    input: Omit<ConferAwardInput, 'examBoardId'> & { examBoardId: string | null },
+    actorId: string,
+    recommendation: ClassificationRecommendation | null,
+    requestedAwardId?: string,
+  ): Promise<string> {
     const now   = clockNow();
-    const awardId = randomUUID();
+    const awardId = requestedAwardId ?? randomUUID();
 
     await withTenantContext(this.db, tenantId, async (tx) => {
       await tx.insert(awards).values({
@@ -141,7 +179,7 @@ export class AwardService {
         tenantId:            tenantId as `${string}-${string}-${string}-${string}-${string}`,
         enrolmentId:         enrolmentId as `${string}-${string}-${string}-${string}-${string}`,
         personId:            enrolment.personId as `${string}-${string}-${string}-${string}-${string}`,
-        examBoardId:         input.examBoardId as `${string}-${string}-${string}-${string}-${string}`,
+        examBoardId:         (input.examBoardId ?? null) as `${string}-${string}-${string}-${string}-${string}` | null,
         sourceCaseId:        null,
         qualificationCode:   input.qualificationCode,
         classificationCode:  input.classificationCode,
@@ -157,7 +195,7 @@ export class AwardService {
       });
     });
 
-    await this.#writeAwardEvidence(tenantId, awardId, recommendation);
+    if (recommendation) await this.#writeAwardEvidence(tenantId, awardId, recommendation);
 
     // Graduate the enrolment via the standard transition path to preserve
     // the transition ledger and person status cascade (→ alumnus).
@@ -170,7 +208,7 @@ export class AwardService {
         awardId,
         enrolmentId,
         personId:           enrolment.personId,
-        examBoardId:        input.examBoardId,
+        examBoardId:        input.examBoardId ?? '',
         qualificationCode:  input.qualificationCode,
         classificationCode: input.classificationCode,
         awardDate:          input.awardDate,

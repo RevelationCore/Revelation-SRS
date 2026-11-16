@@ -171,6 +171,13 @@ export const PERMISSION_ROLES = {
   'pgr-case:write':                      ['pgr-administrator', 'registry-administrator'] as Role[],
   'pgr-case:decide':                     ['pgr-director', 'registry-administrator'] as Role[],
   'award:confer:research':               ['pgr-director', 'registry-administrator'] as Role[],
+  // Award recommendation and conferment (BPR-D14): the board recommends,
+  // a delegated authority who is not the recommender confers.
+  'award:recommend':                     ['exam-board-chair', 'registry-administrator'] as Role[],
+  'award:confer':                        ['registry-administrator', 'tenant-administrator'] as Role[],
+  // Reassessment plans follow a ratified progression decision.
+  'reassessment:read':                   ['registry-administrator', 'exam-board-chair', 'exam-board-member', 'module-tutor', 'personal-tutor'] as Role[],
+  'reassessment:write':                  ['registry-administrator'] as Role[],
 } as const;
 
 export type Permission = keyof typeof PERMISSION_ROLES;

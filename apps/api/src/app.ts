@@ -117,10 +117,12 @@ import { deliveryRoutes, inboundRoutes } from './routes/delivery.js';
 import { supportRoutes } from './routes/support.js';
 import { statusCaseRoutes } from './routes/status-cases.js';
 import { curriculumPublicationRoutes } from './routes/curriculum-publications.js';
+import { awardConfermentRoutes } from './routes/award-conferment.js';
 import { SupportService } from './platform/support/support-service.js';
 import { StatusCaseService } from './platform/status-cases/status-case-service.js';
 import { CurriculumPublicationService } from './platform/curriculum/publication-service.js';
 import { AcademicExceptionService } from './platform/curriculum/academic-exception-service.js';
+import { ConfermentService } from './platform/progression/conferment-service.js';
 import { EmploymentService } from './platform/support/employment-service.js';
 import { InboundRecordService } from './platform/delivery/inbound.js';
 import { engagementOutcomeRoutes } from './routes/engagement-outcomes.js';
@@ -352,6 +354,7 @@ export async function buildApp(
   const misconduct = new MisconductService(db, valueSets, eventBus);
   const progression = new ProgressionService(db, eventBus, rules, deliveries);
   const awards      = new AwardService(db, eventBus, rules, enrolments);
+  const conferment = new ConfermentService(db, valueSets, enrolments, awards);
   const boards = new BoardService(db, eventBus, valueSets, awards, featureFlags);
   const boardAuthority = new BoardAuthorityService(db);
   const hear        = new HearService(db);
@@ -447,6 +450,7 @@ export async function buildApp(
   fastify.decorate('statusCaseService', statusCases);
   fastify.decorate('curriculumPublicationService', curriculumPublications);
   fastify.decorate('academicExceptionService', academicExceptions);
+  fastify.decorate('confermentService', conferment);
   fastify.decorate('employmentService', employment);
   fastify.decorate('businessCaseService', businessCases);
   fastify.decorate('identityResolutionService', identityResolution);
@@ -624,6 +628,9 @@ export async function buildApp(
       ['/curriculum-publications',   'catalogue'],
       ['/recognised-credits',        'enrolments'],
       ['/rule-exceptions',           'enrolments'],
+      ['/award-recommendations',     'progression'],
+      ['/reassessment-plans',        'progression'],
+      ['/progression-decisions',     'progression'],
       ['/work-limits',               'tenant-admin'],
       ['/external-records',          'integration-registry'],
       ['/engagement-outcomes',       'engagement-outcomes'],
@@ -716,6 +723,7 @@ export async function buildApp(
   await fastify.register(supportRoutes,             { prefix: '/api/v1' });
   await fastify.register(statusCaseRoutes,          { prefix: '/api/v1' });
   await fastify.register(curriculumPublicationRoutes, { prefix: '/api/v1' });
+  await fastify.register(awardConfermentRoutes,     { prefix: '/api/v1' });
   await fastify.register(engagementOutcomeRoutes,   { prefix: '/api/v1' });
   await fastify.register(engagementProxyRoutes,     { prefix: '/api/v1' });
   await fastify.register(circumstancesRoutes,       { prefix: '/api/v1' });
@@ -799,6 +807,7 @@ declare module 'fastify' {
     statusCaseService: StatusCaseService;
     curriculumPublicationService: CurriculumPublicationService;
     academicExceptionService: AcademicExceptionService;
+    confermentService: ConfermentService;
     employmentService: EmploymentService;
     businessCaseService: BusinessCaseService;
     identityResolutionService: IdentityResolutionService;

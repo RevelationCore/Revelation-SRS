@@ -64,6 +64,13 @@
       "when": 1785000034000,
       "tag": "0008_curriculum_publication",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1785000035000,
+      "tag": "0009_reassessment_and_conferment",
+      "breakpoints": true
     }
   ]
 }

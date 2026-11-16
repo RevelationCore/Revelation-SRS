@@ -836,6 +836,102 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/enrolments/{enrolmentId}/award-recommendations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getEnrolmentsByEnrolmentIdAwardRecommendations"];
+        put?: never;
+        post: operations["createEnrolmentsByEnrolmentIdAwardRecommendations"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/award-recommendations/{recommendationId}/conferment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createAwardRecommendationsByRecommendationIdConferment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/award-recommendations/{recommendationId}/withdrawal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createAwardRecommendationsByRecommendationIdWithdrawal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/enrolments/{enrolmentId}/reassessment-plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getEnrolmentsByEnrolmentIdReassessmentPlans"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/progression-decisions/{progressionDecisionId}/reassessment-plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createProgressionDecisionsByProgressionDecisionIdReassessmentPlans"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reassessment-plans/{planId}/closure": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createReassessmentPlansByPlanIdClosure"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/students/{personId}/engagement-outcomes": {
         parameters: {
             query?: never;
@@ -9376,6 +9472,535 @@ export interface operations {
                         decidedBy: string | null;
                         decidedAt: string | null;
                         decisionReason: string | null;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getEnrolmentsByEnrolmentIdAwardRecommendations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrolmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        recommendationId: string;
+                        enrolmentId: string;
+                        personId: string;
+                        examBoardId: string | null;
+                        awardTypeCode: string;
+                        qualificationCode: string;
+                        classificationCode: string;
+                        calculatedClassificationCode: string | null;
+                        aggregateMark: number | null;
+                        discretionReason: string | null;
+                        authorityRef: string | null;
+                        statusCode: string;
+                        recommendedBy: string;
+                        recommendedAt: string;
+                        withdrawnReason: string | null;
+                        conferment: {
+                            confermentId: string;
+                            recommendationId: string;
+                            awardId: string;
+                            confermentDate: string;
+                            authorityRef: string;
+                            conferredBy: string;
+                            conferredAt: string;
+                        } | null;
+                    }[];
+                };
+            };
+        };
+    };
+    createEnrolmentsByEnrolmentIdAwardRecommendations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrolmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    awardTypeCode: "standard" | "exit" | "aegrotat" | "posthumous";
+                    qualificationCode: string;
+                    classificationCode: string;
+                    examBoardId?: string;
+                    discretionReason?: string;
+                    authorityRef?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        recommendationId: string;
+                        enrolmentId: string;
+                        personId: string;
+                        examBoardId: string | null;
+                        awardTypeCode: string;
+                        qualificationCode: string;
+                        classificationCode: string;
+                        calculatedClassificationCode: string | null;
+                        aggregateMark: number | null;
+                        discretionReason: string | null;
+                        authorityRef: string | null;
+                        statusCode: string;
+                        recommendedBy: string;
+                        recommendedAt: string;
+                        withdrawnReason: string | null;
+                        conferment: {
+                            confermentId: string;
+                            recommendationId: string;
+                            awardId: string;
+                            confermentDate: string;
+                            authorityRef: string;
+                            conferredBy: string;
+                            conferredAt: string;
+                        } | null;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createAwardRecommendationsByRecommendationIdConferment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recommendationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    confermentDate: string;
+                    authorityRef: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        recommendationId: string;
+                        enrolmentId: string;
+                        personId: string;
+                        examBoardId: string | null;
+                        awardTypeCode: string;
+                        qualificationCode: string;
+                        classificationCode: string;
+                        calculatedClassificationCode: string | null;
+                        aggregateMark: number | null;
+                        discretionReason: string | null;
+                        authorityRef: string | null;
+                        statusCode: string;
+                        recommendedBy: string;
+                        recommendedAt: string;
+                        withdrawnReason: string | null;
+                        conferment: {
+                            confermentId: string;
+                            recommendationId: string;
+                            awardId: string;
+                            confermentDate: string;
+                            authorityRef: string;
+                            conferredBy: string;
+                            conferredAt: string;
+                        } | null;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createAwardRecommendationsByRecommendationIdWithdrawal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recommendationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    reason: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        recommendationId: string;
+                        enrolmentId: string;
+                        personId: string;
+                        examBoardId: string | null;
+                        awardTypeCode: string;
+                        qualificationCode: string;
+                        classificationCode: string;
+                        calculatedClassificationCode: string | null;
+                        aggregateMark: number | null;
+                        discretionReason: string | null;
+                        authorityRef: string | null;
+                        statusCode: string;
+                        recommendedBy: string;
+                        recommendedAt: string;
+                        withdrawnReason: string | null;
+                        conferment: {
+                            confermentId: string;
+                            recommendationId: string;
+                            awardId: string;
+                            confermentDate: string;
+                            authorityRef: string;
+                            conferredBy: string;
+                            conferredAt: string;
+                        } | null;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getEnrolmentsByEnrolmentIdReassessmentPlans: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrolmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        reassessmentPlanId: string;
+                        enrolmentId: string;
+                        progressionDecisionId: string;
+                        planTypeCode: string;
+                        moduleRegistrationId: string | null;
+                        assessmentComponentId: string | null;
+                        academicPeriodId: string | null;
+                        attemptNumber: number;
+                        markCap: number | null;
+                        dueDate: string | null;
+                        statusCode: string;
+                        outcomeNote: string | null;
+                        createdBy: string;
+                        createdAt: string;
+                        closedBy: string | null;
+                        closedAt: string | null;
+                    }[];
+                };
+            };
+        };
+    };
+    createProgressionDecisionsByProgressionDecisionIdReassessmentPlans: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                progressionDecisionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    planTypeCode: string;
+                    moduleRegistrationId?: string;
+                    assessmentComponentId?: string;
+                    academicPeriodId?: string;
+                    dueDate?: string;
+                    markCap?: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        reassessmentPlanId: string;
+                        enrolmentId: string;
+                        progressionDecisionId: string;
+                        planTypeCode: string;
+                        moduleRegistrationId: string | null;
+                        assessmentComponentId: string | null;
+                        academicPeriodId: string | null;
+                        attemptNumber: number;
+                        markCap: number | null;
+                        dueDate: string | null;
+                        statusCode: string;
+                        outcomeNote: string | null;
+                        createdBy: string;
+                        createdAt: string;
+                        closedBy: string | null;
+                        closedAt: string | null;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createReassessmentPlansByPlanIdClosure: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                planId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    statusCode: "completed" | "expired" | "cancelled";
+                    note?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        reassessmentPlanId: string;
+                        enrolmentId: string;
+                        progressionDecisionId: string;
+                        planTypeCode: string;
+                        moduleRegistrationId: string | null;
+                        assessmentComponentId: string | null;
+                        academicPeriodId: string | null;
+                        attemptNumber: number;
+                        markCap: number | null;
+                        dueDate: string | null;
+                        statusCode: string;
+                        outcomeNote: string | null;
+                        createdBy: string;
+                        createdAt: string;
+                        closedBy: string | null;
+                        closedAt: string | null;
                     };
                 };
             };

@@ -13015,6 +13015,1760 @@
         }
       }
     },
+    "/api/v1/enrolments/{enrolmentId}/award-recommendations": {
+      "get": {
+        "operationId": "getEnrolmentsByEnrolmentIdAwardRecommendations",
+        "tags": [
+          "progression"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "enrolmentId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "recommendationId",
+                      "enrolmentId",
+                      "personId",
+                      "examBoardId",
+                      "awardTypeCode",
+                      "qualificationCode",
+                      "classificationCode",
+                      "calculatedClassificationCode",
+                      "aggregateMark",
+                      "discretionReason",
+                      "authorityRef",
+                      "statusCode",
+                      "recommendedBy",
+                      "recommendedAt",
+                      "withdrawnReason",
+                      "conferment"
+                    ],
+                    "properties": {
+                      "recommendationId": {
+                        "type": "string"
+                      },
+                      "enrolmentId": {
+                        "type": "string"
+                      },
+                      "personId": {
+                        "type": "string"
+                      },
+                      "examBoardId": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "awardTypeCode": {
+                        "type": "string"
+                      },
+                      "qualificationCode": {
+                        "type": "string"
+                      },
+                      "classificationCode": {
+                        "type": "string"
+                      },
+                      "calculatedClassificationCode": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "aggregateMark": {
+                        "anyOf": [
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "discretionReason": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "authorityRef": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "statusCode": {
+                        "type": "string"
+                      },
+                      "recommendedBy": {
+                        "type": "string"
+                      },
+                      "recommendedAt": {
+                        "type": "string"
+                      },
+                      "withdrawnReason": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "conferment": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "required": [
+                              "confermentId",
+                              "recommendationId",
+                              "awardId",
+                              "confermentDate",
+                              "authorityRef",
+                              "conferredBy",
+                              "conferredAt"
+                            ],
+                            "properties": {
+                              "confermentId": {
+                                "type": "string"
+                              },
+                              "recommendationId": {
+                                "type": "string"
+                              },
+                              "awardId": {
+                                "type": "string"
+                              },
+                              "confermentDate": {
+                                "type": "string"
+                              },
+                              "authorityRef": {
+                                "type": "string"
+                              },
+                              "conferredBy": {
+                                "type": "string"
+                              },
+                              "conferredAt": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createEnrolmentsByEnrolmentIdAwardRecommendations",
+        "tags": [
+          "progression"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "awardTypeCode",
+                  "qualificationCode",
+                  "classificationCode"
+                ],
+                "properties": {
+                  "awardTypeCode": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "standard"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "exit"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "aegrotat"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "posthumous"
+                        ]
+                      }
+                    ]
+                  },
+                  "qualificationCode": {
+                    "minLength": 1,
+                    "maxLength": 50,
+                    "type": "string"
+                  },
+                  "classificationCode": {
+                    "minLength": 1,
+                    "maxLength": 50,
+                    "type": "string"
+                  },
+                  "examBoardId": {
+                    "type": "string"
+                  },
+                  "discretionReason": {
+                    "maxLength": 2000,
+                    "type": "string"
+                  },
+                  "authorityRef": {
+                    "maxLength": 200,
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "enrolmentId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "recommendationId",
+                    "enrolmentId",
+                    "personId",
+                    "examBoardId",
+                    "awardTypeCode",
+                    "qualificationCode",
+                    "classificationCode",
+                    "calculatedClassificationCode",
+                    "aggregateMark",
+                    "discretionReason",
+                    "authorityRef",
+                    "statusCode",
+                    "recommendedBy",
+                    "recommendedAt",
+                    "withdrawnReason",
+                    "conferment"
+                  ],
+                  "properties": {
+                    "recommendationId": {
+                      "type": "string"
+                    },
+                    "enrolmentId": {
+                      "type": "string"
+                    },
+                    "personId": {
+                      "type": "string"
+                    },
+                    "examBoardId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "awardTypeCode": {
+                      "type": "string"
+                    },
+                    "qualificationCode": {
+                      "type": "string"
+                    },
+                    "classificationCode": {
+                      "type": "string"
+                    },
+                    "calculatedClassificationCode": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "aggregateMark": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "discretionReason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "authorityRef": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "statusCode": {
+                      "type": "string"
+                    },
+                    "recommendedBy": {
+                      "type": "string"
+                    },
+                    "recommendedAt": {
+                      "type": "string"
+                    },
+                    "withdrawnReason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "conferment": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": [
+                            "confermentId",
+                            "recommendationId",
+                            "awardId",
+                            "confermentDate",
+                            "authorityRef",
+                            "conferredBy",
+                            "conferredAt"
+                          ],
+                          "properties": {
+                            "confermentId": {
+                              "type": "string"
+                            },
+                            "recommendationId": {
+                              "type": "string"
+                            },
+                            "awardId": {
+                              "type": "string"
+                            },
+                            "confermentDate": {
+                              "type": "string"
+                            },
+                            "authorityRef": {
+                              "type": "string"
+                            },
+                            "conferredBy": {
+                              "type": "string"
+                            },
+                            "conferredAt": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/award-recommendations/{recommendationId}/conferment": {
+      "post": {
+        "operationId": "createAwardRecommendationsByRecommendationIdConferment",
+        "tags": [
+          "progression"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "confermentDate",
+                  "authorityRef"
+                ],
+                "properties": {
+                  "confermentDate": {
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                    "type": "string"
+                  },
+                  "authorityRef": {
+                    "minLength": 1,
+                    "maxLength": 200,
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "recommendationId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "recommendationId",
+                    "enrolmentId",
+                    "personId",
+                    "examBoardId",
+                    "awardTypeCode",
+                    "qualificationCode",
+                    "classificationCode",
+                    "calculatedClassificationCode",
+                    "aggregateMark",
+                    "discretionReason",
+                    "authorityRef",
+                    "statusCode",
+                    "recommendedBy",
+                    "recommendedAt",
+                    "withdrawnReason",
+                    "conferment"
+                  ],
+                  "properties": {
+                    "recommendationId": {
+                      "type": "string"
+                    },
+                    "enrolmentId": {
+                      "type": "string"
+                    },
+                    "personId": {
+                      "type": "string"
+                    },
+                    "examBoardId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "awardTypeCode": {
+                      "type": "string"
+                    },
+                    "qualificationCode": {
+                      "type": "string"
+                    },
+                    "classificationCode": {
+                      "type": "string"
+                    },
+                    "calculatedClassificationCode": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "aggregateMark": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "discretionReason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "authorityRef": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "statusCode": {
+                      "type": "string"
+                    },
+                    "recommendedBy": {
+                      "type": "string"
+                    },
+                    "recommendedAt": {
+                      "type": "string"
+                    },
+                    "withdrawnReason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "conferment": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": [
+                            "confermentId",
+                            "recommendationId",
+                            "awardId",
+                            "confermentDate",
+                            "authorityRef",
+                            "conferredBy",
+                            "conferredAt"
+                          ],
+                          "properties": {
+                            "confermentId": {
+                              "type": "string"
+                            },
+                            "recommendationId": {
+                              "type": "string"
+                            },
+                            "awardId": {
+                              "type": "string"
+                            },
+                            "confermentDate": {
+                              "type": "string"
+                            },
+                            "authorityRef": {
+                              "type": "string"
+                            },
+                            "conferredBy": {
+                              "type": "string"
+                            },
+                            "conferredAt": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/award-recommendations/{recommendationId}/withdrawal": {
+      "post": {
+        "operationId": "createAwardRecommendationsByRecommendationIdWithdrawal",
+        "tags": [
+          "progression"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "reason"
+                ],
+                "properties": {
+                  "reason": {
+                    "minLength": 1,
+                    "maxLength": 2000,
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "recommendationId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "recommendationId",
+                    "enrolmentId",
+                    "personId",
+                    "examBoardId",
+                    "awardTypeCode",
+                    "qualificationCode",
+                    "classificationCode",
+                    "calculatedClassificationCode",
+                    "aggregateMark",
+                    "discretionReason",
+                    "authorityRef",
+                    "statusCode",
+                    "recommendedBy",
+                    "recommendedAt",
+                    "withdrawnReason",
+                    "conferment"
+                  ],
+                  "properties": {
+                    "recommendationId": {
+                      "type": "string"
+                    },
+                    "enrolmentId": {
+                      "type": "string"
+                    },
+                    "personId": {
+                      "type": "string"
+                    },
+                    "examBoardId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "awardTypeCode": {
+                      "type": "string"
+                    },
+                    "qualificationCode": {
+                      "type": "string"
+                    },
+                    "classificationCode": {
+                      "type": "string"
+                    },
+                    "calculatedClassificationCode": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "aggregateMark": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "discretionReason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "authorityRef": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "statusCode": {
+                      "type": "string"
+                    },
+                    "recommendedBy": {
+                      "type": "string"
+                    },
+                    "recommendedAt": {
+                      "type": "string"
+                    },
+                    "withdrawnReason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "conferment": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": [
+                            "confermentId",
+                            "recommendationId",
+                            "awardId",
+                            "confermentDate",
+                            "authorityRef",
+                            "conferredBy",
+                            "conferredAt"
+                          ],
+                          "properties": {
+                            "confermentId": {
+                              "type": "string"
+                            },
+                            "recommendationId": {
+                              "type": "string"
+                            },
+                            "awardId": {
+                              "type": "string"
+                            },
+                            "confermentDate": {
+                              "type": "string"
+                            },
+                            "authorityRef": {
+                              "type": "string"
+                            },
+                            "conferredBy": {
+                              "type": "string"
+                            },
+                            "conferredAt": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/enrolments/{enrolmentId}/reassessment-plans": {
+      "get": {
+        "operationId": "getEnrolmentsByEnrolmentIdReassessmentPlans",
+        "tags": [
+          "progression"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "enrolmentId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "reassessmentPlanId",
+                      "enrolmentId",
+                      "progressionDecisionId",
+                      "planTypeCode",
+                      "moduleRegistrationId",
+                      "assessmentComponentId",
+                      "academicPeriodId",
+                      "attemptNumber",
+                      "markCap",
+                      "dueDate",
+                      "statusCode",
+                      "outcomeNote",
+                      "createdBy",
+                      "createdAt",
+                      "closedBy",
+                      "closedAt"
+                    ],
+                    "properties": {
+                      "reassessmentPlanId": {
+                        "type": "string"
+                      },
+                      "enrolmentId": {
+                        "type": "string"
+                      },
+                      "progressionDecisionId": {
+                        "type": "string"
+                      },
+                      "planTypeCode": {
+                        "type": "string"
+                      },
+                      "moduleRegistrationId": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "assessmentComponentId": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "academicPeriodId": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "attemptNumber": {
+                        "type": "integer"
+                      },
+                      "markCap": {
+                        "anyOf": [
+                          {
+                            "type": "integer"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "dueDate": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "statusCode": {
+                        "type": "string"
+                      },
+                      "outcomeNote": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "createdBy": {
+                        "type": "string"
+                      },
+                      "createdAt": {
+                        "type": "string"
+                      },
+                      "closedBy": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "closedAt": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/progression-decisions/{progressionDecisionId}/reassessment-plans": {
+      "post": {
+        "operationId": "createProgressionDecisionsByProgressionDecisionIdReassessmentPlans",
+        "tags": [
+          "progression"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "planTypeCode"
+                ],
+                "properties": {
+                  "planTypeCode": {
+                    "type": "string"
+                  },
+                  "moduleRegistrationId": {
+                    "type": "string"
+                  },
+                  "assessmentComponentId": {
+                    "type": "string"
+                  },
+                  "academicPeriodId": {
+                    "type": "string"
+                  },
+                  "dueDate": {
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                    "type": "string"
+                  },
+                  "markCap": {
+                    "minimum": 0,
+                    "maximum": 100,
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "progressionDecisionId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "reassessmentPlanId",
+                    "enrolmentId",
+                    "progressionDecisionId",
+                    "planTypeCode",
+                    "moduleRegistrationId",
+                    "assessmentComponentId",
+                    "academicPeriodId",
+                    "attemptNumber",
+                    "markCap",
+                    "dueDate",
+                    "statusCode",
+                    "outcomeNote",
+                    "createdBy",
+                    "createdAt",
+                    "closedBy",
+                    "closedAt"
+                  ],
+                  "properties": {
+                    "reassessmentPlanId": {
+                      "type": "string"
+                    },
+                    "enrolmentId": {
+                      "type": "string"
+                    },
+                    "progressionDecisionId": {
+                      "type": "string"
+                    },
+                    "planTypeCode": {
+                      "type": "string"
+                    },
+                    "moduleRegistrationId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "assessmentComponentId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "academicPeriodId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "attemptNumber": {
+                      "type": "integer"
+                    },
+                    "markCap": {
+                      "anyOf": [
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "dueDate": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "statusCode": {
+                      "type": "string"
+                    },
+                    "outcomeNote": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "createdBy": {
+                      "type": "string"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "closedBy": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "closedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/reassessment-plans/{planId}/closure": {
+      "post": {
+        "operationId": "createReassessmentPlansByPlanIdClosure",
+        "tags": [
+          "progression"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "statusCode"
+                ],
+                "properties": {
+                  "statusCode": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "completed"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "expired"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "cancelled"
+                        ]
+                      }
+                    ]
+                  },
+                  "note": {
+                    "maxLength": 2000,
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "planId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "reassessmentPlanId",
+                    "enrolmentId",
+                    "progressionDecisionId",
+                    "planTypeCode",
+                    "moduleRegistrationId",
+                    "assessmentComponentId",
+                    "academicPeriodId",
+                    "attemptNumber",
+                    "markCap",
+                    "dueDate",
+                    "statusCode",
+                    "outcomeNote",
+                    "createdBy",
+                    "createdAt",
+                    "closedBy",
+                    "closedAt"
+                  ],
+                  "properties": {
+                    "reassessmentPlanId": {
+                      "type": "string"
+                    },
+                    "enrolmentId": {
+                      "type": "string"
+                    },
+                    "progressionDecisionId": {
+                      "type": "string"
+                    },
+                    "planTypeCode": {
+                      "type": "string"
+                    },
+                    "moduleRegistrationId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "assessmentComponentId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "academicPeriodId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "attemptNumber": {
+                      "type": "integer"
+                    },
+                    "markCap": {
+                      "anyOf": [
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "dueDate": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "statusCode": {
+                      "type": "string"
+                    },
+                    "outcomeNote": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "createdBy": {
+                      "type": "string"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "closedBy": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "closedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/students/{personId}/engagement-outcomes": {
       "post": {
         "operationId": "createStudentsByPersonIdEngagementOutcomes",
