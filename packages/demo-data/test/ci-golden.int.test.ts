@@ -208,3 +208,32 @@ describe('Idempotency', () => {
     expect(rows.length).toBe(4);
   });
 });
+
+// ─── Award and resit paths ───────────────────────────────────────────────────
+
+describe('Award and resit paths', () => {
+  it('the graduated student has a ratified final-year result in the year BOARD_RATIFIED covers', async () => {
+    const rows = (await db.execute(sql`
+      SELECT ap.academic_year, mr.result_code, mr.locked, b.ratified_at IS NOT NULL AS board_ratified
+      FROM module_result mr
+      JOIN module_registration reg ON reg.id = mr.module_registration_id AND reg.recorded_until IS NULL
+      JOIN module_offering mo ON mo.id = reg.module_offering_id
+      JOIN academic_period ap ON ap.id = mo.academic_period_id
+      JOIN exam_board b ON b.id = ${GOLDEN_IDS.BOARD_RATIFIED} AND b.academic_year = ap.academic_year
+      WHERE reg.enrolment_id = ${GOLDEN_IDS.ENROLMENT_GRADUATED} AND mr.tenant_id = ${DEMO_TENANT_ID}
+    `)) as unknown as Array<{ academic_year: string; result_code: string; locked: boolean; board_ratified: boolean }>;
+    expect(rows).toEqual([{ academic_year: '2023-24', result_code: 'pass', locked: true, board_ratified: true }]);
+  });
+
+  it('the enrolled student has a ratified resit decision and a failed module to plan a reassessment for', async () => {
+    const decisions = (await db.execute(sql`
+      SELECT decision_code, locked FROM progression_decision
+      WHERE id = ${GOLDEN_IDS.PROGRESSION_ENROLLED_RESIT} AND recorded_until IS NULL
+    `)) as unknown as Array<{ decision_code: string; locked: boolean }>;
+    expect(decisions).toEqual([{ decision_code: 'resit', locked: true }]);
+    const results = (await db.execute(sql`
+      SELECT result_code FROM module_result WHERE module_registration_id = ${GOLDEN_IDS.MODULE_REG_ENROLLED_A}
+    `)) as unknown as Array<{ result_code: string }>;
+    expect(results.map((r) => r.result_code)).toEqual(['fail']);
+  });
+});

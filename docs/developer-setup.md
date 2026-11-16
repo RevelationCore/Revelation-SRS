@@ -115,6 +115,8 @@ pnpm demo:status
 pnpm demo:validate ci-golden
 ```
 
+`ci-golden` has four students, one per enrolment status. It also carries an award path and a resit path: the graduated student has a ratified 2023-24 result covered by the ratified exam board, so an award can be recommended and conferred on the student record's Awards tab; the enrolled student has a failed module and a ratified resit decision, so a reassessment plan can be added.
+
 Available scenarios: `ci-golden`, `applicant-pipeline`, `enrolment-induction`, `module-selection`, `assessment-marks`, `graduation-ceremony`, `institution-year`.
 
 ---

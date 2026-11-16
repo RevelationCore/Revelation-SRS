@@ -8,10 +8,12 @@ import {
   integrationRegistrations,
   moduleOfferings,
   moduleRegistrations,
+  moduleResults,
   modules,
   personIdentities,
   persons,
   programmes,
+  progressionDecisions,
   workflowDefinitions,
   workflowDefinitionVersions,
   workflowInstances,
@@ -61,10 +63,11 @@ export async function load(
     case 'persons':        return loadPersons(db, tenantId);
     case 'enrolments':     return loadEnrolments(db, tenantId);
     case 'registrations':  return loadRegistrations(db, tenantId);
+    case 'assessment':     return loadAssessment(db, tenantId);
     case 'wellbeing':      return loadWellbeing(db, tenantId);
     case 'boards':         return loadBoards(db, tenantId);
     case 'integration':    return loadIntegration(db, tenantId);
-    // 'assessment' and 'regulatory' have no data in the CI golden set
+    // 'regulatory' has no data in the CI golden set
   }
 }
 
@@ -98,6 +101,15 @@ async function loadReferenceData(db: Db, tenantId: string): Promise<void> {
       periodTypeCode: 'term',
       startDate:      '2025-04-28',
       endDate:        '2025-06-27',
+    },
+    {
+      id:             GOLDEN_IDS.ACADEMIC_PERIOD_2023_SPRING,
+      tenantId,
+      academicYear:   '2023-24',
+      periodCode:     'SPRING',
+      periodTypeCode: 'term',
+      startDate:      '2024-01-15',
+      endDate:        '2024-04-05',
     },
   ]).onConflictDoNothing();
 
@@ -170,6 +182,13 @@ async function loadReferenceData(db: Db, tenantId: string): Promise<void> {
       tenantId,
       moduleId:         GOLDEN_IDS.MODULE_B,
       academicPeriodId: GOLDEN_IDS.ACADEMIC_PERIOD_SPRING,
+      deliveryModeCode: 'in-person',
+    },
+    {
+      id:               GOLDEN_IDS.MODULE_OFFERING_C_2023,
+      tenantId,
+      moduleId:         GOLDEN_IDS.MODULE_C,
+      academicPeriodId: GOLDEN_IDS.ACADEMIC_PERIOD_2023_SPRING,
       deliveryModeCode: 'in-person',
     },
     {
@@ -354,7 +373,64 @@ async function loadRegistrations(db: Db, tenantId: string): Promise<void> {
       validFrom:        regAt,
       recordedAt:       regAt,
     },
+    {
+      // The graduated student's final-year module, covered by the ratified 2023-24 board.
+      id:               GOLDEN_IDS.MODULE_REG_GRADUATED_C,
+      tenantId,
+      enrolmentId:      GOLDEN_IDS.ENROLMENT_GRADUATED,
+      moduleOfferingId: GOLDEN_IDS.MODULE_OFFERING_C_2023,
+      statusCode:       'registered',
+      registrationDate: '2024-01-08',
+      validFrom:        new Date('2024-01-08T00:00:00Z'),
+      recordedAt:       new Date('2024-01-08T00:00:00Z'),
+    },
   ]).onConflictDoNothing();
+}
+
+/**
+ * Ratified results that let the golden set drive both later paths: the
+ * graduated student's final-year pass (an award can be recommended from the
+ * ratified 2023-24 board and conferred), and the enrolled student's failed
+ * module with a ratified resit decision (a reassessment plan can be made).
+ */
+async function loadAssessment(db: Db, tenantId: string): Promise<void> {
+  const ratifiedAt2024 = new Date('2024-06-05T16:00:00Z');
+  const ratifiedAt2025 = new Date('2025-06-20T16:00:00Z');
+  await db.insert(moduleResults).values([
+    {
+      id:                   GOLDEN_IDS.MODULE_RESULT_GRADUATED_C,
+      tenantId,
+      moduleRegistrationId: GOLDEN_IDS.MODULE_REG_GRADUATED_C,
+      aggregateMark:        '65.00',
+      resultCode:           'pass',
+      locked:               true,
+      validFrom:            ratifiedAt2024,
+      recordedAt:           ratifiedAt2024,
+    },
+    {
+      id:                   GOLDEN_IDS.MODULE_RESULT_ENROLLED_A,
+      tenantId,
+      moduleRegistrationId: GOLDEN_IDS.MODULE_REG_ENROLLED_A,
+      aggregateMark:        '34.00',
+      resultCode:           'fail',
+      locked:               true,
+      validFrom:            ratifiedAt2025,
+      recordedAt:           ratifiedAt2025,
+    },
+  ]).onConflictDoNothing();
+
+  await db.insert(progressionDecisions).values({
+    id:           GOLDEN_IDS.PROGRESSION_ENROLLED_RESIT,
+    tenantId,
+    enrolmentId:  GOLDEN_IDS.ENROLMENT_ENROLLED,
+    academicYear: ACADEMIC_YEAR,
+    yearOfStudy:  '1',
+    decisionCode: 'resit',
+    locked:       true,
+    actorId:      ACTOR,
+    validFrom:    ratifiedAt2025,
+    recordedAt:   ratifiedAt2025,
+  }).onConflictDoNothing();
 }
 
 async function loadWellbeing(db: Db, tenantId: string): Promise<void> {

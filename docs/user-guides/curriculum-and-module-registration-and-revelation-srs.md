@@ -244,7 +244,7 @@ yet.
 | `student` | `module-selection:write:own` — create, edit, and submit their own proposals |
 | `registry-administrator` | Read/write everything in this domain; `module-registration:decide` alongside `personal-tutor` |
 | `personal-tutor` | `module-registration:decide` — approves or rejects portal-initiated add/withdraw change requests |
-| `programme-approver` | `module-selection:decide` — the capacity-exception path for waitlisted proposals |
+| `programme-approver` | `module-selection:decide` — the capacity-exception path for waitlisted proposals; `catalogue:read`, so programmes and modules show by name |
 | `tenant-administrator` | `module-selection:configure` — defines diet groups, rule sets, credit-load rules |
 | `module-tutor`, `exam-board-member`, `exam-board-chair`, `external-examiner`, `integration-service` | `catalogue:read` and, for tutors, `module-registration:read:all` — read-only |
 

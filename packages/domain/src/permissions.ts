@@ -110,7 +110,7 @@ export const PERMISSION_ROLES = {
   'module-registration:write:own':      ['student'] as Role[],
   'module-registration:write':          ['registry-administrator'] as Role[],
   'module-registration:decide':         ['registry-administrator', 'personal-tutor'] as Role[],
-  'catalogue:read':                     ['student', 'module-tutor', 'personal-tutor', 'registry-administrator', 'exam-board-member', 'exam-board-chair', 'integration-service', 'external-examiner'] as Role[],
+  'catalogue:read':                     ['student', 'module-tutor', 'personal-tutor', 'registry-administrator', 'programme-approver', 'exam-board-member', 'exam-board-chair', 'integration-service', 'external-examiner'] as Role[],
   'catalogue:write':                    ['registry-administrator', 'tenant-administrator'] as Role[],
   'calendar:read':                      ['student', 'module-tutor', 'registry-administrator', 'integration-service'] as Role[],
   'calendar:write':                     ['registry-administrator', 'tenant-administrator'] as Role[],
