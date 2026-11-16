@@ -139,6 +139,7 @@ function Sidebar({ onLogout, displayName, roles }: { onLogout: () => void; displ
         {can('academic-exception:approve') && <NavItem to="/credit-approvals" label="Credit & exception approvals" end icon={ListChecks} />}
         {canViewIdentityChangeRequests && <NavItem to="/identity-change-requests" label="Identity change requests" end icon={ListChecks} />}
         {canViewExamBoards && <NavItem to="/exam-boards" label="Exam boards" icon={GraduationCap} />}
+        {can('module-selection:configure', 'curriculum-binding:read') && <NavItem to="/programme-rules" label="Programme rules" icon={ListChecks} />}
         {can('catalogue:write') && <NavItem to="/assessment-structures" label="Assessment structures" icon={ListChecks} />}
         {can('catalogue:write') && <NavItem to="/exam-timings" label="Exam timings" icon={Clock} />}
         {canViewEngagement && <NavItem to="/engagement" label="Engagement" icon={Activity} />}

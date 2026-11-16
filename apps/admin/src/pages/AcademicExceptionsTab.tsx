@@ -12,6 +12,7 @@ import {
 } from '../api/academicExceptions.js';
 import { useAuth } from '../auth/AuthContext.js';
 import { EnrolmentScoped } from '../components/EnrolmentScoped.js';
+import { type CurriculumBinding, type RuleSet, getCurriculumBinding, listRuleSets } from '../api/programmeRules.js';
 import { useValueSet } from '../hooks/useValueSet.js';
 
 export function message(err: unknown, fallback: string): string {
@@ -26,10 +27,15 @@ export const ruleLabel = (code: string) => ENROLMENT_RULES.find((r) => r.code ==
  * approved it changes the rules applied to the student at registration,
  * module selection and progression.
  */
-export function AcademicExceptionsTab({ personId, canPropose, canApprove }: { personId: string; canPropose: boolean; canApprove: boolean }) {
+export function AcademicExceptionsTab({ personId, canPropose, canApprove, canReadBinding = false }: { personId: string; canPropose: boolean; canApprove: boolean; canReadBinding?: boolean }) {
   return (
     <EnrolmentScoped personId={personId} idPrefix="exceptions">
-      {(enrolment) => <EnrolmentExceptions enrolmentId={enrolment.enrolmentId} canPropose={canPropose} canApprove={canApprove} />}
+      {(enrolment) => (
+        <>
+          {canReadBinding && <CurriculumBindingNote enrolmentId={enrolment.enrolmentId} programmeId={enrolment.programmeId} />}
+          <EnrolmentExceptions enrolmentId={enrolment.enrolmentId} canPropose={canPropose} canApprove={canApprove} />
+        </>
+      )}
     </EnrolmentScoped>
   );
 }
@@ -337,5 +343,24 @@ function ExceptionForm({ onSubmit }: { onSubmit: (body: Parameters<typeof propos
         Propose exception
       </Button>
     </form>
+  );
+}
+
+/** The rule set this enrolment's module selection and progression rules come from (BP-03-002). */
+function CurriculumBindingNote({ enrolmentId, programmeId }: { enrolmentId: string; programmeId: string | null }) {
+  const [binding, setBinding] = useState<CurriculumBinding | null | undefined>(undefined);
+  const [ruleSets, setRuleSets] = useState<RuleSet[]>([]);
+  useEffect(() => {
+    getCurriculumBinding(enrolmentId).then(setBinding).catch(() => setBinding(null));
+    if (programmeId) listRuleSets(programmeId).then(setRuleSets).catch(() => undefined);
+  }, [enrolmentId, programmeId]);
+  if (binding === undefined) return null;
+  const ruleSet = binding ? ruleSets.find((r) => r.programmeRuleSetId === binding.programmeRuleSetId) : undefined;
+  return (
+    <p className="text-sm text-neutral-700">
+      {binding
+        ? <>Programme rules: rule set <strong>{ruleSet?.ruleSetCode ?? binding.programmeRuleSetId}</strong> ({binding.decisionAuthorityCode}{binding.decisionReason ? `: ${binding.decisionReason}` : ''}).</>
+        : 'Programme rules: not yet bound to a rule set (bound automatically at the first module selection).'}
+    </p>
   );
 }

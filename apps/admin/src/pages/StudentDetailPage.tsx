@@ -188,6 +188,7 @@ export function StudentDetailPage() {
               personId={personId}
               canPropose={userHasAnyPermission(roles, ['academic-exception:propose'])}
               canApprove={userHasAnyPermission(roles, ['academic-exception:approve'])}
+              canReadBinding={userHasAnyPermission(roles, ['curriculum-binding:read'])}
             />
           )}
         </TabsContent>
