@@ -17646,6 +17646,7 @@ export interface operations {
                     "application/json": {
                         applicationId: string;
                         linkedEnrolmentId: string | null;
+                        studentApplicationId: string | null;
                     };
                 };
             };

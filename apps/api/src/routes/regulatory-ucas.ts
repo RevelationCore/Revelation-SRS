@@ -94,6 +94,8 @@ export function regulatoryUcasRoutes(fastify: FastifyInstance): void {
           201: Type.Object({
             applicationId: Type.String(),
             linkedEnrolmentId: Type.Union([Type.String(), Type.Null()]),
+            /** The channel-neutral application (BPR-D01); null when the record has no applicant names. */
+            studentApplicationId: Type.Union([Type.String(), Type.Null()]),
           }),
           422: ErrorSchema,
         },

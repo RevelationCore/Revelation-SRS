@@ -35,9 +35,12 @@ export interface ReceiveApplicationInput {
   channelCode: AdmissionSourceCode;
   sourceReference: string;
   cycle: string;
-  programmeId: string;
-  intakeCode: string;
-  modeOfStudyCode: string;
+  /** A channel adapter may send an application before these are known; it is then received as incomplete. */
+  programmeId?: string | null;
+  intakeCode?: string | null;
+  modeOfStudyCode?: string | null;
+  /** The UCAS channel's own record, for an application received through the UCAS adapter. */
+  ucasApplicationId?: string;
   applicant: { personId?: string; studentNumber?: string; legalFirstName: string; legalFamilyName: string; dateOfBirth?: string; emailPersonal?: string };
   payload: Record<string, unknown>;
 }
@@ -71,10 +74,17 @@ export class ApplicationService {
 
   // ── Receive and route (BP-01-001) ──────────────────────────────────────────
 
-  async receive(tenantId: string, input: ReceiveApplicationInput, actorId: string): Promise<{ application: ApplicationDto; created: boolean }> {
+  /**
+   * Receives an application from a channel. A direct call must name a known
+   * programme, intake and mode of study; a channel adapter (`lenient`) may
+   * not know them yet, and the application is then kept on the incomplete
+   * worklist instead of being refused.
+   */
+  async receive(
+    tenantId: string, input: ReceiveApplicationInput, actorId: string, options: { lenient?: boolean } = {},
+  ): Promise<{ application: ApplicationDto; created: boolean }> {
     await this.#code(tenantId, 'student_application', 'channel_code', input.channelCode);
-    await this.#code(tenantId, 'enrolment', 'mode_of_study_code', input.modeOfStudyCode);
-    await this.#requireProgramme(tenantId, input.programmeId);
+    const route = await this.#routeFacts(tenantId, input, options.lenient ?? false);
 
     const payloadHash = createHash('sha256').update(JSON.stringify(input.payload)).digest('hex');
     const payloadId = await withTenantContext(this.db, tenantId, async (tx) => {
@@ -92,8 +102,16 @@ export class ApplicationService {
     const existing = await this.#bySource(tenantId, input.channelCode, input.sourceReference);
     if (existing) {
       // A resend or update from the channel: keep the application, point at the latest payload.
-      await withTenantContext(this.db, tenantId, (tx) => tx.update(studentApplications)
-        .set({ latestPayloadId: payloadId, updatedAt: clockNow() }).where(eq(studentApplications.id, existing.id)));
+      // An incomplete application whose route facts have now arrived returns to the received worklist.
+      const completes = existing.statusCode === 'incomplete' && existing.routingReasonCode === 'incomplete' && route.complete;
+      await withTenantContext(this.db, tenantId, (tx) => tx.update(studentApplications).set({
+        latestPayloadId: payloadId, updatedAt: clockNow(),
+        ...(input.ucasApplicationId && !existing.ucasApplicationId ? { ucasApplicationId: input.ucasApplicationId } : {}),
+        ...(completes ? {
+          programmeId: route.programmeId, intakeCode: route.intakeCode, modeOfStudyCode: route.modeOfStudyCode,
+          statusCode: 'received', routingReasonCode: existing.identityMatchCode === 'needs-review' ? 'identity' : null,
+        } : {}),
+      }).where(eq(studentApplications.id, existing.id)));
       return { application: await this.get(tenantId, existing.id), created: false };
     }
 
@@ -101,8 +119,10 @@ export class ApplicationService {
     const [row] = await withTenantContext(this.db, tenantId, (tx) => tx.insert(studentApplications).values({
       tenantId: tenantId as Uuid, channelCode: input.channelCode, sourceReference: input.sourceReference, cycle: input.cycle,
       personId: (identity.personId ?? null) as Uuid | null, identityMatchCode: identity.matchCode,
-      programmeId: input.programmeId as Uuid, intakeCode: input.intakeCode, modeOfStudyCode: input.modeOfStudyCode,
-      latestPayloadId: payloadId as Uuid, routingReasonCode: identity.matchCode === 'needs-review' ? 'identity' : null,
+      programmeId: route.programmeId as Uuid | null, intakeCode: route.intakeCode, modeOfStudyCode: route.modeOfStudyCode,
+      ucasApplicationId: (input.ucasApplicationId ?? null) as Uuid | null, latestPayloadId: payloadId as Uuid,
+      statusCode: route.complete ? 'received' : 'incomplete',
+      routingReasonCode: !route.complete ? 'incomplete' : identity.matchCode === 'needs-review' ? 'identity' : null,
     }).returning());
     return { application: await this.get(tenantId, row!.id), created: true };
   }
@@ -122,6 +142,9 @@ export class ApplicationService {
 
   async route(tenantId: string, applicationId: string, reasonCode: 'incomplete' | 'duplicate' | 'restricted' | null): Promise<ApplicationDto> {
     const app = await this.#app(tenantId, applicationId);
+    if (reasonCode !== 'incomplete' && app.statusCode === 'incomplete' && (!app.programmeId || !app.intakeCode || !app.modeOfStudyCode)) {
+      throw new ConflictError('The application has no programme, intake or mode of study yet; it stays incomplete until the channel sends them');
+    }
     await withTenantContext(this.db, tenantId, (tx) => tx.update(studentApplications).set({
       routingReasonCode: reasonCode, statusCode: reasonCode === 'incomplete' ? 'incomplete' : app.statusCode === 'incomplete' ? 'received' : app.statusCode,
       updatedAt: clockNow(),
@@ -174,11 +197,13 @@ export class ApplicationService {
       return this.get(tenantId, applicationId);
     }
     if (!input.offer) throw new ValidationError('An offer decision needs the offer terms');
+    if (!app.programmeId || !app.intakeCode || !app.modeOfStudyCode) throw new ConflictError('An offer needs the application programme, intake and mode of study');
+    const route = { programmeId: app.programmeId, intakeCode: app.intakeCode, modeOfStudyCode: app.modeOfStudyCode };
     await this.#validateTerms(tenantId, input.offer);
     await withTenantContext(this.db, tenantId, async (tx) => {
       const [offer] = await tx.insert(admissionsOffers).values({
-        tenantId: tenantId as Uuid, applicationId: app.id, version: 1, programmeId: app.programmeId, intakeCode: app.intakeCode,
-        modeOfStudyCode: app.modeOfStudyCode, feeStatusBasisCode: input.offer!.feeStatusBasisCode ?? null,
+        tenantId: tenantId as Uuid, applicationId: app.id, version: 1, programmeId: route.programmeId, intakeCode: route.intakeCode,
+        modeOfStudyCode: route.modeOfStudyCode, feeStatusBasisCode: input.offer!.feeStatusBasisCode ?? null,
         offerTypeCode: input.offer!.offerTypeCode, expiresOn: input.offer!.expiresOn ?? null, decidedBy: actorId,
       }).returning();
       await this.#insertConditions(tx, tenantId, offer!.id, input.offer!.conditions ?? []);
@@ -288,8 +313,10 @@ export class ApplicationService {
     const app = await this.#app(tenantId, offer.applicationId);
     let handoffWorkflowInstanceId: string | null = null;
     if (input.decisionCode !== 'unsuccessful') {
+      // A UCAS application hands off its UCAS record, the same subject the UCAS adapter would,
+      // so a later 'confirmed' status from UCAS does not start a second hand-off.
       const handoff = await this.admissions.startHandoff(tenantId, {
-        applicationId: app.id, sourceApplicationReference: app.sourceReference, source: app.channelCode as AdmissionSourceCode,
+        applicationId: app.ucasApplicationId ?? app.id, sourceApplicationReference: app.sourceReference, source: app.channelCode as AdmissionSourceCode,
         cycle: app.cycle, statusCode: input.decisionCode, rawPayload: {},
       }, actorId);
       handoffWorkflowInstanceId = handoff.workflowInstanceId;
@@ -368,6 +395,41 @@ export class ApplicationService {
       });
       return { personId: created.personId, matchCode: 'created' as const };
     });
+  }
+
+  async #routeFacts(tenantId: string, input: ReceiveApplicationInput, lenient: boolean): Promise<{
+    programmeId: string | null; intakeCode: string | null; modeOfStudyCode: string | null; complete: boolean;
+  }> {
+    let programmeId = input.programmeId ?? null;
+    let modeOfStudyCode = input.modeOfStudyCode ?? null;
+    const intakeCode = input.intakeCode ?? null;
+    if (!lenient) {
+      if (!programmeId || !modeOfStudyCode || !intakeCode) throw new ValidationError('An application names its programme, intake and mode of study');
+      await this.#code(tenantId, 'enrolment', 'mode_of_study_code', modeOfStudyCode);
+      await this.#requireProgramme(tenantId, programmeId);
+      return { programmeId, intakeCode, modeOfStudyCode, complete: true };
+    }
+    // From a channel adapter, an unrecognised value is treated as not yet known.
+    if (programmeId) {
+      const rows = await withTenantContext(this.db, tenantId, (tx) => tx.select({ id: programmes.id }).from(programmes)
+        .where(and(eq(programmes.id, programmeId as Uuid), eq(programmes.tenantId, tenantId as Uuid))).limit(1));
+      if (!rows[0]) programmeId = null;
+    }
+    if (modeOfStudyCode) {
+      try { await this.#code(tenantId, 'enrolment', 'mode_of_study_code', modeOfStudyCode); } catch (err) {
+        if (!(err instanceof ValidationError)) throw err;
+        modeOfStudyCode = null;
+      }
+    }
+    return { programmeId, intakeCode, modeOfStudyCode, complete: Boolean(programmeId && intakeCode && modeOfStudyCode) };
+  }
+
+  /** The channel-neutral application received through the UCAS adapter for one UCAS record. */
+  async findByUcasApplication(tenantId: string, ucasApplicationId: string): Promise<StudentApplication | null> {
+    const [row] = await withTenantContext(this.db, tenantId, (tx) => tx.select().from(studentApplications).where(and(
+      eq(studentApplications.tenantId, tenantId as Uuid), eq(studentApplications.ucasApplicationId, ucasApplicationId as Uuid),
+    )).limit(1));
+    return row ?? null;
   }
 
   async #validateTerms(tenantId: string, terms: OfferTerms): Promise<void> {

@@ -1,7 +1,9 @@
-import { and, eq } from 'drizzle-orm';
+import { and, desc, eq, notInArray } from 'drizzle-orm';
 import {
   workflowDefinitions,
   workflowDefinitionVersions,
+  workflowInstances,
+  workflowTasks,
   type Db,
   withTenantContext,
 } from '@revelation-srs/db';
@@ -73,6 +75,10 @@ export class AdmissionsService {
     actorId:  string,
   ): Promise<AdmissionsHandoffResult> {
     const workflowCode = SOURCE_WORKFLOW[input.source];
+    // One hand-off per application: a second confirmation of the same subject
+    // (for example UCAS reporting a status the provider already confirmed) reuses it.
+    const existing = await this.#existingHandoff(tenantId, workflowCode, this.#entityTypeForSource(input.source), input.applicationId);
+    if (existing) return existing;
     const workflowDefinitionVersionId = await this.#getActiveVersionId(tenantId, workflowCode);
 
     const taskPayload = {
@@ -160,6 +166,23 @@ export class AdmissionsService {
   }
 
   // ── Private helpers ─────────────────────────────────────────────────────────
+
+  async #existingHandoff(tenantId: string, workflowCode: string, subjectEntityType: string, subjectEntityId: string): Promise<AdmissionsHandoffResult | null> {
+    return withTenantContext(this.db, tenantId, async (tx) => {
+      const [instance] = await tx.select({ id: workflowInstances.id }).from(workflowInstances).where(and(
+        eq(workflowInstances.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
+        eq(workflowInstances.workflowCode, workflowCode),
+        eq(workflowInstances.subjectEntityType, subjectEntityType),
+        eq(workflowInstances.subjectEntityId, subjectEntityId as `${string}-${string}-${string}-${string}-${string}`),
+        notInArray(workflowInstances.statusCode, ['cancelled', 'failed']),
+      )).orderBy(desc(workflowInstances.startedAt)).limit(1);
+      if (!instance) return null;
+      const [task] = await tx.select({ id: workflowTasks.id }).from(workflowTasks).where(and(
+        eq(workflowTasks.workflowInstanceId, instance.id), eq(workflowTasks.stepKey, HANDOFF_STEP_KEY),
+      )).orderBy(desc(workflowTasks.createdAt)).limit(1);
+      return task ? { workflowInstanceId: instance.id, workflowTaskId: task.id, workflowCode } : null;
+    });
+  }
 
   async #getActiveVersionId(tenantId: string, definitionCode: string): Promise<string> {
     const rows = await withTenantContext(this.db, tenantId, async (tx) =>

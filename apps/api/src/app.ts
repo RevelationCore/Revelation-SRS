@@ -393,7 +393,7 @@ export async function buildApp(
   const currencyService = new CurrencyService(db, audit);
   const communications  = new CommunicationService(db, localeService, featureFlags);
   const adjustmentTaskNotices = new AdjustmentTaskNoticeService(db, adjustments, adjustmentTargets, communications, config.adminAppUrl, deliveries);
-  const ucas = new UcasService(db, valueSets, eventBus, enrolments, regulatoryExchanges, admissions, featureFlags, workflowBridge, reviewExecution);
+  const ucas = new UcasService(db, valueSets, eventBus, enrolments, regulatoryExchanges, admissions, featureFlags, workflowBridge, reviewExecution, applications);
   const hesa = new HesaService(db, eventBus, students, regulatoryExchanges, workflowBridge, reviewExecution);
   const slc = new SlcService(db, eventBus, valueSets, enrolments, regulatoryExchanges, workflowBridge, reviewExecution);
   const ukvi = new UkviService(db, eventBus, valueSets, rules, regulatoryExchanges, workflowBridge, reviewExecution);

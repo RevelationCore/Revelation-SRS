@@ -4,6 +4,7 @@ import { and, desc, eq, inArray, isNull } from 'drizzle-orm';
 import {
   enrolmentDownstreamTriggers,
   enrolments,
+  programmes,
   ucasApplications,
   workflowDefinitions,
   workflowDefinitionVersions,
@@ -23,6 +24,7 @@ import {
 import type { EnrolmentService } from '../enrolment/service.js';
 import type { IntegrationBusPublisher } from '../integration-bus/publisher.js';
 import type { AdmissionsService } from '../admissions/admissions-service.js';
+import type { ApplicationService, ReceiveApplicationInput } from '../admissions/application-service.js';
 import type { FeatureFlagService } from '../platform-controls/feature-flag-service.js';
 import type { WorkflowBridgeService } from '../platform-controls/workflow-bridge-service.js';
 import { GovernedReview, type ReviewEffectInput } from '../platform-controls/governed-review.js';
@@ -37,6 +39,9 @@ export const ADMISSIONS_ENABLED_FLAG_KEY = 'admissions.enabled';
 export const ADMISSIONS_UCAS_ADAPTER_ENABLED_FLAG_KEY = 'admissions.ucas-adapter.enabled';
 
 type Uuid = `${string}-${string}-${string}-${string}-${string}`;
+
+/** UCAS mode-of-study codes (inbound contract) to the SRS value set. */
+const UCAS_MODE_OF_STUDY: Record<string, string> = { FT: 'full-time', PT: 'part-time' };
 
 const SUBMISSION_WORKFLOW_CODE = 'ucas-confirmation-submission-approval';
 const SUBMISSION_DECISION_STEP_KEY = 'approve-or-reject-submission';
@@ -125,6 +130,8 @@ export class UcasService {
     private readonly featureFlags?: FeatureFlagService,
     private readonly workflowBridge?: WorkflowBridgeService,
     private readonly reviewExecution?: ReviewExecutionService,
+    /** The channel-neutral application this adapter feeds (BPR-D01). */
+    private readonly applications?: ApplicationService,
   ) {
     this.exchanges = exchanges ?? new RegulatoryExchangeService(db);
   }
@@ -163,7 +170,7 @@ export class UcasService {
     tenantId: string,
     payload: UcasApplicationPayload,
     actorId: string,
-  ): Promise<{ applicationId: string; linkedEnrolmentId: string | null }> {
+  ): Promise<{ applicationId: string; linkedEnrolmentId: string | null; studentApplicationId: string | null }> {
     this.#validatePayloadShape(payload);
     await this.#validateStatusCode(tenantId, payload.statusCode);
 
@@ -222,6 +229,8 @@ export class UcasService {
       actorId,
     );
 
+    const studentApplicationId = await this.#feedApplication(tenantId, applicationId, payload, actorId);
+
     await this.#publishApplicationReceived(tenantId, actorId, {
       applicationId,
       ucasPersonalId: payload.ucasPersonalId,
@@ -245,7 +254,55 @@ export class UcasService {
       }, actorId);
     }
 
-    return { applicationId, linkedEnrolmentId };
+    return { applicationId, linkedEnrolmentId, studentApplicationId };
+  }
+
+  /**
+   * Receives the UCAS record as a channel-neutral application (BPR-D01), so
+   * assessment, offers and conditions work the same as for any other channel.
+   * A record without the applicant's names is not fed (there is no applicant
+   * to match or create); one without a recognised programme, intake or mode
+   * of study is received as incomplete until UCAS sends them.
+   */
+  async #feedApplication(tenantId: string, ucasApplicationId: string, payload: UcasApplicationPayload, actorId: string): Promise<string | null> {
+    if (!this.applications) return null;
+    const nested = payload.applicant ?? {};
+    const route = payload.enrolment ?? {};
+    const legalFirstName = payload.legalFirstName ?? nested.givenNames;
+    const legalFamilyName = payload.legalFamilyName ?? nested.familyName;
+    if (!legalFirstName || !legalFamilyName) return null;
+
+    const dateOfBirth = payload.dateOfBirth ?? nested.dateOfBirth;
+    const emailPersonal = payload.emailPersonal ?? nested.email;
+    const startDate = payload.startDate ?? route.startDate;
+    const mode = payload.modeOfStudyCode ?? route.modeOfStudyCode;
+    const input: ReceiveApplicationInput = {
+      channelCode: 'ucas',
+      sourceReference: `${payload.cycle}:${payload.ucasPersonalId}`,
+      cycle: payload.cycle,
+      programmeId: payload.programmeId ?? route.programmeId ?? await this.#programmeFromChoices(tenantId, payload),
+      intakeCode: startDate && /^\d{4}-\d{2}/.test(startDate) ? startDate.slice(0, 7) : null,
+      modeOfStudyCode: mode ? (UCAS_MODE_OF_STUDY[mode] ?? mode) : null,
+      ucasApplicationId,
+      applicant: {
+        legalFirstName, legalFamilyName,
+        ...(dateOfBirth ? { dateOfBirth } : {}), ...(emailPersonal ? { emailPersonal } : {}),
+      },
+      payload,
+    };
+    const { application } = await this.applications.receive(tenantId, input, actorId, { lenient: true });
+    return application.id;
+  }
+
+  /** The programme of the confirmed choice, or of the first choice, by programme code. */
+  async #programmeFromChoices(tenantId: string, payload: UcasApplicationPayload): Promise<string | null> {
+    const choices = Array.isArray(payload['choices']) ? payload['choices'] as Array<Record<string, unknown>> : [];
+    const choice = choices.find((c) => c['decisionCode'] === 'confirmed') ?? choices.find((c) => c['choiceNumber'] === 1) ?? choices[0];
+    const code = typeof choice?.['programmeCode'] === 'string' ? choice['programmeCode'] : null;
+    if (!code) return null;
+    const rows = await withTenantContext(this.db, tenantId, (tx) => tx.select({ id: programmes.id }).from(programmes)
+      .where(and(eq(programmes.tenantId, tenantId as Uuid), eq(programmes.code, code))).limit(1));
+    return rows[0]?.id ?? null;
   }
 
   async linkApplicationToEnrolment(

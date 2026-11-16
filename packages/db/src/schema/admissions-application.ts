@@ -25,9 +25,10 @@ export const studentApplications = pgTable('student_application', {
   cycle:                text('cycle').notNull(),
   personId:             uuid('person_id'),
   identityMatchCode:    text('identity_match_code').notNull(), // matched | created | needs-review
-  programmeId:          uuid('programme_id').notNull(),
-  intakeCode:           text('intake_code').notNull(),
-  modeOfStudyCode:      text('mode_of_study_code').notNull(),
+  // Null only while the application is incomplete (migration 0009).
+  programmeId:          uuid('programme_id'),
+  intakeCode:           text('intake_code'),
+  modeOfStudyCode:      text('mode_of_study_code'),
   latestPayloadId:      uuid('latest_payload_id').notNull().references(() => applicationReceivedPayloads.id),
   ucasApplicationId:    uuid('ucas_application_id'),
   statusCode:           text('status_code').notNull().default('received'),

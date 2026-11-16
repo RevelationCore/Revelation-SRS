@@ -31151,13 +31151,24 @@
                   "type": "object",
                   "required": [
                     "applicationId",
-                    "linkedEnrolmentId"
+                    "linkedEnrolmentId",
+                    "studentApplicationId"
                   ],
                   "properties": {
                     "applicationId": {
                       "type": "string"
                     },
                     "linkedEnrolmentId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "studentApplicationId": {
                       "anyOf": [
                         {
                           "type": "string"
