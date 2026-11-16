@@ -78,6 +78,13 @@
       "when": 1785000036000,
       "tag": "0010_documents_and_graduation",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1785000037000,
+      "tag": "0011_applications_and_offers",
+      "breakpoints": true
     }
   ]
 }

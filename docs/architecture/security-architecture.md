@@ -176,6 +176,7 @@ fastify.get('/students/:id', {
 | `reassessment:read` / `:write` (reassessment plans; read also for board members and tutors) | | ✓ | | ✓ | | |
 | `document:read` / `:issue` / `:revoke` (award documents); `document:read:own` for students; `document:verify` also for integration services | ✓ (own) | ✓ | | | | |
 | `graduation:read` / `:manage` (cycles, invitations, allocation, attendance); `graduation:respond:own` for students | ✓ (own) | ✓ | | | | |
+| `application:read` / `:receive` / `:write` / `:assess` and `offer:decide` (applications and offers; channels receive via integration services; selectors assess and decide; never the recommender) | | ✓ | | | | |
 | `special-category:read` | | | | | ✓ | |
 | `config:write` | | | | | | ✓ |
 | `integration:manage` | | | | | | ✓ |

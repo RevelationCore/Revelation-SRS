@@ -119,6 +119,7 @@ import { statusCaseRoutes } from './routes/status-cases.js';
 import { curriculumPublicationRoutes } from './routes/curriculum-publications.js';
 import { awardConfermentRoutes } from './routes/award-conferment.js';
 import { awardDocumentRoutes } from './routes/award-documents.js';
+import { applicationRoutes } from './routes/applications.js';
 import { SupportService } from './platform/support/support-service.js';
 import { StatusCaseService } from './platform/status-cases/status-case-service.js';
 import { CurriculumPublicationService } from './platform/curriculum/publication-service.js';
@@ -126,6 +127,7 @@ import { AcademicExceptionService } from './platform/curriculum/academic-excepti
 import { ConfermentService } from './platform/progression/conferment-service.js';
 import { AwardDocumentService } from './platform/progression/award-document-service.js';
 import { GraduationService } from './platform/progression/graduation-service.js';
+import { ApplicationService } from './platform/admissions/application-service.js';
 import { EmploymentService } from './platform/support/employment-service.js';
 import { InboundRecordService } from './platform/delivery/inbound.js';
 import { engagementOutcomeRoutes } from './routes/engagement-outcomes.js';
@@ -386,6 +388,7 @@ export async function buildApp(
   const workflowEscalation = new WorkflowEscalationService(db, workflowBridge);
   const environments = new EnvironmentService(db, runtimeDeployment);
   const admissions    = new AdmissionsService(db, workflowBridge, reviewExecution);
+  const applications = new ApplicationService(db, valueSets, students, admissions);
   const localeService   = new LocaleService(db, audit);
   const currencyService = new CurrencyService(db, audit);
   const communications  = new CommunicationService(db, localeService, featureFlags);
@@ -458,6 +461,7 @@ export async function buildApp(
   fastify.decorate('confermentService', conferment);
   fastify.decorate('awardDocumentService', awardDocuments);
   fastify.decorate('graduationService', graduation);
+  fastify.decorate('applicationService', applications);
   fastify.decorate('employmentService', employment);
   fastify.decorate('businessCaseService', businessCases);
   fastify.decorate('identityResolutionService', identityResolution);
@@ -589,6 +593,7 @@ export async function buildApp(
       security: [{ bearerAuth: [] }],
       tags: [
         { name: 'students',             description: 'Student identity and personal data' },
+        { name: 'admissions',           description: 'Applications, assessments, offers and conditions' },
         { name: 'enrolments',           description: 'Enrolment lifecycle' },
         { name: 'module-registrations', description: 'Module registration' },
         { name: 'catalogue',            description: 'Programme and module catalogue' },
@@ -640,6 +645,9 @@ export async function buildApp(
       ['/document-verifications',    'progression'],
       ['/graduation-',               'progression'],
       ['/ceremony-allocations',      'progression'],
+      ['/applications',              'admissions'],
+      ['/admissions-offers',         'admissions'],
+      ['/offer-conditions',          'admissions'],
       ['/reassessment-plans',        'progression'],
       ['/progression-decisions',     'progression'],
       ['/work-limits',               'tenant-admin'],
@@ -736,6 +744,7 @@ export async function buildApp(
   await fastify.register(curriculumPublicationRoutes, { prefix: '/api/v1' });
   await fastify.register(awardConfermentRoutes,     { prefix: '/api/v1' });
   await fastify.register(awardDocumentRoutes,       { prefix: '/api/v1' });
+  await fastify.register(applicationRoutes,         { prefix: '/api/v1' });
   await fastify.register(engagementOutcomeRoutes,   { prefix: '/api/v1' });
   await fastify.register(engagementProxyRoutes,     { prefix: '/api/v1' });
   await fastify.register(circumstancesRoutes,       { prefix: '/api/v1' });
@@ -822,6 +831,7 @@ declare module 'fastify' {
     confermentService: ConfermentService;
     awardDocumentService: AwardDocumentService;
     graduationService: GraduationService;
+    applicationService: ApplicationService;
     employmentService: EmploymentService;
     businessCaseService: BusinessCaseService;
     identityResolutionService: IdentityResolutionService;

@@ -189,6 +189,14 @@ export const PERMISSION_ROLES = {
   'graduation:read':                     ['registry-administrator'] as Role[],
   'graduation:manage':                   ['registry-administrator'] as Role[],
   'graduation:respond:own':              ['student'] as Role[],
+  // Applications and offers (BPR-D01/D02). Channels and connectors send
+  // applications; admissions staff route and recommend; academic selectors
+  // assess; a delegated authority who did not recommend decides.
+  'application:read':                    ['registry-administrator', 'programme-approver', 'integration-service'] as Role[],
+  'application:receive':                 ['integration-service', 'registry-administrator'] as Role[],
+  'application:write':                   ['registry-administrator'] as Role[],
+  'application:assess':                  ['programme-approver', 'registry-administrator'] as Role[],
+  'offer:decide':                        ['programme-approver', 'registry-administrator'] as Role[],
 } as const;
 
 export type Permission = keyof typeof PERMISSION_ROLES;
