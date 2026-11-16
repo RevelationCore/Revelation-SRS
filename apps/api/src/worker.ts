@@ -8,6 +8,7 @@ import { connectWorker, createSrsWorker } from '@revelation-srs/workflow';
 
 import { buildApp } from './app.js';
 import { loadConfig } from './config.js';
+import { clockNow } from './platform/clock.js';
 
 /**
  * Temporal worker for Revelation SRS (ADR-024).
@@ -71,9 +72,9 @@ const reconcile = async (): Promise<void> => {
     // Connected delivery-ledger items not yet published.
     const deliveryItems = await app.deliveryService.drain();
     const result = { ...workflows, adjustmentInstructions, examWithdrawals, overdueNotices, deliveryItems };
-    lastReconcile = { at: new Date().toISOString(), ok: true, result };
+    lastReconcile = { at: clockNow().toISOString(), ok: true, result };
   } catch (err) {
-    lastReconcile = { at: new Date().toISOString(), ok: false, error: err instanceof Error ? err.message : String(err) };
+    lastReconcile = { at: clockNow().toISOString(), ok: false, error: err instanceof Error ? err.message : String(err) };
     app.log.error({ err }, 'Workflow reconciliation failed');
   } finally {
     reconciling = false;

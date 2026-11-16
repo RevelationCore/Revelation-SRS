@@ -11,6 +11,7 @@ import type {
   MisconductOutcomeDto,
   RecordMisconductOutcomeInput,
 } from '../platform/circumstances/misconduct-service.js';
+import { clockNow } from '../platform/clock.js';
 
 const ErrorSchema = Type.Object({
   type: Type.String(),
@@ -136,7 +137,7 @@ export function circumstancesRoutes(fastify: FastifyInstance): void {
       const input: RecordExceptionalCircumstancesInput = {
         enrolmentId:       body.enrolmentId,
         outcomeCode:       'pending',
-        determinationDate: new Date().toISOString().slice(0, 10),
+        determinationDate: clockNow().toISOString().slice(0, 10),
         notes:             body.description,
         ...(body.moduleOfferingId !== undefined ? { moduleOfferingId: body.moduleOfferingId } : {}),
       };

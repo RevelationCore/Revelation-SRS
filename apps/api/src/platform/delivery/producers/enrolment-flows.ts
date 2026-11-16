@@ -9,6 +9,7 @@ import {
 } from '@revelation-srs/db';
 
 import type { DeliveryService } from '../delivery-service.js';
+import { clockNow } from '../../clock.js';
 
 import { requestLibraryAccess } from './library.js';
 import { requestItsmSnapshot } from './person-flows.js';
@@ -105,7 +106,7 @@ export async function onEnrolmentChanged(
   // F-SIS-HR-01: an employed student's study status changed. HR reviews the
   // roles under its own policy; the SRS does not end employment.
   if (flows.accommodation && snapshot.enrolmentStatus !== 'enrolled') {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = clockNow().toISOString().slice(0, 10);
     const links = await withTenantContext(db, tenantId, (tx) =>
       tx.select({ ref: studentEmploymentLinks.hrEmploymentReference, role: studentEmploymentLinks.roleTypeCode, endDate: studentEmploymentLinks.endDate })
         .from(studentEmploymentLinks)

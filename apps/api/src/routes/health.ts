@@ -6,7 +6,7 @@ import type { FastifyInstance } from 'fastify';
 type CheckResult = { status: string; latencyMs?: number; error?: string; required?: boolean; detail?: unknown };
 
 async function tcpCheck(address: string, defaultPort: number): Promise<CheckResult> {
-  const t0 = Date.now();
+  const t0 = Date.now();  // clock:allow — latency timing
   const url = address.includes('://') ? new URL(address) : new URL(`tcp://${address}`);
   const host = url.hostname || 'localhost';
   const port = Number(url.port || defaultPort);
@@ -32,7 +32,7 @@ async function tcpCheck(address: string, defaultPort: number): Promise<CheckResu
 }
 
 async function jwksCheck(jwksUrl: string): Promise<CheckResult> {
-  const t0 = Date.now();
+  const t0 = Date.now();  // clock:allow — latency timing
   try {
     const res = await fetch(jwksUrl, { signal: AbortSignal.timeout(1_500) });
     return res.ok
@@ -76,7 +76,7 @@ export function healthRoutes(fastify: FastifyInstance): void {
 
       // Database check
       try {
-        const t0 = Date.now();
+        const t0 = Date.now();  // clock:allow — latency timing
         await fastify.db.execute(sql`SELECT 1`);
         checks['database'] = { status: 'ok', latencyMs: Date.now() - t0 };  // clock:allow
       } catch (err) {
