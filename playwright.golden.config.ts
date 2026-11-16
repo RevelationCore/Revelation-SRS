@@ -19,10 +19,12 @@ export default defineConfig({
   forbidOnly: !!process.env['CI'],
   retries: 0,
   workers: 1,
-  reporter: process.env['CI'] ? 'github' : 'list',
+  // In CI, also write the HTML report (uploaded on failure) with screenshots and traces.
+  reporter: process.env['CI'] ? [['github'], ['html', { open: 'never' }]] : 'list',
 
   use: {
-    trace:    'on-first-retry',
+    trace:      'retain-on-failure',
+    screenshot: 'only-on-failure',
     baseURL:  process.env['DEMO_GOLDEN_ADMIN_URL'] ?? 'http://localhost:5173',
     headless: true,
   },

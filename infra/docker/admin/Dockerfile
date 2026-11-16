@@ -9,12 +9,19 @@ RUN pnpm install --frozen-lockfile --ignore-scripts --filter "@revelation-srs/ad
 RUN pnpm --filter "@revelation-srs/admin..." build
 
 # ── Stage 2: production image ──────────────────────────────────────────────────
-FROM nginx:1.27-alpine AS runtime
+# Alpine's own nginx package rather than the nginx.org image: Alpine ships its
+# security fixes as package revisions, which the nginx.org build lagged.
+FROM alpine:3.23 AS runtime
+RUN apk upgrade --no-cache && apk add --no-cache nginx \
+  && rm -f /etc/nginx/http.d/default.conf \
+  && ln -sf /dev/stdout /var/log/nginx/access.log && ln -sf /dev/stderr /var/log/nginx/error.log
 
-COPY infra/docker/admin/nginx.conf /etc/nginx/conf.d/default.conf
+COPY infra/docker/admin/nginx.conf /etc/nginx/http.d/default.conf
 COPY --from=build /app/apps/admin/dist /usr/share/nginx/html
 
 EXPOSE 80
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s \
   CMD wget -qO- http://localhost/index.html || exit 1
+
+CMD ["nginx", "-g", "daemon off;"]

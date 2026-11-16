@@ -106,25 +106,33 @@ test.describe('S0 golden — admin student record (PERSON_ENROLLED)', () => {
   test('enrolled student record is accessible by golden ID', async ({ page }) => {
     await page.goto(`${ADMIN_URL}/students/${GOLDEN_IDS.PERSON_ENROLLED}`);
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByText(/enrolled/i)).toBeVisible();
+    // Enrolment status is on the Enrolments tab; the header shows the person's lifecycle status.
+    await page.getByRole('tab', { name: 'Enrolments' }).click();
+    await expect(page.getByText('enrolled', { exact: true }).first()).toBeVisible();
   });
 
   test('graduated student record shows graduated status', async ({ page }) => {
     await page.goto(`${ADMIN_URL}/students/${GOLDEN_IDS.PERSON_GRADUATED}`);
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByText(/graduated/i)).toBeVisible();
+    // Enrolment status is on the Enrolments tab; the header shows the person's lifecycle status.
+    await page.getByRole('tab', { name: 'Enrolments' }).click();
+    await expect(page.getByText('graduated', { exact: true }).first()).toBeVisible();
   });
 
   test('intermitting student record shows intermitting status', async ({ page }) => {
     await page.goto(`${ADMIN_URL}/students/${GOLDEN_IDS.PERSON_INTERMITTING}`);
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByText(/intermitting/i)).toBeVisible();
+    // Enrolment status is on the Enrolments tab; the header shows the person's lifecycle status.
+    await page.getByRole('tab', { name: 'Enrolments' }).click();
+    await expect(page.getByText('intermitting', { exact: true }).first()).toBeVisible();
   });
 
   test('withdrawn student record shows withdrawn status', async ({ page }) => {
     await page.goto(`${ADMIN_URL}/students/${GOLDEN_IDS.PERSON_WITHDRAWN}`);
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByText(/withdrawn/i)).toBeVisible();
+    // Enrolment status is on the Enrolments tab; the header shows the person's lifecycle status.
+    await page.getByRole('tab', { name: 'Enrolments' }).click();
+    await expect(page.getByText('withdrawn', { exact: true }).first()).toBeVisible();
   });
 });
 
@@ -138,13 +146,15 @@ test.describe('S0 golden — exam boards', () => {
   test('scheduled board is visible in the boards list', async ({ page }) => {
     await page.goto(`${ADMIN_URL}/exam-boards`);
     await expect(page.getByRole('heading', { name: /exam boards/i })).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByText(/scheduled/i)).toBeVisible();
+    // A scheduled (not yet ratified) board shows as pending in the list.
+    await expect(page.getByText('pending', { exact: true }).first()).toBeVisible();
   });
 
   test('ratified board is visible in the boards list', async ({ page }) => {
     await page.goto(`${ADMIN_URL}/exam-boards`);
     await expect(page.getByRole('heading', { name: /exam boards/i })).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByText(/ratified/i)).toBeVisible();
+    // Exact text: the column header also contains "Ratified".
+    await expect(page.getByText('ratified', { exact: true }).first()).toBeVisible();
   });
 });
 

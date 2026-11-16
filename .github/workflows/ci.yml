@@ -334,6 +334,13 @@ jobs:
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps chromium
 
+      # The UI tests expect each app's example configuration (e.g. the
+      # Keycloak sign-in button); locally these come from the apps' .env files.
+      - name: Use the apps' example configuration
+        run: |
+          cp apps/admin/.env.example apps/admin/.env
+          cp apps/portal/.env.example apps/portal/.env
+
       # The dev servers resolve workspace packages from their built output.
       - name: Build the packages the UIs import
         run: pnpm --filter "@revelation-srs/admin^..." --filter "@revelation-srs/portal^..." build
