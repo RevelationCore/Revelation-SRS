@@ -17,6 +17,9 @@ import {
 import { NotFoundError, ValidationError } from '@revelation-srs/domain';
 
 import type { WorkflowBridgeService } from '../platform-controls/workflow-bridge-service.js';
+import { GovernedReview, type ReviewDecisionResult, type ReviewEffectInput } from '../platform-controls/governed-review.js';
+import type { ReviewActivitiesService } from '../platform-controls/review-activities.js';
+import type { ReviewExecutionService } from '../platform-controls/review-execution-service.js';
 import type { ValueSetService } from '../value-sets/service.js';
 import { assertChangeAfterCurrentVersion } from '../bitemporal-guard.js';
 import { clockNow } from '../clock.js';
@@ -165,7 +168,44 @@ export class StudentService {
     private readonly workflowBridge?: WorkflowBridgeService,
     /** F-SIS-ITSM-01 and F-SIS-OIV-01 follow the person. */
     private readonly delivery?: DeliveryService,
+    private readonly reviewExecution?: ReviewExecutionService,
   ) {}
+
+  #identityChangeReview(): GovernedReview {
+    if (!this.workflowBridge) throw new ValidationError('Legal identity change workflow is not configured');
+    return new GovernedReview(this.workflowBridge, this.reviewExecution, {
+      workflowCode: IDENTITY_CHANGE_WORKFLOW_CODE,
+      stepKey: IDENTITY_CHANGE_DECISION_STEP_KEY,
+      gatewayKey: IDENTITY_CHANGE_GATEWAY_KEY,
+      outcomeStepKey: 'request-closed',
+      assigneeRoleCode: 'personal-tutor',
+      subjectEntityType: 'person_identity',
+      effectDecisionCodes: ['approved'],
+    });
+  }
+
+  /** On Temporal-run requests the worker applies the approved identity change before the review closes. */
+  registerWorkflowEffects(activities: ReviewActivitiesService): void {
+    if (!this.workflowBridge) return;
+    this.#identityChangeReview().register(activities, (input) => this.#applyIdentityChange(input));
+  }
+
+  async #applyIdentityChange(input: ReviewEffectInput): Promise<Record<string, unknown>> {
+    const context = input.context as { personId: string; patch: PersonIdentityPatch };
+    // A retried effect finds the identity already changed and adds no second version.
+    const current = await withTenantContext(this.db, input.tenantId, async (tx) =>
+      tx.select().from(personIdentities).where(and(
+        eq(personIdentities.personId, context.personId as Uuid),
+        eq(personIdentities.tenantId, input.tenantId as Uuid),
+        isNull(personIdentities.recordedUntil),
+      )).limit(1),
+    );
+    const already = current[0]
+      && (context.patch.genderCode === undefined || current[0].genderCode === context.patch.genderCode)
+      && (context.patch.nationalityCode === undefined || current[0].nationalityCode === context.patch.nationalityCode);
+    if (!already) await this.updatePersonIdentity(context.personId, input.tenantId, context.patch);
+    return { personId: context.personId };
+  }
 
   async #validateFieldValue(
     tenantId:   string,
@@ -467,31 +507,9 @@ export class StudentService {
     };
 
     const workflowDefinitionVersionId = await this.#getActiveIdentityChangeWorkflowVersionId(tenantId);
-    const instance = await this.workflowBridge.startWorkflowInstance({
-      tenantId,
-      workflowDefinitionVersionId,
-      workflowCode: IDENTITY_CHANGE_WORKFLOW_CODE,
-      subjectEntityType: 'person_identity',
-      subjectEntityId: personId,
-      startedBy: requesterId,
-      context,
+    return this.#identityChangeReview().start(tenantId, {
+      workflowDefinitionVersionId, subjectEntityId: personId, startedBy: requesterId, context,
     });
-
-    const task = await this.workflowBridge.assignWorkflowTask({
-      tenantId,
-      workflowInstanceId: instance.workflowInstanceId,
-      stepKey: IDENTITY_CHANGE_DECISION_STEP_KEY,
-      assigneeRoleCode: 'personal-tutor',
-      payload: context,
-    });
-
-    return {
-      workflowInstanceId: instance.workflowInstanceId,
-      workflowTaskId: task.workflowTaskId,
-      statusCode: 'running',
-      context,
-      startedAt: clockNow(),
-    };
   }
 
   async listPendingIdentityChangeRequests(tenantId: string): Promise<IdentityChangeRequestDto[]> {
@@ -537,41 +555,17 @@ export class StudentService {
     decisionCode: 'approved' | 'rejected',
     actorId: string,
     reason?: string,
-  ): Promise<void> {
-    if (!this.workflowBridge) throw new ValidationError('Legal identity change workflow is not configured');
-
+  ): Promise<ReviewDecisionResult> {
+    const review = this.#identityChangeReview();
     const instance = await this.#getIdentityChangeInstance(tenantId, workflowInstanceId);
     if (instance.statusCode !== 'running') {
       throw new ValidationError(`Cannot decide an identity change request in status '${instance.statusCode}'`);
     }
-
     const task = await this.#findIdentityChangeDecisionTask(tenantId, workflowInstanceId);
-
-    await this.workflowBridge.recordWorkflowDecision({
-      tenantId,
-      workflowInstanceId,
-      gatewayKey: IDENTITY_CHANGE_GATEWAY_KEY,
-      decisionCode,
-      ...(reason ? { conditionSummary: reason } : {}),
-      outcomeStepKey: 'request-closed',
-      actorId,
-      metadata: { context: instance.context },
+    return review.decide(tenantId, {
+      instance, legacyTaskId: task?.id ?? null, decisionCode, actorId, ...(reason ? { reason } : {}),
+      effect: (input) => this.#applyIdentityChange(input),
     });
-    if (task) {
-      await this.workflowBridge.completeWorkflowTask({
-        tenantId, workflowTaskId: task.id, completedBy: actorId,
-        payload: { decisionCode, ...(reason ? { reason } : {}) },
-      });
-    }
-    await this.workflowBridge.completeWorkflowInstance({
-      tenantId, workflowInstanceId, actorId,
-      statusCode: 'completed', metadata: { decisionCode },
-    });
-
-    if (decisionCode !== 'approved') return;
-
-    const context = instance.context as { personId: string; patch: PersonIdentityPatch };
-    await this.updatePersonIdentity(context.personId, tenantId, context.patch);
   }
 
   async #getActiveIdentityChangeWorkflowVersionId(tenantId: string): Promise<string> {

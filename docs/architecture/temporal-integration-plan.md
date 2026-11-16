@@ -1,7 +1,7 @@
 # Plan: live Temporal execution in Revelation SRS
 
 Date: 11 November 2026 (revised the same day after review). Status: **Stages 0–4 implemented;
-Stage 5 partly; Stage 6 not started.** See [Implementation progress](#implementation-progress).
+Stage 5 partly; Stage 6a implemented (16 November 2026); Stage 6b out of scope.** See [Implementation progress](#implementation-progress).
 Decisions: [ADR-024](../decisions/ADR-024-live-temporal-execution.md).
 Baseline: the working tree as of commit `3d68f04`, including the generic workflow builder and Task Inbox.
 
@@ -35,7 +35,7 @@ implementation chose between options, ADR-024 records the choice.
 | 3. Generic reviews | **Done** | `reviewWorkflow` keeps real outcomes, absolute deadlines, escalation that keeps waiting, needs-attention, cancellation and queries. Start, decide and cancel routes pick the backend per instance. Task Inbox shows saved/applied/needs-attention states. |
 | 4. Module registration pilot | **Done** | Approvals apply as an idempotent domain effect (registration ID derived from the command). Failures keep the decision visible and reopen the request. Workflow completion follows the domain change. |
 | 5. Recovery and release | **Partly** | Done: 9 time-skipping/replay workflow tests; 18 real-server integration tests (worker restart, Temporal unreachable at start, decision during worker outage, concurrent decisions, deadline races, forged/cross-tenant commands, outbox while NATS down); runbook 04 rewritten; `/ready` no longer fails on Temporal. **Not done:** load test against the 500 ms p95 target, NATS/database-restore drills, alert rules for the backlog metrics, Worker Versioning, UAT rehearsal of flag rollback. |
-| 6. Expand by family | **Not started** | Coverage matrix below. |
+| 6. Expand by family | **6a done; 6b out of scope** | All eight bridge-caller families start on Temporal when flagged (coverage matrix below), through one helper, `GovernedReview` (`platform-controls/governed-review.ts`). Each family's business change is a worker effect, idempotent per decision: HESA skips a return already submitted; OfS derives the extract ID from the command; SLC, UCAS and UKVI process only triggers still pending, and UKVI derives each CAS request ID from its trigger; legal identity skips a change already in place; module selection resumes an interrupted approval at confirmation, with registration IDs derived from the proposal item. Admissions has no decision service, so its hand-off is decided in the Task Inbox like any review. Decide routes return `202` with a command ID when the decision is saved but not yet applied. **The legacy bridge now applies the change before it closes the request** in all eight families. Previously it closed first, so a failed change left a completed request with nothing applied: the bug Stage 0 fixed for module registration. Tests: `temporal-stage6a.int.test.ts` (10: effect coverage for every family; legal identity applied once, rejected, failed and retried, own-request authority; OfS and SLC exactly once under replay; module selection approved once under replay and rejected; legacy failure leaves the request open). **Not done:** dedicated Temporal tests for HESA, UCAS, UKVI and admissions (they share the helper and are covered by the effect-coverage check), and pending-state messages on the family admin pages (they reload and show the request still open; the Task Inbox already shows pending). |
 
 ### Coverage matrix (Stage 0 inventory)
 
@@ -43,14 +43,14 @@ implementation chose between options, ADR-024 records the choice.
 |---|---|---|---|
 | Builder-authored single reviews | (per definition) | Bridge → **Temporal when flagged** | Migrated (Stage 3) |
 | Module registration change | `module-registration-change-approval` | Bridge → **Temporal when flagged** | Migrated (Stage 4) |
-| Module selection | `module-selection-approval` | Bridge (legacy) | Stage 6a |
-| Legal identity change | `legal-identity-change-approval` | Bridge (legacy) | Stage 6a |
-| Admissions hand-off | per source (`SOURCE_WORKFLOW`) | Bridge (legacy) | Stage 6a |
-| HESA return submission | `hesa-return-submission-approval` | Bridge (legacy) | Stage 6a |
-| OfS extract generation | `ofs-extract-generation-approval` | Bridge (legacy) | Stage 6a |
-| SLC confirmation submission | `slc-confirmation-submission-approval` | Bridge (legacy) | Stage 6a |
-| UCAS confirmation submission | `ucas-confirmation-submission-approval` | Bridge (legacy) | Stage 6a |
-| UKVI CAS request submission | `ukvi-cas-request-submission-approval` | Bridge (legacy) | Stage 6a |
+| Module selection | `module-selection-approval` | Bridge → **Temporal when flagged** | Migrated (Stage 6a) |
+| Legal identity change | `legal-identity-change-approval` | Bridge → **Temporal when flagged** | Migrated (Stage 6a) |
+| Admissions hand-off | per source (`SOURCE_WORKFLOW`) | Bridge → **Temporal when flagged** | Migrated (Stage 6a) |
+| HESA return submission | `hesa-return-submission-approval` | Bridge → **Temporal when flagged** | Migrated (Stage 6a) |
+| OfS extract generation | `ofs-extract-generation-approval` | Bridge → **Temporal when flagged** | Migrated (Stage 6a) |
+| SLC confirmation submission | `slc-confirmation-submission-approval` | Bridge → **Temporal when flagged** | Migrated (Stage 6a) |
+| UCAS confirmation submission | `ucas-confirmation-submission-approval` | Bridge → **Temporal when flagged** | Migrated (Stage 6a) |
+| UKVI CAS request submission | `ukvi-cas-request-submission-approval` | Bridge → **Temporal when flagged** | Migrated (Stage 6a) |
 | PGR, DSAR, identity resolution | — | `business_case` (ADR-023) | Out of scope (6b, needs its own ADR) |
 | Wellbeing cases | — | `modules/wellbeing` state machines | Out of scope (6b, needs its own ADR) |
 

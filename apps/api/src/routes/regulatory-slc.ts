@@ -9,6 +9,8 @@ import type {
   SubmissionRequestDto,
 } from '../platform/regulatory/slc-service.js';
 
+import { PendingDecisionSchema, pendingDecision } from './workflow-decision-response.js';
+
 const ErrorSchema = Type.Object({
   type: Type.String(),
   title: Type.String(),
@@ -218,7 +220,8 @@ export function regulatorySlcRoutes(fastify: FastifyInstance): void {
         }),
         response: {
           200: Type.Object({ processedCount: Type.Number() }),
-          404: ErrorSchema, 422: ErrorSchema,
+          202: PendingDecisionSchema,
+          404: ErrorSchema, 409: ErrorSchema, 422: ErrorSchema,
         },
       },
       preHandler: [requirePermission('regulatory:decide')],
@@ -244,7 +247,11 @@ export function regulatorySlcRoutes(fastify: FastifyInstance): void {
         correlationId: request.id,
       });
 
-      await reply.send(result);
+      if (result.status === 'pending') {
+        await reply.code(202).send(pendingDecision(result.commandId));
+        return;
+      }
+      await reply.send({ processedCount: result.processedCount });
     },
   );
 }

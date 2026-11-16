@@ -25,6 +25,9 @@ import type { IntegrationBusPublisher } from '../integration-bus/publisher.js';
 import type { AdmissionsService } from '../admissions/admissions-service.js';
 import type { FeatureFlagService } from '../platform-controls/feature-flag-service.js';
 import type { WorkflowBridgeService } from '../platform-controls/workflow-bridge-service.js';
+import { GovernedReview, type ReviewEffectInput } from '../platform-controls/governed-review.js';
+import type { ReviewActivitiesService } from '../platform-controls/review-activities.js';
+import type { ReviewExecutionService } from '../platform-controls/review-execution-service.js';
 import type { ValueSetService } from '../value-sets/service.js';
 import { clockNow } from '../clock.js';
 
@@ -121,8 +124,39 @@ export class UcasService {
     private readonly admissionsService?: AdmissionsService,
     private readonly featureFlags?: FeatureFlagService,
     private readonly workflowBridge?: WorkflowBridgeService,
+    private readonly reviewExecution?: ReviewExecutionService,
   ) {
     this.exchanges = exchanges ?? new RegulatoryExchangeService(db);
+  }
+
+  #submissionReview(): GovernedReview {
+    if (!this.workflowBridge) throw new ValidationError('UCAS submission workflow is not configured');
+    return new GovernedReview(this.workflowBridge, this.reviewExecution, {
+      workflowCode: SUBMISSION_WORKFLOW_CODE,
+      stepKey: SUBMISSION_DECISION_STEP_KEY,
+      gatewayKey: SUBMISSION_GATEWAY_KEY,
+      outcomeStepKey: 'request-closed',
+      assigneeRoleCode: 'regulatory-officer',
+      subjectEntityType: 'ucas_confirmation_batch',
+      effectDecisionCodes: ['approved'],
+    });
+  }
+
+  /** On Temporal-run requests the worker submits the snapshotted batch before the review closes. */
+  registerWorkflowEffects(activities: ReviewActivitiesService): void {
+    if (!this.workflowBridge) return;
+    this.#submissionReview().register(activities, (input) => this.#applySubmissionApproval(input));
+  }
+
+  /**
+   * Submits exactly the snapshotted trigger set. Only triggers still pending
+   * are processed, so a retried effect sends nothing twice.
+   */
+  async #applySubmissionApproval(input: ReviewEffectInput): Promise<Record<string, unknown>> {
+    const cycle = input.context['cycle'] as string;
+    const triggerIds = input.context['triggerIds'] as string[];
+    const result = await this.generateOutboundConfirmations(input.tenantId, cycle, input.actorId, { dryRun: false, triggerIds });
+    return { processedCount: result.processedCount };
   }
 
   async ingestApplication(
@@ -336,26 +370,16 @@ export class UcasService {
     const triggerIds = preview.payload.confirmations.map((c) => c.triggerId);
 
     const workflowDefinitionVersionId = await this.#getActiveSubmissionWorkflowVersionId(tenantId);
-    const instance = await this.workflowBridge.startWorkflowInstance({
-      tenantId,
+    const started = await this.#submissionReview().start(tenantId, {
       workflowDefinitionVersionId,
-      workflowCode: SUBMISSION_WORKFLOW_CODE,
-      subjectEntityType: 'ucas_confirmation_batch',
       startedBy: requesterId,
       context: { cycle, triggerIds, recordCount: triggerIds.length, ...(reason ? { reason } : {}) },
-    });
-
-    const task = await this.workflowBridge.assignWorkflowTask({
-      tenantId,
-      workflowInstanceId: instance.workflowInstanceId,
-      stepKey: SUBMISSION_DECISION_STEP_KEY,
-      assigneeRoleCode: 'regulatory-officer',
-      payload: { cycle, triggerIds, recordCount: triggerIds.length },
+      taskPayload: { cycle, triggerIds, recordCount: triggerIds.length },
     });
 
     return {
-      workflowInstanceId: instance.workflowInstanceId,
-      workflowTaskId: task.workflowTaskId,
+      workflowInstanceId: started.workflowInstanceId,
+      workflowTaskId: started.workflowTaskId,
       statusCode: 'running',
       recordCount: triggerIds.length,
       context: { cycle, triggerIds, recordCount: triggerIds.length },
@@ -394,8 +418,8 @@ export class UcasService {
     decisionCode: 'approved' | 'rejected',
     actorId: string,
     reason?: string,
-  ): Promise<{ processedCount: number }> {
-    if (!this.workflowBridge) throw new ValidationError('UCAS submission workflow is not configured');
+  ): Promise<{ processedCount: number; status: 'applied' } | { processedCount: 0; status: 'pending'; commandId: string }> {
+    const review = this.#submissionReview();
 
     const instance = await this.#getSubmissionInstance(tenantId, workflowInstanceId);
     if (instance.statusCode !== 'running') {
@@ -403,34 +427,12 @@ export class UcasService {
     }
 
     const task = await this.#findSubmissionDecisionTask(tenantId, workflowInstanceId);
-
-    await this.workflowBridge.recordWorkflowDecision({
-      tenantId,
-      workflowInstanceId,
-      gatewayKey: SUBMISSION_GATEWAY_KEY,
-      decisionCode,
-      ...(reason ? { conditionSummary: reason } : {}),
-      outcomeStepKey: 'request-closed',
-      actorId,
-      metadata: { context: instance.context },
+    const result = await review.decide(tenantId, {
+      instance, legacyTaskId: task?.id ?? null, decisionCode, actorId, ...(reason ? { reason } : {}),
+      effect: (input) => this.#applySubmissionApproval(input),
     });
-    if (task) {
-      await this.workflowBridge.completeWorkflowTask({
-        tenantId, workflowTaskId: task.id, completedBy: actorId,
-        payload: { decisionCode, ...(reason ? { reason } : {}) },
-      });
-    }
-    await this.workflowBridge.completeWorkflowInstance({
-      tenantId, workflowInstanceId, actorId,
-      statusCode: 'completed', metadata: { decisionCode },
-    });
-
-    if (decisionCode !== 'approved') return { processedCount: 0 };
-
-    const cycle = instance.context['cycle'] as string;
-    const triggerIds = instance.context['triggerIds'] as string[];
-    const result = await this.generateOutboundConfirmations(tenantId, cycle, actorId, { dryRun: false, triggerIds });
-    return { processedCount: result.processedCount };
+    if (result.status === 'pending') return { processedCount: 0, status: 'pending', commandId: result.commandId };
+    return { processedCount: (result.result['processedCount'] as number | undefined) ?? 0, status: 'applied' };
   }
 
   async #getSubmissionInstance(tenantId: string, workflowInstanceId: string) {

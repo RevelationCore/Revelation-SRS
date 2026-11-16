@@ -26,6 +26,9 @@ import {
 } from '@revelation-srs/domain';
 
 import type { WorkflowBridgeService } from '../platform-controls/workflow-bridge-service.js';
+import { GovernedReview, type ReviewDecisionResult, type ReviewEffectInput } from '../platform-controls/governed-review.js';
+import type { ReviewActivitiesService } from '../platform-controls/review-activities.js';
+import type { ReviewExecutionService } from '../platform-controls/review-execution-service.js';
 import type { IntegrationBusPublisher } from '../integration-bus/publisher.js';
 import type { StudentService } from '../students/service.js';
 import { clockNow } from '../clock.js';
@@ -125,8 +128,38 @@ export class HesaService {
     private readonly students: StudentService,
     exchanges?: RegulatoryExchangeService,
     private readonly workflowBridge?: WorkflowBridgeService,
+    private readonly reviewExecution?: ReviewExecutionService,
   ) {
     this.exchanges = exchanges ?? new RegulatoryExchangeService(db);
+  }
+
+  #submissionReview(): GovernedReview {
+    if (!this.workflowBridge) throw new ValidationError('HESA submission workflow is not configured');
+    return new GovernedReview(this.workflowBridge, this.reviewExecution, {
+      workflowCode: HESA_SUBMISSION_WORKFLOW_CODE,
+      stepKey: HESA_SUBMISSION_DECISION_STEP_KEY,
+      gatewayKey: HESA_SUBMISSION_GATEWAY_KEY,
+      outcomeStepKey: 'request-closed',
+      assigneeRoleCode: 'regulatory-officer',
+      subjectEntityType: 'hesa_student_return',
+      effectDecisionCodes: ['approved'],
+    });
+  }
+
+  /** On Temporal-run requests the worker marks the return submitted before the review closes. */
+  registerWorkflowEffects(activities: ReviewActivitiesService): void {
+    if (!this.workflowBridge) return;
+    this.#submissionReview().register(activities, (input) => this.#applySubmissionApproval(input));
+  }
+
+  async #applySubmissionApproval(input: ReviewEffectInput): Promise<Record<string, unknown>> {
+    const context = input.context as { returnId: string; submissionReference?: string };
+    const hesaReturn = await this.#requireReturn(context.returnId, input.tenantId);
+    // A retried effect finds the return already submitted.
+    if (hesaReturn.statusCode !== 'submitted') {
+      await this.markSubmitted(context.returnId, input.tenantId, context.submissionReference ?? null, input.actorId);
+    }
+    return { returnId: context.returnId };
   }
 
   async generateStudentReturn(
@@ -461,31 +494,12 @@ export class HesaService {
     };
 
     const workflowDefinitionVersionId = await this.#getActiveSubmissionWorkflowVersionId(tenantId);
-    const instance = await this.workflowBridge.startWorkflowInstance({
-      tenantId,
+    return this.#submissionReview().start(tenantId, {
       workflowDefinitionVersionId,
-      workflowCode: HESA_SUBMISSION_WORKFLOW_CODE,
-      subjectEntityType: 'hesa_student_return',
       subjectEntityId: returnId,
       startedBy: requesterId,
       context,
     });
-
-    const task = await this.workflowBridge.assignWorkflowTask({
-      tenantId,
-      workflowInstanceId: instance.workflowInstanceId,
-      stepKey: HESA_SUBMISSION_DECISION_STEP_KEY,
-      assigneeRoleCode: 'regulatory-officer',
-      payload: context,
-    });
-
-    return {
-      workflowInstanceId: instance.workflowInstanceId,
-      workflowTaskId: task.workflowTaskId,
-      statusCode: 'running',
-      context,
-      startedAt: clockNow(),
-    };
   }
 
   async listPendingReturnSubmissionRequests(tenantId: string): Promise<HesaSubmissionRequestDto[]> {
@@ -512,41 +526,17 @@ export class HesaService {
     decisionCode: 'approved' | 'rejected',
     actorId: string,
     reason?: string,
-  ): Promise<void> {
-    if (!this.workflowBridge) throw new ValidationError('HESA submission workflow is not configured');
-
+  ): Promise<ReviewDecisionResult> {
+    const review = this.#submissionReview();
     const instance = await this.#getSubmissionInstance(tenantId, workflowInstanceId);
     if (instance.statusCode !== 'running') {
       throw new ValidationError(`Cannot decide a submission request in status '${instance.statusCode}'`);
     }
-
     const task = await this.#findSubmissionDecisionTask(tenantId, workflowInstanceId);
-
-    await this.workflowBridge.recordWorkflowDecision({
-      tenantId,
-      workflowInstanceId,
-      gatewayKey: HESA_SUBMISSION_GATEWAY_KEY,
-      decisionCode,
-      ...(reason ? { conditionSummary: reason } : {}),
-      outcomeStepKey: 'request-closed',
-      actorId,
-      metadata: { context: instance.context },
+    return review.decide(tenantId, {
+      instance, legacyTaskId: task?.id ?? null, decisionCode, actorId, ...(reason ? { reason } : {}),
+      effect: (input) => this.#applySubmissionApproval(input),
     });
-    if (task) {
-      await this.workflowBridge.completeWorkflowTask({
-        tenantId, workflowTaskId: task.id, completedBy: actorId,
-        payload: { decisionCode, ...(reason ? { reason } : {}) },
-      });
-    }
-    await this.workflowBridge.completeWorkflowInstance({
-      tenantId, workflowInstanceId, actorId,
-      statusCode: 'completed', metadata: { decisionCode },
-    });
-
-    if (decisionCode !== 'approved') return;
-
-    const context = instance.context as { returnId: string; submissionReference?: string };
-    await this.markSubmitted(context.returnId, tenantId, context.submissionReference ?? null, actorId);
   }
 
   async #getActiveSubmissionWorkflowVersionId(tenantId: string): Promise<string> {

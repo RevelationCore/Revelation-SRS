@@ -22,6 +22,8 @@ import type {
 } from '../platform/enrolment/service.js';
 import type { ChangeRequestDto } from '../platform/registration/service.js';
 
+import { PendingDecisionSchema, pendingDecision } from './workflow-decision-response.js';
+
 const PersonIdentitySchema = Type.Object({
   versionId:          Type.String(),
   legalFirstName:     Type.String(),
@@ -673,7 +675,7 @@ export function studentRoutes(fastify: FastifyInstance): void {
           decisionCode: Type.Union([Type.Literal('approved'), Type.Literal('rejected')]),
           reason:       Type.Optional(Type.String()),
         }),
-        response: { 204: Type.Null(), 404: ErrorSchema, 422: ErrorSchema },
+        response: { 202: PendingDecisionSchema, 204: Type.Null(), 404: ErrorSchema, 409: ErrorSchema, 422: ErrorSchema },
       },
       preHandler: [requirePermission('student:decide')],
     },
@@ -681,7 +683,7 @@ export function studentRoutes(fastify: FastifyInstance): void {
       const { workflowInstanceId } = request.params as { workflowInstanceId: string };
       const { decisionCode, reason } = request.body as { decisionCode: 'approved' | 'rejected'; reason?: string };
 
-      await fastify.studentService.decideIdentityChangeRequest(
+      const result = await fastify.studentService.decideIdentityChangeRequest(
         request.tenantId, workflowInstanceId, decisionCode, request.user.sub, reason,
       );
 
@@ -698,6 +700,10 @@ export function studentRoutes(fastify: FastifyInstance): void {
         correlationId:    request.id,
       });
 
+      if (result.status === 'pending') {
+        await reply.code(202).send(pendingDecision(result.commandId));
+        return;
+      }
       await reply.code(204).send();
     },
   );

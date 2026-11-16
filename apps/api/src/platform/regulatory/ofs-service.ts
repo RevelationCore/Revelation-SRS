@@ -19,6 +19,9 @@ import {
 } from '@revelation-srs/domain';
 
 import type { WorkflowBridgeService } from '../platform-controls/workflow-bridge-service.js';
+import { GovernedReview, deterministicUuid, type ReviewEffectInput } from '../platform-controls/governed-review.js';
+import type { ReviewActivitiesService } from '../platform-controls/review-activities.js';
+import type { ReviewExecutionService } from '../platform-controls/review-execution-service.js';
 import type { IntegrationBusPublisher } from '../integration-bus/publisher.js';
 import { clockNow } from '../clock.js';
 
@@ -70,12 +73,47 @@ export class OfsService {
     private readonly db: Db,
     private readonly eventBus: IntegrationBusPublisher,
     private readonly workflowBridge?: WorkflowBridgeService,
+    private readonly reviewExecution?: ReviewExecutionService,
   ) {}
+
+  #generationReview(): GovernedReview {
+    if (!this.workflowBridge) throw new ValidationError('OfS extract generation workflow is not configured');
+    return new GovernedReview(this.workflowBridge, this.reviewExecution, {
+      workflowCode: OFS_GENERATION_WORKFLOW_CODE,
+      stepKey: OFS_GENERATION_DECISION_STEP_KEY,
+      gatewayKey: OFS_GENERATION_GATEWAY_KEY,
+      outcomeStepKey: 'request-closed',
+      assigneeRoleCode: 'regulatory-officer',
+      subjectEntityType: 'ofs_extract',
+      effectDecisionCodes: ['approved'],
+    });
+  }
+
+  /** On Temporal-run requests the worker generates the extract before the review closes. */
+  registerWorkflowEffects(activities: ReviewActivitiesService): void {
+    if (!this.workflowBridge) return;
+    this.#generationReview().register(activities, (input) => this.#applyGenerationApproval(input));
+  }
+
+  async #applyGenerationApproval(input: ReviewEffectInput): Promise<Record<string, unknown>> {
+    const context = input.context as { extractTypeCode: OfsExtractTypeCode; academicYear: string };
+    // One extract per decision: a retried effect finds the extract it already made.
+    const extractId = deterministicUuid(`ofs-extract:${input.operationKey}`);
+    const existing = await withTenantContext(this.db, input.tenantId, async (tx) =>
+      tx.select({ id: ofsExtracts.id }).from(ofsExtracts).where(eq(ofsExtracts.id, extractId)).limit(1),
+    );
+    if (existing[0]) return { extractId };
+    const result = context.extractTypeCode === 'b3-student-outcomes'
+      ? await this.generateB3Extract(input.tenantId, context.academicYear, input.actorId, extractId)
+      : await this.generateParticipationReport(input.tenantId, context.academicYear, input.actorId, extractId);
+    return { extractId: result.extractId };
+  }
 
   async generateB3Extract(
     tenantId: string,
     academicYear: string,
     actorId: string,
+    requestedExtractId?: string,
   ): Promise<{ extractId: string; recordCount: number; payload: Record<string, unknown> }> {
     const now = clockNow();
     const metrics = await this.#loadB3Metrics(tenantId, academicYear);
@@ -115,6 +153,7 @@ export class OfsService {
       payload,
       actorId,
       now,
+      requestedExtractId,
     );
     await this.#publishExtractGenerated(tenantId, actorId, {
       extractId,
@@ -131,6 +170,7 @@ export class OfsService {
     tenantId: string,
     academicYear: string,
     actorId: string,
+    requestedExtractId?: string,
   ): Promise<{ extractId: string; recordCount: number; payload: Record<string, unknown> }> {
     const now = clockNow();
     const rows = await this.#loadParticipationRows(tenantId, academicYear);
@@ -166,6 +206,7 @@ export class OfsService {
       payload,
       actorId,
       now,
+      requestedExtractId,
     );
     await this.#publishExtractGenerated(tenantId, actorId, {
       extractId,
@@ -215,30 +256,7 @@ export class OfsService {
     const context: Record<string, unknown> = { extractTypeCode, academicYear, ...(reason ? { reason } : {}) };
 
     const workflowDefinitionVersionId = await this.#getActiveGenerationWorkflowVersionId(tenantId);
-    const instance = await this.workflowBridge.startWorkflowInstance({
-      tenantId,
-      workflowDefinitionVersionId,
-      workflowCode: OFS_GENERATION_WORKFLOW_CODE,
-      subjectEntityType: 'ofs_extract',
-      startedBy: requesterId,
-      context,
-    });
-
-    const task = await this.workflowBridge.assignWorkflowTask({
-      tenantId,
-      workflowInstanceId: instance.workflowInstanceId,
-      stepKey: OFS_GENERATION_DECISION_STEP_KEY,
-      assigneeRoleCode: 'regulatory-officer',
-      payload: context,
-    });
-
-    return {
-      workflowInstanceId: instance.workflowInstanceId,
-      workflowTaskId: task.workflowTaskId,
-      statusCode: 'running',
-      context,
-      startedAt: clockNow(),
-    };
+    return this.#generationReview().start(tenantId, { workflowDefinitionVersionId, startedBy: requesterId, context });
   }
 
   async listPendingGenerationRequests(tenantId: string): Promise<OfsGenerationRequestDto[]> {
@@ -265,44 +283,19 @@ export class OfsService {
     decisionCode: 'approved' | 'rejected',
     actorId: string,
     reason?: string,
-  ): Promise<{ extractId: string | null }> {
-    if (!this.workflowBridge) throw new ValidationError('OfS extract generation workflow is not configured');
-
+  ): Promise<{ extractId: string | null; status: 'applied' } | { extractId: null; status: 'pending'; commandId: string }> {
+    const review = this.#generationReview();
     const instance = await this.#getGenerationInstance(tenantId, workflowInstanceId);
     if (instance.statusCode !== 'running') {
       throw new ValidationError(`Cannot decide a generation request in status '${instance.statusCode}'`);
     }
-
     const task = await this.#findGenerationDecisionTask(tenantId, workflowInstanceId);
-
-    await this.workflowBridge.recordWorkflowDecision({
-      tenantId,
-      workflowInstanceId,
-      gatewayKey: OFS_GENERATION_GATEWAY_KEY,
-      decisionCode,
-      ...(reason ? { conditionSummary: reason } : {}),
-      outcomeStepKey: 'request-closed',
-      actorId,
-      metadata: { context: instance.context },
+    const result = await review.decide(tenantId, {
+      instance, legacyTaskId: task?.id ?? null, decisionCode, actorId, ...(reason ? { reason } : {}),
+      effect: (input) => this.#applyGenerationApproval(input),
     });
-    if (task) {
-      await this.workflowBridge.completeWorkflowTask({
-        tenantId, workflowTaskId: task.id, completedBy: actorId,
-        payload: { decisionCode, ...(reason ? { reason } : {}) },
-      });
-    }
-    await this.workflowBridge.completeWorkflowInstance({
-      tenantId, workflowInstanceId, actorId,
-      statusCode: 'completed', metadata: { decisionCode },
-    });
-
-    if (decisionCode !== 'approved') return { extractId: null };
-
-    const context = instance.context as { extractTypeCode: OfsExtractTypeCode; academicYear: string };
-    const result = context.extractTypeCode === 'b3-student-outcomes'
-      ? await this.generateB3Extract(tenantId, context.academicYear, actorId)
-      : await this.generateParticipationReport(tenantId, context.academicYear, actorId);
-    return { extractId: result.extractId };
+    if (result.status === 'pending') return { extractId: null, status: 'pending', commandId: result.commandId };
+    return { extractId: (result.result['extractId'] as string | undefined) ?? null, status: 'applied' };
   }
 
   async #getActiveGenerationWorkflowVersionId(tenantId: string): Promise<string> {
@@ -358,8 +351,8 @@ export class OfsService {
     payload: Record<string, unknown>,
     actorId: string,
     generatedAt: Date,
+    extractId: string = randomUUID(),
   ): Promise<string> {
-    const extractId = randomUUID();
     await withTenantContext(this.db, tenantId, async (tx) => {
       await tx.insert(ofsExtracts).values({
         id: extractId,

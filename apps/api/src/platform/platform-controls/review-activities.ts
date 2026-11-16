@@ -71,6 +71,11 @@ export class ReviewActivitiesService {
     this.#effects.set(workflowCode, registration);
   }
 
+  /** Workflow codes whose approvals change business records (for coverage checks). */
+  effectWorkflowCodes(): string[] {
+    return [...this.#effects.keys()].sort();
+  }
+
   activities(): SrsWorkerActivities {
     return {
       applyReviewCommand: (input) => this.applyReviewCommand(input),

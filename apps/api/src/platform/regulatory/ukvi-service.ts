@@ -32,6 +32,9 @@ import {
 import type { IntegrationBusPublisher } from '../integration-bus/publisher.js';
 import type { RulesEngine } from '../rules-engine/engine.js';
 import type { WorkflowBridgeService } from '../platform-controls/workflow-bridge-service.js';
+import { GovernedReview, deterministicUuid, type ReviewEffectInput } from '../platform-controls/governed-review.js';
+import type { ReviewActivitiesService } from '../platform-controls/review-activities.js';
+import type { ReviewExecutionService } from '../platform-controls/review-execution-service.js';
 import type { ValueSetService } from '../value-sets/service.js';
 import { clockNow } from '../clock.js';
 
@@ -202,8 +205,38 @@ export class UkviService {
     private readonly rules: RulesEngine,
     exchanges?: RegulatoryExchangeService,
     private readonly workflowBridge?: WorkflowBridgeService,
+    private readonly reviewExecution?: ReviewExecutionService,
   ) {
     this.exchanges = exchanges ?? new RegulatoryExchangeService(db);
+  }
+
+  #submissionReview(): GovernedReview {
+    if (!this.workflowBridge) throw new ValidationError('UKVI CAS submission workflow is not configured');
+    return new GovernedReview(this.workflowBridge, this.reviewExecution, {
+      workflowCode: CAS_SUBMISSION_WORKFLOW_CODE,
+      stepKey: CAS_SUBMISSION_DECISION_STEP_KEY,
+      gatewayKey: CAS_SUBMISSION_GATEWAY_KEY,
+      outcomeStepKey: 'request-closed',
+      assigneeRoleCode: 'regulatory-officer',
+      subjectEntityType: 'ukvi_cas_request_batch',
+      effectDecisionCodes: ['approved'],
+    });
+  }
+
+  /** On Temporal-run requests the worker submits the snapshotted batch before the review closes. */
+  registerWorkflowEffects(activities: ReviewActivitiesService): void {
+    if (!this.workflowBridge) return;
+    this.#submissionReview().register(activities, (input) => this.#applySubmissionApproval(input));
+  }
+
+  /**
+   * Submits exactly the snapshotted trigger set. Only triggers still pending
+   * are processed, so a retried effect sends nothing twice.
+   */
+  async #applySubmissionApproval(input: ReviewEffectInput): Promise<Record<string, unknown>> {
+    const triggerIds = input.context['triggerIds'] as string[];
+    const result = await this.generateCasRequests(input.tenantId, input.actorId, { dryRun: false, triggerIds });
+    return { processedCount: result.processedCount };
   }
 
   async generateCasRequests(
@@ -220,7 +253,9 @@ export class UkviService {
       if (seenTriggers.has(row.trigger_id)) continue;
       seenTriggers.add(row.trigger_id);
 
-      const casRequestId = randomUUID();
+      // Derived from the trigger, so a run interrupted between writing the CAS
+      // request and marking the trigger processed does not create a second one.
+      const casRequestId = opts.dryRun ? randomUUID() : deterministicUuid(`ukvi-cas-request:${row.trigger_id}`);
       const personData = mapCasPersonData(row);
 
       if (opts.dryRun) {
@@ -229,6 +264,9 @@ export class UkviService {
       }
 
       await withTenantContext(this.db, tenantId, async (tx) => {
+        const existing = await tx.select({ id: ukviCasRequests.id }).from(ukviCasRequests)
+          .where(and(eq(ukviCasRequests.id, casRequestId), eq(ukviCasRequests.tenantId, tenantId))).limit(1);
+        if (existing[0]) return;
         await tx.insert(ukviCasRequests).values({
           versionId: randomUUID(),
           id: casRequestId,
@@ -307,26 +345,16 @@ export class UkviService {
     const triggerIds = preview.casRequests.map((c) => c.triggerId);
 
     const workflowDefinitionVersionId = await this.#getActiveCasSubmissionWorkflowVersionId(tenantId);
-    const instance = await this.workflowBridge.startWorkflowInstance({
-      tenantId,
+    const started = await this.#submissionReview().start(tenantId, {
       workflowDefinitionVersionId,
-      workflowCode: CAS_SUBMISSION_WORKFLOW_CODE,
-      subjectEntityType: 'ukvi_cas_request_batch',
       startedBy: requesterId,
       context: { triggerIds, recordCount: triggerIds.length, ...(reason ? { reason } : {}) },
-    });
-
-    const task = await this.workflowBridge.assignWorkflowTask({
-      tenantId,
-      workflowInstanceId: instance.workflowInstanceId,
-      stepKey: CAS_SUBMISSION_DECISION_STEP_KEY,
-      assigneeRoleCode: 'regulatory-officer',
-      payload: { triggerIds, recordCount: triggerIds.length },
+      taskPayload: { triggerIds, recordCount: triggerIds.length },
     });
 
     return {
-      workflowInstanceId: instance.workflowInstanceId,
-      workflowTaskId: task.workflowTaskId,
+      workflowInstanceId: started.workflowInstanceId,
+      workflowTaskId: started.workflowTaskId,
       statusCode: 'running',
       recordCount: triggerIds.length,
       context: { triggerIds, recordCount: triggerIds.length },
@@ -365,8 +393,8 @@ export class UkviService {
     decisionCode: 'approved' | 'rejected',
     actorId: string,
     reason?: string,
-  ): Promise<{ processedCount: number }> {
-    if (!this.workflowBridge) throw new ValidationError('UKVI CAS submission workflow is not configured');
+  ): Promise<{ processedCount: number; status: 'applied' } | { processedCount: 0; status: 'pending'; commandId: string }> {
+    const review = this.#submissionReview();
 
     const instance = await this.#getCasSubmissionInstance(tenantId, workflowInstanceId);
     if (instance.statusCode !== 'running') {
@@ -374,33 +402,12 @@ export class UkviService {
     }
 
     const task = await this.#findCasSubmissionDecisionTask(tenantId, workflowInstanceId);
-
-    await this.workflowBridge.recordWorkflowDecision({
-      tenantId,
-      workflowInstanceId,
-      gatewayKey: CAS_SUBMISSION_GATEWAY_KEY,
-      decisionCode,
-      ...(reason ? { conditionSummary: reason } : {}),
-      outcomeStepKey: 'request-closed',
-      actorId,
-      metadata: { context: instance.context },
+    const result = await review.decide(tenantId, {
+      instance, legacyTaskId: task?.id ?? null, decisionCode, actorId, ...(reason ? { reason } : {}),
+      effect: (input) => this.#applySubmissionApproval(input),
     });
-    if (task) {
-      await this.workflowBridge.completeWorkflowTask({
-        tenantId, workflowTaskId: task.id, completedBy: actorId,
-        payload: { decisionCode, ...(reason ? { reason } : {}) },
-      });
-    }
-    await this.workflowBridge.completeWorkflowInstance({
-      tenantId, workflowInstanceId, actorId,
-      statusCode: 'completed', metadata: { decisionCode },
-    });
-
-    if (decisionCode !== 'approved') return { processedCount: 0 };
-
-    const triggerIds = instance.context['triggerIds'] as string[];
-    const result = await this.generateCasRequests(tenantId, actorId, { dryRun: false, triggerIds });
-    return { processedCount: result.processedCount };
+    if (result.status === 'pending') return { processedCount: 0, status: 'pending', commandId: result.commandId };
+    return { processedCount: (result.result['processedCount'] as number | undefined) ?? 0, status: 'applied' };
   }
 
   async #getCasSubmissionInstance(tenantId: string, workflowInstanceId: string) {

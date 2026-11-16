@@ -10,6 +10,8 @@ import type {
   ProposalDto,
 } from '../platform/module-selection/service.js';
 
+import { PendingDecisionSchema, pendingDecision } from './workflow-decision-response.js';
+
 const ValidationMessageSchema = Type.Object({
   ruleTypeCode: Type.String(),
   message: Type.String(),
@@ -271,7 +273,7 @@ export function moduleSelectionProposalsRoutes(fastify: FastifyInstance): void {
           decisionCode: Type.Union([Type.Literal('approved'), Type.Literal('rejected'), Type.Literal('returned')]),
           reason: Type.String(),
         }),
-        response: { 200: ProposalSchema, 403: ErrorSchema, 404: ErrorSchema, 422: ErrorSchema },
+        response: { 200: ProposalSchema, 202: PendingDecisionSchema, 403: ErrorSchema, 404: ErrorSchema, 409: ErrorSchema, 422: ErrorSchema },
       },
       preHandler: [requirePermission('module-selection:decide')],
     },
@@ -295,6 +297,10 @@ export function moduleSelectionProposalsRoutes(fastify: FastifyInstance): void {
         correlationId: request.id,
       });
 
+      if (proposal.decisionStatus === 'pending') {
+        await reply.code(202).send(pendingDecision(proposal.commandId));
+        return;
+      }
       await reply.send(proposalToWire(proposal));
     },
   );

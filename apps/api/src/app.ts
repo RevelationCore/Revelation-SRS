@@ -321,7 +321,8 @@ export async function buildApp(
   const deliveries = new DeliveryService(db, eventBus, valueSets, (err, context) => {
     fastify.log.warn({ err, ...context }, 'Delivery item not yet published; it stays due for the reconcile loop');
   });
-  const students   = new StudentService(db, valueSets, workflowBridge, deliveries);
+  const students   = new StudentService(db, valueSets, workflowBridge, deliveries, reviewExecution);
+  students.registerWorkflowEffects(reviewActivities);
   const enrolments = new EnrolmentService(db, eventBus, valueSets, triggerRules, deliveries);
   const catalogue  = new CatalogueService(db, eventBus, valueSets);
   const calendar   = new CalendarService(db);
@@ -365,22 +366,25 @@ export async function buildApp(
   const workflowDefinitions = new WorkflowDefinitionService(db);
   const workflowInstances = new WorkflowInstanceService(db);
   const workflowTasks = new WorkflowTaskService(db);
-  const moduleSelection = new ModuleSelectionService(db, eventBus, rules, workflowBridge, registrations);
+  const moduleSelection = new ModuleSelectionService(db, eventBus, rules, workflowBridge, registrations, reviewExecution);
+  moduleSelection.registerWorkflowEffects(reviewActivities);
   const workflowResponsibilities = new WorkflowResponsibilityService(db);
   const workflowBuilder = new WorkflowBuilderService(db, workflowResponsibilities);
   const workflowEscalation = new WorkflowEscalationService(db, workflowBridge);
   const environments = new EnvironmentService(db, runtimeDeployment);
-  const admissions    = new AdmissionsService(db, workflowBridge);
+  const admissions    = new AdmissionsService(db, workflowBridge, reviewExecution);
   const localeService   = new LocaleService(db, audit);
   const currencyService = new CurrencyService(db, audit);
   const communications  = new CommunicationService(db, localeService, featureFlags);
   const adjustmentTaskNotices = new AdjustmentTaskNoticeService(db, adjustments, adjustmentTargets, communications, config.adminAppUrl, deliveries);
-  const ucas = new UcasService(db, valueSets, eventBus, enrolments, regulatoryExchanges, admissions, featureFlags, workflowBridge);
-  const hesa = new HesaService(db, eventBus, students, regulatoryExchanges, workflowBridge);
-  const slc = new SlcService(db, eventBus, valueSets, enrolments, regulatoryExchanges, workflowBridge);
-  const ukvi = new UkviService(db, eventBus, valueSets, rules, regulatoryExchanges, workflowBridge);
+  const ucas = new UcasService(db, valueSets, eventBus, enrolments, regulatoryExchanges, admissions, featureFlags, workflowBridge, reviewExecution);
+  const hesa = new HesaService(db, eventBus, students, regulatoryExchanges, workflowBridge, reviewExecution);
+  const slc = new SlcService(db, eventBus, valueSets, enrolments, regulatoryExchanges, workflowBridge, reviewExecution);
+  const ukvi = new UkviService(db, eventBus, valueSets, rules, regulatoryExchanges, workflowBridge, reviewExecution);
   const casCases = new CasCaseService(db);
-  const ofs = new OfsService(db, eventBus, workflowBridge);
+  const ofs = new OfsService(db, eventBus, workflowBridge, reviewExecution);
+  // ADR-024 Stage 6a: approvals that change a record, applied by the worker on Temporal-run reviews.
+  for (const service of [ucas, hesa, slc, ukvi, ofs]) service.registerWorkflowEffects(reviewActivities);
   const regulatoryCollectionService = new RegulatoryCollectionService(db);
   const foi = new FoiService(db, valueSets);
   const examEntries = new ExamEntryService(db, eventBus, regulatoryExchanges, adjustments);

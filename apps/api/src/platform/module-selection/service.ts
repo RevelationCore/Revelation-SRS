@@ -15,6 +15,7 @@ import {
   programmeRuleSets,
   workflowDefinitions,
   workflowDefinitionVersions,
+  workflowInstances,
   workflowTasks,
   type Db,
   withTenantContext,
@@ -32,6 +33,9 @@ import type {
 
 import type { IntegrationBusPublisher } from '../integration-bus/publisher.js';
 import type { WorkflowBridgeService } from '../platform-controls/workflow-bridge-service.js';
+import { GovernedReview, deterministicUuid } from '../platform-controls/governed-review.js';
+import type { ReviewActivitiesService } from '../platform-controls/review-activities.js';
+import type { ReviewExecutionService } from '../platform-controls/review-execution-service.js';
 import type { ModuleRegistrationService } from '../registration/service.js';
 import type { RulesEngine } from '../rules-engine/engine.js';
 import { clockNow } from '../clock.js';
@@ -161,7 +165,29 @@ export class ModuleSelectionService {
     private readonly rules: RulesEngine,
     private readonly workflowBridge: WorkflowBridgeService,
     private readonly moduleRegistrations: ModuleRegistrationService,
+    private readonly reviewExecution?: ReviewExecutionService,
   ) {}
+
+  readonly #approvalReview = (): GovernedReview => new GovernedReview(this.workflowBridge, this.reviewExecution, {
+    workflowCode: APPROVAL_WORKFLOW_CODE,
+    stepKey: APPROVAL_DECISION_STEP_KEY,
+    gatewayKey: APPROVAL_GATEWAY_KEY,
+    outcomeStepKey: 'proposal-closed',
+    assigneeRoleCode: 'programme-approver',
+    subjectEntityType: 'module_selection_proposal',
+    effectDecisionCodes: ['approved', 'rejected', 'returned'],
+  });
+
+  /** On Temporal-run approvals the worker applies the decision to the proposal before the review closes. */
+  registerWorkflowEffects(activities: ReviewActivitiesService): void {
+    this.#approvalReview().register(activities, async (input) => {
+      const proposalId = input.context['moduleSelectionProposalId'] as string;
+      await this.#applyProposalDecision(
+        input.tenantId, proposalId, input.decisionCode as 'approved' | 'rejected' | 'returned', input.actorId, input.reason ?? '',
+      );
+      return { moduleSelectionProposalId: proposalId };
+    });
+  }
 
   // ── Proposal lifecycle ───────────────────────────────────────────────────────
 
@@ -345,34 +371,54 @@ export class ModuleSelectionService {
     decisionCode: 'approved' | 'rejected' | 'returned',
     actorId: string,
     reason: string,
-  ): Promise<ProposalDto> {
+  ): Promise<ProposalDto & { decisionStatus: 'applied' } | ProposalDto & { decisionStatus: 'pending'; commandId: string }> {
     const proposal = await this.#getCurrentProposalRow(proposalId, tenantId);
     if (proposal.statusCode !== 'waitlisted' && proposal.statusCode !== 'submitted') {
       throw new ValidationError(`Cannot decide a proposal in status '${proposal.statusCode}'`);
     }
 
-    if (proposal.workflowInstanceId) {
-      await this.workflowBridge.recordWorkflowDecision({
-        tenantId,
-        workflowInstanceId: proposal.workflowInstanceId,
-        gatewayKey: APPROVAL_GATEWAY_KEY,
-        decisionCode,
-        conditionSummary: reason,
-        outcomeStepKey: 'proposal-closed',
-        actorId,
-        metadata: { moduleSelectionProposalId: proposalId },
-      });
-      const task = await this.#findApprovalTask(tenantId, proposal.workflowInstanceId);
-      if (task) {
-        await this.workflowBridge.completeWorkflowTask({
-          tenantId, workflowTaskId: task.id, completedBy: actorId,
-          payload: { decisionCode, reason },
-        });
-      }
-      await this.workflowBridge.completeWorkflowInstance({
-        tenantId, workflowInstanceId: proposal.workflowInstanceId, actorId,
-        statusCode: 'completed', metadata: { decisionCode },
-      });
+    if (!proposal.workflowInstanceId) {
+      const decided = await this.#applyProposalDecision(tenantId, proposalId, decisionCode, actorId, reason);
+      return { ...decided, decisionStatus: 'applied' };
+    }
+
+    const instance = await this.#getApprovalInstance(tenantId, proposal.workflowInstanceId);
+    if (instance.statusCode !== 'running') {
+      throw new ValidationError(`Cannot decide a proposal whose approval is '${instance.statusCode}'`);
+    }
+    const task = await this.#findApprovalTask(tenantId, proposal.workflowInstanceId);
+    const result = await this.#approvalReview().decide(tenantId, {
+      instance, legacyTaskId: task?.id ?? null, decisionCode, actorId, reason,
+      metadata: { moduleSelectionProposalId: proposalId },
+      effect: async (input) => {
+        await this.#applyProposalDecision(tenantId, proposalId, decisionCode, input.actorId, reason);
+        return { moduleSelectionProposalId: proposalId };
+      },
+    });
+    const current = (await this.getProposal(proposalId, tenantId))!;
+    return result.status === 'pending'
+      ? { ...current, decisionStatus: 'pending', commandId: result.commandId }
+      : { ...current, decisionStatus: 'applied' };
+  }
+
+  /**
+   * Applies a human decision to a proposal (BP-03-004 A5/A5b). Safe to
+   * repeat: a proposal already in the decided state is left as it is, and an
+   * approval interrupted before confirmation resumes at confirmation.
+   */
+  async #applyProposalDecision(
+    tenantId: string,
+    proposalId: string,
+    decisionCode: 'approved' | 'rejected' | 'returned',
+    actorId: string,
+    reason: string,
+  ): Promise<ProposalDto> {
+    const proposal = await this.#getCurrentProposalRow(proposalId, tenantId);
+    if (decisionCode === 'approved' && proposal.statusCode === 'confirmed') return (await this.getProposal(proposalId, tenantId))!;
+    if (decisionCode === 'approved' && proposal.statusCode === 'approved') return this.#confirmProposal(tenantId, proposalId, actorId);
+    if (decisionCode !== 'approved' && proposal.statusCode === decisionCode) return (await this.getProposal(proposalId, tenantId))!;
+    if (proposal.statusCode !== 'waitlisted' && proposal.statusCode !== 'submitted') {
+      throw new ValidationError(`Cannot decide a proposal in status '${proposal.statusCode}'`);
     }
 
     if (this.eventBus.isConnected()) {
@@ -404,6 +450,18 @@ export class ModuleSelectionService {
       decidedAt: clockNow(),
     }, clockNow());
     return (await this.getProposal(proposalId, tenantId))!;
+  }
+
+  async #getApprovalInstance(tenantId: string, workflowInstanceId: string) {
+    const rows = await withTenantContext(this.db, tenantId, async (tx) =>
+      tx.select().from(workflowInstances).where(and(
+        eq(workflowInstances.id, workflowInstanceId as Uuid),
+        eq(workflowInstances.tenantId, tenantId as Uuid),
+        eq(workflowInstances.workflowCode, APPROVAL_WORKFLOW_CODE),
+      )).limit(1),
+    );
+    if (!rows[0]) throw new NotFoundError('WorkflowInstance', workflowInstanceId);
+    return rows[0];
   }
 
   // ── Curriculum binding administration ────────────────────────────────────────
@@ -973,9 +1031,13 @@ export class ModuleSelectionService {
       // waitlisted proposal, explicitly authorised by an approver's decision) —
       // re-checking it here would race against that decision. Duplicate,
       // prerequisite/co-requisite/exclusion and credit-limit checks still apply.
+      // Derived from the item, so confirming again after an interruption
+      // finds the registrations it already created.
+      const moduleRegistrationId = deterministicUuid(`module-selection-registration:${proposalId}:${item.proposalItemId}`);
+      if (await this.moduleRegistrations.getRegistration(moduleRegistrationId, tenantId)) continue;
       await this.moduleRegistrations.createRegistration(
         tenantId,
-        { enrolmentId: proposal.enrolmentId, moduleOfferingId: item.moduleOfferingId, skipCapacityCheck: true },
+        { enrolmentId: proposal.enrolmentId, moduleOfferingId: item.moduleOfferingId, skipCapacityCheck: true, moduleRegistrationId },
         actorId,
       );
     }
@@ -1114,25 +1176,13 @@ export class ModuleSelectionService {
     reason: string,
   ): Promise<string> {
     const workflowDefinitionVersionId = await this.#getActiveVersionId(tenantId, APPROVAL_WORKFLOW_CODE);
-    const instance = await this.workflowBridge.startWorkflowInstance({
-      tenantId,
+    const started = await this.#approvalReview().start(tenantId, {
       workflowDefinitionVersionId,
-      workflowCode: APPROVAL_WORKFLOW_CODE,
-      subjectEntityType: 'module_selection_proposal',
       subjectEntityId: proposal.id,
       startedBy: actorId,
       context: { moduleSelectionProposalId: proposal.id, reason },
     });
-
-    await this.workflowBridge.assignWorkflowTask({
-      tenantId,
-      workflowInstanceId: instance.workflowInstanceId,
-      stepKey: APPROVAL_DECISION_STEP_KEY,
-      assigneeRoleCode: 'programme-approver',
-      payload: { moduleSelectionProposalId: proposal.id, reason },
-    });
-
-    return instance.workflowInstanceId;
+    return started.workflowInstanceId;
   }
 
   async #findApprovalTask(tenantId: string, workflowInstanceId: string) {

@@ -4,6 +4,8 @@ import type { FastifyInstance } from 'fastify';
 
 import type { HesaReturnDto, HesaSubmissionRequestDto, HesaValidationReportPayload } from '../platform/regulatory/hesa-service.js';
 
+import { PendingDecisionSchema, pendingDecision } from './workflow-decision-response.js';
+
 const ErrorSchema = Type.Object({
   type: Type.String(),
   title: Type.String(),
@@ -299,7 +301,7 @@ export function regulatoryHesaRoutes(fastify: FastifyInstance): void {
           decisionCode: Type.Union([Type.Literal('approved'), Type.Literal('rejected')]),
           reason:       Type.Optional(Type.String()),
         }),
-        response: { 204: Type.Null(), 404: ErrorSchema, 422: ErrorSchema },
+        response: { 202: PendingDecisionSchema, 204: Type.Null(), 404: ErrorSchema, 409: ErrorSchema, 422: ErrorSchema },
       },
       preHandler: [requirePermission('regulatory:decide')],
     },
@@ -307,7 +309,7 @@ export function regulatoryHesaRoutes(fastify: FastifyInstance): void {
       const { workflowInstanceId } = request.params as { workflowInstanceId: string };
       const { decisionCode, reason } = request.body as { decisionCode: 'approved' | 'rejected'; reason?: string };
 
-      await fastify.hesaService.decideReturnSubmission(
+      const result = await fastify.hesaService.decideReturnSubmission(
         request.tenantId, workflowInstanceId, decisionCode, request.user.sub, reason,
       );
 
@@ -324,6 +326,10 @@ export function regulatoryHesaRoutes(fastify: FastifyInstance): void {
         correlationId: request.id,
       });
 
+      if (result.status === 'pending') {
+        await reply.code(202).send(pendingDecision(result.commandId));
+        return;
+      }
       await reply.code(204).send();
     },
   );

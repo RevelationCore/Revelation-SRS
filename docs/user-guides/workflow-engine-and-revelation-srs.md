@@ -252,11 +252,15 @@ runs the reconciler (`workflow-reconciler.ts`), which starts saved reviews,
 re-delivers saved decisions and publishes saved events. It is safe to run
 on several replicas.
 
-**Legacy path** (`execution_backend = 'legacy'`, every family not yet
-migrated): the platform services below call `WorkflowBridgeService` directly
-and synchronously inside their HTTP handlers. Starting a "workflow" means
-calling `startWorkflowInstance` + `assignWorkflowTask`; deciding means calling
-`completeWorkflowTask` + `recordWorkflowDecision` + `completeWorkflowInstance`.
+**Legacy path** (`execution_backend = 'legacy'`: any instance started without
+the rollout flag): the platform services below call `WorkflowBridgeService`
+synchronously inside their HTTP handlers. Starting a "workflow" means calling
+`startWorkflowInstance` + `assignWorkflowTask`. Deciding applies the business
+change first, then calls `recordWorkflowDecision` + `completeWorkflowTask` +
+`completeWorkflowInstance`, so a change that fails leaves the request open.
+Since Stage 6a (16 November 2026) every family below goes through
+`GovernedReview` (`platform-controls/governed-review.ts`), which picks the
+backend per instance. On Temporal, the same change runs as a worker effect.
 Deadlines on this path are enforced only when something calls
 `POST /workflow-tasks/sweep-overdue`. Legacy workflow events now also go
 through the outbox.
@@ -267,7 +271,8 @@ time-skipping server (deadlines, escalation, replay determinism), and
 `apps/api/test/temporal-execution.int.test.ts` runs the API, a real worker and
 the pinned dev server image together (worker restarts, Temporal unreachable at
 start, decisions during a worker outage, concurrent decisions, deadline races,
-forged commands, and the registration pilot).
+forged commands, and the registration pilot), and
+`apps/api/test/temporal-stage6a.int.test.ts` covers the Stage 6a families.
 
 ### Who calls the workflow bridge today
 

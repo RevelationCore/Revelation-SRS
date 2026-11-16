@@ -8,6 +8,7 @@ import {
 import { NotFoundError } from '@revelation-srs/domain';
 
 import type { WorkflowBridgeService } from '../platform-controls/workflow-bridge-service.js';
+import type { ReviewExecutionService } from '../platform-controls/review-execution-service.js';
 
 // ── Source codes and workflow mapping ─────────────────────────────────────────
 
@@ -63,6 +64,7 @@ export class AdmissionsService {
   constructor(
     private readonly db:             Db,
     private readonly workflowBridge: WorkflowBridgeService,
+    private readonly reviewExecution?: ReviewExecutionService,
   ) {}
 
   async startHandoff(
@@ -72,6 +74,42 @@ export class AdmissionsService {
   ): Promise<AdmissionsHandoffResult> {
     const workflowCode = SOURCE_WORKFLOW[input.source];
     const workflowDefinitionVersionId = await this.#getActiveVersionId(tenantId, workflowCode);
+
+    const taskPayload = {
+      applicationId:              input.applicationId,
+      sourceSystemCode:           input.source,
+      sourceApplicationReference: input.sourceApplicationReference,
+      ...(input.cycle ? { cycle: input.cycle } : {}),
+      handoffMode: 'workflow',
+    };
+
+    // Temporal-run hand-off (ADR-024 Stage 6a): the task is completed through
+    // the Task Inbox like any other review. The source confirmation is kept in
+    // the context, since there is no bridge decision log on this backend.
+    if (this.reviewExecution
+      && (await this.reviewExecution.selectBackend(tenantId, { workflowDefinitionVersionId })) === 'temporal') {
+      const started = await this.reviewExecution.startReview({
+        tenantId,
+        workflowDefinitionVersionId,
+        workflowCode,
+        subjectEntityType: this.#entityTypeForSource(input.source),
+        subjectEntityId:   input.applicationId,
+        startedBy:         actorId,
+        context: {
+          sourceSystemCode:           input.source,
+          sourceApplicationReference: input.sourceApplicationReference,
+          ...(input.cycle ? { cycle: input.cycle } : {}),
+          statusCode:                 input.statusCode,
+          handoffStepKey:             HANDOFF_STEP_KEY,
+          handoffConfirmation: {
+            decisionCode: 'confirmed-for-handoff',
+            summary: `${input.source} application confirmed; enrolment conversion delegated to Admissions workflow.`,
+          },
+        },
+        task: { stepKey: HANDOFF_STEP_KEY, assigneeRoleCode: 'registry-administrator', payload: taskPayload },
+      });
+      return { workflowInstanceId: started.workflowInstanceId, workflowTaskId: started.workflowTaskId, workflowCode };
+    }
 
     const instance = await this.workflowBridge.startWorkflowInstance({
       tenantId,
@@ -111,13 +149,7 @@ export class AdmissionsService {
       workflowInstanceId: instance.workflowInstanceId,
       stepKey:            HANDOFF_STEP_KEY,
       assigneeRoleCode:   'registry-administrator',
-      payload: {
-        applicationId:              input.applicationId,
-        sourceSystemCode:           input.source,
-        sourceApplicationReference: input.sourceApplicationReference,
-        ...(input.cycle ? { cycle: input.cycle } : {}),
-        handoffMode: 'workflow',
-      },
+      payload:            taskPayload,
     });
 
     return {

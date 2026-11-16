@@ -88,11 +88,10 @@ an option if an institution needs separate retention, quotas or operator access.
 - `TEMPORAL_EXECUTION_ENABLED=true` enables the capability for a deployment.
   The `workflow.temporal-execution` flag (default off) then selects new starts
   by tenant, environment and workflow definition version.
-- Covered now: builder-authored single-review workflows and
-  `module-registration-change-approval`.
-- Stage 6a (later): the other workflow-bridge callers — admissions, student
-  record changes (legal identity), module selection and the five regulatory
-  submission workflows.
+- Covered: builder-authored single-review workflows,
+  `module-registration-change-approval`, and (Stage 6a, 16 November 2026) the
+  other workflow-bridge callers — admissions, legal identity change, module
+  selection and the five regulatory submission workflows.
 - Stage 6b is **out of scope** unless a later ADR says otherwise: PGR, data
   subject access requests and identity resolution (on `business_case`, ADR-023)
   and the wellbeing module's case state machines. They do not use the workflow
