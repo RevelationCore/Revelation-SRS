@@ -51,6 +51,7 @@ export const recognisedCredits = pgTable('recognised_credit', {
   sourceDescription:   text('source_description').notNull(),
   creditValue:         smallint('credit_value').notNull(),
   fheqLevel:           smallint('fheq_level'),
+  academicYear:        text('academic_year'), // the year whose progression it counts towards; null = award only
   moduleId:            uuid('module_id'),
   statusCaseId:        uuid('status_case_id'),
   evidenceRef:         text('evidence_ref'),
@@ -76,6 +77,7 @@ export const ruleExceptions = pgTable('rule_exception', {
   validFrom:          date('valid_from').notNull(),
   validTo:            date('valid_to'),
   authorityRef:       text('authority_ref'),
+  variationValue:     jsonb('variation_value').$type<Record<string, unknown>>(), // the replacement rule value; null for a waiver
   statusCode:         text('status_code').notNull().default('proposed'), // proposed | approved | rejected | revoked
   createdBy:          text('created_by').notNull(),
   createdAt:          timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

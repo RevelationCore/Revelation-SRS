@@ -17,7 +17,8 @@ import type { ProgressionDecidedV1Payload } from '@revelation-srs/domain';
 
 import { assertNotLocked } from '../assessment/lock.js';
 import type { IntegrationBusPublisher } from '../integration-bus/publisher.js';
-import type { RulesEngine } from '../rules-engine/engine.js';
+import { approvedCreditForYearFor } from '../curriculum/academic-exception-service.js';
+import type { AppliedRuleException, RulesEngine } from '../rules-engine/engine.js';
 import { clockNow } from '../clock.js';
 import type { DeliveryService } from '../delivery/delivery-service.js';
 import { onEnrolmentChanged } from '../delivery/producers/enrolment-flows.js';
@@ -60,6 +61,11 @@ interface ProgressionRules {
   compensationThreshold: number | null;
   compensationCreditLimit: number;
   condonementThreshold: number | null;
+  /** Approved recognised credit for this year (BPR-D05), counted as earned. */
+  recognisedCredits: number;
+  recognisedCreditIds: string[];
+  /** Approved rule exceptions that changed a rule for this student. */
+  appliedExceptions: AppliedRuleException[];
 }
 
 interface DecisionEvidence {
@@ -86,7 +92,7 @@ export class ProgressionService {
   ): Promise<string> {
     const enrolment = await this.#getEnrolment(enrolmentId, tenantId);
     const outcomes = await this.#getModuleOutcomes(enrolmentId, tenantId, academicYear);
-    const rules = await this.#getProgressionRules(tenantId, enrolment.programmeId, academicYear, outcomes);
+    const rules = await this.#getProgressionRules(tenantId, enrolmentId, enrolment.programmeId, academicYear, outcomes);
     const evidence = this.#decide(outcomes, rules);
     const { decisionCode } = evidence;
     const current = await this.#getCurrentDecision(enrolmentId, tenantId, academicYear);
@@ -294,32 +300,47 @@ export class ProgressionService {
 
   async #getProgressionRules(
     tenantId: string,
+    enrolmentId: string,
     programmeId: string | null,
     academicYear: string,
     outcomes: ModuleOutcome[],
   ): Promise<ProgressionRules> {
     const ctx = { tenantId, programmeId: programmeId ?? '', asOfDate: academicYearEndDate(academicYear) };
-    const totalCredits = outcomes.reduce((sum, outcome) => sum + outcome.creditValue, 0);
+    const credit = await approvedCreditForYearFor(this.db, tenantId, enrolmentId, academicYear);
+    const recognisedCredits = credit.reduce((sum, c) => sum + c.creditValue, 0);
+    const totalCredits = outcomes.reduce((sum, outcome) => sum + outcome.creditValue, 0) + recognisedCredits;
+    const appliedExceptions: AppliedRuleException[] = [];
+
+    // A waiver of the credit requirement removes it; a waiver of the compensation limit lets any
+    // eligible credit be compensated. A variation replaces the named fields.
+    const required = await this.rules.resolveForEnrolment(ctx, 'progression-credit-requirement', enrolmentId,
+      () => this.#getRawRule(ctx, 'progression-credit-requirement', 'default'));
+    if (required.exception) appliedExceptions.push(required.exception);
+    const compensation = await this.rules.resolveForEnrolment(ctx, 'compensation-credit-limit', enrolmentId,
+      () => this.#getRawRule(ctx, 'compensation-credit-limit', 'default'));
+    if (compensation.exception) appliedExceptions.push(compensation.exception);
+
+    const waived = (r: { value: unknown; exception: AppliedRuleException | null }) => r.exception?.exceptionTypeCode === 'waiver';
     return {
-      requiredCredits: await this.#getNumericRule(ctx, 'progression-credit-requirement', 'default', ['requiredCredits', 'credits', 'minimumCredits'], totalCredits),
+      requiredCredits: waived(required) ? 0 : numberFromRule(required.value, ['requiredCredits', 'credits', 'minimumCredits'], totalCredits),
       compensationThreshold: await this.#getOptionalNumericRule(ctx, 'compensation-threshold', 'default', ['minimumMark', 'threshold', 'mark']),
-      compensationCreditLimit: await this.#getNumericRule(ctx, 'compensation-credit-limit', 'default', ['maxCredits', 'creditLimit', 'credits'], 0),
+      compensationCreditLimit: waived(compensation) ? totalCredits : numberFromRule(compensation.value, ['maxCredits', 'creditLimit', 'credits'], 0),
       condonementThreshold: await this.#getOptionalNumericRule(ctx, 'condonement-threshold', 'default', ['minimumMark', 'threshold', 'mark']),
+      recognisedCredits,
+      recognisedCreditIds: credit.map((c) => c.id),
+      appliedExceptions,
     };
   }
 
-  async #getNumericRule(
+  async #getRawRule(
     ctx: { tenantId: string; programmeId: string; asOfDate: Date },
     ruleType: Parameters<RulesEngine['getRule']>[1],
     ruleKey: string,
-    fields: string[],
-    fallback: number,
-  ): Promise<number> {
+  ): Promise<Record<string, unknown> | null> {
     try {
-      const rule = await this.rules.getRule<Record<string, unknown>>(ctx, ruleType, ruleKey);
-      return numberFromRule(rule, fields, fallback);
+      return await this.rules.getRule<Record<string, unknown>>(ctx, ruleType, ruleKey);
     } catch (err) {
-      if (err instanceof RuleNotConfiguredError) return fallback;
+      if (err instanceof RuleNotConfiguredError) return null;
       throw err;
     }
   }
@@ -340,7 +361,7 @@ export class ProgressionService {
   }
 
   #decide(outcomes: ModuleOutcome[], rules: ProgressionRules): DecisionEvidence {
-    let earnedCredits = 0;
+    let earnedCredits = rules.recognisedCredits;
     let compensationCredits = 0;
     let unresolvedCredits = 0;
 
@@ -394,7 +415,11 @@ export class ProgressionService {
           ${tenantId}::uuid, ${progressionDecisionId}::uuid, ${academicYear},
           ${rules.requiredCredits}, ${rules.compensationThreshold}, ${rules.compensationCreditLimit}, ${rules.condonementThreshold},
           ${evidence.earnedCredits}, ${evidence.compensationCredits}, ${evidence.unresolvedCredits},
-          ${evidence.decisionCode}, '{}'::jsonb
+          ${evidence.decisionCode}, ${JSON.stringify({
+            recognisedCredits: rules.recognisedCredits,
+            recognisedCreditIds: rules.recognisedCreditIds,
+            appliedExceptions: rules.appliedExceptions,
+          })}::jsonb
         )
       `);
     } catch {
@@ -420,8 +445,10 @@ function decisionToDto(row: typeof progressionDecisions.$inferSelect): Progressi
   };
 }
 
-function numberFromRule(rule: Record<string, unknown>, fields: string[], fallback: number): number {
+function numberFromRule(rule: Record<string, unknown> | null, fields: string[], fallback: number): number {
+  if (!rule) return fallback;
   for (const field of fields) {
+    if (rule[field] === null || rule[field] === undefined) continue;
     const value = Number(rule[field]);
     if (Number.isFinite(value)) return value;
   }

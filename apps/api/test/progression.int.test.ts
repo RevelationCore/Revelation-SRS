@@ -49,6 +49,49 @@ afterAll(async () => {
 });
 
 describe('Progression decisions', () => {
+  it('counts approved recognised credit for the year and applies an approved rule variation (BPR-D05)', async () => {
+    const proposerJwt = await ctx.makeJwt({ sub: 'prg-proposer', roles: ['registry-administrator'] });
+    const approverJwt = await ctx.makeJwt({ sub: 'prg-approver', roles: ['programme-approver'] });
+    const post = (url: string, as: string, payload: Record<string, unknown>) =>
+      ctx.app.inject({ method: 'POST', url: `/api/v1${url}`, headers: { authorization: `Bearer ${as}` }, payload });
+    const approve = (url: string) => post(url, approverJwt, { decisionCode: 'approved', reason: 'Approved' });
+
+    // No module results: without credit the student would repeat the year.
+    const credited = await createProgressionFixture('PRG110');
+    const otherYear = await post(`/enrolments/${credited.enrolmentId}/recognised-credits`, proposerJwt, {
+      recognitionTypeCode: 'rpcl', sourceDescription: 'Prior study', creditValue: 20, academicYear: '2028-29',
+    });
+    await approve(`/recognised-credits/${otherYear.json<{ recognisedCreditId: string }>().recognisedCreditId}/decision`);
+    await evaluateProgression(credited.enrolmentId);
+    expect((await getProgression(credited.enrolmentId)).json<{ decisionCode: string }>().decisionCode).toBe('repeat-year');
+
+    const thisYear = await post(`/enrolments/${credited.enrolmentId}/recognised-credits`, proposerJwt, {
+      recognitionTypeCode: 'rpcl', sourceDescription: 'Prior study', creditValue: 20, academicYear: '2027-28',
+    });
+    const creditId = thisYear.json<{ recognisedCreditId: string }>().recognisedCreditId;
+    await approve(`/recognised-credits/${creditId}/decision`);
+    await evaluateProgression(credited.enrolmentId);
+    expect((await getProgression(credited.enrolmentId)).json<{ decisionCode: string }>().decisionCode).toBe('progress');
+    const snapshot = (await ctx.db.execute(sql`
+      SELECT e.earned_credits::int AS earned_credits, e.rule_snapshot FROM progression_calculation_evidence e
+      JOIN progression_decision d ON d.id = e.progression_decision_id AND d.recorded_until IS NULL
+      WHERE d.enrolment_id = ${credited.enrolmentId} ORDER BY e.calculated_at DESC LIMIT 1
+    `)) as unknown as Array<{ earned_credits: number; rule_snapshot: { recognisedCreditIds: string[] } }>;
+    expect(snapshot[0]).toMatchObject({ earned_credits: 20, rule_snapshot: { recognisedCreditIds: [creditId] } });
+
+    // A variation raising the requirement to 40 turns a 20-credit pass into a resit.
+    const varied = await createProgressionFixture('PRG111');
+    await addModuleResult(varied, 'PRG111A', 60);
+    const exception = await post(`/enrolments/${varied.enrolmentId}/rule-exceptions`, proposerJwt, {
+      ruleCode: 'progression-credit-requirement', exceptionTypeCode: 'variation', variationValue: { requiredCredits: 40 },
+      description: 'Must complete the deferred module this year', validFrom: '2027-09-01', authorityRef: 'Board 2027/3',
+    });
+    expect(exception.statusCode).toBe(201);
+    await approve(`/rule-exceptions/${exception.json<{ ruleExceptionId: string }>().ruleExceptionId}/decision`);
+    await evaluateProgression(varied.enrolmentId);
+    expect((await getProgression(varied.enrolmentId)).json<{ decisionCode: string }>().decisionCode).toBe('resit');
+  });
+
   it('evaluates a passing progression decision and publishes an event', async () => {
     const fixture = await createProgressionFixture('PRG101');
     await addModuleResult(fixture, 'PRG101A', 60);

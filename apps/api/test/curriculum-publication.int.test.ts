@@ -139,7 +139,7 @@ describe('recognised credit and rule exceptions', () => {
 
   it('a rule exception is approved, in force for its dates, and can be revoked', async () => {
     const proposed = await call('POST', `/enrolments/${enrolmentId}/rule-exceptions`, registryJwt, {
-      ruleCode: 'max-credit-per-year', exceptionTypeCode: 'variation', description: 'Allow 140 credits in year 2',
+      ruleCode: 'max-credits-per-period', exceptionTypeCode: 'variation', variationValue: { maxCredits: 140 }, description: 'Allow 140 credits in year 2',
       validFrom: '2027-09-01', validTo: '2028-08-31', authorityRef: 'Programme board 2027/09',
     });
     expect(proposed.statusCode).toBe(201);

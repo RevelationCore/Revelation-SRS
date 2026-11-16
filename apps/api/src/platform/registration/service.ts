@@ -810,11 +810,15 @@ export class ModuleRegistrationService {
   ): Promise<void> {
     if (offering.creditValue === null) return;
 
-    const maxCredits = await this.rules.getMaxCreditsPerPeriod({
-      tenantId,
-      programmeId: enrolment.programmeId ?? '',
+    // A student's approved rule exception (waiver or variation) takes precedence.
+    const ctx = { tenantId, programmeId: enrolment.programmeId ?? '' };
+    const { value, exception } = await this.rules.resolveForEnrolment(ctx, 'max-credits-per-period', enrolment.enrolmentId, async () => {
+      const programmeMax = await this.rules.getMaxCreditsPerPeriod(ctx);
+      return programmeMax === null ? null : { maxCredits: programmeMax };
     });
+    const maxCredits = (value?.maxCredits as number | null | undefined) ?? null;
     if (maxCredits === null) return;
+    const limitSource = exception ? ' (as varied for this student)' : '';
 
     const registeredCredits = await this.#sumRegisteredCreditsForPeriod(
       enrolment.enrolmentId,
@@ -824,7 +828,7 @@ export class ModuleRegistrationService {
 
     if (registeredCredits + offering.creditValue > maxCredits) {
       throw new ValidationError(
-        `Registration would exceed the maximum credit limit of ${maxCredits} for the period`,
+        `Registration would exceed the maximum credit limit of ${maxCredits}${limitSource} for the period`,
         [{
           field: 'moduleOfferingId',
           message: `Adding ${offering.creditValue} credits would total ${registeredCredits + offering.creditValue}, exceeding the period limit of ${maxCredits}`,

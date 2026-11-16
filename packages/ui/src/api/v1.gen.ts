@@ -9484,6 +9484,7 @@ export interface operations {
                             moduleId: string | null;
                             statusCaseId: string | null;
                             evidenceRef: string | null;
+                            academicYear: string | null;
                             statusCode: string;
                             createdBy: string;
                             createdAt: string;
@@ -9516,6 +9517,7 @@ export interface operations {
                     moduleId?: string;
                     statusCaseId?: string;
                     evidenceRef?: string;
+                    academicYear?: string;
                 };
             };
         };
@@ -9536,6 +9538,7 @@ export interface operations {
                         moduleId: string | null;
                         statusCaseId: string | null;
                         evidenceRef: string | null;
+                        academicYear: string | null;
                         statusCode: string;
                         createdBy: string;
                         createdAt: string;
@@ -9609,6 +9612,7 @@ export interface operations {
                         moduleId: string | null;
                         statusCaseId: string | null;
                         evidenceRef: string | null;
+                        academicYear: string | null;
                         statusCode: string;
                         createdBy: string;
                         createdAt: string;
@@ -9675,6 +9679,9 @@ export interface operations {
                         validFrom: string;
                         validTo: string | null;
                         authorityRef: string | null;
+                        variationValue: {
+                            [key: string]: number | null;
+                        } | null;
                         statusCode: string;
                         createdBy: string;
                         createdAt: string;
@@ -9705,6 +9712,9 @@ export interface operations {
                     validTo?: string;
                     programmeRuleSetId?: string;
                     authorityRef?: string;
+                    variationValue?: {
+                        [key: string]: number | null;
+                    };
                 };
             };
         };
@@ -9725,6 +9735,9 @@ export interface operations {
                         validFrom: string;
                         validTo: string | null;
                         authorityRef: string | null;
+                        variationValue: {
+                            [key: string]: number | null;
+                        } | null;
                         statusCode: string;
                         createdBy: string;
                         createdAt: string;
@@ -9798,6 +9811,9 @@ export interface operations {
                         validFrom: string;
                         validTo: string | null;
                         authorityRef: string | null;
+                        variationValue: {
+                            [key: string]: number | null;
+                        } | null;
                         statusCode: string;
                         createdBy: string;
                         createdAt: string;
@@ -9870,6 +9886,9 @@ export interface operations {
                         validFrom: string;
                         validTo: string | null;
                         authorityRef: string | null;
+                        variationValue: {
+                            [key: string]: number | null;
+                        } | null;
                         statusCode: string;
                         createdBy: string;
                         createdAt: string;

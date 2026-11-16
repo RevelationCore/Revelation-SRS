@@ -36,13 +36,14 @@ const ModuleItem = Type.Object({
 const CreditSchema = Type.Object({
   recognisedCreditId: Type.String(), enrolmentId: Type.String(), recognitionTypeCode: Type.String(), sourceDescription: Type.String(),
   creditValue: Type.Integer(), fheqLevel: NullableInt, moduleId: Nullable(Type.String()), statusCaseId: Nullable(Type.String()),
-  evidenceRef: Nullable(Type.String()), statusCode: Type.String(), createdBy: Type.String(), createdAt: Type.String(),
+  evidenceRef: Nullable(Type.String()), academicYear: Nullable(Type.String()), statusCode: Type.String(), createdBy: Type.String(), createdAt: Type.String(),
   decidedBy: Nullable(Type.String()), decidedAt: Nullable(Type.String()), decisionReason: Nullable(Type.String()),
 });
 const ExceptionSchema = Type.Object({
   ruleExceptionId: Type.String(), enrolmentId: Type.String(), programmeRuleSetId: Nullable(Type.String()), ruleCode: Type.String(),
   exceptionTypeCode: Type.String(), description: Type.String(), validFrom: Type.String(), validTo: Nullable(Type.String()),
-  authorityRef: Nullable(Type.String()), statusCode: Type.String(), createdBy: Type.String(), createdAt: Type.String(),
+  authorityRef: Nullable(Type.String()), variationValue: Type.Union([Type.Record(Type.String(), Type.Union([Type.Number(), Type.Null()])), Type.Null()]),
+  statusCode: Type.String(), createdBy: Type.String(), createdAt: Type.String(),
   decidedBy: Nullable(Type.String()), decidedAt: Nullable(Type.String()), decisionReason: Nullable(Type.String()),
 });
 const DecisionBody = Type.Object({
@@ -118,6 +119,7 @@ export function curriculumPublicationRoutes(fastify: FastifyInstance): void {
         recognitionTypeCode: Type.String(), sourceDescription: Type.String({ minLength: 1, maxLength: 500 }),
         creditValue: Type.Integer({ minimum: 1, maximum: 720 }), fheqLevel: Type.Optional(Type.Integer({ minimum: 3, maximum: 8 })),
         moduleId: Type.Optional(Type.String()), statusCaseId: Type.Optional(Type.String()), evidenceRef: Type.Optional(Type.String({ maxLength: 200 })),
+        academicYear: Type.Optional(Type.String({ pattern: '^\\d{4}-\\d{2}$' })),
       }),
       response: { 201: CreditSchema, 404: ErrorSchema, 422: ErrorSchema },
     },
@@ -156,6 +158,7 @@ export function curriculumPublicationRoutes(fastify: FastifyInstance): void {
         ruleCode: Type.String({ minLength: 1, maxLength: 100 }), exceptionTypeCode: Type.String(),
         description: Type.String({ minLength: 1, maxLength: 2000 }), validFrom: DateString, validTo: Type.Optional(DateString),
         programmeRuleSetId: Type.Optional(Type.String()), authorityRef: Type.Optional(Type.String({ maxLength: 200 })),
+        variationValue: Type.Optional(Type.Record(Type.String(), Type.Union([Type.Number(), Type.Null()]))),
       }),
       response: { 201: ExceptionSchema, 404: ErrorSchema, 422: ErrorSchema },
     },

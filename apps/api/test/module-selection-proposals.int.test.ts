@@ -103,6 +103,40 @@ describe('Module selection proposals', () => {
     expect(result.decisionReason).toContain('Core modules');
   });
 
+  it('an approved exemption satisfies a compulsory group and is not auto-added (BPR-D05)', async () => {
+    const programmeId = await createProgramme('MSP-P6');
+    const ruleSetId = await createRuleSet(programmeId, 'default');
+    const exemptModuleId = await createModule('MSP601', 'Exempt Core Module', 20);
+    await createOffering(exemptModuleId, 20);
+    const optionalModuleId = await createModule('MSP602', 'Optional Module', 20);
+    const optionalOfferingId = await createOffering(optionalModuleId, 20);
+    const groupId = await createModuleGroup(ruleSetId, {
+      groupCode: 'CORE6', title: 'Core modules 6', groupTypeCode: 'compulsory', minModules: 1,
+    });
+    await addGroupMember(groupId, exemptModuleId, true);
+    const enrolmentId = await createEnrolment(await createStudent('Eve', 'Exempt'), programmeId);
+
+    const proposer = await ctx.makeJwt({ sub: 'msp-credit-proposer', roles: ['registry-administrator'] });
+    const decider = await ctx.makeJwt({ sub: 'msp-credit-approver', roles: ['programme-approver'] });
+    const credit = await ctx.app.inject({
+      method: 'POST', url: `/api/v1/enrolments/${enrolmentId}/recognised-credits`, headers: { authorization: `Bearer ${proposer}` },
+      payload: { recognitionTypeCode: 'exemption', moduleId: exemptModuleId, sourceDescription: 'A-level Maths', creditValue: 20, academicYear: '2026-27' },
+    });
+    expect(credit.statusCode).toBe(201);
+    expect((await ctx.app.inject({
+      method: 'POST', url: `/api/v1/recognised-credits/${credit.json<{ recognisedCreditId: string }>().recognisedCreditId}/decision`,
+      headers: { authorization: `Bearer ${decider}` }, payload: { decisionCode: 'approved', reason: 'Equivalent prior learning' },
+    })).statusCode).toBe(200);
+
+    const proposalId = await createProposal(enrolmentId, 4);
+    expect((await getProposal(proposalId)).items).toHaveLength(0);
+    await addItem(proposalId, optionalModuleId, optionalOfferingId);
+    const submit = await ctx.app.inject({
+      method: 'POST', url: `/api/v1/module-selection-proposals/${proposalId}/submission`, headers: { authorization: `Bearer ${jwt}` },
+    });
+    expect(submit.json<{ statusCode: string }>().statusCode).toBe('confirmed');
+  });
+
   it('enforces a configured credit-load-requirement', async () => {
     const programmeId = await createProgramme('MSP-P3');
     await createRuleSet(programmeId, 'default');

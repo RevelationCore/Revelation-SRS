@@ -1,5 +1,5 @@
-import { sql } from 'drizzle-orm';
-import { withTenantContext, type Db } from '@revelation-srs/db';
+import { and, desc, eq, sql } from 'drizzle-orm';
+import { ruleExceptions, withTenantContext, type Db } from '@revelation-srs/db';
 import { RuleNotConfiguredError } from '@revelation-srs/domain';
 
 import { clockNow } from '../clock.js';
@@ -27,6 +27,28 @@ export type RuleTypeCode =
   | 'joint-honours-balance'
   | 'repeat-module-requirement'
   | 'timetable-clash-policy';
+
+/**
+ * Rules evaluated for one student, which an approved rule exception
+ * (BPR-D05) may waive or vary. Each lists the value fields a variation may
+ * set; a variation's value merges over the programme rule's value.
+ */
+export const ENROLMENT_RULE_FIELDS = {
+  'max-credits-per-period':         ['maxCredits'],
+  'credit-load-requirement':        ['minCredits', 'maxCredits'],
+  'level-credit-requirement':       ['minCreditsAtLevel'],
+  'adjacent-level-credit-limit':    ['maxCredits'],
+  'progression-credit-requirement': ['requiredCredits'],
+  'compensation-credit-limit':      ['maxCredits'],
+} as const satisfies Partial<Record<RuleTypeCode, readonly string[]>>;
+
+export type EnrolmentRuleType = keyof typeof ENROLMENT_RULE_FIELDS;
+
+export interface AppliedRuleException {
+  exceptionId: string;
+  ruleCode: EnrolmentRuleType;
+  exceptionTypeCode: 'waiver' | 'variation';
+}
 
 export interface RuleContext {
   tenantId:    string;
@@ -110,6 +132,38 @@ export class RulesEngine {
         this.cache.delete(key);
       }
     }
+  }
+
+  /**
+   * Resolves an enrolment-scoped rule: an approved rule exception in force
+   * on the context date wins (a waiver means no rule applies; a variation's
+   * value merges over the programme rule), otherwise the programme rule.
+   * Returns which exception, if any, was applied, so callers can record it.
+   */
+  async resolveForEnrolment<T extends Record<string, unknown>>(
+    ctx: RuleContext,
+    ruleType: EnrolmentRuleType,
+    enrolmentId: string,
+    programmeRule: () => Promise<T | null>,
+  ): Promise<{ value: T | null; exception: AppliedRuleException | null }> {
+    const onDate = (ctx.asOfDate ?? clockNow()).toISOString().slice(0, 10);
+    const rows = await withTenantContext(this.db, ctx.tenantId, (tx) => tx.select().from(ruleExceptions).where(and(
+      eq(ruleExceptions.tenantId, ctx.tenantId as `${string}-${string}-${string}-${string}-${string}`),
+      eq(ruleExceptions.enrolmentId, enrolmentId as `${string}-${string}-${string}-${string}-${string}`),
+      eq(ruleExceptions.ruleCode, ruleType),
+      eq(ruleExceptions.statusCode, 'approved'),
+      sql`${ruleExceptions.validFrom} <= ${onDate}`,
+      sql`(${ruleExceptions.validTo} IS NULL OR ${ruleExceptions.validTo} > ${onDate})`,
+    )).orderBy(desc(ruleExceptions.decidedAt)).limit(1));
+    const exception = rows[0];
+    if (!exception) return { value: await programmeRule(), exception: null };
+
+    const applied: AppliedRuleException = {
+      exceptionId: exception.id, ruleCode: ruleType, exceptionTypeCode: exception.exceptionTypeCode as 'waiver' | 'variation',
+    };
+    if (exception.exceptionTypeCode === 'waiver') return { value: null, exception: applied };
+    const base = await programmeRule();
+    return { value: { ...(base ?? {}), ...(exception.variationValue ?? {}) } as T, exception: applied };
   }
 
   async getPassMark(ctx: RuleContext): Promise<number> {

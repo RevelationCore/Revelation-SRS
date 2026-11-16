@@ -15,6 +15,7 @@ import {
   programmeRuleSets,
   workflowDefinitions,
   workflowDefinitionVersions,
+  academicPeriods,
   workflowInstances,
   workflowTasks,
   type Db,
@@ -36,6 +37,7 @@ import type { WorkflowBridgeService } from '../platform-controls/workflow-bridge
 import { GovernedReview, deterministicUuid } from '../platform-controls/governed-review.js';
 import type { ReviewActivitiesService } from '../platform-controls/review-activities.js';
 import type { ReviewExecutionService } from '../platform-controls/review-execution-service.js';
+import { approvedExemptionsFor } from '../curriculum/academic-exception-service.js';
 import type { ModuleRegistrationService } from '../registration/service.js';
 import type { RulesEngine } from '../rules-engine/engine.js';
 import { clockNow } from '../clock.js';
@@ -217,7 +219,7 @@ export class ModuleSelectionService {
       });
     });
 
-    await this.#populateCompulsoryItems(tenantId, proposalId, programmeRuleSetId, input.academicPeriodId, input.fheqLevel);
+    await this.#populateCompulsoryItems(tenantId, proposalId, programmeRuleSetId, input.academicPeriodId, input.fheqLevel, input.enrolmentId);
 
     return proposalId;
   }
@@ -767,17 +769,25 @@ export class ModuleSelectionService {
       }
     }
 
+    // Approved exemptions count as taken for diet groups and the minimum credit load (BPR-D05).
+    const exemptions = await approvedExemptionsFor(this.db, tenantId, enrolment.enrolmentId, await this.#academicYear(tenantId, proposal.academicPeriodId));
+    const exemptCredits = exemptions.reduce((sum, e) => sum + e.creditValue, 0);
+
     // Diet group bounds
-    const groupMessages = await this.#checkGroups(tenantId, proposal.programmeRuleSetId, items);
+    const groupMessages = await this.#checkGroups(tenantId, proposal.programmeRuleSetId, items, exemptions);
     for (const [itemId, msgs] of groupMessages) {
       for (const m of msgs) pushItemMessage(itemId, m);
     }
 
     // Credit load requirement (mode-of-study aware)
     const totalCredits = items.reduce((sum, i) => sum + (i.creditValue ?? 0), 0);
-    const creditLoad = await this.rules.getCreditLoadRequirement(
-      { tenantId, programmeId: enrolment.programmeId ?? '' }, enrolment.modeOfStudyCode,
-    );
+    const ruleCtx = { tenantId, programmeId: enrolment.programmeId ?? '' };
+    // Each enrolment-scoped rule honours the student's approved rule exceptions.
+    const { value: creditLoadValue } = await this.rules.resolveForEnrolment(ruleCtx, 'credit-load-requirement', enrolment.enrolmentId,
+      () => this.rules.getCreditLoadRequirement(ruleCtx, enrolment.modeOfStudyCode));
+    const creditLoad = creditLoadValue
+      ? { minCredits: (creditLoadValue.minCredits as number | null | undefined) ?? null, maxCredits: (creditLoadValue.maxCredits as number | null | undefined) ?? null }
+      : null;
     if (creditLoad) {
       if (creditLoad.maxCredits !== null && totalCredits > creditLoad.maxCredits) {
         errors.push({
@@ -785,10 +795,10 @@ export class ModuleSelectionService {
           message: `Total selected credits (${totalCredits}) exceed the maximum of ${creditLoad.maxCredits} for ${enrolment.modeOfStudyCode} study`,
         });
       }
-      if (creditLoad.minCredits !== null && totalCredits < creditLoad.minCredits) {
+      if (creditLoad.minCredits !== null && totalCredits + exemptCredits < creditLoad.minCredits) {
         errors.push({
           ruleTypeCode: 'credit-load-requirement', severity: 'error',
-          message: `Total selected credits (${totalCredits}) are below the minimum of ${creditLoad.minCredits} for ${enrolment.modeOfStudyCode} study`,
+          message: `Total selected credits (${totalCredits}${exemptCredits ? ` plus ${exemptCredits} exempt` : ''}) are below the minimum of ${creditLoad.minCredits} for ${enrolment.modeOfStudyCode} study`,
         });
       }
     }
@@ -801,7 +811,11 @@ export class ModuleSelectionService {
     }
     if (levelCounts.size > 0) {
       const [modalLevel] = [...levelCounts.entries()].sort((a, b) => b[1] - a[1])[0]!;
-      const minAtLevel = await this.rules.getLevelCreditRequirement({ tenantId, programmeId: enrolment.programmeId ?? '' }, modalLevel);
+      const { value: levelRule } = await this.rules.resolveForEnrolment(ruleCtx, 'level-credit-requirement', enrolment.enrolmentId, async () => {
+        const min = await this.rules.getLevelCreditRequirement(ruleCtx, modalLevel);
+        return min === null ? null : { minCreditsAtLevel: min };
+      });
+      const minAtLevel = (levelRule?.minCreditsAtLevel as number | null | undefined) ?? null;
       if (minAtLevel !== null && (levelCounts.get(modalLevel) ?? 0) < minAtLevel) {
         errors.push({
           ruleTypeCode: 'level-credit-requirement', severity: 'error',
@@ -809,7 +823,11 @@ export class ModuleSelectionService {
         });
       }
 
-      const adjacentLimit = await this.rules.getAdjacentLevelCreditLimit({ tenantId, programmeId: enrolment.programmeId ?? '' });
+      const { value: adjacentRule } = await this.rules.resolveForEnrolment(ruleCtx, 'adjacent-level-credit-limit', enrolment.enrolmentId, async () => {
+        const max = await this.rules.getAdjacentLevelCreditLimit(ruleCtx);
+        return max === null ? null : { maxCredits: max };
+      });
+      const adjacentLimit = (adjacentRule?.maxCredits as number | null | undefined) ?? null;
       if (adjacentLimit !== null) {
         const adjacentCredits = [...levelCounts.entries()]
           .filter(([level]) => level !== modalLevel)
@@ -935,6 +953,7 @@ export class ModuleSelectionService {
     tenantId: string,
     programmeRuleSetId: string,
     items: ProposalItemDto[],
+    exemptions: Array<{ moduleId: string; creditValue: number }> = [],
   ): Promise<Map<string, ValidationMessage[]>> {
     const result = new Map<string, ValidationMessage[]>();
     const groups = await withTenantContext(this.db, tenantId, async (tx) =>
@@ -960,9 +979,13 @@ export class ModuleSelectionService {
       );
       const memberModuleIds = new Set(members.map((m) => m.moduleId));
       const selectedInGroup = items.filter((i) => memberModuleIds.has(i.moduleId));
-      if (selectedInGroup.length === 0 && group.groupTypeCode !== 'compulsory') continue;
+      // Exempt modules in the group count as taken.
+      const exemptInGroup = exemptions.filter((e) => memberModuleIds.has(e.moduleId) && !selectedInGroup.some((i) => i.moduleId === e.moduleId));
+      if (selectedInGroup.length === 0 && exemptInGroup.length === 0 && group.groupTypeCode !== 'compulsory') continue;
 
-      const selectedCredits = selectedInGroup.reduce((sum, i) => sum + (i.creditValue ?? 0), 0);
+      const selectedCredits = selectedInGroup.reduce((sum, i) => sum + (i.creditValue ?? 0), 0)
+        + exemptInGroup.reduce((sum, e) => sum + e.creditValue, 0);
+      const takenCount = selectedInGroup.length + exemptInGroup.length;
 
       const flagAll = (msg: ValidationMessage) => {
         for (const item of selectedInGroup.length > 0 ? selectedInGroup : items) {
@@ -972,16 +995,16 @@ export class ModuleSelectionService {
         }
       };
 
-      if (group.minModules !== null && selectedInGroup.length < (group.minModules ?? 0)) {
+      if (group.minModules !== null && takenCount < (group.minModules ?? 0)) {
         flagAll({
           ruleTypeCode: 'module-group', severity: 'error',
-          message: `Group '${group.title}' requires at least ${group.minModules} module(s); ${selectedInGroup.length} selected`,
+          message: `Group '${group.title}' requires at least ${group.minModules} module(s); ${takenCount} selected or exempt`,
         });
       }
-      if (group.maxModules !== null && selectedInGroup.length > (group.maxModules ?? Infinity)) {
+      if (group.maxModules !== null && takenCount > (group.maxModules ?? Infinity)) {
         flagAll({
           ruleTypeCode: 'module-group', severity: 'error',
-          message: `Group '${group.title}' allows at most ${group.maxModules} module(s); ${selectedInGroup.length} selected`,
+          message: `Group '${group.title}' allows at most ${group.maxModules} module(s); ${takenCount} selected or exempt`,
         });
       }
       if (group.minCredits !== null && selectedCredits < (group.minCredits ?? 0)) {
@@ -1105,13 +1128,23 @@ export class ModuleSelectionService {
     return defaultRuleSet.id;
   }
 
+  async #academicYear(tenantId: string, academicPeriodId: string): Promise<string | null> {
+    const rows = await withTenantContext(this.db, tenantId, (tx) => tx.select({ year: academicPeriods.academicYear }).from(academicPeriods)
+      .where(and(eq(academicPeriods.id, academicPeriodId as Uuid), eq(academicPeriods.tenantId, tenantId as Uuid))).limit(1));
+    return rows[0]?.year ?? null;
+  }
+
   async #populateCompulsoryItems(
     tenantId: string,
     proposalId: string,
     programmeRuleSetId: string,
     academicPeriodId: string,
     fheqLevel: number,
+    enrolmentId: string,
   ): Promise<void> {
+    // A compulsory module the student is exempt from (approved recognised credit) is not added.
+    const exempt = new Set((await approvedExemptionsFor(this.db, tenantId, enrolmentId, await this.#academicYear(tenantId, academicPeriodId)))
+      .map((e) => e.moduleId));
     const groups = await withTenantContext(this.db, tenantId, async (tx) =>
       tx.select().from(moduleGroups).where(
         and(
@@ -1139,6 +1172,7 @@ export class ModuleSelectionService {
       );
 
       for (const member of members) {
+        if (exempt.has(member.moduleId)) continue;
         const offeringRows = await withTenantContext(this.db, tenantId, async (tx) =>
           tx.select({ id: moduleOfferings.id }).from(moduleOfferings).where(
             and(

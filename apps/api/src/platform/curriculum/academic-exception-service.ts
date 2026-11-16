@@ -12,6 +12,7 @@ import { and, desc, eq, isNull } from 'drizzle-orm';
 
 import { clockNow } from '../clock.js';
 import type { EnrolmentService } from '../enrolment/service.js';
+import { ENROLMENT_RULE_FIELDS } from '../rules-engine/engine.js';
 import type { ValueSetService } from '../value-sets/service.js';
 
 type Uuid = `${string}-${string}-${string}-${string}-${string}`;
@@ -24,6 +25,8 @@ export interface RecognisedCreditInput {
   moduleId?: string;
   statusCaseId?: string;
   evidenceRef?: string;
+  /** The academic year whose progression it counts towards (e.g. 2026-27); omit to count towards the award only. */
+  academicYear?: string;
 }
 
 export interface RuleExceptionInput {
@@ -34,6 +37,8 @@ export interface RuleExceptionInput {
   validTo?: string;
   programmeRuleSetId?: string;
   authorityRef?: string;
+  /** For a variation: the replacement value, in the rule's own fields (e.g. { maxCredits: 140 }). */
+  variationValue?: Record<string, number | null>;
 }
 
 export type Decision = { decisionCode: 'approved' | 'rejected'; reason: string };
@@ -57,6 +62,7 @@ export class AcademicExceptionService {
     await this.#code(tenantId, 'recognised_credit', 'recognition_type_code', input.recognitionTypeCode);
     if (!Number.isInteger(input.creditValue) || input.creditValue <= 0) throw new ValidationError('Credit must be a positive whole number');
     if (input.recognitionTypeCode === 'exemption' && !input.moduleId) throw new ValidationError('An exemption must name the module it exempts');
+    if (input.academicYear && !/^\d{4}-\d{2}$/.test(input.academicYear)) throw new ValidationError('academicYear must look like 2026-27');
     if (input.moduleId) {
       const found = await withTenantContext(this.db, tenantId, (tx) => tx.select({ id: modules.id }).from(modules)
         .where(and(eq(modules.id, input.moduleId as Uuid), eq(modules.tenantId, tenantId as Uuid), isNull(modules.recordedUntil))).limit(1));
@@ -66,9 +72,19 @@ export class AcademicExceptionService {
       tenantId: tenantId as Uuid, enrolmentId: enrolmentId as Uuid, recognitionTypeCode: input.recognitionTypeCode,
       sourceDescription: input.sourceDescription, creditValue: input.creditValue, fheqLevel: input.fheqLevel ?? null,
       moduleId: (input.moduleId ?? null) as Uuid | null, statusCaseId: (input.statusCaseId ?? null) as Uuid | null,
-      evidenceRef: input.evidenceRef ?? null, createdBy: actorId,
+      evidenceRef: input.evidenceRef ?? null, academicYear: input.academicYear ?? null, createdBy: actorId,
     }).returning());
     return row!;
+  }
+
+  /** Approved recognised credit counting towards one academic year's progression. */
+  async approvedCreditForYear(tenantId: string, enrolmentId: string, academicYear: string): Promise<RecognisedCredit[]> {
+    return approvedCreditForYearFor(this.db, tenantId, enrolmentId, academicYear);
+  }
+
+  /** Modules the student is exempt from (approved exemptions), for one academic year or year-independent. */
+  async approvedExemptions(tenantId: string, enrolmentId: string, academicYear?: string): Promise<Array<{ moduleId: string; creditValue: number; recognisedCreditId: string }>> {
+    return approvedExemptionsFor(this.db, tenantId, enrolmentId, academicYear ?? null);
   }
 
   async decideCredit(tenantId: string, creditId: string, decision: Decision, actorId: string): Promise<RecognisedCredit> {
@@ -96,11 +112,29 @@ export class AcademicExceptionService {
     await this.#requireEnrolment(tenantId, enrolmentId);
     await this.#code(tenantId, 'rule_exception', 'exception_type_code', input.exceptionTypeCode);
     if (input.validTo && input.validTo <= input.validFrom) throw new ValidationError('An exception must end after it starts');
+    // Only rules evaluated for an individual student can be excepted, so an
+    // approved exception always has an effect (see RulesEngine.resolveForEnrolment).
+    const fields = (ENROLMENT_RULE_FIELDS as Record<string, readonly string[]>)[input.ruleCode];
+    if (!fields) {
+      throw new ValidationError(`Rule '${input.ruleCode}' cannot be excepted for one student; use one of ${Object.keys(ENROLMENT_RULE_FIELDS).join(', ')}`);
+    }
+    if (input.exceptionTypeCode === 'waiver' && input.variationValue) throw new ValidationError('A waiver removes the rule; it takes no value');
+    if (input.exceptionTypeCode === 'variation') {
+      const value = input.variationValue ?? {};
+      const keys = Object.keys(value);
+      if (keys.length === 0) throw new ValidationError(`A variation of ${input.ruleCode} needs a value: ${fields.join(' and/or ')}`);
+      const unknown = keys.filter((k) => !fields.includes(k));
+      if (unknown.length > 0) throw new ValidationError(`${unknown.join(', ')} is not a field of ${input.ruleCode} (expected ${fields.join(', ')})`);
+      if (keys.some((k) => value[k] !== null && (typeof value[k] !== 'number' || value[k] < 0))) {
+        throw new ValidationError('Variation values must be non-negative numbers (or null to remove a bound)');
+      }
+    }
     const [row] = await withTenantContext(this.db, tenantId, (tx) => tx.insert(ruleExceptions).values({
       tenantId: tenantId as Uuid, enrolmentId: enrolmentId as Uuid, ruleCode: input.ruleCode,
       exceptionTypeCode: input.exceptionTypeCode, description: input.description, validFrom: input.validFrom,
       validTo: input.validTo ?? null, programmeRuleSetId: (input.programmeRuleSetId ?? null) as Uuid | null,
       authorityRef: input.authorityRef ?? null, createdBy: actorId,
+      variationValue: input.exceptionTypeCode === 'variation' ? (input.variationValue ?? null) : null,
     }).returning());
     return row!;
   }
@@ -160,4 +194,31 @@ export class AcademicExceptionService {
       throw new ValidationError(`Invalid value '${value}' for ${entity}.${field}`, [{ field, message: 'Value is not active in the configured value set' }]);
     }
   }
+}
+
+// ── Read helpers for rule consumers (no service dependency needed) ───────────
+
+/** Approved module exemptions for an enrolment, for one academic year or year-independent ones. */
+export async function approvedExemptionsFor(
+  db: Db, tenantId: string, enrolmentId: string, academicYear: string | null,
+): Promise<Array<{ moduleId: string; creditValue: number; recognisedCreditId: string }>> {
+  const rows = await withTenantContext(db, tenantId, (tx) => tx.select().from(recognisedCredits).where(and(
+    eq(recognisedCredits.tenantId, tenantId as Uuid),
+    eq(recognisedCredits.enrolmentId, enrolmentId as Uuid),
+    eq(recognisedCredits.statusCode, 'approved'),
+    eq(recognisedCredits.recognitionTypeCode, 'exemption'),
+  )));
+  return rows
+    .filter((c) => c.moduleId && (c.academicYear === null || academicYear === null || c.academicYear === academicYear))
+    .map((c) => ({ moduleId: c.moduleId!, creditValue: c.creditValue, recognisedCreditId: c.id }));
+}
+
+/** Approved recognised credit counting towards one academic year's progression. */
+export async function approvedCreditForYearFor(db: Db, tenantId: string, enrolmentId: string, academicYear: string): Promise<RecognisedCredit[]> {
+  return withTenantContext(db, tenantId, (tx) => tx.select().from(recognisedCredits).where(and(
+    eq(recognisedCredits.tenantId, tenantId as Uuid),
+    eq(recognisedCredits.enrolmentId, enrolmentId as Uuid),
+    eq(recognisedCredits.statusCode, 'approved'),
+    eq(recognisedCredits.academicYear, academicYear),
+  )));
 }

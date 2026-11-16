@@ -11589,6 +11589,7 @@
                           "moduleId",
                           "statusCaseId",
                           "evidenceRef",
+                          "academicYear",
                           "statusCode",
                           "createdBy",
                           "createdAt",
@@ -11643,6 +11644,16 @@
                             ]
                           },
                           "evidenceRef": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "academicYear": {
                             "anyOf": [
                               {
                                 "type": "string"
@@ -11748,6 +11759,10 @@
                   "evidenceRef": {
                     "maxLength": 200,
                     "type": "string"
+                  },
+                  "academicYear": {
+                    "pattern": "^\\d{4}-\\d{2}$",
+                    "type": "string"
                   }
                 }
               }
@@ -11782,6 +11797,7 @@
                     "moduleId",
                     "statusCaseId",
                     "evidenceRef",
+                    "academicYear",
                     "statusCode",
                     "createdBy",
                     "createdAt",
@@ -11836,6 +11852,16 @@
                       ]
                     },
                     "evidenceRef": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "academicYear": {
                       "anyOf": [
                         {
                           "type": "string"
@@ -12021,6 +12047,7 @@
                     "moduleId",
                     "statusCaseId",
                     "evidenceRef",
+                    "academicYear",
                     "statusCode",
                     "createdBy",
                     "createdAt",
@@ -12075,6 +12102,16 @@
                       ]
                     },
                     "evidenceRef": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "academicYear": {
                       "anyOf": [
                         {
                           "type": "string"
@@ -12225,6 +12262,7 @@
                       "validFrom",
                       "validTo",
                       "authorityRef",
+                      "variationValue",
                       "statusCode",
                       "createdBy",
                       "createdAt",
@@ -12275,6 +12313,26 @@
                         "anyOf": [
                           {
                             "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "variationValue": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "additionalProperties": {
+                              "anyOf": [
+                                {
+                                  "type": "number"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
                           },
                           {
                             "type": "null"
@@ -12373,6 +12431,19 @@
                   "authorityRef": {
                     "maxLength": 200,
                     "type": "string"
+                  },
+                  "variationValue": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
                   }
                 }
               }
@@ -12407,6 +12478,7 @@
                     "validFrom",
                     "validTo",
                     "authorityRef",
+                    "variationValue",
                     "statusCode",
                     "createdBy",
                     "createdAt",
@@ -12457,6 +12529,26 @@
                       "anyOf": [
                         {
                           "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "variationValue": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "additionalProperties": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
                         },
                         {
                           "type": "null"
@@ -12639,6 +12731,7 @@
                     "validFrom",
                     "validTo",
                     "authorityRef",
+                    "variationValue",
                     "statusCode",
                     "createdBy",
                     "createdAt",
@@ -12689,6 +12782,26 @@
                       "anyOf": [
                         {
                           "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "variationValue": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "additionalProperties": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
                         },
                         {
                           "type": "null"
@@ -12854,6 +12967,7 @@
                     "validFrom",
                     "validTo",
                     "authorityRef",
+                    "variationValue",
                     "statusCode",
                     "createdBy",
                     "createdAt",
@@ -12904,6 +13018,26 @@
                       "anyOf": [
                         {
                           "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "variationValue": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "additionalProperties": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
                         },
                         {
                           "type": "null"

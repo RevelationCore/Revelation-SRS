@@ -299,6 +299,59 @@ describe('Module registrations', () => {
     expect(resC.statusCode).toBe(422);
     expect(resC.json<{ detail: string }>().detail).toContain('credit limit');
   });
+
+  it('applies a student\'s approved rule exception to the credit limit (BPR-D05)', async () => {
+    // Relies on the 60-credit max-credits-per-period rule seeded by the previous test.
+    const registryJwt = await ctx.makeJwt({ sub: 'exc-proposer', roles: ['registry-administrator'] });
+    const approverJwt = await ctx.makeJwt({ sub: 'exc-approver', roles: ['programme-approver'] });
+    const register = (enrolment: string, offering: string) => ctx.app.inject({
+      method: 'POST', url: '/api/v1/module-registrations', headers: { authorization: `Bearer ${jwt}` },
+      payload: { enrolmentId: enrolment, moduleOfferingId: offering, registrationDate: '2026-10-01' },
+    });
+    const propose = async (enrolment: string, body: Record<string, unknown>) => {
+      const res = await ctx.app.inject({
+        method: 'POST', url: `/api/v1/enrolments/${enrolment}/rule-exceptions`, headers: { authorization: `Bearer ${registryJwt}` },
+        payload: { ruleCode: 'max-credits-per-period', description: 'Exception', validFrom: '2026-01-01', authorityRef: 'Board 2026/1', ...body },
+      });
+      return res;
+    };
+    const approve = (id: string) => ctx.app.inject({
+      method: 'POST', url: `/api/v1/rule-exceptions/${id}/decision`, headers: { authorization: `Bearer ${approverJwt}` },
+      payload: { decisionCode: 'approved', reason: 'Justified' },
+    });
+    const offerings = await Promise.all(['A', 'B', 'C', 'D'].map(async (k) =>
+      createOffering(await createModuleWithCredits(`REG109${k}`, `Exception Module ${k}`, 30), 50)));
+
+    // Invalid exceptions are refused.
+    const varied = await createEnrolment(await createStudent('Varied', 'Limit'));
+    expect((await propose(varied, { ruleCode: 'not-a-rule', exceptionTypeCode: 'waiver' })).statusCode).toBe(422);
+    expect((await propose(varied, { exceptionTypeCode: 'variation' })).statusCode).toBe(422);
+    expect((await propose(varied, { exceptionTypeCode: 'variation', variationValue: { maxCredits: -1 } })).statusCode).toBe(422);
+    expect((await propose(varied, { exceptionTypeCode: 'waiver', variationValue: { maxCredits: 90 } })).statusCode).toBe(422);
+
+    // A proposed (not yet approved) variation has no effect.
+    const variation = await propose(varied, { exceptionTypeCode: 'variation', variationValue: { maxCredits: 90 } });
+    expect(variation.statusCode).toBe(201);
+    for (const o of offerings.slice(0, 2)) expect((await register(varied, o)).statusCode).toBe(201);
+    expect((await register(varied, offerings[2]!)).statusCode).toBe(422);
+
+    // Once approved, the varied limit of 90 applies to this student only.
+    expect((await approve(variation.json<{ ruleExceptionId: string }>().ruleExceptionId)).statusCode).toBe(200);
+    expect((await register(varied, offerings[2]!)).statusCode).toBe(201);
+    const over = await register(varied, offerings[3]!);
+    expect(over.statusCode).toBe(422);
+    expect(over.json<{ detail: string }>().detail).toContain('as varied for this student');
+
+    // A waiver removes the limit; an expired one does not.
+    const waived = await createEnrolment(await createStudent('Waived', 'Limit'));
+    const expired = await propose(waived, { exceptionTypeCode: 'waiver', validFrom: '2025-01-01', validTo: '2025-12-31' });
+    await approve(expired.json<{ ruleExceptionId: string }>().ruleExceptionId);
+    for (const o of offerings.slice(0, 2)) expect((await register(waived, o)).statusCode).toBe(201);
+    expect((await register(waived, offerings[2]!)).statusCode).toBe(422);
+    const waiver = await propose(waived, { exceptionTypeCode: 'waiver' });
+    await approve(waiver.json<{ ruleExceptionId: string }>().ruleExceptionId);
+    for (const o of offerings.slice(2)) expect((await register(waived, o)).statusCode).toBe(201);
+  });
 });
 
 // Isolated in the second tenant so enabling registrationWindowMode here

@@ -57,6 +57,13 @@
       "when": 1785000037000,
       "tag": "0007_business_process_completion",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1785000038000,
+      "tag": "0008_exception_values_and_credit_years",
+      "breakpoints": true
     }
   ]
 }
