@@ -11,7 +11,7 @@
 --      derived from the offer, so no column is needed on the append-only
 --      offer_confirmation_decision.
 -- D-11 The reason for changing one student's curriculum binding.
--- D-12 At most one live reassessment plan per decision and module.
+-- D-12 No two live reassessment plans of one type per decision and module.
 -- D-13 A verbal Clearing offer is an offer type.
 
 -- ── D-8 Re-registration ─────────────────────────────────────────────────────
@@ -70,10 +70,13 @@ ALTER TABLE "curriculum_binding_change" FORCE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS tenant_isolation ON "curriculum_binding_change";
 CREATE POLICY tenant_isolation ON "curriculum_binding_change" USING (tenant_id = current_setting('app.current_tenant_id', true)::uuid);
 
--- ── D-12 One live reassessment plan per decision and module ─────────────────
+-- ── D-12 No duplicate live plan of a type per decision and module ───────────
+-- A decision can hold several plans for one module (a deferral, a referral,
+-- then an additional attempt), but never two live plans of the same type:
+-- repeating ratification cannot duplicate the plans it created.
 
-CREATE UNIQUE INDEX IF NOT EXISTS "reassessment_plan_one_live"
-  ON "reassessment_plan" ("progression_decision_id", COALESCE("module_registration_id", '00000000-0000-0000-0000-000000000000'::uuid))
+CREATE UNIQUE INDEX IF NOT EXISTS "reassessment_plan_one_live_per_type"
+  ON "reassessment_plan" ("progression_decision_id", COALESCE("module_registration_id", '00000000-0000-0000-0000-000000000000'::uuid), "plan_type_code")
   WHERE "status_code" <> 'cancelled';
 
 -- ── D-13 Verbal Clearing offers ─────────────────────────────────────────────

@@ -55,7 +55,11 @@ class FakeReviewActivities {
 let env: TestWorkflowEnvironment;
 
 beforeAll(async () => {
-  env = await TestWorkflowEnvironment.createTimeSkipping();
+  // Pinned: the time-skipping test server ships with the Java SDK, and the
+  // "default" version resolved to v1.41.0 on its release (2026-11-16), under
+  // which every Update-driven test here times out. Move the pin forward only
+  // after checking these tests against the newer server.
+  env = await TestWorkflowEnvironment.createTimeSkipping({ server: { executable: { type: 'cached-download', version: 'v1.40.0' } } });
 }, 120_000);
 
 afterAll(async () => {
