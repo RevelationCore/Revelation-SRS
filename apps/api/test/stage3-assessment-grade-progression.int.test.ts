@@ -17,6 +17,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { sql } from 'drizzle-orm';
 
 import { startTestApp, type TestApp } from './helpers/test-app.js';
+import { conferViaBoard } from './helpers/award.js';
 
 let ctx: TestApp;
 let jwt: string;       // registry-administrator
@@ -683,17 +684,7 @@ describe('award_calculation_evidence', () => {
       headers: { authorization: `Bearer ${chairJwt}` },
     });
 
-    const awardRes = await ctx.app.inject({
-      method:  'POST',
-      url:     `/api/v1/enrolments/${enrolmentId}/award`,
-      headers: { authorization: `Bearer ${chairJwt}` },
-      payload: {
-        examBoardId,
-        qualificationCode:  'BSc',
-        classificationCode,
-        awardDate:          '2026-07-15',
-      },
-    });
+    const awardRes = await conferViaBoard(ctx, { enrolmentId, examBoardId, qualificationCode: 'BSc', classificationCode, recommenderJwt: chairJwt });
     expect(awardRes.statusCode).toBe(201);
     const { awardId } = awardRes.json<{ awardId: string }>();
 

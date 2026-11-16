@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { IntegrationBusPublisher } from '../src/platform/integration-bus/publisher.js';
 
 import { startTestApp, type TestApp } from './helpers/test-app.js';
+import { conferViaBoard } from './helpers/award.js';
 
 // Minimal spy bus — HEAR generates no domain events itself
 function makeSpyBus(): IntegrationBusPublisher {
@@ -282,10 +283,7 @@ async function createHearFixture(code: string): Promise<HearFixture> {
   });
   expect(ratification.statusCode).toBe(204);
 
-  const award = await ctx.app.inject({
-    method: 'POST', url: `/api/v1/enrolments/${enrolmentId}/award`, headers: { authorization: `Bearer ${chairJwt}` },
-    payload: { examBoardId, qualificationCode: 'BSc', classificationCode: 'upper-second', awardDate: '2026-07-15' },
-  });
+  const award = await conferViaBoard(ctx, { enrolmentId, examBoardId, qualificationCode: 'BSc', classificationCode: 'upper-second', recommenderJwt: chairJwt });
   expect(award.statusCode).toBe(201);
   const awardId = award.json<{ awardId: string }>().awardId;
 

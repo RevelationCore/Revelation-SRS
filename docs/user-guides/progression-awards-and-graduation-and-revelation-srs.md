@@ -42,13 +42,15 @@ fact that already, unconditionally, exists.
 
 ## Part 2 — How Revelation SRS supports progression, awards and graduation
 
-### In short: the core calculations are real and tested; almost everything around them is thin or missing
+### In short: real calculations, and since November 2026 the governed records around them
 
-Every one of this domain's six processes has a genuine, working
-calculation engine behind its central question — but every one of them
-also stops well short of the fuller process its own business-process
-documentation describes, and (with one clear exception) none of them has
-any user interface at all.
+Every one of this domain's six processes has a genuine calculation behind
+its central question. Since 16 November 2026 the governed records the
+business processes call for also exist — reassessment plans, a separate
+recommendation and conferment, an award-document lifecycle and graduation
+cycles — through the API. What is still thin is the wiring between them and
+the screens: outside PGR completion, none of this has an admin or portal
+page yet.
 
 ### Progression — a real, deterministic calculation, with no board around it
 
@@ -73,82 +75,90 @@ exception-submission step. `POST /enrolments/:enrolmentId/progression` is
 a single, synchronous, `registry-administrator`-only call — API-only, with
 no admin or portal page anywhere that surfaces it.
 
-### Reassessment — deliberately, or perhaps just currently, distributed rather than governed
+### Reassessment — a governed plan that follows a ratified decision
 
-There is no single "repeat-study plan" record. What BP-06-002 calls for —
-attempt entitlement, next-attempt timing, a repeat-with-or-without-
-attendance distinction, fee/timetable/visa consequences — is instead
-spread thinly across fields that already exist for other reasons: a
-module result's own `resultCode` (which includes `resit-required`), a
-candidate attempt's type (`first-sit`/`resit`/`repeat`), and the
-progression decision's own `resit`/`repeat-year` codes. There's no
-distinct "referral" outcome separate from resit, and no consequence
-recording of any kind. This is one of the more clearly named gaps in the
-business-process document's own self-assessment, and it holds up: nothing
-in the schema or services offers a first-class reassessment-plan record.
+Since 16 November 2026 there is a first-class `reassessment_plan` record
+(BPR-D14). A plan can only be created from a **ratified** progression
+decision, and only of a type that decision allows: a `resit` decision can
+lead to resit without attendance, referral, a repeat module, a deferral or
+an exceptional additional attempt; a `repeat-year` decision to a repeat
+stage. The plan carries its attempt number (a deferral keeps first-attempt
+treatment and does not use one up), any mark cap and a due date, and is
+closed as completed, expired or cancelled — never overwritten.
 
-### Awards — real classification and conferral, in one step rather than two
+What's still missing is the wiring around it: plans are created by hand
+(`POST /progression-decisions/{id}/reassessment-plans`), not at
+ratification; they are not yet linked to the new attempt's marks; fee,
+timetable and visa consequences are not recorded; and there is no screen.
+
+### Awards — a recommendation, then a separate conferment
 
 ```mermaid
 flowchart TD
-    A[Ratified exam board\ncovers the enrolment] --> B[calculateClassification\nweighted-average or best-of-two-years]
-    B --> C{Supplied classification\n== recommendation?}
-    C -- no --> D[Rejected — no discretionary override]
-    C -- yes --> E[conferAward\none synchronous call, one actor]
-    E --> F[Enrolment transitions to 'graduated']
-    E --> G[generateHear\npopulated JSON, no PDF]
-    E -.-> H[["No revocation or correction path —\naward isn't in CorrectionService's entity list"]]
+    A[Ratified award board\ncovers the enrolment] --> B[calculateClassification\nweighted-average or best-of-two-years]
+    B --> C[Board recommends\naward-recommendations]
+    C --> D{Differs from the\ncalculation?}
+    D -- yes --> E[Discretion reason required]
+    D -- no --> F[Recommendation recorded]
+    E --> F
+    F --> G[Delegated authority confers\nnot the recommender]
+    G --> H[award_conferment\nappend-only]
+    H --> I[Award created; enrolment 'graduated'; event published]
 ```
 
 `AwardService.calculateClassification` computes a genuine UK-convention
-classification recommendation: a configurable algorithm (weighted average
-by default, or best-of-two-years), mapped to a boundary table that falls
-back to the familiar `70/60/50/40` UK degree-classification bands if
-nothing more specific is configured. `conferAward` is where the design
-choice worth naming plainly sits: it requires a *ratified, covering* exam
-board, requires the classification supplied to exactly match the
-freshly-recalculated recommendation (no discretionary override path), and
-performs the whole thing as one synchronous call by one actor — not the
-three-step recommend → confer-with-authority → immutable-fact sequence
-BP-06-003 describes. There's also no revocation or correction path for a
-conferred award at all: `award` isn't even in the list of entity types
-`CorrectionService` knows how to amend, despite the business process's own
-exception flow explicitly anticipating that a conferred record might need
-correcting without ever looking unconferred.
+classification: a configurable algorithm (weighted average by default, or
+best-of-two-years), mapped to a boundary table that falls back to the
+familiar `70/60/50/40` bands if nothing more specific is configured.
 
-Award conferral is gated by `exam-board:ratify` — the same permission that
-governs board ratification — rather than any dedicated award permission,
-another instance of this codebase reusing an adjacent permission rather
-than minting a new one.
+Since 16 November 2026 conferral follows BP-06-003's two steps (BPR-D14):
 
-### HEAR — a genuine, populated data artefact, not a document
+1. The board **recommends** (`POST /enrolments/{id}/award-recommendations`,
+   `award:recommend`). The recommendation is bound to the calculated
+   classification; recommending a different one needs a recorded
+   discretion reason. Aegrotat and posthumous awards must cite the policy
+   that allows them. Every recommendation needs a ratified award board
+   that covers the student, and there is at most one open recommendation
+   per enrolment.
+2. A **delegated authority who is not the recommender** confers it
+   (`POST /award-recommendations/{id}/conferment`, `award:confer`). That
+   writes an append-only `award_conferment` row (a database trigger
+   refuses updates and deletes), creates the award, graduates the
+   enrolment and publishes `srs.award.conferred`.
 
-`HearService.generateHear` is worth being precise about, because it's easy
-to either overstate or understate what it does. It **is** real: it
-assembles a genuinely complete, populated structure — institution,
-verified student identity, award details, and every ratified module
-result the student achieved — stored as JSON on the award record, with
-careful, correctly-scoped access control (a student can only fetch their
-own). What it is **not** is document generation in the sense BP-06-004
-means: there's no PDF or any other rendered file anywhere in the
-codebase, no signing, no secure delivery channel, and no
-issue/replace/revoke/verify lifecycle. There's no certificate or
-transcript concept at all — only this one HEAR data structure. A column
-for tracking certificate issuance exists on the `award` table; nothing in
-the codebase ever writes to it.
+The old one-step `POST /enrolments/{id}/award`, which let one person
+confer directly, is retired: it now returns `410 Gone` and names the two
+routes above. A conferred award still has no revocation or correction
+path (`award` is not in `CorrectionService`'s entity list).
 
-### Graduation ceremonies — not modelled
+### HEAR and award documents
 
-This is the cleanest, most complete gap in the domain: there is no
-ceremony, invitation, attendance, or allocation concept anywhere in the
-schema or code. "Graduated," in Revelation SRS today, is purely an
-enrolment status that's set automatically the moment an award is
-conferred — which means the separation this guide's Part 1 opened with
-(a ceremony no-show must never look like an unconferred award) is, in a
-sense, trivially true here: there's no ceremony record to conflate with
-the award in the first place, because there's no ceremony record at all.
-This is worth stating candidly rather than reading as either a strength
-or a failure — it's simply unbuilt.
+`HearService.generateHear` assembles a genuinely complete HEAR structure —
+institution, verified identity, award details and every ratified module
+result — stored as JSON on the award, with a student able to fetch only
+their own.
+
+Since 16 November 2026 there is also an award-document lifecycle
+(BPR-D15): certificates, transcripts, HEARs and award letters are issued as
+numbered `document_issue` rows, each with the exact content it states, a
+SHA-256 hash of that content and a verification code. A replacement or
+corrected-name issue supersedes the previous one without rewriting it;
+revocation is append-only; every verification check is logged and discloses
+only what the outcome allows. What it is **not** yet is document rendering:
+there is no PDF, no cryptographic signature and no public verification page
+(verification is an authenticated API).
+
+### Graduation ceremonies — invitations, allocation and attendance
+
+Graduation is modelled separately from the award (BPR-D15), which is the
+separation Part 1 opened with. A graduation cycle invites everyone whose
+award was conferred in its window (re-inviting deferrals, skipping anyone
+already presented); students answer their own invitation (attending, in
+absentia, deferred or declined); the graduation team allocates attending
+graduands to ceremonies within capacity and guest limits, freezes the
+presentation list, and records attendance afterwards. None of that ever
+changes the award: a full ceremony or an absence moves attendance, not
+academic status. There is no ticketing and no screen yet.
 
 ### PGR completion — the one process built to match its documentation closely
 
@@ -171,10 +181,11 @@ it — genuinely finished, not just calculated.
 
 | Role | What they can do here |
 |---|---|
-| `registry-administrator` | Runs progression evaluation (`progression:write`); holds `exam-board:ratify`, so can also confer taught awards |
-| `exam-board-chair` | `exam-board:ratify` — the same permission that gates award conferral as gates board ratification itself, reused rather than a dedicated award permission |
-| `pgr-director` | `award:confer:research` — the dedicated (only dedicated) award permission in this domain, for research-degree conferral |
-| `student` | Reads their own HEAR once generated, with an explicit ownership check — no write access anywhere in this domain |
+| `registry-administrator` | Runs progression evaluation (`progression:write`); `award:recommend` and `award:confer` (never both on the same award); reassessment plans, documents and graduation |
+| `exam-board-chair` | `exam-board:ratify` for board ratification; `award:recommend` to record the board's award recommendation |
+| `tenant-administrator` | `award:confer` as a delegated conferment authority |
+| `pgr-director` | `award:confer:research`, for research-degree conferral through the PGR completion case |
+| `student` | Reads their own HEAR and award documents; answers their own graduation invitation |
 
 Every capability in this domain outside PGR completion is reachable only
 through the API — there's no admin or portal screen gating any of these
@@ -182,13 +193,12 @@ permissions in practice, because there's no screen at all.
 
 ### What this means in practice
 
-`docs/product/current-capabilities.md` summarises this domain in one
-sentence that holds up precisely against the code: *"Reassessment plan,
-recommendation/conferment separation, issued document lifecycle and
-ceremony are absent."* If you're evaluating this capability: trust the
-calculations — progression and classification logic are genuine,
-UK-convention-aware, and evidenced — but don't expect a board workflow, a
-reassessment record, a rendered certificate, or anything resembling
-ceremony administration. Everything outside PGR completion is reachable
-only through the API today; there is no admin or portal screen for
-progression, award conferral, or HEAR generation at all.
+If you're evaluating this capability: trust the calculations — progression
+and classification are genuine, UK-convention-aware and evidenced — and
+expect the governed records BP-06-002 to BP-06-005 describe to exist and be
+enforced through the API: a recommendation that one person makes and
+another confers, append-only conferment, reassessment plans, issued and
+revocable documents, and graduation kept apart from the award. Don't
+expect a progression-board workflow, rendered or signed certificates,
+automatic plan creation at ratification, or any screen outside PGR
+completion. `docs/product/current-capabilities.md` keeps the current list.

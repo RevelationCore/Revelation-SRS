@@ -78,7 +78,7 @@ export class AwardService {
    * computes a weighted aggregate using the configured classification-algorithm,
    * and maps the result to a classification band using classification-boundary.
    *
-   * Returns a recommendation only — the award is not recorded until conferAward is called.
+   * Returns a recommendation only — the award is recorded when a recommendation is conferred (ConfermentService).
    */
   async calculateClassification(
     enrolmentId: string,
@@ -102,38 +102,6 @@ export class AwardService {
       boundariesApplied: boundaries,
     };
   }
-
-  /**
-   * Formally confers an award on the enrolment.
-   *
-   * Creates a bitemporal award record, sets hear_generated_at as a stub,
-   * and calls EnrolmentService.transitionStatus to graduate the enrolment
-   * through the standard path (preserving transition ledger and person status cascade).
-   */
-  async conferAward(
-    enrolmentId: string,
-    tenantId: string,
-    input: ConferAwardInput,
-    actorId: string,
-  ): Promise<string> {
-    const enrolment = await this.#getEnrolment(enrolmentId, tenantId);
-    await this.#ensureRatifiedBoardCoversEnrolment(input.examBoardId, enrolmentId, tenantId);
-    const recommendation = await this.calculateClassification(enrolmentId, tenantId);
-    if (recommendation.classificationCode !== input.classificationCode) {
-      throw new ValidationError(
-        `Requested classification '${input.classificationCode}' does not match calculated recommendation '${recommendation.classificationCode}'`,
-        [{ field: 'classificationCode', message: 'Classification must match the current calculated recommendation' }],
-      );
-    }
-
-    const existing = await this.#getCurrentAward(enrolmentId, tenantId);
-    if (existing) {
-      throw new ValidationError(`Enrolment '${enrolmentId}' already has a conferred award`);
-    }
-
-    return this.#recordAward(enrolmentId, enrolment, tenantId, input, actorId, recommendation);
-  }
-
 
   /**
    * Records an award conferred from a board recommendation (BPR-D14).

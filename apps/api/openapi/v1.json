@@ -23214,39 +23214,7 @@
         "tags": [
           "progression"
         ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "required": [
-                  "examBoardId",
-                  "qualificationCode",
-                  "classificationCode",
-                  "awardDate"
-                ],
-                "properties": {
-                  "examBoardId": {
-                    "type": "string"
-                  },
-                  "qualificationCode": {
-                    "minLength": 1,
-                    "type": "string"
-                  },
-                  "classificationCode": {
-                    "minLength": 1,
-                    "type": "string"
-                  },
-                  "awardDate": {
-                    "minLength": 1,
-                    "type": "string"
-                  }
-                }
-              }
-            }
-          }
-        },
+        "description": "Retired. Awards are conferred through a recommendation and a separate conferment.",
         "parameters": [
           {
             "schema": {
@@ -23257,56 +23225,10 @@
             "required": true
           }
         ],
+        "deprecated": true,
         "x-publication-class": "workflow",
         "responses": {
-          "201": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "awardId"
-                  ],
-                  "properties": {
-                    "awardId": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "type",
-                    "title",
-                    "status"
-                  ],
-                  "properties": {
-                    "type": {
-                      "type": "string"
-                    },
-                    "title": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "number"
-                    },
-                    "detail": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "422": {
+          "410": {
             "description": "Default Response",
             "content": {
               "application/json": {

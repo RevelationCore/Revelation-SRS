@@ -13,6 +13,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import type { IntegrationBusPublisher } from '../../src/platform/integration-bus/publisher.js';
 import { startTestApp, type TestApp } from '../helpers/test-app.js';
+import { conferViaBoard } from '../helpers/award.js';
 
 // ─── Spy bus ─────────────────────────────────────────────────────────────────
 
@@ -444,17 +445,7 @@ describe('Progression and award events', () => {
   });
 
   it('conferring an award publishes srs.award.conferred (personal)', async () => {
-    const res = await ctx.app.inject({
-      method: 'POST',
-      url:    `/api/v1/enrolments/${enrolmentId}/award`,
-      headers: { authorization: `Bearer ${chairJwt}` },
-      payload: {
-        examBoardId,
-        qualificationCode:  'BSc',
-        classificationCode: 'upper-second',
-        awardDate:          '2026-07-15',
-      },
-    });
+    const res = await conferViaBoard(ctx, { enrolmentId, examBoardId, qualificationCode: 'BSc', classificationCode: 'upper-second', recommenderJwt: chairJwt });
     expect(res.statusCode).toBe(201);
 
     const evt = findEvent('srs.award.conferred');

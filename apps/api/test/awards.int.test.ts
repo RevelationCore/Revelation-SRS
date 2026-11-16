@@ -3,6 +3,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { IntegrationBusPublisher } from '../src/platform/integration-bus/publisher.js';
 
 import { startTestApp, type TestApp } from './helpers/test-app.js';
+import { conferViaBoard } from './helpers/award.js';
 
 interface CapturedEvent {
   type: string;
@@ -196,7 +197,7 @@ describe('Award conferral', () => {
     const first = await conferAward(fixture, examBoardId, 'BSc', 'first');
     expect(first.statusCode).toBe(201);
 
-    const second = await conferAward(fixture, examBoardId, 'BSc', 'upper-second');
+    const second = await conferAward(fixture, examBoardId, 'BSc', 'first');
     expect(second.statusCode).toBe(422);
   });
 
@@ -224,7 +225,18 @@ describe('Award conferral', () => {
     expect(res.statusCode).toBe(404);
   });
 
-  it('requires exam-board:ratify to confer an award', async () => {
+  it('the retired direct conferral route returns 410 and points to the governed routes', async () => {
+    const fixture = await createAwardFixture('AWD207');
+    const res = await ctx.app.inject({
+      method: 'POST', url: `/api/v1/enrolments/${fixture.enrolmentId}/award`,
+      headers: { authorization: `Bearer ${chairJwt}` },
+      payload: { examBoardId: '00000000-0000-0000-0000-000000000000', qualificationCode: 'BSc', classificationCode: 'first', awardDate: '2026-07-15' },
+    });
+    expect(res.statusCode).toBe(410);
+    expect(res.json<{ detail: string }>().detail).toMatch(/award-recommendations/);
+  });
+
+  it('requires award:recommend to start an award', async () => {
     const fixture = await createAwardFixture('AWD205');
     await seedRatifiedResult(fixture, 'AWD205A', 72, 20);
     const examBoardId = await createExamBoard();
@@ -372,6 +384,7 @@ async function ratifyBoard(examBoardId: string): Promise<void> {
   expect(res.statusCode).toBe(204);
 }
 
+/** Recommend then confer (BPR-D14); the direct POST /award route is retired. */
 async function conferAward(
   fixture: AwardFixture,
   examBoardId: string,
@@ -379,12 +392,7 @@ async function conferAward(
   classificationCode: string,
   authJwt = chairJwt,
 ) {
-  return ctx.app.inject({
-    method: 'POST',
-    url: `/api/v1/enrolments/${fixture.enrolmentId}/award`,
-    headers: { authorization: `Bearer ${authJwt}` },
-    payload: { examBoardId, qualificationCode, classificationCode, awardDate: '2026-07-15' },
-  });
+  return conferViaBoard(ctx, { enrolmentId: fixture.enrolmentId, examBoardId, qualificationCode, classificationCode, recommenderJwt: authJwt });
 }
 
 async function seedClassificationRules(): Promise<void> {

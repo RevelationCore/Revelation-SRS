@@ -31,7 +31,7 @@ export type NewProgressionDecision = typeof progressionDecisions.$inferInsert;
 /**
  * Award — bitemporal; the formal conferral of a qualification.
  *
- * Created by AwardService.conferAward after board ratification (taught
+ * Created by AwardService.recordConferredAward on conferment (taught
  * awards — exam_board_id set) or AwardService.conferResearchAward after a
  * PGR completion case (research awards — source_case_id set instead; see
  * ADR-023). Exactly one of exam_board_id/source_case_id is populated per

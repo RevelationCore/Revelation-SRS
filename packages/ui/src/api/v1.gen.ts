@@ -1806,6 +1806,10 @@ export interface paths {
         };
         get: operations["getEnrolmentsByEnrolmentIdAward"];
         put?: never;
+        /**
+         * @deprecated
+         * @description Retired. Awards are conferred through a recommendation and a separate conferment.
+         */
         post: operations["createEnrolmentsByEnrolmentIdAward"];
         delete?: never;
         options?: never;
@@ -14127,44 +14131,10 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/json": {
-                    examBoardId: string;
-                    qualificationCode: string;
-                    classificationCode: string;
-                    awardDate: string;
-                };
-            };
-        };
+        requestBody?: never;
         responses: {
             /** @description Default Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        awardId: string;
-                    };
-                };
-            };
-            /** @description Default Response */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        type: string;
-                        title: string;
-                        status: number;
-                        detail?: string;
-                    };
-                };
-            };
-            /** @description Default Response */
-            422: {
+            410: {
                 headers: {
                     [name: string]: unknown;
                 };

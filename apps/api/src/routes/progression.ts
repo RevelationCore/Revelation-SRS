@@ -7,10 +7,7 @@ import type {
   EvaluateProgressionInput,
   ProgressionDecisionDto,
 } from '../platform/progression/progression-service.js';
-import type {
-  AwardDto,
-  ConferAwardInput,
-} from '../platform/progression/award-service.js';
+import type { AwardDto } from '../platform/progression/award-service.js';
 import type { HearDto } from '../platform/progression/hear-service.js';
 
 const ErrorSchema = Type.Object({
@@ -158,40 +155,32 @@ export function progressionRoutes(fastify: FastifyInstance): void {
     },
   );
 
-  // ── Confer award ──────────────────────────────────────────────────────────
+  // ── Confer award (retired) ────────────────────────────────────────────────
+  // Direct conferral bypassed the separation between the board's
+  // recommendation and the delegated authority's conferment (BPR-D14;
+  // BP-06-003 steps 4–5). Use POST /enrolments/{id}/award-recommendations,
+  // then POST /award-recommendations/{id}/conferment by someone else.
 
   fastify.post(
     '/enrolments/:enrolmentId/award',
     {
       schema: {
+        deprecated: true,
+        description: 'Retired. Awards are conferred through a recommendation and a separate conferment.',
         params: Type.Object({ enrolmentId: Type.String() }),
-        body: Type.Object({
-          examBoardId:        Type.String(),
-          qualificationCode:  Type.String({ minLength: 1 }),
-          classificationCode: Type.String({ minLength: 1 }),
-          awardDate:          Type.String({ minLength: 1 }),
-        }),
-        response: { 201: Type.Object({ awardId: Type.String() }), 404: ErrorSchema, 422: ErrorSchema },
+        response: { 410: ErrorSchema },
       },
       preHandler: [requirePermission('exam-board:ratify')],
     },
     async (request, reply) => {
-      const { enrolmentId } = request.params as { enrolmentId: string };
-      const body = request.body as ConferAwardInput;
-      const awardId = await fastify.awardService.conferAward(enrolmentId, request.tenantId, body, request.user.sub);
-
-      await fastify.audit.record({
-        tenantId:         request.tenantId,
-        entityType:       'award',
-        entityId:         awardId,
-        actionType:       'create',
-        actorType:        'user',
-        actorId:          request.user.sub,
-        actorDisplayName: request.user.displayName,
-        correlationId:    request.id,
+      await reply.code(410).send({
+        type:   'https://srs.example.com/errors/gone',
+        title:  'Gone',
+        status: 410,
+        detail: 'Direct award conferral is retired. Record the board\'s recommendation with POST /api/v1/enrolments/{enrolmentId}/award-recommendations; '
+          + 'a different delegated authority then confers it with POST /api/v1/award-recommendations/{recommendationId}/conferment.',
+        instance: request.url,
       });
-
-      await reply.code(201).send({ awardId });
     },
   );
 
