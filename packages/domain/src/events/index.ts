@@ -1,6 +1,7 @@
 export * from './student/created.v1.js';
 export * from './student/identity-updated.v1.js';
 export * from './student/enrolled.v1.js';
+export * from './student/re-enrolled.v1.js';
 export * from './student/status-changed.v1.js';
 export * from './student/disability-declaration-updated.v1.js';
 export * from './identity/verification-requested.v1.js';
@@ -69,6 +70,7 @@ export const EVENT_TYPES = {
   STUDENT_IDENTITY_UPDATED:                 'srs.student.identity-updated',
   STUDENT_ENROLLED:                         'srs.student.enrolled',
   STUDENT_STATUS_CHANGED:                   'srs.student.status-changed',
+  STUDENT_RE_ENROLLED:                      'srs.student.re-enrolled',
   STUDENT_DISABILITY_DECLARATION_UPDATED:   'srs.student.disability-declaration-updated',
   IDENTITY_VERIFICATION_REQUESTED:          'srs.identity.verification-requested',
   IDENTITY_VERIFICATION_COMPLETED:          'srs.identity.verification-completed',

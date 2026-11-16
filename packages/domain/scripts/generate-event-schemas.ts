@@ -72,6 +72,15 @@ export const PUBLISHED_EVENTS: EventDef[] = [
     consumers: ['finance-adapter', 'vle-adapter', 'wellbeing-module'],
   },
   {
+    typeName: 'StudentReEnrolledV1Payload',
+    file: 'student/re-enrolled.v1.ts',
+    subject: 'srs.student.re-enrolled',
+    schemaPath: 'student/re-enrolled',
+    dataClass: 'personal',
+    partitionKey: 'personId',
+    consumers: ['finance-adapter', 'vle-adapter'],
+  },
+  {
     typeName: 'StudentStatusChangedV1Payload',
     file: 'student/status-changed.v1.ts',
     subject: 'srs.student.status-changed',

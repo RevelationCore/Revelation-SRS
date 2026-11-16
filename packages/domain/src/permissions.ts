@@ -173,6 +173,12 @@ export const PERMISSION_ROLES = {
   'curriculum-binding:write':            ['registry-administrator'] as Role[],
   // A binding change something already depends on is decided by a programme approver (D-11).
   'curriculum-binding:approve':          ['programme-approver'] as Role[],
+  // Annual and initial registration (D-8, D-10): the registry opens and closes
+  // periods and may confirm on a student's behalf; students confirm their own.
+  'registration-period:manage':          ['registry-administrator'] as Role[],
+  'registration:read':                   ['registry-administrator', 'personal-tutor'] as Role[],
+  'registration:confirm:assisted':       ['registry-administrator'] as Role[],
+  'registration:confirm:own':            ['student'] as Role[],
   'pgr-case:read':                       ['pgr-administrator', 'pgr-director', 'research-supervisor', 'registry-administrator'] as Role[],
   'pgr-case:read:own':                   ['student'] as Role[],
   'pgr-case:write':                      ['pgr-administrator', 'registry-administrator'] as Role[],

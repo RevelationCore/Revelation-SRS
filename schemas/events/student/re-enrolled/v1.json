@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/StudentReEnrolledV1Payload",
+  "definitions": {
+    "StudentReEnrolledV1Payload": {
+      "type": "object",
+      "properties": {
+        "personId": {
+          "type": "string"
+        },
+        "enrolmentId": {
+          "type": "string"
+        },
+        "academicYear": {
+          "type": "string"
+        },
+        "periodType": {
+          "type": "string"
+        },
+        "channel": {
+          "type": "string"
+        },
+        "confirmedAt": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "personId",
+        "enrolmentId",
+        "academicYear",
+        "periodType",
+        "channel",
+        "confirmedAt"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$id": "https://schemas.revelation-srs.io/events/student/re-enrolled/v1.json",
+  "title": "StudentReEnrolledV1Payload",
+  "description": "Payload schema for srs.student.re-enrolled v1.0.0"
+}

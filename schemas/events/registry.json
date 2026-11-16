@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "generated": "2026-11-15T23:46:07.313Z",
+  "generated": "2026-11-16T20:51:24.781Z",
   "description": "Machine-readable registry of all Revelation SRS domain events.",
   "schemaUriBase": "https://schemas.revelation-srs.io/events",
   "events": [
@@ -44,6 +44,19 @@
         "finance-adapter",
         "vle-adapter",
         "wellbeing-module"
+      ],
+      "status": "published"
+    },
+    {
+      "subject": "srs.student.re-enrolled",
+      "version": "1.0.0",
+      "schemaRef": "https://schemas.revelation-srs.io/events/student/re-enrolled/v1.json",
+      "schemaPath": "schemas/events/student/re-enrolled/v1.json",
+      "dataClass": "personal",
+      "partitionKey": "personId",
+      "consumers": [
+        "finance-adapter",
+        "vle-adapter"
       ],
       "status": "published"
     },

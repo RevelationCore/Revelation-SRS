@@ -117,6 +117,8 @@ import { adjustmentRoutes } from './routes/adjustments.js';
 import { deliveryRoutes, inboundRoutes } from './routes/delivery.js';
 import { supportRoutes } from './routes/support.js';
 import { statusCaseRoutes } from './routes/status-cases.js';
+import { registrationPeriodRoutes } from './routes/registration-periods.js';
+import { RegistrationPeriodService } from './platform/registration-periods/service.js';
 import { curriculumPublicationRoutes } from './routes/curriculum-publications.js';
 import { awardConfermentRoutes } from './routes/award-conferment.js';
 import { awardDocumentRoutes } from './routes/award-documents.js';
@@ -384,6 +386,7 @@ export async function buildApp(
   const workflowTasks = new WorkflowTaskService(db);
   const moduleSelection = new ModuleSelectionService(db, eventBus, rules, workflowBridge, registrations, reviewExecution);
   const bindingChanges = new BindingChangeService(db, valueSets, enrolments, moduleSelection);
+  const registrationPeriods = new RegistrationPeriodService(db, valueSets, eventBus);
   moduleSelection.registerWorkflowEffects(reviewActivities);
   const workflowResponsibilities = new WorkflowResponsibilityService(db);
   const workflowBuilder = new WorkflowBuilderService(db, workflowResponsibilities);
@@ -427,6 +430,7 @@ export async function buildApp(
   fastify.decorate('registrationWindowService', registrationWindows);
   fastify.decorate('moduleSelectionService', moduleSelection);
   fastify.decorate('bindingChangeService', bindingChanges);
+  fastify.decorate('registrationPeriodService', registrationPeriods);
   fastify.decorate('tenantAdminService', tenantAdmin);
   fastify.decorate('assessmentComponentService', assessmentComponents);
   fastify.decorate('moduleResultService', moduleResults);
@@ -643,6 +647,8 @@ export async function buildApp(
       ['/curriculum-publications',   'catalogue'],
       ['/recognised-credits',        'enrolments'],
       ['/curriculum-binding-changes', 'module-selection'],
+      ['/registration-periods',      'enrolments'],
+      ['/registration-confirmations', 'enrolments'],
       ['/academic-exceptions',       'enrolments'],
       ['/rule-exceptions',           'enrolments'],
       ['/award-recommendations',     'progression'],
@@ -746,6 +752,7 @@ export async function buildApp(
   await fastify.register(inboundRoutes,             { prefix: '/api/v1' });
   await fastify.register(supportRoutes,             { prefix: '/api/v1' });
   await fastify.register(statusCaseRoutes,          { prefix: '/api/v1' });
+  await fastify.register(registrationPeriodRoutes,  { prefix: '/api/v1' });
   await fastify.register(curriculumPublicationRoutes, { prefix: '/api/v1' });
   await fastify.register(awardConfermentRoutes,     { prefix: '/api/v1' });
   await fastify.register(awardDocumentRoutes,       { prefix: '/api/v1' });
@@ -819,6 +826,7 @@ declare module 'fastify' {
     registrationWindowService: RegistrationWindowService;
     moduleSelectionService: ModuleSelectionService;
     bindingChangeService: BindingChangeService;
+    registrationPeriodService: RegistrationPeriodService;
     tenantAdminService: TenantAdminService;
     assessmentComponentService: AssessmentComponentService;
     moduleResultService: ModuleResultService;
