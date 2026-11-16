@@ -645,7 +645,7 @@ export async function buildApp(
       ['/document-verifications',    'progression'],
       ['/graduation-',               'progression'],
       ['/ceremony-allocations',      'progression'],
-      ['/applications',              'admissions'],
+      ['/api/v1/applications',       'admissions'],  // anchored: UCAS has /regulatory/ucas/applications
       ['/admissions-offers',         'admissions'],
       ['/offer-conditions',          'admissions'],
       ['/reassessment-plans',        'progression'],

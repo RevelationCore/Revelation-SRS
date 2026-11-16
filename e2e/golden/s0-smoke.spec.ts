@@ -54,6 +54,8 @@ function goldenStaffToken(tenantId: string): string {
     given_name:         'Demo',
     family_name:        'Staff',
     email:              'demo.staff@demo.srs',
+    // The API reads realm_roles (the Keycloak mapper's claim); the UI reads either.
+    realm_roles:        ['registry-administrator', 'tenant-administrator'],
     realm_access:       { roles: ['registry-administrator', 'tenant-administrator'] },
     tenant_id:          tenantId,
     exp:                EXP,

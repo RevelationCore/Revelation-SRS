@@ -23,6 +23,8 @@ const ADMIN = 'http://localhost:5173';
 test.describe('Keyboard navigation — login page (KN-01)', () => {
   test('Tab key reaches the Sign in button from the page load', async ({ page }) => {
     await page.goto(`${ADMIN}/login`);
+    // Wait for the form: the dev server may still be optimising dependencies on first load.
+    await expect(page.getByRole('button').first()).toBeVisible();
     // Start focus at body, Tab through form elements
     await page.keyboard.press('Tab');
     // The focused element should be within the login form (link or button or input)
@@ -32,6 +34,7 @@ test.describe('Keyboard navigation — login page (KN-01)', () => {
 
   test('all login form elements are reachable without mouse', async ({ page }) => {
     await page.goto(`${ADMIN}/login`);
+    await expect(page.getByRole('button').first()).toBeVisible();
     const focusable: string[] = [];
     for (let i = 0; i < 10; i++) {
       await page.keyboard.press('Tab');

@@ -30959,7 +30959,7 @@
       "post": {
         "operationId": "createRegulatoryUcasApplications",
         "tags": [
-          "admissions"
+          "regulatory"
         ],
         "requestBody": {
           "required": true,
@@ -31150,7 +31150,7 @@
       "get": {
         "operationId": "getRegulatoryUcasApplications",
         "tags": [
-          "admissions"
+          "regulatory"
         ],
         "parameters": [
           {
@@ -31235,7 +31235,7 @@
       "post": {
         "operationId": "createRegulatoryUcasApplicationsByApplicationIdLink",
         "tags": [
-          "admissions"
+          "regulatory"
         ],
         "requestBody": {
           "required": true,

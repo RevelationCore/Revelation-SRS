@@ -54,36 +54,8 @@
     {
       "idx": 7,
       "version": "7",
-      "when": 1785000033000,
-      "tag": "0007_student_status_cases",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "7",
-      "when": 1785000034000,
-      "tag": "0008_curriculum_publication",
-      "breakpoints": true
-    },
-    {
-      "idx": 9,
-      "version": "7",
-      "when": 1785000035000,
-      "tag": "0009_reassessment_and_conferment",
-      "breakpoints": true
-    },
-    {
-      "idx": 10,
-      "version": "7",
-      "when": 1785000036000,
-      "tag": "0010_documents_and_graduation",
-      "breakpoints": true
-    },
-    {
-      "idx": 11,
-      "version": "7",
       "when": 1785000037000,
-      "tag": "0011_applications_and_offers",
+      "tag": "0007_business_process_completion",
       "breakpoints": true
     }
   ]
