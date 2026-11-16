@@ -31,6 +31,12 @@ export interface RegistrationBlocker { code: string; message: string }
 export interface RegistrationBlockerProvider {
   blockersFor(tenantId: string, enrolmentId: string, academicYear: string): Promise<RegistrationBlocker[]>;
 }
+/** Told when registrations lapse at close, and when a lapsed one is confirmed late (BP-02-011; D-9). */
+export interface RegistrationLapseHandler {
+  lapsed(tenantId: string, period: ReenrolmentPeriod, confirmations: ReenrolmentConfirmation[], actorId: string): Promise<unknown>;
+  confirmedLate(tenantId: string, confirmationId: string, actorId: string): Promise<void>;
+}
+
 export const noRegistrationBlockers: RegistrationBlockerProvider = { blockersFor: () => Promise.resolve([]) };
 
 export interface OpenPeriodInput {
@@ -68,6 +74,13 @@ export class RegistrationPeriodService {
     private readonly eventBus: IntegrationBusPublisher,
     private readonly blockers: RegistrationBlockerProvider = noRegistrationBlockers,
   ) {}
+
+  #lapseHandler: RegistrationLapseHandler | null = null;
+
+  /** Registers what follows a lapse (the failure-to-register cases). */
+  onLapse(handler: RegistrationLapseHandler): void {
+    this.#lapseHandler = handler;
+  }
 
   async openPeriod(tenantId: string, input: OpenPeriodInput, actorId: string): Promise<PeriodDto> {
     if (!/^\d{4}-\d{2}$/.test(input.academicYear)) throw new ValidationError('The academic year looks like 2027-28');
@@ -225,6 +238,7 @@ export class RegistrationPeriodService {
       };
       await this.eventBus.publish(EVENT_TYPES.STUDENT_RE_ENROLLED, '1.0.0', tenantId, actorId, 'personal', payload);
     }
+    if (current.statusCode === 'lapsed') await this.#lapseHandler?.confirmedLate(tenantId, current.id, actorId);
     return updated.row;
   }
 
@@ -247,6 +261,7 @@ export class RegistrationPeriodService {
         statusCode: 'lapsed', validFrom: now, recordedAt: now,
       }))).returning();
     });
+    if (lapsed.length > 0) await this.#lapseHandler?.lapsed(tenantId, period, lapsed, actorId);
     return { period: await this.getPeriod(tenantId, period.id), lapsed };
   }
 

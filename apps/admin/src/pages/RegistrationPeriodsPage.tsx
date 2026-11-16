@@ -45,7 +45,12 @@ export function RegistrationPeriodsPage() {
       <PageHeader
         title="Registration"
         description="Annual re-registration of continuing students. Students confirm in the portal by accepting the current terms; the registry can register a student on their behalf."
-        actions={canManage && <Button size="sm" onClick={() => setOpening((v) => !v)}>{opening ? 'Cancel' : 'Open a period'}</Button>}
+        actions={
+          <div className="flex gap-2">
+            <Link to="/registration/non-registration" className="inline-flex items-center rounded-md border border-neutral-300 px-3 py-1.5 text-sm text-neutral-700 hover:bg-neutral-50">Students who did not register</Link>
+            {canManage && <Button size="sm" onClick={() => setOpening((v) => !v)}>{opening ? 'Cancel' : 'Open a period'}</Button>}
+          </div>
+        }
       />
       {periods && !terms && <div className="mt-4"><StatusNotice>No registration terms version is set. A tenant administrator must set registrationTermsVersion in tenant configuration before a period can open.</StatusNotice></div>}
       {opening && <div className="mt-4"><OpenPeriodForm onOpened={() => { setOpening(false); void load(); }} /></div>}
@@ -63,7 +68,7 @@ export function RegistrationPeriodsPage() {
                           <TableCell>{p.academicYear}<div className="text-xs text-neutral-500">{p.periodTypeCode === 'initial' ? 'New entrants' : 'Continuing students'}</div></TableCell>
                           <TableCell className="text-sm">{day(p.opensAt)} – {day(p.closesAt)}</TableCell>
                           <TableCell>{p.counts.confirmed}</TableCell>
-                          <TableCell>{p.counts.pending}{p.counts.lapsed ? <div className="text-xs text-neutral-500">{p.counts.lapsed} lapsed</div> : null}</TableCell>
+                          <TableCell>{p.counts.pending}{p.counts.lapsed ? <div className="text-xs text-neutral-500"><Link to="/registration/non-registration" className="hover:underline">{p.counts.lapsed} lapsed</Link></div> : null}</TableCell>
                           <TableCell><Badge value={p.closedAt ? 'ratified' : 'pending'} label={p.closedAt ? 'Closed' : 'Open'} /></TableCell>
                           <TableCell className="text-right"><Link to={`/registration/${p.periodId}`} className="text-sm text-primary-600 hover:underline">View<span className="sr-only"> {p.academicYear} registration</span></Link></TableCell>
                         </TableRow>

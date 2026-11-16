@@ -27,6 +27,8 @@ For a sponsored student, a lapse raises a regulatory-officer task at once, showi
 
 **Institution must confirm.** The contact period and channels, the review or appeal route, and what its regulations call the outcome.
 
+**Implementation note (D-9).** No new table: the case is a `business_case` with process `BP-02-011` and the enrolment as subject. The lapsed confirmation, contact attempts and any written statement are `case_evidence_reference` rows (distinguished by `source_reference`), and the outcome is a `case_decision` (`registered-late`, `referred` or `non-registration`). The withdrawal status case points back at the decision through `institutional_outcome_ref = case-decision:<id>`. The "regulatory-officer task" is a UKVI compliance alert of type `non-enrolment`, the existing regulatory-officer worklist; the case shows the 10-working-day deadline. Bank holidays are not counted. Because engagement data lives in the attendance module, staff enter the last engagement date with the decision.
+
 ## D-10: Initial registration and applicant conversion (BP-02-001, BP-01-007)
 
 **Decision.** The enrolment is created when registry completes the admissions hand-off task, not at offer confirmation, so identity, CAS and fee-status problems are caught first. The task shows the values derived from the confirmed offer and creates the enrolment in one action: the programme (or the alternative programme), mode, academic year of entry and start date from the intake. Completing it again returns the same enrolment.

@@ -81,6 +81,8 @@ All eleven processes already pass integration tests through the API.
 
 ## Phase 2 — Build the missing processes (large)
 
+**Status: in progress.** Decisions are recorded in [Phase 2 gap-closure decisions](../decisions/phase-2-gap-closure-decisions.md) (D-8 to D-13). Delivered so far: assessment structures and programme rules screens, reassessment plans at ratification (D-12), governed curriculum binding changes (D-11), annual re-registration (D-8) and failure to register (D-9). Remaining: initial registration and applicant conversion (D-10) and Clearing (D-13).
+
 | Process | Work |
 |---|---|
 | BP-02-010 annual re-registration | Service, API and screens over the existing `reenrolment_period` and `reenrolment_confirmation` tables: open a period, students confirm in the portal, outstanding confirmations show on a worklist, and confirmations feed the enrolment status |

@@ -117,7 +117,8 @@ import { adjustmentRoutes } from './routes/adjustments.js';
 import { deliveryRoutes, inboundRoutes } from './routes/delivery.js';
 import { supportRoutes } from './routes/support.js';
 import { statusCaseRoutes } from './routes/status-cases.js';
-import { registrationPeriodRoutes } from './routes/registration-periods.js';
+import { nonRegistrationRoutes, registrationPeriodRoutes } from './routes/registration-periods.js';
+import { NonRegistrationService } from './platform/registration-periods/non-registration-service.js';
 import { RegistrationPeriodService } from './platform/registration-periods/service.js';
 import { curriculumPublicationRoutes } from './routes/curriculum-publications.js';
 import { awardConfermentRoutes } from './routes/award-conferment.js';
@@ -524,6 +525,9 @@ export async function buildApp(
   fastify.decorate('rightsRequestService', rightsRequestService);
 
   const notificationService = new NotificationService(db);
+  const nonRegistration = new NonRegistrationService(db, valueSets, businessCases, statusCases, notificationService);
+  registrationPeriods.onLapse(nonRegistration);
+  fastify.decorate('nonRegistrationService', nonRegistration);
   fastify.decorate('notificationService', notificationService);
 
   // - Security plugins -
@@ -649,6 +653,7 @@ export async function buildApp(
       ['/curriculum-binding-changes', 'module-selection'],
       ['/registration-periods',      'enrolments'],
       ['/registration-confirmations', 'enrolments'],
+      ['/non-registration-cases', 'enrolments'],
       ['/academic-exceptions',       'enrolments'],
       ['/rule-exceptions',           'enrolments'],
       ['/award-recommendations',     'progression'],
@@ -753,6 +758,7 @@ export async function buildApp(
   await fastify.register(supportRoutes,             { prefix: '/api/v1' });
   await fastify.register(statusCaseRoutes,          { prefix: '/api/v1' });
   await fastify.register(registrationPeriodRoutes,  { prefix: '/api/v1' });
+  await fastify.register(nonRegistrationRoutes,  { prefix: '/api/v1' });
   await fastify.register(curriculumPublicationRoutes, { prefix: '/api/v1' });
   await fastify.register(awardConfermentRoutes,     { prefix: '/api/v1' });
   await fastify.register(awardDocumentRoutes,       { prefix: '/api/v1' });
@@ -827,6 +833,7 @@ declare module 'fastify' {
     moduleSelectionService: ModuleSelectionService;
     bindingChangeService: BindingChangeService;
     registrationPeriodService: RegistrationPeriodService;
+    nonRegistrationService: NonRegistrationService;
     tenantAdminService: TenantAdminService;
     assessmentComponentService: AssessmentComponentService;
     moduleResultService: ModuleResultService;

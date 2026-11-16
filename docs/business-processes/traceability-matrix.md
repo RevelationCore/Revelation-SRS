@@ -17,10 +17,10 @@ How far each academic-journey process (areas 01–06) can be carried out in the 
 
 | Coverage | Processes |
 |---|---|
-| On screen | 40 |
+| On screen | 41 |
 | Partly built | 7 |
 | API only | 0 |
-| Not built | 2 |
+| Not built | 1 |
 
 | Process | Coverage | Staff screen | Student portal | Gap |
 |---|---|---|---|---|
@@ -41,7 +41,7 @@ How far each academic-journey process (areas 01–06) can be carried out in the 
 | [BP-02-008](02-registration-and-student-status/bp-02-008-return-from-interruption.md) Return from interruption | On screen | Status cases (return, with return conditions) | Enrolment page: request a return | Offered only after an approved interruption |
 | [BP-02-009](02-registration-and-student-status/bp-02-009-withdraw-from-studies.md) Withdraw from studies | On screen | Status cases (withdrawal) | Enrolment page: request a withdrawal | Sponsored students need UKVI compliance advice before a decision |
 | [BP-02-010](02-registration-and-student-status/bp-02-010-complete-annual-re-registration.md) Complete annual re-registration | On screen | Registration: open a period, follow who has registered, register a student on their behalf (with a reason), close the period | Registration: accept the current terms and register | Confirmation is blocked until the previous year's results are ratified; fee debt does not block (D-8); closing lapses unregistered students |
-| [BP-02-011](02-registration-and-student-status/bp-02-011-resolve-failure-to-register.md) Resolve failure to register or re-register | Not built | — | — | Non-registration decisions are not modelled |
+| [BP-02-011](02-registration-and-student-status/bp-02-011-resolve-failure-to-register.md) Resolve failure to register or re-register | On screen | Registration → Students who did not register: contact attempts, written statement, referral, non-registration decision; status cases for the resulting withdrawal | — | Non-registration opens a withdrawal that another person approves (D-9); last engagement is entered by staff because attendance is a separate module |
 | [BP-02-012](02-registration-and-student-status/bp-02-012-close-leaver-record.md) Close a leaver record and entitlements | On screen | Status cases (leaver closure, closure items) | — | Closure does not itself end access; withdrawal and graduation delivery flows do |
 | [BP-03-001](03-curriculum-and-module-registration/bp-03-001-import-and-publish-curriculum-data.md) Import and publish curriculum data to the SRS | On screen | Curriculum publications list and review | — | Programmes and modules only; a person cannot apply a publication they entered |
 | [BP-03-002](03-curriculum-and-module-registration/bp-03-002-assign-programme-route-and-rules.md) Assign a programme route and rule set | On screen | Programme rules; student record Credit & exceptions: bound rule set and changing it; approvals page for programme approvers | — | A change of programme or mode goes through a transfer |

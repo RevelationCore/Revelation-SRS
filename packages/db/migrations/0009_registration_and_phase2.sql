@@ -117,3 +117,32 @@ VALUES
   ('reenrolment_confirmation', 'assisted_reason_code', 'registration-assisted-reason-code', NULL),
   ('enrolment_curriculum_binding', 'change_reason_code', 'curriculum-binding-change-reason-code', NULL)
 ON CONFLICT DO NOTHING;
+
+-- ── Failure to register (BP-02-011; D-9) ────────────────────────────────────
+-- A lapsed registration opens a business case (process BP-02-011); contact
+-- attempts are case evidence and the outcome is a case decision, so no new
+-- table is needed. Only the picklists are new.
+
+INSERT INTO "value_set" ("set_code", "display_name", "source", "source_version", "description", "is_extensible")
+VALUES
+  ('registration-contact-channel-code', 'Registration Contact Channel', 'srs-internal', NULL, 'How the registry contacted a student who did not register', true)
+ON CONFLICT ("set_code") DO NOTHING;
+
+INSERT INTO "value_set_member" ("value_set_id", "code", "display_label", "sort_order", "active_from")
+SELECT vs."id", v.code, v.display_label, v.sort_order, '2000-01-01T00:00:00Z'
+FROM "value_set" vs,
+(VALUES
+  ('registration-contact-channel-code', 'portal',    'Portal notification', 10),
+  ('registration-contact-channel-code', 'email',     'Email',               20),
+  ('registration-contact-channel-code', 'phone',     'Phone call',          30),
+  ('registration-contact-channel-code', 'letter',    'Letter',              40),
+  ('registration-contact-channel-code', 'in-person', 'In person',           50),
+  ('ukvi-alert-type-code', 'non-enrolment', 'Sponsored student did not register', 40)
+) AS v(set_code, code, display_label, sort_order)
+WHERE vs."set_code" = v.set_code
+ON CONFLICT DO NOTHING;
+
+INSERT INTO "field_value_set" ("entity_name", "field_name", "value_set_code", "description")
+VALUES
+  ('non_registration_case', 'contact_channel_code', 'registration-contact-channel-code', 'Business case BP-02-011 contact attempts (stored as case evidence source_system)')
+ON CONFLICT DO NOTHING;

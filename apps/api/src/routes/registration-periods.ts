@@ -4,6 +4,7 @@ import { ForbiddenError, hasPermission } from '@revelation-srs/domain';
 import type { ReenrolmentConfirmation, ReenrolmentPeriod } from '@revelation-srs/db';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 
+import type { NonRegistrationCaseDto } from '../platform/registration-periods/non-registration-service.js';
 import type { ConfirmationDto, MyRegistrationDto, PeriodDto } from '../platform/registration-periods/service.js';
 
 const ErrorSchema = Type.Object({ type: Type.String(), title: Type.String(), status: Type.Number(), detail: Type.Optional(Type.String()) });
@@ -105,6 +106,93 @@ export function registrationPeriodRoutes(fastify: FastifyInstance): void {
     await audit(fastify, request, 'reenrolment_confirmation', confirmationId, 'update', assisted ? `Registration confirmed on the student's behalf (${body.assistedReasonCode ?? ''})` : 'Registration confirmed');
     await reply.send(confirmationRowToWire(confirmed));
   });
+}
+
+
+/** Failure to register (BP-02-011; D-9): cases opened when registrations lapse. */
+export function nonRegistrationRoutes(fastify: FastifyInstance): void {
+  const Id = Type.Object({ caseId: Type.String() });
+  const manage = [requirePermission('non-registration:manage')];
+  const svc = () => fastify.nonRegistrationService;
+
+  fastify.get('/non-registration-cases', {
+    schema: { querystring: Type.Object({ open: Type.Optional(Type.Boolean()), enrolmentId: Type.Optional(Type.String()) }), response: { 200: Type.Array(Json) } },
+    preHandler: [requireAnyPermission('non-registration:manage', 'registration:read')],
+  }, async (request, reply) => {
+    const q = request.query as { open?: boolean; enrolmentId?: string };
+    const cases = await svc().listCases(request.tenantId, { ...(q.open ? { open: true } : {}), ...(q.enrolmentId ? { enrolmentId: q.enrolmentId } : {}) });
+    await reply.send(cases.map(caseToWire));
+  });
+
+  fastify.get('/non-registration-cases/:caseId', {
+    schema: { params: Id, response: { 200: Json, 404: ErrorSchema } },
+    preHandler: [requireAnyPermission('non-registration:manage', 'registration:read')],
+  }, async (request, reply) => {
+    await reply.send(caseToWire(await svc().getCase(request.tenantId, (request.params as { caseId: string }).caseId)));
+  });
+
+  fastify.post('/non-registration-cases/:caseId/contact-attempts', {
+    schema: {
+      params: Id,
+      body: Type.Object({ channelCode: Type.String({ minLength: 1 }), reference: Type.Optional(Type.String()), message: Type.Optional(Type.String({ maxLength: 2000 })) }),
+      response: { 201: Json, 404: ErrorSchema, 409: ErrorSchema, 422: ErrorSchema },
+    },
+    preHandler: manage,
+  }, async (request, reply) => {
+    const { caseId } = request.params as { caseId: string };
+    const dto = await svc().recordContact(request.tenantId, caseId, request.body as never, request.user.sub);
+    await audit(fastify, request, 'business_case', caseId, 'update', `Contact attempt recorded (${(request.body as { channelCode: string }).channelCode})`);
+    await reply.code(201).send(caseToWire(dto));
+  });
+
+  fastify.post('/non-registration-cases/:caseId/written-statement', {
+    schema: { params: Id, body: Type.Object({ reference: Type.String({ minLength: 1 }) }), response: { 201: Json, 404: ErrorSchema, 409: ErrorSchema, 422: ErrorSchema } },
+    preHandler: manage,
+  }, async (request, reply) => {
+    const { caseId } = request.params as { caseId: string };
+    const dto = await svc().recordWrittenNonContinuation(request.tenantId, caseId, request.body as never, request.user.sub);
+    await audit(fastify, request, 'business_case', caseId, 'update', 'Student confirmed in writing they will not continue');
+    await reply.code(201).send(caseToWire(dto));
+  });
+
+  fastify.post('/non-registration-cases/:caseId/referral', {
+    schema: { params: Id, body: Type.Object({ statusCaseId: Type.String() }), response: { 200: Json, 404: ErrorSchema, 409: ErrorSchema, 422: ErrorSchema } },
+    preHandler: manage,
+  }, async (request, reply) => {
+    const { caseId } = request.params as { caseId: string };
+    const dto = await svc().refer(request.tenantId, caseId, request.body as never, request.user.sub);
+    await audit(fastify, request, 'business_case', caseId, 'update', 'Referred to the student\'s own status request');
+    await reply.send(caseToWire(dto));
+  });
+
+  fastify.post('/non-registration-cases/:caseId/decision', {
+    schema: {
+      params: Id,
+      body: Type.Object({
+        reason: Type.String({ minLength: 1, maxLength: 2000 }), policyVersion: Type.String({ minLength: 1 }),
+        effectiveDate: Type.Optional(Type.String({ format: 'date' })), lastEngagementDate: Type.Optional(Type.String({ format: 'date' })),
+      }),
+      response: { 200: Json, 404: ErrorSchema, 409: ErrorSchema, 422: ErrorSchema },
+    },
+    preHandler: manage,
+  }, async (request, reply) => {
+    const { caseId } = request.params as { caseId: string };
+    const dto = await svc().decideNonRegistration(request.tenantId, caseId, request.body as never, request.user.sub);
+    await audit(fastify, request, 'business_case', caseId, 'update', 'Non-registration decided; withdrawal case opened for decision');
+    await reply.send(caseToWire(dto));
+  });
+}
+
+function caseToWire(c: NonRegistrationCaseDto) {
+  const iso = (d: Date | null) => d?.toISOString() ?? null;
+  return {
+    ...c,
+    periodClosesAt: c.periodClosesAt.toISOString(), openedAt: c.openedAt.toISOString(),
+    contactAttempts: c.contactAttempts.map((a) => ({ ...a, contactedAt: a.contactedAt.toISOString() })),
+    writtenNonContinuation: c.writtenNonContinuation ? { ...c.writtenNonContinuation, receivedAt: c.writtenNonContinuation.receivedAt.toISOString() } : null,
+    outcome: c.outcome ? { ...c.outcome, decidedAt: c.outcome.decidedAt.toISOString(), effectiveAt: c.outcome.effectiveAt.toISOString() } : null,
+    decisionAllowedFrom: iso(c.decisionAllowedFrom), ukviReportDueBy: iso(c.ukviReportDueBy), subject: c.subject ?? null,
+  };
 }
 
 function assertOwn(request: FastifyRequest, personId: string, staffPermission: string): void {
