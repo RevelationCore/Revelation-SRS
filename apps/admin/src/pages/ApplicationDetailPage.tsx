@@ -1,0 +1,698 @@
+import { type FormEvent, type ReactNode, useCallback, useEffect, useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
+import {
+  PageHeader, Card, CardHeader, CardBody, Button, Input, Select, Textarea, Checkbox, LabelledField, Badge, Spinner, StatusNotice,
+  Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
+} from '@revelation-srs/ui';
+import type { Permission } from '@revelation-srs/domain';
+
+import { ApiError } from '../api/client.js';
+import {
+  type ApplicationDetail, type ConditionInput, type Offer, type OfferCondition,
+  getApplication, confirmIdentity, routeApplication, recordAssessment, recommendApplication, decideApplication,
+  recordOfferResponse, changeOffer, withdrawOffer, confirmOffer, recordConditionEvidence, decideCondition,
+} from '../api/applications.js';
+import { useAuth } from '../auth/AuthContext.js';
+import { userHasAnyPermission } from '../auth/RequirePermission.js';
+import { useValueSet } from '../hooks/useValueSet.js';
+import { APPLICATION_STATUS_LABELS, ROUTING_LABELS, programmeLabel, useProgrammeNames } from './ApplicationsPage.js';
+
+const OPEN_OFFER = ['made', 'accepted'];
+
+function message(err: unknown, fallback: string): string {
+  return err instanceof ApiError ? (err.detail ?? err.message) : fallback;
+}
+
+/**
+ * One application from receipt to confirmation (BP-01-001 to BP-01-004).
+ * Every action calls the API, which enforces the rules (certain identity,
+ * the recommender cannot decide, conditions met only on verified
+ * evidence); the page shows only the actions open at each stage.
+ */
+export function ApplicationDetailPage() {
+  const { applicationId } = useParams<{ applicationId: string }>();
+  const { roles, user } = useAuth();
+  const [app, setApp] = useState<ApplicationDetail | null>(null);
+  const [error, setError] = useState('');
+  const [actionError, setActionError] = useState('');
+  const programmes = useProgrammeNames();
+
+  const load = useCallback(async () => {
+    if (!applicationId) return;
+    try {
+      setApp(await getApplication(applicationId));
+    } catch (err) {
+      setError(message(err, 'Failed to load the application'));
+    }
+  }, [applicationId]);
+  useEffect(() => { void load(); }, [load]);
+
+  /** Runs an action, then reloads; an API refusal is shown and the page is left as it was. */
+  const act = useCallback(async (run: () => Promise<unknown>): Promise<boolean> => {
+    setActionError('');
+    try {
+      await run();
+      await load();
+      return true;
+    } catch (err) {
+      setActionError(message(err, 'The action failed'));
+      return false;
+    }
+  }, [load]);
+
+  if (error) return <p className="text-sm text-danger-600" role="alert">{error}</p>;
+  if (!app) return <div className="flex justify-center py-16"><Spinner /></div>;
+
+  const can = (permission: Permission) => userHasAnyPermission(roles, [permission]);
+  const canWrite = can('application:write');
+  const canAssess = can('application:assess');
+  const canDecide = can('offer:decide');
+  const canReceive = can('application:receive');
+  const offers = [...app.offers].sort((a, b) => b.version - a.version);
+  const assessable = Boolean(app.personId) && ['received', 'under-assessment'].includes(app.statusCode);
+
+  return (
+    <div>
+      <PageHeader
+        breadcrumbs={[{ label: 'Applications', to: '/applications' }]}
+        title={`${app.channelCode.toUpperCase()} ${app.sourceReference}`}
+        description={`Cycle ${app.cycle}`}
+        actions={<Badge value={app.statusCode} label={APPLICATION_STATUS_LABELS[app.statusCode] ?? app.statusCode} />}
+      />
+
+      {actionError && <p className="mb-4 text-sm text-danger-600" role="alert">{actionError}</p>}
+
+      <div className="flex flex-col gap-6">
+        <Card>
+          <CardHeader title="Application" />
+          <CardBody>
+            <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm md:grid-cols-3">
+              <Fact label="Programme">{programmeLabel(programmes, app.programmeId)}</Fact>
+              <Fact label="Intake">{app.intakeCode ?? 'Not yet known'}</Fact>
+              <Fact label="Mode of study">{app.modeOfStudyCode ?? 'Not yet known'}</Fact>
+              <Fact label="Applicant">
+                {app.personId
+                  ? <Link to={`/students/${app.personId}`} className="text-primary-600 hover:underline">{app.identityMatchCode === 'created' ? 'New person record' : 'Matched person record'}</Link>
+                  : 'Identity not confirmed'}
+              </Fact>
+              <Fact label="Worklist">{app.routingReasonCode ? (ROUTING_LABELS[app.routingReasonCode] ?? app.routingReasonCode) : 'None'}</Fact>
+              <Fact label="Received">{new Date(app.createdAt).toLocaleString('en-GB')}</Fact>
+            </dl>
+            {app.statusCode === 'incomplete' && !app.programmeId && (
+              <p className="mt-4 text-sm text-neutral-600">
+                The channel has not yet sent a recognised programme, intake or mode of study. The application stays incomplete until it does.
+              </p>
+            )}
+          </CardBody>
+        </Card>
+
+        {canWrite && app.identityMatchCode === 'needs-review' && (
+          <IdentityCard onConfirm={(personId) => act(() => confirmIdentity(app.id, personId))} />
+        )}
+
+        {canWrite && !['rejected', 'offered', 'withdrawn'].includes(app.statusCode) && (
+          <RoutingCard current={app.routingReasonCode} onRoute={(reason) => act(() => routeApplication(app.id, reason))} />
+        )}
+
+        <Card>
+          <CardHeader title="Assessments" description="Each assessment is kept with its assessor and evidence version; a safeguarding concern blocks an offer recommendation." />
+          <CardBody>
+            {app.assessments.length === 0 ? <p className="text-sm text-neutral-600">No assessments yet.</p> : (
+              <Table>
+                <TableHead>
+                  <tr>
+                    <TableHeaderCell>Type</TableHeaderCell><TableHeaderCell>Outcome</TableHeaderCell>
+                    <TableHeaderCell>Evidence</TableHeaderCell><TableHeaderCell>By</TableHeaderCell><TableHeaderCell>When</TableHeaderCell>
+                  </tr>
+                </TableHead>
+                <TableBody>
+                  {app.assessments.map((a) => (
+                    <TableRow key={a.id}>
+                      <TableCell>{a.assessmentTypeCode}</TableCell>
+                      <TableCell><Badge value={a.outcomeCode} /></TableCell>
+                      <TableCell className="text-xs">{a.evidenceRef ? `${a.evidenceRef}${a.evidenceVersion ? ` (v${a.evidenceVersion})` : ''}` : '—'}</TableCell>
+                      <TableCell className="text-xs">{a.assessedBy}</TableCell>
+                      <TableCell className="text-xs">{new Date(a.assessedAt).toLocaleString('en-GB')}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+            {canAssess && assessable && <AssessmentForm onSubmit={(body) => act(() => recordAssessment(app.id, body))} />}
+            {canAssess && !app.personId && <p className="mt-4 text-sm text-neutral-600">Confirm the applicant identity before assessing.</p>}
+          </CardBody>
+        </Card>
+
+        {canWrite && app.statusCode === 'under-assessment' && (
+          <RecommendationCard onSubmit={(body) => act(() => recommendApplication(app.id, body))} />
+        )}
+
+        {app.statusCode === 'recommended' && (
+          <DecisionCard
+            app={app}
+            canDecide={canDecide}
+            isRecommender={app.recommendedBy === user?.sub}
+            onSubmit={(body) => act(() => decideApplication(app.id, body))}
+          />
+        )}
+
+        {offers.map((offer) => (
+          <OfferCard
+            key={offer.id}
+            offer={offer}
+            programmeName={programmeLabel(programmes, offer.programmeId)}
+            canDecide={canDecide}
+            canReceive={canReceive}
+            act={act}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function Fact({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div>
+      <dt className="text-xs text-neutral-500">{label}</dt>
+      <dd className="mt-0.5">{children}</dd>
+    </div>
+  );
+}
+
+function IdentityCard({ onConfirm }: { onConfirm: (personId: string) => Promise<boolean> }) {
+  const [personId, setPersonId] = useState('');
+  return (
+    <Card>
+      <CardHeader title="Confirm the applicant" description="The applicant resembles an existing person but was not matched on certain evidence, so nothing was merged. Check the student record, then confirm which person this is." />
+      <CardBody>
+        <form className="flex items-end gap-3" onSubmit={(e) => { e.preventDefault(); void onConfirm(personId.trim()); }}>
+          <LabelledField label="Person ID" htmlFor="identity-person" required>
+            <Input id="identity-person" value={personId} onChange={(e) => setPersonId(e.target.value)} className="w-96" />
+          </LabelledField>
+          <Button type="submit" disabled={!personId.trim()}>Confirm identity</Button>
+        </form>
+      </CardBody>
+    </Card>
+  );
+}
+
+function RoutingCard({ current, onRoute }: { current: string | null; onRoute: (reason: 'incomplete' | 'duplicate' | 'restricted' | null) => Promise<boolean> }) {
+  const [reason, setReason] = useState(current && current !== 'identity' ? current : '');
+  return (
+    <Card>
+      <CardHeader title="Worklist" description="Hold the application on a worklist, or clear it to return it for assessment." />
+      <CardBody>
+        <form className="flex items-end gap-3" onSubmit={(e) => { e.preventDefault(); void onRoute((reason || null) as 'incomplete' | 'duplicate' | 'restricted' | null); }}>
+          <LabelledField label="Hold for" htmlFor="routing-reason">
+            <Select id="routing-reason" value={reason} onChange={(e) => setReason(e.target.value)} className="w-64">
+              <option value="">Nothing (clear the worklist)</option>
+              <option value="incomplete">Incomplete</option>
+              <option value="duplicate">Possible duplicate</option>
+              <option value="restricted">Restricted</option>
+            </Select>
+          </LabelledField>
+          <Button type="submit" variant="secondary">Update worklist</Button>
+        </form>
+      </CardBody>
+    </Card>
+  );
+}
+
+function AssessmentForm({ onSubmit }: { onSubmit: (body: { assessmentTypeCode: string; outcomeCode: string; evidenceRef?: string; evidenceVersion?: string; note?: string }) => Promise<boolean> }) {
+  const { members: types } = useValueSet('application_assessment', 'assessment_type_code');
+  const { members: outcomes } = useValueSet('application_assessment', 'outcome_code');
+  const [type, setType] = useState('');
+  const [outcome, setOutcome] = useState('');
+  const [evidenceRef, setEvidenceRef] = useState('');
+  const [evidenceVersion, setEvidenceVersion] = useState('');
+  const [note, setNote] = useState('');
+
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    const ok = await onSubmit({
+      assessmentTypeCode: type, outcomeCode: outcome,
+      ...(evidenceRef.trim() ? { evidenceRef: evidenceRef.trim() } : {}),
+      ...(evidenceVersion.trim() ? { evidenceVersion: evidenceVersion.trim() } : {}),
+      ...(note.trim() ? { note: note.trim() } : {}),
+    });
+    if (ok) { setType(''); setOutcome(''); setEvidenceRef(''); setEvidenceVersion(''); setNote(''); }
+  }
+
+  return (
+    <form className="mt-4 grid grid-cols-2 gap-3 items-end md:grid-cols-4" onSubmit={(e) => void submit(e)}>
+      <LabelledField label="Assessment" htmlFor="assessment-type" required>
+        <Select id="assessment-type" value={type} onChange={(e) => setType(e.target.value)}>
+          <option value="">Choose…</option>
+          {types.map((m) => <option key={m.code} value={m.code}>{m.displayLabel}</option>)}
+        </Select>
+      </LabelledField>
+      <LabelledField label="Outcome" htmlFor="assessment-outcome" required>
+        <Select id="assessment-outcome" value={outcome} onChange={(e) => setOutcome(e.target.value)}>
+          <option value="">Choose…</option>
+          {outcomes.map((m) => <option key={m.code} value={m.code}>{m.displayLabel}</option>)}
+        </Select>
+      </LabelledField>
+      <LabelledField label="Evidence reference" htmlFor="assessment-evidence">
+        <Input id="assessment-evidence" value={evidenceRef} onChange={(e) => setEvidenceRef(e.target.value)} />
+      </LabelledField>
+      <LabelledField label="Evidence version" htmlFor="assessment-version">
+        <Input id="assessment-version" value={evidenceVersion} onChange={(e) => setEvidenceVersion(e.target.value)} />
+      </LabelledField>
+      <div className="col-span-2 md:col-span-3">
+        <LabelledField label="Note" htmlFor="assessment-note">
+          <Input id="assessment-note" value={note} onChange={(e) => setNote(e.target.value)} />
+        </LabelledField>
+      </div>
+      <Button type="submit" disabled={!type || !outcome}>Record assessment</Button>
+    </form>
+  );
+}
+
+function RecommendationCard({ onSubmit }: { onSubmit: (body: { recommendationCode: 'offer' | 'reject'; reason: string }) => Promise<boolean> }) {
+  const [code, setCode] = useState<'offer' | 'reject'>('offer');
+  const [reason, setReason] = useState('');
+  return (
+    <Card>
+      <CardHeader title="Recommend" description="Your recommendation is decided by someone else." />
+      <CardBody>
+        <form className="grid grid-cols-1 gap-3 md:grid-cols-4 items-end" onSubmit={(e) => { e.preventDefault(); void onSubmit({ recommendationCode: code, reason: reason.trim() }); }}>
+          <LabelledField label="Recommendation" htmlFor="recommendation-code">
+            <Select id="recommendation-code" value={code} onChange={(e) => setCode(e.target.value as 'offer' | 'reject')}>
+              <option value="offer">Make an offer</option>
+              <option value="reject">Reject</option>
+            </Select>
+          </LabelledField>
+          <div className="md:col-span-2">
+            <LabelledField label="Reason" htmlFor="recommendation-reason" required>
+              <Input id="recommendation-reason" value={reason} onChange={(e) => setReason(e.target.value)} />
+            </LabelledField>
+          </div>
+          <Button type="submit" disabled={!reason.trim()}>Record recommendation</Button>
+        </form>
+      </CardBody>
+    </Card>
+  );
+}
+
+function ConditionsEditor({ conditions, onChange, idPrefix }: { conditions: ConditionInput[]; onChange: (c: ConditionInput[]) => void; idPrefix: string }) {
+  const { members: types } = useValueSet('offer_condition', 'condition_type_code');
+  const update = (i: number, patch: Partial<ConditionInput>) => onChange(conditions.map((c, j) => (j === i ? { ...c, ...patch } : c)));
+  return (
+    <fieldset className="flex flex-col gap-2">
+      <legend className="text-sm font-medium text-neutral-700">Conditions</legend>
+      {conditions.map((c, i) => (
+        <div key={i} className="grid grid-cols-1 gap-2 md:grid-cols-[12rem_1fr_10rem_auto] items-end">
+          <LabelledField label={`Condition ${i + 1} type`} htmlFor={`${idPrefix}-type-${i}`}>
+            <Select id={`${idPrefix}-type-${i}`} value={c.conditionTypeCode} onChange={(e) => update(i, { conditionTypeCode: e.target.value })}>
+              <option value="">Choose…</option>
+              {types.map((m) => <option key={m.code} value={m.code}>{m.displayLabel}</option>)}
+            </Select>
+          </LabelledField>
+          <LabelledField label={`Condition ${i + 1} description`} htmlFor={`${idPrefix}-desc-${i}`}>
+            <Input id={`${idPrefix}-desc-${i}`} value={c.description} onChange={(e) => update(i, { description: e.target.value })} />
+          </LabelledField>
+          <LabelledField label={`Condition ${i + 1} required value`} htmlFor={`${idPrefix}-value-${i}`}>
+            <Input id={`${idPrefix}-value-${i}`} value={c.requiredValue ?? ''} onChange={(e) => update(i, { requiredValue: e.target.value })} />
+          </LabelledField>
+          <Button type="button" variant="ghost" size="sm" onClick={() => onChange(conditions.filter((_, j) => j !== i))}>
+            Remove<span className="sr-only"> condition {i + 1}</span>
+          </Button>
+        </div>
+      ))}
+      <div>
+        <Button type="button" variant="secondary" size="sm" onClick={() => onChange([...conditions, { conditionTypeCode: '', description: '' }])}>
+          Add condition
+        </Button>
+      </div>
+    </fieldset>
+  );
+}
+
+function cleanConditions(conditions: ConditionInput[]): ConditionInput[] {
+  return conditions.map((c) => ({
+    conditionTypeCode: c.conditionTypeCode, description: c.description.trim(),
+    ...(c.requiredValue?.trim() ? { requiredValue: c.requiredValue.trim() } : {}),
+  }));
+}
+
+function DecisionCard({ app, canDecide, isRecommender, onSubmit }: {
+  app: ApplicationDetail; canDecide: boolean; isRecommender: boolean;
+  onSubmit: (body: Parameters<typeof decideApplication>[1]) => Promise<boolean>;
+}) {
+  const [decision, setDecision] = useState<'offer' | 'reject'>(app.recommendationCode ?? 'offer');
+  const [reason, setReason] = useState('');
+  const [offerType, setOfferType] = useState<'conditional' | 'unconditional'>('conditional');
+  const [expiresOn, setExpiresOn] = useState('');
+  const [conditions, setConditions] = useState<ConditionInput[]>([{ conditionTypeCode: '', description: '' }]);
+
+  function submit(e: FormEvent) {
+    e.preventDefault();
+    void onSubmit(decision === 'reject'
+      ? { decisionCode: 'reject', ...(reason.trim() ? { reason: reason.trim() } : {}) }
+      : {
+        decisionCode: 'offer',
+        offer: {
+          offerTypeCode: offerType, ...(expiresOn ? { expiresOn } : {}),
+          ...(offerType === 'conditional' ? { conditions: cleanConditions(conditions) } : {}),
+        },
+      });
+  }
+
+  return (
+    <Card>
+      <CardHeader title="Decide" description={`Recommended: ${app.recommendationCode === 'offer' ? 'make an offer' : 'reject'} — ${app.recommendationReason ?? ''} (by ${app.recommendedBy ?? 'unknown'})`} />
+      <CardBody>
+        {!canDecide ? (
+          <p className="text-sm text-neutral-600">Awaiting a decision by an admissions decision-maker.</p>
+        ) : isRecommender ? (
+          <StatusNotice>You recommended this application, so someone else must decide it.</StatusNotice>
+        ) : (
+          <form className="flex flex-col gap-4" onSubmit={submit}>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-3 items-end">
+              <LabelledField label="Decision" htmlFor="decision-code">
+                <Select id="decision-code" value={decision} onChange={(e) => setDecision(e.target.value as 'offer' | 'reject')}>
+                  <option value="offer">Make an offer</option>
+                  <option value="reject">Reject</option>
+                </Select>
+              </LabelledField>
+              {decision === 'offer' ? (
+                <>
+                  <LabelledField label="Offer type" htmlFor="offer-type">
+                    <Select id="offer-type" value={offerType} onChange={(e) => setOfferType(e.target.value as 'conditional' | 'unconditional')}>
+                      <option value="conditional">Conditional</option>
+                      <option value="unconditional">Unconditional</option>
+                    </Select>
+                  </LabelledField>
+                  <LabelledField label="Expires on" htmlFor="offer-expires">
+                    <Input id="offer-expires" type="date" value={expiresOn} onChange={(e) => setExpiresOn(e.target.value)} />
+                  </LabelledField>
+                </>
+              ) : (
+                <div className="md:col-span-2">
+                  <LabelledField label="Reason" htmlFor="decision-reason">
+                    <Input id="decision-reason" value={reason} onChange={(e) => setReason(e.target.value)} />
+                  </LabelledField>
+                </div>
+              )}
+            </div>
+            {decision === 'offer' && offerType === 'conditional' && (
+              <ConditionsEditor conditions={conditions} onChange={setConditions} idPrefix="decision-condition" />
+            )}
+            <div><Button type="submit">{decision === 'offer' ? 'Make offer' : 'Reject application'}</Button></div>
+          </form>
+        )}
+      </CardBody>
+    </Card>
+  );
+}
+
+function OfferCard({ offer, programmeName, canDecide, canReceive, act }: {
+  offer: Offer; programmeName: string; canDecide: boolean; canReceive: boolean;
+  act: (run: () => Promise<unknown>) => Promise<boolean>;
+}) {
+  const open = OPEN_OFFER.includes(offer.statusCode);
+  return (
+    <Card>
+      <CardHeader
+        title={`Offer version ${offer.version}`}
+        description={`${offer.offerTypeCode === 'conditional' ? 'Conditional' : 'Unconditional'} · ${programmeName} · ${offer.intakeCode} · ${offer.modeOfStudyCode}${offer.expiresOn ? ` · expires ${offer.expiresOn}` : ''}`}
+        actions={<Badge value={offer.statusCode} />}
+      />
+      <CardBody>
+        <div className="flex flex-col gap-4">
+          {offer.changeReason && <p className="text-sm text-neutral-600">Changed: {offer.changeReason}</p>}
+          {offer.responseCode && (
+            <p className="text-sm">Applicant {offer.responseCode === 'accept' ? 'accepted' : 'declined'}{offer.responseSourceAt ? ` on ${new Date(offer.responseSourceAt).toLocaleString('en-GB')}` : ''}.</p>
+          )}
+
+          {offer.conditions.length > 0 && (
+            <ConditionsTable conditions={offer.conditions} offerOpen={open} canDecide={canDecide} canReceive={canReceive} act={act} offerVersion={offer.version} />
+          )}
+
+          {offer.confirmation && (
+            <div className="rounded border border-neutral-200 p-3 text-sm">
+              <p className="font-medium">Confirmation: {offer.confirmation.decisionCode}</p>
+              {offer.confirmation.reason && <p className="text-neutral-600">{offer.confirmation.reason}</p>}
+              {offer.confirmation.handoffWorkflowInstanceId && <p className="text-neutral-600">Handed to enrolment (workflow {offer.confirmation.handoffWorkflowInstanceId}).</p>}
+            </div>
+          )}
+
+          {offer.statusCode === 'made' && canReceive && (
+            <ResponseForm offerId={offer.id} onSubmit={(body) => act(() => recordOfferResponse(offer.id, body))} />
+          )}
+          {offer.statusCode === 'accepted' && canDecide && (
+            <ConfirmationForm offer={offer} onSubmit={(body) => act(() => confirmOffer(offer.id, body))} />
+          )}
+          {open && canDecide && (
+            <ChangeOfferForm
+              offer={offer}
+              onChange={(body) => act(() => changeOffer(offer.id, body))}
+              onWithdraw={() => act(() => withdrawOffer(offer.id))}
+            />
+          )}
+        </div>
+      </CardBody>
+    </Card>
+  );
+}
+
+function ConditionsTable({ conditions, offerOpen, canDecide, canReceive, act, offerVersion }: {
+  conditions: OfferCondition[]; offerOpen: boolean; canDecide: boolean; canReceive: boolean; offerVersion: number;
+  act: (run: () => Promise<unknown>) => Promise<boolean>;
+}) {
+  return (
+    <Table>
+      <TableHead>
+        <tr>
+          <TableHeaderCell>Condition</TableHeaderCell><TableHeaderCell>Required</TableHeaderCell>
+          <TableHeaderCell>Evidence</TableHeaderCell><TableHeaderCell>Status</TableHeaderCell>
+          <TableHeaderCell><span className="sr-only">Actions</span></TableHeaderCell>
+        </tr>
+      </TableHead>
+      <TableBody>
+        {conditions.map((c) => (
+          <TableRow key={c.id}>
+            <TableCell>{c.description}<div className="text-xs text-neutral-500">{c.conditionTypeCode}</div></TableCell>
+            <TableCell className="text-sm">{c.requiredValue ?? '—'}</TableCell>
+            <TableCell className="text-xs">
+              {c.evidence.length === 0 ? 'None' : c.evidence.map((e) => (
+                <div key={e.id}>{e.provenanceCode}: {e.evidenceRef}{e.reportedValue ? ` = ${e.reportedValue}` : ''} {e.verified ? '(verified)' : '(unverified)'}</div>
+              ))}
+            </TableCell>
+            <TableCell>
+              <Badge value={c.statusCode} />
+              {c.decisionNote && <div className="text-xs text-neutral-500">{c.decisionNote}</div>}
+            </TableCell>
+            <TableCell className="text-right">
+              {offerOpen && (canReceive || canDecide) && (
+                <ConditionActions condition={c} canDecide={canDecide} canReceive={canReceive} act={act} idPrefix={`v${offerVersion}-${c.id}`} />
+              )}
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+}
+
+function ConditionActions({ condition, canDecide, canReceive, act, idPrefix }: {
+  condition: OfferCondition; canDecide: boolean; canReceive: boolean; idPrefix: string;
+  act: (run: () => Promise<unknown>) => Promise<boolean>;
+}) {
+  const [mode, setMode] = useState<'' | 'evidence' | 'decide'>('');
+  const { members: provenances } = useValueSet('condition_evidence', 'provenance_code');
+  const [provenance, setProvenance] = useState('');
+  const [evidenceRef, setEvidenceRef] = useState('');
+  const [reportedValue, setReportedValue] = useState('');
+  const [verified, setVerified] = useState(false);
+  const [status, setStatus] = useState<'met' | 'waived' | 'unmet'>('met');
+  const [note, setNote] = useState('');
+
+  if (mode === '') {
+    return (
+      <div className="inline-flex gap-2">
+        {canReceive && <Button size="sm" variant="secondary" onClick={() => setMode('evidence')}>Add evidence<span className="sr-only"> for {condition.description}</span></Button>}
+        {canDecide && <Button size="sm" variant="secondary" onClick={() => setMode('decide')}>Decide<span className="sr-only"> {condition.description}</span></Button>}
+      </div>
+    );
+  }
+  if (mode === 'evidence') {
+    return (
+      <form className="flex flex-col items-end gap-2" onSubmit={(e) => {
+        e.preventDefault();
+        void act(() => recordConditionEvidence(condition.id, {
+          provenanceCode: provenance, evidenceRef: evidenceRef.trim(), verified,
+          ...(reportedValue.trim() ? { reportedValue: reportedValue.trim() } : {}),
+        })).then((ok) => { if (ok) setMode(''); });
+      }}>
+        <LabelledField label="Source" htmlFor={`${idPrefix}-prov`}>
+          <Select id={`${idPrefix}-prov`} value={provenance} onChange={(e) => setProvenance(e.target.value)}>
+            <option value="">Choose…</option>
+            {provenances.map((m) => <option key={m.code} value={m.code}>{m.displayLabel}</option>)}
+          </Select>
+        </LabelledField>
+        <LabelledField label="Evidence reference" htmlFor={`${idPrefix}-ref`}>
+          <Input id={`${idPrefix}-ref`} value={evidenceRef} onChange={(e) => setEvidenceRef(e.target.value)} />
+        </LabelledField>
+        <LabelledField label="Reported value" htmlFor={`${idPrefix}-value`}>
+          <Input id={`${idPrefix}-value`} value={reportedValue} onChange={(e) => setReportedValue(e.target.value)} />
+        </LabelledField>
+        <label className="flex items-center gap-2 text-sm" htmlFor={`${idPrefix}-verified`}>
+          <Checkbox id={`${idPrefix}-verified`} checked={verified} onChange={(e) => setVerified(e.target.checked)} /> Verified at source
+        </label>
+        <div className="flex gap-2">
+          <Button type="submit" size="sm" disabled={!provenance || !evidenceRef.trim()}>Record evidence</Button>
+          <Button type="button" size="sm" variant="ghost" onClick={() => setMode('')}>Cancel</Button>
+        </div>
+      </form>
+    );
+  }
+  return (
+    <form className="flex flex-col items-end gap-2" onSubmit={(e) => {
+      e.preventDefault();
+      void act(() => decideCondition(condition.id, { statusCode: status, ...(note.trim() ? { note: note.trim() } : {}) }))
+        .then((ok) => { if (ok) setMode(''); });
+    }}>
+      <LabelledField label="Outcome" htmlFor={`${idPrefix}-status`}>
+        <Select id={`${idPrefix}-status`} value={status} onChange={(e) => setStatus(e.target.value as 'met' | 'waived' | 'unmet')}>
+          <option value="met">Met (needs verified evidence)</option>
+          <option value="waived">Waived (needs authority and reason)</option>
+          <option value="unmet">Not met</option>
+        </Select>
+      </LabelledField>
+      <LabelledField label="Note" htmlFor={`${idPrefix}-note`}>
+        <Input id={`${idPrefix}-note`} value={note} onChange={(e) => setNote(e.target.value)} />
+      </LabelledField>
+      <div className="flex gap-2">
+        <Button type="submit" size="sm">Record outcome</Button>
+        <Button type="button" size="sm" variant="ghost" onClick={() => setMode('')}>Cancel</Button>
+      </div>
+    </form>
+  );
+}
+
+function ResponseForm({ offerId, onSubmit }: { offerId: string; onSubmit: (body: { responseCode: 'accept' | 'decline'; sourceTimestamp: string }) => Promise<boolean> }) {
+  const [response, setResponse] = useState<'accept' | 'decline'>('accept');
+  const [at, setAt] = useState('');
+  return (
+    <form className="flex flex-wrap items-end gap-3" onSubmit={(e) => { e.preventDefault(); void onSubmit({ responseCode: response, sourceTimestamp: new Date(at).toISOString() }); }}>
+      <LabelledField label="Applicant response" htmlFor={`response-${offerId}`}>
+        <Select id={`response-${offerId}`} value={response} onChange={(e) => setResponse(e.target.value as 'accept' | 'decline')}>
+          <option value="accept">Accepted</option>
+          <option value="decline">Declined</option>
+        </Select>
+      </LabelledField>
+      <LabelledField label="Responded at (from the channel)" htmlFor={`response-at-${offerId}`} required>
+        <Input id={`response-at-${offerId}`} type="datetime-local" value={at} onChange={(e) => setAt(e.target.value)} />
+      </LabelledField>
+      <Button type="submit" variant="secondary" disabled={!at}>Record response</Button>
+    </form>
+  );
+}
+
+function ConfirmationForm({ offer, onSubmit }: { offer: Offer; onSubmit: (body: Parameters<typeof confirmOffer>[1]) => Promise<boolean> }) {
+  const programmes = useProgrammeNames();
+  const [decision, setDecision] = useState<'confirmed' | 'confirmed-alternative' | 'unsuccessful'>('confirmed');
+  const [alternative, setAlternative] = useState('');
+  const [reason, setReason] = useState('');
+  const outstanding = offer.conditions.filter((c) => c.statusCode !== 'met' && c.statusCode !== 'waived').length;
+  return (
+    <form className="flex flex-col gap-3 rounded border border-neutral-200 p-3" onSubmit={(e) => {
+      e.preventDefault();
+      void onSubmit({ decisionCode: decision, ...(alternative ? { alternativeProgrammeId: alternative } : {}), ...(reason.trim() ? { reason: reason.trim() } : {}) });
+    }}>
+      <p className="text-sm font-medium">Confirmation</p>
+      {outstanding > 0 && <p className="text-sm text-neutral-600">{outstanding} condition(s) not yet met or waived: the offer can be confirmed only once all are.</p>}
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-3 items-end">
+        <LabelledField label="Outcome" htmlFor={`confirm-${offer.id}`}>
+          <Select id={`confirm-${offer.id}`} value={decision} onChange={(e) => setDecision(e.target.value as typeof decision)}>
+            <option value="confirmed">Confirmed</option>
+            <option value="confirmed-alternative">Confirmed on an alternative programme</option>
+            <option value="unsuccessful">Unsuccessful</option>
+          </Select>
+        </LabelledField>
+        {decision === 'confirmed-alternative' && (
+          <LabelledField label="Alternative programme" htmlFor={`confirm-alt-${offer.id}`} required>
+            {programmes.size > 0 ? (
+              <Select id={`confirm-alt-${offer.id}`} value={alternative} onChange={(e) => setAlternative(e.target.value)}>
+                <option value="">Choose…</option>
+                {[...programmes.values()].map((p) => <option key={p.programmeId} value={p.programmeId}>{p.code} — {p.title}</option>)}
+              </Select>
+            ) : (
+              <Input id={`confirm-alt-${offer.id}`} value={alternative} onChange={(e) => setAlternative(e.target.value)} placeholder="Programme ID" />
+            )}
+          </LabelledField>
+        )}
+        {decision !== 'confirmed' && (
+          <LabelledField label="Reason" htmlFor={`confirm-reason-${offer.id}`} required>
+            <Input id={`confirm-reason-${offer.id}`} value={reason} onChange={(e) => setReason(e.target.value)} />
+          </LabelledField>
+        )}
+      </div>
+      <div><Button type="submit">Record confirmation</Button></div>
+    </form>
+  );
+}
+
+function ChangeOfferForm({ offer, onChange, onWithdraw }: {
+  offer: Offer;
+  onChange: (body: Parameters<typeof changeOffer>[1]) => Promise<boolean>;
+  onWithdraw: () => Promise<boolean>;
+}) {
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState('');
+  const [offerType, setOfferType] = useState(offer.offerTypeCode);
+  const [expiresOn, setExpiresOn] = useState(offer.expiresOn ?? '');
+  const [replaceConditions, setReplaceConditions] = useState(false);
+  const [conditions, setConditions] = useState<ConditionInput[]>(
+    offer.conditions.map((c) => ({ conditionTypeCode: c.conditionTypeCode, description: c.description, ...(c.requiredValue ? { requiredValue: c.requiredValue } : {}) })),
+  );
+
+  if (!open) {
+    return (
+      <div className="flex gap-2">
+        <Button variant="secondary" size="sm" onClick={() => setOpen(true)}>Change offer</Button>
+        <Button variant="secondary" size="sm" className="border-danger-300 text-danger-700 hover:bg-danger-50" onClick={() => void onWithdraw()}>Withdraw offer</Button>
+      </div>
+    );
+  }
+  return (
+    <form className="flex flex-col gap-3 rounded border border-neutral-200 p-3" onSubmit={(e) => {
+      e.preventDefault();
+      void onChange({
+        reason: reason.trim(), offerTypeCode: offerType, ...(expiresOn ? { expiresOn } : {}),
+        ...(replaceConditions ? { conditions: offerType === 'conditional' ? cleanConditions(conditions) : [] } : offerType === 'unconditional' ? { conditions: [] } : {}),
+      }).then((ok) => { if (ok) setOpen(false); });
+    }}>
+      <p className="text-sm font-medium">Change offer (creates a new version; an acceptance carries over)</p>
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-3 items-end">
+        <LabelledField label="Offer type" htmlFor={`change-type-${offer.id}`}>
+          <Select id={`change-type-${offer.id}`} value={offerType} onChange={(e) => setOfferType(e.target.value as 'conditional' | 'unconditional')}>
+            <option value="conditional">Conditional</option>
+            <option value="unconditional">Unconditional</option>
+          </Select>
+        </LabelledField>
+        <LabelledField label="Expires on" htmlFor={`change-expires-${offer.id}`}>
+          <Input id={`change-expires-${offer.id}`} type="date" value={expiresOn} onChange={(e) => setExpiresOn(e.target.value)} />
+        </LabelledField>
+        <LabelledField label="Reason for the change" htmlFor={`change-reason-${offer.id}`} required>
+          <Textarea id={`change-reason-${offer.id}`} rows={1} value={reason} onChange={(e) => setReason(e.target.value)} />
+        </LabelledField>
+      </div>
+      {offerType === 'conditional' && (
+        <>
+          <label className="flex items-center gap-2 text-sm" htmlFor={`change-replace-${offer.id}`}>
+            <Checkbox id={`change-replace-${offer.id}`} checked={replaceConditions} onChange={(e) => setReplaceConditions(e.target.checked)} />
+            Replace the conditions (otherwise they carry over)
+          </label>
+          {replaceConditions && <ConditionsEditor conditions={conditions} onChange={setConditions} idPrefix={`change-condition-${offer.id}`} />}
+        </>
+      )}
+      <div className="flex gap-2">
+        <Button type="submit" disabled={!reason.trim()}>Save new version</Button>
+        <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
+      </div>
+    </form>
+  );
+}

@@ -74,13 +74,14 @@ import { useAuth } from '../auth/AuthContext.js';
 import { userHasAnyPermission } from '../auth/RequirePermission.js';
 import { ExternalRecordsTab } from './ExternalRecordsTab.js';
 import { SupportEmploymentTab } from './SupportEmploymentTab.js';
+import { AcademicExceptionsTab } from './AcademicExceptionsTab.js';
 import {
   PageHeader, Card, CardHeader, CardBody, Button, Input, Select, Textarea, LabelledField,
   Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, Dialog, DialogClose,
   Tabs, TabsList, TabsTrigger, TabsContent,
 } from '@revelation-srs/ui';
 
-type Tab = 'identity' | 'enrolments' | 'registrations' | 'assessment' | 'history' | 'wellbeing' | 'corrections' | 'cas' | 'communications' | 'other-systems' | 'support';
+type Tab = 'identity' | 'enrolments' | 'credit' | 'registrations' | 'assessment' | 'history' | 'wellbeing' | 'corrections' | 'cas' | 'communications' | 'other-systems' | 'support';
 
 export function StudentDetailPage() {
   const { roles } = useAuth();
@@ -125,9 +126,11 @@ export function StudentDetailPage() {
   const canWriteAdjustments = userHasAnyPermission(roles, ['adjustment:write']);
   const canReadCircumstances = userHasAnyPermission(roles, ['circumstances:read']);
   const canReadNotifications = userHasAnyPermission(roles, ['notifications:read']);
+  const canReadExceptions = userHasAnyPermission(roles, ['academic-exception:read']);
   const tabs: Tab[] = [
     'identity',
     ...(canReadEnrolments ? ['enrolments', 'history'] as Tab[] : []),
+    ...(canReadEnrolments && canReadExceptions ? ['credit'] as Tab[] : []),
     ...(canReadEnrolments && canReadCorrections ? ['corrections'] as Tab[] : []),
     ...(canReadEnrolments && canReadCas ? ['cas'] as Tab[] : []),
     ...(canReadRegistrations ? ['registrations'] as Tab[] : []),
@@ -150,10 +153,19 @@ export function StudentDetailPage() {
       <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)}>
         <TabsList className="mb-6">
           {tabs.map((t) => (
-            <TabsTrigger key={t} value={t} className="capitalize">{t === 'cas' ? 'CAS' : t === 'other-systems' ? 'Other systems' : t === 'support' ? 'Support & employment' : t}</TabsTrigger>
+            <TabsTrigger key={t} value={t} className="capitalize">{t === 'cas' ? 'CAS' : t === 'other-systems' ? 'Other systems' : t === 'support' ? 'Support & employment' : t === 'credit' ? 'Credit & exceptions' : t}</TabsTrigger>
           ))}
         </TabsList>
 
+        <TabsContent value="credit">
+          {personId && (
+            <AcademicExceptionsTab
+              personId={personId}
+              canPropose={userHasAnyPermission(roles, ['academic-exception:propose'])}
+              canApprove={userHasAnyPermission(roles, ['academic-exception:approve'])}
+            />
+          )}
+        </TabsContent>
         <TabsContent value="support">
           {personId && <SupportEmploymentTab personId={personId} />}
         </TabsContent>

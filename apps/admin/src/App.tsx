@@ -56,6 +56,8 @@ import { RightsRequestsPage } from './pages/RightsRequestsPage.js';
 import { AuditReviewPage } from './pages/AuditReviewPage.js';
 import { AdjustmentCasesPage } from './pages/AdjustmentCasesPage.js';
 import { AdjustmentCaseDetailPage } from './pages/AdjustmentCaseDetailPage.js';
+import { ApplicationsPage } from './pages/ApplicationsPage.js';
+import { ApplicationDetailPage } from './pages/ApplicationDetailPage.js';
 
 const ENGAGEMENT_ROLES = ['module-tutor', 'personal-tutor', 'engagement-officer', 'registry-administrator', 'tenant-administrator'];
 const ADMIN_PERMISSIONS = [
@@ -97,6 +99,8 @@ export function App() {
                 <Route path="module-selection-proposals" element={<RequirePermission permissions={['module-selection:decide', 'module-selection:read:all']}><ModuleSelectionProposalsPage /></RequirePermission>} />
                 <Route path="module-registration-requests" element={<RequirePermission permissions={['module-registration:decide']}><ModuleRegistrationRequestsPage /></RequirePermission>} />
                 <Route path="identity-change-requests" element={<RequirePermission permissions={['student:decide']}><IdentityChangeRequestsPage /></RequirePermission>} />
+                <Route path="applications" element={<RequirePermission permissions={['application:read']}><ApplicationsPage /></RequirePermission>} />
+                <Route path="applications/:applicationId" element={<RequirePermission permissions={['application:read']}><ApplicationDetailPage /></RequirePermission>} />
                 <Route path="students" element={<RequirePermission permissions={['student:read:all']}><StudentsPage /></RequirePermission>} />
                 <Route path="students/:personId" element={<RequirePermission permissions={['student:read:all']}><StudentDetailPage /></RequirePermission>} />
                 <Route path="exam-boards" element={<RequirePermission permissions={['exam-board:read']}><ExamBoardsPage /></RequirePermission>} />

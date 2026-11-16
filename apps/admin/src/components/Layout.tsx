@@ -2,7 +2,7 @@ import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   LayoutDashboard, Users, ListChecks, GraduationCap, Activity, Landmark,
-  BarChart3, Settings, Server, Clock, LogOut, ShieldCheck,
+  BarChart3, Settings, Server, Clock, LogOut, ShieldCheck, Inbox,
 } from 'lucide-react';
 import type { ComponentType } from 'react';
 import { useAuth } from '../auth/AuthContext.js';
@@ -130,6 +130,7 @@ function Sidebar({ onLogout, displayName, roles }: { onLogout: () => void; displ
       {/* Scrollable nav */}
       <nav className="flex-1 overflow-y-auto px-2 py-3">
         <NavItem to="/dashboard" label="Dashboard" end icon={LayoutDashboard} />
+        {can('application:read') && <NavItem to="/applications" label="Applications" icon={Inbox} />}
         {canViewStudents && <NavItem to="/students" label="Students" icon={Users} />}
         {canViewTasks && <NavItem to="/tasks" label="Tasks" end icon={ListChecks} />}
         {canViewModuleSelectionProposals && <NavItem to="/module-selection-proposals" label="Module selection" end icon={ListChecks} />}
