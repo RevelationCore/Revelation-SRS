@@ -1,70 +1,73 @@
+import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { useAuth } from './auth/AuthContext.js';
 import { RequireRole } from './auth/RequireRole.js';
 import { RequirePermission } from './auth/RequirePermission.js';
 import { Layout } from './components/Layout.js';
-import { AcademicRulesPage } from './pages/AcademicRulesPage.js';
-import { RegistrationWindowsPage } from './pages/RegistrationWindowsPage.js';
-import { AuditPage } from './pages/AuditPage.js';
 import { CallbackPage } from './pages/CallbackPage.js';
-import { DashboardPage } from './pages/DashboardPage.js';
-import { EnrolmentReportPage } from './pages/EnrolmentReportPage.js';
-import { EnvironmentRuntimePage } from './pages/EnvironmentRuntimePage.js';
-import { ExamBoardDetailPage } from './pages/ExamBoardDetailPage.js';
-import { ExamBoardsPage } from './pages/ExamBoardsPage.js';
-import { FeatureFlagsPage } from './pages/FeatureFlagsPage.js';
-import { FoiPage } from './pages/FoiPage.js';
-import { ForbiddenPage } from './pages/ForbiddenPage.js';
-import { GlobalisationPage } from './pages/GlobalisationPage.js';
-import { HesaPage } from './pages/HesaPage.js';
-import { IntegrationOpsPage } from './pages/IntegrationOpsPage.js';
-import { IntegrationTasksPage } from './pages/IntegrationTasksPage.js';
-import { ExamTimingsPage } from './pages/ExamTimingsPage.js';
-import { IntegrationsPage } from './pages/IntegrationsPage.js';
 import { LoginPage } from './pages/LoginPage.js';
-import { OfsPage } from './pages/OfsPage.js';
-import { OperationsPage } from './pages/OperationsPage.js';
-import { RegulatoryPage } from './pages/RegulatoryPage.js';
-import { RegulatoryStatusPage } from './pages/RegulatoryStatusPage.js';
-import { ReportingPage } from './pages/ReportingPage.js';
-import { SlcPage } from './pages/SlcPage.js';
-import { StudentDetailPage } from './pages/StudentDetailPage.js';
-import { StudentsPage } from './pages/StudentsPage.js';
-import { TaskInboxPage } from './pages/TaskInboxPage.js';
-import { ModuleSelectionProposalsPage } from './pages/ModuleSelectionProposalsPage.js';
-import { ModuleRegistrationRequestsPage } from './pages/ModuleRegistrationRequestsPage.js';
-import { IdentityChangeRequestsPage } from './pages/IdentityChangeRequestsPage.js';
-import { TenantAdminPage } from './pages/TenantAdminPage.js';
-import { TenantConfigPage } from './pages/TenantConfigPage.js';
-import { UcasPage } from './pages/UcasPage.js';
-import { UkviPage } from './pages/UkviPage.js';
-import { ValueSetsPage } from './pages/ValueSetsPage.js';
-import { WorkflowDefsPage } from './pages/WorkflowDefsPage.js';
-import { StartWorkflowPage } from './pages/StartWorkflowPage.js';
-import { AccessibilityStatementPage } from './pages/AccessibilityStatementPage.js';
-import { NotFoundPage } from './pages/NotFoundPage.js';
-import { EngagementPage } from './pages/EngagementPage.js';
-import { EngagementCasePage } from './pages/EngagementCasePage.js';
-import { ModerationPage } from './pages/ModerationPage.js';
-import { RegulatoryCollectionsPage } from './pages/RegulatoryCollectionsPage.js';
-import { IdentityResolutionPage } from './pages/IdentityResolutionPage.js';
-import { PgrSupervisionPage } from './pages/PgrSupervisionPage.js';
-import { PgrProgressReviewPage } from './pages/PgrProgressReviewPage.js';
-import { PgrExaminationPage } from './pages/PgrExaminationPage.js';
-import { PgrCompletionPage } from './pages/PgrCompletionPage.js';
-import { RightsRequestsPage } from './pages/RightsRequestsPage.js';
-import { AuditReviewPage } from './pages/AuditReviewPage.js';
-import { AdjustmentCasesPage } from './pages/AdjustmentCasesPage.js';
-import { AdjustmentCaseDetailPage } from './pages/AdjustmentCaseDetailPage.js';
-import { ApplicationsPage } from './pages/ApplicationsPage.js';
-import { ApplicationDetailPage } from './pages/ApplicationDetailPage.js';
-import { PendingApprovalsPage } from './pages/PendingApprovalsPage.js';
-import { StatusCasesPage } from './pages/StatusCasesPage.js';
-import { StatusCaseDetailPage } from './pages/StatusCaseDetailPage.js';
-import { GraduationPage } from './pages/GraduationPage.js';
-import { GraduationCycleDetailPage } from './pages/GraduationCycleDetailPage.js';
-import { DocumentVerificationPage } from './pages/DocumentVerificationPage.js';
-import { CurriculumPublicationsPage, CurriculumPublicationDetailPage } from './pages/CurriculumPublicationsPage.js';
+
+const AcademicRulesPage = lazy(() => import('./pages/AcademicRulesPage.js').then((m) => ({ default: m.AcademicRulesPage })));
+const RegistrationWindowsPage = lazy(() => import('./pages/RegistrationWindowsPage.js').then((m) => ({ default: m.RegistrationWindowsPage })));
+const AuditPage = lazy(() => import('./pages/AuditPage.js').then((m) => ({ default: m.AuditPage })));
+const DashboardPage = lazy(() => import('./pages/DashboardPage.js').then((m) => ({ default: m.DashboardPage })));
+const EnrolmentReportPage = lazy(() => import('./pages/EnrolmentReportPage.js').then((m) => ({ default: m.EnrolmentReportPage })));
+const EnvironmentRuntimePage = lazy(() => import('./pages/EnvironmentRuntimePage.js').then((m) => ({ default: m.EnvironmentRuntimePage })));
+const ExamBoardDetailPage = lazy(() => import('./pages/ExamBoardDetailPage.js').then((m) => ({ default: m.ExamBoardDetailPage })));
+const ExamBoardsPage = lazy(() => import('./pages/ExamBoardsPage.js').then((m) => ({ default: m.ExamBoardsPage })));
+const FeatureFlagsPage = lazy(() => import('./pages/FeatureFlagsPage.js').then((m) => ({ default: m.FeatureFlagsPage })));
+const FoiPage = lazy(() => import('./pages/FoiPage.js').then((m) => ({ default: m.FoiPage })));
+const ForbiddenPage = lazy(() => import('./pages/ForbiddenPage.js').then((m) => ({ default: m.ForbiddenPage })));
+const GlobalisationPage = lazy(() => import('./pages/GlobalisationPage.js').then((m) => ({ default: m.GlobalisationPage })));
+const HesaPage = lazy(() => import('./pages/HesaPage.js').then((m) => ({ default: m.HesaPage })));
+const IntegrationOpsPage = lazy(() => import('./pages/IntegrationOpsPage.js').then((m) => ({ default: m.IntegrationOpsPage })));
+const IntegrationTasksPage = lazy(() => import('./pages/IntegrationTasksPage.js').then((m) => ({ default: m.IntegrationTasksPage })));
+const ExamTimingsPage = lazy(() => import('./pages/ExamTimingsPage.js').then((m) => ({ default: m.ExamTimingsPage })));
+const IntegrationsPage = lazy(() => import('./pages/IntegrationsPage.js').then((m) => ({ default: m.IntegrationsPage })));
+const OfsPage = lazy(() => import('./pages/OfsPage.js').then((m) => ({ default: m.OfsPage })));
+const OperationsPage = lazy(() => import('./pages/OperationsPage.js').then((m) => ({ default: m.OperationsPage })));
+const RegulatoryPage = lazy(() => import('./pages/RegulatoryPage.js').then((m) => ({ default: m.RegulatoryPage })));
+const RegulatoryStatusPage = lazy(() => import('./pages/RegulatoryStatusPage.js').then((m) => ({ default: m.RegulatoryStatusPage })));
+const ReportingPage = lazy(() => import('./pages/ReportingPage.js').then((m) => ({ default: m.ReportingPage })));
+const SlcPage = lazy(() => import('./pages/SlcPage.js').then((m) => ({ default: m.SlcPage })));
+const StudentDetailPage = lazy(() => import('./pages/StudentDetailPage.js').then((m) => ({ default: m.StudentDetailPage })));
+const StudentsPage = lazy(() => import('./pages/StudentsPage.js').then((m) => ({ default: m.StudentsPage })));
+const TaskInboxPage = lazy(() => import('./pages/TaskInboxPage.js').then((m) => ({ default: m.TaskInboxPage })));
+const ModuleSelectionProposalsPage = lazy(() => import('./pages/ModuleSelectionProposalsPage.js').then((m) => ({ default: m.ModuleSelectionProposalsPage })));
+const ModuleRegistrationRequestsPage = lazy(() => import('./pages/ModuleRegistrationRequestsPage.js').then((m) => ({ default: m.ModuleRegistrationRequestsPage })));
+const IdentityChangeRequestsPage = lazy(() => import('./pages/IdentityChangeRequestsPage.js').then((m) => ({ default: m.IdentityChangeRequestsPage })));
+const TenantAdminPage = lazy(() => import('./pages/TenantAdminPage.js').then((m) => ({ default: m.TenantAdminPage })));
+const TenantConfigPage = lazy(() => import('./pages/TenantConfigPage.js').then((m) => ({ default: m.TenantConfigPage })));
+const UcasPage = lazy(() => import('./pages/UcasPage.js').then((m) => ({ default: m.UcasPage })));
+const UkviPage = lazy(() => import('./pages/UkviPage.js').then((m) => ({ default: m.UkviPage })));
+const ValueSetsPage = lazy(() => import('./pages/ValueSetsPage.js').then((m) => ({ default: m.ValueSetsPage })));
+const WorkflowDefsPage = lazy(() => import('./pages/WorkflowDefsPage.js').then((m) => ({ default: m.WorkflowDefsPage })));
+const StartWorkflowPage = lazy(() => import('./pages/StartWorkflowPage.js').then((m) => ({ default: m.StartWorkflowPage })));
+const AccessibilityStatementPage = lazy(() => import('./pages/AccessibilityStatementPage.js').then((m) => ({ default: m.AccessibilityStatementPage })));
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage.js').then((m) => ({ default: m.NotFoundPage })));
+const EngagementPage = lazy(() => import('./pages/EngagementPage.js').then((m) => ({ default: m.EngagementPage })));
+const EngagementCasePage = lazy(() => import('./pages/EngagementCasePage.js').then((m) => ({ default: m.EngagementCasePage })));
+const ModerationPage = lazy(() => import('./pages/ModerationPage.js').then((m) => ({ default: m.ModerationPage })));
+const RegulatoryCollectionsPage = lazy(() => import('./pages/RegulatoryCollectionsPage.js').then((m) => ({ default: m.RegulatoryCollectionsPage })));
+const IdentityResolutionPage = lazy(() => import('./pages/IdentityResolutionPage.js').then((m) => ({ default: m.IdentityResolutionPage })));
+const PgrSupervisionPage = lazy(() => import('./pages/PgrSupervisionPage.js').then((m) => ({ default: m.PgrSupervisionPage })));
+const PgrProgressReviewPage = lazy(() => import('./pages/PgrProgressReviewPage.js').then((m) => ({ default: m.PgrProgressReviewPage })));
+const PgrExaminationPage = lazy(() => import('./pages/PgrExaminationPage.js').then((m) => ({ default: m.PgrExaminationPage })));
+const PgrCompletionPage = lazy(() => import('./pages/PgrCompletionPage.js').then((m) => ({ default: m.PgrCompletionPage })));
+const RightsRequestsPage = lazy(() => import('./pages/RightsRequestsPage.js').then((m) => ({ default: m.RightsRequestsPage })));
+const AuditReviewPage = lazy(() => import('./pages/AuditReviewPage.js').then((m) => ({ default: m.AuditReviewPage })));
+const AdjustmentCasesPage = lazy(() => import('./pages/AdjustmentCasesPage.js').then((m) => ({ default: m.AdjustmentCasesPage })));
+const AdjustmentCaseDetailPage = lazy(() => import('./pages/AdjustmentCaseDetailPage.js').then((m) => ({ default: m.AdjustmentCaseDetailPage })));
+const ApplicationsPage = lazy(() => import('./pages/ApplicationsPage.js').then((m) => ({ default: m.ApplicationsPage })));
+const ApplicationDetailPage = lazy(() => import('./pages/ApplicationDetailPage.js').then((m) => ({ default: m.ApplicationDetailPage })));
+const PendingApprovalsPage = lazy(() => import('./pages/PendingApprovalsPage.js').then((m) => ({ default: m.PendingApprovalsPage })));
+const StatusCasesPage = lazy(() => import('./pages/StatusCasesPage.js').then((m) => ({ default: m.StatusCasesPage })));
+const StatusCaseDetailPage = lazy(() => import('./pages/StatusCaseDetailPage.js').then((m) => ({ default: m.StatusCaseDetailPage })));
+const GraduationPage = lazy(() => import('./pages/GraduationPage.js').then((m) => ({ default: m.GraduationPage })));
+const GraduationCycleDetailPage = lazy(() => import('./pages/GraduationCycleDetailPage.js').then((m) => ({ default: m.GraduationCycleDetailPage })));
+const DocumentVerificationPage = lazy(() => import('./pages/DocumentVerificationPage.js').then((m) => ({ default: m.DocumentVerificationPage })));
+const CurriculumPublicationsPage = lazy(() => import('./pages/CurriculumPublicationsPage.js').then((m) => ({ default: m.CurriculumPublicationsPage })));
+const CurriculumPublicationDetailPage = lazy(() => import('./pages/CurriculumPublicationsPage.js').then((m) => ({ default: m.CurriculumPublicationDetailPage })));
 
 const ENGAGEMENT_ROLES = ['module-tutor', 'personal-tutor', 'engagement-officer', 'registry-administrator', 'tenant-administrator'];
 const ADMIN_PERMISSIONS = [
@@ -86,6 +89,7 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
 
 export function App() {
   return (
+    <Suspense fallback={null}>
     <Routes>
       {/* Public routes */}
       <Route path="/login"           element={<LoginPage />} />
@@ -99,6 +103,7 @@ export function App() {
         element={
           <RequireAuth>
             <Layout>
+              <Suspense fallback={<div className="flex justify-center py-16" role="status" aria-label="Loading page" />}>
               <Routes>
                 <Route index                              element={<Navigate to="/dashboard" replace />} />
                 <Route path="dashboard"                  element={<DashboardPage />} />
@@ -203,10 +208,12 @@ export function App() {
 
                 <Route path="*" element={<NotFoundPage />} />
               </Routes>
+              </Suspense>
             </Layout>
           </RequireAuth>
         }
       />
     </Routes>
+    </Suspense>
   );
 }
