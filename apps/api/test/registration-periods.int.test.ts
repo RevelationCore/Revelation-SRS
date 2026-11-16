@@ -91,7 +91,8 @@ describe('annual re-registration', () => {
   });
 
   it('a period cannot be closed before its end date', async () => {
-    const period = (await call('GET', '/registration-periods', registryJwt)).json<Array<{ periodId: string; academicYear: string }>>().find((p) => p.academicYear === '2027-28')!;
+    const period = (await call('GET', '/registration-periods', registryJwt)).json<Array<{ periodId: string; academicYear: string; termsVersion: string }>>().find((p) => p.academicYear === '2027-28')!;
+    expect(period.termsVersion).toBe('2028.1');
     expect((await call('POST', `/registration-periods/${period.periodId}/closure`, registryJwt)).statusCode).toBe(409);
   });
 });
