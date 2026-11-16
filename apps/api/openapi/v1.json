@@ -16943,6 +16943,71 @@
             }
           }
         }
+      },
+      "get": {
+        "operationId": "getGraduationCycles",
+        "tags": [
+          "progression"
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "cycleId",
+                      "cycleCode",
+                      "title",
+                      "awardsFrom",
+                      "awardsTo",
+                      "statusCode",
+                      "createdAt",
+                      "frozenAt"
+                    ],
+                    "properties": {
+                      "cycleId": {
+                        "type": "string"
+                      },
+                      "cycleCode": {
+                        "type": "string"
+                      },
+                      "title": {
+                        "type": "string"
+                      },
+                      "awardsFrom": {
+                        "type": "string"
+                      },
+                      "awardsTo": {
+                        "type": "string"
+                      },
+                      "statusCode": {
+                        "type": "string"
+                      },
+                      "createdAt": {
+                        "type": "string"
+                      },
+                      "frozenAt": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/graduation-cycles/{cycleId}": {
@@ -17229,7 +17294,10 @@
                       "guestCount",
                       "accessibilityRequired",
                       "respondedAt",
-                      "createdAt"
+                      "createdAt",
+                      "studentName",
+                      "studentNumber",
+                      "allocation"
                     ],
                     "properties": {
                       "invitationId": {
@@ -17265,6 +17333,72 @@
                       },
                       "createdAt": {
                         "type": "string"
+                      },
+                      "studentName": {
+                        "type": "string"
+                      },
+                      "studentNumber": {
+                        "type": "string"
+                      },
+                      "allocation": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "required": [
+                              "allocationId",
+                              "invitationId",
+                              "ceremonyId",
+                              "presentationOrder",
+                              "attendanceCode",
+                              "allocatedBy",
+                              "allocatedAt",
+                              "attendanceRecordedAt"
+                            ],
+                            "properties": {
+                              "allocationId": {
+                                "type": "string"
+                              },
+                              "invitationId": {
+                                "type": "string"
+                              },
+                              "ceremonyId": {
+                                "type": "string"
+                              },
+                              "presentationOrder": {
+                                "anyOf": [
+                                  {
+                                    "type": "integer"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "attendanceCode": {
+                                "type": "string"
+                              },
+                              "allocatedBy": {
+                                "type": "string"
+                              },
+                              "allocatedAt": {
+                                "type": "string"
+                              },
+                              "attendanceRecordedAt": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            }
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
                       }
                     }
                   }

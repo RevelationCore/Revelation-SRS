@@ -38,7 +38,16 @@ Every item is finished only when it has a service and API (where new), a screen,
 
 **Exit:** all 49 processes have a checked rating.
 
-## Phase 1 — Screens for the API-only journeys (medium)
+## Phase 1 — Screens for the API-only journeys (medium) — done 2026-11-16
+
+**Status: delivered.** Decisions are recorded in [Phase 1 gap-closure decisions](../decisions/phase-1-gap-closure-decisions.md). All eleven processes are usable on screen, verified in the real app for the status-case journey (portal request, assessor advice from the worklist, approval by a second registry administrator). Beyond the plan, Phase 1 also:
+
+- retired the direct staff status-change routes (D-1), so the Enrolments tab no longer bypasses the governed case;
+- added the guards a decision needs: a transfer to another programme needs the destination programme's support, and a sponsored student's case needs UKVI compliance advice;
+- gave misconduct outcomes and identity-verification results their own permissions (D-5, D-6) and required a second person to apply a manually entered curriculum publication (D-7).
+
+Still open from Phase 1's scope: right to study is not yet a separate identity outcome (moved to Phase 3), misconduct effects on individual marks are API-only, and documents have no download until rendering (Phase 3).
+
 
 All eleven processes already pass integration tests through the API.
 
@@ -125,7 +134,7 @@ All eleven processes already pass integration tests through the API.
 | Phase | Size | Processes usable on screen at exit | Main dependency |
 |---|---|---|---|
 | 0 Confirm the baseline | Small | 30 (checked) | None |
-| 1 Screens over existing APIs | Medium | 41 | Two policy decisions on status changes |
+| 1 Screens over existing APIs — **done** | Medium | 41 | Decided (D-1 to D-7) |
 | 2 Missing processes | Large | 46+ of 49, all 49 built | Re-registration and Clearing policy |
 | 3 Integrations and outputs | Large | 49 | UCAS access; signing approach |
 | 4 Rule depth | Medium | 49, with full selection rules | Timetabling source |

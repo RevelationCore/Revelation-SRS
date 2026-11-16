@@ -57,7 +57,9 @@
       "adjustments":   "Adjustments",
       "disability":    "Disability",
       "circumstances": "Circumstances",
-      "notifications": "Notifications"
+      "notifications": "Notifications",
+      "documents":     "Award documents",
+      "graduation":    "Graduation"
     },
     "enrolment": {
       "status": {

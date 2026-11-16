@@ -22,6 +22,8 @@ const NAV_ITEMS: Array<{ to: string; label: string; icon: ComponentType<{ classN
   { to: '/disability',    label: 'portal.nav.disability',    icon: HeartPulse },
   { to: '/circumstances', label: 'portal.nav.circumstances', icon: AlertTriangle },
   { to: '/notifications', label: 'portal.nav.notifications', icon: Bell },
+  { to: '/documents',     label: 'portal.nav.documents',     icon: FileText },
+  { to: '/graduation',    label: 'portal.nav.graduation',    icon: GraduationCap },
 ];
 
 function navLinkClass({ isActive }: { isActive: boolean }) {

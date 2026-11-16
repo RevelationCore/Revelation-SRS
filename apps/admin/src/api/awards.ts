@@ -83,3 +83,56 @@ export const closeReassessmentPlan = (planId: string, body: { statusCode: 'compl
 
 export const listProgressionHistory = (enrolmentId: string) =>
   api.get<ProgressionDecision[]>(`/api/v1/enrolments/${enrolmentId}/progression/history`);
+
+// ── Progression (D-3) ────────────────────────────────────────────────────────
+
+export interface ProgressionEvidence {
+  requiredCredits: number;
+  earnedCredits: number;
+  compensationCredits: number;
+  unresolvedCredits: number;
+  compensationThreshold: number | null;
+  compensationCreditLimit: number;
+  condonementThreshold: number | null;
+  decisionCode: string;
+  recognisedCredits: number;
+  recognisedCreditIds: string[];
+  appliedExceptions: Array<{ exceptionId: string; ruleCode: string; exceptionTypeCode: string }>;
+  calculatedAt: string;
+}
+
+export const evaluateProgression = (enrolmentId: string, academicYear: string) =>
+  api.post(`/api/v1/enrolments/${enrolmentId}/progression`, { academicYear });
+export const getProgressionEvidence = (progressionDecisionId: string) =>
+  api.get<ProgressionEvidence>(`/api/v1/progression-decisions/${progressionDecisionId}/evidence`);
+
+// ── Award documents (D-4) ────────────────────────────────────────────────────
+
+export interface DocumentIssue {
+  documentIssueId: string;
+  studentDocumentId: string;
+  documentTypeCode: string;
+  awardId: string;
+  issueNumber: number;
+  issueTypeCode: string;
+  contentHash: string;
+  verificationCode: string;
+  channelCode: string;
+  statusCode: string;
+  issuedBy: string;
+  issuedAt: string;
+  revocation: { reasonCode: string; reasonText: string; revokedBy: string; revokedAt: string } | null;
+}
+
+export const listAwardDocuments = (awardId: string) => api.get<DocumentIssue[]>(`/api/v1/awards/${awardId}/documents`);
+export const issueAwardDocument = (awardId: string, body: { documentTypeCode: string; channelCode: string; issueTypeCode?: string }) =>
+  api.post<DocumentIssue>(`/api/v1/awards/${awardId}/documents`, body);
+export const revokeDocumentIssue = (documentIssueId: string, body: { reasonCode: string; reasonText: string }) =>
+  api.post(`/api/v1/document-issues/${documentIssueId}/revocation`, body);
+
+export interface VerificationResult {
+  outcomeCode: string;
+  document: { documentTypeCode: string; holderName: string; qualificationCode: string; classificationCode: string; awardDate: string; issuedAt: string } | null;
+}
+export const verifyDocument = (verificationCode: string, requesterNote?: string) =>
+  api.post<VerificationResult>('/api/v1/document-verifications', { verificationCode, ...(requesterNote ? { requesterNote } : {}) });

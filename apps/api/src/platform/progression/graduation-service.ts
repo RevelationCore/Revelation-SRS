@@ -4,6 +4,8 @@ import {
   graduationCeremonies,
   graduationCycles,
   graduationInvitations,
+  personIdentities,
+  persons,
   type CeremonyAllocation,
   type Db,
   type GraduationCeremony,
@@ -12,7 +14,7 @@ import {
   withTenantContext,
 } from '@revelation-srs/db';
 import { ConflictError, NotFoundError, ValidationError } from '@revelation-srs/domain';
-import { and, asc, count, eq, gte, inArray, isNull, lte, ne } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gte, inArray, isNull, lte, ne } from 'drizzle-orm';
 
 import { clockNow } from '../clock.js';
 
@@ -121,6 +123,37 @@ export class GraduationService {
     return withTenantContext(this.db, tenantId, (tx) => tx.select().from(graduationInvitations)
       .where(and(eq(graduationInvitations.tenantId, tenantId as Uuid), eq(graduationInvitations.cycleId, cycleId as Uuid)))
       .orderBy(asc(graduationInvitations.createdAt)));
+  }
+
+  /** All cycles, newest first. */
+  async listCycles(tenantId: string): Promise<GraduationCycle[]> {
+    return withTenantContext(this.db, tenantId, (tx) => tx.select().from(graduationCycles)
+      .where(eq(graduationCycles.tenantId, tenantId as Uuid)).orderBy(desc(graduationCycles.createdAt)));
+  }
+
+  /** A cycle's invitations with each graduand's name, number and ceremony allocation, for the registry. */
+  async listInvitationsWithAllocations(tenantId: string, cycleId: string): Promise<Array<GraduationInvitation & {
+    studentName: string; studentNumber: string; allocation: CeremonyAllocation | null;
+  }>> {
+    const invitations = await this.listInvitations(tenantId, cycleId);
+    if (invitations.length === 0) return [];
+    return withTenantContext(this.db, tenantId, async (tx) => {
+      const allocations = await tx.select().from(ceremonyAllocations).where(inArray(ceremonyAllocations.invitationId, invitations.map((i) => i.id)));
+      const people = await tx.select({
+        id: persons.id, studentNumber: persons.studentNumber, first: personIdentities.legalFirstName, family: personIdentities.legalFamilyName,
+      }).from(persons)
+        .leftJoin(personIdentities, and(eq(personIdentities.personId, persons.id), isNull(personIdentities.recordedUntil), isNull(personIdentities.validTo)))
+        .where(inArray(persons.id, [...new Set(invitations.map((i) => i.personId))]));
+      return invitations.map((i) => {
+        const p = people.find((x) => x.id === i.personId);
+        return {
+          ...i,
+          studentName: p?.first ? `${p.first} ${p.family ?? ''}`.trim() : (p?.studentNumber ?? i.personId),
+          studentNumber: p?.studentNumber ?? '',
+          allocation: allocations.find((a) => a.invitationId === i.id) ?? null,
+        };
+      });
+    });
   }
 
   async listInvitationsForPerson(tenantId: string, personId: string): Promise<GraduationInvitation[]> {

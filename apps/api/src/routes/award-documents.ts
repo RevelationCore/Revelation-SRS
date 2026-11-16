@@ -132,6 +132,20 @@ export function awardDocumentRoutes(fastify: FastifyInstance): void {
     await reply.code(201).send(cycleToWire(cycle));
   });
 
+  fastify.get('/graduation-cycles', {
+    schema: { response: { 200: Type.Array(Type.Object({
+      cycleId: Type.String(), cycleCode: Type.String(), title: Type.String(), awardsFrom: Type.String(), awardsTo: Type.String(),
+      statusCode: Type.String(), createdAt: Type.String(), frozenAt: Nullable(Type.String()),
+    })) } },
+    preHandler: [requirePermission('graduation:read')],
+  }, async (request, reply) => {
+    const cycles = await fastify.graduationService.listCycles(request.tenantId);
+    await reply.send(cycles.map((c) => ({
+      cycleId: c.id, cycleCode: c.cycleCode, title: c.title, awardsFrom: c.awardsFrom, awardsTo: c.awardsTo, statusCode: c.statusCode,
+      createdAt: c.createdAt.toISOString(), frozenAt: c.frozenAt?.toISOString() ?? null,
+    })));
+  });
+
   fastify.get('/graduation-cycles/:cycleId', {
     schema: { params: Type.Object({ cycleId: Type.String() }), response: { 200: CycleSchema, 404: ErrorSchema } },
     preHandler: [requirePermission('graduation:read')],
@@ -154,11 +168,16 @@ export function awardDocumentRoutes(fastify: FastifyInstance): void {
   });
 
   fastify.get('/graduation-cycles/:cycleId/invitations', {
-    schema: { params: Type.Object({ cycleId: Type.String() }), response: { 200: Type.Array(InvitationSchema) } },
+    schema: { params: Type.Object({ cycleId: Type.String() }), response: { 200: Type.Array(Type.Composite([InvitationSchema, Type.Object({
+      studentName: Type.String(), studentNumber: Type.String(), allocation: Type.Union([AllocationSchema, Type.Null()]),
+    })])) } },
     preHandler: [requirePermission('graduation:read')],
   }, async (request, reply) => {
     const { cycleId } = request.params as { cycleId: string };
-    await reply.send((await fastify.graduationService.listInvitations(request.tenantId, cycleId)).map(invitationToWire));
+    const rows = await fastify.graduationService.listInvitationsWithAllocations(request.tenantId, cycleId);
+    await reply.send(rows.map(({ studentName, studentNumber, allocation, ...i }) => ({
+      ...invitationToWire(i), studentName, studentNumber, allocation: allocation ? allocationToWire(allocation) : null,
+    })));
   });
 
   fastify.get('/students/:personId/graduation-invitations', {

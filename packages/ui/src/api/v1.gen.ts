@@ -1035,7 +1035,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        get: operations["getGraduationCycles"];
         put?: never;
         post: operations["createGraduationCycles"];
         delete?: never;
@@ -10953,6 +10953,35 @@ export interface operations {
             };
         };
     };
+    getGraduationCycles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        cycleId: string;
+                        cycleCode: string;
+                        title: string;
+                        awardsFrom: string;
+                        awardsTo: string;
+                        statusCode: string;
+                        createdAt: string;
+                        frozenAt: string | null;
+                    }[];
+                };
+            };
+        };
+    };
     createGraduationCycles: {
         parameters: {
             query?: never;
@@ -11119,6 +11148,18 @@ export interface operations {
                         accessibilityRequired: boolean;
                         respondedAt: string | null;
                         createdAt: string;
+                        studentName: string;
+                        studentNumber: string;
+                        allocation: {
+                            allocationId: string;
+                            invitationId: string;
+                            ceremonyId: string;
+                            presentationOrder: number | null;
+                            attendanceCode: string;
+                            allocatedBy: string;
+                            allocatedAt: string;
+                            attendanceRecordedAt: string | null;
+                        } | null;
                     }[];
                 };
             };

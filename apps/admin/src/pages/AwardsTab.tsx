@@ -15,6 +15,8 @@ import { type ModuleRegistration, listAllModuleRegistrations } from '../api/regi
 import { useAuth } from '../auth/AuthContext.js';
 import { EnrolmentScoped } from '../components/EnrolmentScoped.js';
 import { useValueSet } from '../hooks/useValueSet.js';
+import { AwardDocumentsSection } from './AwardDocumentsSection.js';
+import { ProgressionSection } from './ProgressionSection.js';
 
 function message(err: unknown, fallback: string): string {
   return err instanceof ApiError ? (err.detail ?? err.message) : fallback;
@@ -26,6 +28,11 @@ export interface AwardsTabPermissions {
   canReadPlans: boolean;
   canWritePlans: boolean;
   canReadBoards: boolean;
+  /** Optional so existing callers keep working; default false. */
+  canRunProgression?: boolean;
+  canIssueDocuments?: boolean;
+  canRevokeDocuments?: boolean;
+  canReadDocuments?: boolean;
 }
 
 interface Classification { aggregateMark: number; classificationCode: string; boundariesApplied: Array<{ code: string; minimumMark: number }> }
@@ -42,6 +49,7 @@ export function AwardsTab({ personId, permissions }: { personId: string; permiss
     <EnrolmentScoped personId={personId} idPrefix="awards">
       {(enrolment) => (
         <>
+          <ProgressionSection enrolmentId={enrolment.enrolmentId} canRun={permissions.canRunProgression ?? false} />
           <AwardRecommendations enrolmentId={enrolment.enrolmentId} permissions={permissions} />
           {permissions.canReadPlans && <ReassessmentPlans enrolmentId={enrolment.enrolmentId} canWrite={permissions.canWritePlans} />}
         </>
@@ -72,6 +80,7 @@ function AwardRecommendations({ enrolmentId, permissions }: { enrolmentId: strin
   const conferred = recommendations.find((r) => r.statusCode === 'conferred');
 
   return (
+    <>
     <Card>
       <CardHeader
         title="Award"
@@ -129,6 +138,14 @@ function AwardRecommendations({ enrolmentId, permissions }: { enrolmentId: strin
         </div>
       </CardBody>
     </Card>
+    {conferred?.conferment && permissions.canReadDocuments && (
+      <AwardDocumentsSection
+        awardId={conferred.conferment.awardId}
+        canIssue={permissions.canIssueDocuments ?? false}
+        canRevoke={permissions.canRevokeDocuments ?? false}
+      />
+    )}
+    </>
   );
 }
 

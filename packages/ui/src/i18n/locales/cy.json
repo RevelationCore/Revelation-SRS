@@ -57,7 +57,9 @@
       "adjustments":   "Addasiadau",
       "disability":    "Anabledd",
       "circumstances": "Amgylchiadau",
-      "notifications": "Hysbysiadau"
+      "notifications": "Hysbysiadau",
+      "documents":     "Dogfennau dyfarnu",
+      "graduation":    "Graddio"
     },
     "enrolment": {
       "status": {

@@ -73,13 +73,15 @@ import { SupportEmploymentTab } from './SupportEmploymentTab.js';
 import { AcademicExceptionsTab } from './AcademicExceptionsTab.js';
 import { AwardsTab } from './AwardsTab.js';
 import { StatusCasesTab } from './StatusCasesTab.js';
+import { MisconductTab } from './MisconductTab.js';
+import { IdentityVerificationSection } from './IdentityVerificationSection.js';
 import {
   PageHeader, Card, CardHeader, CardBody, Button, Input, Select, Textarea, LabelledField,
   Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, Dialog, DialogClose,
   Tabs, TabsList, TabsTrigger, TabsContent,
 } from '@revelation-srs/ui';
 
-type Tab = 'identity' | 'enrolments' | 'status' | 'credit' | 'awards' | 'registrations' | 'assessment' | 'history' | 'wellbeing' | 'corrections' | 'cas' | 'communications' | 'other-systems' | 'support';
+type Tab = 'identity' | 'enrolments' | 'status' | 'misconduct' | 'credit' | 'awards' | 'registrations' | 'assessment' | 'history' | 'wellbeing' | 'corrections' | 'cas' | 'communications' | 'other-systems' | 'support';
 
 export function StudentDetailPage() {
   const { roles } = useAuth();
@@ -136,6 +138,7 @@ export function StudentDetailPage() {
     ...(canReadEnrolments && canReadCas ? ['cas'] as Tab[] : []),
     ...(canReadRegistrations ? ['registrations'] as Tab[] : []),
     ...(canReadAssessment ? ['assessment'] as Tab[] : []),
+    ...(userHasAnyPermission(roles, ['misconduct:read']) ? ['misconduct'] as Tab[] : []),
     ...(canReadDisability || canReadAdjustments || canReadCircumstances ? ['wellbeing'] as Tab[] : []),
     ...(canReadNotifications ? ['communications'] as Tab[] : []),
     ...(userHasAnyPermission(roles, ['external-record:read']) ? ['other-systems'] as Tab[] : []),
@@ -171,6 +174,10 @@ export function StudentDetailPage() {
                 canReadPlans: userHasAnyPermission(roles, ['reassessment:read']),
                 canWritePlans: userHasAnyPermission(roles, ['reassessment:write']),
                 canReadBoards: userHasAnyPermission(roles, ['exam-board:read']),
+                canRunProgression: userHasAnyPermission(roles, ['progression:write']),
+                canReadDocuments: userHasAnyPermission(roles, ['document:read']),
+                canIssueDocuments: userHasAnyPermission(roles, ['document:issue']),
+                canRevokeDocuments: userHasAnyPermission(roles, ['document:revoke']),
               }}
             />
           )}
@@ -192,6 +199,12 @@ export function StudentDetailPage() {
         </TabsContent>
         <TabsContent value="identity">
           <IdentityTab student={student} onUpdated={reload} canWrite={canWriteStudent} />
+          {personId && userHasAnyPermission(roles, ['identity-verification:read']) && (
+            <div className="mt-6"><IdentityVerificationSection personId={personId} canWrite={canWriteStudent} /></div>
+          )}
+        </TabsContent>
+        <TabsContent value="misconduct">
+          {personId && <MisconductTab personId={personId} canRecord={userHasAnyPermission(roles, ['misconduct:record'])} />}
         </TabsContent>
         <TabsContent value="enrolments">
           {personId && <EnrolmentsTab personId={personId} student={student} onUpdated={reload} onOpenStatusCases={userHasAnyPermission(roles, ['status-case:read']) ? () => setTab('status') : undefined} />}

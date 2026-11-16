@@ -13,6 +13,7 @@ import {
   getFieldValueSet,
   type ValueSetDto,
 } from '../api/me.js';
+import { StatusChangesSection } from './StatusChangesSection.js';
 import { Spinner, Problem, formatDate, PageHeader, Card, CardHeader, CardBody, Badge, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell } from '@revelation-srs/ui';
 
 function codeLabel(vs: ValueSetDto | null | undefined, code: string | null | undefined): string | null | undefined {
@@ -95,6 +96,8 @@ export function EnrolmentDetailPage() {
             </dl>
           </CardBody>
         </Card>
+
+        {enrolmentId && <StatusChangesSection enrolmentId={enrolmentId} modeOfStudyCode={enrolment.modeOfStudyCode} />}
 
         {((supervision && supervision.length > 0) || (milestones && milestones.length > 0)) && (
           <Card>

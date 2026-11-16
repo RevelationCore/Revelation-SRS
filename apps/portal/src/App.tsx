@@ -28,6 +28,8 @@ const AdjustmentCaseDetailPage = lazy(() => import('./pages/AdjustmentCaseDetail
 const DisabilityPage = lazy(() => import('./pages/DisabilityPage.js').then((m) => ({ default: m.DisabilityPage })));
 const CircumstancesPage = lazy(() => import('./pages/CircumstancesPage.js').then((m) => ({ default: m.CircumstancesPage })));
 const NotificationsPage = lazy(() => import('./pages/NotificationsPage.js').then((m) => ({ default: m.NotificationsPage })));
+const DocumentsPage = lazy(() => import('./pages/DocumentsPage.js').then((m) => ({ default: m.DocumentsPage })));
+const GraduationPage = lazy(() => import('./pages/GraduationPage.js').then((m) => ({ default: m.GraduationPage })));
 
 function PageLoading() {
   return <p role="status" className="p-6 text-sm text-neutral-600">Loading…</p>;
@@ -70,6 +72,8 @@ export function App() {
           <Route path="/disability"            element={<DisabilityPage />} />
           <Route path="/circumstances"         element={<CircumstancesPage />} />
           <Route path="/notifications"         element={<NotificationsPage />} />
+          <Route path="/documents"             element={<DocumentsPage />} />
+          <Route path="/graduation"            element={<GraduationPage />} />
         </Route>
 
         {/* Public accessibility statement — no auth required */}

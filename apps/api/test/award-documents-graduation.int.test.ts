@@ -137,6 +137,15 @@ describe('graduation', () => {
     expect((await call('POST', `/graduation-invitations/${absInv}/response`, absentia.jwt, { responseCode: 'attending' })).statusCode).toBe(409);
 
     const allocationId = allocated.json<{ allocationId: string }>().allocationId;
+
+    // The registry's views: cycles, and each invitation with its graduand and allocation.
+    const cycles = (await call('GET', '/graduation-cycles', registryJwt)).json<Array<{ cycleId: string; statusCode: string }>>();
+    expect(cycles.find((c) => c.cycleId === cycle.cycleId)).toBeDefined();
+    const rows = (await call('GET', `/graduation-cycles/${cycle.cycleId}/invitations`, registryJwt))
+      .json<Array<{ invitationId: string; studentName: string; studentNumber: string; allocation: { allocationId: string } | null }>>();
+    expect(rows.find((r) => r.invitationId === attInv)?.allocation?.allocationId).toBe(allocationId);
+    expect(rows.find((r) => r.invitationId === absInv)?.allocation).toBeNull();
+    expect(rows.every((r) => r.studentName.length > 0 && r.studentNumber.length > 0)).toBe(true);
     expect((await call('POST', `/ceremony-allocations/${allocationId}/attendance`, registryJwt, { attendanceCode: 'absent' })).json<{ attendanceCode: string }>().attendanceCode).toBe('absent');
     const award = (await ctx.db.execute(sql`SELECT classification_code, recorded_until FROM award WHERE id = ${attending.awardId}`)) as unknown as Array<{ classification_code: string; recorded_until: Date | null }>;
     expect(award).toEqual([{ classification_code: 'upper-second', recorded_until: null }]);

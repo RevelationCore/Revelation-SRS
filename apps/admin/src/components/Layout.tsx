@@ -141,6 +141,9 @@ function Sidebar({ onLogout, displayName, roles }: { onLogout: () => void; displ
         {canViewExamBoards && <NavItem to="/exam-boards" label="Exam boards" icon={GraduationCap} />}
         {can('catalogue:write') && <NavItem to="/exam-timings" label="Exam timings" icon={Clock} />}
         {canViewEngagement && <NavItem to="/engagement" label="Engagement" icon={Activity} />}
+        {can('graduation:read') && <NavItem to="/graduation" label="Graduation" icon={GraduationCap} />}
+        {can('document:verify') && <NavItem to="/document-verification" label="Verify a document" end icon={ShieldCheck} />}
+        {can('curriculum-publication:read') && <NavItem to="/curriculum-publications" label="Curriculum publications" icon={ListChecks} />}
 
         {canViewRegulatory && <>
           <Divider />

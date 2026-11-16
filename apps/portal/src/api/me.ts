@@ -515,3 +515,60 @@ export function deleteProposalItem(proposalId: string, proposalItemId: string): 
 export function postProposalSubmission(proposalId: string): Promise<ModuleSelectionProposal> {
   return api.post(`/api/v1/module-selection-proposals/${proposalId}/submission`, {});
 }
+
+// ── Status changes (BP-02-006 to 009; D-2) ───────────────────────────────────
+
+export interface StatusCaseCondition { conditionId: string; description: string; statusCode: string; dueDate: string | null }
+export interface MyStatusCase {
+  statusCaseId: string; caseTypeCode: string; statusCode: string; initiatedByCode: string; reasonCategoryCode: string | null;
+  requestedEffectiveDate: string; expectedReturnDate: string | null; decisionReason: string | null;
+  approvedEffectiveDate: string | null; approvedReturnDate: string | null; createdBy: string; createdAt: string;
+  conditions: StatusCaseCondition[];
+}
+export interface StatusCaseOptions {
+  enrolmentStatusCode: string;
+  requestableTypes: string[];
+  openCaseId: string | null;
+  returnFrom: { statusCaseId: string; caseTypeCode: string; approvedEffectiveDate: string | null; approvedReturnDate: string | null; outstandingConditions: StatusCaseCondition[] } | null;
+  sponsored: boolean;
+}
+
+export function getStatusCaseOptions(enrolmentId: string): Promise<StatusCaseOptions> {
+  return api.get(`/api/v1/enrolments/${enrolmentId}/status-case-options`);
+}
+export function listMyStatusCases(enrolmentId: string): Promise<MyStatusCase[]> {
+  return api.get(`/api/v1/enrolments/${enrolmentId}/status-cases`);
+}
+export function requestStatusCase(enrolmentId: string, body: {
+  caseTypeCode: string; reasonCategoryCode?: string; requestedEffectiveDate: string; expectedReturnDate?: string;
+  destinationProgrammeId?: string; destinationModeOfStudyCode?: string; relatedCaseId?: string;
+}): Promise<MyStatusCase> {
+  return api.post(`/api/v1/enrolments/${enrolmentId}/status-cases`, body);
+}
+export function withdrawMyStatusCase(statusCaseId: string): Promise<MyStatusCase> {
+  return api.post(`/api/v1/status-cases/${statusCaseId}/withdrawal`, {});
+}
+export function listCatalogueProgrammes(): Promise<Array<{ programmeId: string; code: string; title: string }>> {
+  return api.get('/api/v1/programmes');
+}
+
+// ── Award documents and graduation (BP-06-004/005; D-4) ──────────────────────
+
+export interface MyDocument {
+  documentIssueId: string; documentTypeCode: string; issueNumber: number; issueTypeCode: string; channelCode: string;
+  verificationCode: string; statusCode: string; issuedAt: string;
+}
+export interface MyGraduationInvitation {
+  invitationId: string; cycleId: string; awardId: string; responseCode: string; guestCount: number;
+  accessibilityRequired: boolean; respondedAt: string | null; createdAt: string;
+}
+
+export function listMyDocuments(personId: string): Promise<MyDocument[]> {
+  return api.get(`/api/v1/students/${personId}/documents`);
+}
+export function listMyGraduationInvitations(personId: string): Promise<MyGraduationInvitation[]> {
+  return api.get(`/api/v1/students/${personId}/graduation-invitations`);
+}
+export function respondToGraduationInvitation(invitationId: string, body: { responseCode: string; guestCount?: number; accessibilityRequired?: boolean }): Promise<MyGraduationInvitation> {
+  return api.post(`/api/v1/graduation-invitations/${invitationId}/response`, body);
+}

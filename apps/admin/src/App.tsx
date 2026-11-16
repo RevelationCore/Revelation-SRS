@@ -61,6 +61,10 @@ import { ApplicationDetailPage } from './pages/ApplicationDetailPage.js';
 import { PendingApprovalsPage } from './pages/PendingApprovalsPage.js';
 import { StatusCasesPage } from './pages/StatusCasesPage.js';
 import { StatusCaseDetailPage } from './pages/StatusCaseDetailPage.js';
+import { GraduationPage } from './pages/GraduationPage.js';
+import { GraduationCycleDetailPage } from './pages/GraduationCycleDetailPage.js';
+import { DocumentVerificationPage } from './pages/DocumentVerificationPage.js';
+import { CurriculumPublicationsPage, CurriculumPublicationDetailPage } from './pages/CurriculumPublicationsPage.js';
 
 const ENGAGEMENT_ROLES = ['module-tutor', 'personal-tutor', 'engagement-officer', 'registry-administrator', 'tenant-administrator'];
 const ADMIN_PERMISSIONS = [
@@ -104,6 +108,11 @@ export function App() {
                 <Route path="identity-change-requests" element={<RequirePermission permissions={['student:decide']}><IdentityChangeRequestsPage /></RequirePermission>} />
                 <Route path="applications" element={<RequirePermission permissions={['application:read']}><ApplicationsPage /></RequirePermission>} />
                 <Route path="applications/:applicationId" element={<RequirePermission permissions={['application:read']}><ApplicationDetailPage /></RequirePermission>} />
+                <Route path="graduation" element={<RequirePermission permissions={['graduation:read']}><GraduationPage /></RequirePermission>} />
+                <Route path="graduation/:cycleId" element={<RequirePermission permissions={['graduation:read']}><GraduationCycleDetailPage /></RequirePermission>} />
+                <Route path="document-verification" element={<RequirePermission permissions={['document:verify']}><DocumentVerificationPage /></RequirePermission>} />
+                <Route path="curriculum-publications" element={<RequirePermission permissions={['curriculum-publication:read']}><CurriculumPublicationsPage /></RequirePermission>} />
+                <Route path="curriculum-publications/:publicationId" element={<RequirePermission permissions={['curriculum-publication:read']}><CurriculumPublicationDetailPage /></RequirePermission>} />
                 <Route path="status-cases" element={<RequirePermission permissions={['status-case:read']}><StatusCasesPage /></RequirePermission>} />
                 <Route path="status-cases/:statusCaseId" element={<RequirePermission permissions={['status-case:read']}><StatusCaseDetailPage /></RequirePermission>} />
                 <Route path="credit-approvals" element={<RequirePermission permissions={['academic-exception:approve']}><PendingApprovalsPage /></RequirePermission>} />
