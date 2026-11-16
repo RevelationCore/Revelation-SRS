@@ -3,7 +3,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   LayoutDashboard, UserCircle, GraduationCap, BookOpen, FileText, Calendar,
-  PenSquare, Accessibility, HeartPulse, AlertTriangle, Bell, Menu, X, LogOut,
+  PenSquare, ClipboardCheck, Accessibility, HeartPulse, AlertTriangle, Bell, Menu, X, LogOut,
 } from 'lucide-react';
 import type { ComponentType } from 'react';
 import { useAuth } from '../auth/AuthContext.js';
@@ -13,6 +13,7 @@ import { DemoBanner } from './DemoBanner.js';
 const NAV_ITEMS: Array<{ to: string; label: string; icon: ComponentType<{ className?: string }> }> = [
   { to: '/dashboard',     label: 'portal.nav.dashboard',     icon: LayoutDashboard },
   { to: '/profile',       label: 'portal.nav.profile',       icon: UserCircle },
+  { to: '/registration',  label: 'portal.nav.registration',  icon: ClipboardCheck },
   { to: '/enrolments',    label: 'portal.nav.enrolments',    icon: GraduationCap },
   { to: '/modules',       label: 'portal.nav.modules',       icon: BookOpen },
   { to: '/results',       label: 'portal.nav.results',       icon: FileText },

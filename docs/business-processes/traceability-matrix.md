@@ -17,10 +17,10 @@ How far each academic-journey process (areas 01–06) can be carried out in the 
 
 | Coverage | Processes |
 |---|---|
-| On screen | 39 |
+| On screen | 40 |
 | Partly built | 7 |
 | API only | 0 |
-| Not built | 3 |
+| Not built | 2 |
 
 | Process | Coverage | Staff screen | Student portal | Gap |
 |---|---|---|---|---|
@@ -40,7 +40,7 @@ How far each academic-journey process (areas 01–06) can be carried out in the 
 | [BP-02-007](02-registration-and-student-status/bp-02-007-interrupt-or-suspend-studies.md) Interrupt or suspend studies | On screen | Status cases (interruption, suspension) | Enrolment page: request an interruption | Funding and Student-visa notices before requesting |
 | [BP-02-008](02-registration-and-student-status/bp-02-008-return-from-interruption.md) Return from interruption | On screen | Status cases (return, with return conditions) | Enrolment page: request a return | Offered only after an approved interruption |
 | [BP-02-009](02-registration-and-student-status/bp-02-009-withdraw-from-studies.md) Withdraw from studies | On screen | Status cases (withdrawal) | Enrolment page: request a withdrawal | Sponsored students need UKVI compliance advice before a decision |
-| [BP-02-010](02-registration-and-student-status/bp-02-010-complete-annual-re-registration.md) Complete annual re-registration | Not built | — | — | `reenrolment_period` and `reenrolment_confirmation` tables exist with no service or API |
+| [BP-02-010](02-registration-and-student-status/bp-02-010-complete-annual-re-registration.md) Complete annual re-registration | On screen | Registration: open a period, follow who has registered, register a student on their behalf (with a reason), close the period | Registration: accept the current terms and register | Confirmation is blocked until the previous year's results are ratified; fee debt does not block (D-8); closing lapses unregistered students |
 | [BP-02-011](02-registration-and-student-status/bp-02-011-resolve-failure-to-register.md) Resolve failure to register or re-register | Not built | — | — | Non-registration decisions are not modelled |
 | [BP-02-012](02-registration-and-student-status/bp-02-012-close-leaver-record.md) Close a leaver record and entitlements | On screen | Status cases (leaver closure, closure items) | — | Closure does not itself end access; withdrawal and graduation delivery flows do |
 | [BP-03-001](03-curriculum-and-module-registration/bp-03-001-import-and-publish-curriculum-data.md) Import and publish curriculum data to the SRS | On screen | Curriculum publications list and review | — | Programmes and modules only; a person cannot apply a publication they entered |
@@ -93,7 +93,7 @@ Principal integration flows are summarised by system pair below; see the [Enterp
 
 | Process | Workflow | Requirements | Entities | Events | Contracts | Alignment/gap |
 |---|---|---|---|---|---|---|
-| BP-02-010 Complete annual re-registration | W010 | ENR-003, ENR-005, ENR-008–ENR-010; REG-001–REG-007 where coupled | `enrolment`, `reenrolment_period`, `reenrolment_confirmation`, `person_identity`, `student_address`, `student_contact_method`, `fee_liability`, `student_hold`, `slc_notification`, `integration_exchange` | `srs.student.re-enrolled` and `srs.enrolment.fee-liability-updated` are documented but remain in the not-implemented event backlog | `portal-self-service-update.v1`, `finance-fee-liability.v1`, `slc-enrolment-exchange.v1`, `iam-account-provisioning.v1`, `vle-course-provisioning.v1`, `library-access-entitlement.v1` | Current W010 provides a state skeleton; national/student-mode variations, acknowledgement/reconciliation and non-registration outcome need more detail |
+| BP-02-010 Complete annual re-registration | W010 | ENR-003, ENR-005, ENR-008–ENR-010; REG-001–REG-007 where coupled | `enrolment`, `reenrolment_period`, `reenrolment_confirmation`, `person_identity`, `student_address`, `student_contact_method`, `fee_liability`, `student_hold`, `slc_notification`, `integration_exchange` | `srs.student.re-enrolled` is published on confirmation; `srs.enrolment.fee-liability-updated` remains in the not-implemented event backlog | `portal-self-service-update.v1`, `finance-fee-liability.v1`, `slc-enrolment-exchange.v1`, `iam-account-provisioning.v1`, `vle-course-provisioning.v1`, `library-access-entitlement.v1` | Current W010 provides a state skeleton; national/student-mode variations, acknowledgement/reconciliation and non-registration outcome need more detail |
 
 ## Registration and student-status wave
 

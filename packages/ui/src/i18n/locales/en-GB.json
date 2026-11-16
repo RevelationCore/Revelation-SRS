@@ -59,7 +59,8 @@
       "circumstances": "Circumstances",
       "notifications": "Notifications",
       "documents":     "Award documents",
-      "graduation":    "Graduation"
+      "graduation":    "Graduation",
+      "registration":  "Registration"
     },
     "enrolment": {
       "status": {

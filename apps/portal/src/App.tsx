@@ -29,6 +29,7 @@ const DisabilityPage = lazy(() => import('./pages/DisabilityPage.js').then((m) =
 const CircumstancesPage = lazy(() => import('./pages/CircumstancesPage.js').then((m) => ({ default: m.CircumstancesPage })));
 const NotificationsPage = lazy(() => import('./pages/NotificationsPage.js').then((m) => ({ default: m.NotificationsPage })));
 const DocumentsPage = lazy(() => import('./pages/DocumentsPage.js').then((m) => ({ default: m.DocumentsPage })));
+const RegistrationPage = lazy(() => import('./pages/RegistrationPage.js').then((m) => ({ default: m.RegistrationPage })));
 const GraduationPage = lazy(() => import('./pages/GraduationPage.js').then((m) => ({ default: m.GraduationPage })));
 
 function PageLoading() {
@@ -58,6 +59,7 @@ export function App() {
           <Route path="/profile/edit"          element={<ProfileEditPage />} />
           <Route path="/profile/addresses/new" element={<AddAddressPage />} />
           <Route path="/profile/addresses/:addressId/edit" element={<AddAddressPage />} />
+          <Route path="/registration"          element={<RegistrationPage />} />
           <Route path="/enrolments"            element={<EnrolmentsPage />} />
           <Route path="/enrolments/:enrolmentId" element={<EnrolmentDetailPage />} />
           <Route path="/modules"               element={<ModulesPage />} />

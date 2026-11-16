@@ -72,7 +72,7 @@ export class RegistrationPeriodService {
   async openPeriod(tenantId: string, input: OpenPeriodInput, actorId: string): Promise<PeriodDto> {
     if (!/^\d{4}-\d{2}$/.test(input.academicYear)) throw new ValidationError('The academic year looks like 2027-28');
     if (new Date(input.closesAt) <= new Date(input.opensAt)) throw new ValidationError('A period must close after it opens');
-    if (!(await this.#termsVersion(tenantId))) {
+    if (!(await this.termsVersion(tenantId))) {
       throw new ValidationError('Set the registration terms version (tenant configuration registrationTermsVersion) before opening a period');
     }
     const [period] = await withTenantContext(this.db, tenantId, (tx) => tx.insert(reenrolmentPeriods).values({
@@ -141,7 +141,7 @@ export class RegistrationPeriodService {
 
   /** A student's registrations: what they can confirm now, and what they already have. */
   async registrationsForPerson(tenantId: string, personId: string): Promise<MyRegistrationDto[]> {
-    const termsVersion = await this.#termsVersion(tenantId);
+    const termsVersion = await this.termsVersion(tenantId);
     return withTenantContext(this.db, tenantId, async (tx) => {
       const mine = await tx.select().from(enrolments).where(and(
         eq(enrolments.tenantId, tenantId as Uuid), eq(enrolments.personId, personId as Uuid), isNull(enrolments.recordedUntil), isNull(enrolments.validTo),
@@ -190,7 +190,7 @@ export class RegistrationPeriodService {
     } else if (current.statusCode !== 'pending' || period.closedAt || clockNow() > period.closesAt) {
       throw new ConflictError('This registration period has closed: contact the registry');
     }
-    const termsVersion = await this.#termsVersion(tenantId);
+    const termsVersion = await this.termsVersion(tenantId);
     if (!termsVersion || input.acceptedTermsVersion !== termsVersion) {
       throw new ConflictError(`The terms have changed: please read and accept version ${termsVersion ?? '(not set)'}`);
     }
@@ -273,7 +273,8 @@ export class RegistrationPeriodService {
     return [...found, ...(await this.blockers.blockersFor(tenantId, enrolmentId, period.academicYear))];
   }
 
-  async #termsVersion(tenantId: string): Promise<string | null> {
+  /** The terms version students accept now (tenant configuration registrationTermsVersion). */
+  async termsVersion(tenantId: string): Promise<string | null> {
     const [row] = await this.db.select({ configuration: tenants.configuration }).from(tenants).where(eq(tenants.id, tenantId as Uuid)).limit(1);
     const version = row?.configuration?.['registrationTermsVersion'];
     return typeof version === 'string' && version.trim() ? version : null;

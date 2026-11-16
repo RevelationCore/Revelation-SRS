@@ -572,3 +572,17 @@ export function listMyGraduationInvitations(personId: string): Promise<MyGraduat
 export function respondToGraduationInvitation(invitationId: string, body: { responseCode: string; guestCount?: number; accessibilityRequired?: boolean }): Promise<MyGraduationInvitation> {
   return api.post(`/api/v1/graduation-invitations/${invitationId}/response`, body);
 }
+
+/** Annual registration (BP-02-010; D-8). */
+export interface MyRegistration {
+  confirmation: { confirmationId: string; enrolmentId: string; statusCode: 'pending' | 'confirmed' | 'lapsed'; confirmedAt: string | null; channelCode: 'portal' | 'assisted' | null; termsVersion: string | null };
+  period: { periodId: string; academicYear: string; opensAt: string; closesAt: string; periodTypeCode: 'annual' | 'initial'; closedAt: string | null };
+  blockers: Array<{ code: string; message: string }>;
+  termsVersion: string | null;
+}
+export function listMyRegistrations(personId: string): Promise<MyRegistration[]> {
+  return api.get(`/api/v1/students/${personId}/registrations`);
+}
+export function confirmMyRegistration(confirmationId: string, acceptedTermsVersion: string): Promise<unknown> {
+  return api.post(`/api/v1/registration-confirmations/${confirmationId}/confirmation`, { acceptedTermsVersion });
+}

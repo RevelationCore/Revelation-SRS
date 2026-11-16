@@ -58,6 +58,7 @@ interface DomainEventEnvelope<T> {
 | `srs.student.identity-updated` | personal | `personId` | identity-service, vle-adapter, finance-adapter |
 | `srs.student.enrolled` | personal | `personId` | finance-adapter, vle-adapter, wellbeing-module |
 | `srs.student.status-changed` | personal | `personId` | finance-adapter, vle-adapter, wellbeing-module |
+| `srs.student.re-enrolled` | personal | `personId` | finance-adapter, vle-adapter |
 | `srs.student.disability-declaration-updated` | special-category | `personId` | wellbeing-module, disability-service |
 
 ### Identity (`srs.identity.*`)
@@ -180,7 +181,6 @@ These events were planned in Phase 2 but not implemented in Phases 4–6. They r
 > **Not covered by this backlog**: CRM, Library, Accommodation, Estates, Online ID Verification, Student Evaluation of Teaching Software, Payroll, Research Proposals, Content Management Systems and IT Service Management are deliberately absent from the list below — they are not "planned but unbuilt". Their contracts are seeded (migration `0006_adjustments_integration_and_support` (section `0019_partner_systems_contracts`)) and simulated end-to-end by `apps/partner-systems-sandbox` against the real integration registry — see `docs/architecture/integration-contract-catalogue.md`.
 
 ### Student lifecycle
-- `srs.student.re-enrolled` — Annual re-enrolment confirmation
 - `srs.student.hold-applied` / `srs.student.hold-released` — Account holds
 
 ### Fee and finance

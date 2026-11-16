@@ -31,7 +31,8 @@ export function registrationPeriodRoutes(fastify: FastifyInstance): void {
     schema: { response: { 200: Type.Array(Json) } },
     preHandler: [requirePermission('registration:read')],
   }, async (request, reply) => {
-    await reply.send((await fastify.registrationPeriodService.listPeriods(request.tenantId)).map(periodToWire));
+    const termsVersion = await fastify.registrationPeriodService.termsVersion(request.tenantId);
+    await reply.send((await fastify.registrationPeriodService.listPeriods(request.tenantId)).map((p) => ({ ...periodToWire(p), termsVersion })));
   });
 
   fastify.get('/registration-periods/:periodId', {
@@ -39,7 +40,8 @@ export function registrationPeriodRoutes(fastify: FastifyInstance): void {
     preHandler: [requirePermission('registration:read')],
   }, async (request, reply) => {
     const { periodId } = request.params as { periodId: string };
-    await reply.send(periodToWire(await fastify.registrationPeriodService.getPeriod(request.tenantId, periodId)));
+    const termsVersion = await fastify.registrationPeriodService.termsVersion(request.tenantId);
+    await reply.send({ ...periodToWire(await fastify.registrationPeriodService.getPeriod(request.tenantId, periodId)), termsVersion });
   });
 
   fastify.post('/registration-periods/:periodId/refresh', {
