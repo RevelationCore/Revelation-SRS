@@ -17,6 +17,8 @@
  * Required environments fail during setup when either URL is unavailable.
  * Run with: pnpm test:e2e:playwright:golden
  */
+import { createHmac } from 'node:crypto';
+
 import { type Page, test, expect } from '@playwright/test';
 
 import { GOLDEN_IDS } from '../../packages/demo-data/src/golden-ids.js';
@@ -32,10 +34,15 @@ function b64url(obj: unknown): string {
     .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
 }
 
+// Signed with the API's HS256 secret: the API rejects unsigned (alg: none)
+// tokens. Locally the API reads JWT_SECRET from .env (copied from .env.example).
+const JWT_SECRET = process.env['JWT_SECRET'] ?? 'change-me-in-production-use-keycloak-jwks';
+
 function makeJwt(payload: Record<string, unknown>): string {
-  const header = b64url({ alg: 'none', typ: 'JWT' });
+  const header = b64url({ alg: 'HS256', typ: 'JWT' });
   const body   = b64url(payload);
-  return `${header}.${body}.golden-sig`;
+  const signature = createHmac('sha256', JWT_SECRET).update(`${header}.${body}`).digest('base64url');
+  return `${header}.${body}.${signature}`;
 }
 
 const EXP = 9_999_999_999;

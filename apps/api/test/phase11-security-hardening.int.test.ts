@@ -171,6 +171,24 @@ describe('error sanitisation (NFR-SEC-011)', () => {
 
 // ─── NFR-SEC-004 — Unauthenticated endpoint audit ────────────────────────────
 
+describe('token verification', () => {
+  const b64 = (o: unknown) => Buffer.from(JSON.stringify(o)).toString('base64url');
+  const claims = { sub: 'attacker', tenant_id: '00000000-0000-0000-0000-000000000001', realm_roles: ['tenant-administrator'], exp: 9_999_999_999 };
+
+  // Until the fast-jwt 6 upgrade (2026-11-16) the HS256 path accepted these.
+  test('rejects an unsigned (alg: none) token', async () => {
+    const token = `${b64({ alg: 'none', typ: 'JWT' })}.${b64(claims)}.`;
+    const res = await ctx.app.inject({ method: 'GET', url: '/api/v1/students', headers: { authorization: `Bearer ${token}` } });
+    expect(res.statusCode).toBe(401);
+  });
+
+  test('rejects an HS256 token with a forged signature', async () => {
+    const token = `${b64({ alg: 'HS256', typ: 'JWT' })}.${b64(claims)}.${Buffer.from('forged').toString('base64url')}`;
+    const res = await ctx.app.inject({ method: 'GET', url: '/api/v1/students', headers: { authorization: `Bearer ${token}` } });
+    expect(res.statusCode).toBe(401);
+  });
+});
+
 describe('OpenAPI security coverage (NFR-SEC-004)', () => {
   test('every non-public route in the spec carries at least one security scheme', async () => {
     const response = await ctx.app.inject({

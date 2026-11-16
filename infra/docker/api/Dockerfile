@@ -1,49 +1,32 @@
-# ── Stage 1: dependencies ──────────────────────────────────────────────────────
-FROM node:22-alpine AS deps
+# ── Stage 1: build ─────────────────────────────────────────────────────────────
+# Installs and builds only the API and the workspace packages it imports, then
+# `pnpm deploy` produces a pruned production copy with those packages inlined.
+FROM node:22-bookworm-slim AS build
 RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
 WORKDIR /app
 
-# Copy workspace manifests only (cache busts only when deps change)
-COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
-COPY packages/domain/package.json  ./packages/domain/
-COPY packages/db/package.json      ./packages/db/
-COPY packages/auth/package.json    ./packages/auth/
-COPY packages/workflow/package.json ./packages/workflow/
-COPY apps/api/package.json         ./apps/api/
+# The Temporal SDK's native bridge needs glibc, so Debian slim rather than Alpine.
+# Install scripts are skipped: nothing the API runs needs a native build.
+COPY . .
+RUN pnpm install --frozen-lockfile --ignore-scripts --filter "@revelation-srs/api..."
+RUN pnpm --filter "@revelation-srs/api..." build
+RUN pnpm --filter @revelation-srs/api deploy --prod --ignore-scripts /out
 
-RUN pnpm install --frozen-lockfile --prod=false
-
-# ── Stage 2: build ─────────────────────────────────────────────────────────────
-FROM deps AS build
-COPY tsconfig.base.json ./
-COPY packages/domain/  ./packages/domain/
-COPY packages/db/      ./packages/db/
-COPY packages/auth/    ./packages/auth/
-COPY packages/workflow/ ./packages/workflow/
-COPY apps/api/         ./apps/api/
-
-RUN pnpm -r build
-
-# ── Stage 3: production image ──────────────────────────────────────────────────
-FROM node:22-alpine AS runtime
+# ── Stage 2: production image ──────────────────────────────────────────────────
+FROM node:22-bookworm-slim AS runtime
 
 # Non-root user
-RUN addgroup -S srs && adduser -S srs -G srs
+RUN groupadd --system srs && useradd --system --gid srs srs
+# The runtime needs only node: drop the bundled npm, npx and corepack (and their advisories).
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack
 WORKDIR /app
 
-# Production-only node_modules
-COPY --from=build /app/node_modules      ./node_modules
-COPY --from=build /app/packages/domain/dist  ./packages/domain/dist
-COPY --from=build /app/packages/db/dist      ./packages/db/dist
-COPY --from=build /app/packages/auth/dist    ./packages/auth/dist
-COPY --from=build /app/packages/workflow/dist ./packages/workflow/dist
-COPY --from=build /app/apps/api/dist         ./apps/api/dist
-COPY --from=build /app/apps/api/package.json ./apps/api/
+COPY --from=build --chown=srs:srs /out ./
 
 USER srs
 EXPOSE 3000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s \
-  CMD wget -qO- http://localhost:3000/health || exit 1
+  CMD node -e "fetch('http://localhost:3000/health').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"
 
-CMD ["node", "apps/api/dist/main.js"]
+CMD ["node", "dist/main.js"]

@@ -1,0 +1,16 @@
+# Build context for infra/docker/* images. Dependencies and build output are
+# produced inside the image; local copies must never leak in.
+**/node_modules
+**/dist
+**/*.tsbuildinfo
+**/coverage
+.git
+.env
+.env.*
+!.env.example
+test-results
+playwright-report
+.lighthouseci
+**/test
+e2e
+docs

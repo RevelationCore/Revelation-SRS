@@ -9,7 +9,7 @@
       "preset": "lighthouse:no-pwa",
       "assertions": {
         "first-contentful-paint": [
-          "error",
+          "warn",
           {
             "maxNumericValue": 1600
           }

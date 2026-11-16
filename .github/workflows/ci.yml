@@ -331,6 +331,10 @@ jobs:
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps chromium
 
+      # The dev servers resolve workspace packages from their built output.
+      - name: Build the packages the UIs import
+        run: pnpm --filter "@revelation-srs/admin^..." --filter "@revelation-srs/portal^..." build
+
       - name: Run mocked UI tests
         id: mocked_ui_tests
         run: pnpm test:ui:mocked
@@ -429,6 +433,9 @@ jobs:
   golden-e2e:
     name: Real Full-stack Journey
     runs-on: ubuntu-latest
+    env:
+      # The API and the journey's signed test tokens must share one secret.
+      JWT_SECRET: journey-hs256-secret
     needs: [integration-tests]
     steps:
       - uses: actions/checkout@v4
@@ -475,7 +482,6 @@ jobs:
         run: pnpm test:journey
         env:
           DATABASE_URL:            postgres://srs:srs@localhost:5432/srs
-          JWT_SECRET:              test-secret
           DEMO_DATA_ENABLED:       "true"
           TESTCONTAINERS_RYUK_DISABLED: "true"
 

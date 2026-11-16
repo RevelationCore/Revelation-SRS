@@ -1,25 +1,14 @@
-# ── Stage 1: dependencies ──────────────────────────────────────────────────────
-FROM node:22-alpine AS deps
+# ── Stage 1: build ─────────────────────────────────────────────────────────────
+# Installs and builds only the portal and the workspace packages it imports.
+FROM node:22-alpine AS build
 RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
 WORKDIR /app
 
-# Copy workspace manifests only (cache busts only when deps change)
-COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
-COPY packages/ui/package.json     ./packages/ui/
-COPY apps/portal/package.json     ./apps/portal/
+COPY . .
+RUN pnpm install --frozen-lockfile --ignore-scripts --filter "@revelation-srs/portal..."
+RUN pnpm --filter "@revelation-srs/portal..." build
 
-RUN pnpm install --frozen-lockfile --prod=false
-
-# ── Stage 2: build ─────────────────────────────────────────────────────────────
-FROM deps AS build
-COPY tsconfig.base.json ./
-COPY packages/ui/      ./packages/ui/
-COPY apps/portal/      ./apps/portal/
-
-# Vite reads UI sources via path alias — no pre-build of packages/ui required
-RUN pnpm --filter @revelation-srs/portal build
-
-# ── Stage 3: production image ──────────────────────────────────────────────────
+# ── Stage 2: production image ──────────────────────────────────────────────────
 FROM nginx:1.27-alpine AS runtime
 
 COPY infra/docker/portal/nginx.conf /etc/nginx/conf.d/default.conf
