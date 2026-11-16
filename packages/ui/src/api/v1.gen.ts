@@ -612,6 +612,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/enrolments/{enrolmentId}/status-case-options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getEnrolmentsByEnrolmentIdStatusCaseOptions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/status-cases/{statusCaseId}": {
         parameters: {
             query?: never;
@@ -1789,6 +1805,22 @@ export interface paths {
             cookie?: never;
         };
         get: operations["getEnrolmentsByEnrolmentIdProgressionHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/progression-decisions/{progressionDecisionId}/evidence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getProgressionDecisionsByProgressionDecisionIdEvidence"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3875,86 +3907,6 @@ export interface paths {
         get: operations["getEnrolmentsByEnrolmentId"];
         put?: never;
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/enrolments/{enrolmentId}/intermit": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["createEnrolmentsByEnrolmentIdIntermit"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/enrolments/{enrolmentId}/suspend": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["createEnrolmentsByEnrolmentIdSuspend"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/enrolments/{enrolmentId}/withdraw": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["createEnrolmentsByEnrolmentIdWithdraw"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/enrolments/{enrolmentId}/graduate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["createEnrolmentsByEnrolmentIdGraduate"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/enrolments/{enrolmentId}/reinstate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["createEnrolmentsByEnrolmentIdReinstate"];
         delete?: never;
         options?: never;
         head?: never;
@@ -8191,6 +8143,13 @@ export interface operations {
                             resolvedAt: string | null;
                             resolutionNote: string | null;
                         }[];
+                        subject?: {
+                            personId: string;
+                            studentNumber: string;
+                            studentName: string;
+                            programmeCode: string | null;
+                            programmeTitle: string | null;
+                        };
                     }[];
                 };
             };
@@ -8268,6 +8227,13 @@ export interface operations {
                             resolvedAt: string | null;
                             resolutionNote: string | null;
                         }[];
+                        subject?: {
+                            personId: string;
+                            studentNumber: string;
+                            studentName: string;
+                            programmeCode: string | null;
+                            programmeTitle: string | null;
+                        };
                     }[];
                 };
             };
@@ -8387,6 +8353,13 @@ export interface operations {
                             resolvedAt: string | null;
                             resolutionNote: string | null;
                         }[];
+                        subject?: {
+                            personId: string;
+                            studentNumber: string;
+                            studentName: string;
+                            programmeCode: string | null;
+                            programmeTitle: string | null;
+                        };
                     };
                 };
             };
@@ -8434,6 +8407,79 @@ export interface operations {
             };
             /** @description Default Response */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getEnrolmentsByEnrolmentIdStatusCaseOptions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrolmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        enrolmentStatusCode: string;
+                        requestableTypes: string[];
+                        openCaseId: string | null;
+                        returnFrom: {
+                            statusCaseId: string;
+                            caseTypeCode: string;
+                            approvedEffectiveDate: string | null;
+                            approvedReturnDate: string | null;
+                            outstandingConditions: {
+                                conditionId: string;
+                                statusCaseId: string;
+                                conditionTypeCode: string;
+                                description: string;
+                                dueDate: string | null;
+                                statusCode: string;
+                                evidenceRef: string | null;
+                                resolvedBy: string | null;
+                                resolvedAt: string | null;
+                                resolutionNote: string | null;
+                            }[];
+                        } | null;
+                        sponsored: boolean;
+                    };
+                };
+            };
+            /** @description Default Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -8520,6 +8566,13 @@ export interface operations {
                             resolvedAt: string | null;
                             resolutionNote: string | null;
                         }[];
+                        subject?: {
+                            personId: string;
+                            studentNumber: string;
+                            studentName: string;
+                            programmeCode: string | null;
+                            programmeTitle: string | null;
+                        };
                     };
                 };
             };
@@ -8633,6 +8686,13 @@ export interface operations {
                             resolvedAt: string | null;
                             resolutionNote: string | null;
                         }[];
+                        subject?: {
+                            personId: string;
+                            studentNumber: string;
+                            studentName: string;
+                            programmeCode: string | null;
+                            programmeTitle: string | null;
+                        };
                     };
                 };
             };
@@ -8760,6 +8820,13 @@ export interface operations {
                             resolvedAt: string | null;
                             resolutionNote: string | null;
                         }[];
+                        subject?: {
+                            personId: string;
+                            studentNumber: string;
+                            studentName: string;
+                            programmeCode: string | null;
+                            programmeTitle: string | null;
+                        };
                     };
                 };
             };
@@ -8971,6 +9038,13 @@ export interface operations {
                             resolvedAt: string | null;
                             resolutionNote: string | null;
                         }[];
+                        subject?: {
+                            personId: string;
+                            studentNumber: string;
+                            studentName: string;
+                            programmeCode: string | null;
+                            programmeTitle: string | null;
+                        };
                     };
                 };
             };
@@ -9090,6 +9164,13 @@ export interface operations {
                             resolvedAt: string | null;
                             resolutionNote: string | null;
                         }[];
+                        subject?: {
+                            personId: string;
+                            studentNumber: string;
+                            studentName: string;
+                            programmeCode: string | null;
+                            programmeTitle: string | null;
+                        };
                     };
                 };
             };
@@ -14117,6 +14198,59 @@ export interface operations {
                         recordedAt: string;
                         recordedUntil: string | null;
                     }[];
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getProgressionDecisionsByProgressionDecisionIdEvidence: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                progressionDecisionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        requiredCredits: number;
+                        earnedCredits: number;
+                        compensationCredits: number;
+                        unresolvedCredits: number;
+                        compensationThreshold: number | null;
+                        compensationCreditLimit: number;
+                        condonementThreshold: number | null;
+                        decisionCode: string;
+                        recognisedCredits: number;
+                        recognisedCreditIds: string[];
+                        appliedExceptions: {
+                            exceptionId: string;
+                            ruleCode: string;
+                            exceptionTypeCode: string;
+                        }[];
+                        calculatedAt: string;
+                    };
                 };
             };
             /** @description Default Response */
@@ -21534,291 +21668,6 @@ export interface operations {
             };
             /** @description Default Response */
             404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        type: string;
-                        title: string;
-                        status: number;
-                        detail?: string;
-                    };
-                };
-            };
-        };
-    };
-    createEnrolmentsByEnrolmentIdIntermit: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                enrolmentId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /** Format: date-time */
-                    validFrom?: string;
-                    reasonCode?: string;
-                    reasonText?: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Default Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Default Response */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        type: string;
-                        title: string;
-                        status: number;
-                        detail?: string;
-                    };
-                };
-            };
-            /** @description Default Response */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        type: string;
-                        title: string;
-                        status: number;
-                        detail?: string;
-                    };
-                };
-            };
-        };
-    };
-    createEnrolmentsByEnrolmentIdSuspend: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                enrolmentId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /** Format: date-time */
-                    validFrom?: string;
-                    reasonCode?: string;
-                    reasonText?: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Default Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Default Response */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        type: string;
-                        title: string;
-                        status: number;
-                        detail?: string;
-                    };
-                };
-            };
-            /** @description Default Response */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        type: string;
-                        title: string;
-                        status: number;
-                        detail?: string;
-                    };
-                };
-            };
-        };
-    };
-    createEnrolmentsByEnrolmentIdWithdraw: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                enrolmentId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /** Format: date-time */
-                    validFrom?: string;
-                    reasonCode?: string;
-                    reasonText?: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Default Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Default Response */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        type: string;
-                        title: string;
-                        status: number;
-                        detail?: string;
-                    };
-                };
-            };
-            /** @description Default Response */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        type: string;
-                        title: string;
-                        status: number;
-                        detail?: string;
-                    };
-                };
-            };
-        };
-    };
-    createEnrolmentsByEnrolmentIdGraduate: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                enrolmentId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /** Format: date-time */
-                    validFrom?: string;
-                    reasonCode?: string;
-                    reasonText?: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Default Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Default Response */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        type: string;
-                        title: string;
-                        status: number;
-                        detail?: string;
-                    };
-                };
-            };
-            /** @description Default Response */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        type: string;
-                        title: string;
-                        status: number;
-                        detail?: string;
-                    };
-                };
-            };
-        };
-    };
-    createEnrolmentsByEnrolmentIdReinstate: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                enrolmentId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /** Format: date-time */
-                    validFrom?: string;
-                    reasonCode?: string;
-                    reasonText?: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Default Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Default Response */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        type: string;
-                        title: string;
-                        status: number;
-                        detail?: string;
-                    };
-                };
-            };
-            /** @description Default Response */
-            422: {
                 headers: {
                     [name: string]: unknown;
                 };

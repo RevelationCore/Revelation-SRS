@@ -161,6 +161,59 @@ describe('transfer', () => {
     expect(approved.enrolmentStatusTransitionId).not.toBeNull();
     expect(await enrolmentStatus(s.enrolmentId)).toMatchObject({ statusCode: 'enrolled', modeOfStudyCode: 'part-time' });
   });
+
+  it('a transfer to another programme needs the destination programme\'s support', async () => {
+    const s = await student('Tdp');
+    const programme = await call('POST', '/programmes', registryJwt, { code: 'TDP-DEST', title: 'Destination Programme', fheqLevel: 6, creditTotal: 360 });
+    const destinationProgrammeId = programme.json<{ programmeId: string }>().programmeId;
+    const t = await open(s.enrolmentId, s.jwt, { caseTypeCode: 'transfer', destinationProgrammeId, requestedEffectiveDate: '2030-01-15' });
+    const refused = await decide(t.statusCaseId, 'approved');
+    expect(refused.statusCode).toBe(409);
+    expect(refused.json<{ detail: string }>().detail).toMatch(/destination programme/);
+    await call('POST', `/status-cases/${t.statusCaseId}/assessments`, academicJwt, { assessorRoleCode: 'destination-academic', outcomeCode: 'supports' });
+    expect((await decide(t.statusCaseId, 'approved')).statusCode).toBe(200);
+  });
+});
+
+describe('what a student may request', () => {
+  it('follows the enrolment\'s status, offers a return only after an approved interruption, and none while a case is open', async () => {
+    type Options = { requestableTypes: string[]; openCaseId: string | null; returnFrom: { statusCaseId: string; outstandingConditions: unknown[] } | null; sponsored: boolean };
+    const s = await student('Opt');
+    const options = async () => (await call('GET', `/enrolments/${s.enrolmentId}/status-case-options`, s.jwt)).json<Options>();
+    expect(await options()).toMatchObject({ requestableTypes: ['interruption', 'withdrawal', 'transfer'], openCaseId: null, returnFrom: null, sponsored: false });
+
+    const i = await open(s.enrolmentId, s.jwt, { caseTypeCode: 'interruption', requestedEffectiveDate: '2030-03-01', expectedReturnDate: '2030-09-01', reasonCategoryCode: 'health' });
+    expect(await options()).toMatchObject({ requestableTypes: [], openCaseId: i.statusCaseId });
+
+    await call('POST', `/status-cases/${i.statusCaseId}/conditions`, registryJwt, { conditionTypeCode: 'fitness-to-study', description: 'Fit-to-study note' });
+    expect((await decide(i.statusCaseId, 'approved')).statusCode).toBe(200);
+    const after = await options();
+    expect(after.requestableTypes).toEqual(['return', 'withdrawal']);
+    expect(after.returnFrom?.statusCaseId).toBe(i.statusCaseId);
+    expect(after.returnFrom?.outstandingConditions).toHaveLength(1);
+
+    const other = await student('Oth');
+    expect((await call('GET', `/enrolments/${other.enrolmentId}/status-case-options`, s.jwt)).statusCode).toBe(403);
+  });
+});
+
+describe('sponsored students', () => {
+  it('a sponsored student\'s withdrawal needs UKVI compliance advice before it is decided', async () => {
+    const s = await student('Spo');
+    await ctx.db.execute(sql`
+      INSERT INTO ukvi_visa_status (id, tenant_id, enrolment_id, cas_reference, status_code, effective_date, valid_from)
+      VALUES (gen_random_uuid(), ${ctx.tenantId}, ${s.enrolmentId}, 'CAS-SPO-1', 'active', '2026-09-01', now())
+    `);
+    expect((await call('GET', `/enrolments/${s.enrolmentId}/status-case-options`, s.jwt)).json<{ sponsored: boolean }>().sponsored).toBe(true);
+    const w = await open(s.enrolmentId, s.jwt, { caseTypeCode: 'withdrawal', requestedEffectiveDate: '2030-02-01', reasonCategoryCode: 'personal' });
+    const refused = await decide(w.statusCaseId, 'approved');
+    expect(refused.statusCode).toBe(409);
+    expect(refused.json<{ detail: string }>().detail).toMatch(/UKVI compliance advice/);
+    expect((await call('POST', `/status-cases/${w.statusCaseId}/assessments`, registryJwt, {
+      assessorRoleCode: 'compliance', outcomeCode: 'supports', note: 'Report to UKVI within 10 working days',
+    })).statusCode).toBe(200);
+    expect((await decide(w.statusCaseId, 'approved')).statusCode).toBe(200);
+  });
 });
 
 describe('access and failure', () => {
@@ -186,5 +239,17 @@ describe('access and failure', () => {
     const list = (await call('GET', '/status-cases', registryJwt)).json<Case[]>();
     expect(list.every((c) => c.statusCode === 'requested')).toBe(true);
     expect(list.length).toBeGreaterThan(0);
+  });
+
+  it('shows assessors who cannot open student records who each case is about', async () => {
+    const list = (await call('GET', '/status-cases', academicJwt)).json<Array<Case & { subject: { personId: string; studentName: string; studentNumber: string } }>>();
+    expect(list.length).toBeGreaterThan(0);
+    for (const c of list) {
+      expect(c.subject.personId).toBe(c.personId);
+      expect(c.subject.studentName).toMatch(/Status$/);
+      expect(c.subject.studentNumber).not.toBe('');
+    }
+    const one = (await call('GET', `/status-cases/${list[0]!.statusCaseId}`, academicJwt)).json<{ subject: { personId: string } }>();
+    expect(one.subject.personId).toBe(list[0]!.personId);
   });
 });

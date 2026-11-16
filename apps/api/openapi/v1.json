@@ -6406,6 +6406,47 @@
                             }
                           }
                         }
+                      },
+                      "subject": {
+                        "type": "object",
+                        "required": [
+                          "personId",
+                          "studentNumber",
+                          "studentName",
+                          "programmeCode",
+                          "programmeTitle"
+                        ],
+                        "properties": {
+                          "personId": {
+                            "type": "string"
+                          },
+                          "studentNumber": {
+                            "type": "string"
+                          },
+                          "studentName": {
+                            "type": "string"
+                          },
+                          "programmeCode": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "programmeTitle": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        }
                       }
                     }
                   }
@@ -6828,6 +6869,47 @@
                                 }
                               ]
                             }
+                          }
+                        }
+                      },
+                      "subject": {
+                        "type": "object",
+                        "required": [
+                          "personId",
+                          "studentNumber",
+                          "studentName",
+                          "programmeCode",
+                          "programmeTitle"
+                        ],
+                        "properties": {
+                          "personId": {
+                            "type": "string"
+                          },
+                          "studentNumber": {
+                            "type": "string"
+                          },
+                          "studentName": {
+                            "type": "string"
+                          },
+                          "programmeCode": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "programmeTitle": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
                           }
                         }
                       }
@@ -7404,6 +7486,47 @@
                           }
                         }
                       }
+                    },
+                    "subject": {
+                      "type": "object",
+                      "required": [
+                        "personId",
+                        "studentNumber",
+                        "studentName",
+                        "programmeCode",
+                        "programmeTitle"
+                      ],
+                      "properties": {
+                        "personId": {
+                          "type": "string"
+                        },
+                        "studentNumber": {
+                          "type": "string"
+                        },
+                        "studentName": {
+                          "type": "string"
+                        },
+                        "programmeCode": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "programmeTitle": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
                     }
                   }
                 }
@@ -7498,6 +7621,256 @@
             }
           },
           "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/enrolments/{enrolmentId}/status-case-options": {
+      "get": {
+        "operationId": "getEnrolmentsByEnrolmentIdStatusCaseOptions",
+        "tags": [
+          "enrolments"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "enrolmentId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "enrolmentStatusCode",
+                    "requestableTypes",
+                    "openCaseId",
+                    "returnFrom",
+                    "sponsored"
+                  ],
+                  "properties": {
+                    "enrolmentStatusCode": {
+                      "type": "string"
+                    },
+                    "requestableTypes": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "openCaseId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "returnFrom": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": [
+                            "statusCaseId",
+                            "caseTypeCode",
+                            "approvedEffectiveDate",
+                            "approvedReturnDate",
+                            "outstandingConditions"
+                          ],
+                          "properties": {
+                            "statusCaseId": {
+                              "type": "string"
+                            },
+                            "caseTypeCode": {
+                              "type": "string"
+                            },
+                            "approvedEffectiveDate": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "approvedReturnDate": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "outstandingConditions": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "required": [
+                                  "conditionId",
+                                  "statusCaseId",
+                                  "conditionTypeCode",
+                                  "description",
+                                  "dueDate",
+                                  "statusCode",
+                                  "evidenceRef",
+                                  "resolvedBy",
+                                  "resolvedAt",
+                                  "resolutionNote"
+                                ],
+                                "properties": {
+                                  "conditionId": {
+                                    "type": "string"
+                                  },
+                                  "statusCaseId": {
+                                    "type": "string"
+                                  },
+                                  "conditionTypeCode": {
+                                    "type": "string"
+                                  },
+                                  "description": {
+                                    "type": "string"
+                                  },
+                                  "dueDate": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "statusCode": {
+                                    "type": "string"
+                                  },
+                                  "evidenceRef": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "resolvedBy": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "resolvedAt": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "resolutionNote": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "sponsored": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
             "description": "Default Response",
             "content": {
               "application/json": {
@@ -7939,6 +8312,47 @@
                               }
                             ]
                           }
+                        }
+                      }
+                    },
+                    "subject": {
+                      "type": "object",
+                      "required": [
+                        "personId",
+                        "studentNumber",
+                        "studentName",
+                        "programmeCode",
+                        "programmeTitle"
+                      ],
+                      "properties": {
+                        "personId": {
+                          "type": "string"
+                        },
+                        "studentNumber": {
+                          "type": "string"
+                        },
+                        "studentName": {
+                          "type": "string"
+                        },
+                        "programmeCode": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "programmeTitle": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         }
                       }
                     }
@@ -8444,6 +8858,47 @@
                               }
                             ]
                           }
+                        }
+                      }
+                    },
+                    "subject": {
+                      "type": "object",
+                      "required": [
+                        "personId",
+                        "studentNumber",
+                        "studentName",
+                        "programmeCode",
+                        "programmeTitle"
+                      ],
+                      "properties": {
+                        "personId": {
+                          "type": "string"
+                        },
+                        "studentNumber": {
+                          "type": "string"
+                        },
+                        "studentName": {
+                          "type": "string"
+                        },
+                        "programmeCode": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "programmeTitle": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         }
                       }
                     }
@@ -8980,6 +9435,47 @@
                               }
                             ]
                           }
+                        }
+                      }
+                    },
+                    "subject": {
+                      "type": "object",
+                      "required": [
+                        "personId",
+                        "studentNumber",
+                        "studentName",
+                        "programmeCode",
+                        "programmeTitle"
+                      ],
+                      "properties": {
+                        "personId": {
+                          "type": "string"
+                        },
+                        "studentNumber": {
+                          "type": "string"
+                        },
+                        "studentName": {
+                          "type": "string"
+                        },
+                        "programmeCode": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "programmeTitle": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         }
                       }
                     }
@@ -9771,6 +10267,47 @@
                           }
                         }
                       }
+                    },
+                    "subject": {
+                      "type": "object",
+                      "required": [
+                        "personId",
+                        "studentNumber",
+                        "studentName",
+                        "programmeCode",
+                        "programmeTitle"
+                      ],
+                      "properties": {
+                        "personId": {
+                          "type": "string"
+                        },
+                        "studentNumber": {
+                          "type": "string"
+                        },
+                        "studentName": {
+                          "type": "string"
+                        },
+                        "programmeCode": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "programmeTitle": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
                     }
                   }
                 }
@@ -10277,6 +10814,47 @@
                               }
                             ]
                           }
+                        }
+                      }
+                    },
+                    "subject": {
+                      "type": "object",
+                      "required": [
+                        "personId",
+                        "studentNumber",
+                        "studentName",
+                        "programmeCode",
+                        "programmeTitle"
+                      ],
+                      "properties": {
+                        "personId": {
+                          "type": "string"
+                        },
+                        "studentNumber": {
+                          "type": "string"
+                        },
+                        "studentName": {
+                          "type": "string"
+                        },
+                        "programmeCode": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "programmeTitle": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         }
                       }
                     }
@@ -23579,6 +24157,154 @@
                           }
                         ]
                       }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/progression-decisions/{progressionDecisionId}/evidence": {
+      "get": {
+        "operationId": "getProgressionDecisionsByProgressionDecisionIdEvidence",
+        "tags": [
+          "progression"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "progressionDecisionId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "requiredCredits",
+                    "earnedCredits",
+                    "compensationCredits",
+                    "unresolvedCredits",
+                    "compensationThreshold",
+                    "compensationCreditLimit",
+                    "condonementThreshold",
+                    "decisionCode",
+                    "recognisedCredits",
+                    "recognisedCreditIds",
+                    "appliedExceptions",
+                    "calculatedAt"
+                  ],
+                  "properties": {
+                    "requiredCredits": {
+                      "type": "number"
+                    },
+                    "earnedCredits": {
+                      "type": "number"
+                    },
+                    "compensationCredits": {
+                      "type": "number"
+                    },
+                    "unresolvedCredits": {
+                      "type": "number"
+                    },
+                    "compensationThreshold": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "compensationCreditLimit": {
+                      "type": "number"
+                    },
+                    "condonementThreshold": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "decisionCode": {
+                      "type": "string"
+                    },
+                    "recognisedCredits": {
+                      "type": "number"
+                    },
+                    "recognisedCreditIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "appliedExceptions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "exceptionId",
+                          "ruleCode",
+                          "exceptionTypeCode"
+                        ],
+                        "properties": {
+                          "exceptionId": {
+                            "type": "string"
+                          },
+                          "ruleCode": {
+                            "type": "string"
+                          },
+                          "exceptionTypeCode": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "calculatedAt": {
+                      "type": "string"
                     }
                   }
                 }
@@ -41115,526 +41841,6 @@
             }
           },
           "404": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "type",
-                    "title",
-                    "status"
-                  ],
-                  "properties": {
-                    "type": {
-                      "type": "string"
-                    },
-                    "title": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "number"
-                    },
-                    "detail": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/enrolments/{enrolmentId}/intermit": {
-      "post": {
-        "operationId": "createEnrolmentsByEnrolmentIdIntermit",
-        "tags": [
-          "enrolments"
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "validFrom": {
-                    "format": "date-time",
-                    "type": "string"
-                  },
-                  "reasonCode": {
-                    "type": "string"
-                  },
-                  "reasonText": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "in": "path",
-            "name": "enrolmentId",
-            "required": true
-          }
-        ],
-        "x-publication-class": "workflow",
-        "responses": {
-          "204": {
-            "description": "Default Response"
-          },
-          "404": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "type",
-                    "title",
-                    "status"
-                  ],
-                  "properties": {
-                    "type": {
-                      "type": "string"
-                    },
-                    "title": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "number"
-                    },
-                    "detail": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "type",
-                    "title",
-                    "status"
-                  ],
-                  "properties": {
-                    "type": {
-                      "type": "string"
-                    },
-                    "title": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "number"
-                    },
-                    "detail": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/enrolments/{enrolmentId}/suspend": {
-      "post": {
-        "operationId": "createEnrolmentsByEnrolmentIdSuspend",
-        "tags": [
-          "enrolments"
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "validFrom": {
-                    "format": "date-time",
-                    "type": "string"
-                  },
-                  "reasonCode": {
-                    "type": "string"
-                  },
-                  "reasonText": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "in": "path",
-            "name": "enrolmentId",
-            "required": true
-          }
-        ],
-        "x-publication-class": "workflow",
-        "responses": {
-          "204": {
-            "description": "Default Response"
-          },
-          "404": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "type",
-                    "title",
-                    "status"
-                  ],
-                  "properties": {
-                    "type": {
-                      "type": "string"
-                    },
-                    "title": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "number"
-                    },
-                    "detail": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "type",
-                    "title",
-                    "status"
-                  ],
-                  "properties": {
-                    "type": {
-                      "type": "string"
-                    },
-                    "title": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "number"
-                    },
-                    "detail": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/enrolments/{enrolmentId}/withdraw": {
-      "post": {
-        "operationId": "createEnrolmentsByEnrolmentIdWithdraw",
-        "tags": [
-          "enrolments"
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "validFrom": {
-                    "format": "date-time",
-                    "type": "string"
-                  },
-                  "reasonCode": {
-                    "type": "string"
-                  },
-                  "reasonText": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "in": "path",
-            "name": "enrolmentId",
-            "required": true
-          }
-        ],
-        "x-publication-class": "workflow",
-        "responses": {
-          "204": {
-            "description": "Default Response"
-          },
-          "404": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "type",
-                    "title",
-                    "status"
-                  ],
-                  "properties": {
-                    "type": {
-                      "type": "string"
-                    },
-                    "title": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "number"
-                    },
-                    "detail": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "type",
-                    "title",
-                    "status"
-                  ],
-                  "properties": {
-                    "type": {
-                      "type": "string"
-                    },
-                    "title": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "number"
-                    },
-                    "detail": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/enrolments/{enrolmentId}/graduate": {
-      "post": {
-        "operationId": "createEnrolmentsByEnrolmentIdGraduate",
-        "tags": [
-          "enrolments"
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "validFrom": {
-                    "format": "date-time",
-                    "type": "string"
-                  },
-                  "reasonCode": {
-                    "type": "string"
-                  },
-                  "reasonText": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "in": "path",
-            "name": "enrolmentId",
-            "required": true
-          }
-        ],
-        "x-publication-class": "public",
-        "responses": {
-          "204": {
-            "description": "Default Response"
-          },
-          "404": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "type",
-                    "title",
-                    "status"
-                  ],
-                  "properties": {
-                    "type": {
-                      "type": "string"
-                    },
-                    "title": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "number"
-                    },
-                    "detail": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "type",
-                    "title",
-                    "status"
-                  ],
-                  "properties": {
-                    "type": {
-                      "type": "string"
-                    },
-                    "title": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "number"
-                    },
-                    "detail": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/enrolments/{enrolmentId}/reinstate": {
-      "post": {
-        "operationId": "createEnrolmentsByEnrolmentIdReinstate",
-        "tags": [
-          "enrolments"
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "validFrom": {
-                    "format": "date-time",
-                    "type": "string"
-                  },
-                  "reasonCode": {
-                    "type": "string"
-                  },
-                  "reasonText": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "in": "path",
-            "name": "enrolmentId",
-            "required": true
-          }
-        ],
-        "x-publication-class": "public",
-        "responses": {
-          "204": {
-            "description": "Default Response"
-          },
-          "404": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "type",
-                    "title",
-                    "status"
-                  ],
-                  "properties": {
-                    "type": {
-                      "type": "string"
-                    },
-                    "title": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "number"
-                    },
-                    "detail": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "422": {
             "description": "Default Response",
             "content": {
               "application/json": {

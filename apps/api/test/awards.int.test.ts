@@ -3,6 +3,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { IntegrationBusPublisher } from '../src/platform/integration-bus/publisher.js';
 
 import { startTestApp, type TestApp } from './helpers/test-app.js';
+import { transitionEnrolment } from './helpers/transition.js';
 import { conferViaBoard } from './helpers/award.js';
 
 interface CapturedEvent {
@@ -170,12 +171,7 @@ describe('Award conferral', () => {
     const examBoardId = await createExamBoard();
 
     // Manually graduate the enrolment first
-    await ctx.app.inject({
-      method: 'POST',
-      url: `/api/v1/enrolments/${fixture.enrolmentId}/graduate`,
-      headers: { authorization: `Bearer ${jwt}` },
-      payload: {},
-    });
+    await transitionEnrolment(ctx, fixture.enrolmentId, 'graduated');
 
     const award = await conferAward(fixture, examBoardId, 'BSc', 'first');
     expect(award.statusCode).toBe(201);

@@ -34,6 +34,11 @@ const CaseSchema = Type.Object({
   })),
   conditions: Type.Array(ConditionSchema),
   outstandingReturnConditions: Type.Array(ConditionSchema),
+  /** The student, for readers without student-record access (ADR-017). */
+  subject: Type.Optional(Type.Object({
+    personId: Type.String(), studentNumber: Type.String(), studentName: Type.String(),
+    programmeCode: Nullable(Type.String()), programmeTitle: Nullable(Type.String()),
+  })),
 });
 
 /**
@@ -46,7 +51,9 @@ export function statusCaseRoutes(fastify: FastifyInstance): void {
     schema: { response: { 200: Type.Array(CaseSchema) } },
     preHandler: [requirePermission('status-case:read')],
   }, async (request, reply) => {
-    await reply.send((await fastify.statusCaseService.listOpen(request.tenantId)).map(caseToWire));
+    const cases = await fastify.statusCaseService.listOpen(request.tenantId);
+    const subjects = await fastify.statusCaseService.subjects(request.tenantId, cases.map((c) => c.enrolmentId));
+    await reply.send(cases.map((c) => ({ ...caseToWire(c), subject: subjects.get(c.enrolmentId) })));
   });
 
   fastify.get('/enrolments/:enrolmentId/status-cases', {
@@ -56,6 +63,30 @@ export function statusCaseRoutes(fastify: FastifyInstance): void {
     const { enrolmentId } = request.params as { enrolmentId: string };
     await assertEnrolmentAccess(fastify, request, enrolmentId, 'status-case:read');
     await reply.send((await fastify.statusCaseService.listForEnrolment(request.tenantId, enrolmentId)).map(caseToWire));
+  });
+
+  fastify.get('/enrolments/:enrolmentId/status-case-options', {
+    schema: {
+      params: Type.Object({ enrolmentId: Type.String() }),
+      response: { 200: Type.Object({
+        enrolmentStatusCode: Type.String(),
+        requestableTypes: Type.Array(Type.String()),
+        openCaseId: Nullable(Type.String()),
+        returnFrom: Type.Union([Type.Object({
+          statusCaseId: Type.String(), caseTypeCode: Type.String(),
+          approvedEffectiveDate: Nullable(Type.String()), approvedReturnDate: Nullable(Type.String()),
+          outstandingConditions: Type.Array(ConditionSchema),
+        }), Type.Null()]),
+        sponsored: Type.Boolean(),
+      }), 403: ErrorSchema, 404: ErrorSchema },
+    },
+    preHandler: [requireAnyPermission('status-case:read', 'status-case:request:own')],
+  }, async (request, reply) => {
+    const { enrolmentId } = request.params as { enrolmentId: string };
+    await assertEnrolmentAccess(fastify, request, enrolmentId, 'status-case:read');
+    const forStudent = !hasPermission(request.user.roles, 'status-case:write');
+    const options = await fastify.statusCaseService.requestOptions(request.tenantId, enrolmentId, forStudent);
+    await reply.send({ ...options, returnFrom: options.returnFrom ? { ...options.returnFrom, outstandingConditions: options.returnFrom.outstandingConditions.map(conditionToWire) } : null });
   });
 
   fastify.post('/enrolments/:enrolmentId/status-cases', {
@@ -96,7 +127,8 @@ export function statusCaseRoutes(fastify: FastifyInstance): void {
     const { statusCaseId } = request.params as { statusCaseId: string };
     const found = await fastify.statusCaseService.getCase(request.tenantId, statusCaseId);
     await assertEnrolmentAccess(fastify, request, found.enrolmentId, 'status-case:read');
-    await reply.send(caseToWire(found));
+    const subjects = await fastify.statusCaseService.subjects(request.tenantId, [found.enrolmentId]);
+    await reply.send({ ...caseToWire(found), subject: subjects.get(found.enrolmentId) });
   });
 
   fastify.post('/status-cases/:statusCaseId/assessments', {

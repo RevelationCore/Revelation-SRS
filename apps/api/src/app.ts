@@ -207,7 +207,7 @@ function classifyOperation(method: string, url: string): string {
 
   // Workflow — commands that trigger state machine transitions
   const WORKFLOW_ACTIONS = [
-    '/transitions', '/intermit', '/withdraw', '/suspend', '/graduation',
+    '/transitions', '/withdraw', '/graduation',
     '/completion', '/ratification', '/deferral', '/quorum',
     '/external-examiner-signoff', '/generate', '/validate', '/submit',
     '/amendments', '/slc-status-notification', '/expire', '/acknowledge',

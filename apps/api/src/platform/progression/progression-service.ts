@@ -75,6 +75,21 @@ interface DecisionEvidence {
   decisionCode: string;
 }
 
+export interface ProgressionEvidenceDto {
+  requiredCredits: number;
+  earnedCredits: number;
+  compensationCredits: number;
+  unresolvedCredits: number;
+  compensationThreshold: number | null;
+  compensationCreditLimit: number;
+  condonementThreshold: number | null;
+  decisionCode: string;
+  recognisedCredits: number;
+  recognisedCreditIds: string[];
+  appliedExceptions: AppliedRuleException[];
+  calculatedAt: Date;
+}
+
 export class ProgressionService {
   constructor(
     private readonly db: Db,
@@ -222,6 +237,40 @@ export class ProgressionService {
     const current = await this.#getCurrentDecision(enrolmentId, tenantId, academicYear);
     if (!current) throw new NotFoundError('ProgressionDecision', `${enrolmentId}:${academicYear}`);
     return current;
+  }
+
+  /**
+   * How the latest evaluation of a decision was reached (D-3): the credits
+   * required and earned, compensation and condonement applied, and the
+   * recognised credit and rule exceptions that changed the rules.
+   */
+  async getCalculationEvidence(tenantId: string, progressionDecisionId: string): Promise<ProgressionEvidenceDto> {
+    const rows = (await withTenantContext(this.db, tenantId, (tx) => tx.execute(sql`
+      SELECT required_credits::float AS required_credits, earned_credits::float AS earned_credits,
+             compensation_credits::float AS compensation_credits, unresolved_credits::float AS unresolved_credits,
+             compensation_threshold::float AS compensation_threshold, compensation_credit_limit::float AS compensation_credit_limit,
+             condonement_threshold::float AS condonement_threshold, decision_code, rule_snapshot, calculated_at
+      FROM progression_calculation_evidence
+      WHERE tenant_id = ${tenantId}::uuid AND progression_decision_id = ${progressionDecisionId}::uuid
+      ORDER BY calculated_at DESC LIMIT 1
+    `))) as unknown as Array<Record<string, unknown>>;
+    const row = rows[0];
+    if (!row) throw new NotFoundError('ProgressionCalculationEvidence', progressionDecisionId);
+    const snapshot = (row['rule_snapshot'] ?? {}) as { recognisedCredits?: number; recognisedCreditIds?: string[]; appliedExceptions?: AppliedRuleException[] };
+    return {
+      requiredCredits: row['required_credits'] as number,
+      earnedCredits: row['earned_credits'] as number,
+      compensationCredits: row['compensation_credits'] as number,
+      unresolvedCredits: row['unresolved_credits'] as number,
+      compensationThreshold: (row['compensation_threshold'] as number | null) ?? null,
+      compensationCreditLimit: row['compensation_credit_limit'] as number,
+      condonementThreshold: (row['condonement_threshold'] as number | null) ?? null,
+      decisionCode: row['decision_code'] as string,
+      recognisedCredits: snapshot.recognisedCredits ?? 0,
+      recognisedCreditIds: snapshot.recognisedCreditIds ?? [],
+      appliedExceptions: snapshot.appliedExceptions ?? [],
+      calculatedAt: new Date(row['calculated_at'] as string),
+    };
   }
 
   async getProgressionHistory(enrolmentId: string, tenantId: string): Promise<ProgressionDecisionDto[]> {

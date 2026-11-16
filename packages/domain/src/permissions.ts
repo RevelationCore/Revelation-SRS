@@ -78,7 +78,7 @@ export const PERMISSION_ROLES = {
   // (integration-service), the registry reviews and applies them.
   'curriculum-publication:read':    ['registry-administrator', 'tenant-administrator', 'integration-service'] as Role[],
   'curriculum-publication:receive': ['integration-service', 'registry-administrator'] as Role[],
-  'curriculum-publication:apply':   ['registry-administrator', 'tenant-administrator'] as Role[],
+  'curriculum-publication:apply':   ['registry-administrator'] as Role[],
   // Recognised credit and rule exceptions: proposed by the registry,
   // approved by a programme approver (never the proposer).
   'academic-exception:read':        ['registry-administrator', 'programme-approver', 'personal-tutor', 'exam-board-chair'] as Role[],
@@ -159,6 +159,11 @@ export const PERMISSION_ROLES = {
   'engagement-outcome:read:own':        ['student'] as Role[],
   'engagement-outcome:read:all':        ['personal-tutor', 'engagement-officer', 'registry-administrator', 'integration-service'] as Role[],
   'identity:manage':                    ['dpo', 'registry-administrator'] as Role[],
+  // Identity verification results, including fraud flags: only those who act on them (D-6).
+  'identity-verification:read':         ['registry-administrator', 'dpo', 'regulatory-officer'] as Role[],
+  // Academic misconduct outcomes and their effects, never allegations or evidence (D-5; ADR-017).
+  'misconduct:record':                  ['integrity-officer', 'registry-administrator'] as Role[],
+  'misconduct:read':                    ['integrity-officer', 'registry-administrator', 'exam-board-chair'] as Role[],
   'module-selection:read:own':          ['student'] as Role[],
   'module-selection:write:own':         ['student'] as Role[],
   'module-selection:read:all':          ['registry-administrator', 'personal-tutor', 'programme-approver', 'integration-service'] as Role[],

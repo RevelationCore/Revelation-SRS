@@ -1,9 +1,5 @@
 import {
-  enrolments,
   modules,
-  personIdentities,
-  persons,
-  programmes,
   recognisedCredits,
   ruleExceptions,
   type Db,
@@ -16,6 +12,7 @@ import { and, asc, desc, eq, isNull } from 'drizzle-orm';
 
 import { clockNow } from '../clock.js';
 import type { EnrolmentService } from '../enrolment/service.js';
+import { type EnrolmentSubject, subjectsForEnrolments } from '../enrolment/subjects.js';
 import { ENROLMENT_RULE_FIELDS } from '../rules-engine/engine.js';
 import type { ValueSetService } from '../value-sets/service.js';
 
@@ -45,14 +42,7 @@ export interface RuleExceptionInput {
   variationValue?: Record<string, number | null>;
 }
 
-/** Who a pending proposal is about: enough for an approver to decide without the full student record. */
-export interface PendingSubject {
-  personId: string;
-  studentNumber: string;
-  studentName: string;
-  programmeCode: string | null;
-  programmeTitle: string | null;
-}
+export type PendingSubject = EnrolmentSubject;
 
 export type Decision = { decisionCode: 'approved' | 'rejected'; reason: string };
 
@@ -195,31 +185,10 @@ export class AcademicExceptionService {
         eq(ruleExceptions.tenantId, tenantId as Uuid), eq(ruleExceptions.statusCode, 'proposed'),
       )).orderBy(asc(ruleExceptions.createdAt));
 
-      const enrolmentIds = [...new Set([...credits, ...exceptions].map((r) => r.enrolmentId))];
-      const subjects = new Map<string, PendingSubject>();
-      for (const enrolmentId of enrolmentIds) {
-        const [row] = await tx.select({
-          personId: persons.id, studentNumber: persons.studentNumber,
-          firstName: personIdentities.legalFirstName, familyName: personIdentities.legalFamilyName,
-          programmeCode: programmes.code, programmeTitle: programmes.title,
-        }).from(enrolments)
-          .innerJoin(persons, eq(persons.id, enrolments.personId))
-          .leftJoin(personIdentities, and(eq(personIdentities.personId, persons.id), isNull(personIdentities.recordedUntil), isNull(personIdentities.validTo)))
-          .leftJoin(programmes, and(eq(programmes.id, enrolments.programmeId), isNull(programmes.recordedUntil), isNull(programmes.validTo)))
-          .where(and(eq(enrolments.id, enrolmentId), eq(enrolments.tenantId, tenantId as Uuid), isNull(enrolments.recordedUntil)))
-          .limit(1);
-        if (row) {
-          subjects.set(enrolmentId, {
-            personId: row.personId, studentNumber: row.studentNumber,
-            studentName: row.firstName ? `${row.firstName} ${row.familyName ?? ''}`.trim() : row.studentNumber,
-            programmeCode: row.programmeCode ?? null, programmeTitle: row.programmeTitle ?? null,
-          });
-        }
-      }
-      const unknown = (enrolmentId: string): PendingSubject => ({ personId: '', studentNumber: '', studentName: `Enrolment ${enrolmentId}`, programmeCode: null, programmeTitle: null });
+      const subjects = await subjectsForEnrolments(tx, tenantId, [...credits, ...exceptions].map((r) => r.enrolmentId));
       return {
-        credits: credits.map((c) => ({ ...c, subject: subjects.get(c.enrolmentId) ?? unknown(c.enrolmentId) })),
-        exceptions: exceptions.map((x) => ({ ...x, subject: subjects.get(x.enrolmentId) ?? unknown(x.enrolmentId) })),
+        credits: credits.map((c) => ({ ...c, subject: subjects.get(c.enrolmentId)! })),
+        exceptions: exceptions.map((x) => ({ ...x, subject: subjects.get(x.enrolmentId)! })),
       };
     });
   }

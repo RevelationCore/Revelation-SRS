@@ -7,12 +7,9 @@ import type {
   DownstreamTriggerDto,
   EnrolmentDto,
   EnrolmentHistoryDto,
-  EnrolmentStatusCode,
   EnrolmentTransitionDto,
   FeeLiabilityDto,
 } from '../platform/enrolment/service.js';
-import { transitionAuditValue } from '../platform/workflow/transition-service.js';
-import { clockNow } from '../platform/clock.js';
 
 const EnrolmentSchema = Type.Object({
   enrolmentId:         Type.String(),
@@ -82,12 +79,6 @@ const ErrorSchema = Type.Object({
   title:  Type.String(),
   status: Type.Number(),
   detail: Type.Optional(Type.String()),
-});
-
-const StatusTransitionBody = Type.Object({
-  validFrom:   Type.Optional(Type.String({ format: 'date-time' })),
-  reasonCode:  Type.Optional(Type.String()),
-  reasonText:  Type.Optional(Type.String()),
 });
 
 /**
@@ -288,68 +279,9 @@ export function enrolmentRoutes(fastify: FastifyInstance): void {
     },
   );
 
-  // ── Status transition helper ─────────────────────────────────────────────────
-  function makeTransitionRoute(newStatus: EnrolmentStatusCode): void {
-    const pathByStatus: Record<EnrolmentStatusCode, string> = {
-      enrolled:     'reinstate',
-      intermitting: 'intermit',
-      withdrawn:    'withdraw',
-      suspended:    'suspend',
-      graduated:    'graduate',
-    };
-    const path = pathByStatus[newStatus];
-    fastify.post(
-      `/enrolments/:enrolmentId/${path}`,
-      {
-        schema: {
-          params: Type.Object({ enrolmentId: Type.String() }),
-          body:   StatusTransitionBody,
-          response: { 204: Type.Null(), 404: ErrorSchema, 422: ErrorSchema },
-        },
-        preHandler: [requirePermission('enrolment:write')],
-      },
-      async (request, reply) => {
-        const { enrolmentId } = request.params as { enrolmentId: string };
-        const body = request.body as { validFrom?: string; reasonCode?: string; reasonText?: string };
-        const transitionOptions: { reasonCode?: string; reasonText?: string } = {};
-        if (body.reasonCode !== undefined) transitionOptions.reasonCode = body.reasonCode;
-        if (body.reasonText !== undefined) transitionOptions.reasonText = body.reasonText;
-
-        const transitionDecision = await fastify.enrolmentService.transitionStatus(
-          enrolmentId,
-          request.tenantId,
-          newStatus,
-          body.validFrom ? new Date(body.validFrom) : clockNow(),
-          request.user.sub,
-          transitionOptions,
-        );
-
-        await fastify.audit.record({
-          tenantId:         request.tenantId,
-          entityType:       'enrolment',
-          entityId:         enrolmentId,
-          fieldName:        'status_code',
-          afterValue:       transitionAuditValue(transitionDecision, {
-            reasonCode: body.reasonCode,
-            reasonText: body.reasonText,
-          }),
-          actionType:       'update',
-          actorType:        'user',
-          actorId:          request.user.sub,
-          actorDisplayName: request.user.displayName,
-          correlationId:    request.id,
-        });
-
-        await reply.code(204).send();
-      },
-    );
-  }
-
-  makeTransitionRoute('intermitting');
-  makeTransitionRoute('suspended');
-  makeTransitionRoute('withdrawn');
-  makeTransitionRoute('graduated');
-  makeTransitionRoute('enrolled');  // reinstate
+  // Status changes are governed: interruption, suspension, return, withdrawal and
+  // transfer go through a status case, and graduation through award conferment.
+  // The direct transition routes were retired (docs/decisions/phase-1-gap-closure-decisions.md, D-1).
 }
 
 function enrolmentToWire(e: EnrolmentDto) {

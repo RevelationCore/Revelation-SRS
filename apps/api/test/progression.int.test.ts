@@ -78,6 +78,10 @@ describe('Progression decisions', () => {
       WHERE d.enrolment_id = ${credited.enrolmentId} ORDER BY e.calculated_at DESC LIMIT 1
     `)) as unknown as Array<{ earned_credits: number; rule_snapshot: { recognisedCreditIds: string[] } }>;
     expect(snapshot[0]).toMatchObject({ earned_credits: 20, rule_snapshot: { recognisedCreditIds: [creditId] } });
+    const decisionId = (await getProgression(credited.enrolmentId)).json<{ progressionDecisionId: string }>().progressionDecisionId;
+    const evidence = await ctx.app.inject({ method: 'GET', url: `/api/v1/progression-decisions/${decisionId}/evidence`, headers: { authorization: `Bearer ${jwt}` } });
+    expect(evidence.statusCode).toBe(200);
+    expect(evidence.json()).toMatchObject({ requiredCredits: 20, earnedCredits: 20, recognisedCredits: 20, recognisedCreditIds: [creditId], decisionCode: 'progress' });
 
     // A variation raising the requirement to 40 turns a 20-credit pass into a resit.
     const varied = await createProgressionFixture('PRG111');

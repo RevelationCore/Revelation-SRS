@@ -462,7 +462,7 @@ export function studentRoutes(fastify: FastifyInstance): void {
           404: ErrorSchema,
         },
       },
-      preHandler: [requirePermission('student:read:all')],
+      preHandler: [requirePermission('identity-verification:read')],
     },
     async (request, reply) => {
       const { personId } = request.params as { personId: string };

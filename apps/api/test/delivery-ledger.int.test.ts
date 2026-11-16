@@ -10,6 +10,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { IntegrationBusPublisher, PublishOptions } from '../src/platform/integration-bus/publisher.js';
 
 import { startTestApp, type TestApp } from './helpers/test-app.js';
+import { transitionEnrolment } from './helpers/transition.js';
 
 const bus = { connected: true, events: [] as Array<{ type: string; payload: Record<string, unknown>; options: PublishOptions }> };
 const spy = {
@@ -87,7 +88,7 @@ describe('F-SIS-LIB-01 library access from enrolment status (manual by default)'
 
   it('a later status supersedes an undelivered earlier one: the library gets the latest', async () => {
     const f = await fixture('LIB102');
-    expect((await post(`/api/v1/enrolments/${f.enrolmentId}/intermit`, { reasonCode: 'health' }, registryJwt)).statusCode).toBe(204);
+    await transitionEnrolment(ctx, f.enrolmentId, 'intermitting', { reasonCode: 'health' });
 
     const open = (await tasks()).filter((t) => t.subjectId === f.enrolmentId && t.flowCode === LIB);
     expect(open.map((t) => t.payload['accessAction'])).toEqual(['suspend']);
@@ -113,7 +114,7 @@ describe('F-SIS-LIB-01 library access from enrolment status (manual by default)'
   it('a superseded item cannot be confirmed', async () => {
     const f = await fixture('LIB104');
     const first = (await tasks()).find((t) => t.subjectId === f.enrolmentId && t.flowCode === LIB)!;
-    await post(`/api/v1/enrolments/${f.enrolmentId}/withdraw`, { reasonCode: 'personal' }, registryJwt);
+    await transitionEnrolment(ctx, f.enrolmentId, 'withdrawn', { reasonCode: 'personal' });
 
     expect((await post(`/api/v1/delivery-items/${first.deliveryItemId}/acknowledge`, {}, registryJwt)).statusCode).toBe(409);
   });

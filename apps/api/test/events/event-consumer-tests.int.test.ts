@@ -13,6 +13,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import type { IntegrationBusPublisher } from '../../src/platform/integration-bus/publisher.js';
 import { startTestApp, type TestApp } from '../helpers/test-app.js';
+import { transitionEnrolment } from '../helpers/transition.js';
 
 // ─── Spy bus ─────────────────────────────────────────────────────────────────
 
@@ -273,15 +274,8 @@ describe('Enrolment lifecycle events', () => {
     expect(typeof (trigger!.payload as Record<string, unknown>)['triggerId']).toBe('string');
   });
 
-  it('POST /enrolments/:id/graduate publishes srs.student.status-changed', async () => {
-    const jwt = await ctx.makeJwt();
-    const res = await ctx.app.inject({
-      method:  'POST',
-      url:     `/api/v1/enrolments/${enrolmentId}/graduate`,
-      headers: { authorization: `Bearer ${jwt}` },
-      payload: { reasonCode: 'completed' },
-    });
-    expect(res.statusCode).toBe(204);
+  it('a graduation publishes srs.student.status-changed', async () => {
+    await transitionEnrolment(ctx, enrolmentId, 'graduated', { reasonCode: 'completed' });
 
     const evt = findEvent('srs.student.status-changed');
     expect(evt).toBeDefined();

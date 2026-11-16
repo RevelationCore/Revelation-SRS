@@ -395,6 +395,16 @@ describe('Identity verification checks', () => {
     });
   });
 
+  it('verification results are not shown to external examiners or wellbeing advisers (D-6)', async () => {
+    for (const role of ['external-examiner', 'wellbeing-advisor']) {
+      const jwt = await ctx.makeJwt({ sub: `iv-${role}`, roles: [role] });
+      const res = await ctx.app.inject({ method: 'GET', url: `/api/v1/students/${personId}/identity-verifications`, headers: { authorization: `Bearer ${jwt}` } });
+      expect({ role, status: res.statusCode }).toEqual({ role, status: 403 });
+    }
+    const dpo = await ctx.makeJwt({ sub: 'iv-dpo', roles: ['dpo'] });
+    expect((await ctx.app.inject({ method: 'GET', url: `/api/v1/students/${personId}/identity-verifications`, headers: { authorization: `Bearer ${dpo}` } })).statusCode).toBe(200);
+  });
+
   it('returns 422 when completing the same verification twice', async () => {
     const jwt = await ctx.makeJwt();
     const res = await ctx.app.inject({

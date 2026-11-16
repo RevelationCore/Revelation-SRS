@@ -105,6 +105,22 @@ describe('curriculum publication', () => {
     expect((await call('POST', '/curriculum-publications', student, { sourceSystemCode: 'cm', sourcePublicationRef: 'X', publicationVersion: '1', effectiveFrom: '2031-08-01' })).statusCode).toBe(403);
     expect((await call('POST', '/curriculum-publications/00000000-0000-0000-0000-000000000000/application', connectorJwt)).statusCode).toBe(403);
   });
+
+  it('a publication entered by a person is applied by someone else; tenant administrators do not apply (D-7)', async () => {
+    const manual = await call('POST', '/curriculum-publications', registryJwt, {
+      sourceSystemCode: 'cm', sourcePublicationRef: 'PUB-MANUAL', publicationVersion: '1', effectiveFrom: '2031-08-01',
+      modules: [{ code: 'MAN101', title: 'Manual Module', creditValue: 20, fheqLevel: 4 }],
+    });
+    expect(manual.statusCode).toBe(201);
+    const id = manual.json<Publication>().publicationId;
+    const self = await call('POST', `/curriculum-publications/${id}/application`, registryJwt);
+    expect(self.statusCode).toBe(409);
+    expect(self.json<{ detail: string }>().detail).toMatch(/someone else must apply/);
+    const tenantAdmin = await ctx.makeJwt({ sub: 'tenant-admin-1', roles: ['tenant-administrator'] });
+    expect((await call('POST', `/curriculum-publications/${id}/application`, tenantAdmin)).statusCode).toBe(403);
+    const colleague = await ctx.makeJwt({ sub: 'registry-2', roles: ['registry-administrator'] });
+    expect((await call('POST', `/curriculum-publications/${id}/application`, colleague)).json<Publication>().statusCode).toBe('applied');
+  });
 });
 
 describe('recognised credit and rule exceptions', () => {

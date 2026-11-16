@@ -128,6 +128,32 @@ export function progressionRoutes(fastify: FastifyInstance): void {
     },
   );
 
+  fastify.get(
+    '/progression-decisions/:progressionDecisionId/evidence',
+    {
+      schema: {
+        params: Type.Object({ progressionDecisionId: Type.String() }),
+        response: {
+          200: Type.Object({
+            requiredCredits: Type.Number(), earnedCredits: Type.Number(), compensationCredits: Type.Number(), unresolvedCredits: Type.Number(),
+            compensationThreshold: Type.Union([Type.Number(), Type.Null()]), compensationCreditLimit: Type.Number(),
+            condonementThreshold: Type.Union([Type.Number(), Type.Null()]), decisionCode: Type.String(),
+            recognisedCredits: Type.Number(), recognisedCreditIds: Type.Array(Type.String()),
+            appliedExceptions: Type.Array(Type.Object({ exceptionId: Type.String(), ruleCode: Type.String(), exceptionTypeCode: Type.String() })),
+            calculatedAt: Type.String(),
+          }),
+          404: ErrorSchema,
+        },
+      },
+      preHandler: [requirePermission('progression:read')],
+    },
+    async (request, reply) => {
+      const { progressionDecisionId } = request.params as { progressionDecisionId: string };
+      const evidence = await fastify.progressionService.getCalculationEvidence(request.tenantId, progressionDecisionId);
+      await reply.send({ ...evidence, calculatedAt: evidence.calculatedAt.toISOString() });
+    },
+  );
+
   // ── Classification recommendation ─────────────────────────────────────────
 
   fastify.get(

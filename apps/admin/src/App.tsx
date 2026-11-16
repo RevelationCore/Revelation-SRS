@@ -59,6 +59,8 @@ import { AdjustmentCaseDetailPage } from './pages/AdjustmentCaseDetailPage.js';
 import { ApplicationsPage } from './pages/ApplicationsPage.js';
 import { ApplicationDetailPage } from './pages/ApplicationDetailPage.js';
 import { PendingApprovalsPage } from './pages/PendingApprovalsPage.js';
+import { StatusCasesPage } from './pages/StatusCasesPage.js';
+import { StatusCaseDetailPage } from './pages/StatusCaseDetailPage.js';
 
 const ENGAGEMENT_ROLES = ['module-tutor', 'personal-tutor', 'engagement-officer', 'registry-administrator', 'tenant-administrator'];
 const ADMIN_PERMISSIONS = [
@@ -102,6 +104,8 @@ export function App() {
                 <Route path="identity-change-requests" element={<RequirePermission permissions={['student:decide']}><IdentityChangeRequestsPage /></RequirePermission>} />
                 <Route path="applications" element={<RequirePermission permissions={['application:read']}><ApplicationsPage /></RequirePermission>} />
                 <Route path="applications/:applicationId" element={<RequirePermission permissions={['application:read']}><ApplicationDetailPage /></RequirePermission>} />
+                <Route path="status-cases" element={<RequirePermission permissions={['status-case:read']}><StatusCasesPage /></RequirePermission>} />
+                <Route path="status-cases/:statusCaseId" element={<RequirePermission permissions={['status-case:read']}><StatusCaseDetailPage /></RequirePermission>} />
                 <Route path="credit-approvals" element={<RequirePermission permissions={['academic-exception:approve']}><PendingApprovalsPage /></RequirePermission>} />
                 <Route path="students" element={<RequirePermission permissions={['student:read:all']}><StudentsPage /></RequirePermission>} />
                 <Route path="students/:personId" element={<RequirePermission permissions={['student:read:all']}><StudentDetailPage /></RequirePermission>} />

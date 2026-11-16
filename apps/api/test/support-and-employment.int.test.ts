@@ -9,6 +9,7 @@ import { sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { startTestApp, type TestApp } from './helpers/test-app.js';
+import { transitionEnrolment } from './helpers/transition.js';
 
 let ctx: TestApp;
 let recorder: string;   // registry administrator: records awards and instalments
@@ -159,7 +160,7 @@ describe('Employment links and work limits', () => {
     const notEmployed = await fixture('EMP104');
 
     for (const f of [employed, notEmployed]) {
-      expect((await post(`/api/v1/enrolments/${f.enrolmentId}/withdraw`, { reasonCode: 'personal' }, recorder)).statusCode).toBe(204);
+      await transitionEnrolment(ctx, f.enrolmentId, 'withdrawn', { reasonCode: 'personal' });
     }
     const hr = (id: string) => get(`/api/v1/delivery-items?flowCode=F-SIS-HR-01&subjectId=${id}`, recorder).then((r) => r.json<Array<{ summary: string }>>());
     expect((await hr(employed.personId))[0]?.summary).toBe('Review employment HR-EMP103 (gta): study status now withdrawn');

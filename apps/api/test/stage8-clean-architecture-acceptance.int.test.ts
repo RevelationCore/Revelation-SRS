@@ -25,6 +25,7 @@ import { sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { startTestApp, type TestApp } from './helpers/test-app.js';
+import { transitionEnrolment } from './helpers/transition.js';
 
 describe('Stage 8 — Clean Architecture Acceptance Review', () => {
   let ctx: TestApp;
@@ -308,11 +309,7 @@ describe('Stage 8 — Clean Architecture Acceptance Review', () => {
       const { enrolmentId } = enrolRes.json<{ enrolmentId: string }>();
 
       // Intermit creates a new version; the enrolled version must be preserved
-      await ctx.app.inject({
-        method: 'POST', url: `/api/v1/enrolments/${enrolmentId}/intermit`,
-        headers: { authorization: `Bearer ${jwt}` },
-        payload: { reasonCode: 'medical' },
-      });
+      await transitionEnrolment(ctx, enrolmentId, 'intermitting', { reasonCode: 'medical' });
 
       const rows = await ctx.db.execute(sql`
         SELECT version_id, valid_from, valid_to, recorded_at, recorded_until

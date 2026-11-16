@@ -5,6 +5,7 @@
 
 - [Current capabilities](current-capabilities.md) — authoritative implemented/partial/proposed status.
 - [UK HE business processes](../business-processes/README.md) — researched target processes.
+- [Academic journey gap-closure plan](academic-journey-gap-closure-plan.md) — proposed phases to bring all 49 academic-journey processes into the app.
 - [Academic journey narrative catalogue](academic-journey-narrative-catalogue.md) — proposed high-level stories, interlocking outcomes, coverage of all reference-model systems/interactions and candidate gaps to investigate.
 - [Expanded academic journeys](academic-journeys/README.md) — forty proposed stories covering curriculum governance, diverse entry and delivery routes, study and support, assessment and appeals, the research lifecycle, employment, graduation, reporting, records, flexible learning, mobility and service continuity, with shared weekly timelines, fixtures and acceptance cases.
 - [P0 functional requirements](../requirements/business-process-p0-functional-requirements.md) — proposed priority controls.

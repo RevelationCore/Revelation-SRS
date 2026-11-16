@@ -33,13 +33,9 @@ import { getAuditLog, type AuditEntry } from '../api/auditLog.js';
 import {
   type CreateEnrolmentInput,
   type Enrolment,
-  type TransitionAction,
-  type TransitionOptions,
-  AVAILABLE_TRANSITIONS,
   createEnrolment,
   getEnrolmentHistory,
   listStudentEnrolments,
-  transitionEnrolment,
 } from '../api/enrolments.js';
 import {
   type ModuleRegistration,
@@ -76,13 +72,14 @@ import { ExternalRecordsTab } from './ExternalRecordsTab.js';
 import { SupportEmploymentTab } from './SupportEmploymentTab.js';
 import { AcademicExceptionsTab } from './AcademicExceptionsTab.js';
 import { AwardsTab } from './AwardsTab.js';
+import { StatusCasesTab } from './StatusCasesTab.js';
 import {
   PageHeader, Card, CardHeader, CardBody, Button, Input, Select, Textarea, LabelledField,
   Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, Dialog, DialogClose,
   Tabs, TabsList, TabsTrigger, TabsContent,
 } from '@revelation-srs/ui';
 
-type Tab = 'identity' | 'enrolments' | 'credit' | 'awards' | 'registrations' | 'assessment' | 'history' | 'wellbeing' | 'corrections' | 'cas' | 'communications' | 'other-systems' | 'support';
+type Tab = 'identity' | 'enrolments' | 'status' | 'credit' | 'awards' | 'registrations' | 'assessment' | 'history' | 'wellbeing' | 'corrections' | 'cas' | 'communications' | 'other-systems' | 'support';
 
 export function StudentDetailPage() {
   const { roles } = useAuth();
@@ -132,6 +129,7 @@ export function StudentDetailPage() {
   const tabs: Tab[] = [
     'identity',
     ...(canReadEnrolments ? ['enrolments', 'history'] as Tab[] : []),
+    ...(canReadEnrolments && userHasAnyPermission(roles, ['status-case:read']) ? ['status'] as Tab[] : []),
     ...(canReadEnrolments && canReadExceptions ? ['credit'] as Tab[] : []),
     ...(canReadEnrolments && canReadProgression ? ['awards'] as Tab[] : []),
     ...(canReadEnrolments && canReadCorrections ? ['corrections'] as Tab[] : []),
@@ -156,10 +154,13 @@ export function StudentDetailPage() {
       <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)}>
         <TabsList className="mb-6">
           {tabs.map((t) => (
-            <TabsTrigger key={t} value={t} className="capitalize">{t === 'cas' ? 'CAS' : t === 'other-systems' ? 'Other systems' : t === 'support' ? 'Support & employment' : t === 'credit' ? 'Credit & exceptions' : t}</TabsTrigger>
+            <TabsTrigger key={t} value={t} className="capitalize">{t === 'cas' ? 'CAS' : t === 'other-systems' ? 'Other systems' : t === 'support' ? 'Support & employment' : t === 'credit' ? 'Credit & exceptions' : t === 'status' ? 'Status changes' : t}</TabsTrigger>
           ))}
         </TabsList>
 
+        <TabsContent value="status">
+          {personId && <StatusCasesTab personId={personId} canOpen={userHasAnyPermission(roles, ['status-case:write'])} />}
+        </TabsContent>
         <TabsContent value="awards">
           {personId && (
             <AwardsTab
@@ -193,7 +194,7 @@ export function StudentDetailPage() {
           <IdentityTab student={student} onUpdated={reload} canWrite={canWriteStudent} />
         </TabsContent>
         <TabsContent value="enrolments">
-          {personId && <EnrolmentsTab personId={personId} student={student} onUpdated={reload} />}
+          {personId && <EnrolmentsTab personId={personId} student={student} onUpdated={reload} onOpenStatusCases={userHasAnyPermission(roles, ['status-case:read']) ? () => setTab('status') : undefined} />}
         </TabsContent>
         <TabsContent value="registrations">
           {personId && <RegistrationsTab personId={personId} />}
@@ -425,9 +426,12 @@ function EnrolmentsTab({
   personId,
   student,
   onUpdated,
+  onOpenStatusCases,
 }: {
   personId:  string;
   student:   Student;
+  /** Status changes go through a status case (D-1); this opens the Status changes tab. */
+  onOpenStatusCases?: () => void;
   onUpdated: () => void;
 }) {
   const [enrolments, setEnrolments] = useState<Enrolment[]>([]);
@@ -454,11 +458,6 @@ function EnrolmentsTab({
     onUpdated(); // person status may change
   }
 
-  function handleTransitioned() {
-    void reload();
-    onUpdated();
-  }
-
   if (loading) return <div className="flex justify-center py-8"><Spinner /></div>;
 
   return (
@@ -480,7 +479,7 @@ function EnrolmentsTab({
               enrolment={e}
               expanded={expanded === e.enrolmentId}
               onToggle={() => setExpanded(expanded === e.enrolmentId ? null : e.enrolmentId)}
-              onTransitioned={handleTransitioned}
+              onOpenStatusCases={onOpenStatusCases}
             />
           ))}
         </div>
@@ -501,21 +500,17 @@ function EnrolmentCard({
   enrolment,
   expanded,
   onToggle,
-  onTransitioned,
+  onOpenStatusCases,
 }: {
   enrolment:      Enrolment;
   expanded:       boolean;
   onToggle:       () => void;
-  onTransitioned: () => void;
+  onOpenStatusCases?: () => void;
 }) {
-  const [transitioning, setTransitioning] = useState(false);
-  const [showTransitionModal, setShowTransitionModal] = useState<TransitionAction | null>(null);
   const [timetable, setTimetable]          = useState<TimetableEntry[] | null>(null);
   const [registrations, setRegistrations]  = useState<ModuleRegistration[] | null>(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
-  const [transitionError, setTransitionError] = useState('');
-
-  const available = AVAILABLE_TRANSITIONS[enrolment.statusCode] ?? [];
+  const changeable = enrolment.statusCode !== 'withdrawn' && enrolment.statusCode !== 'graduated';
 
   useEffect(() => {
     if (!expanded) return;
@@ -528,26 +523,6 @@ function EnrolmentCard({
       .catch(() => { /* non-critical */ })
       .finally(() => setLoadingDetails(false));
   }, [expanded, enrolment.enrolmentId]);
-
-  async function handleTransition(action: TransitionAction, opts?: TransitionOptions) {
-    setTransitioning(true);
-    setTransitionError('');
-    try {
-      await transitionEnrolment(enrolment.enrolmentId, action, opts);
-      setShowTransitionModal(null);
-      onTransitioned();
-    } catch (e) {
-      setTransitionError(e instanceof ApiError ? (e.detail ?? e.message) : 'Transition failed');
-    } finally { setTransitioning(false); }
-  }
-
-  const TRANSITION_STYLES: Record<TransitionAction, string> = {
-    intermit:  'bg-warning-50 text-warning-700 border-warning-200 hover:bg-warning-100',
-    suspend:   'bg-warning-50 text-warning-700 border-warning-200 hover:bg-warning-100',
-    withdraw:  'bg-danger-50    text-danger-700    border-danger-200    hover:bg-danger-100',
-    graduate:  'bg-success-50  text-success-700  border-success-200  hover:bg-success-100',
-    reinstate: 'bg-primary-50   text-primary-700   border-primary-200   hover:bg-primary-100',
-  };
 
   return (
     <Card className="overflow-hidden">
@@ -585,24 +560,12 @@ function EnrolmentCard({
             {enrolment.actualEndDate && <InfoRow label="Actual end" value={enrolment.actualEndDate} />}
           </div>
 
-          {/* Transition actions */}
-          {available.length > 0 && (
-            <div>
-              <p className="text-xs text-neutral-500 mb-2">Actions</p>
-              <div className="flex gap-2 flex-wrap">
-                {available.map((action) => (
-                  <button
-                    key={action}
-                    disabled={transitioning}
-                    onClick={() => setShowTransitionModal(action)}
-                    className={`px-3 py-1 text-xs font-medium rounded border capitalize disabled:opacity-40 ${TRANSITION_STYLES[action] ?? ''}`}
-                  >
-                    {action}
-                  </button>
-                ))}
-              </div>
-              {transitionError && <p className="mt-2 text-xs text-danger-600">{transitionError}</p>}
-            </div>
+          {/* Status changes are governed (D-1) */}
+          {changeable && onOpenStatusCases && (
+            <p className="text-xs text-neutral-600">
+              To interrupt, suspend, withdraw or transfer, or to record a return, open a status case.{' '}
+              <button type="button" className="text-primary-600 hover:underline" onClick={onOpenStatusCases}>Go to Status changes</button>
+            </p>
           )}
 
           {/* Module registrations */}
@@ -627,57 +590,7 @@ function EnrolmentCard({
         </div>
       )}
 
-      <Dialog
-        open={showTransitionModal !== null}
-        onOpenChange={(open) => { if (!open) setShowTransitionModal(null); }}
-        title={showTransitionModal ? `${showTransitionModal} enrolment` : ''}
-      >
-        {showTransitionModal && (
-          <TransitionForm
-            action={showTransitionModal}
-            onConfirm={(opts) => void handleTransition(showTransitionModal, opts)}
-            saving={transitioning}
-          />
-        )}
-      </Dialog>
     </Card>
-  );
-}
-
-function TransitionForm({
-  action,
-  onConfirm,
-  saving,
-}: {
-  action:    TransitionAction;
-  onConfirm: (opts?: TransitionOptions) => void;
-  saving:    boolean;
-}) {
-  function handleSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const fd = new FormData(e.currentTarget);
-    const reasonCode = String(fd.get('reasonCode') ?? '').trim() || undefined;
-    const reasonText = String(fd.get('reasonText') ?? '').trim() || undefined;
-    onConfirm({ reasonCode, reasonText });
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-3">
-      <LabelledField label="Reason code" htmlFor="tr-reason-code">
-        <Input id="tr-reason-code" name="reasonCode" />
-      </LabelledField>
-      <LabelledField label="Reason" htmlFor="tr-reason-text" hint="Optional note">
-        <Textarea id="tr-reason-text" name="reasonText" rows={2} />
-      </LabelledField>
-      <div className="flex justify-end gap-2 pt-1">
-        <DialogClose asChild>
-          <Button type="button" variant="ghost" size="sm">Cancel</Button>
-        </DialogClose>
-        <Button type="submit" size="sm" disabled={saving} className="capitalize">
-          {saving ? 'Saving…' : action}
-        </Button>
-      </div>
-    </form>
   );
 }
 

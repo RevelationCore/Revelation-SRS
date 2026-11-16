@@ -5,6 +5,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { IntegrationBusPublisher } from '../src/platform/integration-bus/publisher.js';
 
 import { startTestApp, type TestApp } from './helpers/test-app.js';
+import { transitionEnrolment } from './helpers/transition.js';
 
 interface CapturedEvent {
   type: string;
@@ -87,13 +88,7 @@ describe('SLC exchange', () => {
 
   it('generates status-change notifications and rejects missing SLC references', async () => {
     const fixture = await createSlcEnrolment('SLC-STAT-001');
-    const withdraw = await ctx.app.inject({
-      method: 'POST',
-      url: `/api/v1/enrolments/${fixture.enrolmentId}/withdraw`,
-      headers: { authorization: `Bearer ${jwt}` },
-      payload: { reasonCode: 'student-request' },
-    });
-    expect(withdraw.statusCode).toBe(204);
+    await transitionEnrolment(ctx, fixture.enrolmentId, 'withdrawn', { reasonCode: 'student-request' });
 
     const notification = await ctx.app.inject({
       method: 'POST',

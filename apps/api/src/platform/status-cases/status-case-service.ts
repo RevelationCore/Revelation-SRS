@@ -1,11 +1,14 @@
 import { randomUUID } from 'node:crypto';
 
 import {
+  casCases,
   enrolmentStatusTransitions,
   programmes,
   statusCaseAssessments,
   statusCaseConditions,
   studentStatusCases,
+  ukviCasRequests,
+  ukviVisaStatuses,
   type Db,
   type StatusCaseAssessment,
   type StatusCaseCondition,
@@ -18,6 +21,7 @@ import { and, desc, eq } from 'drizzle-orm';
 import type { BusinessCaseService } from '../cases/business-case-service.js';
 import { clockNow } from '../clock.js';
 import type { EnrolmentService } from '../enrolment/service.js';
+import { type EnrolmentSubject, subjectsForEnrolments } from '../enrolment/subjects.js';
 import { deterministicUuid } from '../platform-controls/governed-review.js';
 import type { ValueSetService } from '../value-sets/service.js';
 
@@ -89,6 +93,18 @@ export interface StatusCaseAssessmentDto {
   assessedAt: Date;
 }
 
+export interface StatusCaseRequestOptions {
+  enrolmentStatusCode: string;
+  requestableTypes: StatusCaseType[];
+  openCaseId: string | null;
+  returnFrom: {
+    statusCaseId: string; caseTypeCode: string; approvedEffectiveDate: string | null; approvedReturnDate: string | null;
+    outstandingConditions: StatusCaseConditionDto[];
+  } | null;
+  /** Only whether the student is on a Student visa, never visa details (ADR-017). */
+  sponsored: boolean;
+}
+
 export interface StatusCaseDto {
   statusCaseId: string;
   businessCaseId: string;
@@ -123,6 +139,29 @@ export interface StatusCaseDto {
  * changes only when a case is approved, and the approval applies the change
  * first: if the change is refused the case stays open.
  */
+/** Changes a sponsor must report to UKVI for a sponsored student. */
+const SPONSOR_REPORTABLE: StatusCaseType[] = ['interruption', 'suspension', 'withdrawal', 'transfer'];
+
+/**
+ * Whether the enrolment is sponsored on a Student visa: it has a UKVI visa
+ * status or a CAS record. Only this yes/no leaves the compliance area
+ * (minimum necessary data, ADR-017, ADR-022).
+ */
+export async function isSponsoredEnrolment(db: Db, tenantId: string, enrolmentId: string): Promise<boolean> {
+  return withTenantContext(db, tenantId, async (tx) => {
+    const id = enrolmentId as Uuid;
+    const t = tenantId as Uuid;
+    const [visa] = await tx.select({ id: ukviVisaStatuses.id }).from(ukviVisaStatuses)
+      .where(and(eq(ukviVisaStatuses.tenantId, t), eq(ukviVisaStatuses.enrolmentId, id))).limit(1);
+    if (visa) return true;
+    const [cas] = await tx.select({ id: casCases.id }).from(casCases).where(and(eq(casCases.tenantId, t), eq(casCases.enrolmentId, id))).limit(1);
+    if (cas) return true;
+    const [request] = await tx.select({ id: ukviCasRequests.id }).from(ukviCasRequests)
+      .where(and(eq(ukviCasRequests.tenantId, t), eq(ukviCasRequests.enrolmentId, id))).limit(1);
+    return Boolean(request);
+  });
+}
+
 export class StatusCaseService {
   constructor(
     private readonly db: Db,
@@ -216,6 +255,41 @@ export class StatusCaseService {
     return Promise.all(rows.map((r) => this.#dto(tenantId, r)));
   }
 
+  /**
+   * What can be requested on an enrolment now (D-2): the case types its status
+   * allows (only the student-requestable ones for a student), whether a case is
+   * already open, the approved break a return would end (with its open
+   * conditions), and whether the student is sponsored. The portal shows only
+   * these, so the rules live here rather than in each client.
+   */
+  async requestOptions(tenantId: string, enrolmentId: string, forStudent: boolean): Promise<StatusCaseRequestOptions> {
+    const enrolment = await this.enrolments.getEnrolment(enrolmentId, tenantId);
+    if (!enrolment) throw new NotFoundError('Enrolment', enrolmentId);
+    const cases = await this.listForEnrolment(tenantId, enrolmentId);
+    const open = cases.find((c) => c.statusCode === 'requested') ?? null;
+    const lastBreak = await this.#latestApprovedBreak(tenantId, enrolmentId);
+    const returnable = lastBreak && (!forStudent || lastBreak.caseTypeCode === 'interruption') ? lastBreak : null;
+    const candidates = (forStudent ? STUDENT_REQUESTABLE : (Object.keys(STARTS_FROM) as StatusCaseType[]))
+      .filter((t) => STARTS_FROM[t].includes(enrolment.statusCode))
+      .filter((t) => t !== 'return' || returnable !== null);
+    return {
+      enrolmentStatusCode: enrolment.statusCode,
+      requestableTypes: open ? [] : candidates,
+      openCaseId: open?.statusCaseId ?? null,
+      returnFrom: returnable ? {
+        statusCaseId: returnable.id, caseTypeCode: returnable.caseTypeCode,
+        approvedEffectiveDate: returnable.approvedEffectiveDate, approvedReturnDate: returnable.approvedReturnDate,
+        outstandingConditions: (await this.#conditions(tenantId, returnable.id)).filter((c) => c.statusCode === 'open'),
+      } : null,
+      sponsored: await isSponsoredEnrolment(this.db, tenantId, enrolmentId),
+    };
+  }
+
+  /** Who each enrolment's case is about, for worklist readers without student-record access. */
+  async subjects(tenantId: string, enrolmentIds: string[]): Promise<Map<string, EnrolmentSubject>> {
+    return withTenantContext(this.db, tenantId, (tx) => subjectsForEnrolments(tx, tenantId, enrolmentIds));
+  }
+
   /** Worklist: cases awaiting a decision, oldest first. */
   async listOpen(tenantId: string): Promise<StatusCaseDto[]> {
     const rows = await withTenantContext(this.db, tenantId, (tx) => tx.select().from(studentStatusCases)
@@ -307,6 +381,18 @@ export class StatusCaseService {
     if (type === 'leaver-closure') {
       const open = (await this.#conditions(tenantId, row.id)).filter((c) => c.statusCode === 'open');
       if (open.length > 0) throw new ConflictError(`Closure items are still open: ${open.map((c) => c.description).join('; ')}`);
+    }
+
+    // Advice the decision depends on (BP-02-006 steps 3-4; Phase 1 decisions, risk 1).
+    const assessments = await withTenantContext(this.db, tenantId, (tx) => tx.select().from(statusCaseAssessments)
+      .where(eq(statusCaseAssessments.statusCaseId, row.id)));
+    if (type === 'transfer' && row.destinationProgrammeId
+      && !assessments.some((a) => a.assessorRoleCode === 'destination-academic' && a.outcomeCode === 'supports')) {
+      throw new ConflictError('A transfer to another programme needs the destination programme\'s support before it is approved');
+    }
+    if (SPONSOR_REPORTABLE.includes(type) && await isSponsoredEnrolment(this.db, tenantId, row.enrolmentId)
+      && !assessments.some((a) => a.assessorRoleCode === 'compliance')) {
+      throw new ConflictError('This student is sponsored on a Student visa: record UKVI compliance advice before deciding (the change must be reported to UKVI)');
     }
 
     // Apply the change first. If the enrolment refuses it, the case stays open.

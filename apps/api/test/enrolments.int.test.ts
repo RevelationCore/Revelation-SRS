@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { EnrolmentService } from '../src/platform/enrolment/service.js';
 
 import { startTestApp, type TestApp } from './helpers/test-app.js';
+import { transitionEnrolment } from './helpers/transition.js';
 
 let ctx: TestApp;
 let personId: string;
@@ -196,15 +197,18 @@ describe('Status transitions', () => {
     enrolmentId = res.json<{ enrolmentId: string }>().enrolmentId;
   });
 
+  it('the staff-facing direct transition routes are retired (status changes go through a status case)', async () => {
+    const jwt = await ctx.makeJwt();
+    for (const path of ['intermit', 'suspend', 'withdraw', 'graduate', 'reinstate']) {
+      const res = await ctx.app.inject({ method: 'POST', url: `/api/v1/enrolments/${enrolmentId}/${path}`, headers: { authorization: `Bearer ${jwt}` }, payload: {} });
+      expect({ path, status: res.statusCode }).toEqual({ path, status: 404 });
+    }
+  });
+
   it('rejects a transition dated on or before the current version began', async () => {
     const jwt = await ctx.makeJwt();
-    const backdated = await ctx.app.inject({
-      method:  'POST',
-      url:     `/api/v1/enrolments/${enrolmentId}/intermit`,
-      headers: { authorization: `Bearer ${jwt}` },
-      payload: { validFrom: '2020-01-01T00:00:00.000Z', reasonCode: 'health' },
-    });
-    expect(backdated.statusCode).toBe(422);
+    await expect(transitionEnrolment(ctx, enrolmentId, 'intermitting', { validFrom: new Date('2020-01-01T00:00:00.000Z'), reasonCode: 'health' }))
+      .rejects.toThrow();
 
     const check = await ctx.app.inject({
       method:  'GET',
@@ -214,15 +218,9 @@ describe('Status transitions', () => {
     expect(check.json<{ statusCode: string }>().statusCode).toBe('enrolled');
   });
 
-  it('POST /intermit returns 204 and status changes to intermitting', async () => {
+  it('an interruption changes the status to intermitting', async () => {
     const jwt = await ctx.makeJwt();
-    const intermit = await ctx.app.inject({
-      method:  'POST',
-      url:     `/api/v1/enrolments/${enrolmentId}/intermit`,
-      headers: { authorization: `Bearer ${jwt}` },
-      payload: { reasonCode: 'health', reasonText: 'Student requested a break in study' },
-    });
-    expect(intermit.statusCode).toBe(204);
+    await transitionEnrolment(ctx, enrolmentId, 'intermitting', { reasonCode: 'health', reasonText: 'Student requested a break in study' });
 
     const check = await ctx.app.inject({
       method:  'GET',
@@ -232,15 +230,9 @@ describe('Status transitions', () => {
     expect(check.json<{ statusCode: string }>().statusCode).toBe('intermitting');
   });
 
-  it('POST /reinstate returns 204 and status changes back to enrolled', async () => {
+  it('a return changes the status back to enrolled', async () => {
     const jwt = await ctx.makeJwt();
-    const reinstate = await ctx.app.inject({
-      method:  'POST',
-      url:     `/api/v1/enrolments/${enrolmentId}/reinstate`,
-      headers: { authorization: `Bearer ${jwt}` },
-      payload: {},
-    });
-    expect(reinstate.statusCode).toBe(204);
+    await transitionEnrolment(ctx, enrolmentId, 'enrolled');
 
     const check = await ctx.app.inject({
       method:  'GET',
@@ -250,15 +242,8 @@ describe('Status transitions', () => {
     expect(check.json<{ statusCode: string }>().statusCode).toBe('enrolled');
   });
 
-  it('POST /withdraw returns 204 and status changes to withdrawn', async () => {
-    const jwt = await ctx.makeJwt();
-    const withdraw = await ctx.app.inject({
-      method:  'POST',
-      url:     `/api/v1/enrolments/${enrolmentId}/withdraw`,
-      headers: { authorization: `Bearer ${jwt}` },
-      payload: { reasonCode: 'personal' },
-    });
-    expect(withdraw.statusCode).toBe(204);
+  it('a withdrawal changes the status to withdrawn', async () => {
+    await transitionEnrolment(ctx, enrolmentId, 'withdrawn', { reasonCode: 'personal' });
   });
 
   it('exposes bitemporal history and transition reasons', async () => {
@@ -296,7 +281,7 @@ describe('Status transitions', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('Invalid status transitions', () => {
-  it('returns 422 when trying to intermit a withdrawn enrolment', async () => {
+  it('refuses to intermit a withdrawn enrolment', async () => {
     const jwt = await ctx.makeJwt();
 
     // Create and immediately withdraw
@@ -313,21 +298,10 @@ describe('Invalid status transitions', () => {
     });
     const eid = createRes.json<{ enrolmentId: string }>().enrolmentId;
 
-    await ctx.app.inject({
-      method:  'POST',
-      url:     `/api/v1/enrolments/${eid}/withdraw`,
-      headers: { authorization: `Bearer ${jwt}` },
-      payload: {},
-    });
+    await transitionEnrolment(ctx, eid, 'withdrawn');
 
     // Attempt invalid transition
-    const bad = await ctx.app.inject({
-      method:  'POST',
-      url:     `/api/v1/enrolments/${eid}/intermit`,
-      headers: { authorization: `Bearer ${jwt}` },
-      payload: {},
-    });
-    expect(bad.statusCode).toBe(422);
+    await expect(transitionEnrolment(ctx, eid, 'intermitting')).rejects.toThrow(/withdrawn|transition/i);
   });
 });
 
@@ -439,12 +413,7 @@ describe('Person status lifecycle (SID-009)', () => {
 
   it('graduating the enrolment advances person status to alumnus', async () => {
     const jwt = await ctx.makeJwt();
-    await ctx.app.inject({
-      method:  'POST',
-      url:     `/api/v1/enrolments/${lifecycleEnrolmentId}/graduate`,
-      headers: { authorization: `Bearer ${jwt}` },
-      payload: {},
-    });
+    await transitionEnrolment(ctx, lifecycleEnrolmentId, 'graduated');
 
     const res = await ctx.app.inject({
       method:  'GET',

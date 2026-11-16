@@ -175,6 +175,23 @@ describe('Exceptional circumstances and misconduct', () => {
           expect.objectContaining({ targetEntityId: fixture.moduleRegistrationId }),
         ]) as Array<{ targetEntityId: string }>,
       }));
+
+    // Misconduct outcomes are for those who act on them (D-5): not module tutors or external examiners.
+    for (const role of ['module-tutor', 'external-examiner']) {
+      const other = await ctx.makeJwt({ sub: `mc-${role}`, roles: [role] });
+      const read = await ctx.app.inject({ method: 'GET', url: `/api/v1/students/${fixture.personId}/misconduct-outcomes`, headers: { authorization: `Bearer ${other}` } });
+      expect({ role, status: read.statusCode }).toEqual({ role, status: 403 });
+    }
+    const tutor = await ctx.makeJwt({ sub: 'mc-tutor', roles: ['module-tutor'] });
+    const tutorRecord = await ctx.app.inject({
+      method: 'POST', url: `/api/v1/students/${fixture.personId}/misconduct-outcomes`, headers: { authorization: `Bearer ${tutor}` },
+      payload: { enrolmentId: fixture.enrolmentId, caseReference: 'AI-CASE-002', caseStatusCode: 'closed', penaltyCode: 'mark-cap', effectiveDate: '2027-11-20', penaltyEffects: [] },
+    });
+    expect(tutorRecord.statusCode).toBe(403);
+    const integrity = await ctx.makeJwt({ sub: 'mc-integrity', roles: ['integrity-officer'] });
+    const chair = await ctx.makeJwt({ sub: 'mc-chair', roles: ['exam-board-chair'] });
+    expect((await ctx.app.inject({ method: 'GET', url: `/api/v1/students/${fixture.personId}/misconduct-outcomes`, headers: { authorization: `Bearer ${integrity}` } })).statusCode).toBe(200);
+    expect((await ctx.app.inject({ method: 'GET', url: `/api/v1/students/${fixture.personId}/misconduct-outcomes`, headers: { authorization: `Bearer ${chair}` } })).statusCode).toBe(200);
   });
 
   it('does not expose circumstances records through another tenant', async () => {

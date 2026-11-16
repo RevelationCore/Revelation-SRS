@@ -33,13 +33,6 @@ export interface EnrolmentTransition {
   createdAt:      string;
 }
 
-export type TransitionAction = 'intermit' | 'suspend' | 'withdraw' | 'graduate' | 'reinstate';
-
-export interface TransitionOptions {
-  reasonCode?: string;
-  reasonText?: string;
-}
-
 export interface CreateEnrolmentInput {
   personId:            string;
   modeOfStudyCode:     string;
@@ -50,28 +43,12 @@ export interface CreateEnrolmentInput {
   fundingSourceCode?:  string;
 }
 
-export const AVAILABLE_TRANSITIONS: Record<string, TransitionAction[]> = {
-  enrolled:     ['intermit', 'suspend', 'withdraw', 'graduate'],
-  intermitting: ['reinstate', 'withdraw'],
-  suspended:    ['reinstate', 'withdraw'],
-  withdrawn:    [],
-  graduated:    [],
-};
-
 export function listStudentEnrolments(personId: string): Promise<Enrolment[]> {
   return api.get<Enrolment[]>(`/api/v1/students/${personId}/enrolments`);
 }
 
 export function createEnrolment(input: CreateEnrolmentInput): Promise<{ enrolmentId: string }> {
   return api.post('/api/v1/enrolments', input);
-}
-
-export function transitionEnrolment(
-  enrolmentId: string,
-  action: TransitionAction,
-  options?: TransitionOptions,
-): Promise<void> {
-  return api.post(`/api/v1/enrolments/${enrolmentId}/${action}`, options ?? {});
 }
 
 export function listEnrolmentTransitions(enrolmentId: string): Promise<EnrolmentTransition[]> {

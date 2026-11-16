@@ -253,7 +253,7 @@ export function circumstancesRoutes(fastify: FastifyInstance): void {
         body: MisconductBody,
         response: { 201: Type.Object({ misconductOutcomeId: Type.String() }), 404: ErrorSchema, 422: ErrorSchema },
       },
-      preHandler: [requirePermission('mark:write')],
+      preHandler: [requirePermission('misconduct:record')],
     },
     async (request, reply) => {
       const { personId } = request.params as { personId: string };
@@ -281,7 +281,7 @@ export function circumstancesRoutes(fastify: FastifyInstance): void {
         querystring: ListQuery,
         response: { 200: Type.Array(MisconductSchema), 404: ErrorSchema },
       },
-      preHandler: [requirePermission('mark:read:all')],
+      preHandler: [requirePermission('misconduct:read')],
     },
     async (request, reply) => {
       const { personId } = request.params as { personId: string };

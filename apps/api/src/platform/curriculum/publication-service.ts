@@ -176,6 +176,11 @@ export class CurriculumPublicationService {
     if (publication.statusCode !== 'validated') {
       throw new ConflictError('Only a validated publication can be applied; this one was rejected');
     }
+    // A publication someone entered by hand is applied by someone else; one sent by
+    // the curriculum connector carries the source system's approval (D-7).
+    if (publication.receivedBy === actorId) {
+      throw new ConflictError('You received this publication, so someone else must apply it');
+    }
 
     const validFrom = new Date(`${publication.effectiveFrom}T00:00:00Z`);
     const now = clockNow();
