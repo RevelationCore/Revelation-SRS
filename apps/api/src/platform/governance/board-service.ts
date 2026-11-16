@@ -26,7 +26,7 @@ import {
   type Db,
   withTenantContext,
 } from '@revelation-srs/db';
-import { EVENT_TYPES, NotFoundError, ValidationError } from '@revelation-srs/domain';
+import { EVENT_TYPES, NotFoundError, RuleNotConfiguredError, ValidationError } from '@revelation-srs/domain';
 import type {
   AssessmentModuleResultRatifiedV1Payload,
   GovernanceExamBoardDataPackReadyV1Payload,
@@ -38,6 +38,8 @@ import type { AwardService } from '../progression/award-service.js';
 import type { IntegrationBusPublisher } from '../integration-bus/publisher.js';
 import type { FeatureFlagService } from '../platform-controls/feature-flag-service.js';
 import type { ValueSetService } from '../value-sets/service.js';
+import type { RulesEngine } from '../rules-engine/engine.js';
+import { DEFAULT_RESIT_MARK_CAP, planReassessmentsAtRatification } from '../progression/reassessment-at-ratification.js';
 import { clockNow } from '../clock.js';
 
 export interface DeferBoardInput {
@@ -150,6 +152,8 @@ export class BoardService {
     private readonly valueSets:      ValueSetService,
     private readonly awardService?:  AwardService,
     private readonly featureFlags?:  FeatureFlagService,
+    /** For the resit mark cap applied to reassessment plans created at ratification (D-12). */
+    private readonly rules?:         RulesEngine,
   ) {}
 
   async createExamBoard(tenantId: string, input: CreateExamBoardInput, actorId: string): Promise<string> {
@@ -482,6 +486,15 @@ export class BoardService {
     let lockedMarkCount = 0;
     let lockedProgressionCount = 0;
 
+    // Inputs for the reassessment plans created at ratification (D-12).
+    const registrations = await this.#getBoardRegistrations(board, tenantId);
+    const enrolmentOf = new Map(registrations.map((r) => [r.moduleRegistrationId, r.enrolmentId]));
+    const ratifiedResults = coveredResults.flatMap((r) => {
+      const enrolmentId = enrolmentOf.get(r.moduleRegistrationId);
+      return enrolmentId ? [{ moduleRegistrationId: r.moduleRegistrationId, enrolmentId, resultCode: r.resultCode }] : [];
+    });
+    const markCaps = await this.#resitMarkCaps(tenantId, coveredProgressionDecisions.map((d) => d.enrolmentId));
+
     await withTenantContext(this.db, tenantId, async (tx) => {
       await tx.update(examBoards)
         .set({ ratifiedAt })
@@ -525,6 +538,11 @@ export class BoardService {
           ))
           .returning({ id: progressionDecisions.id });
         lockedProgressionCount = lockedProgression.length;
+
+        await planReassessmentsAtRatification(tx, tenantId, {
+          decisions: coveredProgressionDecisions, results: ratifiedResults,
+          markCapFor: (enrolmentId) => markCaps.get(enrolmentId) ?? DEFAULT_RESIT_MARK_CAP, actorId,
+        });
       }
     });
 
@@ -745,13 +763,37 @@ export class BoardService {
     }));
   }
 
-  async #getCoveredProgressionDecisions(board: BoardRow, tenantId: string): Promise<Array<{ progressionDecisionId: string }>> {
+  /** The resit mark cap for each enrolment's programme, from the rules engine (default 40). */
+  async #resitMarkCaps(tenantId: string, enrolmentIds: string[]): Promise<Map<string, number>> {
+    const caps = new Map<string, number>();
+    if (!this.rules || enrolmentIds.length === 0) return caps;
+    const rows = await withTenantContext(this.db, tenantId, (tx) => tx.select({ id: enrolments.id, programmeId: enrolments.programmeId })
+      .from(enrolments).where(and(
+        eq(enrolments.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
+        inArray(enrolments.id, [...new Set(enrolmentIds)] as Array<`${string}-${string}-${string}-${string}-${string}`>),
+        isNull(enrolments.recordedUntil),
+      )));
+    for (const row of rows) {
+      try {
+        caps.set(row.id, await this.rules.getResitMarkCap({ tenantId, programmeId: row.programmeId ?? '' }));
+      } catch (err) {
+        if (!(err instanceof RuleNotConfiguredError)) throw err;
+        caps.set(row.id, DEFAULT_RESIT_MARK_CAP);
+      }
+    }
+    return caps;
+  }
+
+  async #getCoveredProgressionDecisions(board: BoardRow, tenantId: string): Promise<Array<{ progressionDecisionId: string; enrolmentId: string; decisionCode: string; academicYear: string }>> {
     const registrations = await this.#getBoardRegistrations(board, tenantId);
     const enrolmentIds = [...new Set(registrations.map((registration) => registration.enrolmentId))];
     if (enrolmentIds.length === 0) return [];
 
     return withTenantContext(this.db, tenantId, async (tx) =>
-      tx.select({ progressionDecisionId: progressionDecisions.id }).from(progressionDecisions).where(and(
+      tx.select({
+        progressionDecisionId: progressionDecisions.id, enrolmentId: progressionDecisions.enrolmentId,
+        decisionCode: progressionDecisions.decisionCode, academicYear: progressionDecisions.academicYear,
+      }).from(progressionDecisions).where(and(
         eq(progressionDecisions.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
         eq(progressionDecisions.academicYear, board.academicYear),
         inArray(progressionDecisions.enrolmentId, enrolmentIds as Array<`${string}-${string}-${string}-${string}-${string}`>),

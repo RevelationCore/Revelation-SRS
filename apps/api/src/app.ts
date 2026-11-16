@@ -362,7 +362,7 @@ export async function buildApp(
   const conferment = new ConfermentService(db, valueSets, enrolments, awards);
   const awardDocuments = new AwardDocumentService(db, valueSets);
   const graduation = new GraduationService(db);
-  const boards = new BoardService(db, eventBus, valueSets, awards, featureFlags);
+  const boards = new BoardService(db, eventBus, valueSets, awards, featureFlags, rules);
   const boardAuthority = new BoardAuthorityService(db);
   const hear        = new HearService(db);
   const corrections = new CorrectionService(db, eventBus, marks, moduleResults, progression, valueSets, businessCases);

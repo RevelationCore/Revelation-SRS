@@ -137,6 +137,32 @@ describe('reassessment plans', () => {
     expect((await call('GET', `/enrolments/${f.enrolmentId}/reassessment-plans`, jwt)).json<unknown[]>()).toHaveLength(3);
   });
 
+  it('ratifying a board creates the plans its resit decisions call for (D-12)', async () => {
+    const f = await createAwardFixture('REA3');
+    const moduleId = (await call('POST', '/modules', jwt, { code: 'REA3F', title: 'Failed Module', creditValue: 20 })).json<{ moduleId: string }>().moduleId;
+    const academicPeriodId = (await call('POST', '/academic-periods', jwt, {
+      academicYear: '2025-26', periodCode: 'REA3-SEM1', periodTypeCode: 'semester', startDate: '2025-09-22', endDate: '2026-01-16',
+    })).json<{ academicPeriodId: string }>().academicPeriodId;
+    const reassessment = await call('POST', '/academic-periods', jwt, {
+      academicYear: '2025-26', periodCode: 'REA3-RESIT', periodTypeCode: 'reassessment', startDate: '2026-07-20', endDate: '2026-08-21',
+    });
+    expect(reassessment.statusCode).toBe(201);
+    const moduleOfferingId = (await call('POST', '/module-offerings', jwt, { moduleId, academicPeriodId, deliveryModeCode: 'in-person', capacity: 100 })).json<{ moduleOfferingId: string }>().moduleOfferingId;
+    const moduleRegistrationId = (await call('POST', '/module-registrations', jwt, { enrolmentId: f.enrolmentId, moduleOfferingId, registrationDate: '2025-10-01' })).json<{ moduleRegistrationId: string }>().moduleRegistrationId;
+    const componentId = (await call('POST', `/module-offerings/${moduleOfferingId}/components`, jwt, { componentTypeCode: 'coursework', title: 'Coursework', weighting: 100 })).json<{ assessmentComponentId: string }>().assessmentComponentId;
+    expect((await call('POST', `/module-registrations/${moduleRegistrationId}/marks`, jwt, { assessmentComponentId: componentId, rawMark: 22 })).statusCode).toBe(201);
+    const resit = await decision(f.enrolmentId, 'resit', false);
+
+    const boardId = (await call('POST', '/exam-boards', jwt, { boardTypeCode: 'award', academicYear: '2025-26', academicPeriodId })).json<{ examBoardId: string }>().examBoardId;
+    await signoffBoard(boardId);
+    await ratifyBoard(boardId);
+
+    const plans = (await call('GET', `/enrolments/${f.enrolmentId}/reassessment-plans`, jwt)).json<Array<{ progressionDecisionId: string; planTypeCode: string; moduleRegistrationId: string; attemptNumber: number; markCap: number | null; dueDate: string | null }>>();
+    expect(plans).toEqual([expect.objectContaining({
+      progressionDecisionId: resit, planTypeCode: 'referral', moduleRegistrationId, attemptNumber: 2, markCap: 40, dueDate: '2026-08-21',
+    })]);
+  });
+
   it('a repeat-year decision leads to a repeat stage', async () => {
     const f = await createAwardFixture('REA2');
     const repeat = await decision(f.enrolmentId, 'repeat-year', true);

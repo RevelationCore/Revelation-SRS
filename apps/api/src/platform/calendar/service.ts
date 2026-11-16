@@ -11,7 +11,8 @@ import { NotFoundError } from '@revelation-srs/domain';
 export interface AcademicPeriodInput {
   academicYear: string;
   periodCode: string;
-  periodTypeCode: 'semester' | 'term' | 'year';
+  /** 'reassessment' marks the period whose end is the due date for plans created at ratification (D-12). */
+  periodTypeCode: 'semester' | 'term' | 'year' | 'reassessment';
   startDate: string;
   endDate: string;
 }

@@ -61,7 +61,7 @@ export function academicPeriodsRoutes(fastify: FastifyInstance): void {
         body: Type.Object({
           academicYear:   Type.String({ minLength: 1 }),
           periodCode:     Type.String({ minLength: 1 }),
-          periodTypeCode: Type.Union([Type.Literal('semester'), Type.Literal('term'), Type.Literal('year')]),
+          periodTypeCode: Type.Union([Type.Literal('semester'), Type.Literal('term'), Type.Literal('year'), Type.Literal('reassessment')]),
           startDate:      Type.String(),
           endDate:        Type.String(),
         }),
