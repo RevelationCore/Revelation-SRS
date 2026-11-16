@@ -1,8 +1,6 @@
 import { useCallback, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../auth/AuthContext.js';
 import { useApiData } from '../hooks/useApiData.js';
@@ -10,16 +8,18 @@ import { useFormSubmit } from '../hooks/useFormSubmit.js';
 import { postAddress, getAddress, getFieldValueSet } from '../api/me.js';
 import { Problem, Field, Spinner, PageHeader, Card, CardBody, Button, Select } from '@revelation-srs/ui';
 
-const schema = z.object({
-  addressTypeCode: z.string().min(1, 'Address type is required.'),
-  line1:           z.string().min(1, 'Address line 1 is required.'),
-  line2:           z.string().optional(),
-  city:            z.string().optional(),
-  postcode:        z.string().optional(),
-  countryCode:     z.string().optional(),
-});
+interface FormValues {
+  addressTypeCode: string;
+  line1:           string;
+  line2?:          string;
+  city?:           string;
+  postcode?:       string;
+  countryCode?:    string;
+}
 
-type FormValues = z.infer<typeof schema>;
+const ADDRESS_TYPE_RULES = { required: 'Address type is required.' };
+const LINE1_RULES = { required: 'Address line 1 is required.' };
+
 
 export function AddAddressPage() {
   const { t }    = useTranslation();
@@ -43,7 +43,6 @@ export function AddAddressPage() {
   const addressTypes = addressTypeSet?.members ?? [];
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<FormValues>({
-    resolver: zodResolver(schema),
   });
 
   useEffect(() => {
@@ -107,7 +106,7 @@ export function AddAddressPage() {
             ) : isEdit ? (
               /* Lock type when editing — service upserts by type */
               <>
-                <input type="hidden" {...register('addressTypeCode')} />
+                <input type="hidden" {...register('addressTypeCode', ADDRESS_TYPE_RULES)} />
                 <p className="rounded border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm text-neutral-700">
                   {addressTypes.find(m => m.code === existing?.addressTypeCode)?.displayLabel
                     ?? existing?.addressTypeCode}
@@ -118,7 +117,7 @@ export function AddAddressPage() {
                 id="addressTypeCode"
                 aria-required="true"
                 invalid={!!errors.addressTypeCode}
-                {...register('addressTypeCode')}
+                {...register('addressTypeCode', ADDRESS_TYPE_RULES)}
               >
                 <option value="">Select address type…</option>
                 {addressTypes.map(({ code, displayLabel }) => (
@@ -133,7 +132,7 @@ export function AddAddressPage() {
 
           <Field
             label={`${t('portal.address.line1')} *`}
-            registration={register('line1')}
+            registration={register('line1', LINE1_RULES)}
             error={errors.line1}
             required
           />

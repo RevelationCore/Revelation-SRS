@@ -165,7 +165,7 @@ jobs:
           cache-to:   type=gha,mode=max
 
       - name: Trivy scan — API
-        uses: aquasecurity/trivy-action@0.24.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref:     revelation-srs/api:${{ github.sha }}
           format:        table
@@ -184,7 +184,7 @@ jobs:
           cache-to:   type=gha,mode=max
 
       - name: Trivy scan — Portal
-        uses: aquasecurity/trivy-action@0.24.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref:     revelation-srs/portal:${{ github.sha }}
           format:        table
@@ -203,7 +203,7 @@ jobs:
           cache-to:   type=gha,mode=max
 
       - name: Trivy scan — Admin
-        uses: aquasecurity/trivy-action@0.24.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref:     revelation-srs/admin:${{ github.sha }}
           format:        table
@@ -373,7 +373,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - name: Build frontend apps
-        run: pnpm --filter @revelation-srs/portal build && pnpm --filter @revelation-srs/admin build
+        run: pnpm --filter "@revelation-srs/portal..." --filter "@revelation-srs/admin..." build
 
       - name: Check bundle size budgets
         run: pnpm check:bundle-size
@@ -415,12 +415,13 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - name: Build portal
-        run: pnpm --filter @revelation-srs/portal build
+      - name: Build portal (and the packages it imports)
+        run: pnpm --filter "@revelation-srs/portal..." build
 
       - name: Run Lighthouse CI
         run: |
-          pnpm exec lhci autorun
+          # CI-only tool, run without adding it (and its dependency advisories) to the workspace.
+          npx --yes @lhci/cli@0.15.1 autorun
         env:
           LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
 

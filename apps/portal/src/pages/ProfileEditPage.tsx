@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../auth/AuthContext.js';
 import { useApiData } from '../hooks/useApiData.js';
@@ -22,14 +20,16 @@ function codeLabel(vs: ValueSetDto | null | undefined, code: string | null | und
   return vs.members.find(m => m.code === code)?.displayLabel ?? code;
 }
 
-const schema = z.object({
-  preferredName:    z.string().optional(),
-  preferredPronouns: z.string().optional(),
-  emailPersonal:    z.string().email({ message: 'Enter a valid email address.' }).or(z.literal('')).optional(),
-  phoneMobile:      z.string().optional(),
-});
+interface FormValues {
+  preferredName?:     string;
+  preferredPronouns?: string;
+  emailPersonal?:     string;
+  phoneMobile?:       string;
+}
 
-type FormValues = z.infer<typeof schema>;
+// An empty value is allowed (the field is optional); a non-empty one must look like an address.
+const EMAIL_RULES = { pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Enter a valid email address.' } };
+
 
 export function ProfileEditPage() {
   const { t }    = useTranslation();
@@ -62,7 +62,6 @@ export function ProfileEditPage() {
   const pendingIdentityRequest = identityChangeRequests?.find(r => r.statusCode === 'running');
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<FormValues>({
-    resolver: zodResolver(schema),
   });
 
   useEffect(() => {
@@ -172,7 +171,7 @@ export function ProfileEditPage() {
             <CardBody className="space-y-4">
               <Field
                 label={t('portal.profile.emailPersonal')}
-                registration={register('emailPersonal')}
+                registration={register('emailPersonal', EMAIL_RULES)}
                 error={errors.emailPersonal}
                 type="email"
               />

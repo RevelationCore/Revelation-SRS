@@ -25,6 +25,19 @@ function routes() {
 }
 
 describe('student record update workflow — portal address edit', () => {
+  it('validation: submitting an empty new address shows the required-field messages and sends nothing', async () => {
+    let posted = false;
+    server.use(
+      http.get(`${API}/api/v1/fields/student_address/address_type_code/value-set`, () => HttpResponse.json(valueSet)),
+      http.post(`${API}/api/v1/students/:personId/addresses`, () => { posted = true; return HttpResponse.json({}, { status: 201 }); }),
+    );
+    renderWithProviders(routes(), { route: '/profile/addresses/new' });
+    await userEvent.click(await screen.findByRole('button', { name: /save|add address/i }));
+    expect(await screen.findByText('Address type is required.')).toBeVisible();
+    expect(screen.getByText('Address line 1 is required.')).toBeVisible();
+    expect(posted).toBe(false);
+  });
+
   it('initial load: pre-fills the form from the existing address once it resolves', async () => {
     server.use(
       http.get(`${API}/api/v1/fields/student_address/address_type_code/value-set`, () => HttpResponse.json(valueSet)),

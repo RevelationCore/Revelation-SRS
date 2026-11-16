@@ -1,7 +1,5 @@
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
 import { PageHeader, Card, CardBody, Button, Select, Problem } from '@revelation-srs/ui';
 import { useAuth } from '../auth/AuthContext.js';
@@ -16,12 +14,11 @@ const ADJUSTMENT_TYPES = [
   { code: 'other',      label: 'Other' },
 ];
 
-const schema = z.object({
-  adjustmentTypeCode: z.string().min(1, 'Select the kind of adjustment you need.'),
-  rationale:          z.string().optional(),
-});
+interface FormValues {
+  adjustmentTypeCode: string;
+  rationale?:         string;
+}
 
-type FormValues = z.infer<typeof schema>;
 
 export function AdjustmentRequestPage() {
   const { t } = useTranslation();
@@ -29,7 +26,6 @@ export function AdjustmentRequestPage() {
   const navigate = useNavigate();
   const { submitting, submitError, submit } = useFormSubmit<{ id: string }>();
   const { register, handleSubmit, formState: { errors } } = useForm<FormValues>({
-    resolver: zodResolver(schema),
     defaultValues: { adjustmentTypeCode: 'exam-time' },
   });
 
@@ -59,7 +55,7 @@ export function AdjustmentRequestPage() {
               <label htmlFor="adj-req-type" className="block text-sm font-medium text-neutral-700">
                 What kind of adjustment do you need? <span className="text-danger-500" aria-hidden="true">*</span>
               </label>
-              <Select id="adj-req-type" aria-required="true" invalid={!!errors.adjustmentTypeCode} {...register('adjustmentTypeCode')}>
+              <Select id="adj-req-type" aria-required="true" invalid={!!errors.adjustmentTypeCode} {...register('adjustmentTypeCode', { required: 'Select the kind of adjustment you need.' })}>
                 {ADJUSTMENT_TYPES.map((o) => <option key={o.code} value={o.code}>{o.label}</option>)}
               </Select>
               {errors.adjustmentTypeCode && (

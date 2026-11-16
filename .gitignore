@@ -50,3 +50,6 @@ test-results/
 # Tutorial video pipeline — generated media artifacts, not source
 tutorials/generated/
 tutorials/output/
+
+# Lighthouse CI reports
+.lighthouseci/

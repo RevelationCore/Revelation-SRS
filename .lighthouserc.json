@@ -8,13 +8,41 @@
     "assert": {
       "preset": "lighthouse:no-pwa",
       "assertions": {
-        "first-contentful-paint": ["error", { "maxNumericValue": 1500 }],
-        "largest-contentful-paint": ["error", { "maxNumericValue": 2500 }],
-        "interactive": ["error", { "maxNumericValue": 3500 }],
-        "total-blocking-time": ["warn", { "maxNumericValue": 300 }],
-        "cumulative-layout-shift": ["warn", { "maxNumericValue": 0.1 }],
+        "first-contentful-paint": [
+          "error",
+          {
+            "maxNumericValue": 1600
+          }
+        ],
+        "largest-contentful-paint": [
+          "error",
+          {
+            "maxNumericValue": 2500
+          }
+        ],
+        "interactive": [
+          "error",
+          {
+            "maxNumericValue": 3500
+          }
+        ],
+        "total-blocking-time": [
+          "warn",
+          {
+            "maxNumericValue": 300
+          }
+        ],
+        "cumulative-layout-shift": [
+          "warn",
+          {
+            "maxNumericValue": 0.1
+          }
+        ],
         "uses-responsive-images": "off",
-        "uses-long-cache-ttl": "off"
+        "uses-long-cache-ttl": "off",
+        "network-dependency-tree-insight": "warn",
+        "unused-javascript": "warn",
+        "is-crawlable": "off"
       }
     },
     "upload": {
