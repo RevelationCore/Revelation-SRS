@@ -12,7 +12,7 @@ import {
 } from '../api/academicExceptions.js';
 import { useAuth } from '../auth/AuthContext.js';
 import { EnrolmentScoped } from '../components/EnrolmentScoped.js';
-import { type CurriculumBinding, type RuleSet, getCurriculumBinding, listRuleSets } from '../api/programmeRules.js';
+import { type BindingChange, type CurriculumBinding, type RuleSet, getCurriculumBinding, listBindingChangesFor, listRuleSets, proposeBindingChange } from '../api/programmeRules.js';
 import { useValueSet } from '../hooks/useValueSet.js';
 
 export function message(err: unknown, fallback: string): string {
@@ -27,12 +27,12 @@ export const ruleLabel = (code: string) => ENROLMENT_RULES.find((r) => r.code ==
  * approved it changes the rules applied to the student at registration,
  * module selection and progression.
  */
-export function AcademicExceptionsTab({ personId, canPropose, canApprove, canReadBinding = false }: { personId: string; canPropose: boolean; canApprove: boolean; canReadBinding?: boolean }) {
+export function AcademicExceptionsTab({ personId, canPropose, canApprove, canReadBinding = false, canChangeBinding = false }: { personId: string; canPropose: boolean; canApprove: boolean; canReadBinding?: boolean; canChangeBinding?: boolean }) {
   return (
     <EnrolmentScoped personId={personId} idPrefix="exceptions">
       {(enrolment) => (
         <>
-          {canReadBinding && <CurriculumBindingNote enrolmentId={enrolment.enrolmentId} programmeId={enrolment.programmeId} />}
+          {canReadBinding && <CurriculumBindingNote enrolmentId={enrolment.enrolmentId} programmeId={enrolment.programmeId} canChange={canChangeBinding} />}
           <EnrolmentExceptions enrolmentId={enrolment.enrolmentId} canPropose={canPropose} canApprove={canApprove} />
         </>
       )}
@@ -346,21 +346,82 @@ function ExceptionForm({ onSubmit }: { onSubmit: (body: Parameters<typeof propos
   );
 }
 
-/** The rule set this enrolment's module selection and progression rules come from (BP-03-002). */
-function CurriculumBindingNote({ enrolmentId, programmeId }: { enrolmentId: string; programmeId: string | null }) {
+/**
+ * The rule set this enrolment's module selection and progression rules come
+ * from (BP-03-002), and changing it (D-11): applied at once if nothing depends
+ * on it yet, otherwise proposed for a programme approver.
+ */
+function CurriculumBindingNote({ enrolmentId, programmeId, canChange }: { enrolmentId: string; programmeId: string | null; canChange: boolean }) {
+  const { members: reasons } = useValueSet('enrolment_curriculum_binding', 'change_reason_code');
   const [binding, setBinding] = useState<CurriculumBinding | null | undefined>(undefined);
   const [ruleSets, setRuleSets] = useState<RuleSet[]>([]);
+  const [pending, setPending] = useState<BindingChange | null>(null);
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({ programmeRuleSetId: '', changeReasonCode: '', reason: '', effectiveDate: '' });
+  const [notice, setNotice] = useState('');
+  const [error, setError] = useState('');
+
+  const load = useCallback(async () => {
+    setBinding(await getCurriculumBinding(enrolmentId).catch(() => null));
+    const changes = await listBindingChangesFor(enrolmentId).catch(() => [] as BindingChange[]);
+    setPending(changes.find((c) => c.statusCode === 'proposed') ?? null);
+  }, [enrolmentId]);
   useEffect(() => {
-    getCurriculumBinding(enrolmentId).then(setBinding).catch(() => setBinding(null));
+    void load();
     if (programmeId) listRuleSets(programmeId).then(setRuleSets).catch(() => undefined);
-  }, [enrolmentId, programmeId]);
+  }, [load, programmeId]);
+
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    setError(''); setNotice('');
+    try {
+      const { applied } = await proposeBindingChange(enrolmentId, { ...form, reason: form.reason.trim() });
+      setNotice(applied ? 'The rule set was changed.' : 'Modules or a selection already depend on the current rule set, so a programme approver must approve the change.');
+      setOpen(false); setForm({ programmeRuleSetId: '', changeReasonCode: '', reason: '', effectiveDate: '' });
+      await load();
+    } catch (err) { setError(message(err, 'The change was refused')); }
+  }
+
   if (binding === undefined) return null;
-  const ruleSet = binding ? ruleSets.find((r) => r.programmeRuleSetId === binding.programmeRuleSetId) : undefined;
+  const code = (id: string) => ruleSets.find((r) => r.programmeRuleSetId === id)?.ruleSetCode ?? id;
   return (
-    <p className="text-sm text-neutral-700">
-      {binding
-        ? <>Programme rules: rule set <strong>{ruleSet?.ruleSetCode ?? binding.programmeRuleSetId}</strong> ({binding.decisionAuthorityCode}{binding.decisionReason ? `: ${binding.decisionReason}` : ''}).</>
-        : 'Programme rules: not yet bound to a rule set (bound automatically at the first module selection).'}
-    </p>
+    <div className="flex flex-col gap-2 text-sm text-neutral-700">
+      <p>
+        {binding
+          ? <>Programme rules: rule set <strong>{code(binding.programmeRuleSetId)}</strong> ({binding.decisionAuthorityCode}{binding.decisionReason ? `: ${binding.decisionReason}` : ''}).</>
+          : 'Programme rules: not yet bound to a rule set (bound automatically at the first module selection).'}
+        {canChange && !pending && !open && <> <button type="button" className="text-primary-600 hover:underline" onClick={() => setOpen(true)}>Change rule set</button></>}
+      </p>
+      {pending && <p>A change to rule set <strong>{code(pending.programmeRuleSetId)}</strong> is waiting for a programme approver.</p>}
+      {notice && <p role="status">{notice}</p>}
+      {error && <p className="text-danger-600" role="alert">{error}</p>}
+      {open && (
+        <form className="grid grid-cols-1 gap-3 items-end md:grid-cols-5" onSubmit={(e) => void submit(e)}>
+          <LabelledField label="New rule set" htmlFor="binding-rule-set" required>
+            <Select id="binding-rule-set" value={form.programmeRuleSetId} onChange={(e) => setForm((f) => ({ ...f, programmeRuleSetId: e.target.value }))}>
+              <option value="">Choose…</option>
+              {ruleSets.filter((r) => r.programmeRuleSetId !== binding?.programmeRuleSetId).map((r) => <option key={r.programmeRuleSetId} value={r.programmeRuleSetId}>{r.ruleSetCode}</option>)}
+            </Select>
+          </LabelledField>
+          <LabelledField label="Reason" htmlFor="binding-reason-code" required>
+            <Select id="binding-reason-code" value={form.changeReasonCode} onChange={(e) => setForm((f) => ({ ...f, changeReasonCode: e.target.value }))}>
+              <option value="">Choose…</option>
+              {reasons.map((m) => <option key={m.code} value={m.code}>{m.displayLabel}</option>)}
+            </Select>
+          </LabelledField>
+          <LabelledField label="Explanation" htmlFor="binding-reason" required>
+            <Input id="binding-reason" value={form.reason} onChange={(e) => setForm((f) => ({ ...f, reason: e.target.value }))} />
+          </LabelledField>
+          <LabelledField label="From" htmlFor="binding-effective" required>
+            <Input id="binding-effective" type="date" value={form.effectiveDate} onChange={(e) => setForm((f) => ({ ...f, effectiveDate: e.target.value }))} />
+          </LabelledField>
+          <div className="flex gap-2">
+            <Button type="submit" size="sm" disabled={!form.programmeRuleSetId || !form.changeReasonCode || !form.reason.trim() || !form.effectiveDate}>Change</Button>
+            <Button type="button" size="sm" variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
+          </div>
+        </form>
+      )}
+      <p className="text-xs text-neutral-500">A change of programme or mode is a transfer: use Status changes.</p>
+    </div>
   );
 }

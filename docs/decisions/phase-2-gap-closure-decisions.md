@@ -39,6 +39,8 @@ The enrolment starts in a new status, `pre-registration`, which can move only to
 
 **Decision.** A change of programme or mode goes only through a transfer status case. A route or rule-set change within the same programme needs a reason code and an effective date. A registry administrator makes it alone if nothing yet depends on the binding in the current year (no module registrations, no pending or approved selection proposal, no marks); otherwise a programme approver (`curriculum-binding:approve`) decides it, and never the proposer. Replacing a binding happens in one transaction.
 
+Implementation note: the proposal and its decision are held in a `curriculum_binding_change` row (proposed, approved, rejected or applied directly), following the rule-exception pattern, because a business case has nowhere to hold the proposed binding.
+
 **Institution must confirm.** Who approves pathway changes.
 
 ## D-12: Reassessment plans at ratification (BP-06-002)

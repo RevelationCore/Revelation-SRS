@@ -171,6 +171,8 @@ export const PERMISSION_ROLES = {
   'module-selection:configure':         ['registry-administrator', 'tenant-administrator'] as Role[],
   'curriculum-binding:read':             ['registry-administrator', 'programme-approver'] as Role[],
   'curriculum-binding:write':            ['registry-administrator'] as Role[],
+  // A binding change something already depends on is decided by a programme approver (D-11).
+  'curriculum-binding:approve':          ['programme-approver'] as Role[],
   'pgr-case:read':                       ['pgr-administrator', 'pgr-director', 'research-supervisor', 'registry-administrator'] as Role[],
   'pgr-case:read:own':                   ['student'] as Role[],
   'pgr-case:write':                      ['pgr-administrator', 'registry-administrator'] as Role[],

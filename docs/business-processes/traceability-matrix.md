@@ -17,8 +17,8 @@ How far each academic-journey process (areas 01–06) can be carried out in the 
 
 | Coverage | Processes |
 |---|---|
-| On screen | 38 |
-| Partly built | 8 |
+| On screen | 39 |
+| Partly built | 7 |
 | API only | 0 |
 | Not built | 3 |
 
@@ -44,7 +44,7 @@ How far each academic-journey process (areas 01–06) can be carried out in the 
 | [BP-02-011](02-registration-and-student-status/bp-02-011-resolve-failure-to-register.md) Resolve failure to register or re-register | Not built | — | — | Non-registration decisions are not modelled |
 | [BP-02-012](02-registration-and-student-status/bp-02-012-close-leaver-record.md) Close a leaver record and entitlements | On screen | Status cases (leaver closure, closure items) | — | Closure does not itself end access; withdrawal and graduation delivery flows do |
 | [BP-03-001](03-curriculum-and-module-registration/bp-03-001-import-and-publish-curriculum-data.md) Import and publish curriculum data to the SRS | On screen | Curriculum publications list and review | — | Programmes and modules only; a person cannot apply a publication they entered |
-| [BP-03-002](03-curriculum-and-module-registration/bp-03-002-assign-programme-route-and-rules.md) Assign a programme route and rule set | Partly built | Programme rules: rule sets and diet groups; student record shows the bound rule set | — | Changing one student's binding is API only, pending a decision on how it is governed |
+| [BP-03-002](03-curriculum-and-module-registration/bp-03-002-assign-programme-route-and-rules.md) Assign a programme route and rule set | On screen | Programme rules; student record Credit & exceptions: bound rule set and changing it; approvals page for programme approvers | — | A change of programme or mode goes through a transfer |
 | [BP-03-003](03-curriculum-and-module-registration/bp-03-003-select-modules.md) Select modules | On screen | Module selection proposals | Module selection | No timetable-clash, joint-honours or selection-window rules |
 | [BP-03-004](03-curriculum-and-module-registration/bp-03-004-validate-and-approve-module-selection.md) Validate and approve module selection | On screen | Module selection proposals: approval | — | Applies approved credit and rule exceptions; no ranked allocation |
 | [BP-03-005](03-curriculum-and-module-registration/bp-03-005-change-module-registration.md) Change a module registration | On screen | Registration requests | My modules: add and withdraw requests | — |

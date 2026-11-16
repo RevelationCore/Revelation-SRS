@@ -71,9 +71,9 @@ export async function planReassessmentsAtRatification(tx: Tx, tenantId: string, 
     for (const r of input.results.filter((x) => x.enrolmentId === d.enrolmentId)) {
       if (has(d.progressionDecisionId, r.moduleRegistrationId)) continue;
       if (r.resultCode === 'deferred') {
-        rows.push({ ...base, planTypeCode: 'deferral', moduleRegistrationId: r.moduleRegistrationId as Uuid, attemptNumber: Math.max(2, used(d.enrolmentId, r.moduleRegistrationId)), markCap: null });
+        rows.push({ ...base, planTypeCode: 'deferral', moduleRegistrationId: r.moduleRegistrationId, attemptNumber: Math.max(2, used(d.enrolmentId, r.moduleRegistrationId)), markCap: null });
       } else if (FAILED.includes(r.resultCode)) {
-        rows.push({ ...base, planTypeCode: DEFAULT_MODULE_PLAN_TYPE, moduleRegistrationId: r.moduleRegistrationId as Uuid, attemptNumber: used(d.enrolmentId, r.moduleRegistrationId) + 1, markCap: input.markCapFor(d.enrolmentId) });
+        rows.push({ ...base, planTypeCode: DEFAULT_MODULE_PLAN_TYPE, moduleRegistrationId: r.moduleRegistrationId, attemptNumber: used(d.enrolmentId, r.moduleRegistrationId) + 1, markCap: input.markCapFor(d.enrolmentId) });
       }
     }
   }

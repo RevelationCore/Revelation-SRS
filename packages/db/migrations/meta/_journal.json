@@ -64,6 +64,13 @@
       "when": 1785000040000,
       "tag": "0008_rules_admissions_and_person_indexes",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1785000041000,
+      "tag": "0009_registration_and_phase2",
+      "breakpoints": true
     }
   ]
 }

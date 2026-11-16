@@ -12,6 +12,7 @@ import {
 import { useAuth } from '../auth/AuthContext.js';
 import { userHasAnyPermission } from '../auth/RequirePermission.js';
 import { DecideControl, message, ruleLabel } from './AcademicExceptionsTab.js';
+import { type BindingChange, decideBindingChange, listPendingBindingChanges } from '../api/programmeRules.js';
 
 /**
  * Recognised credit and rule exceptions awaiting a decision, across all
@@ -24,17 +25,26 @@ export function PendingApprovalsPage() {
   const [error, setError] = useState('');
   const [actionError, setActionError] = useState('');
   const canOpenRecord = userHasAnyPermission(roles, ['student:read:all']);
+  const canApproveBindings = userHasAnyPermission(roles, ['curriculum-binding:approve']);
+  const [bindingChanges, setBindingChanges] = useState<BindingChange[]>([]);
+
+  const loadBindingChanges = useCallback(async () => {
+    if (canApproveBindings) setBindingChanges(await listPendingBindingChanges().catch(() => []));
+  }, [canApproveBindings]);
+  useEffect(() => { void loadBindingChanges(); }, [loadBindingChanges]);
 
   const load = useCallback(async () => {
     setError('');
-    try { setPending(await listPendingApprovals()); } catch (err) { setError(message(err, 'Failed to load pending approvals')); }
+    try {
+      setPending(await listPendingApprovals());
+    } catch (err) { setError(message(err, 'Failed to load pending approvals')); }
   }, []);
   useEffect(() => { void load(); }, [load]);
 
   const act = useCallback(async (run: () => Promise<unknown>): Promise<boolean> => {
     setActionError('');
-    try { await run(); await load(); return true; } catch (err) { setActionError(message(err, 'The decision failed')); return false; }
-  }, [load]);
+    try { await run(); await Promise.all([load(), loadBindingChanges()]); return true; } catch (err) { setActionError(message(err, 'The decision failed')); return false; }
+  }, [load, loadBindingChanges]);
 
   const student = (s: PendingSubject) => (
     <>
@@ -92,6 +102,36 @@ export function PendingApprovalsPage() {
                   </Table>
                 )}
               </Card>
+
+              {canApproveBindings && (
+                <Card>
+                  <CardHeader title={`Rule-set changes (${bindingChanges.length})`} />
+                  {bindingChanges.length === 0 ? <p className="px-6 pb-6 text-sm text-neutral-600">No rule-set change awaits a decision.</p> : (
+                    <Table>
+                      <TableHead>
+                        <tr><TableHeaderCell>Student</TableHeaderCell><TableHeaderCell>Change</TableHeaderCell><TableHeaderCell>From</TableHeaderCell><TableHeaderCell>Proposed</TableHeaderCell><TableHeaderCell><span className="sr-only">Decide</span></TableHeaderCell></tr>
+                      </TableHead>
+                      <TableBody>
+                        {bindingChanges.map((c) => (
+                          <TableRow key={c.curriculumBindingChangeId}>
+                            <TableCell>{c.subject ? student(c.subject) : c.enrolmentId}</TableCell>
+                            <TableCell className="text-sm">{c.changeReasonCode}<div className="text-xs text-neutral-500">{c.reason}</div></TableCell>
+                            <TableCell className="text-sm">{c.effectiveDate}</TableCell>
+                            <TableCell>{proposed(c.proposedBy, c.proposedAt)}</TableCell>
+                            <TableCell className="text-right">
+                              <DecideControl
+                                subject={`rule-set change for ${c.subject?.studentName ?? c.enrolmentId}`}
+                                ownProposal={c.proposedBy === user?.sub}
+                                onDecide={(code, reason) => act(() => decideBindingChange(c.curriculumBindingChangeId, code, reason))}
+                              />
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </Card>
+              )}
 
               <Card>
                 <CardHeader title={`Rule exceptions (${pending.exceptions.length})`} />

@@ -1,4 +1,4 @@
-import { boolean, jsonb, smallint, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { boolean, date, jsonb, smallint, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { pgTable } from 'drizzle-orm/pg-core';
 
 import { bitemporalColumns } from '../temporal.js';
@@ -62,6 +62,8 @@ export const enrolmentCurriculumBindings = pgTable('enrolment_curriculum_binding
   programmeRuleSetId:     uuid('programme_rule_set_id').notNull(), // logical FK → programmeRuleSets.id
   decisionAuthorityCode:  text('decision_authority_code').notNull(), // 'automatic' | 'registry-administrator' | 'academic-approver'
   decisionReason:         text('decision_reason'),
+  /** Why one student's binding was changed (D-11); value set curriculum-binding-change-reason-code. */
+  changeReasonCode:       text('change_reason_code'),
 });
 
 export type EnrolmentCurriculumBinding    = typeof enrolmentCurriculumBindings.$inferSelect;
@@ -113,3 +115,26 @@ export const moduleSelectionProposalItems = pgTable('module_selection_proposal_i
 
 export type ModuleSelectionProposalItem    = typeof moduleSelectionProposalItems.$inferSelect;
 export type NewModuleSelectionProposalItem = typeof moduleSelectionProposalItems.$inferInsert;
+
+/**
+ * A proposed change to one student's curriculum binding (D-11). Applied at
+ * once when nothing depends on the binding yet ('applied-directly');
+ * otherwise decided by a programme approver who is not the proposer.
+ */
+export const curriculumBindingChanges = pgTable('curriculum_binding_change', {
+  id:                 uuid('id').primaryKey().defaultRandom(),
+  tenantId:           uuid('tenant_id').notNull().references(() => tenants.id),
+  enrolmentId:        uuid('enrolment_id').notNull(),
+  programmeRouteId:   uuid('programme_route_id'),
+  programmeRuleSetId: uuid('programme_rule_set_id').notNull(),
+  changeReasonCode:   text('change_reason_code').notNull(),
+  reason:             text('reason').notNull(),
+  effectiveDate:      date('effective_date').notNull(),
+  statusCode:         text('status_code').notNull().default('proposed'),
+  proposedBy:         text('proposed_by').notNull(),
+  proposedAt:         timestamp('proposed_at', { withTimezone: true }).notNull().defaultNow(),
+  decidedBy:          text('decided_by'),
+  decidedAt:          timestamp('decided_at', { withTimezone: true }),
+  decisionReason:     text('decision_reason'),
+});
+export type CurriculumBindingChange = typeof curriculumBindingChanges.$inferSelect;

@@ -113,6 +113,7 @@ export interface CurriculumBindingDto {
   programmeRuleSetId: string;
   decisionAuthorityCode: string;
   decisionReason: string | null;
+  changeReasonCode: string | null;
 }
 
 export interface CreateModuleGroupInput {
@@ -487,6 +488,7 @@ export class ModuleSelectionService {
       programmeRuleSetId: row.programmeRuleSetId,
       decisionAuthorityCode: row.decisionAuthorityCode,
       decisionReason: row.decisionReason,
+      changeReasonCode: row.changeReasonCode,
     };
   }
 
@@ -495,37 +497,30 @@ export class ModuleSelectionService {
     tenantId: string,
     enrolmentId: string,
     input: {
-      programmeRouteId?: string;
+      programmeRouteId?: string | null;
       programmeRuleSetId: string;
       decisionAuthorityCode: 'automatic' | 'registry-administrator' | 'academic-approver';
       decisionReason?: string;
+      changeReasonCode?: string;
+      validFrom?: Date;
     },
   ): Promise<string> {
     const now = clockNow();
-    const existing = await withTenantContext(this.db, tenantId, async (tx) =>
-      tx.select({ id: enrolmentCurriculumBindings.id }).from(enrolmentCurriculumBindings).where(
-        and(
-          eq(enrolmentCurriculumBindings.enrolmentId, enrolmentId as Uuid),
+    // One transaction: an enrolment is never left without a current binding (D-11).
+    return withTenantContext(this.db, tenantId, async (tx) => {
+      const [existing] = await tx.select({ id: enrolmentCurriculumBindings.id }).from(enrolmentCurriculumBindings).where(and(
+        eq(enrolmentCurriculumBindings.enrolmentId, enrolmentId as Uuid),
+        eq(enrolmentCurriculumBindings.tenantId, tenantId as Uuid),
+        isNull(enrolmentCurriculumBindings.recordedUntil),
+      )).limit(1);
+      if (existing) {
+        await tx.update(enrolmentCurriculumBindings).set({ recordedUntil: now }).where(and(
+          eq(enrolmentCurriculumBindings.id, existing.id as Uuid),
           eq(enrolmentCurriculumBindings.tenantId, tenantId as Uuid),
           isNull(enrolmentCurriculumBindings.recordedUntil),
-        ),
-      ).limit(1),
-    );
-
-    if (existing[0]) {
-      await withTenantContext(this.db, tenantId, async (tx) => {
-        await tx.update(enrolmentCurriculumBindings).set({ recordedUntil: now }).where(
-          and(
-            eq(enrolmentCurriculumBindings.id, existing[0]!.id as Uuid),
-            eq(enrolmentCurriculumBindings.tenantId, tenantId as Uuid),
-            isNull(enrolmentCurriculumBindings.recordedUntil),
-          ),
-        );
-      });
-    }
-
-    const bindingId = existing[0]?.id ?? randomUUID();
-    await withTenantContext(this.db, tenantId, async (tx) => {
+        ));
+      }
+      const bindingId = existing?.id ?? randomUUID();
       await tx.insert(enrolmentCurriculumBindings).values({
         versionId:             randomUUID(),
         id:                    bindingId as Uuid,
@@ -535,13 +530,14 @@ export class ModuleSelectionService {
         programmeRuleSetId:    input.programmeRuleSetId as Uuid,
         decisionAuthorityCode: input.decisionAuthorityCode,
         decisionReason:        input.decisionReason ?? null,
-        validFrom:             now,
+        changeReasonCode:      input.changeReasonCode ?? null,
+        validFrom:             input.validFrom ?? now,
         validTo:               null,
         recordedAt:            now,
         recordedUntil:         null,
       });
+      return bindingId;
     });
-    return bindingId;
   }
 
   // ── Programme rule set administration ────────────────────────────────────────

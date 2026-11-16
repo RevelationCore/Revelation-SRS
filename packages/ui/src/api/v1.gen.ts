@@ -4601,6 +4601,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/curriculum-binding-changes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getCurriculumBindingChanges"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/curriculum-binding-changes/{changeId}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createCurriculumBindingChangesByChangeIdDecision"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/programme-rule-sets": {
         parameters: {
             query?: never;
@@ -22399,7 +22431,7 @@ export interface operations {
                 "application/json": {
                     academicYear: string;
                     periodCode: string;
-                    periodTypeCode: "semester" | "term" | "year";
+                    periodTypeCode: "semester" | "term" | "year" | "reassessment";
                     startDate: string;
                     endDate: string;
                 };
@@ -24664,6 +24696,7 @@ export interface operations {
                         programmeRuleSetId: string;
                         decisionAuthorityCode: string;
                         decisionReason: string | null;
+                        changeReasonCode: string | null;
                     };
                 };
             };
@@ -24697,7 +24730,9 @@ export interface operations {
                 "application/json": {
                     programmeRouteId?: string;
                     programmeRuleSetId: string;
-                    decisionReason?: string;
+                    changeReasonCode: string;
+                    reason: string;
+                    effectiveDate: string;
                 };
             };
         };
@@ -24709,7 +24744,179 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        enrolmentCurriculumBindingId: string;
+                        applied: boolean;
+                        change: {
+                            curriculumBindingChangeId: string;
+                            enrolmentId: string;
+                            programmeRouteId: string | null;
+                            programmeRuleSetId: string;
+                            changeReasonCode: string;
+                            reason: string;
+                            effectiveDate: string;
+                            statusCode: string;
+                            proposedBy: string;
+                            proposedAt: string;
+                            decidedBy: string | null;
+                            decidedAt: string | null;
+                            decisionReason: string | null;
+                        };
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getCurriculumBindingChanges: {
+        parameters: {
+            query?: {
+                enrolmentId?: string;
+                pending?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        curriculumBindingChangeId: string;
+                        enrolmentId: string;
+                        programmeRouteId: string | null;
+                        programmeRuleSetId: string;
+                        changeReasonCode: string;
+                        reason: string;
+                        effectiveDate: string;
+                        statusCode: string;
+                        proposedBy: string;
+                        proposedAt: string;
+                        decidedBy: string | null;
+                        decidedAt: string | null;
+                        decisionReason: string | null;
+                        subject?: {
+                            personId: string;
+                            studentNumber: string;
+                            studentName: string;
+                            programmeCode: string | null;
+                            programmeTitle: string | null;
+                        };
+                    }[];
+                };
+            };
+        };
+    };
+    createCurriculumBindingChangesByChangeIdDecision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                changeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    decisionCode: "approved" | "rejected";
+                    reason: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        curriculumBindingChangeId: string;
+                        enrolmentId: string;
+                        programmeRouteId: string | null;
+                        programmeRuleSetId: string;
+                        changeReasonCode: string;
+                        reason: string;
+                        effectiveDate: string;
+                        statusCode: string;
+                        proposedBy: string;
+                        proposedAt: string;
+                        decidedBy: string | null;
+                        decidedAt: string | null;
+                        decisionReason: string | null;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
                     };
                 };
             };

@@ -50,6 +50,7 @@ import { CorrectionService } from './platform/governance/correction-service.js';
 import { ModuleRegistrationService } from './platform/registration/service.js';
 import { RegistrationWindowService } from './platform/registration/window-service.js';
 import { ModuleSelectionService } from './platform/module-selection/service.js';
+import { BindingChangeService } from './platform/module-selection/binding-change-service.js';
 import { IntegrationRegistryService } from './platform/integration/registry-service.js';
 import { RegulatoryExchangeService } from './platform/regulatory/exchange-service.js';
 import { EnvironmentService } from './platform/platform-controls/environment-service.js';
@@ -382,6 +383,7 @@ export async function buildApp(
   const workflowInstances = new WorkflowInstanceService(db);
   const workflowTasks = new WorkflowTaskService(db);
   const moduleSelection = new ModuleSelectionService(db, eventBus, rules, workflowBridge, registrations, reviewExecution);
+  const bindingChanges = new BindingChangeService(db, valueSets, enrolments, moduleSelection);
   moduleSelection.registerWorkflowEffects(reviewActivities);
   const workflowResponsibilities = new WorkflowResponsibilityService(db);
   const workflowBuilder = new WorkflowBuilderService(db, workflowResponsibilities);
@@ -424,6 +426,7 @@ export async function buildApp(
   fastify.decorate('moduleRegistrationService', registrations);
   fastify.decorate('registrationWindowService', registrationWindows);
   fastify.decorate('moduleSelectionService', moduleSelection);
+  fastify.decorate('bindingChangeService', bindingChanges);
   fastify.decorate('tenantAdminService', tenantAdmin);
   fastify.decorate('assessmentComponentService', assessmentComponents);
   fastify.decorate('moduleResultService', moduleResults);
@@ -639,6 +642,7 @@ export async function buildApp(
       ['/status-case',               'enrolments'],
       ['/curriculum-publications',   'catalogue'],
       ['/recognised-credits',        'enrolments'],
+      ['/curriculum-binding-changes', 'module-selection'],
       ['/academic-exceptions',       'enrolments'],
       ['/rule-exceptions',           'enrolments'],
       ['/award-recommendations',     'progression'],
@@ -814,6 +818,7 @@ declare module 'fastify' {
     moduleRegistrationService: ModuleRegistrationService;
     registrationWindowService: RegistrationWindowService;
     moduleSelectionService: ModuleSelectionService;
+    bindingChangeService: BindingChangeService;
     tenantAdminService: TenantAdminService;
     assessmentComponentService: AssessmentComponentService;
     moduleResultService: ModuleResultService;

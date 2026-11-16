@@ -22,3 +22,17 @@ export const createDietGroup = (body: {
 export const addDietGroupMember = (moduleGroupId: string, body: { moduleId: string; isDefault?: boolean; isNonCondonable?: boolean }) =>
   api.post(`/api/v1/module-groups/${moduleGroupId}/members`, body);
 export const getCurriculumBinding = (enrolmentId: string) => api.get<CurriculumBinding>(`/api/v1/enrolment-curriculum-bindings/${enrolmentId}`);
+
+/** A change to one student's binding (D-11): applied at once, or proposed for a programme approver. */
+export interface BindingChange {
+  curriculumBindingChangeId: string; enrolmentId: string; programmeRouteId: string | null; programmeRuleSetId: string;
+  changeReasonCode: string; reason: string; effectiveDate: string; statusCode: 'proposed' | 'approved' | 'rejected' | 'applied-directly';
+  proposedBy: string; proposedAt: string; decidedBy: string | null; decidedAt: string | null; decisionReason: string | null;
+  subject?: { personId: string; studentNumber: string; studentName: string; programmeCode: string | null; programmeTitle: string | null };
+}
+export const proposeBindingChange = (enrolmentId: string, body: { programmeRuleSetId: string; changeReasonCode: string; reason: string; effectiveDate: string }) =>
+  api.post<{ applied: boolean; change: BindingChange }>(`/api/v1/enrolment-curriculum-bindings/${enrolmentId}`, body);
+export const listPendingBindingChanges = () => api.get<BindingChange[]>('/api/v1/curriculum-binding-changes?pending=true');
+export const listBindingChangesFor = (enrolmentId: string) => api.get<BindingChange[]>(`/api/v1/curriculum-binding-changes?enrolmentId=${encodeURIComponent(enrolmentId)}`);
+export const decideBindingChange = (changeId: string, decisionCode: 'approved' | 'rejected', reason: string) =>
+  api.post<BindingChange>(`/api/v1/curriculum-binding-changes/${changeId}/decision`, { decisionCode, reason });

@@ -119,6 +119,11 @@ export const reenrolmentPeriods = pgTable('reenrolment_period', {
   opensAt:      timestamp('opens_at',   { withTimezone: true }).notNull(),
   closesAt:     timestamp('closes_at',  { withTimezone: true }).notNull(),
   reminderAt:   timestamp('reminder_at',{ withTimezone: true }),
+  /** 'annual' re-registration, or 'initial' registration of new entrants (D-8, D-10). */
+  periodTypeCode: text('period_type_code').notNull().default('annual'),
+  openedBy:     text('opened_by'),
+  closedAt:     timestamp('closed_at', { withTimezone: true }),
+  closedBy:     text('closed_by'),
 });
 
 export type ReenrolmentPeriod    = typeof reenrolmentPeriods.$inferSelect;
@@ -137,6 +142,11 @@ export const reenrolmentConfirmations = pgTable('reenrolment_confirmation', {
   reenrolmentPeriodId: uuid('reenrolment_period_id').notNull().references(() => reenrolmentPeriods.id),
   statusCode:          text('status_code').notNull().default('pending'),
   confirmedAt:         timestamp('confirmed_at', { withTimezone: true }),
+  confirmedBy:         text('confirmed_by'),
+  /** 'portal' (the student) or 'assisted' (registry on the student's behalf). */
+  channelCode:         text('channel_code'),
+  termsVersion:        text('terms_version'),
+  assistedReasonCode:  text('assisted_reason_code'),
 });
 
 export type ReenrolmentConfirmation    = typeof reenrolmentConfirmations.$inferSelect;

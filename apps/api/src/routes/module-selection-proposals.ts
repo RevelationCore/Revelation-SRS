@@ -1,5 +1,6 @@
 import { Type } from '@sinclair/typebox';
 import { requireAnyPermission, requirePermission } from '@revelation-srs/auth';
+import type { CurriculumBindingChange } from '@revelation-srs/db';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 
 import type {
@@ -320,6 +321,7 @@ export function moduleSelectionProposalsRoutes(fastify: FastifyInstance): void {
             programmeRuleSetId: Type.String(),
             decisionAuthorityCode: Type.String(),
             decisionReason: Type.Union([Type.String(), Type.Null()]),
+            changeReasonCode: Type.Union([Type.String(), Type.Null()]),
           }),
           404: ErrorSchema,
         },
@@ -334,6 +336,20 @@ export function moduleSelectionProposalsRoutes(fastify: FastifyInstance): void {
     },
   );
 
+  const BindingChangeSchema = Type.Object({
+    curriculumBindingChangeId: Type.String(), enrolmentId: Type.String(),
+    programmeRouteId: Type.Union([Type.String(), Type.Null()]), programmeRuleSetId: Type.String(),
+    changeReasonCode: Type.String(), reason: Type.String(), effectiveDate: Type.String(), statusCode: Type.String(),
+    proposedBy: Type.String(), proposedAt: Type.String(),
+    decidedBy: Type.Union([Type.String(), Type.Null()]), decidedAt: Type.Union([Type.String(), Type.Null()]), decisionReason: Type.Union([Type.String(), Type.Null()]),
+  });
+  const changeToWire = (c: CurriculumBindingChange) => {
+    const { id, tenantId: _t, ...rest } = c;
+    return { curriculumBindingChangeId: id, ...rest, proposedAt: c.proposedAt.toISOString(), decidedAt: c.decidedAt?.toISOString() ?? null };
+  };
+
+  // Changing one student's binding (D-11): applied at once when nothing depends
+  // on it yet, otherwise proposed for a programme approver's decision.
   fastify.post(
     '/enrolment-curriculum-bindings/:enrolmentId',
     {
@@ -342,35 +358,66 @@ export function moduleSelectionProposalsRoutes(fastify: FastifyInstance): void {
         body: Type.Object({
           programmeRouteId: Type.Optional(Type.String()),
           programmeRuleSetId: Type.String(),
-          decisionReason: Type.Optional(Type.String()),
+          changeReasonCode: Type.String({ minLength: 1 }),
+          reason: Type.String({ minLength: 1, maxLength: 2000 }),
+          effectiveDate: Type.String({ pattern: '^\\d{4}-\\d{2}-\\d{2}$' }),
         }),
-        response: { 201: Type.Object({ enrolmentCurriculumBindingId: Type.String() }) },
+        response: { 201: Type.Object({ applied: Type.Boolean(), change: BindingChangeSchema }), 404: ErrorSchema, 409: ErrorSchema, 422: ErrorSchema },
       },
       preHandler: [requirePermission('curriculum-binding:write')],
     },
     async (request, reply) => {
       const { enrolmentId } = request.params as { enrolmentId: string };
-      const body = request.body as { programmeRouteId?: string; programmeRuleSetId: string; decisionReason?: string };
-      const enrolmentCurriculumBindingId = await fastify.moduleSelectionService.setCurriculumBinding(
-        request.tenantId, enrolmentId, { ...body, decisionAuthorityCode: 'registry-administrator' },
-      );
-
+      const { change, applied } = await fastify.bindingChangeService.proposeBindingChange(request.tenantId, enrolmentId, request.body as never, request.user.sub);
       await fastify.audit.record({
-        tenantId: request.tenantId,
-        entityType: 'enrolment_curriculum_binding',
-        entityId: enrolmentCurriculumBindingId,
-        actionType: 'create',
-        actorType: 'user',
-        actorId: request.user.sub,
-        actorDisplayName: request.user.displayName,
-        correlationId: request.id,
+        tenantId: request.tenantId, entityType: 'curriculum_binding_change', entityId: change.id, actionType: 'create', actorType: 'user',
+        actorId: request.user.sub, actorDisplayName: request.user.displayName, correlationId: request.id,
+        reasonText: applied ? 'Curriculum binding changed' : 'Curriculum binding change proposed',
       });
-
-      await reply.code(201).send({ enrolmentCurriculumBindingId });
+      await reply.code(201).send({ applied, change: changeToWire(change) });
     },
   );
 
-  // ── Programme rule sets ──────────────────────────────────────────────────────
+  fastify.get(
+    '/curriculum-binding-changes',
+    {
+      schema: {
+        querystring: Type.Object({ enrolmentId: Type.Optional(Type.String()), pending: Type.Optional(Type.Boolean()) }),
+        response: { 200: Type.Array(Type.Composite([BindingChangeSchema, Type.Object({ subject: Type.Optional(Type.Object({
+          personId: Type.String(), studentNumber: Type.String(), studentName: Type.String(),
+          programmeCode: Type.Union([Type.String(), Type.Null()]), programmeTitle: Type.Union([Type.String(), Type.Null()]),
+        })) })])) },
+      },
+      preHandler: [requirePermission('curriculum-binding:read')],
+    },
+    async (request, reply) => {
+      const { enrolmentId, pending } = request.query as { enrolmentId?: string; pending?: boolean };
+      const rows = await fastify.bindingChangeService.listBindingChanges(request.tenantId, { ...(enrolmentId ? { enrolmentId } : {}), pendingOnly: pending ?? false });
+      const subjects = await fastify.statusCaseService.subjects(request.tenantId, rows.map((r) => r.enrolmentId));
+      await reply.send(rows.map((r) => ({ ...changeToWire(r), subject: subjects.get(r.enrolmentId) })));
+    },
+  );
+
+  fastify.post(
+    '/curriculum-binding-changes/:changeId/decision',
+    {
+      schema: {
+        params: Type.Object({ changeId: Type.String() }),
+        body: Type.Object({ decisionCode: Type.Union([Type.Literal('approved'), Type.Literal('rejected')]), reason: Type.String({ minLength: 1, maxLength: 2000 }) }),
+        response: { 200: BindingChangeSchema, 404: ErrorSchema, 409: ErrorSchema },
+      },
+      preHandler: [requirePermission('curriculum-binding:approve')],
+    },
+    async (request, reply) => {
+      const { changeId } = request.params as { changeId: string };
+      const decided = await fastify.bindingChangeService.decideBindingChange(request.tenantId, changeId, request.body as never, request.user.sub);
+      await fastify.audit.record({
+        tenantId: request.tenantId, entityType: 'curriculum_binding_change', entityId: changeId, actionType: 'update', actorType: 'user',
+        actorId: request.user.sub, actorDisplayName: request.user.displayName, correlationId: request.id, reasonText: `Binding change ${decided.statusCode}`,
+      });
+      await reply.send(changeToWire(decided));
+    },
+  );
 
   fastify.get(
     '/programme-rule-sets',
