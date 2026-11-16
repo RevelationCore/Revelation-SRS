@@ -14769,6 +14769,2214 @@
         }
       }
     },
+    "/api/v1/awards/{awardId}/documents": {
+      "post": {
+        "operationId": "createAwardsByAwardIdDocuments",
+        "tags": [
+          "progression"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "documentTypeCode",
+                  "channelCode"
+                ],
+                "properties": {
+                  "documentTypeCode": {
+                    "type": "string"
+                  },
+                  "channelCode": {
+                    "type": "string"
+                  },
+                  "issueTypeCode": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "original"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "replacement"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "corrected-name"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "certified-copy"
+                        ]
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "awardId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "documentIssueId",
+                    "studentDocumentId",
+                    "documentTypeCode",
+                    "awardId",
+                    "issueNumber",
+                    "issueTypeCode",
+                    "contentSnapshot",
+                    "contentHash",
+                    "verificationCode",
+                    "channelCode",
+                    "statusCode",
+                    "issuedBy",
+                    "issuedAt",
+                    "revocation"
+                  ],
+                  "properties": {
+                    "documentIssueId": {
+                      "type": "string"
+                    },
+                    "studentDocumentId": {
+                      "type": "string"
+                    },
+                    "documentTypeCode": {
+                      "type": "string"
+                    },
+                    "awardId": {
+                      "type": "string"
+                    },
+                    "issueNumber": {
+                      "type": "integer"
+                    },
+                    "issueTypeCode": {
+                      "type": "string"
+                    },
+                    "contentSnapshot": {
+                      "type": "object",
+                      "additionalProperties": {}
+                    },
+                    "contentHash": {
+                      "type": "string"
+                    },
+                    "verificationCode": {
+                      "type": "string"
+                    },
+                    "channelCode": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "type": "string"
+                    },
+                    "issuedBy": {
+                      "type": "string"
+                    },
+                    "issuedAt": {
+                      "type": "string"
+                    },
+                    "revocation": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": [
+                            "reasonCode",
+                            "reasonText",
+                            "revokedBy",
+                            "revokedAt"
+                          ],
+                          "properties": {
+                            "reasonCode": {
+                              "type": "string"
+                            },
+                            "reasonText": {
+                              "type": "string"
+                            },
+                            "revokedBy": {
+                              "type": "string"
+                            },
+                            "revokedAt": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "getAwardsByAwardIdDocuments",
+        "tags": [
+          "progression"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "awardId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "documentIssueId",
+                      "studentDocumentId",
+                      "documentTypeCode",
+                      "awardId",
+                      "issueNumber",
+                      "issueTypeCode",
+                      "contentSnapshot",
+                      "contentHash",
+                      "verificationCode",
+                      "channelCode",
+                      "statusCode",
+                      "issuedBy",
+                      "issuedAt",
+                      "revocation"
+                    ],
+                    "properties": {
+                      "documentIssueId": {
+                        "type": "string"
+                      },
+                      "studentDocumentId": {
+                        "type": "string"
+                      },
+                      "documentTypeCode": {
+                        "type": "string"
+                      },
+                      "awardId": {
+                        "type": "string"
+                      },
+                      "issueNumber": {
+                        "type": "integer"
+                      },
+                      "issueTypeCode": {
+                        "type": "string"
+                      },
+                      "contentSnapshot": {
+                        "type": "object",
+                        "additionalProperties": {}
+                      },
+                      "contentHash": {
+                        "type": "string"
+                      },
+                      "verificationCode": {
+                        "type": "string"
+                      },
+                      "channelCode": {
+                        "type": "string"
+                      },
+                      "statusCode": {
+                        "type": "string"
+                      },
+                      "issuedBy": {
+                        "type": "string"
+                      },
+                      "issuedAt": {
+                        "type": "string"
+                      },
+                      "revocation": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "required": [
+                              "reasonCode",
+                              "reasonText",
+                              "revokedBy",
+                              "revokedAt"
+                            ],
+                            "properties": {
+                              "reasonCode": {
+                                "type": "string"
+                              },
+                              "reasonText": {
+                                "type": "string"
+                              },
+                              "revokedBy": {
+                                "type": "string"
+                              },
+                              "revokedAt": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/students/{personId}/documents": {
+      "get": {
+        "operationId": "getStudentsByPersonIdDocuments",
+        "tags": [
+          "students"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "personId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "documentIssueId",
+                      "studentDocumentId",
+                      "documentTypeCode",
+                      "awardId",
+                      "issueNumber",
+                      "issueTypeCode",
+                      "contentSnapshot",
+                      "contentHash",
+                      "verificationCode",
+                      "channelCode",
+                      "statusCode",
+                      "issuedBy",
+                      "issuedAt",
+                      "revocation"
+                    ],
+                    "properties": {
+                      "documentIssueId": {
+                        "type": "string"
+                      },
+                      "studentDocumentId": {
+                        "type": "string"
+                      },
+                      "documentTypeCode": {
+                        "type": "string"
+                      },
+                      "awardId": {
+                        "type": "string"
+                      },
+                      "issueNumber": {
+                        "type": "integer"
+                      },
+                      "issueTypeCode": {
+                        "type": "string"
+                      },
+                      "contentSnapshot": {
+                        "type": "object",
+                        "additionalProperties": {}
+                      },
+                      "contentHash": {
+                        "type": "string"
+                      },
+                      "verificationCode": {
+                        "type": "string"
+                      },
+                      "channelCode": {
+                        "type": "string"
+                      },
+                      "statusCode": {
+                        "type": "string"
+                      },
+                      "issuedBy": {
+                        "type": "string"
+                      },
+                      "issuedAt": {
+                        "type": "string"
+                      },
+                      "revocation": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "required": [
+                              "reasonCode",
+                              "reasonText",
+                              "revokedBy",
+                              "revokedAt"
+                            ],
+                            "properties": {
+                              "reasonCode": {
+                                "type": "string"
+                              },
+                              "reasonText": {
+                                "type": "string"
+                              },
+                              "revokedBy": {
+                                "type": "string"
+                              },
+                              "revokedAt": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/document-issues/{documentIssueId}/revocation": {
+      "post": {
+        "operationId": "createDocumentIssuesByDocumentIssueIdRevocation",
+        "tags": [
+          "progression"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "reasonCode",
+                  "reasonText"
+                ],
+                "properties": {
+                  "reasonCode": {
+                    "type": "string"
+                  },
+                  "reasonText": {
+                    "minLength": 1,
+                    "maxLength": 2000,
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "documentIssueId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "documentIssueId",
+                    "studentDocumentId",
+                    "documentTypeCode",
+                    "awardId",
+                    "issueNumber",
+                    "issueTypeCode",
+                    "contentSnapshot",
+                    "contentHash",
+                    "verificationCode",
+                    "channelCode",
+                    "statusCode",
+                    "issuedBy",
+                    "issuedAt",
+                    "revocation"
+                  ],
+                  "properties": {
+                    "documentIssueId": {
+                      "type": "string"
+                    },
+                    "studentDocumentId": {
+                      "type": "string"
+                    },
+                    "documentTypeCode": {
+                      "type": "string"
+                    },
+                    "awardId": {
+                      "type": "string"
+                    },
+                    "issueNumber": {
+                      "type": "integer"
+                    },
+                    "issueTypeCode": {
+                      "type": "string"
+                    },
+                    "contentSnapshot": {
+                      "type": "object",
+                      "additionalProperties": {}
+                    },
+                    "contentHash": {
+                      "type": "string"
+                    },
+                    "verificationCode": {
+                      "type": "string"
+                    },
+                    "channelCode": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "type": "string"
+                    },
+                    "issuedBy": {
+                      "type": "string"
+                    },
+                    "issuedAt": {
+                      "type": "string"
+                    },
+                    "revocation": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": [
+                            "reasonCode",
+                            "reasonText",
+                            "revokedBy",
+                            "revokedAt"
+                          ],
+                          "properties": {
+                            "reasonCode": {
+                              "type": "string"
+                            },
+                            "reasonText": {
+                              "type": "string"
+                            },
+                            "revokedBy": {
+                              "type": "string"
+                            },
+                            "revokedAt": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/document-verifications": {
+      "post": {
+        "operationId": "createDocumentVerifications",
+        "tags": [
+          "progression"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "verificationCode"
+                ],
+                "properties": {
+                  "verificationCode": {
+                    "minLength": 4,
+                    "maxLength": 64,
+                    "type": "string"
+                  },
+                  "requesterNote": {
+                    "maxLength": 300,
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "outcomeCode",
+                    "document"
+                  ],
+                  "properties": {
+                    "outcomeCode": {
+                      "type": "string"
+                    },
+                    "document": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": [
+                            "documentTypeCode",
+                            "holderName",
+                            "qualificationCode",
+                            "classificationCode",
+                            "awardDate",
+                            "issuedAt"
+                          ],
+                          "properties": {
+                            "documentTypeCode": {
+                              "type": "string"
+                            },
+                            "holderName": {
+                              "type": "string"
+                            },
+                            "qualificationCode": {
+                              "type": "string"
+                            },
+                            "classificationCode": {
+                              "type": "string"
+                            },
+                            "awardDate": {
+                              "type": "string"
+                            },
+                            "issuedAt": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/graduation-cycles": {
+      "post": {
+        "operationId": "createGraduationCycles",
+        "tags": [
+          "progression"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "cycleCode",
+                  "title",
+                  "awardsFrom",
+                  "awardsTo",
+                  "ceremonies"
+                ],
+                "properties": {
+                  "cycleCode": {
+                    "minLength": 1,
+                    "maxLength": 50,
+                    "type": "string"
+                  },
+                  "title": {
+                    "minLength": 1,
+                    "maxLength": 200,
+                    "type": "string"
+                  },
+                  "awardsFrom": {
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                    "type": "string"
+                  },
+                  "awardsTo": {
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                    "type": "string"
+                  },
+                  "ceremonies": {
+                    "minItems": 1,
+                    "maxItems": 50,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "ceremonyCode",
+                        "startsAt",
+                        "venue",
+                        "capacity"
+                      ],
+                      "properties": {
+                        "ceremonyCode": {
+                          "minLength": 1,
+                          "maxLength": 50,
+                          "type": "string"
+                        },
+                        "startsAt": {
+                          "format": "date-time",
+                          "type": "string"
+                        },
+                        "venue": {
+                          "minLength": 1,
+                          "maxLength": 200,
+                          "type": "string"
+                        },
+                        "capacity": {
+                          "minimum": 1,
+                          "type": "integer"
+                        },
+                        "guestLimit": {
+                          "minimum": 0,
+                          "maximum": 20,
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-publication-class": "workflow",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "cycleId",
+                    "cycleCode",
+                    "title",
+                    "awardsFrom",
+                    "awardsTo",
+                    "statusCode",
+                    "createdBy",
+                    "createdAt",
+                    "frozenAt",
+                    "ceremonies"
+                  ],
+                  "properties": {
+                    "cycleId": {
+                      "type": "string"
+                    },
+                    "cycleCode": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "awardsFrom": {
+                      "type": "string"
+                    },
+                    "awardsTo": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "type": "string"
+                    },
+                    "createdBy": {
+                      "type": "string"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "frozenAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "ceremonies": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "ceremonyId",
+                          "ceremonyCode",
+                          "startsAt",
+                          "venue",
+                          "capacity",
+                          "guestLimit",
+                          "allocated"
+                        ],
+                        "properties": {
+                          "ceremonyId": {
+                            "type": "string"
+                          },
+                          "ceremonyCode": {
+                            "type": "string"
+                          },
+                          "startsAt": {
+                            "type": "string"
+                          },
+                          "venue": {
+                            "type": "string"
+                          },
+                          "capacity": {
+                            "type": "integer"
+                          },
+                          "guestLimit": {
+                            "type": "integer"
+                          },
+                          "allocated": {
+                            "type": "integer"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/graduation-cycles/{cycleId}": {
+      "get": {
+        "operationId": "getGraduationCyclesByCycleId",
+        "tags": [
+          "progression"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "cycleId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "cycleId",
+                    "cycleCode",
+                    "title",
+                    "awardsFrom",
+                    "awardsTo",
+                    "statusCode",
+                    "createdBy",
+                    "createdAt",
+                    "frozenAt",
+                    "ceremonies"
+                  ],
+                  "properties": {
+                    "cycleId": {
+                      "type": "string"
+                    },
+                    "cycleCode": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "awardsFrom": {
+                      "type": "string"
+                    },
+                    "awardsTo": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "type": "string"
+                    },
+                    "createdBy": {
+                      "type": "string"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "frozenAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "ceremonies": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "ceremonyId",
+                          "ceremonyCode",
+                          "startsAt",
+                          "venue",
+                          "capacity",
+                          "guestLimit",
+                          "allocated"
+                        ],
+                        "properties": {
+                          "ceremonyId": {
+                            "type": "string"
+                          },
+                          "ceremonyCode": {
+                            "type": "string"
+                          },
+                          "startsAt": {
+                            "type": "string"
+                          },
+                          "venue": {
+                            "type": "string"
+                          },
+                          "capacity": {
+                            "type": "integer"
+                          },
+                          "guestLimit": {
+                            "type": "integer"
+                          },
+                          "allocated": {
+                            "type": "integer"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/graduation-cycles/{cycleId}/invitations": {
+      "post": {
+        "operationId": "createGraduationCyclesByCycleIdInvitations",
+        "tags": [
+          "progression"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "cycleId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "invited",
+                    "alreadyInvited",
+                    "previouslyPresented"
+                  ],
+                  "properties": {
+                    "invited": {
+                      "type": "integer"
+                    },
+                    "alreadyInvited": {
+                      "type": "integer"
+                    },
+                    "previouslyPresented": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "getGraduationCyclesByCycleIdInvitations",
+        "tags": [
+          "progression"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "cycleId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "invitationId",
+                      "cycleId",
+                      "awardId",
+                      "personId",
+                      "responseCode",
+                      "guestCount",
+                      "accessibilityRequired",
+                      "respondedAt",
+                      "createdAt"
+                    ],
+                    "properties": {
+                      "invitationId": {
+                        "type": "string"
+                      },
+                      "cycleId": {
+                        "type": "string"
+                      },
+                      "awardId": {
+                        "type": "string"
+                      },
+                      "personId": {
+                        "type": "string"
+                      },
+                      "responseCode": {
+                        "type": "string"
+                      },
+                      "guestCount": {
+                        "type": "integer"
+                      },
+                      "accessibilityRequired": {
+                        "type": "boolean"
+                      },
+                      "respondedAt": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "createdAt": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/students/{personId}/graduation-invitations": {
+      "get": {
+        "operationId": "getStudentsByPersonIdGraduationInvitations",
+        "tags": [
+          "progression"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "personId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "invitationId",
+                      "cycleId",
+                      "awardId",
+                      "personId",
+                      "responseCode",
+                      "guestCount",
+                      "accessibilityRequired",
+                      "respondedAt",
+                      "createdAt"
+                    ],
+                    "properties": {
+                      "invitationId": {
+                        "type": "string"
+                      },
+                      "cycleId": {
+                        "type": "string"
+                      },
+                      "awardId": {
+                        "type": "string"
+                      },
+                      "personId": {
+                        "type": "string"
+                      },
+                      "responseCode": {
+                        "type": "string"
+                      },
+                      "guestCount": {
+                        "type": "integer"
+                      },
+                      "accessibilityRequired": {
+                        "type": "boolean"
+                      },
+                      "respondedAt": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "createdAt": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/graduation-invitations/{invitationId}/response": {
+      "post": {
+        "operationId": "createGraduationInvitationsByInvitationIdResponse",
+        "tags": [
+          "progression"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "responseCode"
+                ],
+                "properties": {
+                  "responseCode": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "attending"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "in-absentia"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "deferred"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "declined"
+                        ]
+                      }
+                    ]
+                  },
+                  "guestCount": {
+                    "minimum": 0,
+                    "maximum": 20,
+                    "type": "integer"
+                  },
+                  "accessibilityRequired": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "invitationId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "invitationId",
+                    "cycleId",
+                    "awardId",
+                    "personId",
+                    "responseCode",
+                    "guestCount",
+                    "accessibilityRequired",
+                    "respondedAt",
+                    "createdAt"
+                  ],
+                  "properties": {
+                    "invitationId": {
+                      "type": "string"
+                    },
+                    "cycleId": {
+                      "type": "string"
+                    },
+                    "awardId": {
+                      "type": "string"
+                    },
+                    "personId": {
+                      "type": "string"
+                    },
+                    "responseCode": {
+                      "type": "string"
+                    },
+                    "guestCount": {
+                      "type": "integer"
+                    },
+                    "accessibilityRequired": {
+                      "type": "boolean"
+                    },
+                    "respondedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/graduation-invitations/{invitationId}/allocation": {
+      "post": {
+        "operationId": "createGraduationInvitationsByInvitationIdAllocation",
+        "tags": [
+          "progression"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "ceremonyId"
+                ],
+                "properties": {
+                  "ceremonyId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "invitationId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "allocationId",
+                    "invitationId",
+                    "ceremonyId",
+                    "presentationOrder",
+                    "attendanceCode",
+                    "allocatedBy",
+                    "allocatedAt",
+                    "attendanceRecordedAt"
+                  ],
+                  "properties": {
+                    "allocationId": {
+                      "type": "string"
+                    },
+                    "invitationId": {
+                      "type": "string"
+                    },
+                    "ceremonyId": {
+                      "type": "string"
+                    },
+                    "presentationOrder": {
+                      "anyOf": [
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "attendanceCode": {
+                      "type": "string"
+                    },
+                    "allocatedBy": {
+                      "type": "string"
+                    },
+                    "allocatedAt": {
+                      "type": "string"
+                    },
+                    "attendanceRecordedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/graduation-cycles/{cycleId}/freeze": {
+      "post": {
+        "operationId": "createGraduationCyclesByCycleIdFreeze",
+        "tags": [
+          "progression"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "cycleId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "ceremonyCode",
+                      "presentationOrder",
+                      "invitationId",
+                      "awardId",
+                      "personId",
+                      "guestCount",
+                      "accessibilityRequired",
+                      "attendanceCode"
+                    ],
+                    "properties": {
+                      "ceremonyCode": {
+                        "type": "string"
+                      },
+                      "presentationOrder": {
+                        "anyOf": [
+                          {
+                            "type": "integer"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "invitationId": {
+                        "type": "string"
+                      },
+                      "awardId": {
+                        "type": "string"
+                      },
+                      "personId": {
+                        "type": "string"
+                      },
+                      "guestCount": {
+                        "type": "integer"
+                      },
+                      "accessibilityRequired": {
+                        "type": "boolean"
+                      },
+                      "attendanceCode": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ceremony-allocations/{allocationId}/attendance": {
+      "post": {
+        "operationId": "createCeremonyAllocationsByAllocationIdAttendance",
+        "tags": [
+          "progression"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "attendanceCode"
+                ],
+                "properties": {
+                  "attendanceCode": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "attended"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "absent"
+                        ]
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "allocationId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "allocationId",
+                    "invitationId",
+                    "ceremonyId",
+                    "presentationOrder",
+                    "attendanceCode",
+                    "allocatedBy",
+                    "allocatedAt",
+                    "attendanceRecordedAt"
+                  ],
+                  "properties": {
+                    "allocationId": {
+                      "type": "string"
+                    },
+                    "invitationId": {
+                      "type": "string"
+                    },
+                    "ceremonyId": {
+                      "type": "string"
+                    },
+                    "presentationOrder": {
+                      "anyOf": [
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "attendanceCode": {
+                      "type": "string"
+                    },
+                    "allocatedBy": {
+                      "type": "string"
+                    },
+                    "allocatedAt": {
+                      "type": "string"
+                    },
+                    "attendanceRecordedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/students/{personId}/engagement-outcomes": {
       "post": {
         "operationId": "createStudentsByPersonIdEngagementOutcomes",

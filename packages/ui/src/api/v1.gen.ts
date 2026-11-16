@@ -932,6 +932,198 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/awards/{awardId}/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getAwardsByAwardIdDocuments"];
+        put?: never;
+        post: operations["createAwardsByAwardIdDocuments"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/students/{personId}/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getStudentsByPersonIdDocuments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/document-issues/{documentIssueId}/revocation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createDocumentIssuesByDocumentIssueIdRevocation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/document-verifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createDocumentVerifications"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/graduation-cycles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createGraduationCycles"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/graduation-cycles/{cycleId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getGraduationCyclesByCycleId"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/graduation-cycles/{cycleId}/invitations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getGraduationCyclesByCycleIdInvitations"];
+        put?: never;
+        post: operations["createGraduationCyclesByCycleIdInvitations"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/students/{personId}/graduation-invitations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getStudentsByPersonIdGraduationInvitations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/graduation-invitations/{invitationId}/response": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createGraduationInvitationsByInvitationIdResponse"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/graduation-invitations/{invitationId}/allocation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createGraduationInvitationsByInvitationIdAllocation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/graduation-cycles/{cycleId}/freeze": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createGraduationCyclesByCycleIdFreeze"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ceremony-allocations/{allocationId}/attendance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createCeremonyAllocationsByAllocationIdAttendance"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/students/{personId}/engagement-outcomes": {
         parameters: {
             query?: never;
@@ -10001,6 +10193,874 @@ export interface operations {
                         createdAt: string;
                         closedBy: string | null;
                         closedAt: string | null;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getAwardsByAwardIdDocuments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                awardId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        documentIssueId: string;
+                        studentDocumentId: string;
+                        documentTypeCode: string;
+                        awardId: string;
+                        issueNumber: number;
+                        issueTypeCode: string;
+                        contentSnapshot: {
+                            [key: string]: unknown;
+                        };
+                        contentHash: string;
+                        verificationCode: string;
+                        channelCode: string;
+                        statusCode: string;
+                        issuedBy: string;
+                        issuedAt: string;
+                        revocation: {
+                            reasonCode: string;
+                            reasonText: string;
+                            revokedBy: string;
+                            revokedAt: string;
+                        } | null;
+                    }[];
+                };
+            };
+        };
+    };
+    createAwardsByAwardIdDocuments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                awardId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    documentTypeCode: string;
+                    channelCode: string;
+                    issueTypeCode?: "original" | "replacement" | "corrected-name" | "certified-copy";
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        documentIssueId: string;
+                        studentDocumentId: string;
+                        documentTypeCode: string;
+                        awardId: string;
+                        issueNumber: number;
+                        issueTypeCode: string;
+                        contentSnapshot: {
+                            [key: string]: unknown;
+                        };
+                        contentHash: string;
+                        verificationCode: string;
+                        channelCode: string;
+                        statusCode: string;
+                        issuedBy: string;
+                        issuedAt: string;
+                        revocation: {
+                            reasonCode: string;
+                            reasonText: string;
+                            revokedBy: string;
+                            revokedAt: string;
+                        } | null;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getStudentsByPersonIdDocuments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        documentIssueId: string;
+                        studentDocumentId: string;
+                        documentTypeCode: string;
+                        awardId: string;
+                        issueNumber: number;
+                        issueTypeCode: string;
+                        contentSnapshot: {
+                            [key: string]: unknown;
+                        };
+                        contentHash: string;
+                        verificationCode: string;
+                        channelCode: string;
+                        statusCode: string;
+                        issuedBy: string;
+                        issuedAt: string;
+                        revocation: {
+                            reasonCode: string;
+                            reasonText: string;
+                            revokedBy: string;
+                            revokedAt: string;
+                        } | null;
+                    }[];
+                };
+            };
+            /** @description Default Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createDocumentIssuesByDocumentIssueIdRevocation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                documentIssueId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    reasonCode: string;
+                    reasonText: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        documentIssueId: string;
+                        studentDocumentId: string;
+                        documentTypeCode: string;
+                        awardId: string;
+                        issueNumber: number;
+                        issueTypeCode: string;
+                        contentSnapshot: {
+                            [key: string]: unknown;
+                        };
+                        contentHash: string;
+                        verificationCode: string;
+                        channelCode: string;
+                        statusCode: string;
+                        issuedBy: string;
+                        issuedAt: string;
+                        revocation: {
+                            reasonCode: string;
+                            reasonText: string;
+                            revokedBy: string;
+                            revokedAt: string;
+                        } | null;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createDocumentVerifications: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    verificationCode: string;
+                    requesterNote?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        outcomeCode: string;
+                        document: {
+                            documentTypeCode: string;
+                            holderName: string;
+                            qualificationCode: string;
+                            classificationCode: string;
+                            awardDate: string;
+                            issuedAt: string;
+                        } | null;
+                    };
+                };
+            };
+        };
+    };
+    createGraduationCycles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    cycleCode: string;
+                    title: string;
+                    awardsFrom: string;
+                    awardsTo: string;
+                    ceremonies: {
+                        ceremonyCode: string;
+                        /** Format: date-time */
+                        startsAt: string;
+                        venue: string;
+                        capacity: number;
+                        guestLimit?: number;
+                    }[];
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        cycleId: string;
+                        cycleCode: string;
+                        title: string;
+                        awardsFrom: string;
+                        awardsTo: string;
+                        statusCode: string;
+                        createdBy: string;
+                        createdAt: string;
+                        frozenAt: string | null;
+                        ceremonies: {
+                            ceremonyId: string;
+                            ceremonyCode: string;
+                            startsAt: string;
+                            venue: string;
+                            capacity: number;
+                            guestLimit: number;
+                            allocated: number;
+                        }[];
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getGraduationCyclesByCycleId: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cycleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        cycleId: string;
+                        cycleCode: string;
+                        title: string;
+                        awardsFrom: string;
+                        awardsTo: string;
+                        statusCode: string;
+                        createdBy: string;
+                        createdAt: string;
+                        frozenAt: string | null;
+                        ceremonies: {
+                            ceremonyId: string;
+                            ceremonyCode: string;
+                            startsAt: string;
+                            venue: string;
+                            capacity: number;
+                            guestLimit: number;
+                            allocated: number;
+                        }[];
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getGraduationCyclesByCycleIdInvitations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cycleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        invitationId: string;
+                        cycleId: string;
+                        awardId: string;
+                        personId: string;
+                        responseCode: string;
+                        guestCount: number;
+                        accessibilityRequired: boolean;
+                        respondedAt: string | null;
+                        createdAt: string;
+                    }[];
+                };
+            };
+        };
+    };
+    createGraduationCyclesByCycleIdInvitations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cycleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        invited: number;
+                        alreadyInvited: number;
+                        previouslyPresented: number;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getStudentsByPersonIdGraduationInvitations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        invitationId: string;
+                        cycleId: string;
+                        awardId: string;
+                        personId: string;
+                        responseCode: string;
+                        guestCount: number;
+                        accessibilityRequired: boolean;
+                        respondedAt: string | null;
+                        createdAt: string;
+                    }[];
+                };
+            };
+            /** @description Default Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createGraduationInvitationsByInvitationIdResponse: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invitationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    responseCode: "attending" | "in-absentia" | "deferred" | "declined";
+                    guestCount?: number;
+                    accessibilityRequired?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        invitationId: string;
+                        cycleId: string;
+                        awardId: string;
+                        personId: string;
+                        responseCode: string;
+                        guestCount: number;
+                        accessibilityRequired: boolean;
+                        respondedAt: string | null;
+                        createdAt: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createGraduationInvitationsByInvitationIdAllocation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invitationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    ceremonyId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        allocationId: string;
+                        invitationId: string;
+                        ceremonyId: string;
+                        presentationOrder: number | null;
+                        attendanceCode: string;
+                        allocatedBy: string;
+                        allocatedAt: string;
+                        attendanceRecordedAt: string | null;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createGraduationCyclesByCycleIdFreeze: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cycleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        ceremonyCode: string;
+                        presentationOrder: number | null;
+                        invitationId: string;
+                        awardId: string;
+                        personId: string;
+                        guestCount: number;
+                        accessibilityRequired: boolean;
+                        attendanceCode: string;
+                    }[];
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createCeremonyAllocationsByAllocationIdAttendance: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                allocationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    attendanceCode: "attended" | "absent";
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        allocationId: string;
+                        invitationId: string;
+                        ceremonyId: string;
+                        presentationOrder: number | null;
+                        attendanceCode: string;
+                        allocatedBy: string;
+                        allocatedAt: string;
+                        attendanceRecordedAt: string | null;
                     };
                 };
             };

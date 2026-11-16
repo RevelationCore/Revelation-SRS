@@ -20,6 +20,7 @@ export * from './support.js';
 export * from './status-case.js';
 export * from './curriculum-publication.js';
 export * from './award-conferment.js';
+export * from './award-documents.js';
 export * from './circumstances.js';
 export * from './governance.js';
 export * from './progression.js';

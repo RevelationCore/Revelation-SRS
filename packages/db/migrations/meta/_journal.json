@@ -71,6 +71,13 @@
       "when": 1785000035000,
       "tag": "0009_reassessment_and_conferment",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1785000036000,
+      "tag": "0010_documents_and_graduation",
+      "breakpoints": true
     }
   ]
 }

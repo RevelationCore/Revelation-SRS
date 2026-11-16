@@ -178,6 +178,17 @@ export const PERMISSION_ROLES = {
   // Reassessment plans follow a ratified progression decision.
   'reassessment:read':                   ['registry-administrator', 'exam-board-chair', 'exam-board-member', 'module-tutor', 'personal-tutor'] as Role[],
   'reassessment:write':                  ['registry-administrator'] as Role[],
+  // Award documents (BPR-D15): the registry issues and revokes; verifiers
+  // (e.g. a degree-verification service) check a code.
+  'document:read':                       ['registry-administrator'] as Role[],
+  'document:read:own':                   ['student'] as Role[],
+  'document:issue':                      ['registry-administrator'] as Role[],
+  'document:revoke':                     ['registry-administrator'] as Role[],
+  'document:verify':                     ['registry-administrator', 'integration-service'] as Role[],
+  // Graduation (BPR-D15): the graduation team runs cycles; students respond.
+  'graduation:read':                     ['registry-administrator'] as Role[],
+  'graduation:manage':                   ['registry-administrator'] as Role[],
+  'graduation:respond:own':              ['student'] as Role[],
 } as const;
 
 export type Permission = keyof typeof PERMISSION_ROLES;

@@ -174,6 +174,8 @@ fastify.get('/students/:id', {
 | `award:recommend` (record a board's award recommendation) | | ✓ | | ✓ | | |
 | `award:confer` (confer a recommended award as delegated authority; never the recommender) | | ✓ | | | | ✓ |
 | `reassessment:read` / `:write` (reassessment plans; read also for board members and tutors) | | ✓ | | ✓ | | |
+| `document:read` / `:issue` / `:revoke` (award documents); `document:read:own` for students; `document:verify` also for integration services | ✓ (own) | ✓ | | | | |
+| `graduation:read` / `:manage` (cycles, invitations, allocation, attendance); `graduation:respond:own` for students | ✓ (own) | ✓ | | | | |
 | `special-category:read` | | | | | ✓ | |
 | `config:write` | | | | | | ✓ |
 | `integration:manage` | | | | | | ✓ |
