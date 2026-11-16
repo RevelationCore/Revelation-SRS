@@ -66,6 +66,24 @@ export const PERMISSION_ROLES = {
   // Student employment links (not appointments: HR owns those) and work limits.
   'employment-link:read':      ['registry-administrator', 'pgr-administrator', 'pgr-director', 'research-supervisor'] as Role[],
   'employment-link:write':     ['registry-administrator', 'pgr-administrator'] as Role[],
+  // Student status cases (BPR-D04): interruption, suspension, return,
+  // withdrawal, transfer and leaver closure. Reviewers advise; only the
+  // registry decides, and never on a case they opened.
+  'status-case:read':          ['registry-administrator', 'programme-approver', 'finance-administrator', 'regulatory-officer', 'pgr-administrator', 'personal-tutor'] as Role[],
+  'status-case:request:own':   ['student'] as Role[],
+  'status-case:write':         ['registry-administrator', 'pgr-administrator'] as Role[],
+  'status-case:assess':        ['registry-administrator', 'programme-approver', 'finance-administrator', 'regulatory-officer'] as Role[],
+  'status-case:decide':        ['registry-administrator'] as Role[],
+  // Curriculum publications (BPR-D05): the curriculum system sends them
+  // (integration-service), the registry reviews and applies them.
+  'curriculum-publication:read':    ['registry-administrator', 'tenant-administrator', 'integration-service'] as Role[],
+  'curriculum-publication:receive': ['integration-service', 'registry-administrator'] as Role[],
+  'curriculum-publication:apply':   ['registry-administrator', 'tenant-administrator'] as Role[],
+  // Recognised credit and rule exceptions: proposed by the registry,
+  // approved by a programme approver (never the proposer).
+  'academic-exception:read':        ['registry-administrator', 'programme-approver', 'personal-tutor', 'exam-board-chair'] as Role[],
+  'academic-exception:propose':     ['registry-administrator', 'programme-approver'] as Role[],
+  'academic-exception:approve':     ['programme-approver', 'registry-administrator'] as Role[],
   // Reasonable-adjustment *case* (wellbeing-module-hosted process — referral,
   // assessment, panel, approve/reject), distinct from the `adjustment:*`
   // permissions above which gate the core-SRS *distributed outcome* record.

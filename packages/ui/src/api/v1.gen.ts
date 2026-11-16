@@ -580,6 +580,262 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/status-cases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getStatusCases"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/enrolments/{enrolmentId}/status-cases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getEnrolmentsByEnrolmentIdStatusCases"];
+        put?: never;
+        post: operations["createEnrolmentsByEnrolmentIdStatusCases"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/status-cases/{statusCaseId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getStatusCasesByStatusCaseId"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/status-cases/{statusCaseId}/assessments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createStatusCasesByStatusCaseIdAssessments"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/status-cases/{statusCaseId}/conditions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createStatusCasesByStatusCaseIdConditions"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/status-case-conditions/{conditionId}/resolution": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createStatusCaseConditionsByConditionIdResolution"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/status-cases/{statusCaseId}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createStatusCasesByStatusCaseIdDecision"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/status-cases/{statusCaseId}/withdrawal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createStatusCasesByStatusCaseIdWithdrawal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/curriculum-publications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getCurriculumPublications"];
+        put?: never;
+        post: operations["createCurriculumPublications"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/curriculum-publications/{publicationId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getCurriculumPublicationsByPublicationId"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/curriculum-publications/{publicationId}/application": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createCurriculumPublicationsByPublicationIdApplication"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/enrolments/{enrolmentId}/recognised-credits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getEnrolmentsByEnrolmentIdRecognisedCredits"];
+        put?: never;
+        post: operations["createEnrolmentsByEnrolmentIdRecognisedCredits"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/recognised-credits/{recognisedCreditId}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createRecognisedCreditsByRecognisedCreditIdDecision"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/enrolments/{enrolmentId}/rule-exceptions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getEnrolmentsByEnrolmentIdRuleExceptions"];
+        put?: never;
+        post: operations["createEnrolmentsByEnrolmentIdRuleExceptions"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/rule-exceptions/{ruleExceptionId}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createRuleExceptionsByRuleExceptionIdDecision"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/rule-exceptions/{ruleExceptionId}/revocation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createRuleExceptionsByRuleExceptionIdRevocation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/students/{personId}/engagement-outcomes": {
         parameters: {
             query?: never;
@@ -7335,6 +7591,1810 @@ export interface operations {
             };
             /** @description Default Response */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getStatusCases: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        statusCaseId: string;
+                        businessCaseId: string;
+                        enrolmentId: string;
+                        personId: string;
+                        caseTypeCode: string;
+                        initiatedByCode: string;
+                        reasonCategoryCode: string | null;
+                        requestedEffectiveDate: string;
+                        expectedReturnDate: string | null;
+                        destinationProgrammeId: string | null;
+                        destinationModeOfStudyCode: string | null;
+                        relatedCaseId: string | null;
+                        institutionalOutcomeRef: string | null;
+                        statusCode: string;
+                        decidedBy: string | null;
+                        decidedAt: string | null;
+                        decisionReason: string | null;
+                        approvedEffectiveDate: string | null;
+                        approvedReturnDate: string | null;
+                        enrolmentStatusTransitionId: string | null;
+                        createdBy: string;
+                        createdAt: string;
+                        assessments: {
+                            assessmentId: string;
+                            assessorRoleCode: string;
+                            outcomeCode: string;
+                            note: string | null;
+                            assessedBy: string;
+                            assessedAt: string;
+                        }[];
+                        conditions: {
+                            conditionId: string;
+                            statusCaseId: string;
+                            conditionTypeCode: string;
+                            description: string;
+                            dueDate: string | null;
+                            statusCode: string;
+                            evidenceRef: string | null;
+                            resolvedBy: string | null;
+                            resolvedAt: string | null;
+                            resolutionNote: string | null;
+                        }[];
+                        outstandingReturnConditions: {
+                            conditionId: string;
+                            statusCaseId: string;
+                            conditionTypeCode: string;
+                            description: string;
+                            dueDate: string | null;
+                            statusCode: string;
+                            evidenceRef: string | null;
+                            resolvedBy: string | null;
+                            resolvedAt: string | null;
+                            resolutionNote: string | null;
+                        }[];
+                    }[];
+                };
+            };
+        };
+    };
+    getEnrolmentsByEnrolmentIdStatusCases: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrolmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        statusCaseId: string;
+                        businessCaseId: string;
+                        enrolmentId: string;
+                        personId: string;
+                        caseTypeCode: string;
+                        initiatedByCode: string;
+                        reasonCategoryCode: string | null;
+                        requestedEffectiveDate: string;
+                        expectedReturnDate: string | null;
+                        destinationProgrammeId: string | null;
+                        destinationModeOfStudyCode: string | null;
+                        relatedCaseId: string | null;
+                        institutionalOutcomeRef: string | null;
+                        statusCode: string;
+                        decidedBy: string | null;
+                        decidedAt: string | null;
+                        decisionReason: string | null;
+                        approvedEffectiveDate: string | null;
+                        approvedReturnDate: string | null;
+                        enrolmentStatusTransitionId: string | null;
+                        createdBy: string;
+                        createdAt: string;
+                        assessments: {
+                            assessmentId: string;
+                            assessorRoleCode: string;
+                            outcomeCode: string;
+                            note: string | null;
+                            assessedBy: string;
+                            assessedAt: string;
+                        }[];
+                        conditions: {
+                            conditionId: string;
+                            statusCaseId: string;
+                            conditionTypeCode: string;
+                            description: string;
+                            dueDate: string | null;
+                            statusCode: string;
+                            evidenceRef: string | null;
+                            resolvedBy: string | null;
+                            resolvedAt: string | null;
+                            resolutionNote: string | null;
+                        }[];
+                        outstandingReturnConditions: {
+                            conditionId: string;
+                            statusCaseId: string;
+                            conditionTypeCode: string;
+                            description: string;
+                            dueDate: string | null;
+                            statusCode: string;
+                            evidenceRef: string | null;
+                            resolvedBy: string | null;
+                            resolvedAt: string | null;
+                            resolutionNote: string | null;
+                        }[];
+                    }[];
+                };
+            };
+            /** @description Default Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createEnrolmentsByEnrolmentIdStatusCases: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrolmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    caseTypeCode: "interruption" | "suspension" | "return" | "withdrawal" | "transfer" | "leaver-closure";
+                    initiatedByCode?: "student" | "institution";
+                    reasonCategoryCode?: string;
+                    requestedEffectiveDate: string;
+                    expectedReturnDate?: string;
+                    destinationProgrammeId?: string;
+                    destinationModeOfStudyCode?: string;
+                    relatedCaseId?: string;
+                    institutionalOutcomeRef?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        statusCaseId: string;
+                        businessCaseId: string;
+                        enrolmentId: string;
+                        personId: string;
+                        caseTypeCode: string;
+                        initiatedByCode: string;
+                        reasonCategoryCode: string | null;
+                        requestedEffectiveDate: string;
+                        expectedReturnDate: string | null;
+                        destinationProgrammeId: string | null;
+                        destinationModeOfStudyCode: string | null;
+                        relatedCaseId: string | null;
+                        institutionalOutcomeRef: string | null;
+                        statusCode: string;
+                        decidedBy: string | null;
+                        decidedAt: string | null;
+                        decisionReason: string | null;
+                        approvedEffectiveDate: string | null;
+                        approvedReturnDate: string | null;
+                        enrolmentStatusTransitionId: string | null;
+                        createdBy: string;
+                        createdAt: string;
+                        assessments: {
+                            assessmentId: string;
+                            assessorRoleCode: string;
+                            outcomeCode: string;
+                            note: string | null;
+                            assessedBy: string;
+                            assessedAt: string;
+                        }[];
+                        conditions: {
+                            conditionId: string;
+                            statusCaseId: string;
+                            conditionTypeCode: string;
+                            description: string;
+                            dueDate: string | null;
+                            statusCode: string;
+                            evidenceRef: string | null;
+                            resolvedBy: string | null;
+                            resolvedAt: string | null;
+                            resolutionNote: string | null;
+                        }[];
+                        outstandingReturnConditions: {
+                            conditionId: string;
+                            statusCaseId: string;
+                            conditionTypeCode: string;
+                            description: string;
+                            dueDate: string | null;
+                            statusCode: string;
+                            evidenceRef: string | null;
+                            resolvedBy: string | null;
+                            resolvedAt: string | null;
+                            resolutionNote: string | null;
+                        }[];
+                    };
+                };
+            };
+            /** @description Default Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getStatusCasesByStatusCaseId: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                statusCaseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        statusCaseId: string;
+                        businessCaseId: string;
+                        enrolmentId: string;
+                        personId: string;
+                        caseTypeCode: string;
+                        initiatedByCode: string;
+                        reasonCategoryCode: string | null;
+                        requestedEffectiveDate: string;
+                        expectedReturnDate: string | null;
+                        destinationProgrammeId: string | null;
+                        destinationModeOfStudyCode: string | null;
+                        relatedCaseId: string | null;
+                        institutionalOutcomeRef: string | null;
+                        statusCode: string;
+                        decidedBy: string | null;
+                        decidedAt: string | null;
+                        decisionReason: string | null;
+                        approvedEffectiveDate: string | null;
+                        approvedReturnDate: string | null;
+                        enrolmentStatusTransitionId: string | null;
+                        createdBy: string;
+                        createdAt: string;
+                        assessments: {
+                            assessmentId: string;
+                            assessorRoleCode: string;
+                            outcomeCode: string;
+                            note: string | null;
+                            assessedBy: string;
+                            assessedAt: string;
+                        }[];
+                        conditions: {
+                            conditionId: string;
+                            statusCaseId: string;
+                            conditionTypeCode: string;
+                            description: string;
+                            dueDate: string | null;
+                            statusCode: string;
+                            evidenceRef: string | null;
+                            resolvedBy: string | null;
+                            resolvedAt: string | null;
+                            resolutionNote: string | null;
+                        }[];
+                        outstandingReturnConditions: {
+                            conditionId: string;
+                            statusCaseId: string;
+                            conditionTypeCode: string;
+                            description: string;
+                            dueDate: string | null;
+                            statusCode: string;
+                            evidenceRef: string | null;
+                            resolvedBy: string | null;
+                            resolvedAt: string | null;
+                            resolutionNote: string | null;
+                        }[];
+                    };
+                };
+            };
+            /** @description Default Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createStatusCasesByStatusCaseIdAssessments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                statusCaseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    assessorRoleCode: string;
+                    outcomeCode: string;
+                    note?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        statusCaseId: string;
+                        businessCaseId: string;
+                        enrolmentId: string;
+                        personId: string;
+                        caseTypeCode: string;
+                        initiatedByCode: string;
+                        reasonCategoryCode: string | null;
+                        requestedEffectiveDate: string;
+                        expectedReturnDate: string | null;
+                        destinationProgrammeId: string | null;
+                        destinationModeOfStudyCode: string | null;
+                        relatedCaseId: string | null;
+                        institutionalOutcomeRef: string | null;
+                        statusCode: string;
+                        decidedBy: string | null;
+                        decidedAt: string | null;
+                        decisionReason: string | null;
+                        approvedEffectiveDate: string | null;
+                        approvedReturnDate: string | null;
+                        enrolmentStatusTransitionId: string | null;
+                        createdBy: string;
+                        createdAt: string;
+                        assessments: {
+                            assessmentId: string;
+                            assessorRoleCode: string;
+                            outcomeCode: string;
+                            note: string | null;
+                            assessedBy: string;
+                            assessedAt: string;
+                        }[];
+                        conditions: {
+                            conditionId: string;
+                            statusCaseId: string;
+                            conditionTypeCode: string;
+                            description: string;
+                            dueDate: string | null;
+                            statusCode: string;
+                            evidenceRef: string | null;
+                            resolvedBy: string | null;
+                            resolvedAt: string | null;
+                            resolutionNote: string | null;
+                        }[];
+                        outstandingReturnConditions: {
+                            conditionId: string;
+                            statusCaseId: string;
+                            conditionTypeCode: string;
+                            description: string;
+                            dueDate: string | null;
+                            statusCode: string;
+                            evidenceRef: string | null;
+                            resolvedBy: string | null;
+                            resolvedAt: string | null;
+                            resolutionNote: string | null;
+                        }[];
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createStatusCasesByStatusCaseIdConditions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                statusCaseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    conditionTypeCode: string;
+                    description: string;
+                    dueDate?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        statusCaseId: string;
+                        businessCaseId: string;
+                        enrolmentId: string;
+                        personId: string;
+                        caseTypeCode: string;
+                        initiatedByCode: string;
+                        reasonCategoryCode: string | null;
+                        requestedEffectiveDate: string;
+                        expectedReturnDate: string | null;
+                        destinationProgrammeId: string | null;
+                        destinationModeOfStudyCode: string | null;
+                        relatedCaseId: string | null;
+                        institutionalOutcomeRef: string | null;
+                        statusCode: string;
+                        decidedBy: string | null;
+                        decidedAt: string | null;
+                        decisionReason: string | null;
+                        approvedEffectiveDate: string | null;
+                        approvedReturnDate: string | null;
+                        enrolmentStatusTransitionId: string | null;
+                        createdBy: string;
+                        createdAt: string;
+                        assessments: {
+                            assessmentId: string;
+                            assessorRoleCode: string;
+                            outcomeCode: string;
+                            note: string | null;
+                            assessedBy: string;
+                            assessedAt: string;
+                        }[];
+                        conditions: {
+                            conditionId: string;
+                            statusCaseId: string;
+                            conditionTypeCode: string;
+                            description: string;
+                            dueDate: string | null;
+                            statusCode: string;
+                            evidenceRef: string | null;
+                            resolvedBy: string | null;
+                            resolvedAt: string | null;
+                            resolutionNote: string | null;
+                        }[];
+                        outstandingReturnConditions: {
+                            conditionId: string;
+                            statusCaseId: string;
+                            conditionTypeCode: string;
+                            description: string;
+                            dueDate: string | null;
+                            statusCode: string;
+                            evidenceRef: string | null;
+                            resolvedBy: string | null;
+                            resolvedAt: string | null;
+                            resolutionNote: string | null;
+                        }[];
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createStatusCaseConditionsByConditionIdResolution: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conditionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    statusCode: "met" | "waived";
+                    note?: string;
+                    evidenceRef?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        conditionId: string;
+                        statusCaseId: string;
+                        conditionTypeCode: string;
+                        description: string;
+                        dueDate: string | null;
+                        statusCode: string;
+                        evidenceRef: string | null;
+                        resolvedBy: string | null;
+                        resolvedAt: string | null;
+                        resolutionNote: string | null;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createStatusCasesByStatusCaseIdDecision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                statusCaseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    decisionCode: "approved" | "rejected";
+                    reason: string;
+                    effectiveDate?: string;
+                    returnDate?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        statusCaseId: string;
+                        businessCaseId: string;
+                        enrolmentId: string;
+                        personId: string;
+                        caseTypeCode: string;
+                        initiatedByCode: string;
+                        reasonCategoryCode: string | null;
+                        requestedEffectiveDate: string;
+                        expectedReturnDate: string | null;
+                        destinationProgrammeId: string | null;
+                        destinationModeOfStudyCode: string | null;
+                        relatedCaseId: string | null;
+                        institutionalOutcomeRef: string | null;
+                        statusCode: string;
+                        decidedBy: string | null;
+                        decidedAt: string | null;
+                        decisionReason: string | null;
+                        approvedEffectiveDate: string | null;
+                        approvedReturnDate: string | null;
+                        enrolmentStatusTransitionId: string | null;
+                        createdBy: string;
+                        createdAt: string;
+                        assessments: {
+                            assessmentId: string;
+                            assessorRoleCode: string;
+                            outcomeCode: string;
+                            note: string | null;
+                            assessedBy: string;
+                            assessedAt: string;
+                        }[];
+                        conditions: {
+                            conditionId: string;
+                            statusCaseId: string;
+                            conditionTypeCode: string;
+                            description: string;
+                            dueDate: string | null;
+                            statusCode: string;
+                            evidenceRef: string | null;
+                            resolvedBy: string | null;
+                            resolvedAt: string | null;
+                            resolutionNote: string | null;
+                        }[];
+                        outstandingReturnConditions: {
+                            conditionId: string;
+                            statusCaseId: string;
+                            conditionTypeCode: string;
+                            description: string;
+                            dueDate: string | null;
+                            statusCode: string;
+                            evidenceRef: string | null;
+                            resolvedBy: string | null;
+                            resolvedAt: string | null;
+                            resolutionNote: string | null;
+                        }[];
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createStatusCasesByStatusCaseIdWithdrawal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                statusCaseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        statusCaseId: string;
+                        businessCaseId: string;
+                        enrolmentId: string;
+                        personId: string;
+                        caseTypeCode: string;
+                        initiatedByCode: string;
+                        reasonCategoryCode: string | null;
+                        requestedEffectiveDate: string;
+                        expectedReturnDate: string | null;
+                        destinationProgrammeId: string | null;
+                        destinationModeOfStudyCode: string | null;
+                        relatedCaseId: string | null;
+                        institutionalOutcomeRef: string | null;
+                        statusCode: string;
+                        decidedBy: string | null;
+                        decidedAt: string | null;
+                        decisionReason: string | null;
+                        approvedEffectiveDate: string | null;
+                        approvedReturnDate: string | null;
+                        enrolmentStatusTransitionId: string | null;
+                        createdBy: string;
+                        createdAt: string;
+                        assessments: {
+                            assessmentId: string;
+                            assessorRoleCode: string;
+                            outcomeCode: string;
+                            note: string | null;
+                            assessedBy: string;
+                            assessedAt: string;
+                        }[];
+                        conditions: {
+                            conditionId: string;
+                            statusCaseId: string;
+                            conditionTypeCode: string;
+                            description: string;
+                            dueDate: string | null;
+                            statusCode: string;
+                            evidenceRef: string | null;
+                            resolvedBy: string | null;
+                            resolvedAt: string | null;
+                            resolutionNote: string | null;
+                        }[];
+                        outstandingReturnConditions: {
+                            conditionId: string;
+                            statusCaseId: string;
+                            conditionTypeCode: string;
+                            description: string;
+                            dueDate: string | null;
+                            statusCode: string;
+                            evidenceRef: string | null;
+                            resolvedBy: string | null;
+                            resolvedAt: string | null;
+                            resolutionNote: string | null;
+                        }[];
+                    };
+                };
+            };
+            /** @description Default Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getCurriculumPublications: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        publicationId: string;
+                        sourceSystemCode: string;
+                        sourcePublicationRef: string;
+                        publicationVersion: string;
+                        approvalRef: string | null;
+                        effectiveFrom: string;
+                        statusCode: string;
+                        counts: {
+                            added: number;
+                            changed: number;
+                            closed: number;
+                            unchanged: number;
+                            rejected: number;
+                        };
+                        receivedBy: string;
+                        receivedAt: string;
+                        appliedBy: string | null;
+                        appliedAt: string | null;
+                        items: {
+                            itemId: string;
+                            objectTypeCode: string;
+                            objectCode: string;
+                            sourceReference: string | null;
+                            changeTypeCode: string;
+                            issue: string | null;
+                            appliedEntityId: string | null;
+                        }[];
+                    }[];
+                };
+            };
+        };
+    };
+    createCurriculumPublications: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    sourceSystemCode: string;
+                    sourcePublicationRef: string;
+                    publicationVersion: string;
+                    approvalRef?: string;
+                    effectiveFrom: string;
+                    correctionRationale?: string;
+                    programmes?: {
+                        code: string;
+                        sourceReference?: string;
+                        closed?: boolean;
+                        title?: string;
+                        qualificationTypeCode?: string;
+                        owningSchool?: string;
+                        creditFrameworkCode?: string;
+                        fheqLevel?: number;
+                        creditTotal?: number;
+                        durationYears?: number;
+                        modeOfStudyCode?: string;
+                    }[];
+                    modules?: {
+                        code: string;
+                        sourceReference?: string;
+                        closed?: boolean;
+                        title?: string;
+                        creditValue?: number;
+                        fheqLevel?: number;
+                    }[];
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        publicationId: string;
+                        sourceSystemCode: string;
+                        sourcePublicationRef: string;
+                        publicationVersion: string;
+                        approvalRef: string | null;
+                        effectiveFrom: string;
+                        statusCode: string;
+                        counts: {
+                            added: number;
+                            changed: number;
+                            closed: number;
+                            unchanged: number;
+                            rejected: number;
+                        };
+                        receivedBy: string;
+                        receivedAt: string;
+                        appliedBy: string | null;
+                        appliedAt: string | null;
+                        items: {
+                            itemId: string;
+                            objectTypeCode: string;
+                            objectCode: string;
+                            sourceReference: string | null;
+                            changeTypeCode: string;
+                            issue: string | null;
+                            appliedEntityId: string | null;
+                        }[];
+                    };
+                };
+            };
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        publicationId: string;
+                        sourceSystemCode: string;
+                        sourcePublicationRef: string;
+                        publicationVersion: string;
+                        approvalRef: string | null;
+                        effectiveFrom: string;
+                        statusCode: string;
+                        counts: {
+                            added: number;
+                            changed: number;
+                            closed: number;
+                            unchanged: number;
+                            rejected: number;
+                        };
+                        receivedBy: string;
+                        receivedAt: string;
+                        appliedBy: string | null;
+                        appliedAt: string | null;
+                        items: {
+                            itemId: string;
+                            objectTypeCode: string;
+                            objectCode: string;
+                            sourceReference: string | null;
+                            changeTypeCode: string;
+                            issue: string | null;
+                            appliedEntityId: string | null;
+                        }[];
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getCurriculumPublicationsByPublicationId: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                publicationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        publicationId: string;
+                        sourceSystemCode: string;
+                        sourcePublicationRef: string;
+                        publicationVersion: string;
+                        approvalRef: string | null;
+                        effectiveFrom: string;
+                        statusCode: string;
+                        counts: {
+                            added: number;
+                            changed: number;
+                            closed: number;
+                            unchanged: number;
+                            rejected: number;
+                        };
+                        receivedBy: string;
+                        receivedAt: string;
+                        appliedBy: string | null;
+                        appliedAt: string | null;
+                        items: {
+                            itemId: string;
+                            objectTypeCode: string;
+                            objectCode: string;
+                            sourceReference: string | null;
+                            changeTypeCode: string;
+                            issue: string | null;
+                            appliedEntityId: string | null;
+                        }[];
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createCurriculumPublicationsByPublicationIdApplication: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                publicationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        publicationId: string;
+                        sourceSystemCode: string;
+                        sourcePublicationRef: string;
+                        publicationVersion: string;
+                        approvalRef: string | null;
+                        effectiveFrom: string;
+                        statusCode: string;
+                        counts: {
+                            added: number;
+                            changed: number;
+                            closed: number;
+                            unchanged: number;
+                            rejected: number;
+                        };
+                        receivedBy: string;
+                        receivedAt: string;
+                        appliedBy: string | null;
+                        appliedAt: string | null;
+                        items: {
+                            itemId: string;
+                            objectTypeCode: string;
+                            objectCode: string;
+                            sourceReference: string | null;
+                            changeTypeCode: string;
+                            issue: string | null;
+                            appliedEntityId: string | null;
+                        }[];
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getEnrolmentsByEnrolmentIdRecognisedCredits: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrolmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        credits: {
+                            recognisedCreditId: string;
+                            enrolmentId: string;
+                            recognitionTypeCode: string;
+                            sourceDescription: string;
+                            creditValue: number;
+                            fheqLevel: number | null;
+                            moduleId: string | null;
+                            statusCaseId: string | null;
+                            evidenceRef: string | null;
+                            statusCode: string;
+                            createdBy: string;
+                            createdAt: string;
+                            decidedBy: string | null;
+                            decidedAt: string | null;
+                            decisionReason: string | null;
+                        }[];
+                        approvedCreditTotal: number;
+                    };
+                };
+            };
+        };
+    };
+    createEnrolmentsByEnrolmentIdRecognisedCredits: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrolmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    recognitionTypeCode: string;
+                    sourceDescription: string;
+                    creditValue: number;
+                    fheqLevel?: number;
+                    moduleId?: string;
+                    statusCaseId?: string;
+                    evidenceRef?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        recognisedCreditId: string;
+                        enrolmentId: string;
+                        recognitionTypeCode: string;
+                        sourceDescription: string;
+                        creditValue: number;
+                        fheqLevel: number | null;
+                        moduleId: string | null;
+                        statusCaseId: string | null;
+                        evidenceRef: string | null;
+                        statusCode: string;
+                        createdBy: string;
+                        createdAt: string;
+                        decidedBy: string | null;
+                        decidedAt: string | null;
+                        decisionReason: string | null;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createRecognisedCreditsByRecognisedCreditIdDecision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recognisedCreditId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    decisionCode: "approved" | "rejected";
+                    reason: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        recognisedCreditId: string;
+                        enrolmentId: string;
+                        recognitionTypeCode: string;
+                        sourceDescription: string;
+                        creditValue: number;
+                        fheqLevel: number | null;
+                        moduleId: string | null;
+                        statusCaseId: string | null;
+                        evidenceRef: string | null;
+                        statusCode: string;
+                        createdBy: string;
+                        createdAt: string;
+                        decidedBy: string | null;
+                        decidedAt: string | null;
+                        decisionReason: string | null;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getEnrolmentsByEnrolmentIdRuleExceptions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrolmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        ruleExceptionId: string;
+                        enrolmentId: string;
+                        programmeRuleSetId: string | null;
+                        ruleCode: string;
+                        exceptionTypeCode: string;
+                        description: string;
+                        validFrom: string;
+                        validTo: string | null;
+                        authorityRef: string | null;
+                        statusCode: string;
+                        createdBy: string;
+                        createdAt: string;
+                        decidedBy: string | null;
+                        decidedAt: string | null;
+                        decisionReason: string | null;
+                    }[];
+                };
+            };
+        };
+    };
+    createEnrolmentsByEnrolmentIdRuleExceptions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrolmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    ruleCode: string;
+                    exceptionTypeCode: string;
+                    description: string;
+                    validFrom: string;
+                    validTo?: string;
+                    programmeRuleSetId?: string;
+                    authorityRef?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        ruleExceptionId: string;
+                        enrolmentId: string;
+                        programmeRuleSetId: string | null;
+                        ruleCode: string;
+                        exceptionTypeCode: string;
+                        description: string;
+                        validFrom: string;
+                        validTo: string | null;
+                        authorityRef: string | null;
+                        statusCode: string;
+                        createdBy: string;
+                        createdAt: string;
+                        decidedBy: string | null;
+                        decidedAt: string | null;
+                        decisionReason: string | null;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createRuleExceptionsByRuleExceptionIdDecision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ruleExceptionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    decisionCode: "approved" | "rejected";
+                    reason: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        ruleExceptionId: string;
+                        enrolmentId: string;
+                        programmeRuleSetId: string | null;
+                        ruleCode: string;
+                        exceptionTypeCode: string;
+                        description: string;
+                        validFrom: string;
+                        validTo: string | null;
+                        authorityRef: string | null;
+                        statusCode: string;
+                        createdBy: string;
+                        createdAt: string;
+                        decidedBy: string | null;
+                        decidedAt: string | null;
+                        decisionReason: string | null;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createRuleExceptionsByRuleExceptionIdRevocation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ruleExceptionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    reason: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        ruleExceptionId: string;
+                        enrolmentId: string;
+                        programmeRuleSetId: string | null;
+                        ruleCode: string;
+                        exceptionTypeCode: string;
+                        description: string;
+                        validFrom: string;
+                        validTo: string | null;
+                        authorityRef: string | null;
+                        statusCode: string;
+                        createdBy: string;
+                        createdAt: string;
+                        decidedBy: string | null;
+                        decidedAt: string | null;
+                        decisionReason: string | null;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

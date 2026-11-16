@@ -163,6 +163,14 @@ fastify.get('/students/:id', {
 | `support:approve` (approve awards and instalments, which instructs payroll; finance administrators and PGR directors only, never the recorder) | | | | | | |
 | `employment-link:read` (university employment and work-limit warnings; also PGR administrators, directors and research supervisors) | | ✓ | | | | |
 | `employment-link:write` (record an employment link; also PGR administrators; HR connectors use `integration:manage`) | | ✓ | | | | |
+| `status-case:read` (student status cases; also programme approvers, finance, regulatory officers, PGR administrators, personal tutors) | | ✓ | | | | |
+| `status-case:request:own` (request one's own interruption, return, withdrawal or transfer) | ✓ | | | | | |
+| `status-case:write` (open institutional cases, set and resolve conditions; also PGR administrators) | | ✓ | | | | |
+| `status-case:assess` (record reviewer advice; also programme approvers, finance, regulatory officers) | | ✓ | | | | |
+| `status-case:decide` (approve or reject; never the person who opened the case) | | ✓ | | | | |
+| `curriculum-publication:read` / `:receive` (the curriculum connector sends; also registry) | | ✓ | | | | ✓ |
+| `curriculum-publication:apply` (apply a validated publication) | | ✓ | | | | ✓ |
+| `academic-exception:read` / `:propose` / `:approve` (recognised credit and rule exceptions; also programme approvers; never the proposer) | | ✓ | | | | |
 | `special-category:read` | | | | | ✓ | |
 | `config:write` | | | | | | ✓ |
 | `integration:manage` | | | | | | ✓ |

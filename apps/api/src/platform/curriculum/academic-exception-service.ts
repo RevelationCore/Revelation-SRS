@@ -1,0 +1,163 @@
+import {
+  modules,
+  recognisedCredits,
+  ruleExceptions,
+  type Db,
+  type RecognisedCredit,
+  type RuleException,
+  withTenantContext,
+} from '@revelation-srs/db';
+import { ConflictError, NotFoundError, ValidationError } from '@revelation-srs/domain';
+import { and, desc, eq, isNull } from 'drizzle-orm';
+
+import { clockNow } from '../clock.js';
+import type { EnrolmentService } from '../enrolment/service.js';
+import type { ValueSetService } from '../value-sets/service.js';
+
+type Uuid = `${string}-${string}-${string}-${string}-${string}`;
+
+export interface RecognisedCreditInput {
+  recognitionTypeCode: string;
+  sourceDescription: string;
+  creditValue: number;
+  fheqLevel?: number;
+  moduleId?: string;
+  statusCaseId?: string;
+  evidenceRef?: string;
+}
+
+export interface RuleExceptionInput {
+  ruleCode: string;
+  exceptionTypeCode: string;
+  description: string;
+  validFrom: string;
+  validTo?: string;
+  programmeRuleSetId?: string;
+  authorityRef?: string;
+}
+
+export type Decision = { decisionCode: 'approved' | 'rejected'; reason: string };
+
+/**
+ * Recognised credit and rule exceptions for one student (BPR-D05). Each is
+ * proposed, then approved or rejected by someone other than the proposer.
+ * Only approved, in-force records count.
+ */
+export class AcademicExceptionService {
+  constructor(
+    private readonly db: Db,
+    private readonly valueSets: ValueSetService,
+    private readonly enrolments: EnrolmentService,
+  ) {}
+
+  // ── Recognised credit ──────────────────────────────────────────────────────
+
+  async proposeCredit(tenantId: string, enrolmentId: string, input: RecognisedCreditInput, actorId: string): Promise<RecognisedCredit> {
+    await this.#requireEnrolment(tenantId, enrolmentId);
+    await this.#code(tenantId, 'recognised_credit', 'recognition_type_code', input.recognitionTypeCode);
+    if (!Number.isInteger(input.creditValue) || input.creditValue <= 0) throw new ValidationError('Credit must be a positive whole number');
+    if (input.recognitionTypeCode === 'exemption' && !input.moduleId) throw new ValidationError('An exemption must name the module it exempts');
+    if (input.moduleId) {
+      const found = await withTenantContext(this.db, tenantId, (tx) => tx.select({ id: modules.id }).from(modules)
+        .where(and(eq(modules.id, input.moduleId as Uuid), eq(modules.tenantId, tenantId as Uuid), isNull(modules.recordedUntil))).limit(1));
+      if (!found[0]) throw new NotFoundError('Module', input.moduleId);
+    }
+    const [row] = await withTenantContext(this.db, tenantId, (tx) => tx.insert(recognisedCredits).values({
+      tenantId: tenantId as Uuid, enrolmentId: enrolmentId as Uuid, recognitionTypeCode: input.recognitionTypeCode,
+      sourceDescription: input.sourceDescription, creditValue: input.creditValue, fheqLevel: input.fheqLevel ?? null,
+      moduleId: (input.moduleId ?? null) as Uuid | null, statusCaseId: (input.statusCaseId ?? null) as Uuid | null,
+      evidenceRef: input.evidenceRef ?? null, createdBy: actorId,
+    }).returning());
+    return row!;
+  }
+
+  async decideCredit(tenantId: string, creditId: string, decision: Decision, actorId: string): Promise<RecognisedCredit> {
+    const [row] = await withTenantContext(this.db, tenantId, (tx) => tx.select().from(recognisedCredits)
+      .where(and(eq(recognisedCredits.id, creditId as Uuid), eq(recognisedCredits.tenantId, tenantId as Uuid))).limit(1));
+    if (!row) throw new NotFoundError('RecognisedCredit', creditId);
+    this.#assertDecidable(row.statusCode, row.createdBy, actorId);
+    const [updated] = await withTenantContext(this.db, tenantId, (tx) => tx.update(recognisedCredits).set({
+      statusCode: decision.decisionCode, decidedBy: actorId, decidedAt: clockNow(), decisionReason: decision.reason,
+    }).where(eq(recognisedCredits.id, row.id)).returning());
+    return updated!;
+  }
+
+  async listCredits(tenantId: string, enrolmentId: string): Promise<{ credits: RecognisedCredit[]; approvedCreditTotal: number }> {
+    const credits = await withTenantContext(this.db, tenantId, (tx) => tx.select().from(recognisedCredits)
+      .where(and(eq(recognisedCredits.tenantId, tenantId as Uuid), eq(recognisedCredits.enrolmentId, enrolmentId as Uuid)))
+      .orderBy(desc(recognisedCredits.createdAt)));
+    const approvedCreditTotal = credits.filter((c) => c.statusCode === 'approved').reduce((sum, c) => sum + c.creditValue, 0);
+    return { credits, approvedCreditTotal };
+  }
+
+  // ── Rule exceptions ────────────────────────────────────────────────────────
+
+  async proposeException(tenantId: string, enrolmentId: string, input: RuleExceptionInput, actorId: string): Promise<RuleException> {
+    await this.#requireEnrolment(tenantId, enrolmentId);
+    await this.#code(tenantId, 'rule_exception', 'exception_type_code', input.exceptionTypeCode);
+    if (input.validTo && input.validTo <= input.validFrom) throw new ValidationError('An exception must end after it starts');
+    const [row] = await withTenantContext(this.db, tenantId, (tx) => tx.insert(ruleExceptions).values({
+      tenantId: tenantId as Uuid, enrolmentId: enrolmentId as Uuid, ruleCode: input.ruleCode,
+      exceptionTypeCode: input.exceptionTypeCode, description: input.description, validFrom: input.validFrom,
+      validTo: input.validTo ?? null, programmeRuleSetId: (input.programmeRuleSetId ?? null) as Uuid | null,
+      authorityRef: input.authorityRef ?? null, createdBy: actorId,
+    }).returning());
+    return row!;
+  }
+
+  async decideException(tenantId: string, exceptionId: string, decision: Decision, actorId: string): Promise<RuleException> {
+    const row = await this.#exception(tenantId, exceptionId);
+    this.#assertDecidable(row.statusCode, row.createdBy, actorId);
+    const [updated] = await withTenantContext(this.db, tenantId, (tx) => tx.update(ruleExceptions).set({
+      statusCode: decision.decisionCode, decidedBy: actorId, decidedAt: clockNow(), decisionReason: decision.reason,
+    }).where(eq(ruleExceptions.id, row.id)).returning());
+    return updated!;
+  }
+
+  /** Ends an approved exception; its history is kept. */
+  async revokeException(tenantId: string, exceptionId: string, reason: string, actorId: string): Promise<RuleException> {
+    const row = await this.#exception(tenantId, exceptionId);
+    if (row.statusCode !== 'approved') throw new ConflictError(`Only an approved exception can be revoked; this one is ${row.statusCode}`);
+    const [updated] = await withTenantContext(this.db, tenantId, (tx) => tx.update(ruleExceptions).set({
+      statusCode: 'revoked', decisionReason: `${row.decisionReason ?? ''}${row.decisionReason ? '; ' : ''}Revoked: ${reason}`,
+      decidedBy: actorId, decidedAt: clockNow(),
+    }).where(eq(ruleExceptions.id, row.id)).returning());
+    return updated!;
+  }
+
+  async listExceptions(tenantId: string, enrolmentId: string): Promise<RuleException[]> {
+    return withTenantContext(this.db, tenantId, (tx) => tx.select().from(ruleExceptions)
+      .where(and(eq(ruleExceptions.tenantId, tenantId as Uuid), eq(ruleExceptions.enrolmentId, enrolmentId as Uuid)))
+      .orderBy(desc(ruleExceptions.createdAt)));
+  }
+
+  /** Approved exceptions in force on a date, e.g. for the rules engine. */
+  async inForceExceptions(tenantId: string, enrolmentId: string, onDate: string): Promise<RuleException[]> {
+    return (await this.listExceptions(tenantId, enrolmentId))
+      .filter((e) => e.statusCode === 'approved' && e.validFrom <= onDate && (!e.validTo || e.validTo > onDate));
+  }
+
+  // ── internals ──────────────────────────────────────────────────────────────
+
+  #assertDecidable(statusCode: string, createdBy: string, actorId: string): void {
+    if (statusCode !== 'proposed') throw new ConflictError(`This record is already ${statusCode}`);
+    if (createdBy === actorId) throw new ConflictError('The person who proposed this cannot decide it');
+  }
+
+  async #exception(tenantId: string, id: string): Promise<RuleException> {
+    const [row] = await withTenantContext(this.db, tenantId, (tx) => tx.select().from(ruleExceptions)
+      .where(and(eq(ruleExceptions.id, id as Uuid), eq(ruleExceptions.tenantId, tenantId as Uuid))).limit(1));
+    if (!row) throw new NotFoundError('RuleException', id);
+    return row;
+  }
+
+  async #requireEnrolment(tenantId: string, enrolmentId: string): Promise<void> {
+    if (!(await this.enrolments.getEnrolment(enrolmentId, tenantId))) throw new NotFoundError('Enrolment', enrolmentId);
+  }
+
+  async #code(tenantId: string, entity: string, field: string, value: string): Promise<void> {
+    if ((await this.valueSets.validateFieldValue(entity, field, value, tenantId)) === false) {
+      throw new ValidationError(`Invalid value '${value}' for ${entity}.${field}`, [{ field, message: 'Value is not active in the configured value set' }]);
+    }
+  }
+}

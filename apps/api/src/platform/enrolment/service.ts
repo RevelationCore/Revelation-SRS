@@ -116,6 +116,8 @@ export interface DownstreamTriggerDto {
 export interface TransitionOptions {
   reasonCode?: string;
   reasonText?: string;
+  /** ID for the enrolment_status_transition row, so a caller can reference it (e.g. a status case). */
+  transitionId?: string;
 }
 
 export interface EnrolmentVolumesDto {
@@ -577,6 +579,7 @@ export class EnrolmentService {
       });
 
       await tx.insert(enrolmentStatusTransitions).values({
+        ...(options.transitionId ? { id: options.transitionId as `${string}-${string}-${string}-${string}-${string}` } : {}),
         tenantId:       tenantId as `${string}-${string}-${string}-${string}-${string}`,
         enrolmentId:    enrolmentId as `${string}-${string}-${string}-${string}-${string}`,
         fromStatusCode: from,
@@ -629,6 +632,84 @@ export class EnrolmentService {
     }
 
     return transitionDecision;
+  }
+
+  /**
+   * Transfer (BP-02-006): a new enrolment version on a different programme
+   * or mode of study, effective from validFrom, without rewriting prior
+   * results. Recorded as an enrolment_status_transition from and to the
+   * current status, with reason 'transfer'.
+   */
+  async changeStudyArrangement(
+    enrolmentId: string,
+    tenantId: string,
+    change: { programmeId?: string | null; modeOfStudyCode?: string | null },
+    validFrom: Date,
+    actorId: string,
+    options: TransitionOptions = {},
+  ): Promise<void> {
+    const current = await this.getEnrolment(enrolmentId, tenantId);
+    if (!current) throw new NotFoundError('Enrolment', enrolmentId);
+    if (current.statusCode !== 'enrolled') {
+      throw new ValidationError(`Only an enrolled student can transfer; this enrolment is ${current.statusCode}`);
+    }
+    if (!change.programmeId && !change.modeOfStudyCode) {
+      throw new ValidationError('A transfer must change the programme or the mode of study');
+    }
+    if (change.modeOfStudyCode) {
+      await this.#validateFieldValue(tenantId, 'enrolment', 'mode_of_study_code', change.modeOfStudyCode);
+    }
+    assertChangeAfterCurrentVersion(current.validFrom, validFrom);
+    const now = clockNow();
+    type U = `${string}-${string}-${string}-${string}-${string}`;
+
+    await withTenantContext(this.db, tenantId, async (tx) => {
+      await tx.update(enrolments).set({ recordedUntil: now, validTo: validFrom }).where(and(
+        eq(enrolments.id, enrolmentId as U), eq(enrolments.tenantId, tenantId as U), isNull(enrolments.recordedUntil),
+      ));
+      await tx.insert(enrolments).values({
+        versionId:           randomUUID(),
+        id:                  enrolmentId as U,
+        tenantId:            tenantId as U,
+        personId:            current.personId as U,
+        programmeId:         (change.programmeId ?? current.programmeId ?? null) as U | null,
+        statusCode:          current.statusCode,
+        modeOfStudyCode:     change.modeOfStudyCode ?? current.modeOfStudyCode,
+        attendanceTypeCode:  current.attendanceTypeCode,
+        academicYearOfEntry: current.academicYearOfEntry,
+        startDate:           current.startDate,
+        expectedEndDate:     current.expectedEndDate,
+        actualEndDate:       current.actualEndDate,
+        feeBandCode:         current.feeBandCode,
+        fundingSourceCode:   current.fundingSourceCode,
+        slcReference:        current.slcReference,
+        ucasPersonalId:      current.ucasPersonalId,
+        validFrom,
+        validTo:       null,
+        recordedAt:    now,
+        recordedUntil: null,
+      });
+      await tx.insert(enrolmentStatusTransitions).values({
+        ...(options.transitionId ? { id: options.transitionId as U } : {}),
+        tenantId:       tenantId as U,
+        enrolmentId:    enrolmentId as U,
+        fromStatusCode: current.statusCode,
+        toStatusCode:   current.statusCode,
+        reasonCode:     options.reasonCode ?? 'transfer',
+        reasonText:     options.reasonText ?? null,
+        effectiveAt:    validFrom,
+        actorId,
+        createdAt:      now,
+      });
+    });
+
+    if (this.delivery) {
+      await onEnrolmentChanged(this.delivery, this.db, tenantId, {
+        enrolmentId,
+        changeKey: `enrolment-transfer:${enrolmentId}:${validFrom.toISOString()}`,
+        effectiveFrom: validFrom,
+      });
+    }
   }
 
   async getEnrolmentHistory(enrolmentId: string, tenantId: string): Promise<EnrolmentHistoryDto[]> {

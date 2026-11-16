@@ -50,6 +50,20 @@
       "when": 1785000032000,
       "tag": "0006_adjustments_integration_and_support",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1785000033000,
+      "tag": "0007_student_status_cases",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1785000034000,
+      "tag": "0008_curriculum_publication",
+      "breakpoints": true
     }
   ]
 }

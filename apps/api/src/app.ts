@@ -115,7 +115,12 @@ import { globalisationRoutes } from './routes/globalisation.js';
 import { adjustmentRoutes } from './routes/adjustments.js';
 import { deliveryRoutes, inboundRoutes } from './routes/delivery.js';
 import { supportRoutes } from './routes/support.js';
+import { statusCaseRoutes } from './routes/status-cases.js';
+import { curriculumPublicationRoutes } from './routes/curriculum-publications.js';
 import { SupportService } from './platform/support/support-service.js';
+import { StatusCaseService } from './platform/status-cases/status-case-service.js';
+import { CurriculumPublicationService } from './platform/curriculum/publication-service.js';
+import { AcademicExceptionService } from './platform/curriculum/academic-exception-service.js';
 import { EmploymentService } from './platform/support/employment-service.js';
 import { InboundRecordService } from './platform/delivery/inbound.js';
 import { engagementOutcomeRoutes } from './routes/engagement-outcomes.js';
@@ -420,6 +425,9 @@ export async function buildApp(
   fastify.decorate('deliveryService', deliveries);
   const inboundRecords = new InboundRecordService(db, valueSets);
   const support = new SupportService(db, valueSets, deliveries);
+  const statusCases = new StatusCaseService(db, valueSets, enrolments, businessCases);
+  const curriculumPublications = new CurriculumPublicationService(db);
+  const academicExceptions = new AcademicExceptionService(db, valueSets, enrolments);
   const employment = new EmploymentService(db, valueSets, support);
   // A payroll confirmation that names an SRS instruction reconciles it.
   inboundRecords.onReceived(async (tenantId, record) => {
@@ -436,6 +444,9 @@ export async function buildApp(
   });
   fastify.decorate('inboundRecordService', inboundRecords);
   fastify.decorate('supportService', support);
+  fastify.decorate('statusCaseService', statusCases);
+  fastify.decorate('curriculumPublicationService', curriculumPublications);
+  fastify.decorate('academicExceptionService', academicExceptions);
   fastify.decorate('employmentService', employment);
   fastify.decorate('businessCaseService', businessCases);
   fastify.decorate('identityResolutionService', identityResolution);
@@ -609,6 +620,10 @@ export async function buildApp(
       ['/delivery-',                 'integration-registry'],
       ['/inbound',                   'integration-registry'],
       ['/support-',                  'students'],
+      ['/status-case',               'enrolments'],
+      ['/curriculum-publications',   'catalogue'],
+      ['/recognised-credits',        'enrolments'],
+      ['/rule-exceptions',           'enrolments'],
       ['/work-limits',               'tenant-admin'],
       ['/external-records',          'integration-registry'],
       ['/engagement-outcomes',       'engagement-outcomes'],
@@ -699,6 +714,8 @@ export async function buildApp(
   await fastify.register(deliveryRoutes,            { prefix: '/api/v1' });
   await fastify.register(inboundRoutes,             { prefix: '/api/v1' });
   await fastify.register(supportRoutes,             { prefix: '/api/v1' });
+  await fastify.register(statusCaseRoutes,          { prefix: '/api/v1' });
+  await fastify.register(curriculumPublicationRoutes, { prefix: '/api/v1' });
   await fastify.register(engagementOutcomeRoutes,   { prefix: '/api/v1' });
   await fastify.register(engagementProxyRoutes,     { prefix: '/api/v1' });
   await fastify.register(circumstancesRoutes,       { prefix: '/api/v1' });
@@ -779,6 +796,9 @@ declare module 'fastify' {
     deliveryService: DeliveryService;
     inboundRecordService: InboundRecordService;
     supportService: SupportService;
+    statusCaseService: StatusCaseService;
+    curriculumPublicationService: CurriculumPublicationService;
+    academicExceptionService: AcademicExceptionService;
     employmentService: EmploymentService;
     businessCaseService: BusinessCaseService;
     identityResolutionService: IdentityResolutionService;
