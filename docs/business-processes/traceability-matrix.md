@@ -1,13 +1,78 @@
 # Business Process Traceability Matrix
 
 > Status: Initial working crosswalk
-> Last updated: 2026-07-26
+> Last updated: 2026-11-16
 
 This matrix connects business outcomes to current Revelation design. It records alignment and gaps; it does not imply that current implementation defines sector practice.
 
 P0 findings have detailed [functional requirements and ADR mappings](p0-requirements-and-adr-traceability.md).
 
 Data findings BPR-D01–BPR-D19 have a completed [logical/physical delta assessment](../architecture/business-process-data-model-delta.md).
+
+## Implementation coverage
+
+> Checked: 2026-11-16, against the running app and the code. `npm run check:process-coverage` keeps this table complete.
+
+How far each academic-journey process (areas 01–06) can be carried out in the app. **On screen**: staff (and, where it applies, students) can do it in the admin or portal. **Partly built**: useful implementation exists but part of the process is manual or missing. **API only**: complete in the API with no screen. **Not built**: no service. The [gap-closure plan](../product/academic-journey-gap-closure-plan.md) schedules the rest.
+
+| Coverage | Processes |
+|---|---|
+| On screen | 37 |
+| Partly built | 7 |
+| API only | 2 |
+| Not built | 3 |
+
+| Process | Coverage | Staff screen | Student portal | Gap |
+|---|---|---|---|---|
+| [BP-01-001](01-recruitment-and-admissions/bp-01-001-receive-an-application.md) Receive an application | On screen | Applications worklist and application page | — | UCAS adapter feeds applications; no applicant view |
+| [BP-01-002](01-recruitment-and-admissions/bp-01-002-assess-an-application.md) Assess an application | On screen | Application page: assessments, recommendation | — | Safeguarding concern blocks an offer recommendation |
+| [BP-01-003](01-recruitment-and-admissions/bp-01-003-make-and-manage-an-offer.md) Make and manage an offer | On screen | Application page: decision, offer change and withdrawal | — | Offers are not published to UCAS |
+| [BP-01-004](01-recruitment-and-admissions/bp-01-004-confirm-offer-conditions.md) Confirm offer conditions | On screen | Application page: condition evidence and decisions, confirmation | — | Results are not mapped to conditions automatically |
+| [BP-01-005](01-recruitment-and-admissions/bp-01-005-create-and-assign-a-cas.md) Create and assign a CAS | Partly built | UKVI page CAS tab (`ukvi_cas_request`) | — | `cas_case` is API only and not bridged to the UKVI CAS record |
+| [BP-01-006](01-recruitment-and-admissions/bp-01-006-place-an-applicant-through-clearing.md) Place an applicant through Clearing | Not built | — | — | Clearing is a channel code only; no Clearing permission model or route |
+| [BP-01-007](01-recruitment-and-admissions/bp-01-007-convert-an-accepted-applicant-to-a-prospective-student-record.md) Convert an accepted applicant to a prospective student record | Partly built | Task Inbox hand-off task; enrolment created by hand on the student record | — | The applicant is a prospective person from receipt; completing the hand-off task changes nothing, so conversion is manual |
+| [BP-02-001](02-registration-and-student-status/bp-02-001-prepare-initial-registration.md) Prepare a student for initial registration | Partly built | Task Inbox hand-off task; Create enrolment on the student record | — | No registration case, invitation or obligations worklist |
+| [BP-02-002](02-registration-and-student-status/bp-02-002-verify-identity-and-right-to-study.md) Verify identity, nationality and right to study | Partly built | Identity tab: verification checks | — | Right to study is not a separate outcome (held with UKVI) |
+| [BP-02-003](02-registration-and-student-status/bp-02-003-complete-initial-academic-registration.md) Complete initial academic registration | On screen | Student record: create enrolment, Enrolments tab | Enrolments, enrolment page | Terms and declarations accepted are not recorded |
+| [BP-02-004](02-registration-and-student-status/bp-02-004-complete-financial-registration.md) Complete financial registration | Partly built | SLC page | Enrolment page: fees | No financial-registration state alongside academic registration |
+| [BP-02-005](02-registration-and-student-status/bp-02-005-activate-access-and-entitlements.md) Activate student access and entitlements | Partly built | Operations: delivery tasks per flow | — | Access is driven by delivery flows; no entitlement view per student |
+| [BP-02-006](02-registration-and-student-status/bp-02-006-transfer-programme-route-or-mode.md) Transfer programme, route or mode | On screen | Status cases worklist and case page; Status changes tab | Enrolment page: request a transfer | Needs destination-programme support to approve |
+| [BP-02-007](02-registration-and-student-status/bp-02-007-interrupt-or-suspend-studies.md) Interrupt or suspend studies | On screen | Status cases (interruption, suspension) | Enrolment page: request an interruption | Funding and Student-visa notices before requesting |
+| [BP-02-008](02-registration-and-student-status/bp-02-008-return-from-interruption.md) Return from interruption | On screen | Status cases (return, with return conditions) | Enrolment page: request a return | Offered only after an approved interruption |
+| [BP-02-009](02-registration-and-student-status/bp-02-009-withdraw-from-studies.md) Withdraw from studies | On screen | Status cases (withdrawal) | Enrolment page: request a withdrawal | Sponsored students need UKVI compliance advice before a decision |
+| [BP-02-010](02-registration-and-student-status/bp-02-010-complete-annual-re-registration.md) Complete annual re-registration | Not built | — | — | `reenrolment_period` and `reenrolment_confirmation` tables exist with no service or API |
+| [BP-02-011](02-registration-and-student-status/bp-02-011-resolve-failure-to-register.md) Resolve failure to register or re-register | Not built | — | — | Non-registration decisions are not modelled |
+| [BP-02-012](02-registration-and-student-status/bp-02-012-close-leaver-record.md) Close a leaver record and entitlements | On screen | Status cases (leaver closure, closure items) | — | Closure does not itself end access; withdrawal and graduation delivery flows do |
+| [BP-03-001](03-curriculum-and-module-registration/bp-03-001-import-and-publish-curriculum-data.md) Import and publish curriculum data to the SRS | On screen | Curriculum publications list and review | — | Programmes and modules only; a person cannot apply a publication they entered |
+| [BP-03-002](03-curriculum-and-module-registration/bp-03-002-assign-programme-route-and-rules.md) Assign a programme route and rule set | API only | — | — | Curriculum binding is automatic on a first proposal or set through the API; routes, rule sets and diet groups have no screen (academic rules have one) |
+| [BP-03-003](03-curriculum-and-module-registration/bp-03-003-select-modules.md) Select modules | On screen | Module selection proposals | Module selection | No timetable-clash, joint-honours or selection-window rules |
+| [BP-03-004](03-curriculum-and-module-registration/bp-03-004-validate-and-approve-module-selection.md) Validate and approve module selection | On screen | Module selection proposals: approval | — | Applies approved credit and rule exceptions; no ranked allocation |
+| [BP-03-005](03-curriculum-and-module-registration/bp-03-005-change-module-registration.md) Change a module registration | On screen | Registration requests | My modules: add and withdraw requests | — |
+| [BP-03-006](03-curriculum-and-module-registration/bp-03-006-provision-confirmed-registrations.md) Provision confirmed registrations downstream | Partly built | Integration operations (exchange status) | — | Confirmed registrations reach the VLE (F-SIS-VLE-01); nothing provisions timetabling |
+| [BP-03-007](03-curriculum-and-module-registration/bp-03-007-establish-pgr-supervision.md) Establish PGR supervision and research context | On screen | PGR supervision | Enrolment page: supervision | — |
+| [BP-04-001](04-learning-engagement-and-support/bp-04-001-record-attendance-and-academic-engagement-evidence.md) Record attendance and academic engagement evidence | On screen | Engagement | — | — |
+| [BP-04-002](04-learning-engagement-and-support/bp-04-002-investigate-and-respond-to-non-engagement.md) Investigate and respond to non-engagement | On screen | Engagement cases | — | — |
+| [BP-04-003](04-learning-engagement-and-support/bp-04-003-review-pgr-progress-and-milestones.md) Review PGR progress and milestones | On screen | PGR progress review | Enrolment page: milestones | — |
+| [BP-04-004](04-learning-engagement-and-support/bp-04-004-manage-a-reasonable-adjustment-case.md) Manage a reasonable adjustment case | On screen | Adjustment cases; student record Wellbeing tab | Adjustments | No independent review of the case workflow yet |
+| [BP-04-005](04-learning-engagement-and-support/bp-04-005-manage-exceptional-circumstances.md) Manage exceptional circumstances | On screen | Student record: exceptional circumstances | Circumstances | — |
+| [BP-04-006](04-learning-engagement-and-support/bp-04-006-distribute-an-approved-support-outcome.md) Distribute an approved support outcome | On screen | Operations: adjustment and delivery tasks | — | — |
+| [BP-05-001](05-assessment-and-results/bp-05-001-establish-assessment-structures.md) Establish assessment structures | API only | Exam timings: component durations only | — | Assessment patterns and components are created through the API |
+| [BP-05-002](05-assessment-and-results/bp-05-002-create-examination-entries-and-accommodations.md) Create examination entries and accommodations | On screen | Exam timings; exam board: exam entries | Exams | — |
+| [BP-05-003](05-assessment-and-results/bp-05-003-receive-or-enter-marks.md) Receive or enter marks | On screen | Student record Assessment tab: marks | Results | — |
+| [BP-05-004](05-assessment-and-results/bp-05-004-moderate-and-confirm-marks.md) Moderate and confirm marks | On screen | Moderation | — | — |
+| [BP-05-005](05-assessment-and-results/bp-05-005-determine-a-module-result.md) Determine a module result | On screen | Student record Assessment tab: module results | Results | Rule-version explanation incomplete |
+| [BP-05-006](05-assessment-and-results/bp-05-006-investigate-academic-misconduct.md) Investigate academic misconduct | On screen | Student record: Misconduct tab | — | Effects on individual marks are API only |
+| [BP-05-007](05-assessment-and-results/bp-05-007-prepare-an-exam-board-and-data-pack.md) Prepare an exam board and data pack | On screen | Exam board page: data pack | — | Pack hash and rule manifest not populated |
+| [BP-05-008](05-assessment-and-results/bp-05-008-complete-external-examiner-review.md) Complete external examiner review | On screen | Exam board page: external examiner sign-off | — | — |
+| [BP-05-009](05-assessment-and-results/bp-05-009-ratify-and-publish-results.md) Ratify and publish results | On screen | Exam board page: ratify | Results | — |
+| [BP-05-010](05-assessment-and-results/bp-05-010-submit-and-examine-a-pgr-thesis.md) Submit and examine a PGR thesis | On screen | PGR examination | Enrolment page | — |
+| [BP-05-011](05-assessment-and-results/bp-05-011-correct-a-ratified-academic-outcome.md) Correct a ratified academic outcome | On screen | Student record Corrections tab | — | Before and after version references not populated |
+| [BP-06-001](06-progression-awards-and-graduation/bp-06-001-determine-progression.md) Determine progression | On screen | Awards tab: Progression | — | Ratified years are locked |
+| [BP-06-002](06-progression-awards-and-graduation/bp-06-002-manage-reassessment-referral-or-repeat-study.md) Manage reassessment, referral or repeat study | On screen | Awards tab: reassessment plans | — | Plans are created by hand, not at ratification |
+| [BP-06-003](06-progression-awards-and-graduation/bp-06-003-determine-and-confer-an-award.md) Determine and confer an award | On screen | Awards tab: recommend and confer | — | — |
+| [BP-06-004](06-progression-awards-and-graduation/bp-06-004-issue-award-documentation-and-hear.md) Issue award documentation and HEAR | On screen | Awards tab: documents; Verify a document | Award documents | Documents are not rendered or signed |
+| [BP-06-005](06-progression-awards-and-graduation/bp-06-005-determine-graduation-eligibility-and-attendance.md) Determine graduation eligibility and attendance | On screen | Graduation cycles and cycle page | Graduation | — |
+| [BP-06-006](06-progression-awards-and-graduation/bp-06-006-record-successful-pgr-completion.md) Record successful PGR completion | On screen | PGR completion | Enrolment page | — |
 
 ## Domain crosswalk
 

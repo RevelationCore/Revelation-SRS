@@ -4,7 +4,9 @@
 > Evidence date: 2026-08-15
 > Application maturity: Alpha — analysis and implementation convergence
 
-[Product documentation](README.md) · [Business process inventory](../business-processes/process-inventory.md) · [Target data-model delta](../architecture/business-process-data-model-delta.md)
+[Product documentation](README.md) · [Business process inventory](../business-processes/process-inventory.md) · [Target data-model delta](../architecture/business-process-data-model-delta.md) · [Per-process coverage](../business-processes/traceability-matrix.md#implementation-coverage)
+
+This matrix rates capabilities. How far each of the 49 academic-journey processes can be carried out in the app is rated, with evidence, in the per-process coverage table (checked 2026-11-16: 37 on screen, 7 partly built, 2 API only, 3 not built).
 
 ## Status definitions
 

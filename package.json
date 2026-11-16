@@ -38,6 +38,7 @@
     "check:p0-business-process-requirements": "node scripts/check-p0-business-process-requirements.mjs",
     "check:business-process-data-model": "node scripts/check-business-process-data-model.mjs",
     "check:current-capabilities": "node scripts/check-current-capabilities.mjs",
+    "check:process-coverage": "node scripts/check-process-coverage.mjs",
     "check:journey-metadata": "node scripts/select-journeys.mjs validate",
     "evidence:generate": "node scripts/generate-evidence-report.mjs",
     "check:doc-links": "node scripts/check-doc-links.mjs",

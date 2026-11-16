@@ -29,7 +29,18 @@ Four of these ratings were inferred rather than checked screen by screen (BP-01-
 
 Every item is finished only when it has a service and API (where new), a screen, automated tests, golden demo data that can drive it, a run in the real app, and an updated row in [current capabilities](current-capabilities.md). The [migration squash rule](../architecture/business-process-data-migration-plan.md#re-squashing) applies: the core set is at its 10-file limit, so the first new migration in any phase starts with a squash.
 
-## Phase 0 — Confirm the baseline (small)
+## Phase 0 — Confirm the baseline (small) — done 2026-11-16
+
+**Status: delivered.** Every process now has a checked rating in the [implementation coverage table](../business-processes/traceability-matrix.md#implementation-coverage), with the screen, portal and gap behind it; `npm run check:process-coverage` (run in CI) keeps the table complete and its totals true. Checking corrected the baseline: after Phase 1, **37** processes are usable on screen, not the 41 Phase 1 claimed.
+
+| Inferred rating | Checked rating | Why |
+|---|---|---|
+| BP-01-007 convert an accepted applicant: on screen | Partly built | Completing the admissions hand-off task changes nothing; staff create the enrolment by hand |
+| BP-02-001 prepare initial registration: partly built | Partly built | Confirmed: hand-off task and manual enrolment creation, no registration case |
+| BP-03-002 route and rule assignment: partly built | API only | The curriculum binding is automatic or set through the API; routes, rule sets and diet groups have no screen |
+| BP-05-001 assessment structures: on screen | API only | Components are listed and their durations edited, but patterns and components are created through the API |
+
+Two ratings not in doubt also changed on inspection: BP-02-002 is partly built (right to study is not recorded as a separate outcome), and BP-03-006 is partly built (registrations reach the VLE, but nothing provisions timetabling). The phases below now cover each.
 
 | Item | Outcome |
 |---|---|
@@ -76,10 +87,12 @@ All eleven processes already pass integration tests through the API.
 | BP-02-011 failure to register | Model the non-registration decision: after a re-registration period closes, unconfirmed students go to a worklist. Each is chased, then resolved by a late confirmation or an institution-initiated withdrawal through a status case |
 | BP-02-001 preparing initial registration | Registration invitations from a confirmed admissions hand-off; finish the partial path |
 | BP-03-002 route and rule assignment | A screen for the curriculum binding (route, rule set, diet groups), which today is automatic or API only |
+| BP-05-001 assessment structures | Screens to create assessment patterns and components, which today are created only through the API |
+| BP-01-007 applicant conversion | Completing the admissions hand-off creates the enrolment from the confirmed offer's programme, intake and mode, instead of by hand |
 | BP-06-002 reassessment at ratification | Create reassessment plans automatically when a resit or repeat decision is ratified; staff then adjust them, instead of creating every plan by hand |
 | BP-01-006 Clearing | A Clearing permission model and route through the channel-neutral application, reusing the applications screens |
 
-**Exit:** all 49 processes exist, and at least 46 are usable on screen.
+**Exit:** all 49 processes exist, and at least 44 are usable on screen.
 
 **Decisions needed:**
 - Re-registration policy: does an outstanding fee debt block confirmation, and who can confirm on a student's behalf?
@@ -91,6 +104,7 @@ All eleven processes already pass integration tests through the API.
 |---|---|
 | UCAS outbound (BP-01-003/004) | Publish offer decisions and changes to UCAS. Map results received from UCAS to offer conditions as evidence, which staff then confirm |
 | CAS (BP-01-005) | Bridge the CAS case to the UKVI page's `ukvi_cas_request`, so there is one CAS record |
+| Right to study (BP-02-002) | Record right to study as its own outcome (who checked, how, and when it expires), separate from identity verification |
 | Financial registration (BP-02-004) | Fee status and liabilities as a registration step, using the SLC data already held |
 | Access and entitlements (BP-02-005) | Connect status-case and registration outcomes to the delivery flows, so a leaver closure itself ends access |
 | Award documents (BP-06-004) | Render certificates, transcripts and the HEAR; sign them; offer verification to third parties without an account |
@@ -107,7 +121,7 @@ All eleven processes already pass integration tests through the API.
 
 | Gap | Work |
 |---|---|
-| Timetable clashes | A timetable-slot entity, fed from the timetabling system, and the existing clash policy enforced against it |
+| Timetable clashes and provisioning (BP-03-006) | A timetable-slot entity, fed from the timetabling system, and the existing clash policy enforced against it; send confirmed registrations to timetabling as they already go to the VLE |
 | Joint-honours balance and repeat-module requirements | Consume the existing rule types in selection validation |
 | Oversubscribed modules | Ranked preference allocation across students, replacing all-or-nothing capacity per module |
 | Selection windows | Enforce open and close dates at proposal submission |
@@ -133,9 +147,9 @@ All eleven processes already pass integration tests through the API.
 
 | Phase | Size | Processes usable on screen at exit | Main dependency |
 |---|---|---|---|
-| 0 Confirm the baseline | Small | 30 (checked) | None |
-| 1 Screens over existing APIs — **done** | Medium | 41 | Decided (D-1 to D-7) |
-| 2 Missing processes | Large | 46+ of 49, all 49 built | Re-registration and Clearing policy |
+| 0 Confirm the baseline — **done** | Small | 37 (checked, after Phase 1) | None |
+| 1 Screens over existing APIs — **done** | Medium | 37 (41 claimed before checking) | Decided (D-1 to D-7) |
+| 2 Missing processes | Large | 44+ of 49, all 49 built | Re-registration and Clearing policy |
 | 3 Integrations and outputs | Large | 49 | UCAS access; signing approach |
 | 4 Rule depth | Medium | 49, with full selection rules | Timetabling source |
 | 5 Audiences and evidence | Medium | 49, at implemented baseline | Independent and SME review |
