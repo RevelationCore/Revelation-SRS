@@ -401,7 +401,7 @@ describe('Stage 6 — UKVI consumer contract', () => {
   ];
 
   const REQUIRED_FILE_SCHEMAS = [
-    'schemas/file-contracts/ukvi/cas-request-outbound.v1.json',
+    'schemas/file-contracts/ukvi/cas-request-outbound.v2.json',
     'schemas/file-contracts/ukvi/attendance-report-outbound.v1.json',
     'schemas/file-contracts/ukvi/visa-update-inbound.v1.json',
   ];
@@ -432,9 +432,9 @@ describe('Stage 6 — UKVI consumer contract', () => {
     expect(missing, 'UKVI file schemas missing').toEqual([]);
   });
 
-  it('UKVI CAS request generate endpoint exists as workflow', () => {
-    expect(pathExists(openApiSpec, 'post', '/api/v1/regulatory/ukvi/cas-requests/generate')).toBe(true);
-    expect(opClass(openApiSpec, 'post', '/api/v1/regulatory/ukvi/cas-requests/generate')).toBe('workflow');
+  it('CAS SMS export endpoint exists as workflow (D-16)', () => {
+    expect(pathExists(openApiSpec, 'post', '/api/v1/regulatory/cas-cases/sms-export')).toBe(true);
+    expect(opClass(openApiSpec, 'post', '/api/v1/regulatory/cas-cases/sms-export')).toBe('workflow');
   });
 
   it('UKVI attendance report generate endpoint exists as workflow', () => {

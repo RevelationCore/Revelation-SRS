@@ -7,7 +7,6 @@ import {
   statusCaseAssessments,
   statusCaseConditions,
   studentStatusCases,
-  ukviCasRequests,
   ukviVisaStatuses,
   type Db,
   type StatusCaseAssessment,
@@ -16,7 +15,7 @@ import {
   withTenantContext,
 } from '@revelation-srs/db';
 import { ConflictError, NotFoundError, ValidationError } from '@revelation-srs/domain';
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, isNull, ne } from 'drizzle-orm';
 
 import type { BusinessCaseService } from '../cases/business-case-service.js';
 import { clockNow } from '../clock.js';
@@ -154,11 +153,11 @@ export async function isSponsoredEnrolment(db: Db, tenantId: string, enrolmentId
     const [visa] = await tx.select({ id: ukviVisaStatuses.id }).from(ukviVisaStatuses)
       .where(and(eq(ukviVisaStatuses.tenantId, t), eq(ukviVisaStatuses.enrolmentId, id))).limit(1);
     if (visa) return true;
-    const [cas] = await tx.select({ id: casCases.id }).from(casCases).where(and(eq(casCases.tenantId, t), eq(casCases.enrolmentId, id))).limit(1);
-    if (cas) return true;
-    const [request] = await tx.select({ id: ukviCasRequests.id }).from(ukviCasRequests)
-      .where(and(eq(ukviCasRequests.tenantId, t), eq(ukviCasRequests.enrolmentId, id))).limit(1);
-    return Boolean(request);
+    // A CAS case is the one CAS record (D-16); a withdrawn one never sponsored the student.
+    const [cas] = await tx.select({ id: casCases.id }).from(casCases).where(and(
+      eq(casCases.tenantId, t), eq(casCases.enrolmentId, id), isNull(casCases.recordedUntil), ne(casCases.statusCode, 'withdrawn'),
+    )).limit(1);
+    return Boolean(cas);
   });
 }
 

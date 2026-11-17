@@ -35103,166 +35103,6 @@
         }
       }
     },
-    "/api/v1/regulatory/ukvi/cas-requests/generate": {
-      "post": {
-        "operationId": "createRegulatoryUkviCasRequestsGenerate",
-        "tags": [
-          "regulatory"
-        ],
-        "x-publication-class": "workflow",
-        "responses": {
-          "200": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "processedCount",
-                    "casRequests"
-                  ],
-                  "properties": {
-                    "processedCount": {
-                      "type": "number"
-                    },
-                    "casRequests": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "required": [
-                          "casRequestId",
-                          "enrolmentId",
-                          "personData"
-                        ],
-                        "properties": {
-                          "casRequestId": {
-                            "type": "string"
-                          },
-                          "enrolmentId": {
-                            "type": "string"
-                          },
-                          "personData": {
-                            "type": "object",
-                            "required": [
-                              "personId",
-                              "legalFirstName",
-                              "legalFamilyName",
-                              "dateOfBirth",
-                              "nationalityCode",
-                              "programmeId",
-                              "programmeCode",
-                              "programmeTitle",
-                              "modeOfStudyCode",
-                              "academicYearOfEntry",
-                              "startDate",
-                              "expectedEndDate"
-                            ],
-                            "properties": {
-                              "personId": {
-                                "type": "string"
-                              },
-                              "legalFirstName": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
-                                ]
-                              },
-                              "legalFamilyName": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
-                                ]
-                              },
-                              "dateOfBirth": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
-                                ]
-                              },
-                              "nationalityCode": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
-                                ]
-                              },
-                              "programmeId": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
-                                ]
-                              },
-                              "programmeCode": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
-                                ]
-                              },
-                              "programmeTitle": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
-                                ]
-                              },
-                              "modeOfStudyCode": {
-                                "type": "string"
-                              },
-                              "academicYearOfEntry": {
-                                "type": "string"
-                              },
-                              "startDate": {
-                                "type": "string"
-                              },
-                              "expectedEndDate": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
-                                ]
-                              }
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/regulatory/ukvi/engagement-evidence-snapshots": {
       "post": {
         "operationId": "createRegulatoryUkviEngagementEvidenceSnapshots",
@@ -36015,210 +35855,6 @@
         }
       }
     },
-    "/api/v1/regulatory/ukvi/cas-requests": {
-      "get": {
-        "operationId": "getRegulatoryUkviCasRequests",
-        "tags": [
-          "regulatory"
-        ],
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "in": "query",
-            "name": "statusCode",
-            "required": false
-          }
-        ],
-        "x-publication-class": "reporting",
-        "responses": {
-          "200": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "required": [
-                      "casRequestId",
-                      "enrolmentId",
-                      "casReference",
-                      "statusCode",
-                      "requestedAt"
-                    ],
-                    "properties": {
-                      "casRequestId": {
-                        "type": "string"
-                      },
-                      "enrolmentId": {
-                        "type": "string"
-                      },
-                      "casReference": {
-                        "anyOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "null"
-                          }
-                        ]
-                      },
-                      "statusCode": {
-                        "type": "string"
-                      },
-                      "requestedAt": {
-                        "type": "string"
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/regulatory/ukvi/cas-requests/{casRequestId}/assignment": {
-      "post": {
-        "operationId": "createRegulatoryUkviCasRequestsByCasRequestIdAssignment",
-        "tags": [
-          "regulatory"
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "required": [
-                  "casReference"
-                ],
-                "properties": {
-                  "casReference": {
-                    "minLength": 1,
-                    "type": "string"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "in": "path",
-            "name": "casRequestId",
-            "required": true
-          }
-        ],
-        "x-publication-class": "reporting",
-        "responses": {
-          "200": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "casRequestId",
-                    "enrolmentId",
-                    "casReference",
-                    "statusCode",
-                    "requestedAt"
-                  ],
-                  "properties": {
-                    "casRequestId": {
-                      "type": "string"
-                    },
-                    "enrolmentId": {
-                      "type": "string"
-                    },
-                    "casReference": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    },
-                    "statusCode": {
-                      "type": "string"
-                    },
-                    "requestedAt": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "type",
-                    "title",
-                    "status"
-                  ],
-                  "properties": {
-                    "type": {
-                      "type": "string"
-                    },
-                    "title": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "number"
-                    },
-                    "detail": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "type",
-                    "title",
-                    "status"
-                  ],
-                  "properties": {
-                    "type": {
-                      "type": "string"
-                    },
-                    "title": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "number"
-                    },
-                    "detail": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/regulatory/ukvi/attendance-reports/generate": {
       "post": {
         "operationId": "createRegulatoryUkviAttendanceReportsGenerate",
@@ -36758,340 +36394,6 @@
             "description": "Default Response"
           },
           "404": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "type",
-                    "title",
-                    "status"
-                  ],
-                  "properties": {
-                    "type": {
-                      "type": "string"
-                    },
-                    "title": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "number"
-                    },
-                    "detail": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/regulatory/ukvi/cas-requests/submission-requests": {
-      "post": {
-        "operationId": "createRegulatoryUkviCasRequestsSubmissionRequests",
-        "tags": [
-          "regulatory"
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "reason": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "x-publication-class": "reporting",
-        "responses": {
-          "202": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "workflowInstanceId",
-                    "workflowTaskId",
-                    "statusCode",
-                    "recordCount",
-                    "context",
-                    "startedAt"
-                  ],
-                  "properties": {
-                    "workflowInstanceId": {
-                      "type": "string"
-                    },
-                    "workflowTaskId": {
-                      "type": "string"
-                    },
-                    "statusCode": {
-                      "type": "string"
-                    },
-                    "recordCount": {
-                      "type": "number"
-                    },
-                    "context": {
-                      "type": "object",
-                      "additionalProperties": {}
-                    },
-                    "startedAt": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "type",
-                    "title",
-                    "status"
-                  ],
-                  "properties": {
-                    "type": {
-                      "type": "string"
-                    },
-                    "title": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "number"
-                    },
-                    "detail": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "get": {
-        "operationId": "getRegulatoryUkviCasRequestsSubmissionRequests",
-        "tags": [
-          "regulatory"
-        ],
-        "x-publication-class": "reporting",
-        "responses": {
-          "200": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "required": [
-                      "workflowInstanceId",
-                      "workflowTaskId",
-                      "statusCode",
-                      "recordCount",
-                      "context",
-                      "startedAt"
-                    ],
-                    "properties": {
-                      "workflowInstanceId": {
-                        "type": "string"
-                      },
-                      "workflowTaskId": {
-                        "type": "string"
-                      },
-                      "statusCode": {
-                        "type": "string"
-                      },
-                      "recordCount": {
-                        "type": "number"
-                      },
-                      "context": {
-                        "type": "object",
-                        "additionalProperties": {}
-                      },
-                      "startedAt": {
-                        "type": "string"
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/regulatory/ukvi/cas-requests/submission-requests/{workflowInstanceId}/decision": {
-      "post": {
-        "operationId": "createRegulatoryUkviCasRequestsSubmissionRequestsByWorkflowInstanceIdDecision",
-        "tags": [
-          "regulatory"
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "required": [
-                  "decisionCode"
-                ],
-                "properties": {
-                  "decisionCode": {
-                    "anyOf": [
-                      {
-                        "type": "string",
-                        "enum": [
-                          "approved"
-                        ]
-                      },
-                      {
-                        "type": "string",
-                        "enum": [
-                          "rejected"
-                        ]
-                      }
-                    ]
-                  },
-                  "reason": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "in": "path",
-            "name": "workflowInstanceId",
-            "required": true
-          }
-        ],
-        "x-publication-class": "reporting",
-        "responses": {
-          "200": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "processedCount"
-                  ],
-                  "properties": {
-                    "processedCount": {
-                      "type": "number"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "202": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "status",
-                    "commandId",
-                    "statusUrl"
-                  ],
-                  "properties": {
-                    "status": {
-                      "type": "string",
-                      "enum": [
-                        "pending"
-                      ]
-                    },
-                    "commandId": {
-                      "type": "string"
-                    },
-                    "statusUrl": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "type",
-                    "title",
-                    "status"
-                  ],
-                  "properties": {
-                    "type": {
-                      "type": "string"
-                    },
-                    "title": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "number"
-                    },
-                    "detail": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "type",
-                    "title",
-                    "status"
-                  ],
-                  "properties": {
-                    "type": {
-                      "type": "string"
-                    },
-                    "title": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "number"
-                    },
-                    "detail": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "422": {
             "description": "Default Response",
             "content": {
               "application/json": {
@@ -37678,27 +36980,230 @@
         }
       }
     },
+    "/api/v1/regulatory/cas-cases": {
+      "get": {
+        "operationId": "getRegulatoryCasCases",
+        "tags": [
+          "regulatory"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "statusCode",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "boolean"
+            },
+            "in": "query",
+            "name": "open",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "applicationId",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "enrolmentId",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "personId",
+            "required": false
+          }
+        ],
+        "x-publication-class": "reporting",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/regulatory/cas-cases/{casCaseId}": {
+      "get": {
+        "operationId": "getRegulatoryCasCasesByCasCaseId",
+        "tags": [
+          "regulatory"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "casCaseId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "reporting",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/applications/{applicationId}/cas-cases": {
+      "post": {
+        "operationId": "createApplicationsByApplicationIdCasCases",
+        "tags": [
+          "admissions"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "applicationId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/enrolments/{enrolmentId}/regulatory/cas-cases": {
       "post": {
         "operationId": "createEnrolmentsByEnrolmentIdRegulatoryCasCases",
         "tags": [
           "regulatory"
         ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "casReference": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
-          }
-        },
         "parameters": [
           {
             "schema": {
@@ -37717,11 +37222,33 @@
               "application/json": {
                 "schema": {
                   "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
                   "required": [
-                    "casCaseId"
+                    "type",
+                    "title",
+                    "status"
                   ],
                   "properties": {
-                    "casCaseId": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
                       "type": "string"
                     }
                   }
@@ -37729,7 +37256,7 @@
               }
             }
           },
-          "422": {
+          "409": {
             "description": "Default Response",
             "content": {
               "application/json": {
@@ -37785,67 +37312,7 @@
                   "type": "array",
                   "items": {
                     "type": "object",
-                    "required": [
-                      "casCaseId",
-                      "enrolmentId",
-                      "casReference",
-                      "statusCode",
-                      "actorId",
-                      "validFrom",
-                      "validTo",
-                      "recordedAt",
-                      "recordedUntil"
-                    ],
-                    "properties": {
-                      "casCaseId": {
-                        "type": "string"
-                      },
-                      "enrolmentId": {
-                        "type": "string"
-                      },
-                      "casReference": {
-                        "anyOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "null"
-                          }
-                        ]
-                      },
-                      "statusCode": {
-                        "type": "string"
-                      },
-                      "actorId": {
-                        "type": "string"
-                      },
-                      "validFrom": {
-                        "type": "string"
-                      },
-                      "validTo": {
-                        "anyOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "null"
-                          }
-                        ]
-                      },
-                      "recordedAt": {
-                        "type": "string"
-                      },
-                      "recordedUntil": {
-                        "anyOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "null"
-                          }
-                        ]
-                      }
-                    }
+                    "additionalProperties": {}
                   }
                 }
               }
@@ -37873,6 +37340,7 @@
                 ],
                 "properties": {
                   "guidanceVersion": {
+                    "minLength": 1,
                     "type": "string"
                   },
                   "checkTypeCode": {
@@ -37947,43 +37415,74 @@
                 }
               }
             }
-          }
-        }
-      }
-    },
-    "/api/v1/regulatory/cas-cases/{casCaseId}/assignment-versions": {
-      "post": {
-        "operationId": "createRegulatoryCasCasesByCasCaseIdAssignmentVersions",
-        "tags": [
-          "regulatory"
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "required": [
-                  "assignedPayloadHash"
-                ],
-                "properties": {
-                  "assignedPayloadHash": {
-                    "type": "string"
-                  },
-                  "casNumber": {
-                    "type": "string"
-                  },
-                  "smsRequestSentAt": {
-                    "type": "string"
-                  },
-                  "smsReceiptRef": {
-                    "type": "string"
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
                   }
                 }
               }
             }
           }
-        },
+        }
+      }
+    },
+    "/api/v1/regulatory/cas-cases/{casCaseId}/preparation": {
+      "post": {
+        "operationId": "createRegulatoryCasCasesByCasCaseIdPreparation",
+        "tags": [
+          "regulatory"
+        ],
         "parameters": [
           {
             "schema": {
@@ -37996,20 +37495,13 @@
         ],
         "x-publication-class": "workflow",
         "responses": {
-          "201": {
+          "200": {
             "description": "Default Response",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": [
-                    "assignmentId"
-                  ],
-                  "properties": {
-                    "assignmentId": {
-                      "type": "string"
-                    }
-                  }
+                  "additionalProperties": {}
                 }
               }
             }
@@ -38039,6 +37531,584 @@
                       "type": "string"
                     }
                   }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/regulatory/cas-cases/{casCaseId}/approval": {
+      "post": {
+        "operationId": "createRegulatoryCasCasesByCasCaseIdApproval",
+        "tags": [
+          "regulatory"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "casCaseId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/regulatory/cas-cases/{casCaseId}/cas-number": {
+      "post": {
+        "operationId": "createRegulatoryCasCasesByCasCaseIdCasNumber",
+        "tags": [
+          "regulatory"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "casNumber"
+                ],
+                "properties": {
+                  "casNumber": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "smsReceiptRef": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "casCaseId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/regulatory/cas-cases/{casCaseId}/correction": {
+      "post": {
+        "operationId": "createRegulatoryCasCasesByCasCaseIdCorrection",
+        "tags": [
+          "regulatory"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "casCaseId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/regulatory/cas-cases/{casCaseId}/withdrawal": {
+      "post": {
+        "operationId": "createRegulatoryCasCasesByCasCaseIdWithdrawal",
+        "tags": [
+          "regulatory"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "casCaseId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/regulatory/cas-cases/sms-export": {
+      "post": {
+        "operationId": "createRegulatoryCasCasesSmsExport",
+        "tags": [
+          "regulatory"
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
                 }
               }
             }

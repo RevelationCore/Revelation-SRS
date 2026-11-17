@@ -188,30 +188,25 @@ describe('Phase 6 event consumers', () => {
   });
 
   it('publishes UKVI regulatory events with required payload fields', async () => {
-    const fixture = await createEnrolment('Ukvi', 'Event', '2027-28', { ukviCasRequired: true });
-
-    const generated = await ctx.app.inject({
-      method: 'POST',
-      url: '/api/v1/regulatory/ukvi/cas-requests/generate',
-      headers: { authorization: `Bearer ${jwt}` },
-    });
-    expect(generated.statusCode).toBe(200);
-    const casRequestId = generated
-      .json<{ casRequests: Array<{ casRequestId: string; enrolmentId: string }> }>()
-      .casRequests.find((request) => request.enrolmentId === fixture.enrolmentId)!.casRequestId;
+    const fixture = await createEnrolment('Ukvi', 'Event', '2027-28');
+    // The CAS case flow (D-16) publishes the CAS events once the case has an enrolment.
+    const officer = await ctx.makeJwt({ sub: 'evt-officer-1', roles: ['regulatory-officer'] });
+    const approver = await ctx.makeJwt({ sub: 'evt-officer-2', roles: ['regulatory-officer'] });
+    const post = (url: string, as: string, payload?: Record<string, unknown>) =>
+      ctx.app.inject({ method: 'POST', url: `/api/v1${url}`, headers: { authorization: `Bearer ${as}` }, ...(payload ? { payload } : {}) });
+    const casCaseId = (await post(`/enrolments/${fixture.enrolmentId}/regulatory/cas-cases`, officer)).json<{ casCaseId: string }>().casCaseId;
+    await post(`/regulatory/cas-cases/${casCaseId}/eligibility-checks`, officer, { guidanceVersion: '10/2026', checkTypeCode: 'genuine-student', resultCode: 'pass' });
+    await post(`/regulatory/cas-cases/${casCaseId}/preparation`, officer);
+    await post(`/regulatory/cas-cases/${casCaseId}/approval`, approver);
+    expect((await post('/regulatory/cas-cases/sms-export', officer)).statusCode).toBe(200);
     const requested = expectEvent('srs.regulatory.ukvi-cas-requested', 'sensitive');
-    expect(isUuid(requested['casRequestId'])).toBe(true);
+    expect(requested['casRequestId']).toBe(casCaseId);
     expect(isUuid(requested['enrolmentId'])).toBe(true);
 
-    const assignment = await ctx.app.inject({
-      method: 'POST',
-      url: `/api/v1/regulatory/ukvi/cas-requests/${casRequestId}/assignment`,
-      headers: { authorization: `Bearer ${jwt}` },
-      payload: { casReference: 'CAS-EVT6-001' },
-    });
+    const assignment = await post(`/regulatory/cas-cases/${casCaseId}/cas-number`, officer, { casNumber: 'CASEVT6000001X' });
     expect(assignment.statusCode).toBe(200);
     const assigned = expectEvent('srs.regulatory.ukvi-cas-assigned', 'sensitive');
-    expect(assigned['casReference']).toBe('CAS-EVT6-001');
+    expect(assigned['casReference']).toBe('CASEVT6000001X');
 
     // Direct attendance-report generation is deliberately retired in favour
     // of the engagement evidence-snapshot + human sponsor decision +
@@ -234,14 +229,14 @@ describe('Phase 6 event consumers', () => {
       url: '/api/v1/regulatory/ukvi/visa-updates',
       headers: { authorization: `Bearer ${jwt}` },
       payload: {
-        casReference: 'CAS-EVT6-001',
+        casReference: 'CASEVT6000001X',
         statusCode: 'curtailed',
         effectiveDate: '2028-02-01',
       },
     });
     expect(visa.statusCode).toBe(201);
     const visaEvent = expectEvent('srs.regulatory.ukvi-visa-status-updated', 'sensitive');
-    expect(visaEvent['casReference']).toBe('CAS-EVT6-001');
+    expect(visaEvent['casReference']).toBe('CASEVT6000001X');
     const alert = expectEvent('srs.regulatory.ukvi-compliance-alert-raised', 'sensitive');
     expect(isUuid(alert['enrolmentId'])).toBe(true);
     expect(alert['alertTypeCode']).toBe('visa-curtailed');

@@ -60,7 +60,6 @@ describe('Regulatory downstream trigger processing', () => {
         ucasPersonalId: 'TRIG-UCAS-001',
         fundingSourceCode: 'slc',
         slcReference: 'TRIG-SLC-001',
-        ukviCasRequired: true,
       },
     });
     expect(enrolment.statusCode).toBe(201);
@@ -73,7 +72,7 @@ describe('Regulatory downstream trigger processing', () => {
         AND enrolment_id = ${enrolmentId}
       ORDER BY trigger_type_code
     `) as Array<{ trigger_type_code: string; status_code: string; sent_at: string | Date | null }>;
-    expect(before.map((row) => row.trigger_type_code)).toEqual(['slc-confirmation', 'ucas-confirmation', 'ukvi-cas']);
+    expect(before.map((row) => row.trigger_type_code)).toEqual(['slc-confirmation', 'ucas-confirmation']); // a CAS is a CAS case, not a trigger (D-16)
     expect(before.every((row) => row.status_code === 'pending' && row.sent_at === null)).toBe(true);
 
     const ucas = await ctx.app.inject({
@@ -91,13 +90,6 @@ describe('Regulatory downstream trigger processing', () => {
     });
     expect(slc.statusCode).toBe(200);
 
-    const ukvi = await ctx.app.inject({
-      method: 'POST',
-      url: '/api/v1/regulatory/ukvi/cas-requests/generate',
-      headers: { authorization: `Bearer ${jwt}` },
-    });
-    expect(ukvi.statusCode).toBe(200);
-
     const after = await ctx.db.execute(sql`
       SELECT trigger_type_code, status_code, sent_at
       FROM enrolment_downstream_trigger
@@ -105,26 +97,24 @@ describe('Regulatory downstream trigger processing', () => {
         AND enrolment_id = ${enrolmentId}
       ORDER BY trigger_type_code
     `) as Array<{ trigger_type_code: string; status_code: string; sent_at: string | Date | null }>;
-    expect(after).toHaveLength(3);
+    expect(after).toHaveLength(2);
     expect(after.every((row) => row.status_code === 'processed' && row.sent_at !== null)).toBe(true);
 
     const exchanges = await ctx.db.execute(sql`
       SELECT exchange_type_code, idempotency_key
       FROM integration_exchange
       WHERE tenant_id = ${ctx.tenantId}
-        AND exchange_type_code IN ('ucas-confirmation', 'slc-confirmation', 'ukvi-cas-request')
+        AND exchange_type_code IN ('ucas-confirmation', 'slc-confirmation')
       ORDER BY exchange_type_code
     `) as Array<{ exchange_type_code: string; idempotency_key: string }>;
     expect(exchanges.map((row) => row.exchange_type_code)).toEqual([
       'slc-confirmation',
       'ucas-confirmation',
-      'ukvi-cas-request',
     ]);
     expect(exchanges.every((row) => row.idempotency_key.includes(':'))).toBe(true);
 
     expect(events.some((event) => event.type === 'srs.regulatory.ucas-confirmation-sent')).toBe(true);
     expect(events.some((event) => event.type === 'srs.regulatory.slc-confirmation-sent')).toBe(true);
-    expect(events.some((event) => event.type === 'srs.regulatory.ukvi-cas-requested')).toBe(true);
   });
 });
 

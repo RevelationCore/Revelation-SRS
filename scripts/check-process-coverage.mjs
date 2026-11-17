@@ -8,7 +8,8 @@ import { resolve } from 'node:path';
 const root = resolve(import.meta.dirname, '..');
 const bpDir = resolve(root, 'docs/business-processes');
 const matrix = readFileSync(resolve(bpDir, 'traceability-matrix.md'), 'utf8');
-const COVERAGE = ['On screen', 'Partly built', 'API only', 'Not built'];
+// 'On screen (simulated link)': usable on screen; the external party is reached by manual file or an in-repo simulator (Phase 3 D-14).
+const COVERAGE = ['On screen', 'On screen (simulated link)', 'Partly built', 'API only', 'Not built'];
 const errors = [];
 
 const processes = readdirSync(bpDir, { withFileTypes: true })
@@ -31,7 +32,7 @@ if (!section) {
     if (!processes.includes(row.link)) errors.push(`${row.id}: link ${row.link} does not match a process page`);
   }
   for (const value of COVERAGE) {
-    const stated = section.match(new RegExp(`^\\| ${value} \\| (\\d+) \\|$`, 'm'));
+    const stated = section.match(new RegExp(`^\\| ${value.replace(/[()]/g, '\\$&')} \\| (\\d+) \\|$`, 'm'));
     const actual = rows.filter((r) => r.coverage === value).length;
     if (!stated) errors.push(`Summary has no count for "${value}"`);
     else if (Number(stated[1]) !== actual) errors.push(`Summary says ${stated[1]} "${value}", rows say ${actual}`);

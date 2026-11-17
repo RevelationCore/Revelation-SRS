@@ -13,12 +13,13 @@ Data findings BPR-D01–BPR-D19 have a completed [logical/physical delta assessm
 
 > Checked: 2026-11-16, against the running app and the code. `npm run check:process-coverage` keeps this table complete.
 
-How far each academic-journey process (areas 01–06) can be carried out in the app. **On screen**: staff (and, where it applies, students) can do it in the admin or portal. **Partly built**: useful implementation exists but part of the process is manual or missing. **API only**: complete in the API with no screen. **Not built**: no service. The [gap-closure plan](../product/academic-journey-gap-closure-plan.md) schedules the rest.
+How far each academic-journey process (areas 01–06) can be carried out in the app. **On screen**: staff (and, where it applies, students) can do it in the admin or portal. **Partly built**: useful implementation exists but part of the process is manual or missing. **API only**: complete in the API with no screen. **Not built**: no service. **On screen (simulated link)**: usable on screen, with the external party reached by manual file or an in-repo simulator until a live link is agreed (Phase 3 D-14). The [gap-closure plan](../product/academic-journey-gap-closure-plan.md) schedules the rest.
 
 | Coverage | Processes |
 |---|---|
 | On screen | 44 |
-| Partly built | 5 |
+| On screen (simulated link) | 1 |
+| Partly built | 4 |
 | API only | 0 |
 | Not built | 0 |
 
@@ -28,7 +29,7 @@ How far each academic-journey process (areas 01–06) can be carried out in the 
 | [BP-01-002](01-recruitment-and-admissions/bp-01-002-assess-an-application.md) Assess an application | On screen | Application page: assessments, recommendation | — | Safeguarding concern blocks an offer recommendation |
 | [BP-01-003](01-recruitment-and-admissions/bp-01-003-make-and-manage-an-offer.md) Make and manage an offer | On screen | Application page: decision, offer change and withdrawal | — | Offers are not published to UCAS |
 | [BP-01-004](01-recruitment-and-admissions/bp-01-004-confirm-offer-conditions.md) Confirm offer conditions | On screen | Application page: condition evidence and decisions, confirmation | — | Results are not mapped to conditions automatically |
-| [BP-01-005](01-recruitment-and-admissions/bp-01-005-create-and-assign-a-cas.md) Create and assign a CAS | Partly built | UKVI page CAS tab (`ukvi_cas_request`) | — | `cas_case` is API only and not bridged to the UKVI CAS record |
+| [BP-01-005](01-recruitment-and-admissions/bp-01-005-create-and-assign-a-cas.md) Create and assign a CAS | On screen (simulated link) | Application page: Student visa card; UKVI page CAS tab: eligibility, preparation, approval by another officer, SMS export file, CAS number; student record CAS tab | — | One CAS record on `cas_case` (D-16); SMS is reached by manual file (D-14); conversion waits for the CAS |
 | [BP-01-006](01-recruitment-and-admissions/bp-01-006-place-an-applicant-through-clearing.md) Place an applicant through Clearing | On screen | Clearing: take a call to a verbal or unconditional offer in one step; next-day review list; Applications pages for the resulting application | — | Fast path only inside the window and for listed programmes, never with a safeguarding, conviction, fitness-to-practise or visa need (D-13); the window and programme list are set in tenant configuration, with no screen yet |
 | [BP-01-007](01-recruitment-and-admissions/bp-01-007-convert-an-accepted-applicant-to-a-prospective-student-record.md) Convert an accepted applicant to a prospective student record | On screen | Application page: Enrolment card creates the enrolment from the confirmed offer and completes the hand-off task | — | The enrolment starts in pre-registration (D-10); converting again returns the same enrolment |
 | [BP-02-001](02-registration-and-student-status/bp-02-001-prepare-initial-registration.md) Prepare a student for initial registration | On screen | Application page: Enrolment card; Registration: initial registration periods invite pre-registration students | Registration | Required declarations and in-person steps are not modelled (institution to confirm, D-10) |

@@ -126,28 +126,28 @@
       "exchanges": [
         {
           "direction": "outbound",
-          "name": "CAS request batch",
-          "endpoint": "POST /api/v1/regulatory/ukvi/cas-requests/generate",
+          "name": "CAS request file for SMS",
+          "endpoint": "POST /api/v1/regulatory/cas-cases/sms-export",
           "format": "json",
-          "transport": "https-api",
+          "transport": "manual-file",
           "dataClassification": "regulatory",
-          "schemaRef": "https://schemas.revelation-srs.io/file-contracts/ukvi/cas-request-outbound/v1.json",
-          "schemaPath": "schemas/file-contracts/ukvi/cas-request-outbound.v1.json",
-          "idempotencyKey": "casRequestId",
-          "permission": "regulatory:write"
+          "schemaRef": "https://schemas.revelation-srs.io/file-contracts/ukvi/cas-request-outbound/v2.json",
+          "schemaPath": "schemas/file-contracts/ukvi/cas-request-outbound.v2.json",
+          "idempotencyKey": "assignmentVersionId",
+          "permission": "cas:prepare"
         },
         {
           "direction": "inbound",
-          "name": "CAS assignment",
-          "endpoint": "POST /api/v1/regulatory/ukvi/cas-requests/{casRequestId}/assignment",
+          "name": "CAS number from SMS",
+          "endpoint": "POST /api/v1/regulatory/cas-cases/{casCaseId}/cas-number",
           "format": "json",
           "transport": "https-api",
           "dataClassification": "regulatory",
           "schemaPath": null,
           "schemaRef": null,
-          "notes": "Body: { casReference: string }. The CAS reference is assigned by UKVI in the SMS and recorded against the pending CAS request.",
-          "idempotencyKey": "casRequestId",
-          "permission": "regulatory:write"
+          "notes": "Body: { casNumber: string, smsReceiptRef?: string }. The CAS number SMS assigns is recorded on the assignment version that was exported (D-16).",
+          "idempotencyKey": "casCaseId",
+          "permission": "cas:prepare"
         },
         {
           "direction": "outbound",

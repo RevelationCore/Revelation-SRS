@@ -1,10 +1,10 @@
-import { and, eq, inArray, isNull } from 'drizzle-orm';
+import { and, eq, inArray, isNull, ne } from 'drizzle-orm';
 import {
   academicPeriods,
   enrolments,
   persons,
   studentEmploymentLinks,
-  ukviCasRequests,
+  casCases,
   ukviVisaStatuses,
   workLimitRules,
   type Db,
@@ -235,8 +235,8 @@ export class EmploymentService {
         .where(and(eq(enrolments.personId, personId as Uuid), eq(enrolments.tenantId, tenantId as Uuid), isNull(enrolments.recordedUntil))))
         .map((e) => e.id);
       if (ids.length === 0) return false;
-      const cas = await tx.select({ id: ukviCasRequests.id }).from(ukviCasRequests)
-        .where(and(inArray(ukviCasRequests.enrolmentId, ids), eq(ukviCasRequests.tenantId, tenantId as Uuid), isNull(ukviCasRequests.recordedUntil))).limit(1);
+      const cas = await tx.select({ id: casCases.id }).from(casCases)
+        .where(and(inArray(casCases.enrolmentId, ids), eq(casCases.tenantId, tenantId as Uuid), isNull(casCases.recordedUntil), ne(casCases.statusCode, 'withdrawn'))).limit(1);
       if (cas.length > 0) return true;
       const visa = await tx.select({ id: ukviVisaStatuses.id }).from(ukviVisaStatuses)
         .where(and(inArray(ukviVisaStatuses.enrolmentId, ids), eq(ukviVisaStatuses.tenantId, tenantId as Uuid), isNull(ukviVisaStatuses.recordedUntil))).limit(1);

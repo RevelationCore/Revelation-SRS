@@ -30,7 +30,7 @@ describe('Phase 6 OpenAPI coverage', () => {
       '/api/v1/regulatory/hesa/returns',
       '/api/v1/regulatory/slc/confirmations/generate',
       '/api/v1/regulatory/slc/notifications',
-      '/api/v1/regulatory/ukvi/cas-requests/generate',
+      '/api/v1/regulatory/cas-cases/sms-export',
       '/api/v1/regulatory/ukvi/attendance-reports/generate',
       '/api/v1/regulatory/ukvi/visa-updates',
       '/api/v1/regulatory/ofs/b3-extracts',

@@ -1,0 +1,144 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://schemas.revelation-srs.io/file-contracts/ukvi/cas-request-outbound/v2.json",
+  "title": "UkviCasRequestOutboundV2",
+  "description": "Outbound CAS data for the UKVI Sponsor Management System (SMS), produced by POST /api/v1/regulatory/cas-cases/sms-export (Phase 3 D-16). Each entry is one approved assignment version of a CAS case; its payload hash is the hash recorded on that version. The CAS number SMS assigns is recorded back with POST /api/v1/regulatory/cas-cases/{casCaseId}/cas-number. Replaces v1, which carried ukvi_cas_request rows.",
+  "type": "object",
+  "required": [
+    "contract",
+    "generatedAt",
+    "processedCount",
+    "casRequests"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "contract": {
+      "const": "ukvi/cas-request-outbound.v2"
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "processedCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "casRequests": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/CasRequestRecord"
+      }
+    }
+  },
+  "definitions": {
+    "CasRequestRecord": {
+      "type": "object",
+      "required": [
+        "casCaseId",
+        "assignmentVersionId",
+        "versionNumber",
+        "payloadHash",
+        "personData"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "casCaseId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "assignmentVersionId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "versionNumber": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "payloadHash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "personData": {
+          "$ref": "#/definitions/CasPersonData"
+        }
+      }
+    },
+    "CasPersonData": {
+      "type": "object",
+      "required": [
+        "personId"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "personId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "applicationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "enrolmentId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "legalFirstName": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "legalFamilyName": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "dateOfBirth": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date"
+        },
+        "nationalityCode": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "programmeCode": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "programmeTitle": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "modeOfStudyCode": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "intakeCode": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "startDate": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date"
+        }
+      }
+    }
+  }
+}

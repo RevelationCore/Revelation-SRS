@@ -89,7 +89,7 @@ describe('POST /api/v1/enrolments', () => {
       .json<Array<{ triggerTypeCode: string }>>()
       .map((t) => t.triggerTypeCode)
       .sort();
-    expect(triggerTypes).toEqual(['slc-confirmation', 'ucas-confirmation', 'ukvi-cas']);
+    expect(triggerTypes).toEqual(['slc-confirmation', 'ucas-confirmation']); // CAS is a CAS case (D-16)
   });
 
   it('returns 422 when required fields are missing', async () => {
@@ -350,12 +350,10 @@ describe('Enrolment domain events', () => {
     expect(events.map((e) => e.type).sort()).toEqual([
       'srs.enrolment.downstream-trigger-created',
       'srs.enrolment.downstream-trigger-created',
-      'srs.enrolment.downstream-trigger-created',
       'srs.enrolment.fee-liability-generated',
       'srs.student.enrolled',
     ]);
-    expect(events.filter((e) => e.type === 'srs.enrolment.downstream-trigger-created')).toHaveLength(3);
-    expect(events.some((e) => e.classification === 'regulatory' && e.payload['triggerTypeCode'] === 'ukvi-cas')).toBe(true);
+    expect(events.filter((e) => e.type === 'srs.enrolment.downstream-trigger-created')).toHaveLength(2);
   });
 });
 

@@ -338,7 +338,7 @@ export class EnrolmentService {
           '1.0.0',
           tenantId,
           actorId,
-          created.trigger.triggerTypeCode === 'ukvi-cas' ? 'regulatory' : 'personal',
+          'personal',
           payload,
         );
       }
@@ -559,6 +559,9 @@ export class EnrolmentService {
       ...(current.programmeId ? { programmeId: current.programmeId } : {}),
       ...(current.feeBandCode ? { feeBandCode: current.feeBandCode } : {}),
       ...(current.fundingSourceCode ? { fundingSourceCode: current.fundingSourceCode } : {}),
+      // Carried so registration sends the UCAS and SLC confirmations a direct enrolment would (Phase 3 risk 2).
+      ...(current.ucasPersonalId ? { ucasPersonalId: current.ucasPersonalId } : {}),
+      ...(current.slcReference ? { slcReference: current.slcReference } : {}),
     };
     const triggerDecisions = [
       ...(await this.triggerRules.evaluateEnrolmentStatusTransition(tenantId, { current, newStatus })),

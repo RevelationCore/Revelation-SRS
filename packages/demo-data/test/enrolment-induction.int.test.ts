@@ -8,7 +8,7 @@ import {
   personIdentities,
   persons,
   slcNotifications,
-  ukviCasRequests,
+  casCases,
   type Db,
 } from '@revelation-srs/db';
 
@@ -200,25 +200,25 @@ describe('Regulatory data', () => {
     expect(rows.length).toBeGreaterThan(0);
   });
 
-  it('has UKVI CAS requests for international students', async () => {
+  it('has CAS cases for international students', async () => {
     const rows = await db
-      .select({ id: ukviCasRequests.id })
-      .from(ukviCasRequests)
-      .where(eq(ukviCasRequests.tenantId, DEMO_TENANT_ID));
+      .select({ id: casCases.id })
+      .from(casCases)
+      .where(eq(casCases.tenantId, DEMO_TENANT_ID));
     // seq%25===0 gives 40 intl students; 25n%20 cycles {5,10,15,0} so 3/4 are active → ~30
     expect(rows.length).toBeGreaterThan(20);
     expect(rows.length).toBeLessThan(40);
   });
 
-  it('UKVI CAS references are prefixed DEMO-CAS-', async () => {
+  it('CAS numbers are prefixed DEMOCAS', async () => {
     const rows = await db
-      .select({ casReference: ukviCasRequests.casReference })
-      .from(ukviCasRequests)
-      .where(eq(ukviCasRequests.tenantId, DEMO_TENANT_ID))
+      .select({ casReference: casCases.casReference })
+      .from(casCases)
+      .where(eq(casCases.tenantId, DEMO_TENANT_ID))
       .limit(10);
     for (const r of rows) {
       if (r.casReference) {
-        expect(r.casReference).toMatch(/^DEMO-CAS-/);
+        expect(r.casReference).toMatch(/^DEMOCAS\d{7}$/);
       }
     }
   });

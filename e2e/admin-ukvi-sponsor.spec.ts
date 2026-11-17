@@ -20,7 +20,7 @@ const decision = {
 
 test.beforeEach(async ({ page }) => {
   await injectAdminAuth(page);
-  await page.route('**/api/v1/regulatory/ukvi/cas-requests', route => route.fulfill({ json: [] }));
+  await page.route('**/api/v1/regulatory/cas-cases', route => route.fulfill({ json: [] }));
   await page.route('**/api/v1/regulatory/ukvi/compliance-alerts', route => route.fulfill({ json: [] }));
   await page.route('**/api/v1/regulatory/ukvi/sponsor-decisions', route => route.fulfill({ json: [decision] }));
   await page.route('**/api/v1/regulatory/ukvi/operations/status', route => route.fulfill({

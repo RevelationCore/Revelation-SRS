@@ -137,32 +137,28 @@ describe('Regulatory contract fixtures', () => {
     const personId = await createPerson(String(expected['givenNames']), String(expected['familyName']));
     const enrolmentId = await createEnrolment(personId, {
       academicYearOfEntry: '2027-28',
-      ukviCasRequired: true,
       expectedEndDate: expected['expectedEndDate'],
     });
 
-    const generated = await ctx.app.inject({
-      method: 'POST',
-      url: '/api/v1/regulatory/ukvi/cas-requests/generate',
-      headers: { authorization: `Bearer ${jwt}` },
-    });
-    expect(generated.statusCode).toBe(200);
-    const cas = generated
-      .json<{ casRequests: Array<{ casRequestId: string; enrolmentId: string; personData: Record<string, unknown> }> }>()
-      .casRequests.find((row) => row.enrolmentId === enrolmentId)!;
+    // The CAS case flow (D-16): in-country case on the enrolment, checked, prepared, approved by another officer, exported.
+    const officer = await ctx.makeJwt({ sub: 'fixture-officer-1', roles: ['regulatory-officer'] });
+    const approver = await ctx.makeJwt({ sub: 'fixture-officer-2', roles: ['regulatory-officer'] });
+    const post = (url: string, as: string, payload?: Record<string, unknown>) =>
+      ctx.app.inject({ method: 'POST', url: `/api/v1${url}`, headers: { authorization: `Bearer ${as}` }, ...(payload ? { payload } : {}) });
+    const casCaseId = (await post(`/enrolments/${enrolmentId}/regulatory/cas-cases`, officer)).json<{ casCaseId: string }>().casCaseId;
+    await post(`/regulatory/cas-cases/${casCaseId}/eligibility-checks`, officer, { guidanceVersion: '10/2026', checkTypeCode: 'genuine-student', resultCode: 'pass' });
+    await post(`/regulatory/cas-cases/${casCaseId}/preparation`, officer);
+    await post(`/regulatory/cas-cases/${casCaseId}/approval`, approver);
+    const exported = (await post('/regulatory/cas-cases/sms-export', officer))
+      .json<{ casRequests: Array<{ casCaseId: string; personData: Record<string, unknown> }> }>();
+    const cas = exported.casRequests.find((row) => row.casCaseId === casCaseId)!;
     expect(cas.personData).toMatchObject({
       legalFirstName: expected['givenNames'],
       legalFamilyName: expected['familyName'],
       startDate: expected['startDate'],
-      expectedEndDate: expected['expectedEndDate'],
     });
 
-    const assignment = await ctx.app.inject({
-      method: 'POST',
-      url: `/api/v1/regulatory/ukvi/cas-requests/${cas.casRequestId}/assignment`,
-      headers: { authorization: `Bearer ${jwt}` },
-      payload: { casReference: visaFixture['casReference'] },
-    });
+    const assignment = await post(`/regulatory/cas-cases/${casCaseId}/cas-number`, officer, { casNumber: String(visaFixture['casReference']) });
     expect(assignment.statusCode).toBe(200);
     const visa = await ctx.app.inject({
       method: 'POST',

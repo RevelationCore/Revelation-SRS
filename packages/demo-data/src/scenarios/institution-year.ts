@@ -16,7 +16,7 @@ import {
   hesaStudentReturns,
   hesaStudentReturnRecords,
   ucasApplications,
-  ukviCasRequests,
+  casCases,
   ukviComplianceAlerts,
   integrationExchanges,
   integrationRegistrations,
@@ -915,28 +915,27 @@ async function loadRegulatory(db: Db, tenantId: string): Promise<void> {
   }
   await batchInsert(db, ucasApplications, ucasRows);
 
-  // UKVI CAS requests — cara (seq 3) plus a representative sample of other
-  // international students so RE-06 starts with visible data.
+  // CAS cases (D-16: the one CAS record) — cara (seq 3) plus a representative sample
+  // of other international students so RE-06 starts with visible data.
   const UKVI_INTL_SEQS = [3, 20, 60, 100, 140] as const;
-  const UKVI_CAS_STATUSES = ['pending', 'assigned', 'issued', 'pending', 'assigned'] as const;
-  const casRows: typeof ukviCasRequests.$inferInsert[] = UKVI_INTL_SEQS.map((seq, i) => {
-    const eId       = enrolmentId(tenantId, seq);
-    const status    = UKVI_CAS_STATUSES[i]!;
-    const hasRef    = status !== 'pending';
-    const casId     = deterministicId('s6-ukvi-cas', tenantId, String(seq));
+  const UKVI_CAS_STATUSES = ['opened', 'assigned', 'assigned', 'opened', 'assigned'] as const;
+  const casRows: typeof casCases.$inferInsert[] = UKVI_INTL_SEQS.map((seq, i) => {
+    const status = UKVI_CAS_STATUSES[i]!;
+    const casId  = deterministicId('s6-ukvi-cas', tenantId, String(seq));
     return {
       versionId:    casId,
       id:           casId,
       tenantId,
-      enrolmentId:  eId,
-      casReference: hasRef ? `DEMO-CAS-${String(seq).padStart(7, '0')}` : null,
+      personId:     mkPersonId(tenantId, seq),
+      enrolmentId:  enrolmentId(tenantId, seq),
+      casReference: status === 'assigned' ? `DEMOCAS${String(seq).padStart(7, '0')}` : null,
       statusCode:   status,
-      requestedAt:  VALID_FROM,
+      actorId:      'demo-data',
       validFrom:    VALID_FROM,
       recordedAt:   VALID_FROM,
     };
   });
-  await batchInsert(db, ukviCasRequests, casRows);
+  await batchInsert(db, casCases, casRows);
 
   // One unresolved compliance alert for cara so the Compliance Alerts tab is non-empty.
   await batchInsert(db, ukviComplianceAlerts, [{

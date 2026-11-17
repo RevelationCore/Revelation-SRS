@@ -13,6 +13,7 @@ import { ConflictError, NotFoundError, ValidationError } from '@revelation-srs/d
 import { and, asc, desc, eq, inArray } from 'drizzle-orm';
 
 import type { EnrolmentService } from '../enrolment/service.js';
+import type { CasCaseService } from '../regulatory/cas-case-service.js';
 import type { ReviewExecutionService } from '../platform-controls/review-execution-service.js';
 import type { WorkflowBridgeService } from '../platform-controls/workflow-bridge-service.js';
 import type { WorkflowTaskService } from '../platform-controls/workflow-runtime-service.js';
@@ -22,7 +23,7 @@ type Uuid = `${string}-${string}-${string}-${string}-${string}`;
 const HANDOFF_STEP_KEY = 'handoff-to-srs-enrolment';
 const FINISHED_TASK_STATUSES = ['completed', 'cancelled', 'failed'];
 
-export interface ConversionBlocker { code: 'no-confirmed-offer' | 'identity-unresolved' | 'intake-unknown'; message: string }
+export interface ConversionBlocker { code: 'no-confirmed-offer' | 'identity-unresolved' | 'intake-unknown' | 'cas-not-assigned'; message: string }
 
 export interface ConversionPreview {
   applicationId: string;
@@ -38,6 +39,8 @@ export interface ConversionPreview {
   academicYearOfEntry: string | null;
   startDate: string | null;
   feeStatusBasisCode: string | null;
+  /** From a UCAS (or UCAS-reconciled Clearing) application, so registration confirms to UCAS. */
+  ucasPersonalId: string | null;
   handoffTaskId: string | null;
   handoffTaskStatus: string | null;
   blockers: ConversionBlocker[];
@@ -74,6 +77,7 @@ export class ApplicantConversionService {
     private readonly workflowBridge: WorkflowBridgeService,
     private readonly workflowTasks: WorkflowTaskService,
     private readonly reviewExecution?: ReviewExecutionService,
+    private readonly casCases?: CasCaseService,
   ) {}
 
   async preview(tenantId: string, applicationId: string): Promise<ConversionPreview> {
@@ -100,6 +104,10 @@ export class ApplicantConversionService {
     if (!app.personId || app.identityMatchCode === 'needs-review') {
       blockers.push({ code: 'identity-unresolved', message: 'The applicant\'s identity must be resolved to one person first' });
     }
+    // CAS problems are caught before the enrolment exists (D-10, D-16).
+    if (this.casCases && (await this.casCases.openCaseForApplication(tenantId, app.id))) {
+      blockers.push({ code: 'cas-not-assigned', message: 'The applicant\'s CAS case is still open: record the CAS number (or withdraw the case) first' });
+    }
     const alternative = decision?.decisionCode === 'confirmed-alternative' && decision.alternativeProgrammeId;
     const academicYearOfEntry = offer ? academicYearForIntake(offer.intakeCode) : null;
     if (offer && !academicYearOfEntry) blockers.push({ code: 'intake-unknown', message: `The intake '${offer.intakeCode}' is not a year and month (YYYY-MM)` });
@@ -118,6 +126,7 @@ export class ApplicantConversionService {
       academicYearOfEntry,
       startDate: offer && academicYearOfEntry ? await this.#startDate(tenantId, offer.intakeCode, academicYearOfEntry) : null,
       feeStatusBasisCode: offer?.feeStatusBasisCode ?? null,
+      ucasPersonalId: ['ucas', 'clearing'].includes(app.channelCode) ? (/^\d{4}:(\d{10})$/.exec(app.sourceReference)?.[1] ?? null) : null,
       handoffTaskId: task?.id ?? null,
       handoffTaskStatus: task?.statusCode ?? null,
       blockers,
@@ -135,8 +144,10 @@ export class ApplicantConversionService {
       await this.enrolments.createEnrolment(tenantId, {
         personId: preview.personId!, modeOfStudyCode: preview.modeOfStudyCode!, academicYearOfEntry: preview.academicYearOfEntry!, startDate,
         ...(preview.programmeId ? { programmeId: preview.programmeId } : {}),
+      ...(preview.ucasPersonalId ? { ucasPersonalId: preview.ucasPersonalId } : {}),
       }, actorId, { enrolmentId: preview.enrolmentId!, initialStatus: 'pre-registration' });
     }
+    await this.casCases?.attachEnrolment(tenantId, applicationId, preview.enrolmentId!, actorId);
     if (preview.handoffTaskId && preview.handoffTaskStatus && !FINISHED_TASK_STATUSES.includes(preview.handoffTaskStatus)) {
       await this.#completeHandoff(tenantId, preview.handoffTaskId, preview.enrolmentId!, actorId);
     }

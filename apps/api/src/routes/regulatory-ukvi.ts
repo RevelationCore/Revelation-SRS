@@ -4,13 +4,9 @@ import type { FastifyInstance } from 'fastify';
 
 import type {
   UkviAttendanceReportPayload,
-  UkviCasRequestDto,
-  UkviCasSubmissionRequestDto,
   UkviComplianceAlertDto,
   UkviVisaStatusUpdateInput,
 } from '../platform/regulatory/ukvi-service.js';
-
-import { PendingDecisionSchema, pendingDecision } from './workflow-decision-response.js';
 
 const ErrorSchema = Type.Object({
   type: Type.String(),
@@ -19,28 +15,7 @@ const ErrorSchema = Type.Object({
   detail: Type.Optional(Type.String()),
 });
 
-const CasRequestSchema = Type.Object({
-  casRequestId: Type.String(),
-  enrolmentId: Type.String(),
-  casReference: Type.Union([Type.String(), Type.Null()]),
-  statusCode: Type.String(),
-  requestedAt: Type.String(),
-});
 
-const PersonDataSchema = Type.Object({
-  personId: Type.String(),
-  legalFirstName: Type.Union([Type.String(), Type.Null()]),
-  legalFamilyName: Type.Union([Type.String(), Type.Null()]),
-  dateOfBirth: Type.Union([Type.String(), Type.Null()]),
-  nationalityCode: Type.Union([Type.String(), Type.Null()]),
-  programmeId: Type.Union([Type.String(), Type.Null()]),
-  programmeCode: Type.Union([Type.String(), Type.Null()]),
-  programmeTitle: Type.Union([Type.String(), Type.Null()]),
-  modeOfStudyCode: Type.String(),
-  academicYearOfEntry: Type.String(),
-  startDate: Type.String(),
-  expectedEndDate: Type.Union([Type.String(), Type.Null()]),
-});
 
 const AttendanceStudentSchema = Type.Object({
   enrolmentId: Type.String(),
@@ -122,39 +97,6 @@ const SponsorDecisionSchema = Type.Object({
 });
 
 export function regulatoryUkviRoutes(fastify: FastifyInstance): void {
-  fastify.post(
-    '/regulatory/ukvi/cas-requests/generate',
-    {
-      schema: {
-        response: {
-          200: Type.Object({
-            processedCount: Type.Number(),
-            casRequests: Type.Array(Type.Object({
-              casRequestId: Type.String(),
-              enrolmentId: Type.String(),
-              personData: PersonDataSchema,
-            })),
-          }),
-        },
-      },
-      preHandler: [requirePermission('regulatory:write')],
-    },
-    async (request, reply) => {
-      const result = await fastify.ukviService.generateCasRequests(request.tenantId, request.user.sub);
-      await fastify.audit.record({
-        tenantId: request.tenantId,
-        entityType: 'ukvi_cas_request',
-        entityId: crypto.randomUUID(),
-        actionType: 'create',
-        actorType: 'user',
-        actorId: request.user.sub,
-        actorDisplayName: request.user.displayName,
-        correlationId: request.id,
-      });
-      await reply.send(result);
-    },
-  );
-
   fastify.post(
     '/regulatory/ukvi/engagement-evidence-snapshots',
     {
@@ -274,55 +216,6 @@ export function regulatoryUkviRoutes(fastify: FastifyInstance): void {
     },
     async (request, reply) => {
       await reply.send(await fastify.ukviService.getOperationalStatus(request.tenantId));
-    },
-  );
-
-  fastify.get(
-    '/regulatory/ukvi/cas-requests',
-    {
-      schema: {
-        querystring: Type.Object({ statusCode: Type.Optional(Type.String()) }),
-        response: { 200: Type.Array(CasRequestSchema) },
-      },
-      preHandler: [requirePermission('regulatory:read')],
-    },
-    async (request, reply) => {
-      const query = request.query as { statusCode?: string };
-      const rows = await fastify.ukviService.listCasRequests(request.tenantId, query);
-      await reply.send(rows.map(casRequestToWire));
-    },
-  );
-
-  fastify.post(
-    '/regulatory/ukvi/cas-requests/:casRequestId/assignment',
-    {
-      schema: {
-        params: Type.Object({ casRequestId: Type.String() }),
-        body: Type.Object({ casReference: Type.String({ minLength: 1 }) }),
-        response: { 200: CasRequestSchema, 404: ErrorSchema, 422: ErrorSchema },
-      },
-      preHandler: [requirePermission('regulatory:write')],
-    },
-    async (request, reply) => {
-      const { casRequestId } = request.params as { casRequestId: string };
-      const { casReference } = request.body as { casReference: string };
-      const result = await fastify.ukviService.recordCasAssignment(
-        casRequestId,
-        casReference,
-        request.tenantId,
-        request.user.sub,
-      );
-      await fastify.audit.record({
-        tenantId: request.tenantId,
-        entityType: 'ukvi_cas_request',
-        entityId: casRequestId,
-        actionType: 'update',
-        actorType: 'user',
-        actorId: request.user.sub,
-        actorDisplayName: request.user.displayName,
-        correlationId: request.id,
-      });
-      await reply.send(casRequestToWire(result));
     },
   );
 
@@ -471,114 +364,7 @@ export function regulatoryUkviRoutes(fastify: FastifyInstance): void {
   );
 
   // ── CAS request submission approval workflow (BPR-W12 rollout) ─────────────
-  const UkviCasSubmissionRequestSchema = Type.Object({
-    workflowInstanceId: Type.String(),
-    workflowTaskId:      Type.String(),
-    statusCode:          Type.String(),
-    recordCount:         Type.Number(),
-    context:             Type.Record(Type.String(), Type.Unknown()),
-    startedAt:           Type.String(),
-  });
 
-  fastify.post(
-    '/regulatory/ukvi/cas-requests/submission-requests',
-    {
-      schema: {
-        body:     Type.Object({ reason: Type.Optional(Type.String()) }),
-        response: { 202: UkviCasSubmissionRequestSchema, 422: ErrorSchema },
-      },
-      preHandler: [requirePermission('regulatory:write')],
-    },
-    async (request, reply) => {
-      const { reason } = request.body as { reason?: string };
-      const submissionRequest = await fastify.ukviService.requestCasSubmission(request.tenantId, request.user.sub, reason);
-
-      await fastify.audit.record({
-        tenantId: request.tenantId,
-        entityType: 'ukvi_cas_request_batch',
-        entityId: submissionRequest.workflowInstanceId,
-        actionType: 'create',
-        actorType: 'user',
-        actorId: request.user.sub,
-        actorDisplayName: request.user.displayName,
-        correlationId: request.id,
-      });
-
-      await reply.code(202).send(casSubmissionRequestToWire(submissionRequest));
-    },
-  );
-
-  fastify.get(
-    '/regulatory/ukvi/cas-requests/submission-requests',
-    {
-      schema: { response: { 200: Type.Array(UkviCasSubmissionRequestSchema) } },
-      preHandler: [requirePermission('regulatory:decide')],
-    },
-    async (request, reply) => {
-      const requests = await fastify.ukviService.listPendingCasSubmissionRequests(request.tenantId);
-      await reply.send(requests.map(casSubmissionRequestToWire));
-    },
-  );
-
-  fastify.post(
-    '/regulatory/ukvi/cas-requests/submission-requests/:workflowInstanceId/decision',
-    {
-      schema: {
-        params: Type.Object({ workflowInstanceId: Type.String() }),
-        body: Type.Object({
-          decisionCode: Type.Union([Type.Literal('approved'), Type.Literal('rejected')]),
-          reason:       Type.Optional(Type.String()),
-        }),
-        response: {
-          200: Type.Object({ processedCount: Type.Number() }),
-          202: PendingDecisionSchema,
-          404: ErrorSchema, 409: ErrorSchema, 422: ErrorSchema,
-        },
-      },
-      preHandler: [requirePermission('regulatory:decide')],
-    },
-    async (request, reply) => {
-      const { workflowInstanceId } = request.params as { workflowInstanceId: string };
-      const { decisionCode, reason } = request.body as { decisionCode: 'approved' | 'rejected'; reason?: string };
-
-      const result = await fastify.ukviService.decideCasSubmissionRequest(
-        request.tenantId, workflowInstanceId, decisionCode, request.user.sub, reason,
-      );
-
-      await fastify.audit.record({
-        tenantId: request.tenantId,
-        entityType: 'ukvi_cas_request_batch',
-        entityId: workflowInstanceId,
-        actionType: 'update',
-        fieldName: 'decision_code',
-        afterValue: { decisionCode },
-        actorType: 'user',
-        actorId: request.user.sub,
-        actorDisplayName: request.user.displayName,
-        correlationId: request.id,
-      });
-
-      if (result.status === 'pending') {
-        await reply.code(202).send(pendingDecision(result.commandId));
-        return;
-      }
-      await reply.send({ processedCount: result.processedCount });
-    },
-  );
-}
-
-function casSubmissionRequestToWire(submissionRequest: UkviCasSubmissionRequestDto) {
-  return {
-    ...submissionRequest,
-    startedAt: submissionRequest.startedAt.toISOString(),
-  };
-}
-
-function casRequestToWire(row: UkviCasRequestDto) {
-  return {
-    ...row,
-    requestedAt: row.requestedAt.toISOString(),
-  };
 }
 
 function alertToWire(row: UkviComplianceAlertDto) {

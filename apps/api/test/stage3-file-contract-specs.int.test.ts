@@ -90,7 +90,7 @@ describe('Stage 3 — schema file structure', () => {
     'hesa/validation-report-inbound.v1.json',
     'slc/confirmation-outbound.v1.json',
     'slc/notification-inbound.v1.json',
-    'ukvi/cas-request-outbound.v1.json',
+    'ukvi/cas-request-outbound.v2.json',
     'ukvi/attendance-report-outbound.v1.json',
     'ukvi/visa-update-inbound.v1.json',
     'exam/entry-outbound.v1.json',
@@ -394,32 +394,28 @@ describe('Stage 3 — UKVI payload validation', () => {
 
   beforeAll(async () => {
     ajv = makeAjv();
-    casRequestSchema = await loadSchema('ukvi/cas-request-outbound.v1.json');
+    casRequestSchema = await loadSchema('ukvi/cas-request-outbound.v2.json');
     attendanceSchema = await loadSchema('ukvi/attendance-report-outbound.v1.json');
     visaUpdateSchema = await loadSchema('ukvi/visa-update-inbound.v1.json');
   });
 
-  it('valid UKVI CAS request outbound passes', () => {
+  it('valid UKVI CAS request outbound passes (v2, D-16)', () => {
     const validate = ajv.compile(casRequestSchema);
     const valid = validate({
+      contract: 'ukvi/cas-request-outbound.v2',
+      generatedAt: '2027-06-01T09:00:00.000Z',
       processedCount: 1,
       casRequests: [
         {
-          casRequestId: 'a1b2c3d4-0000-0000-0000-000000000001',
-          enrolmentId: 'a1b2c3d4-0000-0000-0000-000000000002',
+          casCaseId: 'a1b2c3d4-0000-0000-0000-000000000001',
+          assignmentVersionId: 'a1b2c3d4-0000-0000-0000-000000000002',
+          versionNumber: 1,
+          payloadHash: 'a'.repeat(64),
           personData: {
             personId: 'a1b2c3d4-0000-0000-0000-000000000003',
-            legalFirstName: 'Mei',
-            legalFamilyName: 'Zhang',
-            dateOfBirth: '2001-04-15',
-            nationalityCode: 'CN',
-            programmeId: null,
-            programmeCode: 'BSC-COMP',
-            programmeTitle: 'BSc Computer Science',
-            modeOfStudyCode: 'FT',
-            academicYearOfEntry: '2025/26',
-            startDate: '2025-09-15',
-            expectedEndDate: '2028-06-30',
+            applicationId: 'a1b2c3d4-0000-0000-0000-000000000004',
+            legalFirstName: 'Mei', legalFamilyName: 'Zhang', dateOfBirth: '2001-04-15', nationalityCode: 'CN',
+            programmeCode: 'BSC-COMP', programmeTitle: 'BSc Computer Science', modeOfStudyCode: 'full-time', intakeCode: '2025-09', startDate: null,
           },
         },
       ],
@@ -430,7 +426,7 @@ describe('Stage 3 — UKVI payload validation', () => {
 
   it('UKVI CAS request missing processedCount fails', () => {
     const validate = ajv.compile(casRequestSchema);
-    const valid = validate({ casRequests: [] });
+    const valid = validate({ contract: 'ukvi/cas-request-outbound.v2', generatedAt: '2027-06-01T09:00:00.000Z', casRequests: [] });
     expect(valid).toBe(false);
   });
 

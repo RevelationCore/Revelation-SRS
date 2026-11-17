@@ -56,12 +56,10 @@ import {
 } from '../api/marks.js';
 import {
   type CasCase,
-  listCasCases,
+  listCasCaseWorklist,
   openCasCase,
-  recordEligibilityCheck,
-  recordAssignmentVersion,
-  recordSponsorReportVersion,
 } from '../api/casCases.js';
+import { CasCasePanel } from '../components/CasCasePanel.js';
 import { ApiError } from '../api/client.js';
 import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
@@ -119,8 +117,8 @@ export function StudentDetailPage() {
   const canReadAssessment = userHasAnyPermission(roles, ['mark:read:all']);
   const canReadCorrections = userHasAnyPermission(roles, ['exam-board:read']);
   const canRatify = userHasAnyPermission(roles, ['exam-board:ratify']);
-  const canReadCas = userHasAnyPermission(roles, ['regulatory:read']);
-  const canWriteCas = userHasAnyPermission(roles, ['regulatory:write']);
+  const canReadCas = userHasAnyPermission(roles, ['cas:read']);
+  const canWriteCas = userHasAnyPermission(roles, ['cas:prepare']);
   const canReadDisability = userHasAnyPermission(roles, ['disability:read']);
   const canReadAdjustments = userHasAnyPermission(roles, ['adjustment:read:all']);
   const canWriteAdjustments = userHasAnyPermission(roles, ['adjustment:write']);
@@ -1410,238 +1408,54 @@ function AmendmentSection({ caseId }: { caseId: string }) {
 }
 
 // ── CAS tab ────────────────────────────────────────────────────────────────────
-// cas_case is a separate governed aggregate from ukvi_cas_request (see
-// UkviPage's CAS tab), adding an eligibility-check/assignment-version/
-// sponsor-report-version evidence trail per enrolment.
+// The one CAS record (Phase 3 D-16): a new entrant's CAS is opened on the
+// application; an enrolled student's in-country extension is opened here.
 
 function CasTab({ personId, canWrite }: { personId: string; canWrite: boolean }) {
-  const [enrolments,     setEnrolments]     = useState<Enrolment[]>([]);
-  const [cases,          setCases]          = useState<CasCase[]>([]);
+  const [enrolments, setEnrolments] = useState<Enrolment[]>([]);
+  const [cases, setCases] = useState<CasCase[] | null>(null);
   const [selectedEnrolId, setSelectedEnrolId] = useState('');
-  const [loading,        setLoading]        = useState(true);
-  const [error,          setError]          = useState('');
-  const [showCreate,     setShowCreate]     = useState(false);
-  const [creating,       setCreating]       = useState(false);
-  const [newCasReference, setNewCasReference] = useState('');
+  const [error, setError] = useState('');
 
-  const loadCases = useCallback(async (enrolmentId: string) => {
-    if (!enrolmentId) return;
-    setLoading(true); setError('');
-    try {
-      setCases(await listCasCases(enrolmentId));
-    } catch (e) {
-      setError(e instanceof ApiError ? e.message : 'Failed to load CAS cases');
-    } finally { setLoading(false); }
-  }, []);
+  const load = useCallback(async () => {
+    setError('');
+    try { setCases(await listCasCaseWorklist({ personId })); } catch (e) { setError(e instanceof ApiError ? (e.detail ?? e.message) : 'Failed to load CAS cases'); }
+  }, [personId]);
 
   useEffect(() => {
-    (async () => {
-      try {
-        const enrols = await listStudentEnrolments(personId);
-        setEnrolments(enrols);
-        const first = enrols[0];
-        if (first) {
-          setSelectedEnrolId(first.enrolmentId);
-          await loadCases(first.enrolmentId);
-        } else { setLoading(false); }
-      } catch { setLoading(false); }
-    })();
-  }, [personId, loadCases]);
+    void load();
+    listStudentEnrolments(personId).then((enrols) => { setEnrolments(enrols); setSelectedEnrolId(enrols[0]?.enrolmentId ?? ''); }).catch(() => undefined);
+  }, [personId, load]);
 
   async function handleOpenCase(e: FormEvent) {
     e.preventDefault();
     if (!selectedEnrolId) return;
-    setCreating(true); setError('');
-    try {
-      await openCasCase(selectedEnrolId, newCasReference.trim() || undefined);
-      setShowCreate(false);
-      setNewCasReference('');
-      await loadCases(selectedEnrolId);
-    } catch (err) {
-      setError(err instanceof ApiError ? (err.detail ?? err.message) : 'Failed to open CAS case');
-    } finally { setCreating(false); }
+    setError('');
+    try { await openCasCase(selectedEnrolId); await load(); } catch (err) { setError(err instanceof ApiError ? (err.detail ?? err.message) : 'Failed to open CAS case'); }
   }
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <h2 className="text-sm font-semibold text-neutral-700">CAS cases</h2>
-        {canWrite && <Button size="sm" onClick={() => setShowCreate(s => !s)}>New CAS case</Button>}
+        {canWrite && enrolments.length > 0 && (
+          <form className="flex items-end gap-2" onSubmit={(e) => void handleOpenCase(e)}>
+            <LabelledField label="In-country CAS for enrolment" htmlFor="cas-enrol-select">
+              <Select id="cas-enrol-select" value={selectedEnrolId} onChange={(e) => setSelectedEnrolId(e.target.value)} className="w-auto">
+                {enrolments.map((en) => <option key={en.enrolmentId} value={en.enrolmentId}>{en.academicYearOfEntry} ({en.statusCode})</option>)}
+              </Select>
+            </LabelledField>
+            <Button size="sm" type="submit">Open CAS case</Button>
+          </form>
+        )}
       </div>
-
-      {showCreate && (
-        <Card className="mb-4 border-primary-200 bg-primary-50">
-          <CardBody>
-            <form onSubmit={(e) => void handleOpenCase(e)} className="space-y-3">
-              <LabelledField label="CAS reference" htmlFor="cas-ref" hint="Optional — leave blank if not yet assigned">
-                <Input id="cas-ref" value={newCasReference} onChange={(e) => setNewCasReference(e.target.value)} />
-              </LabelledField>
-              <div className="flex gap-2 justify-end">
-                <Button type="submit" disabled={creating}>{creating ? 'Opening…' : 'Open case'}</Button>
-                <Button type="button" variant="ghost" onClick={() => setShowCreate(false)}>Cancel</Button>
-              </div>
-            </form>
-          </CardBody>
-        </Card>
-      )}
-
-      {enrolments.length > 1 && (
-        <div className="mb-4 flex items-center gap-3">
-          <label className="text-sm text-neutral-500" htmlFor="cas-enrol-select">Enrolment:</label>
-          <Select
-            id="cas-enrol-select"
-            value={selectedEnrolId}
-            onChange={(e) => { setSelectedEnrolId(e.target.value); void loadCases(e.target.value); }}
-            className="w-auto"
-          >
-            {enrolments.map(e => (
-              <option key={e.enrolmentId} value={e.enrolmentId}>
-                {e.academicYearOfEntry} ({e.statusCode})
-              </option>
-            ))}
-          </Select>
-        </div>
-      )}
-
-      {error && <p className="mb-3 text-sm text-danger-600">{error}</p>}
-
-      {loading ? (
-        <div className="flex justify-center py-8"><Spinner /></div>
-      ) : cases.length === 0 ? (
-        <p className="text-sm text-neutral-600">No CAS cases on record for this enrolment.</p>
-      ) : (
-        <div className="space-y-3">
-          {cases.map(c => (
-            <Card key={c.casCaseId}>
-              <CardBody>
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="text-sm font-medium text-neutral-900">
-                      {c.casReference ?? <span className="text-neutral-400">No reference yet</span>}
-                    </p>
-                    <p className="text-xs text-neutral-500 font-mono mt-0.5">{c.casCaseId}</p>
-                  </div>
-                  <Badge value={c.statusCode} />
-                </div>
-                {canWrite && c.statusCode !== 'assigned' && (
-                  <CasCaseActions casCaseId={c.casCaseId} onChanged={() => void loadCases(selectedEnrolId)} />
-                )}
-              </CardBody>
-            </Card>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// Sequential eligibility-check → assignment-version → sponsor-report-version
-// actions for a single CAS case, mirroring the service's own status
-// progression (opened → eligibility-checked → assigned).
-function CasCaseActions({ casCaseId, onChanged }: { casCaseId: string; onChanged: () => void }) {
-  const [step, setStep] = useState<'eligibility' | 'assignment' | 'report' | 'done'>('eligibility');
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState('');
-
-  const [guidanceVersion, setGuidanceVersion] = useState('');
-  const [checkTypeCode, setCheckTypeCode]     = useState('');
-  const [resultCode, setResultCode]           = useState('');
-
-  const [assignedPayloadHash, setAssignedPayloadHash] = useState('');
-  const [casNumber, setCasNumber]                     = useState('');
-
-  const [reportPayloadRef, setReportPayloadRef] = useState('');
-
-  async function handleEligibility(e: FormEvent) {
-    e.preventDefault();
-    setSubmitting(true); setError('');
-    try {
-      await recordEligibilityCheck(casCaseId, { guidanceVersion, checkTypeCode, resultCode });
-      setStep('assignment');
-      onChanged();
-    } catch (err) {
-      setError(err instanceof ApiError ? (err.detail ?? err.message) : 'Failed to record eligibility check');
-    } finally { setSubmitting(false); }
-  }
-
-  async function handleAssignment(e: FormEvent) {
-    e.preventDefault();
-    setSubmitting(true); setError('');
-    try {
-      await recordAssignmentVersion(casCaseId, {
-        assignedPayloadHash,
-        ...(casNumber.trim() ? { casNumber: casNumber.trim() } : {}),
-      });
-      setStep('report');
-      onChanged();
-    } catch (err) {
-      setError(err instanceof ApiError ? (err.detail ?? err.message) : 'Failed to record assignment version');
-    } finally { setSubmitting(false); }
-  }
-
-  async function handleReport(e: FormEvent) {
-    e.preventDefault();
-    setSubmitting(true); setError('');
-    try {
-      await recordSponsorReportVersion(casCaseId, { reportPayloadRef });
-      setStep('done');
-    } catch (err) {
-      setError(err instanceof ApiError ? (err.detail ?? err.message) : 'Failed to record sponsor report version');
-    } finally { setSubmitting(false); }
-  }
-
-  if (step === 'done') {
-    return <p className="mt-3 text-xs text-success-700">Sponsor report version recorded.</p>;
-  }
-
-  return (
-    <div className="mt-3 border-t border-neutral-100 pt-3">
-      {error && <p className="mb-2 text-xs text-danger-600">{error}</p>}
-      {step === 'eligibility' && (
-        <form onSubmit={(e) => void handleEligibility(e)} className="grid grid-cols-3 gap-2 items-end">
-          <LabelledField label="Guidance version" htmlFor={`cas-guidance-${casCaseId}`} required>
-            <Input id={`cas-guidance-${casCaseId}`} value={guidanceVersion} onChange={(e) => setGuidanceVersion(e.target.value)} />
-          </LabelledField>
-          <LabelledField label="Check type" htmlFor={`cas-checktype-${casCaseId}`} required>
-            <Input id={`cas-checktype-${casCaseId}`} value={checkTypeCode} onChange={(e) => setCheckTypeCode(e.target.value)} placeholder="right-to-study" />
-          </LabelledField>
-          <LabelledField label="Result" htmlFor={`cas-result-${casCaseId}`} required>
-            <Input id={`cas-result-${casCaseId}`} value={resultCode} onChange={(e) => setResultCode(e.target.value)} placeholder="pass" />
-          </LabelledField>
-          <div className="col-span-3">
-            <Button type="submit" size="sm" variant="secondary" disabled={submitting}>
-              {submitting ? 'Recording…' : 'Record eligibility check'}
-            </Button>
+      {error && <p className="mb-3 text-sm text-danger-600" role="alert">{error}</p>}
+      {!cases ? <div className="flex justify-center py-8"><Spinner /></div>
+        : cases.length === 0 ? <p className="text-sm text-neutral-600">No CAS cases on record. A new entrant&apos;s CAS is opened from their application.</p> : (
+          <div className="space-y-3">
+            {cases.map((c) => <Card key={c.casCaseId}><CardBody><CasCasePanel item={c} onChanged={() => void load()} /></CardBody></Card>)}
           </div>
-        </form>
-      )}
-      {step === 'assignment' && (
-        <form onSubmit={(e) => void handleAssignment(e)} className="grid grid-cols-2 gap-2 items-end">
-          <LabelledField label="Assigned payload hash" htmlFor={`cas-hash-${casCaseId}`} required>
-            <Input id={`cas-hash-${casCaseId}`} value={assignedPayloadHash} onChange={(e) => setAssignedPayloadHash(e.target.value)} />
-          </LabelledField>
-          <LabelledField label="CAS number" htmlFor={`cas-number-${casCaseId}`} hint="Optional">
-            <Input id={`cas-number-${casCaseId}`} value={casNumber} onChange={(e) => setCasNumber(e.target.value)} />
-          </LabelledField>
-          <div className="col-span-2">
-            <Button type="submit" size="sm" variant="secondary" disabled={submitting}>
-              {submitting ? 'Recording…' : 'Record assignment version'}
-            </Button>
-          </div>
-        </form>
-      )}
-      {step === 'report' && (
-        <form onSubmit={(e) => void handleReport(e)} className="grid grid-cols-1 gap-2 items-end">
-          <LabelledField label="Sponsor report payload reference" htmlFor={`cas-report-${casCaseId}`} required>
-            <Input id={`cas-report-${casCaseId}`} value={reportPayloadRef} onChange={(e) => setReportPayloadRef(e.target.value)} />
-          </LabelledField>
-          <div>
-            <Button type="submit" size="sm" variant="secondary" disabled={submitting}>
-              {submitting ? 'Recording…' : 'Record sponsor report version'}
-            </Button>
-          </div>
-        </form>
-      )}
+        )}
     </div>
   );
 }

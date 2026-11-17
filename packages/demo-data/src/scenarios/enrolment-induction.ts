@@ -13,7 +13,7 @@ import {
   slcNotifications,
   studentAddresses,
   studentContactMethods,
-  ukviCasRequests,
+  casCases,
   type Db,
 } from '@revelation-srs/db';
 
@@ -45,7 +45,7 @@ export const manifest: ScenarioManifest = {
     enrolments:          1_000,
     feeLiabilities:        725,
     slcNotifications:      500,
-    ukviCasRequests:        30,
+    casCases:               30,
     downstreamTriggers:    750,
   },
   loadTimeBudgetMs: 120_000,
@@ -340,16 +340,19 @@ async function loadRegulatory(db: Db, tenantId: string): Promise<void> {
     const eid = enrolmentId(tenantId, seq);
 
     if (isIntl) {
-      // UKVI CAS request for international enrolled students
-      const casStatuses = ['pending', 'issued', 'issued', 'used'];
+      // CAS case (D-16) for international enrolled students
+      const casStatuses = ['opened', 'assigned', 'assigned', 'assigned'];
+      const statusCode = casStatuses[seq % casStatuses.length]!;
       ukviRows.push({
         id:           ukviCasId(tenantId, seq),
         tenantId,
         validFrom:    VALID_FROM,
         recordedAt:   VALID_FROM,
+        personId:     mkPersonId(tenantId, seq),
         enrolmentId:  eid,
-        casReference: `DEMO-CAS-${String(seq).padStart(7, '0')}`,
-        statusCode:   casStatuses[seq % casStatuses.length]!,
+        casReference: statusCode === 'assigned' ? `DEMOCAS${String(seq).padStart(7, '0')}` : null,
+        statusCode,
+        actorId:      'demo-data',
       });
     } else {
       // SLC notification for domestic students
@@ -402,6 +405,6 @@ async function loadRegulatory(db: Db, tenantId: string): Promise<void> {
   }
 
   await batchInsert(db, slcNotifications,          slcRows);
-  await batchInsert(db, ukviCasRequests,           ukviRows);
+  await batchInsert(db, casCases,                  ukviRows);
   await batchInsert(db, enrolmentDownstreamTriggers, triggerRows);
 }

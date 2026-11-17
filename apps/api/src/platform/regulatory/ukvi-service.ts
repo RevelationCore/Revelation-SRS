@@ -1,21 +1,14 @@
 import { createHash, randomUUID } from 'node:crypto';
 
-import { and, desc, eq, isNull, sql } from 'drizzle-orm';
+import { and, eq, isNull, sql } from 'drizzle-orm';
 import {
   engagementOutcomes,
-  enrolmentDownstreamTriggers,
   ukviAttendanceReports,
-  ukviCasRequests,
   ukviComplianceAlerts,
   ukviEngagementEvidenceSnapshots,
   ukviSponsorDecisions,
   ukviVisaStatuses,
-  workflowDefinitions,
-  workflowDefinitionVersions,
-  workflowInstances,
-  workflowTasks,
   type Db,
-  type UkviCasRequest,
   withTenantContext,
 } from '@revelation-srs/db';
 import {
@@ -23,8 +16,6 @@ import {
   NotFoundError,
   ValidationError,
   type RegulatoryUkviAttendanceSubmittedV1Payload,
-  type RegulatoryUkviCasAssignedV1Payload,
-  type RegulatoryUkviCasRequestedV1Payload,
   type RegulatoryUkviComplianceAlertRaisedV1Payload,
   type RegulatoryUkviVisaStatusUpdatedV1Payload,
 } from '@revelation-srs/domain';
@@ -32,19 +23,15 @@ import {
 import type { IntegrationBusPublisher } from '../integration-bus/publisher.js';
 import type { RulesEngine } from '../rules-engine/engine.js';
 import type { WorkflowBridgeService } from '../platform-controls/workflow-bridge-service.js';
-import { GovernedReview, deterministicUuid, type ReviewEffectInput } from '../platform-controls/governed-review.js';
 import type { ReviewActivitiesService } from '../platform-controls/review-activities.js';
 import type { ReviewExecutionService } from '../platform-controls/review-execution-service.js';
 import type { ValueSetService } from '../value-sets/service.js';
 import { clockNow } from '../clock.js';
 
+import type { CasCaseService } from './cas-case-service.js';
 import { RegulatoryExchangeService } from './exchange-service.js';
 
-type Uuid = `${string}-${string}-${string}-${string}-${string}`;
 
-const CAS_SUBMISSION_WORKFLOW_CODE = 'ukvi-cas-request-submission-approval';
-const CAS_SUBMISSION_DECISION_STEP_KEY = 'approve-or-reject-submission';
-const CAS_SUBMISSION_GATEWAY_KEY = 'G01';
 
 export interface UkviCasSubmissionRequestDto {
   workflowInstanceId: string;
@@ -53,23 +40,6 @@ export interface UkviCasSubmissionRequestDto {
   recordCount:         number;
   context:             Record<string, unknown>;
   startedAt:           Date;
-}
-
-interface CasSourceRow {
-  trigger_id: string;
-  enrolment_id: string;
-  person_id: string;
-  legal_first_name: string | null;
-  legal_family_name: string | null;
-  date_of_birth: string | null;
-  nationality_code: string | null;
-  programme_id: string | null;
-  programme_code: string | null;
-  programme_title: string | null;
-  mode_of_study_code: string;
-  academic_year_of_entry: string;
-  start_date: string;
-  expected_end_date: string | null;
 }
 
 interface SponsoredStudentRow {
@@ -103,24 +73,6 @@ export interface UkviPersonData {
   academicYearOfEntry: string;
   startDate: string;
   expectedEndDate: string | null;
-}
-
-export interface UkviCasRequestGenerationResult {
-  processedCount: number;
-  casRequests: Array<{
-    triggerId: string;
-    casRequestId: string;
-    enrolmentId: string;
-    personData: UkviPersonData;
-  }>;
-}
-
-export interface UkviCasRequestDto {
-  casRequestId: string;
-  enrolmentId: string;
-  casReference: string | null;
-  statusCode: string;
-  requestedAt: Date;
 }
 
 export interface UkviAttendanceStudent {
@@ -206,311 +158,16 @@ export class UkviService {
     exchanges?: RegulatoryExchangeService,
     private readonly workflowBridge?: WorkflowBridgeService,
     private readonly reviewExecution?: ReviewExecutionService,
+    private readonly casCases?: CasCaseService,
   ) {
     this.exchanges = exchanges ?? new RegulatoryExchangeService(db);
   }
 
-  #submissionReview(): GovernedReview {
-    if (!this.workflowBridge) throw new ValidationError('UKVI CAS submission workflow is not configured');
-    return new GovernedReview(this.workflowBridge, this.reviewExecution, {
-      workflowCode: CAS_SUBMISSION_WORKFLOW_CODE,
-      stepKey: CAS_SUBMISSION_DECISION_STEP_KEY,
-      gatewayKey: CAS_SUBMISSION_GATEWAY_KEY,
-      outcomeStepKey: 'request-closed',
-      assigneeRoleCode: 'regulatory-officer',
-      subjectEntityType: 'ukvi_cas_request_batch',
-      effectDecisionCodes: ['approved'],
-    });
-  }
-
-  /** On Temporal-run requests the worker submits the snapshotted batch before the review closes. */
+  /** The CAS submission approval is now the CAS case's own approval step (D-16): nothing runs on the worker. */
   registerWorkflowEffects(activities: ReviewActivitiesService): void {
-    if (!this.workflowBridge) return;
-    this.#submissionReview().register(activities, (input) => this.#applySubmissionApproval(input));
+    void activities;
   }
 
-  /**
-   * Submits exactly the snapshotted trigger set. Only triggers still pending
-   * are processed, so a retried effect sends nothing twice.
-   */
-  async #applySubmissionApproval(input: ReviewEffectInput): Promise<Record<string, unknown>> {
-    const triggerIds = input.context['triggerIds'] as string[];
-    const result = await this.generateCasRequests(input.tenantId, input.actorId, { dryRun: false, triggerIds });
-    return { processedCount: result.processedCount };
-  }
-
-  async generateCasRequests(
-    tenantId: string,
-    actorId: string,
-    opts: { dryRun?: boolean; triggerIds?: string[] } = {},
-  ): Promise<UkviCasRequestGenerationResult> {
-    const now = clockNow();
-    const rows = await this.#loadPendingCasSources(tenantId, opts.triggerIds);
-    const casRequests: UkviCasRequestGenerationResult['casRequests'] = [];
-    const seenTriggers = new Set<string>();
-
-    for (const row of rows) {
-      if (seenTriggers.has(row.trigger_id)) continue;
-      seenTriggers.add(row.trigger_id);
-
-      // Derived from the trigger, so a run interrupted between writing the CAS
-      // request and marking the trigger processed does not create a second one.
-      const casRequestId = opts.dryRun ? randomUUID() : deterministicUuid(`ukvi-cas-request:${row.trigger_id}`);
-      const personData = mapCasPersonData(row);
-
-      if (opts.dryRun) {
-        casRequests.push({ triggerId: row.trigger_id, casRequestId, enrolmentId: row.enrolment_id, personData });
-        continue;
-      }
-
-      await withTenantContext(this.db, tenantId, async (tx) => {
-        const existing = await tx.select({ id: ukviCasRequests.id }).from(ukviCasRequests)
-          .where(and(eq(ukviCasRequests.id, casRequestId), eq(ukviCasRequests.tenantId, tenantId))).limit(1);
-        if (existing[0]) return;
-        await tx.insert(ukviCasRequests).values({
-          versionId: randomUUID(),
-          id: casRequestId,
-          tenantId,
-          enrolmentId: row.enrolment_id,
-          casReference: null,
-          statusCode: 'pending',
-          requestedAt: now,
-          validFrom: now,
-          validTo: null,
-          recordedAt: now,
-          recordedUntil: null,
-        });
-      });
-
-      await this.exchanges.recordExchange(
-        tenantId,
-        'ukvi-sponsor-compliance.v1',
-        {
-          directionCode: 'outbound',
-          exchangeTypeCode: 'ukvi-cas-request',
-          idempotencyKey: `ukvi-cas:${row.trigger_id}`,
-          payloadHash: hashPayload(personData),
-          payloadSummary: {
-            enrolmentId: row.enrolment_id,
-            programmeCode: row.programme_code,
-            startDate: row.start_date,
-          },
-          sentAt: now,
-        },
-        actorId,
-      );
-
-      await withTenantContext(this.db, tenantId, async (tx) => {
-        await tx
-          .update(enrolmentDownstreamTriggers)
-          .set({ statusCode: 'processed', sentAt: now })
-          .where(
-            and(
-              eq(enrolmentDownstreamTriggers.id, row.trigger_id),
-              eq(enrolmentDownstreamTriggers.tenantId, tenantId),
-              eq(enrolmentDownstreamTriggers.statusCode, 'pending'),
-            ),
-          );
-      });
-
-      await this.#publishCasRequested(tenantId, actorId, {
-        enrolmentId: row.enrolment_id,
-        casRequestId,
-        requestedAt: now.toISOString(),
-      });
-
-      casRequests.push({ triggerId: row.trigger_id, casRequestId, enrolmentId: row.enrolment_id, personData });
-    }
-
-    return { processedCount: casRequests.length, casRequests };
-  }
-
-  // ── Submission approval workflow (BPR-W12 rollout) ──────────────────────────
-  // Snapshots the previewed trigger set into the workflow context, exactly as
-  // SlcService.requestSubmission / UcasService.requestSubmission do, so a
-  // later approval acts on precisely what was reviewed rather than a fresh
-  // (possibly diverged) query.
-
-  async requestCasSubmission(
-    tenantId: string,
-    requesterId: string,
-    reason?: string,
-  ): Promise<UkviCasSubmissionRequestDto> {
-    if (!this.workflowBridge) throw new ValidationError('UKVI CAS submission workflow is not configured');
-
-    const preview = await this.generateCasRequests(tenantId, requesterId, { dryRun: true });
-    if (preview.casRequests.length === 0) {
-      throw new ValidationError('No pending UKVI CAS requests to submit');
-    }
-    const triggerIds = preview.casRequests.map((c) => c.triggerId);
-
-    const workflowDefinitionVersionId = await this.#getActiveCasSubmissionWorkflowVersionId(tenantId);
-    const started = await this.#submissionReview().start(tenantId, {
-      workflowDefinitionVersionId,
-      startedBy: requesterId,
-      context: { triggerIds, recordCount: triggerIds.length, ...(reason ? { reason } : {}) },
-      taskPayload: { triggerIds, recordCount: triggerIds.length },
-    });
-
-    return {
-      workflowInstanceId: started.workflowInstanceId,
-      workflowTaskId: started.workflowTaskId,
-      statusCode: 'running',
-      recordCount: triggerIds.length,
-      context: { triggerIds, recordCount: triggerIds.length },
-      startedAt: clockNow(),
-    };
-  }
-
-  async listPendingCasSubmissionRequests(tenantId: string): Promise<UkviCasSubmissionRequestDto[]> {
-    const rows = await withTenantContext(this.db, tenantId, async (tx) =>
-      tx.select({ instance: workflowInstances, task: workflowTasks })
-        .from(workflowInstances)
-        .innerJoin(workflowTasks, and(
-          eq(workflowTasks.workflowInstanceId, workflowInstances.id),
-          eq(workflowTasks.stepKey, CAS_SUBMISSION_DECISION_STEP_KEY),
-        ))
-        .where(and(
-          eq(workflowInstances.tenantId, tenantId as Uuid),
-          eq(workflowInstances.workflowCode, CAS_SUBMISSION_WORKFLOW_CODE),
-          eq(workflowInstances.statusCode, 'running'),
-        ))
-        .orderBy(desc(workflowInstances.startedAt)),
-    );
-    return rows.map((r) => ({
-      workflowInstanceId: r.instance.id,
-      workflowTaskId:      r.task.id,
-      statusCode:          r.instance.statusCode,
-      recordCount:         Array.isArray(r.instance.context['triggerIds']) ? (r.instance.context['triggerIds'] as unknown[]).length : 0,
-      context:             r.instance.context,
-      startedAt:           r.instance.startedAt,
-    }));
-  }
-
-  async decideCasSubmissionRequest(
-    tenantId: string,
-    workflowInstanceId: string,
-    decisionCode: 'approved' | 'rejected',
-    actorId: string,
-    reason?: string,
-  ): Promise<{ processedCount: number; status: 'applied' } | { processedCount: 0; status: 'pending'; commandId: string }> {
-    const review = this.#submissionReview();
-
-    const instance = await this.#getCasSubmissionInstance(tenantId, workflowInstanceId);
-    if (instance.statusCode !== 'running') {
-      throw new ValidationError(`Cannot decide a submission request in status '${instance.statusCode}'`);
-    }
-
-    const task = await this.#findCasSubmissionDecisionTask(tenantId, workflowInstanceId);
-    const result = await review.decide(tenantId, {
-      instance, legacyTaskId: task?.id ?? null, decisionCode, actorId, ...(reason ? { reason } : {}),
-      effect: (input) => this.#applySubmissionApproval(input),
-    });
-    if (result.status === 'pending') return { processedCount: 0, status: 'pending', commandId: result.commandId };
-    return { processedCount: (result.result['processedCount'] as number | undefined) ?? 0, status: 'applied' };
-  }
-
-  async #getCasSubmissionInstance(tenantId: string, workflowInstanceId: string) {
-    const rows = await withTenantContext(this.db, tenantId, async (tx) =>
-      tx.select().from(workflowInstances).where(and(
-        eq(workflowInstances.id, workflowInstanceId as Uuid),
-        eq(workflowInstances.tenantId, tenantId as Uuid),
-        eq(workflowInstances.workflowCode, CAS_SUBMISSION_WORKFLOW_CODE),
-      )).limit(1),
-    );
-    if (!rows[0]) throw new NotFoundError('WorkflowInstance', workflowInstanceId);
-    return rows[0];
-  }
-
-  async #findCasSubmissionDecisionTask(tenantId: string, workflowInstanceId: string) {
-    const rows = await withTenantContext(this.db, tenantId, async (tx) =>
-      tx.select().from(workflowTasks).where(and(
-        eq(workflowTasks.workflowInstanceId, workflowInstanceId as Uuid),
-        eq(workflowTasks.tenantId, tenantId as Uuid),
-        eq(workflowTasks.stepKey, CAS_SUBMISSION_DECISION_STEP_KEY),
-      )).limit(1),
-    );
-    return rows[0] ?? null;
-  }
-
-  async #getActiveCasSubmissionWorkflowVersionId(tenantId: string): Promise<string> {
-    const rows = await withTenantContext(this.db, tenantId, async (tx) =>
-      tx.select({ versionId: workflowDefinitionVersions.id })
-        .from(workflowDefinitions)
-        .innerJoin(
-          workflowDefinitionVersions,
-          and(
-            eq(workflowDefinitionVersions.workflowDefinitionId, workflowDefinitions.id),
-            eq(workflowDefinitionVersions.versionNumber, workflowDefinitions.currentVersionNumber),
-          ),
-        )
-        .where(and(
-          eq(workflowDefinitions.definitionCode, CAS_SUBMISSION_WORKFLOW_CODE),
-          eq(workflowDefinitions.statusCode, 'active'),
-          eq(workflowDefinitionVersions.statusCode, 'active'),
-        ))
-        .limit(1),
-    );
-    if (!rows[0]) throw new NotFoundError('WorkflowDefinition', CAS_SUBMISSION_WORKFLOW_CODE);
-    return rows[0].versionId;
-  }
-
-  async recordCasAssignment(
-    casRequestId: string,
-    casReference: string,
-    tenantId: string,
-    actorId: string,
-  ): Promise<UkviCasRequestDto> {
-    if (!casReference.trim()) {
-      throw new ValidationError('CAS reference is required');
-    }
-
-    const current = await this.#getCasRequest(casRequestId, tenantId);
-    if (!current) throw new NotFoundError('UKVI CAS request', casRequestId);
-    const now = clockNow();
-
-    await withTenantContext(this.db, tenantId, async (tx) => {
-      await tx
-        .update(ukviCasRequests)
-        .set({ recordedUntil: now })
-        .where(
-          and(
-            eq(ukviCasRequests.id, casRequestId),
-            eq(ukviCasRequests.tenantId, tenantId),
-            isNull(ukviCasRequests.recordedUntil),
-          ),
-        );
-
-      await tx.insert(ukviCasRequests).values({
-        versionId: randomUUID(),
-        id: current.id,
-        tenantId,
-        enrolmentId: current.enrolmentId,
-        casReference,
-        statusCode: 'assigned',
-        requestedAt: current.requestedAt,
-        validFrom: current.validFrom,
-        validTo: current.validTo,
-        recordedAt: now,
-        recordedUntil: null,
-      });
-    });
-
-    await this.#publishCasAssigned(tenantId, actorId, {
-      enrolmentId: current.enrolmentId,
-      casRequestId,
-      casReference,
-      assignedAt: now.toISOString(),
-    });
-
-    return {
-      casRequestId,
-      enrolmentId: current.enrolmentId,
-      casReference,
-      statusCode: 'assigned',
-      requestedAt: current.requestedAt,
-    };
-  }
 
   generateAttendanceReport(
     _tenantId: string,
@@ -529,8 +186,11 @@ export class UkviService {
     actorId: string,
   ): Promise<{ visaStatusId: string; alertId: string | null }> {
     await this.#validateVisaStatus(tenantId, update.statusCode);
-    const casRequest = await this.#getCasRequestByReference(casReference, tenantId);
-    if (!casRequest) throw new NotFoundError('UKVI CAS reference', casReference);
+    // The CAS case holding this CAS number (D-16). A visa is usually granted before the
+    // applicant is converted, so the status is kept on the case until there is an enrolment.
+    const casCase = await this.casCases?.findByCasReference(tenantId, casReference);
+    if (!casCase) throw new NotFoundError('UKVI CAS reference', casReference);
+    const casRequest = { enrolmentId: casCase.enrolmentId };
 
     const now = clockNow();
     const visaStatusId = randomUUID();
@@ -542,6 +202,7 @@ export class UkviService {
         id: visaStatusId,
         tenantId,
         enrolmentId: casRequest.enrolmentId,
+        casCaseId: casCase.casCaseId,
         casReference,
         statusCode: update.statusCode,
         effectiveDate: update.effectiveDate,
@@ -572,7 +233,7 @@ export class UkviService {
     );
 
     let alertId: string | null = null;
-    if (update.statusCode === 'curtailed' || update.statusCode === 'refused') {
+    if (casRequest.enrolmentId && (update.statusCode === 'curtailed' || update.statusCode === 'refused')) {
       alertId = await this.#raiseAlertIfAbsent(
         tenantId,
         casRequest.enrolmentId,
@@ -583,12 +244,14 @@ export class UkviService {
       );
     }
 
-    await this.#publishVisaStatusUpdated(tenantId, actorId, {
-      enrolmentId: casRequest.enrolmentId,
-      casReference,
-      statusCode: update.statusCode,
-      effectiveDate: update.effectiveDate,
-    });
+    if (casRequest.enrolmentId) {
+      await this.#publishVisaStatusUpdated(tenantId, actorId, {
+        enrolmentId: casRequest.enrolmentId,
+        casReference,
+        statusCode: update.statusCode,
+        effectiveDate: update.effectiveDate,
+      });
+    }
 
     return { visaStatusId, alertId };
   }
@@ -628,23 +291,6 @@ export class UkviService {
     );
 
     if (!updated[0]) throw new NotFoundError('UKVI compliance alert', alertId);
-  }
-
-  async listCasRequests(tenantId: string, filters: { statusCode?: string } = {}): Promise<UkviCasRequestDto[]> {
-    const rows = await withTenantContext(this.db, tenantId, async (tx) =>
-      tx
-        .select()
-        .from(ukviCasRequests)
-        .where(
-          and(
-            eq(ukviCasRequests.tenantId, tenantId),
-            isNull(ukviCasRequests.recordedUntil),
-            ...(filters.statusCode ? [eq(ukviCasRequests.statusCode, filters.statusCode)] : []),
-          ),
-        ),
-    );
-
-    return rows.map(toCasDto);
   }
 
   async listComplianceAlerts(tenantId: string, unresolvedOnly = false): Promise<UkviComplianceAlertDto[]> {
@@ -913,49 +559,6 @@ export class UkviService {
     return rows[0].id;
   }
 
-  async #loadPendingCasSources(tenantId: string, triggerIds?: string[]): Promise<CasSourceRow[]> {
-    const triggerFilter = triggerIds && triggerIds.length > 0
-      ? sql`AND edt.id IN (${sql.join(triggerIds.map((id) => sql`${id}`), sql`, `)})`
-      : sql``;
-    return (await withTenantContext(this.db, tenantId, async (tx) =>
-      tx.execute(sql`
-        SELECT
-          edt.id AS trigger_id,
-          e.id AS enrolment_id,
-          e.person_id,
-          pi.legal_first_name,
-          pi.legal_family_name,
-          pi.date_of_birth,
-          pi.nationality_code,
-          e.programme_id,
-          pr.code AS programme_code,
-          pr.title AS programme_title,
-          e.mode_of_study_code,
-          e.academic_year_of_entry,
-          e.start_date,
-          e.expected_end_date
-        FROM enrolment_downstream_trigger edt
-        JOIN enrolment e
-          ON e.id = edt.enrolment_id
-         AND e.tenant_id = ${tenantId}
-         AND e.recorded_until IS NULL
-        JOIN person_identity pi
-          ON pi.person_id = e.person_id
-         AND pi.tenant_id = ${tenantId}
-         AND pi.recorded_until IS NULL
-        LEFT JOIN programme pr
-          ON pr.id = e.programme_id
-         AND pr.tenant_id = ${tenantId}
-         AND pr.recorded_until IS NULL
-        WHERE edt.tenant_id = ${tenantId}
-          AND edt.trigger_type_code = 'ukvi-cas'
-          AND edt.status_code = 'pending'
-          ${triggerFilter}
-        ORDER BY edt.created_at ASC
-      `),
-    )) as unknown as CasSourceRow[];
-  }
-
   async #loadSponsoredStudents(tenantId: string): Promise<SponsoredStudentRow[]> {
     return (await withTenantContext(this.db, tenantId, async (tx) =>
       tx.execute(sql`
@@ -964,11 +567,12 @@ export class UkviService {
             tenant_id,
             enrolment_id,
             cas_reference
-          FROM ukvi_cas_request
+          FROM cas_case
           WHERE tenant_id = ${tenantId}
             AND recorded_until IS NULL
             AND status_code = 'assigned'
-          ORDER BY tenant_id, enrolment_id, requested_at DESC
+            AND enrolment_id IS NOT NULL
+          ORDER BY tenant_id, enrolment_id, valid_from DESC
         ),
         profile_sponsored AS (
           SELECT DISTINCT tenant_id, enrolment_id
@@ -1022,42 +626,6 @@ export class UkviService {
         LIMIT 1
       `),
     )) as unknown as AttendanceReportRow[];
-
-    return rows[0] ?? null;
-  }
-
-  async #getCasRequest(casRequestId: string, tenantId: string): Promise<UkviCasRequest | null> {
-    const rows = await withTenantContext(this.db, tenantId, async (tx) =>
-      tx
-        .select()
-        .from(ukviCasRequests)
-        .where(
-          and(
-            eq(ukviCasRequests.id, casRequestId),
-            eq(ukviCasRequests.tenantId, tenantId),
-            isNull(ukviCasRequests.recordedUntil),
-          ),
-        )
-        .limit(1),
-    );
-
-    return rows[0] ?? null;
-  }
-
-  async #getCasRequestByReference(casReference: string, tenantId: string): Promise<UkviCasRequest | null> {
-    const rows = await withTenantContext(this.db, tenantId, async (tx) =>
-      tx
-        .select()
-        .from(ukviCasRequests)
-        .where(
-          and(
-            eq(ukviCasRequests.casReference, casReference),
-            eq(ukviCasRequests.tenantId, tenantId),
-            isNull(ukviCasRequests.recordedUntil),
-          ),
-        )
-        .limit(1),
-    );
 
     return rows[0] ?? null;
   }
@@ -1141,24 +709,6 @@ export class UkviService {
     }
   }
 
-  async #publishCasRequested(
-    tenantId: string,
-    actorId: string,
-    payload: RegulatoryUkviCasRequestedV1Payload,
-  ): Promise<void> {
-    if (!this.eventBus.isConnected()) return;
-    await this.eventBus.publish(EVENT_TYPES.REGULATORY_UKVI_CAS_REQUESTED, '1.0.0', tenantId, actorId, 'sensitive', payload);
-  }
-
-  async #publishCasAssigned(
-    tenantId: string,
-    actorId: string,
-    payload: RegulatoryUkviCasAssignedV1Payload,
-  ): Promise<void> {
-    if (!this.eventBus.isConnected()) return;
-    await this.eventBus.publish(EVENT_TYPES.REGULATORY_UKVI_CAS_ASSIGNED, '1.0.0', tenantId, actorId, 'sensitive', payload);
-  }
-
   async #publishAttendanceSubmitted(
     tenantId: string,
     actorId: string,
@@ -1187,32 +737,6 @@ export class UkviService {
   }
 }
 
-function mapCasPersonData(row: CasSourceRow): UkviPersonData {
-  return {
-    personId: row.person_id,
-    legalFirstName: row.legal_first_name,
-    legalFamilyName: row.legal_family_name,
-    dateOfBirth: row.date_of_birth,
-    nationalityCode: row.nationality_code,
-    programmeId: row.programme_id,
-    programmeCode: row.programme_code,
-    programmeTitle: row.programme_title,
-    modeOfStudyCode: row.mode_of_study_code,
-    academicYearOfEntry: row.academic_year_of_entry,
-    startDate: row.start_date,
-    expectedEndDate: row.expected_end_date,
-  };
-}
-
-function toCasDto(row: UkviCasRequest): UkviCasRequestDto {
-  return {
-    casRequestId: row.id,
-    enrolmentId: row.enrolmentId,
-    casReference: row.casReference,
-    statusCode: row.statusCode,
-    requestedAt: row.requestedAt,
-  };
-}
 
 function toEvidenceSnapshotDto(
   row: typeof ukviEngagementEvidenceSnapshots.$inferSelect,

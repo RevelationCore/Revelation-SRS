@@ -8,7 +8,7 @@ import {
 import type { CreateEnrolmentInput, EnrolmentDto, EnrolmentStatusCode } from '../enrolment/service.js';
 import type { FeatureFlagService } from '../platform-controls/feature-flag-service.js';
 
-export type EnrolmentDownstreamTriggerType = 'ucas-confirmation' | 'slc-confirmation' | 'ukvi-cas';
+export type EnrolmentDownstreamTriggerType = 'ucas-confirmation' | 'slc-confirmation';
 export type TriggerRuleMode = 'legacy' | 'configured';
 export type EnrolmentTriggerEventType = 'enrolment.created' | 'enrolment.status-transition';
 
@@ -42,7 +42,6 @@ const TRIGGER_MODE_FLAG_KEY = 'enrolment.downstream-triggers.configured-mode';
 const SUPPORTED_TRIGGER_TYPES = new Set<EnrolmentDownstreamTriggerType>([
   'ucas-confirmation',
   'slc-confirmation',
-  'ukvi-cas',
 ]);
 
 export class TriggerRuleEvaluator {
@@ -126,14 +125,7 @@ export function evaluateLegacyEnrolmentCreationTriggers(input: CreateEnrolmentIn
       },
     }));
   }
-  if (input.ukviCasRequired) {
-    decisions.push(triggerDecision('legacy', 'legacy.ukvi-cas-on-cas-required', 'ukvi-cas', {
-      payloadSummary: {
-        personId: input.personId,
-        academicYear: input.academicYearOfEntry,
-      },
-    }));
-  }
+  // A CAS is no longer an enrolment trigger: it is a CAS case opened on the application (D-16).
   return decisions;
 }
 

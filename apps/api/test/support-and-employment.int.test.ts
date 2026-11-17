@@ -127,8 +127,9 @@ describe('Employment links and work limits', () => {
   it('warns when a visa-sponsored student\'s term-time hours exceed the limit', async () => {
     const f = await fixture('EMP101');
     await ctx.db.execute(sql`
-      INSERT INTO ukvi_cas_request (version_id, id, tenant_id, enrolment_id, cas_reference, status_code, valid_from, recorded_at)
-      VALUES (${randomUUID()}, ${randomUUID()}, ${ctx.tenantId}, ${f.enrolmentId}, 'CAS-EMP101', 'assigned', now(), now())
+      INSERT INTO cas_case (version_id, id, tenant_id, person_id, enrolment_id, cas_reference, status_code, actor_id, valid_from, recorded_at)
+      SELECT ${randomUUID()}, ${randomUUID()}, ${ctx.tenantId}, e.person_id, e.id, 'CAS-EMP101', 'assigned', 'fixture', now(), now()
+      FROM enrolment e WHERE e.id = ${f.enrolmentId} AND e.recorded_until IS NULL
     `);
     const ok = await link(f, 'HR-EMP101-A', 15);
     expect(ok.warnings).toEqual([]);

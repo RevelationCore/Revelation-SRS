@@ -224,7 +224,6 @@ function classifyOperation(method: string, url: string): string {
   if (m === 'POST' && (path.includes('/progression') || path.includes('/award') || path.includes('/classification') || path.includes('/hear'))) return 'workflow';
   if ((m === 'POST' || m === 'PATCH') && path.includes('/correction-cases')) return 'workflow';
   if (m === 'PATCH' && path.includes('/status') && path.includes('/regulatory')) return 'workflow';
-  if (m === 'PATCH' && path.includes('/assignment') && path.includes('/cas-requests')) return 'workflow';
   if (m === 'POST' && path.includes('/cas-cases')) return 'workflow';
   if (m === 'POST' && path.includes('/exam-entries')) return 'workflow';
   if ((m === 'POST' || m === 'PATCH') && path.includes('/moderation')) return 'workflow';
@@ -405,11 +404,11 @@ export async function buildApp(
   const ucas = new UcasService(db, valueSets, eventBus, enrolments, regulatoryExchanges, admissions, featureFlags, workflowBridge, reviewExecution, applications);
   const hesa = new HesaService(db, eventBus, students, regulatoryExchanges, workflowBridge, reviewExecution);
   const slc = new SlcService(db, eventBus, valueSets, enrolments, regulatoryExchanges, workflowBridge, reviewExecution);
-  const ukvi = new UkviService(db, eventBus, valueSets, rules, regulatoryExchanges, workflowBridge, reviewExecution);
-  const casCases = new CasCaseService(db);
+  const casCases = new CasCaseService(db, eventBus, regulatoryExchanges);
+  const ukvi = new UkviService(db, eventBus, valueSets, rules, regulatoryExchanges, workflowBridge, reviewExecution, casCases);
   const ofs = new OfsService(db, eventBus, workflowBridge, reviewExecution);
   // ADR-024 Stage 6a: approvals that change a record, applied by the worker on Temporal-run reviews.
-  for (const service of [ucas, hesa, slc, ukvi, ofs]) service.registerWorkflowEffects(reviewActivities);
+  for (const service of [ucas, hesa, slc, ofs]) service.registerWorkflowEffects(reviewActivities);
   const regulatoryCollectionService = new RegulatoryCollectionService(db);
   const foi = new FoiService(db, valueSets);
   const examEntries = new ExamEntryService(db, eventBus, regulatoryExchanges, adjustments);
@@ -536,7 +535,7 @@ export async function buildApp(
       await enrolments.transitionStatus(enrolmentId, tenantId, 'enrolled', clockNow(), actorId, { reasonText: 'Initial registration confirmed' });
     }
   });
-  const applicantConversion = new ApplicantConversionService(db, enrolments, workflowBridge, workflowTasks, reviewExecution);
+  const applicantConversion = new ApplicantConversionService(db, enrolments, workflowBridge, workflowTasks, reviewExecution, casCases);
   fastify.decorate('applicantConversionService', applicantConversion);
   fastify.decorate('clearingService', new ClearingService(db, applications, businessCases));
   fastify.decorate('nonRegistrationService', nonRegistration);

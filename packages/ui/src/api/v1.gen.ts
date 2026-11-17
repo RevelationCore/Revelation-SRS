@@ -3193,22 +3193,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/regulatory/ukvi/cas-requests/generate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["createRegulatoryUkviCasRequestsGenerate"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/regulatory/ukvi/engagement-evidence-snapshots": {
         parameters: {
             query?: never;
@@ -3267,38 +3251,6 @@ export interface paths {
         get: operations["getRegulatoryUkviOperationsStatus"];
         put?: never;
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/regulatory/ukvi/cas-requests": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getRegulatoryUkviCasRequests"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/regulatory/ukvi/cas-requests/{casRequestId}/assignment": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["createRegulatoryUkviCasRequestsByCasRequestIdAssignment"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3379,38 +3331,6 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["createRegulatoryUkviComplianceAlertsByAlertIdResolve"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/regulatory/ukvi/cas-requests/submission-requests": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getRegulatoryUkviCasRequestsSubmissionRequests"];
-        put?: never;
-        post: operations["createRegulatoryUkviCasRequestsSubmissionRequests"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/regulatory/ukvi/cas-requests/submission-requests/{workflowInstanceId}/decision": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["createRegulatoryUkviCasRequestsSubmissionRequestsByWorkflowInstanceIdDecision"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3513,6 +3433,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/regulatory/cas-cases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getRegulatoryCasCases"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/regulatory/cas-cases/{casCaseId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getRegulatoryCasCasesByCasCaseId"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/applications/{applicationId}/cas-cases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createApplicationsByApplicationIdCasCases"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/enrolments/{enrolmentId}/regulatory/cas-cases": {
         parameters: {
             query?: never;
@@ -3545,7 +3513,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/regulatory/cas-cases/{casCaseId}/assignment-versions": {
+    "/api/v1/regulatory/cas-cases/{casCaseId}/preparation": {
         parameters: {
             query?: never;
             header?: never;
@@ -3554,7 +3522,87 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["createRegulatoryCasCasesByCasCaseIdAssignmentVersions"];
+        post: operations["createRegulatoryCasCasesByCasCaseIdPreparation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/regulatory/cas-cases/{casCaseId}/approval": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createRegulatoryCasCasesByCasCaseIdApproval"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/regulatory/cas-cases/{casCaseId}/cas-number": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createRegulatoryCasCasesByCasCaseIdCasNumber"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/regulatory/cas-cases/{casCaseId}/correction": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createRegulatoryCasCasesByCasCaseIdCorrection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/regulatory/cas-cases/{casCaseId}/withdrawal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createRegulatoryCasCasesByCasCaseIdWithdrawal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/regulatory/cas-cases/sms-export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createRegulatoryCasCasesSmsExport"];
         delete?: never;
         options?: never;
         head?: never;
@@ -19561,46 +19609,6 @@ export interface operations {
             };
         };
     };
-    createRegulatoryUkviCasRequestsGenerate: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Default Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        processedCount: number;
-                        casRequests: {
-                            casRequestId: string;
-                            enrolmentId: string;
-                            personData: {
-                                personId: string;
-                                legalFirstName: string | null;
-                                legalFamilyName: string | null;
-                                dateOfBirth: string | null;
-                                nationalityCode: string | null;
-                                programmeId: string | null;
-                                programmeCode: string | null;
-                                programmeTitle: string | null;
-                                modeOfStudyCode: string;
-                                academicYearOfEntry: string;
-                                startDate: string;
-                                expectedEndDate: string | null;
-                            };
-                        }[];
-                    };
-                };
-            };
-        };
-    };
     createRegulatoryUkviEngagementEvidenceSnapshots: {
         parameters: {
             query?: never;
@@ -19859,96 +19867,6 @@ export interface operations {
             };
         };
     };
-    getRegulatoryUkviCasRequests: {
-        parameters: {
-            query?: {
-                statusCode?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Default Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        casRequestId: string;
-                        enrolmentId: string;
-                        casReference: string | null;
-                        statusCode: string;
-                        requestedAt: string;
-                    }[];
-                };
-            };
-        };
-    };
-    createRegulatoryUkviCasRequestsByCasRequestIdAssignment: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                casRequestId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    casReference: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Default Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        casRequestId: string;
-                        enrolmentId: string;
-                        casReference: string | null;
-                        statusCode: string;
-                        requestedAt: string;
-                    };
-                };
-            };
-            /** @description Default Response */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        type: string;
-                        title: string;
-                        status: number;
-                        detail?: string;
-                    };
-                };
-            };
-            /** @description Default Response */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        type: string;
-                        title: string;
-                        status: number;
-                        detail?: string;
-                    };
-                };
-            };
-        };
-    };
     createRegulatoryUkviAttendanceReportsGenerate: {
         parameters: {
             query?: never;
@@ -20163,171 +20081,6 @@ export interface operations {
             };
             /** @description Default Response */
             404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        type: string;
-                        title: string;
-                        status: number;
-                        detail?: string;
-                    };
-                };
-            };
-        };
-    };
-    getRegulatoryUkviCasRequestsSubmissionRequests: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Default Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        workflowInstanceId: string;
-                        workflowTaskId: string;
-                        statusCode: string;
-                        recordCount: number;
-                        context: {
-                            [key: string]: unknown;
-                        };
-                        startedAt: string;
-                    }[];
-                };
-            };
-        };
-    };
-    createRegulatoryUkviCasRequestsSubmissionRequests: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    reason?: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Default Response */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        workflowInstanceId: string;
-                        workflowTaskId: string;
-                        statusCode: string;
-                        recordCount: number;
-                        context: {
-                            [key: string]: unknown;
-                        };
-                        startedAt: string;
-                    };
-                };
-            };
-            /** @description Default Response */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        type: string;
-                        title: string;
-                        status: number;
-                        detail?: string;
-                    };
-                };
-            };
-        };
-    };
-    createRegulatoryUkviCasRequestsSubmissionRequestsByWorkflowInstanceIdDecision: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                workflowInstanceId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    decisionCode: "approved" | "rejected";
-                    reason?: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Default Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        processedCount: number;
-                    };
-                };
-            };
-            /** @description Default Response */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @enum {string} */
-                        status: "pending";
-                        commandId: string;
-                        statusUrl: string;
-                    };
-                };
-            };
-            /** @description Default Response */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        type: string;
-                        title: string;
-                        status: number;
-                        detail?: string;
-                    };
-                };
-            };
-            /** @description Default Response */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        type: string;
-                        title: string;
-                        status: number;
-                        detail?: string;
-                    };
-                };
-            };
-            /** @description Default Response */
-            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -20616,6 +20369,124 @@ export interface operations {
             };
         };
     };
+    getRegulatoryCasCases: {
+        parameters: {
+            query?: {
+                statusCode?: string;
+                open?: boolean;
+                applicationId?: string;
+                enrolmentId?: string;
+                personId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    }[];
+                };
+            };
+        };
+    };
+    getRegulatoryCasCasesByCasCaseId: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                casCaseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createApplicationsByApplicationIdCasCases: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                applicationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
     getEnrolmentsByEnrolmentIdRegulatoryCasCases: {
         parameters: {
             query?: never;
@@ -20634,15 +20505,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        casCaseId: string;
-                        enrolmentId: string;
-                        casReference: string | null;
-                        statusCode: string;
-                        actorId: string;
-                        validFrom: string;
-                        validTo: string | null;
-                        recordedAt: string;
-                        recordedUntil: string | null;
+                        [key: string]: unknown;
                     }[];
                 };
             };
@@ -20657,13 +20520,7 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/json": {
-                    casReference?: string;
-                };
-            };
-        };
+        requestBody?: never;
         responses: {
             /** @description Default Response */
             201: {
@@ -20672,12 +20529,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        casCaseId: string;
+                        [key: string]: unknown;
                     };
                 };
             };
             /** @description Default Response */
-            422: {
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -20737,9 +20608,37 @@ export interface operations {
                     };
                 };
             };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
         };
     };
-    createRegulatoryCasCasesByCasCaseIdAssignmentVersions: {
+    createRegulatoryCasCasesByCasCaseIdPreparation: {
         parameters: {
             query?: never;
             header?: never;
@@ -20748,25 +20647,16 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/json": {
-                    assignedPayloadHash: string;
-                    casNumber?: string;
-                    smsRequestSentAt?: string;
-                    smsReceiptRef?: string;
-                };
-            };
-        };
+        requestBody?: never;
         responses: {
             /** @description Default Response */
-            201: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": {
-                        assignmentId: string;
+                        [key: string]: unknown;
                     };
                 };
             };
@@ -20781,6 +20671,327 @@ export interface operations {
                         title: string;
                         status: number;
                         detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createRegulatoryCasCasesByCasCaseIdApproval: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                casCaseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createRegulatoryCasCasesByCasCaseIdCasNumber: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                casCaseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    casNumber: string;
+                    smsReceiptRef?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createRegulatoryCasCasesByCasCaseIdCorrection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                casCaseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createRegulatoryCasCasesByCasCaseIdWithdrawal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                casCaseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createRegulatoryCasCasesSmsExport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
                     };
                 };
             };

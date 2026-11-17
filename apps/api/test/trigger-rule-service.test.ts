@@ -64,8 +64,7 @@ describe('enrolment trigger rule evaluation', () => {
     expect(decisions.map((decision) => decision.triggerTypeCode)).toEqual([
       'ucas-confirmation',
       'slc-confirmation',
-      'ukvi-cas',
-    ]);
+    ]); // a CAS is a CAS case on the application, not an enrolment trigger (D-16)
     expect(decisions[0]?.payloadSummary.triggerRule).toMatchObject({
       mode: 'legacy',
       ruleKey: 'legacy.ucas-confirmation-on-ucas-id',

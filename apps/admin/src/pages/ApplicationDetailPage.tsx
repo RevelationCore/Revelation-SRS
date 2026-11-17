@@ -13,7 +13,9 @@ import {
   getApplication, confirmIdentity, routeApplication, recordAssessment, recommendApplication, decideApplication,
   recordOfferResponse, changeOffer, withdrawOffer, confirmOffer, recordConditionEvidence, decideCondition,
 } from '../api/applications.js';
+import { type CasCase, listCasCaseWorklist, openCasCaseForApplication } from '../api/casCases.js';
 import { useAuth } from '../auth/AuthContext.js';
+import { CasCasePanel } from '../components/CasCasePanel.js';
 import { userHasAnyPermission } from '../auth/RequirePermission.js';
 import { useValueSet } from '../hooks/useValueSet.js';
 import { APPLICATION_STATUS_LABELS, ROUTING_LABELS, programmeLabel, useProgrammeNames } from './ApplicationsPage.js';
@@ -157,6 +159,10 @@ export function ApplicationDetailPage() {
           />
         )}
 
+        {can('cas:read') && app.personId && offers.some((o) => ['made', 'accepted', 'confirmed'].includes(o.statusCode)) && (
+          <CasCard applicationId={app.id} canOpen={can('cas:prepare')} />
+        )}
+
         {can('enrolment:write') && offers.some((o) => o.statusCode === 'confirmed') && (
           <ConversionCard applicationId={app.id} programmeName={(id) => programmeLabel(programmes, id)} />
         )}
@@ -173,6 +179,36 @@ export function ApplicationDetailPage() {
         ))}
       </div>
     </div>
+  );
+}
+
+/** The applicant's Student visa CAS (D-16): opened here, worked on the UKVI page or here. */
+function CasCard({ applicationId, canOpen }: { applicationId: string; canOpen: boolean }) {
+  const [cases, setCases] = useState<CasCase[] | null>(null);
+  const [error, setError] = useState('');
+  const load = useCallback(async () => {
+    try { setCases(await listCasCaseWorklist({ applicationId })); } catch (err) { setError(message(err, 'Failed to load the CAS')); }
+  }, [applicationId]);
+  useEffect(() => { void load(); }, [load]);
+  async function open() {
+    setError('');
+    try { await openCasCaseForApplication(applicationId); await load(); } catch (err) { setError(message(err, 'Failed to open the CAS case')); }
+  }
+  if (!cases) return null;
+  const live = cases.filter((c) => c.statusCode !== 'withdrawn');
+  return (
+    <Card>
+      <CardHeader title="Student visa (CAS)" description="For an applicant who needs a Student visa. The enrolment cannot be created while the CAS is still open." />
+      <CardBody>
+        {error && <p className="mb-3 text-sm text-danger-600" role="alert">{error}</p>}
+        {live.length === 0 ? (
+          <div className="flex items-center gap-3">
+            <p className="text-sm text-neutral-600">No CAS case.</p>
+            {canOpen && <Button size="sm" variant="secondary" onClick={() => void open()}>Open a CAS case</Button>}
+          </div>
+        ) : live.map((c) => <CasCasePanel key={c.casCaseId} item={c} onChanged={() => void load()} />)}
+      </CardBody>
+    </Card>
   );
 }
 

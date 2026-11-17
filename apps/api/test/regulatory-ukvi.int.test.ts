@@ -49,75 +49,9 @@ afterAll(async () => {
 });
 
 describe('UKVI compliance exchange', () => {
-  it('generates CAS requests from pending triggers and is idempotent', async () => {
-    const fixture = await createUkviEnrolment('Cas', 'Generate');
-
-    const first = await ctx.app.inject({
-      method: 'POST',
-      url: '/api/v1/regulatory/ukvi/cas-requests/generate',
-      headers: { authorization: `Bearer ${jwt}` },
-    });
-    expect(first.statusCode).toBe(200);
-    const body = first.json<{ processedCount: number; casRequests: Array<{ casRequestId: string; enrolmentId: string }> }>();
-    expect(body.processedCount).toBeGreaterThanOrEqual(1);
-    expect(body.casRequests).toContainEqual(expect.objectContaining({ enrolmentId: fixture.enrolmentId }));
-
-    const triggerRows = await ctx.db.execute(sql`
-      SELECT status_code, sent_at
-      FROM enrolment_downstream_trigger
-      WHERE tenant_id = ${ctx.tenantId}
-        AND enrolment_id = ${fixture.enrolmentId}
-        AND trigger_type_code = 'ukvi-cas'
-    `) as Array<{ status_code: string; sent_at: string | Date | null }>;
-    expect(triggerRows).toEqual([
-      expect.objectContaining({ status_code: 'processed', sent_at: expect.anything() }),
-    ]);
-    expect(events.find((e) => e.type === 'srs.regulatory.ukvi-cas-requested')).toMatchObject({
-      classification: 'sensitive',
-    });
-
-    const second = await ctx.app.inject({
-      method: 'POST',
-      url: '/api/v1/regulatory/ukvi/cas-requests/generate',
-      headers: { authorization: `Bearer ${jwt}` },
-    });
-    expect(second.statusCode).toBe(200);
-    expect(second.json<{ processedCount: number }>().processedCount).toBe(0);
-  });
-
-  it('records CAS assignment as a bitemporal update', async () => {
-    const fixture = await createUkviEnrolment('Cas', 'Assign');
-    const casRequestId = await generateCasRequestFor(fixture.enrolmentId);
-
-    const assigned = await ctx.app.inject({
-      method: 'POST',
-      url: `/api/v1/regulatory/ukvi/cas-requests/${casRequestId}/assignment`,
-      headers: { authorization: `Bearer ${jwt}` },
-      payload: { casReference: 'CAS-ASSIGN-001' },
-    });
-    expect(assigned.statusCode).toBe(200);
-    expect(assigned.json<{ statusCode: string; casReference: string }>())
-      .toMatchObject({ statusCode: 'assigned', casReference: 'CAS-ASSIGN-001' });
-
-    const versions = await ctx.db.execute(sql`
-      SELECT status_code, cas_reference, recorded_until
-      FROM ukvi_cas_request
-      WHERE tenant_id = ${ctx.tenantId}
-        AND id = ${casRequestId}
-      ORDER BY recorded_at ASC
-    `) as Array<{ status_code: string; cas_reference: string | null; recorded_until: string | Date | null }>;
-    expect(versions).toHaveLength(2);
-    expect(versions[0]).toMatchObject({ status_code: 'pending', cas_reference: null, recorded_until: expect.anything() });
-    expect(versions[1]).toMatchObject({ status_code: 'assigned', cas_reference: 'CAS-ASSIGN-001', recorded_until: null });
-    expect(events.find((e) => e.type === 'srs.regulatory.ukvi-cas-assigned')).toMatchObject({
-      classification: 'sensitive',
-    });
-  });
-
   it('blocks the retired direct attendance-report path', async () => {
     const fixture = await createUkviEnrolment('Attendance', 'Report');
-    const casRequestId = await generateCasRequestFor(fixture.enrolmentId);
-    await assignCas(casRequestId, 'CAS-ATTEND-001');
+    await assignedCasFor(fixture.enrolmentId, fixture.personId, 'CAS-ATTEND-001');
     const academicPeriodId = await createAcademicPeriod('UKVI-ATTEND');
 
     const report = await ctx.app.inject({
@@ -133,8 +67,7 @@ describe('UKVI compliance exchange', () => {
 
   it('records curtailed visa updates and raises a compliance alert', async () => {
     const fixture = await createUkviEnrolment('Visa', 'Curtail');
-    const casRequestId = await generateCasRequestFor(fixture.enrolmentId);
-    await assignCas(casRequestId, 'CAS-VISA-001');
+    await assignedCasFor(fixture.enrolmentId, fixture.personId, 'CAS-VISA-001');
 
     const update = await ctx.app.inject({
       method: 'POST',
@@ -173,8 +106,7 @@ describe('UKVI compliance exchange', () => {
 
   it('evaluates threshold breaches once and does not re-raise a resolved same-period breach', async () => {
     const fixture = await createUkviEnrolment('Alert', 'Threshold');
-    const casRequestId = await generateCasRequestFor(fixture.enrolmentId);
-    await assignCas(casRequestId, 'CAS-ALERT-001');
+    await assignedCasFor(fixture.enrolmentId, fixture.personId, 'CAS-ALERT-001');
     const academicPeriodId = await createAcademicPeriod('UKVI-ALERT');
     await insertAttendanceReport(academicPeriodId, {
       academicPeriodId,
@@ -353,14 +285,14 @@ describe('UKVI compliance exchange', () => {
       .toBeGreaterThanOrEqual(1);
   });
 
-  it('does not expose UKVI CAS requests across tenants', async () => {
+  it('does not expose CAS cases across tenants', async () => {
     const fixture = await createUkviEnrolment('Tenant', 'Isolation');
-    await generateCasRequestFor(fixture.enrolmentId);
-    const secondTenantJwt = await ctx.makeJwt({ tenantId: ctx.secondTenantId });
+    await assignedCasFor(fixture.enrolmentId, fixture.personId, 'CAS-TENANT-001');
+    const secondTenantJwt = await ctx.makeJwt({ tenantId: ctx.secondTenantId, roles: ['regulatory-officer'] });
 
     const res = await ctx.app.inject({
       method: 'GET',
-      url: '/api/v1/regulatory/ukvi/cas-requests',
+      url: '/api/v1/regulatory/cas-cases',
       headers: { authorization: `Bearer ${secondTenantJwt}` },
     });
     expect(res.statusCode).toBe(200);
@@ -368,107 +300,7 @@ describe('UKVI compliance exchange', () => {
       expect.objectContaining({ enrolmentId: fixture.enrolmentId }),
     );
   });
-});
 
-describe('UKVI CAS request submission approval workflow', () => {
-  it('rejects a submission request when there are no pending CAS requests', async () => {
-    const request = await ctx.app.inject({
-      method: 'POST',
-      url: '/api/v1/regulatory/ukvi/cas-requests/submission-requests',
-      headers: { authorization: `Bearer ${jwt}` },
-      payload: {},
-    });
-    expect(request.statusCode).toBe(422);
-  });
-
-  it('approving a submission request processes exactly the previewed CAS requests', async () => {
-    const fixture = await createUkviEnrolment('Ukvi', 'WorkflowApprove');
-
-    const request = await ctx.app.inject({
-      method: 'POST',
-      url: '/api/v1/regulatory/ukvi/cas-requests/submission-requests',
-      headers: { authorization: `Bearer ${jwt}` },
-      payload: {},
-    });
-    expect(request.statusCode).toBe(202);
-    const { workflowInstanceId, recordCount } = request.json<{ workflowInstanceId: string; recordCount: number }>();
-    expect(recordCount).toBeGreaterThanOrEqual(1);
-
-    const pending = await ctx.app.inject({
-      method: 'GET',
-      url: '/api/v1/regulatory/ukvi/cas-requests/submission-requests',
-      headers: { authorization: `Bearer ${jwt}` },
-    });
-    expect(pending.statusCode).toBe(200);
-    expect(pending.json<Array<{ workflowInstanceId: string }>>().some(r => r.workflowInstanceId === workflowInstanceId)).toBe(true);
-
-    const decide = await ctx.app.inject({
-      method: 'POST',
-      url: `/api/v1/regulatory/ukvi/cas-requests/submission-requests/${workflowInstanceId}/decision`,
-      headers: { authorization: `Bearer ${jwt}` },
-      payload: { decisionCode: 'approved' },
-    });
-    expect(decide.statusCode).toBe(200);
-    expect(decide.json<{ processedCount: number }>().processedCount).toBe(recordCount);
-
-    const casRows = await ctx.db.execute(sql`
-      SELECT status_code
-      FROM ukvi_cas_request
-      WHERE tenant_id = ${ctx.tenantId}
-        AND enrolment_id = ${fixture.enrolmentId}
-    `) as Array<{ status_code: string }>;
-    expect(casRows).toEqual([expect.objectContaining({ status_code: 'pending' })]);
-  });
-
-  it('a rejected request processes nothing, and cannot be decided twice', async () => {
-    await createUkviEnrolment('Ukvi', 'WorkflowReject');
-
-    const request = await ctx.app.inject({
-      method: 'POST',
-      url: '/api/v1/regulatory/ukvi/cas-requests/submission-requests',
-      headers: { authorization: `Bearer ${jwt}` },
-      payload: {},
-    });
-    const { workflowInstanceId } = request.json<{ workflowInstanceId: string }>();
-
-    const decide = await ctx.app.inject({
-      method: 'POST',
-      url: `/api/v1/regulatory/ukvi/cas-requests/submission-requests/${workflowInstanceId}/decision`,
-      headers: { authorization: `Bearer ${jwt}` },
-      payload: { decisionCode: 'rejected', reason: 'Not ready' },
-    });
-    expect(decide.statusCode).toBe(200);
-    expect(decide.json<{ processedCount: number }>().processedCount).toBe(0);
-
-    const secondDecide = await ctx.app.inject({
-      method: 'POST',
-      url: `/api/v1/regulatory/ukvi/cas-requests/submission-requests/${workflowInstanceId}/decision`,
-      headers: { authorization: `Bearer ${jwt}` },
-      payload: { decisionCode: 'approved' },
-    });
-    expect(secondDecide.statusCode).toBe(422);
-  });
-
-  it('rejects a decision from a role lacking regulatory:decide', async () => {
-    await createUkviEnrolment('Ukvi', 'WorkflowWrongRole');
-
-    const request = await ctx.app.inject({
-      method: 'POST',
-      url: '/api/v1/regulatory/ukvi/cas-requests/submission-requests',
-      headers: { authorization: `Bearer ${jwt}` },
-      payload: {},
-    });
-    const { workflowInstanceId } = request.json<{ workflowInstanceId: string }>();
-
-    const moduleTutorJwt = await ctx.makeJwt({ roles: ['module-tutor'] });
-    const decide = await ctx.app.inject({
-      method: 'POST',
-      url: `/api/v1/regulatory/ukvi/cas-requests/submission-requests/${workflowInstanceId}/decision`,
-      headers: { authorization: `Bearer ${moduleTutorJwt}` },
-      payload: { decisionCode: 'approved' },
-    });
-    expect(decide.statusCode).toBe(403);
-  });
 });
 
 async function createPerson(legalFirstName: string, legalFamilyName: string): Promise<string> {
@@ -497,32 +329,19 @@ async function createUkviEnrolment(
       academicYearOfEntry: '2027-28',
       startDate: '2027-09-20',
       feeBandCode: 'international-undergraduate',
-      ukviCasRequired: true,
     },
   });
   expect(res.statusCode).toBe(201);
   return { personId, enrolmentId: res.json<{ enrolmentId: string }>().enrolmentId };
 }
 
-async function generateCasRequestFor(enrolmentId: string): Promise<string> {
-  const res = await ctx.app.inject({
-    method: 'POST',
-    url: '/api/v1/regulatory/ukvi/cas-requests/generate',
-    headers: { authorization: `Bearer ${jwt}` },
-  });
-  expect(res.statusCode).toBe(200);
-  const body = res.json<{ casRequests: Array<{ casRequestId: string; enrolmentId: string }> }>();
-  return body.casRequests.find((request) => request.enrolmentId === enrolmentId)!.casRequestId;
-}
-
-async function assignCas(casRequestId: string, casReference: string): Promise<void> {
-  const res = await ctx.app.inject({
-    method: 'POST',
-    url: `/api/v1/regulatory/ukvi/cas-requests/${casRequestId}/assignment`,
-    headers: { authorization: `Bearer ${jwt}` },
-    payload: { casReference },
-  });
-  expect(res.statusCode).toBe(200);
+/** An assigned CAS for an enrolment, as the CAS case flow leaves it (D-16). */
+async function assignedCasFor(enrolmentId: string, personId: string, casReference: string): Promise<string> {
+  const id = randomUUID();
+  await ctx.db.execute(sql`
+    INSERT INTO cas_case (version_id, id, tenant_id, person_id, enrolment_id, cas_reference, status_code, actor_id, valid_from)
+    VALUES (${randomUUID()}, ${id}, ${ctx.tenantId}, ${personId}, ${enrolmentId}, ${casReference}, 'assigned', 'fixture', now())`);
+  return id;
 }
 
 async function createAcademicPeriod(periodCode: string): Promise<string> {

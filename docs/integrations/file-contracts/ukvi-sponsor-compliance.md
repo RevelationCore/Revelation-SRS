@@ -24,87 +24,16 @@ Revelation SRS manages the full sponsor-compliance workflow via the UKVI exchang
 
 ## CAS Management
 
-### 1. Generate CAS request batch
+Since Phase 3 (decision D-16) the CAS case is the only CAS record; the earlier `ukvi_cas_request` rows and the `cas-requests` endpoints were retired.
 
-`POST /api/v1/regulatory/ukvi/cas-requests/generate`
+1. **Open a case.** `POST /api/v1/applications/{applicationId}/cas-cases` for a new entrant, or `POST /api/v1/enrolments/{enrolmentId}/regulatory/cas-cases` for an in-country extension (`cas:prepare`).
+2. **Record eligibility checks** with the sponsor guidance version: `POST /api/v1/regulatory/cas-cases/{casCaseId}/eligibility-checks`. The latest check of each type counts.
+3. **Prepare** the CAS data: `POST .../preparation` (`cas:prepare`).
+4. **Approve** it: `POST .../approval` (`cas:approve`), by someone other than the preparer. This creates the assignment version.
+5. **Export the file for SMS**: `POST /api/v1/regulatory/cas-cases/sms-export` (`cas:prepare`) returns every approved, unsent assignment version in the shape of `schemas/file-contracts/ukvi/cas-request-outbound.v2.json`, marks them sent and records one `integration_exchange` row each (idempotency key `ukvi-cas:<assignmentVersionId>`). The transport is a manual file (D-14).
+6. **Record the CAS number** SMS assigns: `POST .../cas-number` with `{ casNumber, smsReceiptRef? }`.
 
-**Permission:** `regulatory:write`
-
-Generates a batch of pending CAS requests for all sponsored students who require a CAS reference but do not yet have one assigned. Returns the payload for transmission to UKVI's Sponsorship Management System (SMS).
-
-**Payload schema:** `schemas/file-contracts/ukvi/cas-request-outbound.v1.json`
-
-**Response:**
-```json
-{
-  "processedCount": 8,
-  "casRequests": [
-    {
-      "casRequestId": "uuid",
-      "enrolmentId": "uuid",
-      "personData": {
-        "personId": "uuid",
-        "legalFirstName": "Mei",
-        "legalFamilyName": "Zhang",
-        "dateOfBirth": "2001-04-15",
-        "nationalityCode": "CN",
-        "programmeId": "uuid",
-        "programmeCode": "BSC-COMP",
-        "programmeTitle": "BSc Computer Science",
-        "modeOfStudyCode": "FT",
-        "academicYearOfEntry": "2025/26",
-        "startDate": "2025-09-15",
-        "expectedEndDate": "2028-06-30"
-      }
-    }
-  ]
-}
-```
-
-**Key requirements:**
-- `legalFirstName` and `legalFamilyName` must match the student's travel document exactly
-- `dateOfBirth` must match the passport
-- `nationalityCode` must be a valid ISO 3166-1 alpha-2 code
-- `startDate` must be the actual programme start date, not the CAS issue date
-
----
-
-### 2. List CAS requests
-
-`GET /api/v1/regulatory/ukvi/cas-requests?statusCode=pending`
-
-**Permission:** `regulatory:read`
-
-Returns all CAS requests, optionally filtered by status.
-
-**Status codes:**
-
-| Code | Meaning |
-|---|---|
-| `pending` | Request generated, awaiting UKVI CAS assignment |
-| `assigned` | CAS reference received from UKVI |
-| `expired` | CAS expired without use |
-
----
-
-### 3. Record CAS assignment
-
-`POST /api/v1/regulatory/ukvi/cas-requests/{casRequestId}/assignment`
-
-**Permission:** `regulatory:write`
-
-Records the CAS reference assigned by UKVI in the SMS, linking it to the pending CAS request. Transitions the request to `assigned` status and publishes `srs.regulatory.ukvi-cas-assigned`.
-
-**Body:**
-```json
-{ "casReference": "A12345678910" }
-```
-
-**Response:** Updated CAS request record including the assigned reference.
-
-**Idempotency:** The `casRequestId` is the idempotency key. Re-POSTing with the same reference is a no-op.
-
----
+A correction after assignment reopens the case (`POST .../correction`) for a new preparation and approval; earlier versions are kept. Applicant conversion is blocked while the application has an open, unassigned CAS case, and attaches the new enrolment to the case.
 
 ## Attendance Monitoring
 

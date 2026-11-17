@@ -1,22 +1,19 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
-  type CasRequest,
   type ComplianceAlert,
   type SponsorDecision,
   type UkviOperationalStatus,
-  type UkviCasSubmissionRequest,
   authoriseSponsorDecision,
   evaluateComplianceAlerts,
-  listCasRequests,
   listComplianceAlerts,
   listSponsorDecisions,
   resolveComplianceAlert,
   getUkviOperationalStatus,
-  requestUkviCasSubmission,
-  listUkviCasSubmissionRequests,
-  decideUkviCasSubmissionRequest,
 } from '../api/regulatory.js';
 import { ApiError } from '../api/client.js';
+import { type CasCase, exportCasForSms, listCasCaseWorklist } from '../api/casCases.js';
+import { CasCasePanel } from '../components/CasCasePanel.js';
 import { useAuth } from '../auth/AuthContext.js';
 import { userHasAnyPermission } from '../auth/RequirePermission.js';
 import { Badge } from '../components/Badge.js';
@@ -37,7 +34,7 @@ export function UkviPage() {
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)}>
         <TabsList className="mb-6">
-          <TabsTrigger value="cas">CAS requests</TabsTrigger>
+          <TabsTrigger value="cas">CAS</TabsTrigger>
           <TabsTrigger value="compliance">Compliance alerts</TabsTrigger>
           <TabsTrigger value="decisions">Sponsor decisions</TabsTrigger>
         </TabsList>
@@ -145,198 +142,63 @@ function SponsorDecisionsTab() {
 
 function CasTab() {
   const { roles } = useAuth();
-  const canDecide = userHasAnyPermission(roles, ['regulatory:decide']);
-  const [requests,   setRequests]   = useState<CasRequest[]>([]);
-  const [loading,    setLoading]    = useState(true);
-  const [error,      setError]      = useState('');
-  const [requesting, setRequesting] = useState(false);
-  const [successMsg, setSuccessMsg] = useState('');
+  const canPrepare = userHasAnyPermission(roles, ['cas:prepare']);
+  const [cases, setCases] = useState<CasCase[] | null>(null);
+  const [showAll, setShowAll] = useState(false);
+  const [error, setError] = useState('');
+  const [exported, setExported] = useState('');
 
   const load = useCallback(async () => {
-    setLoading(true);
     setError('');
-    try {
-      setRequests(await listCasRequests());
-    } catch (e) {
-      setError(e instanceof ApiError ? e.message : 'Failed to load CAS requests');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
+    try { setCases(await listCasCaseWorklist(showAll ? {} : { open: true })); } catch (e) { setError(e instanceof ApiError ? (e.detail ?? e.message) : 'Failed to load CAS cases'); }
+  }, [showAll]);
   useEffect(() => { void load(); }, [load]);
 
-  async function handleRequestSubmission() {
-    setRequesting(true);
-    setError('');
-    setSuccessMsg('');
+  async function handleExport() {
+    setError(''); setExported('');
     try {
-      await requestUkviCasSubmission();
-      setSuccessMsg('Approval requested to submit pending CAS requests.');
-    } catch (err) {
-      setError(err instanceof ApiError ? (err.detail ?? err.message) : 'Failed to request CAS submission');
-    } finally {
-      setRequesting(false);
-    }
-  }
-
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-4">
-        <p className="text-sm text-neutral-600">Confirmation of Acceptance for Studies (CAS) requests for international students.</p>
-        <Button onClick={() => void handleRequestSubmission()} disabled={requesting}>
-          {requesting ? 'Requesting…' : 'Request approval to submit'}
-        </Button>
-      </div>
-
-      {error      && <p className="mb-4 text-sm text-danger-600">{error}</p>}
-      {successMsg && <p className="mb-4 text-sm text-success-600">{successMsg}</p>}
-
-      {loading ? (
-        <div className="flex justify-center py-8"><Spinner /></div>
-      ) : requests.length === 0 ? (
-        <p className="text-sm text-neutral-600">No CAS requests found.</p>
-      ) : (
-        <Card>
-          <Table>
-            <TableHead>
-              <tr>
-                <TableHeaderCell>Enrolment</TableHeaderCell>
-                <TableHeaderCell>CAS reference</TableHeaderCell>
-                <TableHeaderCell>Status</TableHeaderCell>
-                <TableHeaderCell>Requested</TableHeaderCell>
-              </tr>
-            </TableHead>
-            <TableBody>
-              {requests.map(r => (
-                <TableRow key={r.casRequestId}>
-                  <TableCell className="font-mono text-xs text-neutral-700">{r.enrolmentId}</TableCell>
-                  <TableCell className="font-mono text-xs">
-                    {r.casReference ?? <span className="text-neutral-600">pending</span>}
-                  </TableCell>
-                  <TableCell><Badge value={r.statusCode} /></TableCell>
-                  <TableCell className="text-xs">
-                    {new Date(r.requestedAt).toLocaleDateString('en-GB')}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Card>
-      )}
-
-      {canDecide && (
-        <div className="mt-8">
-          <UkviCasSubmissionRequestsQueue onDecided={load} />
-        </div>
-      )}
-    </div>
-  );
-}
-
-function UkviCasSubmissionRequestsQueue({ onDecided }: { onDecided: () => void }) {
-  const [requests, setRequests] = useState<UkviCasSubmissionRequest[]>([]);
-  const [loading,  setLoading]  = useState(true);
-  const [error,    setError]    = useState('');
-  const [deciding, setDeciding] = useState<string | null>(null);
-  const [reasonById, setReasonById] = useState<Record<string, string>>({});
-  const [busyId,   setBusyId]   = useState<string | null>(null);
-
-  const load = useCallback(async () => {
-    setLoading(true); setError('');
-    try {
-      setRequests(await listUkviCasSubmissionRequests());
-    } catch (e) {
-      setError(e instanceof ApiError ? e.message : 'Failed to load submission requests');
-    } finally { setLoading(false); }
-  }, []);
-
-  useEffect(() => { void load(); }, [load]);
-
-  async function handleDecide(workflowInstanceId: string, decisionCode: 'approved' | 'rejected') {
-    setBusyId(workflowInstanceId); setError('');
-    try {
-      await decideUkviCasSubmissionRequest(workflowInstanceId, decisionCode, reasonById[workflowInstanceId]?.trim() || undefined);
-      setDeciding(null);
+      const file = await exportCasForSms();
+      if (file.processedCount > 0) {
+        const url = URL.createObjectURL(new Blob([JSON.stringify(file, null, 2)], { type: 'application/json' }));
+        const a = document.createElement('a');
+        a.href = url; a.download = `cas-sms-export-${file.generatedAt.slice(0, 10)}.json`; a.click();
+        URL.revokeObjectURL(url);
+      }
+      setExported(file.processedCount === 0 ? 'Nothing approved is waiting to be sent.' : `${file.processedCount} CAS request(s) exported for SMS. Upload the file to SMS, then record each CAS number.`);
       await load();
-      onDecided();
-    } catch (e) {
-      setError(e instanceof ApiError ? (e.detail ?? e.message) : 'Failed to record decision');
-    } finally { setBusyId(null); }
+    } catch (e) { setError(e instanceof ApiError ? (e.detail ?? e.message) : 'Export failed'); }
   }
 
   return (
     <Card>
       <CardHeader
-        title="Pending CAS submission requests"
-        actions={<Button variant="secondary" size="sm" onClick={() => void load()}>Refresh</Button>}
+        title="CAS cases"
+        description="Each CAS is prepared, approved by someone else, sent to SMS in an export file, and its CAS number recorded here. Open a case from the applicant's application page."
+        actions={
+          <div className="flex gap-2">
+            <Button size="sm" variant="secondary" onClick={() => setShowAll((v) => !v)}>{showAll ? 'Open cases only' : 'Include assigned and withdrawn'}</Button>
+            {canPrepare && <Button size="sm" onClick={() => void handleExport()}>Export approved for SMS</Button>}
+          </div>
+        }
       />
       <CardBody>
-        {error && <p className="mb-3 text-sm text-danger-600">{error}</p>}
-        {loading ? (
-          <div className="flex justify-center py-8"><Spinner /></div>
-        ) : requests.length === 0 ? (
-          <p className="text-sm text-neutral-600">No pending submission requests.</p>
-        ) : (
-          <Table>
-            <TableHead>
-              <tr>
-                <TableHeaderCell>CAS requests</TableHeaderCell>
-                <TableHeaderCell>Requested</TableHeaderCell>
-                <TableHeaderCell><span className="sr-only">Actions</span></TableHeaderCell>
-              </tr>
-            </TableHead>
-            <TableBody>
-              {requests.map(r => (
-                <TableRow key={r.workflowInstanceId}>
-                  <TableCell className="text-xs">{r.recordCount}</TableCell>
-                  <TableCell className="text-neutral-500">
-                    {new Date(r.startedAt).toLocaleDateString('en-GB')}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {deciding === r.workflowInstanceId ? (
-                      <div className="inline-flex flex-col items-end gap-2">
-                        <input
-                          type="text"
-                          placeholder="Reason (optional)"
-                          className="rounded border border-neutral-300 px-2 py-1 text-xs w-56"
-                          value={reasonById[r.workflowInstanceId] ?? ''}
-                          onChange={(e) => setReasonById(v => ({ ...v, [r.workflowInstanceId]: e.target.value }))}
-                        />
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            disabled={busyId === r.workflowInstanceId}
-                            className="bg-success-600 hover:bg-success-700"
-                            onClick={() => void handleDecide(r.workflowInstanceId, 'approved')}
-                          >
-                            Approve
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            className="border-danger-300 text-danger-700 hover:bg-danger-50"
-                            disabled={busyId === r.workflowInstanceId}
-                            onClick={() => void handleDecide(r.workflowInstanceId, 'rejected')}
-                          >
-                            Reject
-                          </Button>
-                          <Button type="button" variant="ghost" size="sm" onClick={() => setDeciding(null)}>
-                            Cancel
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <Button type="button" variant="secondary" size="sm" onClick={() => setDeciding(r.workflowInstanceId)}>
-                        Decide
-                      </Button>
-                    )}
-                  </TableCell>
-                </TableRow>
+        {error && <p className="mb-3 text-sm text-danger-600" role="alert">{error}</p>}
+        {exported && <p className="mb-3 text-sm text-success-700" role="status">{exported}</p>}
+        {!cases ? <div className="flex justify-center py-8"><Spinner /></div>
+          : cases.length === 0 ? <p className="text-sm text-neutral-600">No CAS cases.</p> : (
+            <ul className="flex flex-col gap-4">
+              {cases.map((c) => (
+                <li key={c.casCaseId} className="rounded-md border border-neutral-200 p-4">
+                  <p className="mb-2 font-medium text-neutral-900">
+                    <Link to={`/students/${c.personId}`} className="text-primary-600 hover:underline">{c.subject.studentName ?? c.personId}</Link>
+                    {c.subject.programmeCode ? <span className="ml-2 text-sm font-normal text-neutral-600">{c.subject.programmeCode}</span> : null}
+                    {c.applicationId ? <Link to={`/applications/${c.applicationId}`} className="ml-2 text-sm font-normal text-primary-600 hover:underline">application</Link> : null}
+                  </p>
+                  <CasCasePanel item={c} onChanged={() => void load()} />
+                </li>
               ))}
-            </TableBody>
-          </Table>
-        )}
+            </ul>
+          )}
       </CardBody>
     </Card>
   );

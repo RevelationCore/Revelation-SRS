@@ -125,6 +125,10 @@ export const PERMISSION_ROLES = {
   'progression:write':                  ['registry-administrator'] as Role[],
   'regulatory:read':                    ['registry-administrator', 'regulatory-officer', 'dpo', 'tenant-administrator', 'system-administrator'] as Role[],
   'regulatory:write':                   ['registry-administrator', 'regulatory-officer', 'dpo', 'tenant-administrator', 'system-administrator'] as Role[],
+  // One CAS record (Phase 3 D-16): CAS work is the compliance team's, not every regulatory writer's.
+  'cas:read':                           ['regulatory-officer', 'registry-administrator'] as Role[],
+  'cas:prepare':                        ['regulatory-officer'] as Role[],
+  'cas:approve':                        ['regulatory-officer'] as Role[],
   'regulatory:decide':                  ['registry-administrator', 'regulatory-officer'] as Role[],
   'workflow:read':                      ['registry-administrator', 'tenant-administrator'] as Role[],
   'workflow:write':                     ['tenant-administrator'] as Role[],

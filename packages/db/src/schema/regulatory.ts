@@ -114,15 +114,6 @@ export const slcNotifications = pgTable('slc_notification', {
   receivedAt:           timestamp('received_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const ukviCasRequests = pgTable('ukvi_cas_request', {
-  ...bitemporalColumns,
-  tenantId:     uuid('tenant_id').notNull().references(() => tenants.id),
-  enrolmentId:  uuid('enrolment_id').notNull(), // logical FK -> enrolment.id
-  casReference: text('cas_reference'),
-  statusCode:   text('status_code').notNull(),
-  requestedAt:  timestamp('requested_at', { withTimezone: true }).notNull().defaultNow(),
-});
-
 export const ukviAttendanceReports = pgTable('ukvi_attendance_report', {
   id:               uuid('id').primaryKey().defaultRandom(),
   tenantId:         uuid('tenant_id').notNull().references(() => tenants.id),
@@ -135,7 +126,9 @@ export const ukviAttendanceReports = pgTable('ukvi_attendance_report', {
 export const ukviVisaStatuses = pgTable('ukvi_visa_status', {
   ...bitemporalColumns,
   tenantId:      uuid('tenant_id').notNull().references(() => tenants.id),
-  enrolmentId:   uuid('enrolment_id').notNull(), // logical FK -> enrolment.id
+  // Null until the applicant is converted (D-16): a visa is granted before enrolment.
+  enrolmentId:   uuid('enrolment_id'), // logical FK -> enrolment.id
+  casCaseId:     uuid('cas_case_id'),  // logical FK -> cas_case.id
   casReference:  text('cas_reference').notNull(),
   statusCode:    text('status_code').notNull(),
   effectiveDate: date('effective_date').notNull(),
@@ -146,6 +139,7 @@ export const ukviComplianceAlerts = pgTable('ukvi_compliance_alert', {
   id:            uuid('id').primaryKey().defaultRandom(),
   tenantId:      uuid('tenant_id').notNull().references(() => tenants.id),
   enrolmentId:   uuid('enrolment_id').notNull(), // logical FK -> enrolment.id
+  casCaseId:     uuid('cas_case_id'),               // logical FK -> cas_case.id (D-16)
   casReference:  text('cas_reference'),
   alertTypeCode: text('alert_type_code').notNull(),
   triggeredAt:   timestamp('triggered_at', { withTimezone: true }).notNull().defaultNow(),
@@ -245,7 +239,6 @@ export type HesaValidationReport         = typeof hesaValidationReports.$inferSe
 export type HesaValidationIssue          = typeof hesaValidationIssues.$inferSelect;
 export type HesaIdentifierAssignment     = typeof hesaIdentifierAssignments.$inferSelect;
 export type SlcNotification              = typeof slcNotifications.$inferSelect;
-export type UkviCasRequest               = typeof ukviCasRequests.$inferSelect;
 export type UkviAttendanceReport         = typeof ukviAttendanceReports.$inferSelect;
 export type UkviVisaStatus               = typeof ukviVisaStatuses.$inferSelect;
 export type UkviComplianceAlert          = typeof ukviComplianceAlerts.$inferSelect;
@@ -257,7 +250,6 @@ export type FoiExtract                   = typeof foiExtracts.$inferSelect;
 export type StudentRegulatoryProfile     = typeof studentRegulatoryProfiles.$inferSelect;
 
 export type NewSlcNotification          = typeof slcNotifications.$inferInsert;
-export type NewUkviCasRequest           = typeof ukviCasRequests.$inferInsert;
 export type NewOfsExtract               = typeof ofsExtracts.$inferInsert;
 export type NewFoiRequest               = typeof foiRequests.$inferInsert;
 export type NewStudentRegulatoryProfile = typeof studentRegulatoryProfiles.$inferInsert;
@@ -265,14 +257,19 @@ export type NewStudentRegulatoryProfile = typeof studentRegulatoryProfiles.$infe
 // ─────────────────────────────────────────────────────────────────────────────
 // BPR-D03 — CAS governance (Stage 1, migration 0004_business_process_foundations).
 //
-// ukvi_cas_request stays as-is: cas_case is a separate governed aggregate.
-// Eligibility checks, assignment versions and sponsor report versions are
-// the evidence/decision trail ukvi_cas_request never captured.
+// Since Phase 3 (D-16) cas_case is the only CAS record: ukvi_cas_request was
+// dropped in migration 0009. A case belongs to an application (new entrant)
+// or an enrolment (in-country extension); conversion adds the enrolment.
 
 export const casCases = pgTable('cas_case', {
   ...bitemporalColumns,
   tenantId:           uuid('tenant_id').notNull().references(() => tenants.id),
-  enrolmentId:        uuid('enrolment_id').notNull(),
+  personId:           uuid('person_id').notNull(),
+  applicationId:      uuid('application_id'),
+  enrolmentId:        uuid('enrolment_id'),
+  /** The CAS data as prepared for approval; its hash is the assignment version's payload hash. */
+  preparedPayload:    jsonb('prepared_payload').$type<Record<string, unknown>>(),
+  preparedBy:         text('prepared_by'),
   casReference:       text('cas_reference'),
   statusCode:         text('status_code').notNull().default('opened'),
   actorId:            text('actor_id').notNull(),

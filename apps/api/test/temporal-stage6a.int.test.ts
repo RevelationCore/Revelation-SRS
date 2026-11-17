@@ -86,8 +86,7 @@ describe('coverage', () => {
       'ofs-extract-generation-approval',
       'slc-confirmation-submission-approval',
       'ucas-confirmation-submission-approval',
-      'ukvi-cas-request-submission-approval',
-    ]);
+    ]); // the CAS submission workflow was retired: a CAS case has its own approval (D-16)
   });
 });
 

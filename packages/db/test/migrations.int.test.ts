@@ -434,7 +434,6 @@ describe('Phase 6 migrations', () => {
           'hesa_validation_issue',
           'hesa_identifier_assignment',
           'slc_notification',
-          'ukvi_cas_request',
           'ukvi_attendance_report',
           'ukvi_visa_status',
           'ukvi_compliance_alert',
@@ -463,7 +462,6 @@ describe('Phase 6 migrations', () => {
       'student_regulatory_profile',
       'ucas_application',
       'ukvi_attendance_report',
-      'ukvi_cas_request',
       'ukvi_compliance_alert',
       'ukvi_visa_status',
     ]);
@@ -482,7 +480,6 @@ describe('Phase 6 migrations', () => {
         'hesa_validation_issue',
         'hesa_identifier_assignment',
         'slc_notification',
-        'ukvi_cas_request',
         'ukvi_attendance_report',
         'ukvi_visa_status',
         'ukvi_compliance_alert',
@@ -495,7 +492,7 @@ describe('Phase 6 migrations', () => {
       )
     `) as Array<{ relname: string; relrowsecurity: boolean; relforcerowsecurity: boolean }>;
 
-    expect(rows).toHaveLength(18);
+    expect(rows).toHaveLength(17); // ukvi_cas_request was dropped (Phase 3 D-16)
     for (const row of rows) {
       expect(row.relrowsecurity).toBe(true);
       expect(row.relforcerowsecurity).toBe(true);
@@ -510,8 +507,6 @@ describe('Phase 6 migrations', () => {
         AND indexname IN (
           'ucas_application_unique_logical_transaction',
           'ucas_application_current_version_unique',
-          'ukvi_cas_request_unique_logical_transaction',
-          'ukvi_cas_request_current_version_unique',
           'ukvi_visa_status_unique_logical_transaction',
           'ukvi_visa_status_current_version_unique',
           'foi_request_unique_logical_transaction',
@@ -532,8 +527,6 @@ describe('Phase 6 migrations', () => {
       'student_regulatory_profile_unique_logical_transaction',
       'ucas_application_current_version_unique',
       'ucas_application_unique_logical_transaction',
-      'ukvi_cas_request_current_version_unique',
-      'ukvi_cas_request_unique_logical_transaction',
       'ukvi_visa_status_current_version_unique',
       'ukvi_visa_status_unique_logical_transaction',
     ]);
@@ -566,7 +559,6 @@ describe('Phase 6 migrations', () => {
         'hesa_student_return',
         'hesa_validation_issue',
         'slc_notification',
-        'ukvi_cas_request',
         'ukvi_visa_status',
         'ukvi_compliance_alert',
         'ofs_extract',

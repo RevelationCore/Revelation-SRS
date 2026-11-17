@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { listHesaReturns, listUcasApplications, listCasRequests, listComplianceAlerts, type HesaReturn } from '../api/regulatory.js';
+import { listHesaReturns, listUcasApplications, listComplianceAlerts, type HesaReturn } from '../api/regulatory.js';
+import { listCasCaseWorklist } from '../api/casCases.js';
 import { ApiError } from '../api/client.js';
 import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
@@ -27,7 +28,8 @@ export function RegulatoryStatusPage() {
         const [hesaReturns, ucasApps, casReqs, alerts] = await Promise.all([
           listHesaReturns(),
           listUcasApplications(),
-          listCasRequests(),
+          // CAS cases need cas:read (D-16); others see the page without them.
+          listCasCaseWorklist().catch(() => []),
           listComplianceAlerts(),
         ]);
 
@@ -42,7 +44,7 @@ export function RegulatoryStatusPage() {
           },
           ucas:  { applications: ucasApps.length },
           cas:   {
-            pending: casReqs.filter(c => c.statusCode === 'pending').length,
+            pending: casReqs.filter(c => !['assigned', 'withdrawn'].includes(c.statusCode)).length,
             total:   casReqs.length,
           },
           ukvi: { activeAlerts: alerts.filter(a => a.resolvedAt === null).length },

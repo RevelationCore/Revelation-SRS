@@ -208,7 +208,7 @@ test.describe('Admin — reporting (GP-A06)', () => {
     await page.route('**/api/v1/regulatory/ucas/applications**', async (route) => {
       await route.fulfill({ json: [] });
     });
-    await page.route('**/api/v1/regulatory/ukvi/cas-requests**', async (route) => {
+    await page.route('**/api/v1/regulatory/cas-cases**', async (route) => {
       await route.fulfill({ json: [] });
     });
     await page.route('**/api/v1/regulatory/ukvi/compliance-alerts**', async (route) => {

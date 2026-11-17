@@ -1,60 +1,39 @@
 import { api } from './client.js';
 
+/** One CAS record (BPR-D03; Phase 3 D-16). */
 export interface CasCase {
-  casCaseId:     string;
-  enrolmentId:   string;
-  casReference:  string | null;
-  statusCode:    string;
-  actorId:       string;
-  validFrom:     string;
-  validTo:       string | null;
-  recordedAt:    string;
-  recordedUntil: string | null;
+  casCaseId: string;
+  personId: string;
+  applicationId: string | null;
+  enrolmentId: string | null;
+  casReference: string | null;
+  statusCode: string; // opened | eligibility-checked | prepared | approved | requested | assigned | withdrawn
+  preparedBy: string | null;
+  preparedPayload: Record<string, unknown> | null;
+  openedAt: string;
+  subject: { studentName: string | null; programmeCode: string | null; programmeTitle: string | null };
+  eligibilityChecks: Array<{ checkId: string; guidanceVersion: string; checkTypeCode: string; resultCode: string; checkedBy: string; checkedAt: string }>;
+  assignmentVersions: Array<{ assignmentVersionId: string; versionNumber: number; assignedPayloadHash: string; casNumber: string | null; approvedBy: string; approvedAt: string; smsRequestSentAt: string | null; smsReceiptRef: string | null }>;
 }
 
-export function listCasCases(enrolmentId: string): Promise<CasCase[]> {
-  return api.get<CasCase[]>(`/api/v1/enrolments/${enrolmentId}/regulatory/cas-cases`);
-}
+export interface CasSmsExport { contract: string; generatedAt: string; processedCount: number; casRequests: unknown[] }
 
-export function openCasCase(
-  enrolmentId:  string,
-  casReference?: string,
-): Promise<{ casCaseId: string }> {
-  const body: { casReference?: string } = {};
-  if (casReference) body.casReference = casReference;
-  return api.post(`/api/v1/enrolments/${enrolmentId}/regulatory/cas-cases`, body);
-}
+const qs = (q: Record<string, string | boolean | undefined>) => {
+  const p = Object.entries(q).filter(([, v]) => v !== undefined && v !== false).map(([k, v]) => `${k}=${encodeURIComponent(String(v))}`);
+  return p.length ? `?${p.join('&')}` : '';
+};
 
-export function recordEligibilityCheck(
-  casCaseId: string,
-  body: {
-    guidanceVersion: string;
-    checkTypeCode:   string;
-    resultCode:      string;
-    evidenceRef?:    string;
-  },
-): Promise<{ checkId: string }> {
-  return api.post(`/api/v1/regulatory/cas-cases/${casCaseId}/eligibility-checks`, body);
-}
-
-export function recordAssignmentVersion(
-  casCaseId: string,
-  body: {
-    assignedPayloadHash: string;
-    casNumber?:          string;
-    smsRequestSentAt?:   string;
-    smsReceiptRef?:      string;
-  },
-): Promise<{ assignmentId: string }> {
-  return api.post(`/api/v1/regulatory/cas-cases/${casCaseId}/assignment-versions`, body);
-}
-
-export function recordSponsorReportVersion(
-  casCaseId: string,
-  body: {
-    reportPayloadRef:   string;
-    distributionItemId?: string;
-  },
-): Promise<{ reportId: string }> {
-  return api.post(`/api/v1/regulatory/cas-cases/${casCaseId}/sponsor-report-versions`, body);
-}
+export const listCasCaseWorklist = (q: { open?: boolean; statusCode?: string; personId?: string; applicationId?: string } = {}) =>
+  api.get<CasCase[]>(`/api/v1/regulatory/cas-cases${qs(q)}`);
+export const listCasCases = (enrolmentId: string) => api.get<CasCase[]>(`/api/v1/enrolments/${enrolmentId}/regulatory/cas-cases`);
+export const openCasCaseForApplication = (applicationId: string) => api.post<CasCase>(`/api/v1/applications/${applicationId}/cas-cases`, {});
+export const openCasCase = (enrolmentId: string) => api.post<CasCase>(`/api/v1/enrolments/${enrolmentId}/regulatory/cas-cases`, {});
+export const recordEligibilityCheck = (casCaseId: string, body: { guidanceVersion: string; checkTypeCode: string; resultCode: string; evidenceRef?: string }) =>
+  api.post<{ checkId: string }>(`/api/v1/regulatory/cas-cases/${casCaseId}/eligibility-checks`, body);
+export const prepareCas = (casCaseId: string) => api.post<CasCase>(`/api/v1/regulatory/cas-cases/${casCaseId}/preparation`);
+export const approveCas = (casCaseId: string) => api.post<CasCase>(`/api/v1/regulatory/cas-cases/${casCaseId}/approval`);
+export const recordCasNumber = (casCaseId: string, body: { casNumber: string; smsReceiptRef?: string }) =>
+  api.post<CasCase>(`/api/v1/regulatory/cas-cases/${casCaseId}/cas-number`, body);
+export const reopenCasForCorrection = (casCaseId: string) => api.post<CasCase>(`/api/v1/regulatory/cas-cases/${casCaseId}/correction`);
+export const withdrawCas = (casCaseId: string) => api.post<CasCase>(`/api/v1/regulatory/cas-cases/${casCaseId}/withdrawal`);
+export const exportCasForSms = () => api.post<CasSmsExport>('/api/v1/regulatory/cas-cases/sms-export');

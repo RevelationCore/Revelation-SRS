@@ -184,14 +184,6 @@ export function decideSlcSubmissionRequest(
 
 // ── UKVI ─────────────────────────────────────────────────────────────────────
 
-export interface CasRequest {
-  casRequestId: string;
-  enrolmentId:  string;
-  casReference: string | null;
-  statusCode:   string;
-  requestedAt:  string;
-}
-
 export interface ComplianceAlert {
   alertId:       string;
   enrolmentId:   string;
@@ -202,42 +194,7 @@ export interface ComplianceAlert {
   resolvedBy:    string | null;
 }
 
-export function listCasRequests(): Promise<CasRequest[]> {
-  return api.get<CasRequest[]>('/api/v1/regulatory/ukvi/cas-requests');
-}
-
-export function generateCasRequests(): Promise<{
-  processedCount: number;
-  casRequests:    Array<{ casRequestId: string; enrolmentId: string }>;
-}> {
-  return api.post('/api/v1/regulatory/ukvi/cas-requests/generate', {});
-}
-
-export interface UkviCasSubmissionRequest {
-  workflowInstanceId: string;
-  workflowTaskId:      string;
-  statusCode:          string;
-  recordCount:         number;
-  context:             Record<string, unknown>;
-  startedAt:           string;
-}
-
 /** Snapshots the current preview of pending CAS requests and starts a regulatory-officer approval workflow for it. */
-export function requestUkviCasSubmission(reason?: string): Promise<UkviCasSubmissionRequest> {
-  return api.post('/api/v1/regulatory/ukvi/cas-requests/submission-requests', { reason });
-}
-
-export function listUkviCasSubmissionRequests(): Promise<UkviCasSubmissionRequest[]> {
-  return api.get<UkviCasSubmissionRequest[]>('/api/v1/regulatory/ukvi/cas-requests/submission-requests');
-}
-
-export function decideUkviCasSubmissionRequest(
-  workflowInstanceId: string,
-  decisionCode: 'approved' | 'rejected',
-  reason?: string,
-): Promise<{ processedCount: number }> {
-  return api.post(`/api/v1/regulatory/ukvi/cas-requests/submission-requests/${workflowInstanceId}/decision`, { decisionCode, reason });
-}
 
 export function listComplianceAlerts(): Promise<ComplianceAlert[]> {
   return api.get<ComplianceAlert[]>('/api/v1/regulatory/ukvi/compliance-alerts');
