@@ -66,3 +66,15 @@ export function distributeAmendment(
 ): Promise<{ distributionItemIds: string[] }> {
   return api.post(`/api/v1/correction-cases/amendments/${amendmentId}/distribute`, { targetSystemCodes });
 }
+
+/** An amendment and the exact versions it replaced and created (D-37). */
+export interface CaseAmendment {
+  amendmentId: string; caseId: string; entityType: string; entityId: string;
+  beforeValue: unknown; afterValue: unknown; authorisedBy: string; amendedAt: string;
+  before: { versionId: string; recordedAt: string } | null;
+  after: { versionId: string; recordedAt: string } | null;
+}
+
+export function listCaseAmendments(caseId: string): Promise<CaseAmendment[]> {
+  return api.get<CaseAmendment[]>(`/api/v1/correction-cases/${caseId}/amendments`);
+}

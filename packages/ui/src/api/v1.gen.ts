@@ -2656,7 +2656,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        get: operations["getCorrectionCasesByCaseIdAmendments"];
         put?: never;
         post: operations["createCorrectionCasesByCaseIdAmendments"];
         delete?: never;
@@ -18344,6 +18344,59 @@ export interface operations {
             };
             /** @description Default Response */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getCorrectionCasesByCaseIdAmendments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                caseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        amendmentId: string;
+                        caseId: string;
+                        entityType: string;
+                        entityId: string;
+                        beforeValue: unknown;
+                        afterValue: unknown;
+                        authorisedBy: string;
+                        amendedAt: string;
+                        before: {
+                            versionId: string;
+                            recordedAt: string;
+                        } | null;
+                        after: {
+                            versionId: string;
+                            recordedAt: string;
+                        } | null;
+                    }[];
+                };
+            };
+            /** @description Default Response */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -292,7 +292,7 @@ export class MarkService {
 
     await withTenantContext(this.db, tenantId, async (tx) => {
       await tx.update(marks)
-        .set({ recordedUntil: now, validTo: now })
+        .set({ recordedUntil: now })
         .where(and(
           eq(marks.id,       markId    as `${string}-${string}-${string}-${string}-${string}`),
           eq(marks.tenantId, tenantId  as `${string}-${string}-${string}-${string}-${string}`),
@@ -314,8 +314,8 @@ export class MarkService {
         locked:                true,  // re-lock after authorised amendment
         sourceSystem:          current.sourceSystem,
         actorId,
-        validFrom:             now,
-        validTo:               null,
+        validFrom:             current.validFrom,
+        validTo:               current.validTo,
         recordedAt:            now,
         recordedUntil:         null,
       });

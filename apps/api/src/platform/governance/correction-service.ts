@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
 import {
   marks,
   moduleRegistrations,
@@ -9,6 +9,7 @@ import {
   postRatificationCases,
   enrolments,
   progressionDecisions,
+  sourceVersionReferences,
   type Db,
   withTenantContext,
 } from '@revelation-srs/db';
@@ -81,6 +82,9 @@ export interface AmendmentDto {
   afterValue:   unknown;
   authorisedBy: string;
   amendedAt:    Date;
+  /** The exact versions before and after the correction (D-37); null for amendments recorded before that. */
+  before:       { versionId: string; recordedAt: Date } | null;
+  after:        { versionId: string; recordedAt: Date } | null;
 }
 
 // ── Allowed status transitions ────────────────────────────────────────────────
@@ -233,7 +237,20 @@ export class CorrectionService {
     const now         = clockNow();
 
     await withTenantContext(this.db, tenantId, async (tx) => {
-      const beforeValue = await this.#dispatchAmendment(tx, tenantId, currentCase.enrolmentId, input, actorId, now);
+      const { beforeValue, beforeVersionId, afterVersionId } = await this.#dispatchAmendment(tx, tenantId, currentCase.enrolmentId, input, actorId, now);
+
+      // The exact versions before and after, so the correction can be reproduced (D-37, BPR-D13).
+      const ref = async (versionId: string, purposeCode: 'amendment-before' | 'amendment-after') => {
+        const id = randomUUID();
+        await tx.insert(sourceVersionReferences).values({
+          id, tenantId: tenantId as `${string}-${string}-${string}-${string}-${string}`, caseDecisionId: null,
+          entityType: input.entityType, entityId: input.entityId as `${string}-${string}-${string}-${string}-${string}`,
+          versionId: versionId as `${string}-${string}-${string}-${string}-${string}`, purposeCode, createdAt: now,
+        });
+        return id;
+      };
+      const beforeVersionRef = await ref(beforeVersionId, 'amendment-before');
+      const afterVersionRef = await ref(afterVersionId, 'amendment-after');
 
       await tx.insert(postRatificationAmendments).values({
         id:           amendmentId,
@@ -245,6 +262,8 @@ export class CorrectionService {
         afterValue:   input.afterValue,
         authorisedBy: actorId,
         amendedAt:    now,
+        beforeVersionRef: beforeVersionRef,
+        afterVersionRef:  afterVersionRef,
       });
     });
 
@@ -271,6 +290,38 @@ export class CorrectionService {
     return amendmentId;
   }
 
+  /** A case's amendments, with the versions each replaced and created (D-37). */
+  async listAmendments(caseId: string, tenantId: string): Promise<AmendmentDto[]> {
+    if (!(await this.#getCurrentCase(caseId, tenantId))) throw new NotFoundError('CorrectionCase', caseId);
+    return withTenantContext(this.db, tenantId, async (tx) => {
+      const rows = await tx.select().from(postRatificationAmendments).where(and(
+        eq(postRatificationAmendments.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
+        eq(postRatificationAmendments.caseId, caseId as `${string}-${string}-${string}-${string}-${string}`),
+      )).orderBy(postRatificationAmendments.amendedAt);
+      const refIds = rows.flatMap((r) => [r.beforeVersionRef, r.afterVersionRef]).filter((v): v is `${string}-${string}-${string}-${string}-${string}` => v !== null);
+      const refs = refIds.length === 0 ? [] : await tx.select().from(sourceVersionReferences).where(inArray(sourceVersionReferences.id, refIds));
+      const versionRow = async (entityType: string, versionId: string): Promise<Date | null> => {
+        const table = entityType === 'mark' ? marks : entityType === 'module_result' ? moduleResults : progressionDecisions;
+        const [v] = await tx.select({ recordedAt: table.recordedAt }).from(table).where(eq(table.versionId, versionId as `${string}-${string}-${string}-${string}-${string}`)).limit(1);
+        return v?.recordedAt ?? null;
+      };
+      const out: AmendmentDto[] = [];
+      for (const r of rows) {
+        const side = async (refId: string | null) => {
+          const ref = refs.find((x) => x.id === refId);
+          if (!ref) return null;
+          const recordedAt = await versionRow(r.entityType, ref.versionId);
+          return recordedAt ? { versionId: ref.versionId, recordedAt } : null;
+        };
+        out.push({
+          amendmentId: r.id, caseId: r.caseId, entityType: r.entityType, entityId: r.entityId, beforeValue: r.beforeValue, afterValue: r.afterValue,
+          authorisedBy: r.authorisedBy, amendedAt: r.amendedAt, before: await side(r.beforeVersionRef), after: await side(r.afterVersionRef),
+        });
+      }
+      return out;
+    });
+  }
+
   async listCases(enrolmentId: string, tenantId: string): Promise<CorrectionCaseDto[]> {
     await this.#ensureEnrolmentExists(enrolmentId, tenantId);
     const rows = await withTenantContext(this.db, tenantId, async (tx) =>
@@ -292,7 +343,11 @@ export class CorrectionService {
     input:    ApplyAmendmentInput,
     actorId:  string,
     now: Date,
-  ): Promise<unknown> {
+  ): Promise<{ beforeValue: unknown; beforeVersionId: string; afterVersionId: string }> {
+    // ADR-013: a correction restates the same valid period. The superseded
+    // version leaves the current record (recorded_until) but keeps its valid
+    // time, so history still shows what was believed true, and when.
+    const afterVersionId = randomUUID();
     switch (input.entityType) {
       case 'mark': {
         const rows = await tx.select({
@@ -339,14 +394,14 @@ export class CorrectionService {
         }
 
         await tx.update(marks)
-          .set({ recordedUntil: now, validTo: now })
+          .set({ recordedUntil: now })
           .where(and(
             eq(marks.id, input.entityId as `${string}-${string}-${string}-${string}-${string}`),
             eq(marks.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
             isNull(marks.recordedUntil),
           ));
         await tx.insert(marks).values({
-          versionId: randomUUID(),
+          versionId: afterVersionId,
           id: input.entityId as `${string}-${string}-${string}-${string}-${string}`,
           tenantId: tenantId as `${string}-${string}-${string}-${string}-${string}`,
           moduleRegistrationId: current.moduleRegistrationId,
@@ -360,16 +415,17 @@ export class CorrectionService {
           locked: true,
           sourceSystem: current.sourceSystem,
           actorId,
-          validFrom: now,
-          validTo: null,
+          validFrom: current.validFrom,
+          validTo: current.validTo,
           recordedAt: now,
           recordedUntil: null,
         });
-        return this.#markBeforeValue(current);
+        return { beforeValue: this.#markBeforeValue(current), beforeVersionId: current.versionId, afterVersionId };
       }
 
       case 'module_result': {
         const rows = await tx.select({
+          versionId: moduleResults.versionId,
           id: moduleResults.id,
           moduleRegistrationId: moduleResults.moduleRegistrationId,
           aggregateMark: moduleResults.aggregateMark,
@@ -403,14 +459,14 @@ export class CorrectionService {
           : current.resultCode;
 
         await tx.update(moduleResults)
-          .set({ recordedUntil: now, validTo: now })
+          .set({ recordedUntil: now })
           .where(and(
             eq(moduleResults.id, input.entityId as `${string}-${string}-${string}-${string}-${string}`),
             eq(moduleResults.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
             isNull(moduleResults.recordedUntil),
           ));
         await tx.insert(moduleResults).values({
-          versionId: randomUUID(),
+          versionId: afterVersionId,
           id: input.entityId as `${string}-${string}-${string}-${string}-${string}`,
           tenantId: tenantId as `${string}-${string}-${string}-${string}-${string}`,
           moduleRegistrationId: current.moduleRegistrationId,
@@ -418,12 +474,12 @@ export class CorrectionService {
           resultCode,
           locked: true,
           calculatedAt: now,
-          validFrom: now,
-          validTo: null,
+          validFrom: current.validFrom,
+          validTo: current.validTo,
           recordedAt: now,
           recordedUntil: null,
         });
-        return this.#moduleResultBeforeValue(current);
+        return { beforeValue: this.#moduleResultBeforeValue(current), beforeVersionId: current.versionId, afterVersionId };
       }
 
       case 'progression_decision': {
@@ -442,14 +498,14 @@ export class CorrectionService {
           : current.decisionCode;
 
         await tx.update(progressionDecisions)
-          .set({ recordedUntil: now, validTo: now })
+          .set({ recordedUntil: now })
           .where(and(
             eq(progressionDecisions.id, input.entityId as `${string}-${string}-${string}-${string}-${string}`),
             eq(progressionDecisions.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
             isNull(progressionDecisions.recordedUntil),
           ));
         await tx.insert(progressionDecisions).values({
-          versionId: randomUUID(),
+          versionId: afterVersionId,
           id: input.entityId as `${string}-${string}-${string}-${string}-${string}`,
           tenantId: tenantId as `${string}-${string}-${string}-${string}-${string}`,
           enrolmentId: current.enrolmentId,
@@ -459,12 +515,12 @@ export class CorrectionService {
           examBoardId: current.examBoardId,
           locked: true,
           actorId,
-          validFrom: now,
-          validTo: null,
+          validFrom: current.validFrom,
+          validTo: current.validTo,
           recordedAt: now,
           recordedUntil: null,
         });
-        return this.#progressionBeforeValue(current);
+        return { beforeValue: this.#progressionBeforeValue(current), beforeVersionId: current.versionId, afterVersionId };
       }
 
       default:

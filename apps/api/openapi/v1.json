@@ -31845,6 +31845,145 @@
             }
           }
         }
+      },
+      "get": {
+        "operationId": "getCorrectionCasesByCaseIdAmendments",
+        "tags": [
+          "governance"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "caseId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "amendmentId",
+                      "caseId",
+                      "entityType",
+                      "entityId",
+                      "beforeValue",
+                      "afterValue",
+                      "authorisedBy",
+                      "amendedAt",
+                      "before",
+                      "after"
+                    ],
+                    "properties": {
+                      "amendmentId": {
+                        "type": "string"
+                      },
+                      "caseId": {
+                        "type": "string"
+                      },
+                      "entityType": {
+                        "type": "string"
+                      },
+                      "entityId": {
+                        "type": "string"
+                      },
+                      "beforeValue": {},
+                      "afterValue": {},
+                      "authorisedBy": {
+                        "type": "string"
+                      },
+                      "amendedAt": {
+                        "type": "string"
+                      },
+                      "before": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "required": [
+                              "versionId",
+                              "recordedAt"
+                            ],
+                            "properties": {
+                              "versionId": {
+                                "type": "string"
+                              },
+                              "recordedAt": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "after": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "required": [
+                              "versionId",
+                              "recordedAt"
+                            ],
+                            "properties": {
+                              "versionId": {
+                                "type": "string"
+                              },
+                              "recordedAt": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/correction-cases/amendments/{amendmentId}/distribute": {

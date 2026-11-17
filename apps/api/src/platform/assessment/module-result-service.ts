@@ -169,7 +169,7 @@ export class ModuleResultService {
 
     await withTenantContext(this.db, tenantId, async (tx) => {
       await tx.update(moduleResults)
-        .set({ recordedUntil: now, validTo: now })
+        .set({ recordedUntil: now })
         .where(and(
           eq(moduleResults.id,       moduleResultId as `${string}-${string}-${string}-${string}-${string}`),
           eq(moduleResults.tenantId, tenantId       as `${string}-${string}-${string}-${string}-${string}`),
@@ -185,8 +185,8 @@ export class ModuleResultService {
         resultCode,
         locked:               true,
         calculatedAt:         now,
-        validFrom:            now,
-        validTo:              null,
+        validFrom:            current.validFrom,
+        validTo:              current.validTo,
         recordedAt:           now,
         recordedUntil:        null,
       });

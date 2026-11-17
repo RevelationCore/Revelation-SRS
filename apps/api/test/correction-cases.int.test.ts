@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import type { IntegrationBusPublisher } from '../src/platform/integration-bus/publisher.js';
@@ -135,6 +136,38 @@ describe('End-to-end: mark → ratify → amend', () => {
       .find((v) => v.recordedUntil === null);
     expect(amended?.rawMark).toBe(62);
     expect(amended?.locked).toBe(true);
+
+    // 10a. The amendment cites the exact versions before and after (D-37), and the versions hold the values.
+    const listed = await ctx.app.inject({ method: 'GET', url: `/api/v1/correction-cases/${caseId}/amendments`, headers: { authorization: `Bearer ${chairJwt}` } });
+    expect(listed.statusCode).toBe(200);
+    const [amendment] = listed.json<Array<{ amendmentId: string; before: { versionId: string } | null; after: { versionId: string } | null }>>();
+    expect(amendment?.amendmentId).toBe(amendmentId);
+    const versionRow = async (versionId: string) => (await ctx.db.execute(sql`
+      SELECT raw_mark::float AS raw_mark, valid_from, valid_to, recorded_at, recorded_until FROM mark WHERE version_id = ${versionId}::uuid`) as unknown as Array<{
+      raw_mark: number; valid_from: Date; valid_to: Date | null; recorded_at: Date; recorded_until: Date | null }>)[0]!;
+    const beforeRow = await versionRow(amendment!.before!.versionId);
+    const afterRow = await versionRow(amendment!.after!.versionId);
+    expect(beforeRow.raw_mark).toBe(55);
+    expect(afterRow.raw_mark).toBe(62);
+    const refs = await ctx.db.execute(sql`
+      SELECT r.purpose_code, r.version_id FROM post_ratification_amendment a
+      JOIN source_version_reference r ON r.id IN (a.before_version_ref, a.after_version_ref) WHERE a.id = ${amendmentId}::uuid ORDER BY r.purpose_code`) as unknown as Array<{ purpose_code: string; version_id: string }>;
+    expect(refs).toEqual([
+      { purpose_code: 'amendment-after', version_id: amendment!.after!.versionId },
+      { purpose_code: 'amendment-before', version_id: amendment!.before!.versionId },
+    ]);
+
+    // 10b. ADR-013: the correction restates the same valid period. As known before the correction,
+    // the mark was 55 from its original valid-from; as known now, it is 62 for that same period.
+    expect(new Date(afterRow.valid_from).toISOString()).toBe(new Date(beforeRow.valid_from).toISOString());
+    expect(beforeRow.valid_to).toBeNull();
+    expect(beforeRow.recorded_until).not.toBeNull();
+    const asKnown = async (at: Date) => (await ctx.db.execute(sql`
+      SELECT raw_mark::float AS raw_mark FROM mark WHERE id = ${fixture.markId}::uuid
+        AND recorded_at <= ${at.toISOString()}::timestamptz AND (recorded_until IS NULL OR recorded_until > ${at.toISOString()}::timestamptz)
+        AND valid_from <= ${new Date(beforeRow.valid_from).toISOString()}::timestamptz`) as unknown as Array<{ raw_mark: number }>).map((r) => r.raw_mark);
+    expect(await asKnown(new Date(new Date(afterRow.recorded_at).getTime() - 1))).toEqual([55]);
+    expect(await asKnown(new Date())).toEqual([62]);
 
     // 11. Subsequent unauthorised direct mutation still returns 403
     const blockedAgain = await ctx.app.inject({

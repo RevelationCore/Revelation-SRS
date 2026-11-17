@@ -29,6 +29,8 @@ import {
   updateCaseStatus,
   addCaseAmendment,
   distributeAmendment,
+  type CaseAmendment,
+  listCaseAmendments,
 } from '../api/corrections.js';
 import { getAuditLog, type AuditEntry } from '../api/auditLog.js';
 import {
@@ -1287,6 +1289,7 @@ function CorrectionsTab({ personId, canRatify }: { personId: string; canRatify: 
                   </div>
                 );
               })()}
+              <CaseAmendmentsList caseId={c.caseId} />
               {canRatify && c.statusCode === 'upheld' && (
                 <AmendmentSection caseId={c.caseId} />
               )}
@@ -1299,6 +1302,28 @@ function CorrectionsTab({ personId, canRatify }: { personId: string; canRatify: 
       {selectedEnrolId && (
         <VleOverrideAuditSection enrolmentId={selectedEnrolId} />
       )}
+    </div>
+  );
+}
+
+/** Applied amendments: what changed, and the record version each replaced and created (D-37). */
+function CaseAmendmentsList({ caseId }: { caseId: string }) {
+  const [amendments, setAmendments] = useState<CaseAmendment[]>([]);
+  useEffect(() => { void listCaseAmendments(caseId).then(setAmendments).catch(() => setAmendments([])); }, [caseId]);
+  if (amendments.length === 0) return null;
+  const version = (v: { versionId: string; recordedAt: string } | null) =>
+    v ? `${v.versionId.slice(0, 8)} (${new Date(v.recordedAt).toLocaleString('en-GB')})` : 'not recorded';
+  return (
+    <div className="mt-3">
+      <p className="text-xs font-medium text-neutral-700">Amendments</p>
+      <ul className="mt-1 space-y-1 text-xs text-neutral-600">
+        {amendments.map((a) => (
+          <li key={a.amendmentId}>
+            {a.entityType.replace('_', ' ')} {a.entityId.slice(0, 8)}: {JSON.stringify(a.afterValue)}, by {a.authorisedBy} on {new Date(a.amendedAt).toLocaleDateString('en-GB')}.
+            <span className="ml-1 font-mono">Version {version(a.before)} → {version(a.after)}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

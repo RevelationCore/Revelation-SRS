@@ -178,6 +178,32 @@ export function correctionCasesRoutes(fastify: FastifyInstance): void {
     },
   );
 
+  // The versions each amendment replaced and created (D-37).
+  fastify.get(
+    '/correction-cases/:caseId/amendments',
+    {
+      schema: {
+        params: Type.Object({ caseId: Type.String() }),
+        response: {
+          200: Type.Array(Type.Object({
+            amendmentId: Type.String(), caseId: Type.String(), entityType: Type.String(), entityId: Type.String(),
+            beforeValue: Type.Unknown(), afterValue: Type.Unknown(), authorisedBy: Type.String(), amendedAt: Type.String(),
+            before: Type.Union([Type.Object({ versionId: Type.String(), recordedAt: Type.String() }), Type.Null()]),
+            after: Type.Union([Type.Object({ versionId: Type.String(), recordedAt: Type.String() }), Type.Null()]),
+          })),
+          404: ErrorSchema,
+        },
+      },
+      preHandler: [requirePermission('exam-board:read')],
+    },
+    async (request, reply) => {
+      const { caseId } = request.params as { caseId: string };
+      const list = await fastify.correctionService.listAmendments(caseId, request.tenantId);
+      const side = (v: { versionId: string; recordedAt: Date } | null) => (v ? { versionId: v.versionId, recordedAt: v.recordedAt.toISOString() } : null);
+      await reply.send(list.map((a) => ({ ...a, amendedAt: a.amendedAt.toISOString(), before: side(a.before), after: side(a.after) })));
+    },
+  );
+
   // ── Distribute amendment to downstream consumers ────────────────────────────────
 
   fastify.post(

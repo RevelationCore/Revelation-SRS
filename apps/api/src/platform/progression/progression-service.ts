@@ -213,7 +213,7 @@ export class ProgressionService {
 
     await withTenantContext(this.db, tenantId, async (tx) => {
       await tx.update(progressionDecisions)
-        .set({ recordedUntil: now, validTo: now })
+        .set({ recordedUntil: now })
         .where(and(
           eq(progressionDecisions.id,       progressionDecisionId as `${string}-${string}-${string}-${string}-${string}`),
           eq(progressionDecisions.tenantId, tenantId              as `${string}-${string}-${string}-${string}-${string}`),
@@ -231,8 +231,8 @@ export class ProgressionService {
         examBoardId:  current.examBoardId as `${string}-${string}-${string}-${string}-${string}` | null | undefined ?? null,
         locked:       true,
         actorId,
-        validFrom:    now,
-        validTo:      null,
+        validFrom:    current.validFrom,
+        validTo:      current.validTo,
         recordedAt:   now,
         recordedUntil: null,
       });

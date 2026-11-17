@@ -64,3 +64,35 @@ ALTER TABLE "exam_board_decision" ADD COLUMN IF NOT EXISTS "pack_hash" text;
 -- a foreign key back would make a cycle (which the demo reset refuses).
 ALTER TABLE "exam_board" ADD COLUMN IF NOT EXISTS "ratified_data_pack_id" uuid;
 ALTER TABLE "exam_board" ADD COLUMN IF NOT EXISTS "ratified_pack_hash" text;
+
+-- ── D-37: before and after version references on corrections ────────────────
+ALTER TABLE "post_ratification_amendment" DROP CONSTRAINT IF EXISTS "post_ratification_amendment_before_version_ref_fkey";
+ALTER TABLE "post_ratification_amendment" ADD CONSTRAINT "post_ratification_amendment_before_version_ref_fkey"
+  FOREIGN KEY ("before_version_ref") REFERENCES "source_version_reference"("id");
+ALTER TABLE "post_ratification_amendment" DROP CONSTRAINT IF EXISTS "post_ratification_amendment_after_version_ref_fkey";
+ALTER TABLE "post_ratification_amendment" ADD CONSTRAINT "post_ratification_amendment_after_version_ref_fkey"
+  FOREIGN KEY ("after_version_ref") REFERENCES "source_version_reference"("id");
+ALTER TABLE "post_ratification_amendment" DROP CONSTRAINT IF EXISTS "post_ratification_amendment_version_refs_paired";
+ALTER TABLE "post_ratification_amendment" ADD CONSTRAINT "post_ratification_amendment_version_refs_paired"
+  CHECK (("before_version_ref" IS NULL) = ("after_version_ref" IS NULL));
+
+INSERT INTO "value_set" ("set_code", "display_name", "source", "source_version", "description", "is_extensible")
+VALUES ('source-version-purpose-code', 'Source Version Purpose', 'srs-internal', NULL, 'Why a record version was cited', false)
+ON CONFLICT ("set_code") DO NOTHING;
+
+INSERT INTO "value_set_member" ("value_set_id", "code", "display_label", "sort_order", "active_from", "source_metadata")
+SELECT vs."id", v.code, v.display_label, v.sort_order, '2000-01-01T00:00:00Z', NULL
+FROM "value_set" vs,
+(VALUES
+  ('source-version-purpose-code', 'decision-basis',     'Basis of a decision',          10),
+  ('source-version-purpose-code', 'published-artefact', 'Published artefact',           20),
+  ('source-version-purpose-code', 'submission-source',  'Source of a submission',       30),
+  ('source-version-purpose-code', 'amendment-before',   'Version a correction replaced', 40),
+  ('source-version-purpose-code', 'amendment-after',    'Version a correction created',  50)
+) AS v(set_code, code, display_label, sort_order)
+WHERE vs."set_code" = v.set_code
+ON CONFLICT DO NOTHING;
+
+INSERT INTO "field_value_set" ("entity_name", "field_name", "value_set_code", "description")
+VALUES ('source_version_reference', 'purpose_code', 'source-version-purpose-code', NULL)
+ON CONFLICT DO NOTHING;
