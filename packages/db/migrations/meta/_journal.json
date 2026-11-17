@@ -64,6 +64,13 @@
       "when": 1785000042000,
       "tag": "0008_admissions_registration_and_integrations",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1785000047000,
+      "tag": "0009_rule_depth",
+      "breakpoints": true
     }
   ]
 }

@@ -10,6 +10,8 @@ export const reassessmentPlans = pgTable('reassessment_plan', {
   progressionDecisionId: uuid('progression_decision_id').notNull(),
   planTypeCode:          text('plan_type_code').notNull(),
   moduleRegistrationId:  uuid('module_registration_id'),
+  /** The repeat registration a selection created for this plan (D-28). */
+  repeatModuleRegistrationId: uuid('repeat_module_registration_id'),
   assessmentComponentId: uuid('assessment_component_id'),
   academicPeriodId:      uuid('academic_period_id'),
   attemptNumber:         smallint('attempt_number').notNull(),

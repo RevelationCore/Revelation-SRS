@@ -183,6 +183,13 @@ export const PERMISSION_ROLES = {
   'module-selection:read:all':          ['registry-administrator', 'personal-tutor', 'programme-approver', 'integration-service'] as Role[],
   'module-selection:decide':            ['registry-administrator', 'programme-approver'] as Role[],
   'module-selection:configure':         ['registry-administrator', 'tenant-administrator'] as Role[],
+  /** Submit a selection outside its window, with a reason (Phase 4 D-29). */
+  'module-selection:submit:late':       ['registry-administrator'] as Role[],
+  /** Preview and submit ranked allocation runs (D-30); a different module-selection:decide holder approves. */
+  'module-selection:allocate':          ['registry-administrator'] as Role[],
+  /** Receive or enter timetable publications (D-24). */
+  'timetable:manage':                   ['registry-administrator', 'tenant-administrator', 'integration-service'] as Role[],
+  'timetable:read':                     ['registry-administrator', 'tenant-administrator', 'integration-service', 'personal-tutor', 'programme-approver'] as Role[],
   'curriculum-binding:read':             ['registry-administrator', 'programme-approver'] as Role[],
   'curriculum-binding:write':            ['registry-administrator'] as Role[],
   // A binding change something already depends on is decided by a programme approver (D-11).

@@ -1,4 +1,4 @@
-import { bigint, date, jsonb, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { bigint, date, jsonb, smallint, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { pgTable } from 'drizzle-orm/pg-core';
 
 import { bitemporalColumns } from '../temporal.js';
@@ -23,7 +23,9 @@ export const enrolments = pgTable('enrolment', {
   personId:             uuid('person_id').notNull().references(() => persons.id),
   programmeId:          uuid('programme_id'),     // FK to programme.id (logical); nullable
   statusCode:           text('status_code').notNull().default('enrolled'),
-  modeOfStudyCode:      text('mode_of_study_code').notNull(),  // 'full-time' | 'part-time' | 'distance' | 'sandwich'
+  modeOfStudyCode:      text('mode_of_study_code').notNull(),
+  /** Study intensity as a percentage of full-time; null means the mode's default (D-31). */
+  studyIntensityPercent: smallint('study_intensity_percent'),  // 'full-time' | 'part-time' | 'distance' | 'sandwich'
   attendanceTypeCode:   text('attendance_type_code'),
   academicYearOfEntry:  text('academic_year_of_entry').notNull(),  // e.g. '2025-26'
   startDate:            date('start_date').notNull(),

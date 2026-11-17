@@ -1,4 +1,6 @@
-import { date, smallint, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { customType, date, smallint, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+
+const bytea = customType<{ data: Buffer }>({ dataType: () => 'bytea' });
 import { pgTable } from 'drizzle-orm/pg-core';
 
 import { tenants } from './tenant.js';
@@ -46,21 +48,30 @@ export type NewModuleOffering = typeof moduleOfferings.$inferInsert;
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Module-registration open/closed window for an academic period. Enforced by
- * ModuleRegistrationService only when the owning tenant's configuration sets
- * registrationWindowMode to 'academic-period' — tenants that leave the mode
- * unset keep the previous unrestricted behaviour.
- *
- * Non-bitemporal, one row per (tenant, academic period): corrections are made
- * by updating opensAt/closesAt in place (captured in audit_record).
+ * When students may submit module selections (Phase 4 D-29): a window per
+ * academic period, optionally narrowed to a programme and/or the student's
+ * current FHEQ level. The most specific window applies. Enforced at
+ * submission when one applies, or always when the tenant sets
+ * moduleSelection.windowEnforcement to 'required'.
  */
-export const registrationWindows = pgTable('registration_window', {
-  id:               uuid('id').primaryKey().defaultRandom(),
-  tenantId:         uuid('tenant_id').notNull().references(() => tenants.id),
-  academicPeriodId: uuid('academic_period_id').notNull().references(() => academicPeriods.id),
-  opensAt:          timestamp('opens_at', { withTimezone: true }).notNull(),
-  closesAt:         timestamp('closes_at', { withTimezone: true }).notNull(),
+export const moduleSelectionWindows = pgTable('module_selection_window', {
+  id:                   uuid('id').primaryKey().defaultRandom(),
+  tenantId:             uuid('tenant_id').notNull().references(() => tenants.id),
+  academicPeriodId:     uuid('academic_period_id').notNull().references(() => academicPeriods.id),
+  /** Null: every programme. */
+  programmeId:          uuid('programme_id'),
+  /** The student's current FHEQ level; null: every level. */
+  fheqLevel:            smallint('fheq_level'),
+  opensAt:              timestamp('opens_at', { withTimezone: true }).notNull(),
+  closesAt:             timestamp('closes_at', { withTimezone: true }).notNull(),
+  /** Returned proposals may be resubmitted until then; null: closesAt. */
+  resubmissionClosesAt: timestamp('resubmission_closes_at', { withTimezone: true }),
+  allocationModeCode:   text('allocation_mode_code').notNull().default('ranked'), // 'first-come' | 'ranked'
+  /** Generated once at the window's first allocation preview and never changed (D-30). */
+  allocationSeed:       bytea('allocation_seed'),
+  createdBy:            text('created_by'),
+  createdAt:            timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
-export type RegistrationWindow    = typeof registrationWindows.$inferSelect;
-export type NewRegistrationWindow = typeof registrationWindows.$inferInsert;
+export type ModuleSelectionWindow    = typeof moduleSelectionWindows.$inferSelect;
+export type NewModuleSelectionWindow = typeof moduleSelectionWindows.$inferInsert;

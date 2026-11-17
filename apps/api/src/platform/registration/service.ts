@@ -35,7 +35,7 @@ import type { RulesEngine } from '../rules-engine/engine.js';
 import { assertChangeAfterCurrentVersion } from '../bitemporal-guard.js';
 import { clockNow } from '../clock.js';
 
-import type { RegistrationWindowService } from './window-service.js';
+import type { SelectionWindowService } from '../module-selection/window-service.js';
 
 type Uuid = `${string}-${string}-${string}-${string}-${string}`;
 
@@ -70,6 +70,8 @@ export interface CreateModuleRegistrationInput {
    * exclusion, credit limit) still apply.
    */
   skipCapacityCheck?: boolean;
+  /** Skips the selection-window check: set when the window was checked when the request was made (D-29). */
+  skipWindowCheck?: boolean;
   /**
    * Caller-chosen registration ID. A workflow that may retry the same
    * approval derives this from its decision command, so a retry finds the
@@ -141,7 +143,7 @@ export class ModuleRegistrationService {
     private readonly db: Db,
     private readonly eventBus: IntegrationBusPublisher,
     private readonly rules: RulesEngine,
-    private readonly registrationWindows: RegistrationWindowService,
+    private readonly selectionWindows: SelectionWindowService,
     private readonly workflowBridge: WorkflowBridgeService,
     private readonly reviewExecution?: ReviewExecutionService,
   ) {}
@@ -187,7 +189,7 @@ export class ModuleRegistrationService {
       );
     }
 
-    await this.#validateRegistrationWindow(tenantId, offering.academicPeriodId);
+    if (!input.skipWindowCheck) await this.#validateRegistrationWindow(tenantId, offering.academicPeriodId, enrolment.programmeId);
     await this.#ensureNoDuplicateCurrentRegistration(input.enrolmentId, input.moduleOfferingId, tenantId);
     if (!input.skipCapacityCheck) {
       await this.#ensureCapacityAvailable(input.moduleOfferingId, offering.capacity, tenantId);
@@ -380,7 +382,8 @@ export class ModuleRegistrationService {
     const enrolment = await this.#getCurrentEnrolment(input.enrolmentId, tenantId);
     // Existence check only — confirms the offering is real before creating a
     // request an approver could never actually apply.
-    await this.#getOfferingContext(input.moduleOfferingId, tenantId);
+    const offering = await this.#getOfferingContext(input.moduleOfferingId, tenantId);
+    await this.#validateRegistrationWindow(tenantId, offering.academicPeriodId, enrolment.programmeId);
 
     return this.#startChangeRequest(tenantId, requesterId, {
       actionType: 'register',
@@ -573,6 +576,8 @@ export class ModuleRegistrationService {
         moduleOfferingId: context.moduleOfferingId!,
         ...(context.registrationDate ? { registrationDate: context.registrationDate } : {}),
         ...(moduleRegistrationId ? { moduleRegistrationId } : {}),
+        // The window was checked when the student asked (D-29): an approver deciding after it closes still applies the change.
+        skipWindowCheck: true,
       }, actorId);
     }
 
@@ -943,29 +948,16 @@ export class ModuleRegistrationService {
   }
 
   /**
-   * Only enforced when the tenant has opted in via
-   * configuration.registrationWindowMode === 'academic-period'. Tenants that
-   * leave it unset keep the previous unrestricted behaviour.
+   * The module selection window for the period (D-29): enforced when one
+   * applies to the student, or always when the tenant requires windows.
    */
-  async #validateRegistrationWindow(tenantId: string, academicPeriodId: string): Promise<void> {
-    const mode = await this.registrationWindows.getEnforcementMode(tenantId);
-    if (mode !== 'academic-period') return;
-
-    const window = await this.registrationWindows.getWindowForPeriod(tenantId, academicPeriodId);
-    if (!window) {
-      throw new ValidationError(
-        'No registration window is configured for this academic period',
-        [{ field: 'moduleOfferingId', message: 'An administrator must configure a registration window before students can register' }],
-      );
-    }
-
-    const now = clockNow();
-    if (now < window.opensAt || now > window.closesAt) {
-      throw new ValidationError(
-        'The registration window for this academic period is not open',
-        [{ field: 'moduleOfferingId', message: `Registration is open from ${window.opensAt.toISOString()} to ${window.closesAt.toISOString()}` }],
-      );
-    }
+  async #validateRegistrationWindow(tenantId: string, academicPeriodId: string, programmeId: string | null): Promise<void> {
+    const check = await this.selectionWindows.check(tenantId, { academicPeriodId, programmeId, fheqLevel: null }, { resubmission: false });
+    if (check.open) return;
+    throw new ValidationError(
+      check.window ? 'The module selection window for this academic period is not open' : 'No module selection window is configured for this academic period',
+      [{ field: 'moduleOfferingId', message: check.message ?? 'Module registration is closed' }],
+    );
   }
 
   async #ensureNoDuplicateCurrentRegistration(

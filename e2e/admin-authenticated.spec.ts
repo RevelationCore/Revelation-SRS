@@ -43,7 +43,7 @@ const PAGES: [string, string | RegExp][] = [
   ['/tenant-admin/value-sets',     'Value sets'],
   ['/tenant-admin/globalisation',  'Globalisation'],
   ['/tenant-admin/rules',          'Academic rules'],
-  ['/tenant-admin/registration-windows', 'Registration windows'],
+  ['/tenant-admin/selection-windows', 'Module selection windows'],
   ['/tenant-admin/workflows',      'Workflow definitions'],
   ['/tenant-admin/flags',          'Feature flags'],
   ['/tenant-admin/integrations',   'Integrations'],

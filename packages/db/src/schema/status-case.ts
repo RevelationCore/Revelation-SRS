@@ -1,4 +1,4 @@
-import { date, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { date, pgTable, smallint, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 
 import { tenants } from './tenant.js';
 
@@ -20,6 +20,7 @@ export const studentStatusCases = pgTable('student_status_case', {
   expectedReturnDate:          date('expected_return_date'),
   destinationProgrammeId:      uuid('destination_programme_id'),
   destinationModeOfStudyCode:  text('destination_mode_of_study_code'),
+  destinationStudyIntensityPercent: smallint('destination_study_intensity_percent'),
   relatedCaseId:               uuid('related_case_id'),
   institutionalOutcomeRef:     text('institutional_outcome_ref'),
   statusCode:                  text('status_code').notNull().default('requested'), // requested | approved | rejected | withdrawn

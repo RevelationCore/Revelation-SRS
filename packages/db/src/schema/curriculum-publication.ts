@@ -54,6 +54,8 @@ export const recognisedCredits = pgTable('recognised_credit', {
   academicYear:        text('academic_year'), // the year whose progression it counts towards; null = award only
   moduleId:            uuid('module_id'),
   statusCaseId:        uuid('status_case_id'),
+  /** The module result the credit came from, on an internal transfer (D-32). */
+  sourceModuleResultId: uuid('source_module_result_id'),
   evidenceRef:         text('evidence_ref'),
   statusCode:          text('status_code').notNull().default('proposed'), // proposed | approved | rejected
   createdBy:           text('created_by').notNull(),

@@ -46,3 +46,39 @@ export function decideModuleSelectionProposal(
 ): Promise<ModuleSelectionProposal> {
   return api.post(`/api/v1/module-selection-proposals/${proposalId}/decision`, { decisionCode, reason });
 }
+
+// ── Selection windows (Phase 4 D-29) ────────────────────────────────────────
+
+export type AllocationMode = 'first-come' | 'ranked';
+
+export interface SelectionWindow {
+  moduleSelectionWindowId: string;
+  academicPeriodId:        string;
+  academicYear:            string;
+  periodCode:              string;
+  programmeId:             string | null;
+  fheqLevel:               number | null;
+  opensAt:                 string;
+  closesAt:                string;
+  resubmissionClosesAt:    string | null;
+  allocationModeCode:      AllocationMode;
+  allocationSeeded:        boolean;
+}
+
+export function listSelectionWindows(): Promise<SelectionWindow[]> {
+  return api.get('/api/v1/module-selection-windows');
+}
+
+export function createSelectionWindow(body: {
+  academicPeriodId: string; programmeId?: string; fheqLevel?: number; opensAt: string; closesAt: string;
+  resubmissionClosesAt?: string; allocationModeCode: AllocationMode;
+}): Promise<{ moduleSelectionWindowId: string }> {
+  return api.post('/api/v1/module-selection-windows', body);
+}
+
+export function updateSelectionWindow(
+  moduleSelectionWindowId: string,
+  body: { opensAt: string; closesAt: string; resubmissionClosesAt: string | null; allocationModeCode?: AllocationMode },
+): Promise<void> {
+  return api.patch(`/api/v1/module-selection-windows/${moduleSelectionWindowId}`, body);
+}

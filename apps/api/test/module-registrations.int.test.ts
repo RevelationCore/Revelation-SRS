@@ -354,7 +354,7 @@ describe('Module registrations', () => {
   });
 });
 
-// Isolated in the second tenant so enabling registrationWindowMode here
+// Isolated in the second tenant so requiring selection windows here
 // cannot affect the unrestricted-by-default behaviour the rest of this file
 // relies on.
 describe('Registration window enforcement', () => {
@@ -367,7 +367,7 @@ describe('Registration window enforcement', () => {
       method: 'PATCH',
       url: '/api/v1/tenant/configuration',
       headers: { authorization: `Bearer ${adminJwt}` },
-      payload: { registrationWindowMode: 'academic-period' },
+      payload: { moduleSelection: { windowEnforcement: 'required' } },
     });
     expect(configure.statusCode).toBe(200);
 
@@ -415,11 +415,11 @@ describe('Registration window enforcement', () => {
 
     // Window configured but already closed — still blocked.
     const closedWindow = await ctx.app.inject({
-      method: 'POST', url: '/api/v1/registration-windows', headers: { authorization: `Bearer ${regJwt}` },
+      method: 'POST', url: '/api/v1/module-selection-windows', headers: { authorization: `Bearer ${regJwt}` },
       payload: { academicPeriodId: windowPeriodId, opensAt: '2020-01-01T00:00:00.000Z', closesAt: '2020-02-01T00:00:00.000Z' },
     });
     expect(closedWindow.statusCode).toBe(201);
-    const registrationWindowId = closedWindow.json<{ registrationWindowId: string }>().registrationWindowId;
+    const moduleSelectionWindowId = closedWindow.json<{ moduleSelectionWindowId: string }>().moduleSelectionWindowId;
 
     const duringClosedWindow = await ctx.app.inject({
       method: 'POST', url: '/api/v1/module-registrations', headers: { authorization: `Bearer ${regJwt}` },
@@ -429,7 +429,7 @@ describe('Registration window enforcement', () => {
 
     // Reopen the window to cover now — registration succeeds.
     const reopen = await ctx.app.inject({
-      method: 'PATCH', url: `/api/v1/registration-windows/${registrationWindowId}`, headers: { authorization: `Bearer ${regJwt}` },
+      method: 'PATCH', url: `/api/v1/module-selection-windows/${moduleSelectionWindowId}`, headers: { authorization: `Bearer ${regJwt}` },
       payload: { opensAt: '2020-01-01T00:00:00.000Z', closesAt: '2099-01-01T00:00:00.000Z' },
     });
     expect(reopen.statusCode).toBe(204);
@@ -465,10 +465,10 @@ describe('Registration/withdrawal change requests', () => {
     const periodId = period.json<{ academicPeriodId: string }>().academicPeriodId;
 
     // The preceding "Registration window enforcement" block already enabled
-    // registrationWindowMode='academic-period' on this same secondTenantId,
+    // moduleSelection.windowEnforcement='required' on this same secondTenantId,
     // so this new academic period needs its own open window too.
     await ctx.app.inject({
-      method: 'POST', url: '/api/v1/registration-windows', headers: { authorization: `Bearer ${regJwt}` },
+      method: 'POST', url: '/api/v1/module-selection-windows', headers: { authorization: `Bearer ${regJwt}` },
       payload: { academicPeriodId: periodId, opensAt: '2020-01-01T00:00:00.000Z', closesAt: '2099-01-01T00:00:00.000Z' },
     });
 

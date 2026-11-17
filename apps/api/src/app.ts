@@ -48,7 +48,7 @@ import { HearService } from './platform/progression/hear-service.js';
 import { ProgressionService } from './platform/progression/progression-service.js';
 import { CorrectionService } from './platform/governance/correction-service.js';
 import { ModuleRegistrationService } from './platform/registration/service.js';
-import { RegistrationWindowService } from './platform/registration/window-service.js';
+import { SelectionWindowService } from './platform/module-selection/window-service.js';
 import { ModuleSelectionService } from './platform/module-selection/service.js';
 import { BindingChangeService } from './platform/module-selection/binding-change-service.js';
 import { IntegrationRegistryService } from './platform/integration/registry-service.js';
@@ -97,7 +97,7 @@ import { markRoutes } from './routes/marks.js';
 import { moderationRoutes } from './routes/moderation.js';
 import { moduleResultRoutes } from './routes/module-results.js';
 import { moduleRegistrationsRoutes } from './routes/module-registrations.js';
-import { registrationWindowsRoutes } from './routes/registration-windows.js';
+import { moduleSelectionWindowsRoutes } from './routes/module-selection-windows.js';
 import { moduleSelectionProposalsRoutes } from './routes/module-selection-proposals.js';
 import { programmesRoutes } from './routes/programmes.js';
 import { progressionRoutes } from './routes/progression.js';
@@ -368,8 +368,8 @@ export async function buildApp(
   const enrolments = new EnrolmentService(db, eventBus, valueSets, triggerRules, deliveries);
   const catalogue  = new CatalogueService(db, eventBus, valueSets);
   const calendar   = new CalendarService(db);
-  const registrationWindows = new RegistrationWindowService(db);
-  const registrations = new ModuleRegistrationService(db, eventBus, rules, registrationWindows, workflowBridge, reviewExecution);
+  const selectionWindows = new SelectionWindowService(db);
+  const registrations = new ModuleRegistrationService(db, eventBus, rules, selectionWindows, workflowBridge, reviewExecution);
   registrations.registerWorkflowEffects(reviewActivities);
   const tenantAdmin = new TenantAdminService(db);
   const assessmentComponents = new AssessmentComponentService(db, valueSets);
@@ -412,7 +412,7 @@ export async function buildApp(
   const workflowDefinitions = new WorkflowDefinitionService(db);
   const workflowInstances = new WorkflowInstanceService(db);
   const workflowTasks = new WorkflowTaskService(db);
-  const moduleSelection = new ModuleSelectionService(db, eventBus, rules, workflowBridge, registrations, reviewExecution);
+  const moduleSelection = new ModuleSelectionService(db, eventBus, rules, workflowBridge, registrations, selectionWindows, reviewExecution);
   const bindingChanges = new BindingChangeService(db, valueSets, enrolments, moduleSelection);
   const notificationService = new NotificationService(db);
   // Registration is blocked by right to study and, if the tenant chooses, a tuition hold (Phase 3 D-17, D-18).
@@ -480,7 +480,7 @@ export async function buildApp(
   fastify.decorate('catalogueService', catalogue);
   fastify.decorate('calendarService',  calendar);
   fastify.decorate('moduleRegistrationService', registrations);
-  fastify.decorate('registrationWindowService', registrationWindows);
+  fastify.decorate('selectionWindowService', selectionWindows);
   fastify.decorate('moduleSelectionService', moduleSelection);
   fastify.decorate('bindingChangeService', bindingChanges);
   fastify.decorate('registrationPeriodService', registrationPeriods);
@@ -791,7 +791,7 @@ export async function buildApp(
       ['/module-relationships',      'catalogue'],
       ['/learning-outcomes',         'catalogue'],
       ['/academic-periods',          'calendar'],
-      ['/registration-windows',      'calendar'],
+      ['/module-selection-windows',  'calendar'],
       ['/components',                'assessment'],
       ['/module-offerings',          'calendar'],
       ['/value-sets',                'value-sets'],
@@ -876,7 +876,7 @@ export async function buildApp(
   await fastify.register(moderationRoutes,          { prefix: '/api/v1' });
   await fastify.register(moduleResultRoutes,        { prefix: '/api/v1' });
   await fastify.register(moduleRegistrationsRoutes, { prefix: '/api/v1' });
-  await fastify.register(registrationWindowsRoutes, { prefix: '/api/v1' });
+  await fastify.register(moduleSelectionWindowsRoutes, { prefix: '/api/v1' });
   await fastify.register(moduleSelectionProposalsRoutes, { prefix: '/api/v1' });
   await fastify.register(tenantAdminRoutes,         { prefix: '/api/v1' });
   await fastify.register(platformControlRoutes,         { prefix: '/api/v1' });
@@ -916,7 +916,7 @@ declare module 'fastify' {
     catalogueService: CatalogueService;
     calendarService:  CalendarService;
     moduleRegistrationService: ModuleRegistrationService;
-    registrationWindowService: RegistrationWindowService;
+    selectionWindowService: SelectionWindowService;
     moduleSelectionService: ModuleSelectionService;
     bindingChangeService: BindingChangeService;
     registrationPeriodService: RegistrationPeriodService;

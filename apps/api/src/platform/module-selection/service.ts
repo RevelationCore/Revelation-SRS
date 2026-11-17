@@ -40,6 +40,7 @@ import type { ReviewExecutionService } from '../platform-controls/review-executi
 import { approvedExemptionsFor } from '../curriculum/academic-exception-service.js';
 import type { ModuleRegistrationService } from '../registration/service.js';
 import type { RulesEngine } from '../rules-engine/engine.js';
+import type { SelectionWindowService } from './window-service.js';
 import { clockNow } from '../clock.js';
 
 type Uuid = `${string}-${string}-${string}-${string}-${string}`;
@@ -50,7 +51,7 @@ const APPROVAL_GATEWAY_KEY = 'G01';
 
 export type ProposalStatusCode =
   | 'draft' | 'submitted' | 'validated' | 'approved'
-  | 'returned' | 'waitlisted' | 'rejected' | 'confirmed';
+  | 'returned' | 'waitlisted' | 'rejected' | 'confirmed' | 'awaiting-allocation';
 
 export interface CreateProposalInput {
   enrolmentId: string;
@@ -63,6 +64,15 @@ export interface AddProposalItemInput {
   moduleOfferingId?: string;
   preferenceRank?: number;
   sourceCode?: 'student-choice' | 'staff-assisted';
+  /** Items sharing a slot are ranked alternatives for one place (D-30). */
+  choiceSlot?: number;
+  /** A repeat plan this item satisfies as a replacement module (D-28). */
+  replacesReassessmentPlanId?: string;
+}
+
+export interface LateSubmission {
+  reasonCode: string;
+  note: string;
 }
 
 export interface ValidationMessage {
@@ -80,6 +90,10 @@ export interface ProposalItemDto {
   fheqLevel: number | null;
   moduleOfferingId: string | null;
   preferenceRank: number | null;
+  choiceSlot: number | null;
+  reassessmentPlanId: string | null;
+  isReplacement: boolean;
+  heldUntil: Date | null;
   sourceCode: string;
   validationStateCode: string;
   validationMessages: ValidationMessage[];
@@ -96,6 +110,9 @@ export interface ProposalDto {
   decisionAuthorityCode: string | null;
   decisionReason: string | null;
   workflowInstanceId: string | null;
+  fheqLevel: number | null;
+  lateSubmissionReasonCode: string | null;
+  lateSubmittedBy: string | null;
   items: ProposalItemDto[];
 }
 
@@ -168,6 +185,7 @@ export class ModuleSelectionService {
     private readonly rules: RulesEngine,
     private readonly workflowBridge: WorkflowBridgeService,
     private readonly moduleRegistrations: ModuleRegistrationService,
+    private readonly windows: SelectionWindowService,
     private readonly reviewExecution?: ReviewExecutionService,
   ) {}
 
@@ -212,6 +230,7 @@ export class ModuleSelectionService {
         enrolmentId:        input.enrolmentId as Uuid,
         academicPeriodId:   input.academicPeriodId as Uuid,
         programmeRuleSetId: programmeRuleSetId as Uuid,
+        fheqLevel:          input.fheqLevel,
         statusCode:         'draft',
         validFrom:          now,
         validTo:            null,
@@ -243,6 +262,9 @@ export class ModuleSelectionService {
         moduleId:            input.moduleId as Uuid,
         moduleOfferingId:    input.moduleOfferingId ? (input.moduleOfferingId as Uuid) : null,
         preferenceRank:      input.preferenceRank ?? null,
+        choiceSlot:          input.choiceSlot ?? null,
+        reassessmentPlanId:  (input.replacesReassessmentPlanId ?? null) as Uuid | null,
+        isReplacement:       Boolean(input.replacesReassessmentPlanId),
         sourceCode:          input.sourceCode ?? 'student-choice',
         validationStateCode: 'pending',
         createdAt:           now,
@@ -302,20 +324,31 @@ export class ModuleSelectionService {
    * alone routes to a programme approver via the workflow bridge (A5). Any
    * rule failure returns the proposal to the student with itemised reasons (E2).
    */
-  async submitProposal(tenantId: string, proposalId: string, actorId: string): Promise<ProposalDto> {
+  async submitProposal(tenantId: string, proposalId: string, actorId: string, late?: LateSubmission): Promise<ProposalDto> {
     const proposal = await this.#getCurrentProposalRow(proposalId, tenantId);
     if (proposal.statusCode !== 'draft' && proposal.statusCode !== 'returned') {
       throw new ValidationError(`Cannot submit a proposal in status '${proposal.statusCode}'`);
     }
 
     const enrolment = await this.#getCurrentEnrolment(proposal.enrolmentId, tenantId);
+
+    // Selection window (D-29): checked at submission; a returned proposal may be resubmitted until resubmission closes.
+    const windowCheck = await this.windows.check(tenantId, {
+      academicPeriodId: proposal.academicPeriodId, programmeId: enrolment.programmeId, fheqLevel: proposal.fheqLevel,
+    }, { resubmission: proposal.statusCode === 'returned' });
+    if (!windowCheck.open && !late) {
+      throw new ValidationError(windowCheck.message ?? 'Module selection is closed', [{ field: 'proposalId', message: 'Staff may submit late with a reason' }]);
+    }
+    const lateFields = !windowCheck.open && late
+      ? { lateSubmissionReasonCode: late.reasonCode, lateSubmissionNote: late.note, lateSubmittedBy: actorId }
+      : {};
     const items = await this.#listItems(tenantId, proposalId);
     if (items.length === 0) {
       throw new ValidationError('Cannot submit a proposal with no module choices');
     }
 
     const now = clockNow();
-    await this.#transitionProposal(proposal, tenantId, { statusCode: 'submitted', submittedAt: now }, now);
+    await this.#transitionProposal(proposal, tenantId, { statusCode: 'submitted', submittedAt: now, ...lateFields }, now);
 
     const validation = await this.#validateSelection(tenantId, proposal, enrolment, items);
     await this.#persistItemValidation(tenantId, validation.itemMessages);
@@ -370,6 +403,21 @@ export class ModuleSelectionService {
       await this.#transitionProposal(current, tenantId, { statusCode: 'waitlisted', workflowInstanceId }, clockNow());
       return (await this.getProposal(proposalId, tenantId))!;
     }
+  }
+
+  /**
+   * Validates a proposal without changing it (D-25; BP-03-003 step 4), so a
+   * student sees rule failures, clashes and warnings while still choosing.
+   */
+  async previewValidation(tenantId: string, proposalId: string): Promise<{ valid: boolean; capacityConflict: boolean; messages: Array<ValidationMessage & { proposalItemId: string | null }> }> {
+    const proposal = await this.#getCurrentProposalRow(proposalId, tenantId);
+    const enrolment = await this.#getCurrentEnrolment(proposal.enrolmentId, tenantId);
+    const items = await this.#listItems(tenantId, proposalId);
+    const v = await this.#validateSelection(tenantId, proposal, enrolment, items);
+    const itemLevel = [...v.itemMessages.entries()].flatMap(([proposalItemId, ms]) => ms.map((m) => ({ ...m, proposalItemId })));
+    const seen = new Set(itemLevel.map((m) => m.message));
+    const overall = v.errors.filter((e) => !seen.has(e.message)).map((m) => ({ ...m, proposalItemId: null }));
+    return { valid: v.errors.length === 0, capacityConflict: v.capacityConflict, messages: [...overall, ...itemLevel] };
   }
 
   /**
@@ -1304,6 +1352,9 @@ export class ModuleSelectionService {
       decisionAuthorityCode: string;
       decisionReason: string;
       workflowInstanceId: string;
+      lateSubmissionReasonCode: string;
+      lateSubmissionNote: string;
+      lateSubmittedBy: string;
     }>,
     validFrom: Date,
   ): Promise<void> {
@@ -1330,6 +1381,10 @@ export class ModuleSelectionService {
         decisionAuthorityCode:  patch.decisionAuthorityCode ?? current.decisionAuthorityCode,
         decisionReason:         patch.decisionReason ?? current.decisionReason,
         workflowInstanceId:     (patch.workflowInstanceId ?? current.workflowInstanceId) as Uuid | null,
+        fheqLevel:              current.fheqLevel,
+        lateSubmissionReasonCode: patch.lateSubmissionReasonCode ?? current.lateSubmissionReasonCode,
+        lateSubmissionNote:     patch.lateSubmissionNote ?? current.lateSubmissionNote,
+        lateSubmittedBy:        patch.lateSubmittedBy ?? current.lateSubmittedBy,
         validFrom,
         validTo:                null,
         recordedAt:             now,
@@ -1367,6 +1422,10 @@ export class ModuleSelectionService {
       fheqLevel: row.fheqLevel ?? null,
       moduleOfferingId: row.item.moduleOfferingId,
       preferenceRank: row.item.preferenceRank,
+      choiceSlot: row.item.choiceSlot,
+      reassessmentPlanId: row.item.reassessmentPlanId,
+      isReplacement: row.item.isReplacement,
+      heldUntil: row.item.heldUntil,
       sourceCode: row.item.sourceCode,
       validationStateCode: row.item.validationStateCode,
       validationMessages: (row.item.validationMessages ?? []),
@@ -1409,6 +1468,9 @@ function proposalToDto(
     decisionAuthorityCode: row.decisionAuthorityCode,
     decisionReason: row.decisionReason,
     workflowInstanceId: row.workflowInstanceId,
+    fheqLevel: row.fheqLevel,
+    lateSubmissionReasonCode: row.lateSubmissionReasonCode,
+    lateSubmittedBy: row.lateSubmittedBy,
     items,
   };
 }

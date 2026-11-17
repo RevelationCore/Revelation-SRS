@@ -190,7 +190,7 @@ function Sidebar({ onLogout, displayName, roles }: { onLogout: () => void; displ
           {can('config:read') && <SubItem to="/tenant-admin/value-sets" label="Value sets" />}
           {can('globalisation:read') && <SubItem to="/tenant-admin/globalisation" label="Globalisation" />}
           {can('rule:read') && <SubItem to="/tenant-admin/rules" label="Academic rules" />}
-          {can('calendar:read') && <SubItem to="/tenant-admin/registration-windows" label="Registration windows" />}
+          {can('calendar:read') && <SubItem to="/tenant-admin/selection-windows" label="Selection windows" />}
           {can('workflow:read') && <SubItem to="/tenant-admin/workflows" label="Workflows" />}
           {can('workflow:write') && <SubItem to="/tenant-admin/workflows/start" label="Start a workflow" />}
           {can('feature-flag:read') && <SubItem to="/tenant-admin/flags" label="Feature flags" />}

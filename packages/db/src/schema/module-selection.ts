@@ -42,6 +42,8 @@ export const moduleGroupMembers = pgTable('module_group_member', {
   moduleId:          uuid('module_id').notNull(),        // logical FK → modules.id
   isDefault:         boolean('is_default').notNull().default(false),
   isNonCondonable:   boolean('is_non_condonable').notNull().default(false),
+  /** Counts the module's whole credit towards one subject area in this diet (D-27). */
+  countsTowardsSubjectAreaCode: text('counts_towards_subject_area_code'),
 });
 
 export type ModuleGroupMember    = typeof moduleGroupMembers.$inferSelect;
@@ -88,6 +90,11 @@ export const moduleSelectionProposals = pgTable('module_selection_proposal', {
   decisionAuthorityCode:  text('decision_authority_code'),
   decisionReason:         text('decision_reason'),
   workflowInstanceId:     uuid('workflow_instance_id'),
+  lateSubmissionReasonCode: text('late_submission_reason_code'),
+  lateSubmissionNote:     text('late_submission_note'),
+  lateSubmittedBy:        text('late_submitted_by'),
+  /** The student's current FHEQ level for this proposal (D-29, D-30). */
+  fheqLevel:              smallint('fheq_level'),
 });
 
 export type ModuleSelectionProposal    = typeof moduleSelectionProposals.$inferSelect;
@@ -106,6 +113,13 @@ export const moduleSelectionProposalItems = pgTable('module_selection_proposal_i
   moduleId:             uuid('module_id').notNull(),     // logical FK → modules.id
   moduleOfferingId:     uuid('module_offering_id'),       // nullable until a specific offering is chosen
   preferenceRank:       smallint('preference_rank'),
+  /** Items sharing a slot are ranked alternatives for one place (D-30); null: a fixed item. */
+  choiceSlot:           smallint('choice_slot'),
+  /** The board's repeat plan this item satisfies (D-28). */
+  reassessmentPlanId:   uuid('reassessment_plan_id'),
+  isReplacement:        boolean('is_replacement').notNull().default(false),
+  /** An allocated place held for a returned proposal until resubmission closes (D-30). */
+  heldUntil:            timestamp('held_until', { withTimezone: true }),
   sourceCode:           text('source_code').notNull(),    // 'compulsory-auto' | 'student-choice' | 'staff-assisted'
   validationStateCode:  text('validation_state_code').notNull().default('pending'), // 'pending' | 'passed' | 'failed'
   validationMessages:   jsonb('validation_messages').$type<Array<{ ruleTypeCode: string; message: string; severity: 'error' | 'warning' }>>(),

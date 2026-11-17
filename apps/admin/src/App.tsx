@@ -8,7 +8,7 @@ import { CallbackPage } from './pages/CallbackPage.js';
 import { LoginPage } from './pages/LoginPage.js';
 
 const AcademicRulesPage = lazy(() => import('./pages/AcademicRulesPage.js').then((m) => ({ default: m.AcademicRulesPage })));
-const RegistrationWindowsPage = lazy(() => import('./pages/RegistrationWindowsPage.js').then((m) => ({ default: m.RegistrationWindowsPage })));
+const SelectionWindowsPage = lazy(() => import('./pages/SelectionWindowsPage.js').then((m) => ({ default: m.SelectionWindowsPage })));
 const AuditPage = lazy(() => import('./pages/AuditPage.js').then((m) => ({ default: m.AuditPage })));
 const DashboardPage = lazy(() => import('./pages/DashboardPage.js').then((m) => ({ default: m.DashboardPage })));
 const EnrolmentReportPage = lazy(() => import('./pages/EnrolmentReportPage.js').then((m) => ({ default: m.EnrolmentReportPage })));
@@ -171,8 +171,8 @@ export function App() {
                   element={<RequirePermission permissions={['rule:read']}><AcademicRulesPage /></RequirePermission>}
                 />
                 <Route
-                  path="tenant-admin/registration-windows"
-                  element={<RequirePermission permissions={['calendar:read']}><RegistrationWindowsPage /></RequirePermission>}
+                  path="tenant-admin/selection-windows"
+                  element={<RequirePermission permissions={['calendar:read']}><SelectionWindowsPage /></RequirePermission>}
                 />
                 <Route
                   path="tenant-admin/workflows"

@@ -1,6 +1,7 @@
 import { Type } from '@sinclair/typebox';
 import { requireAnyPermission, requirePermission } from '@revelation-srs/auth';
 import type { CurriculumBindingChange } from '@revelation-srs/db';
+import { ValidationError, hasPermission } from '@revelation-srs/domain';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 
 import type {
@@ -28,6 +29,10 @@ const ProposalItemSchema = Type.Object({
   fheqLevel: Type.Union([Type.Number(), Type.Null()]),
   moduleOfferingId: Type.Union([Type.String(), Type.Null()]),
   preferenceRank: Type.Union([Type.Number(), Type.Null()]),
+  choiceSlot: Type.Union([Type.Number(), Type.Null()]),
+  reassessmentPlanId: Type.Union([Type.String(), Type.Null()]),
+  isReplacement: Type.Boolean(),
+  heldUntil: Type.Union([Type.String(), Type.Null()]),
   sourceCode: Type.String(),
   validationStateCode: Type.String(),
   validationMessages: Type.Array(ValidationMessageSchema),
@@ -44,6 +49,9 @@ const ProposalSchema = Type.Object({
   decisionAuthorityCode: Type.Union([Type.String(), Type.Null()]),
   decisionReason: Type.Union([Type.String(), Type.Null()]),
   workflowInstanceId: Type.Union([Type.String(), Type.Null()]),
+  fheqLevel: Type.Union([Type.Number(), Type.Null()]),
+  lateSubmissionReasonCode: Type.Union([Type.String(), Type.Null()]),
+  lateSubmittedBy: Type.Union([Type.String(), Type.Null()]),
   items: Type.Array(ProposalItemSchema),
 });
 
@@ -198,6 +206,8 @@ export function moduleSelectionProposalsRoutes(fastify: FastifyInstance): void {
           moduleOfferingId: Type.Optional(Type.String()),
           preferenceRank: Type.Optional(Type.Number()),
           sourceCode: Type.Optional(Type.Union([Type.Literal('student-choice'), Type.Literal('staff-assisted')])),
+          choiceSlot: Type.Optional(Type.Integer({ minimum: 1 })),
+          replacesReassessmentPlanId: Type.Optional(Type.String()),
         }),
         response: {
           201: Type.Object({ proposalItemId: Type.String() }),
@@ -234,11 +244,39 @@ export function moduleSelectionProposalsRoutes(fastify: FastifyInstance): void {
     },
   );
 
+  fastify.get(
+    '/module-selection-proposals/:proposalId/validation',
+    {
+      schema: {
+        params: Type.Object({ proposalId: Type.String() }),
+        response: {
+          200: Type.Object({
+            valid: Type.Boolean(),
+            capacityConflict: Type.Boolean(),
+            messages: Type.Array(Type.Object({
+              ruleTypeCode: Type.String(), message: Type.String(), severity: Type.String(),
+              proposalItemId: Type.Union([Type.String(), Type.Null()]),
+            })),
+          }),
+          403: ErrorSchema, 404: ErrorSchema,
+        },
+      },
+      preHandler: [requireAnyPermission('module-selection:read:own', 'module-selection:read:all')],
+    },
+    async (request, reply) => {
+      const { proposalId } = request.params as { proposalId: string };
+      if (!(await ensureOwnProposalOrStaff(fastify, request, reply, proposalId))) return;
+      await reply.send(await fastify.moduleSelectionService.previewValidation(request.tenantId, proposalId));
+    },
+  );
+
   fastify.post(
     '/module-selection-proposals/:proposalId/submission',
     {
       schema: {
         params: Type.Object({ proposalId: Type.String() }),
+        // Optional body { lateSubmission: { reasonCode, note } }: staff with module-selection:submit:late may submit
+        // outside the window (D-29). No body schema, so a bodiless submission is accepted; checked below.
         response: { 200: ProposalSchema, 403: ErrorSchema, 404: ErrorSchema, 422: ErrorSchema },
       },
       preHandler: [requireAnyPermission('module-selection:write:own', 'module-selection:read:all')],
@@ -246,7 +284,20 @@ export function moduleSelectionProposalsRoutes(fastify: FastifyInstance): void {
     async (request, reply) => {
       const { proposalId } = request.params as { proposalId: string };
       if (!(await ensureOwnProposalOrStaff(fastify, request, reply, proposalId))) return;
-      const proposal = await fastify.moduleSelectionService.submitProposal(request.tenantId, proposalId, request.user.sub);
+      const late = (request.body as { lateSubmission?: { reasonCode?: unknown; note?: unknown } } | null | undefined)?.lateSubmission;
+      if (late && (typeof late.reasonCode !== 'string' || typeof late.note !== 'string' || !late.reasonCode || !late.note.trim())) {
+        throw new ValidationError('A late submission needs a reasonCode and a note');
+      }
+      if (late) {
+        if (!hasPermission(request.user.roles, 'module-selection:submit:late')) {
+          await reply.code(403).send({ type: 'about:blank', title: 'Forbidden', status: 403, detail: 'Late submission needs module-selection:submit:late' });
+          return;
+        }
+        if ((await fastify.valueSetService.validateFieldValue('module_selection_proposal', 'late_submission_reason_code', late.reasonCode as string, request.tenantId)) === false) {
+          throw new ValidationError(`Invalid late submission reason '${late.reasonCode}'`);
+        }
+      }
+      const proposal = await fastify.moduleSelectionService.submitProposal(request.tenantId, proposalId, request.user.sub, late as { reasonCode: string; note: string } | undefined);
 
       await fastify.audit.record({
         tenantId: request.tenantId,
@@ -613,6 +664,7 @@ function proposalToWire(proposal: ProposalDto) {
     ...proposal,
     submittedAt: proposal.submittedAt ? new Date(proposal.submittedAt).toISOString() : null,
     decidedAt: proposal.decidedAt ? new Date(proposal.decidedAt).toISOString() : null,
+    items: proposal.items.map((i) => ({ ...i, heldUntil: i.heldUntil ? new Date(i.heldUntil).toISOString() : null })),
   };
 }
 
