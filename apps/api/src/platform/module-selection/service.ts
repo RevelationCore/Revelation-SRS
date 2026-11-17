@@ -12,6 +12,7 @@ import {
   modules,
   moduleSelectionProposalItems,
   moduleSelectionProposals,
+  programmeRoutes,
   programmeRuleSets,
   reassessmentPlans,
   workflowDefinitions,
@@ -42,6 +43,7 @@ import { approvedExemptionsFor } from '../curriculum/academic-exception-service.
 import type { ModuleRegistrationService } from '../registration/service.js';
 import type { RulesEngine } from '../rules-engine/engine.js';
 import type { SelectionWindowService } from './window-service.js';
+import { type JointHonoursRule, evaluateJointHonours } from './joint-honours.js';
 import { DEFAULT_REPEAT_RULE, type RepeatRule, failedModuleIds, groupMembership, repeatRequirements, repeatRuleFrom } from './repeat-requirements.js';
 import { clockNow } from '../clock.js';
 
@@ -700,7 +702,7 @@ export class ModuleSelectionService {
   async addModuleGroupMember(
     tenantId: string,
     moduleGroupId: string,
-    input: { moduleId: string; isDefault?: boolean; isNonCondonable?: boolean },
+    input: { moduleId: string; isDefault?: boolean; isNonCondonable?: boolean; countsTowardsSubjectAreaCode?: string },
   ): Promise<string> {
     const memberId = randomUUID();
     const now = clockNow();
@@ -713,6 +715,7 @@ export class ModuleSelectionService {
         moduleId:         input.moduleId as Uuid,
         isDefault:        input.isDefault ?? false,
         isNonCondonable:  input.isNonCondonable ?? false,
+        countsTowardsSubjectAreaCode: input.countsTowardsSubjectAreaCode ?? null,
         validFrom:        now,
         validTo:          null,
         recordedAt:       now,
@@ -840,6 +843,24 @@ export class ModuleSelectionService {
     const groupMessages = await this.#checkGroups(tenantId, proposal.programmeRuleSetId, items, exemptions);
     for (const [itemId, msgs] of groupMessages) {
       for (const m of msgs) pushItemMessage(itemId, m);
+    }
+
+    // Joint-honours balance (D-27): only when a rule is configured for the programme or route.
+    const jhCtx = { tenantId, programmeId: enrolment.programmeId ?? '' };
+    const routeCode = await this.#routeCode(tenantId, proposal.programmeRuleSetId);
+    const { value: jhValue } = await this.rules.resolveForEnrolment(jhCtx, 'joint-honours-balance', enrolment.enrolmentId,
+      () => this.rules.getOptionalRule<Record<string, unknown>>(jhCtx, 'joint-honours-balance', [...(routeCode ? [`route:${routeCode}`] : []), 'default']));
+    if (jhValue) {
+      const balance = await evaluateJointHonours(this.db, tenantId, {
+        rule: jhValue as unknown as JointHonoursRule, enrolmentId: enrolment.enrolmentId, academicPeriodId: proposal.academicPeriodId,
+        programmeRuleSetId: proposal.programmeRuleSetId, items, exemptions,
+      });
+      for (const m of balance) {
+        const item = m.moduleId ? items.find((i) => i.moduleId === m.moduleId) : undefined;
+        const msg = { ruleTypeCode: m.ruleTypeCode, severity: m.severity, message: m.message };
+        if (item) pushItemMessage(item.proposalItemId, msg);
+        else if (m.severity === 'error') errors.push(msg);
+      }
     }
 
     const ruleCtx = { tenantId, programmeId: enrolment.programmeId ?? '' };
@@ -1296,6 +1317,13 @@ export class ModuleSelectionService {
         });
       }
     }
+  }
+
+  async #routeCode(tenantId: string, programmeRuleSetId: string): Promise<string | null> {
+    const [row] = await withTenantContext(this.db, tenantId, (tx) => tx.select({ routeCode: programmeRoutes.routeCode }).from(programmeRuleSets)
+      .innerJoin(programmeRoutes, and(eq(programmeRoutes.id, programmeRuleSets.programmeRouteId), isNull(programmeRoutes.recordedUntil)))
+      .where(and(eq(programmeRuleSets.tenantId, tenantId as Uuid), eq(programmeRuleSets.id, programmeRuleSetId as Uuid), isNull(programmeRuleSets.recordedUntil))).limit(1));
+    return row?.routeCode ?? null;
   }
 
   async #repeatRule(ruleCtx: { tenantId: string; programmeId: string }, enrolmentId: string): Promise<RepeatRule | null> {

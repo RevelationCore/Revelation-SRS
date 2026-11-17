@@ -270,6 +270,28 @@ export function moduleSelectionProposalsRoutes(fastify: FastifyInstance): void {
     },
   );
 
+  // ── Module subject areas (D-27) ────────────────────────────────────────────
+  const SubjectShares = Type.Array(Type.Object({ subjectAreaCode: Type.String({ minLength: 1 }), proportionPercent: Type.Integer({ minimum: 1, maximum: 100 }) }));
+  fastify.get('/modules/:moduleId/subjects', {
+    schema: { params: Type.Object({ moduleId: Type.String() }), response: { 200: SubjectShares } },
+    preHandler: [requireAnyPermission('module-selection:read:all', 'module-selection:configure')],
+  }, async (request, reply) => {
+    const { moduleId } = request.params as { moduleId: string };
+    await reply.send(await fastify.moduleSubjectService.list(request.tenantId, moduleId));
+  });
+  fastify.put('/modules/:moduleId/subjects', {
+    schema: { params: Type.Object({ moduleId: Type.String() }), body: SubjectShares, response: { 200: SubjectShares, 404: ErrorSchema, 422: ErrorSchema } },
+    preHandler: [requirePermission('module-selection:configure')],
+  }, async (request, reply) => {
+    const { moduleId } = request.params as { moduleId: string };
+    const shares = await fastify.moduleSubjectService.replace(request.tenantId, moduleId, request.body as Array<{ subjectAreaCode: string; proportionPercent: number }>);
+    await fastify.audit.record({
+      tenantId: request.tenantId, entityType: 'module_subject', entityId: moduleId, actionType: 'update', afterValue: shares,
+      actorType: 'user', actorId: request.user.sub, actorDisplayName: request.user.displayName, correlationId: request.id,
+    });
+    await reply.send(shares);
+  });
+
   fastify.post(
     '/module-selection-proposals/:proposalId/submission',
     {
@@ -599,14 +621,19 @@ export function moduleSelectionProposalsRoutes(fastify: FastifyInstance): void {
           moduleId: Type.String(),
           isDefault: Type.Optional(Type.Boolean()),
           isNonCondonable: Type.Optional(Type.Boolean()),
+          /** Counts the module's whole credit towards one subject area in this diet (D-27). */
+          countsTowardsSubjectAreaCode: Type.Optional(Type.String()),
         }),
-        response: { 201: Type.Object({ moduleGroupMemberId: Type.String() }) },
+        response: { 201: Type.Object({ moduleGroupMemberId: Type.String() }), 422: ErrorSchema },
       },
       preHandler: [requirePermission('module-selection:configure')],
     },
     async (request, reply) => {
       const { moduleGroupId } = request.params as { moduleGroupId: string };
-      const body = request.body as { moduleId: string; isDefault?: boolean; isNonCondonable?: boolean };
+      const body = request.body as { moduleId: string; isDefault?: boolean; isNonCondonable?: boolean; countsTowardsSubjectAreaCode?: string };
+      if (body.countsTowardsSubjectAreaCode && (await fastify.valueSetService.validateFieldValue('module_group_member', 'counts_towards_subject_area_code', body.countsTowardsSubjectAreaCode, request.tenantId)) === false) {
+        throw new ValidationError(`Unknown subject area '${body.countsTowardsSubjectAreaCode}'`);
+      }
       const moduleGroupMemberId = await fastify.moduleSelectionService.addModuleGroupMember(request.tenantId, moduleGroupId, body);
 
       await fastify.audit.record({

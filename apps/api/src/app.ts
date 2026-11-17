@@ -49,6 +49,7 @@ import { ProgressionService } from './platform/progression/progression-service.j
 import { CorrectionService } from './platform/governance/correction-service.js';
 import { ModuleRegistrationService } from './platform/registration/service.js';
 import { SelectionWindowService } from './platform/module-selection/window-service.js';
+import { ModuleSubjectService } from './platform/module-selection/joint-honours.js';
 import { ModuleSelectionService } from './platform/module-selection/service.js';
 import { BindingChangeService } from './platform/module-selection/binding-change-service.js';
 import { IntegrationRegistryService } from './platform/integration/registry-service.js';
@@ -481,6 +482,7 @@ export async function buildApp(
   fastify.decorate('calendarService',  calendar);
   fastify.decorate('moduleRegistrationService', registrations);
   fastify.decorate('selectionWindowService', selectionWindows);
+  fastify.decorate('moduleSubjectService', new ModuleSubjectService(db, valueSets));
   fastify.decorate('moduleSelectionService', moduleSelection);
   fastify.decorate('bindingChangeService', bindingChanges);
   fastify.decorate('registrationPeriodService', registrationPeriods);
@@ -917,6 +919,7 @@ declare module 'fastify' {
     calendarService:  CalendarService;
     moduleRegistrationService: ModuleRegistrationService;
     selectionWindowService: SelectionWindowService;
+    moduleSubjectService: ModuleSubjectService;
     moduleSelectionService: ModuleSelectionService;
     bindingChangeService: BindingChangeService;
     registrationPeriodService: RegistrationPeriodService;
