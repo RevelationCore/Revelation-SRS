@@ -160,6 +160,8 @@ The exchange row acts as an outbox; a dispatcher sends queued items through the 
 
 **Institution must confirm.** Its grace periods, alumni email policy, and whether open complaints or OIA cases keep access.
 
+**Implementation note (D-19).** The account level sent to IAM is the most generous across the person's current enrolments, so a second enrolment in progress keeps the account open after one leaver closure. Study access still follows each enrolment through the existing library, VLE, accommodation and CMS flows. A leaver-closure approval has no status transition, so the status-case service tells a listener, which sends the `ended` item effective at the decision date plus the grace days. A student withdrawn before ever registering keeps the limited account until their leaver closure. API routes for students do not yet enforce the matrix themselves; the portal shows registration first for a pre-registration student.
+
 ## D-20: Rendering and signing award documents (BP-06-004)
 
 **Decision.**

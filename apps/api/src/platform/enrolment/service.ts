@@ -292,7 +292,14 @@ export class EnrolmentService {
 
       await this.#updatePersonStatusFromEnrolments(input.personId, tenantId, tx);
     });
-    if (preRegistration) return enrolmentId;
+    if (preRegistration) {
+      // A converted applicant gets a limited account (registration, profile, documents) and no study access (D-19).
+      if (this.delivery) {
+        await onEnrolmentChanged(this.delivery, this.db, tenantId, { enrolmentId, changeKey: `enrolment-created:${enrolmentId}` },
+          { library: false, crm: false, accommodation: false, iam: true });
+      }
+      return enrolmentId;
+    }
 
     if (this.eventBus.isConnected()) {
       const payload: StudentEnrolledV1Payload = {

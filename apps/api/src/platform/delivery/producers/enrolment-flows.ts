@@ -13,6 +13,7 @@ import { clockNow } from '../../clock.js';
 
 import { requestLibraryAccess } from './library.js';
 import { requestItsmSnapshot } from './person-flows.js';
+import { requestAccountAccess } from './access.js';
 
 type Uuid = `${string}-${string}-${string}-${string}-${string}`;
 
@@ -47,7 +48,7 @@ export async function onEnrolmentChanged(
   tenantId: string,
   change: EnrolmentChange,
   /** Which flows changed: enrolment status affects all three; progression only CRM. */
-  flows: { library: boolean; crm: boolean; accommodation: boolean; cms?: boolean; itsm?: boolean } = { library: true, crm: true, accommodation: true },
+  flows: { library: boolean; crm: boolean; accommodation: boolean; cms?: boolean; itsm?: boolean; iam?: boolean } = { library: true, crm: true, accommodation: true },
 ): Promise<void> {
   const snapshot = await loadSnapshot(db, tenantId, change.enrolmentId);
   if (!snapshot) return;
@@ -134,6 +135,13 @@ export async function onEnrolmentChanged(
 
   if (flows.itsm ?? flows.accommodation) {
     await requestItsmSnapshot(delivery, db, tenantId, snapshot.personId, change.changeKey);
+  }
+
+  // The institutional account follows status, then leaver closure (D-19).
+  if (flows.iam ?? flows.accommodation) {
+    await requestAccountAccess(delivery, db, tenantId, {
+      personId: snapshot.personId, changeKey: change.changeKey, ...(change.effectiveFrom ? { effectiveFrom: change.effectiveFrom } : {}),
+    });
   }
 
   if (flows.accommodation) {

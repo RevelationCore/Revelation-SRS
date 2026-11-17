@@ -131,6 +131,7 @@ import { awardConfermentRoutes } from './routes/award-conferment.js';
 import { awardDocumentRoutes } from './routes/award-documents.js';
 import { applicationRoutes } from './routes/applications.js';
 import { SupportService } from './platform/support/support-service.js';
+import { requestAccountClosure } from './platform/delivery/producers/access.js';
 import { StatusCaseService } from './platform/status-cases/status-case-service.js';
 import { CurriculumPublicationService } from './platform/curriculum/publication-service.js';
 import { AcademicExceptionService } from './platform/curriculum/academic-exception-service.js';
@@ -468,6 +469,14 @@ export async function buildApp(
   const inboundRecords = new InboundRecordService(db, valueSets);
   const support = new SupportService(db, valueSets, deliveries);
   const statusCases = new StatusCaseService(db, valueSets, enrolments, businessCases);
+  // An approved leaver closure ends the institutional account after the grace period (D-19).
+  statusCases.onLeaverClosure(async (tenantId, closure) => {
+    const enrolment = await enrolments.getEnrolment(closure.enrolmentId, tenantId);
+    await requestAccountClosure(deliveries, db, tenantId, {
+      personId: closure.personId, enrolmentId: closure.enrolmentId, endStatus: enrolment?.statusCode ?? 'withdrawn',
+      decidedAt: closure.decidedAt, changeKey: `leaver-closure:${closure.statusCaseId}`,
+    });
+  });
   const curriculumPublications = new CurriculumPublicationService(db);
   const academicExceptions = new AcademicExceptionService(db, valueSets, enrolments);
   const employment = new EmploymentService(db, valueSets, support);

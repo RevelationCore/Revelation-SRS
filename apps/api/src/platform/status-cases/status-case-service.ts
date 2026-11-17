@@ -414,7 +414,18 @@ export class StatusCaseService {
       enrolmentStatusTransitionId: transitionId, updatedAt: now,
     }).where(eq(studentStatusCases.id, row.id)));
     await this.#recordDecision(tenantId, row, 'approved', input.reason, actorId, now);
+    // A leaver closure makes no status transition, so what follows it (ending the account, D-19) is told here.
+    if (type === 'leaver-closure') {
+      for (const listener of this.#leaverClosureListeners) await listener(tenantId, { enrolmentId: row.enrolmentId, personId: row.personId, statusCaseId: row.id, decidedAt: now }, actorId);
+    }
     return this.getCase(tenantId, statusCaseId);
+  }
+
+  #leaverClosureListeners: Array<(tenantId: string, closure: { enrolmentId: string; personId: string; statusCaseId: string; decidedAt: Date }, actorId: string) => Promise<unknown>> = [];
+
+  /** Something that follows an approved leaver closure, such as ending the institutional account (D-19). */
+  onLeaverClosure(listener: (tenantId: string, closure: { enrolmentId: string; personId: string; statusCaseId: string; decidedAt: Date }, actorId: string) => Promise<unknown>): void {
+    this.#leaverClosureListeners.push(listener);
   }
 
   // ── internals ──────────────────────────────────────────────────────────────

@@ -184,6 +184,14 @@ export function deliveryRoutes(fastify: FastifyInstance): void {
     await reply.send(tasks.map(taskToWire));
   });
 
+  fastify.get('/students/:personId/entitlements', {
+    schema: { params: Type.Object({ personId: Type.String() }), response: { 200: Type.Array(ItemSchema) } },
+    preHandler: [requirePermission('student:read:all')],
+  }, async (request, reply) => {
+    const { personId } = request.params as { personId: string };
+    await reply.send((await fastify.deliveryService.entitlementsForPerson(request.tenantId, personId)).map(itemToWire));
+  });
+
   fastify.get('/delivery-items', {
     schema: {
       querystring: Type.Object({ flowCode: Type.Optional(Type.String()), subjectId: Type.Optional(Type.String()) }),

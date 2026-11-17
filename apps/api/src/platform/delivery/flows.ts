@@ -43,8 +43,8 @@ export const DELIVERY_FLOWS: readonly DeliveryFlow[] = [
   {
     flowCode: 'F-SIS-IAM-01', targetSystem: 'iam', targetLabel: 'identity and access management',
     name: 'Identity, enrolment status and access level to IAM', defaultMode: 'manual', stateSync: true,
-    producer: 'none',
-    producerNote: 'Registered for Phase 3 D-19: conversion, each status change and an approved leaver closure will send the access level and its effective date.',
+    producer: 'implemented',
+    producerNote: 'Conversion, each status change and an approved leaver closure send the person\'s account access (limited, full, suspended or ended) and its effective date; the account ends at leaver closure plus a grace period (Phase 3 D-19).',
   },
   {
     flowCode: 'F-SIS-LIB-01', targetSystem: 'lib', targetLabel: 'library system',

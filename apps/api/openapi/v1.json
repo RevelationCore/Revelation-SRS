@@ -3028,6 +3028,129 @@
         }
       }
     },
+    "/api/v1/students/{personId}/entitlements": {
+      "get": {
+        "operationId": "getStudentsByPersonIdEntitlements",
+        "tags": [
+          "students"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "personId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "deliveryItemId",
+                      "flowCode",
+                      "targetSystem",
+                      "subjectType",
+                      "subjectId",
+                      "personId",
+                      "payload",
+                      "summary",
+                      "fulfilmentModeCode",
+                      "statusCode",
+                      "failureReason",
+                      "requestPublishedAt",
+                      "deliveredAt",
+                      "createdAt"
+                    ],
+                    "properties": {
+                      "deliveryItemId": {
+                        "type": "string"
+                      },
+                      "flowCode": {
+                        "type": "string"
+                      },
+                      "targetSystem": {
+                        "type": "string"
+                      },
+                      "subjectType": {
+                        "type": "string"
+                      },
+                      "subjectId": {
+                        "type": "string"
+                      },
+                      "personId": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "payload": {
+                        "type": "object",
+                        "additionalProperties": {}
+                      },
+                      "summary": {
+                        "type": "string"
+                      },
+                      "fulfilmentModeCode": {
+                        "type": "string"
+                      },
+                      "statusCode": {
+                        "type": "string"
+                      },
+                      "failureReason": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "requestPublishedAt": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "deliveredAt": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "createdAt": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/delivery-items": {
       "get": {
         "operationId": "getDeliveryItems",

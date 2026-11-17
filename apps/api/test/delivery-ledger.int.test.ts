@@ -55,9 +55,9 @@ describe('Delivery flows', () => {
     ]);
     expect(flows.find((f) => f.flowCode === LIB)).toMatchObject({ producer: 'implemented', fulfilmentModeCode: 'manual', isDefault: true });
     expect(flows.filter((f) => f.producer === 'implemented').map((f) => f.flowCode).sort())
-      .toEqual([ACC, 'F-SIS-CMS-01', CRM, 'F-SIS-FIN-01', 'F-SIS-HR-01', 'F-SIS-ITSM-01', LIB, 'F-SIS-OIV-01', 'F-SIS-PAY-01', 'F-SIS-RP-01']);
+      .toEqual([ACC, 'F-SIS-CMS-01', CRM, 'F-SIS-FIN-01', 'F-SIS-HR-01', 'F-SIS-IAM-01', 'F-SIS-ITSM-01', LIB, 'F-SIS-OIV-01', 'F-SIS-PAY-01', 'F-SIS-RP-01']);
     expect(flows.filter((f) => f.producer === 'extract').map((f) => f.flowCode).sort()).toEqual(['F-SIS-CM-01', 'F-SIS-EST-01', 'F-SIS-SETS-01']);
-    expect(flows.filter((f) => f.producer === 'none').map((f) => f.flowCode)).toEqual(['F-SIS-IAM-01']);
+    expect(flows.filter((f) => f.producer === 'none').map((f) => f.flowCode)).toEqual([]);
   });
 
   it('validates settings and restricts them to configuration administrators', async () => {

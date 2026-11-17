@@ -75,6 +75,7 @@ import { MisconductTab } from './MisconductTab.js';
 import { IdentityVerificationSection } from './IdentityVerificationSection.js';
 import { FinancialRegistrationSection } from './FinancialRegistrationSection.js';
 import { RightToStudySection } from './RightToStudySection.js';
+import { EntitlementsSection } from './EntitlementsSection.js';
 import {
   PageHeader, Card, CardHeader, CardBody, Button, Input, Select, Textarea, LabelledField,
   Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, Dialog, DialogClose,
@@ -198,6 +199,7 @@ export function StudentDetailPage() {
         </TabsContent>
         <TabsContent value="other-systems">
           {personId && <ExternalRecordsTab personId={personId} canWrite={userHasAnyPermission(roles, ['external-record:write'])} />}
+          {personId && userHasAnyPermission(roles, ['student:read:all']) && <div className="mt-6"><EntitlementsSection personId={personId} /></div>}
         </TabsContent>
         <TabsContent value="identity">
           <IdentityTab student={student} onUpdated={reload} canWrite={canWriteStudent} />

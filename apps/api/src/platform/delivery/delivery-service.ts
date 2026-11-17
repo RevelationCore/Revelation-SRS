@@ -154,6 +154,16 @@ export class DeliveryService {
     return item ? toDto(item) : null;
   }
 
+  /** A person's entitlements (D-19): the latest item of each flow about them, with what was asked and whether it was done. */
+  async entitlementsForPerson(tenantId: string, personId: string): Promise<DeliveryItemDto[]> {
+    const rows = await withTenantContext(this.db, tenantId, (tx) =>
+      tx.select().from(deliveryItems).where(and(eq(deliveryItems.tenantId, tenantId as Uuid), eq(deliveryItems.personId, personId as Uuid)))
+        .orderBy(deliveryItems.createdAt));
+    const latest = new Map<string, typeof rows[number]>();
+    for (const r of rows) latest.set(`${r.flowCode}:${r.subjectId}`, r);
+    return [...latest.values()].sort((a, b) => a.flowCode.localeCompare(b.flowCode)).map(toDto);
+  }
+
   async listItems(tenantId: string, opts: { flowCode?: string; subjectId?: string } = {}): Promise<DeliveryItemDto[]> {
     const rows = await withTenantContext(this.db, tenantId, (tx) =>
       tx.select().from(deliveryItems).where(and(

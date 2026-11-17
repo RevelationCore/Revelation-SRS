@@ -324,6 +324,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/students/{personId}/entitlements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getStudentsByPersonIdEntitlements"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/delivery-items": {
         parameters: {
             query?: never;
@@ -7546,6 +7562,45 @@ export interface operations {
                         studentName: string | null;
                         ownerDescription: string | null;
                         overdue: boolean;
+                    }[];
+                };
+            };
+        };
+    };
+    getStudentsByPersonIdEntitlements: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        deliveryItemId: string;
+                        flowCode: string;
+                        targetSystem: string;
+                        subjectType: string;
+                        subjectId: string;
+                        personId: string | null;
+                        payload: {
+                            [key: string]: unknown;
+                        };
+                        summary: string;
+                        fulfilmentModeCode: string;
+                        statusCode: string;
+                        failureReason: string | null;
+                        requestPublishedAt: string | null;
+                        deliveredAt: string | null;
+                        createdAt: string;
                     }[];
                 };
             };
