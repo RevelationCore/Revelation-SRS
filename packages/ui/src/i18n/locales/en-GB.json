@@ -64,6 +64,7 @@
     },
     "enrolment": {
       "status": {
+        "pre-registration": "Not yet registered",
         "enrolled":     "Enrolled",
         "intermitting": "Intermitting",
         "suspended":    "Suspended",

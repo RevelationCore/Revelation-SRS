@@ -99,7 +99,9 @@ export class ApplicationService {
       return row!.id;
     });
 
-    const existing = await this.#bySource(tenantId, input.channelCode, input.sourceReference);
+    // A UCAS Clearing choice reconciles with the Clearing call already taken for the same UCAS applicant (D-13).
+    const existing = await this.#bySource(tenantId, input.channelCode, input.sourceReference)
+      ?? (input.channelCode === 'ucas' ? await this.#bySource(tenantId, 'clearing', input.sourceReference) : null);
     if (existing) {
       // A resend or update from the channel: keep the application, point at the latest payload.
       // An incomplete application whose route facts have now arrived returns to the received worklist.
@@ -210,6 +212,45 @@ export class ApplicationService {
       await tx.update(studentApplications).set({ statusCode: 'offered', updatedAt: clockNow() }).where(eq(studentApplications.id, app.id));
     });
     return this.get(tenantId, applicationId);
+  }
+
+  /**
+   * The Clearing fast path (BP-01-006; D-13): assessment, recommendation and
+   * offer in one audited step by one person, which the ordinary route keeps
+   * apart. The caller has checked the window, programme and declarations;
+   * a later review by someone else stands in for the separation of duties.
+   */
+  async clearingFastPath(tenantId: string, applicationId: string, input: {
+    callReference: string; reason: string; offer: { offerTypeCode: 'clearing-verbal' | 'conditional' | 'unconditional'; expiresOn?: string; feeStatusBasisCode?: string; conditions?: OfferTerms['conditions'] };
+  }, actorId: string): Promise<{ application: ApplicationDto; offerId: string }> {
+    const app = await this.#app(tenantId, applicationId);
+    if (!app.personId) throw new ConflictError('Confirm the applicant identity before deciding');
+    if (!['received', 'under-assessment'].includes(app.statusCode)) throw new ConflictError(`An application that is ${app.statusCode} cannot be decided through Clearing`);
+    if (!app.programmeId || !app.intakeCode || !app.modeOfStudyCode) throw new ConflictError('A Clearing offer needs the programme, intake and mode of study');
+    if (input.offer.offerTypeCode === 'clearing-verbal') {
+      if ((input.offer.conditions ?? []).length > 0) throw new ValidationError('A verbal Clearing offer has no conditions');
+      if (!input.offer.expiresOn) throw new ValidationError('A verbal Clearing offer expires');
+    } else {
+      await this.#validateTerms(tenantId, { offerTypeCode: input.offer.offerTypeCode, conditions: input.offer.conditions ?? [] });
+    }
+    const now = clockNow();
+    const offerId = await withTenantContext(this.db, tenantId, async (tx) => {
+      await tx.insert(applicationAssessments).values({
+        tenantId: tenantId as Uuid, applicationId: app.id, assessmentTypeCode: 'academic', outcomeCode: 'meets',
+        evidenceRef: `clearing-call:${input.callReference}`, evidenceVersion: null, note: input.reason, assessedBy: actorId,
+      });
+      const [offer] = await tx.insert(admissionsOffers).values({
+        tenantId: tenantId as Uuid, applicationId: app.id, version: 1, programmeId: app.programmeId!, intakeCode: app.intakeCode!,
+        modeOfStudyCode: app.modeOfStudyCode!, feeStatusBasisCode: input.offer.feeStatusBasisCode ?? null,
+        offerTypeCode: input.offer.offerTypeCode, expiresOn: input.offer.expiresOn ?? null, decidedBy: actorId,
+      }).returning();
+      await this.#insertConditions(tx, tenantId, offer!.id, input.offer.conditions ?? []);
+      await tx.update(studentApplications).set({
+        statusCode: 'offered', recommendationCode: 'offer', recommendationReason: input.reason, recommendedBy: actorId, recommendedAt: now, updatedAt: now,
+      }).where(eq(studentApplications.id, app.id));
+      return offer!.id;
+    });
+    return { application: await this.get(tenantId, applicationId), offerId };
   }
 
   /** The applicant's response, with the channel's own timestamp. A response after expiry is refused. */

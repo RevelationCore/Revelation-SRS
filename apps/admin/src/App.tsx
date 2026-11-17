@@ -25,6 +25,7 @@ const IntegrationTasksPage = lazy(() => import('./pages/IntegrationTasksPage.js'
 const ExamTimingsPage = lazy(() => import('./pages/ExamTimingsPage.js').then((m) => ({ default: m.ExamTimingsPage })));
 const AssessmentStructuresPage = lazy(() => import('./pages/AssessmentStructuresPage.js').then((m) => ({ default: m.AssessmentStructuresPage })));
 const ProgrammeRulesPage = lazy(() => import('./pages/ProgrammeRulesPage.js').then((m) => ({ default: m.ProgrammeRulesPage })));
+const ClearingPage = lazy(() => import('./pages/ClearingPage.js').then((m) => ({ default: m.ClearingPage })));
 const RegistrationPeriodsPage = lazy(() => import('./pages/RegistrationPeriodsPage.js').then((m) => ({ default: m.RegistrationPeriodsPage })));
 const NonRegistrationPage = lazy(() => import('./pages/NonRegistrationPage.js').then((m) => ({ default: m.NonRegistrationPage })));
 const RegistrationPeriodDetailPage = lazy(() => import('./pages/RegistrationPeriodsPage.js').then((m) => ({ default: m.RegistrationPeriodDetailPage })));
@@ -116,6 +117,7 @@ export function App() {
                 <Route path="module-selection-proposals" element={<RequirePermission permissions={['module-selection:decide', 'module-selection:read:all']}><ModuleSelectionProposalsPage /></RequirePermission>} />
                 <Route path="module-registration-requests" element={<RequirePermission permissions={['module-registration:decide']}><ModuleRegistrationRequestsPage /></RequirePermission>} />
                 <Route path="identity-change-requests" element={<RequirePermission permissions={['student:decide']}><IdentityChangeRequestsPage /></RequirePermission>} />
+                <Route path="clearing" element={<RequirePermission permissions={['clearing:decide', 'clearing:review']}><ClearingPage /></RequirePermission>} />
                 <Route path="applications" element={<RequirePermission permissions={['application:read']}><ApplicationsPage /></RequirePermission>} />
                 <Route path="applications/:applicationId" element={<RequirePermission permissions={['application:read']}><ApplicationDetailPage /></RequirePermission>} />
                 <Route path="graduation" element={<RequirePermission permissions={['graduation:read']}><GraduationPage /></RequirePermission>} />

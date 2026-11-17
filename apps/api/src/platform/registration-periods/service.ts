@@ -76,6 +76,12 @@ export class RegistrationPeriodService {
   ) {}
 
   #lapseHandler: RegistrationLapseHandler | null = null;
+  #activate: ((tenantId: string, enrolmentId: string, actorId: string) => Promise<void>) | null = null;
+
+  /** What an initial registration does to a pre-registration enrolment: moves it to enrolled (D-10). */
+  onInitialRegistration(activate: (tenantId: string, enrolmentId: string, actorId: string) => Promise<void>): void {
+    this.#activate = activate;
+  }
 
   /** Registers what follows a lapse (the failure-to-register cases). */
   onLapse(handler: RegistrationLapseHandler): void {
@@ -209,6 +215,9 @@ export class RegistrationPeriodService {
     }
     const blockers = await this.#blockers(tenantId, current.enrolmentId, period, termsVersion);
     if (blockers.length > 0) throw new ConflictError(blockers.map((b) => b.message).join('; '));
+
+    // Activate first: if the confirmation then fails it can be retried, as the student is already enrolled.
+    if (period.periodTypeCode === 'initial') await this.#activate?.(tenantId, current.enrolmentId, actorId);
 
     const now = clockNow();
     const updated = await withTenantContext(this.db, tenantId, async (tx) => {

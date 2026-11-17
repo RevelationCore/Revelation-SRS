@@ -148,4 +148,30 @@ describe('application detail', () => {
     await screen.findByText('Application');
     expect(body).toEqual({ decisionCode: 'confirmed' });
   });
+
+  it('the registry completes the hand-off by creating the enrolment from the confirmed offer', async () => {
+    let body: unknown;
+    const conversion = {
+      applicationId: 'app-1', personId: 'person-1', offerId: 'offer-1', enrolmentId: 'enr-9', enrolmentExists: false, programmeId: 'prog-1', programmeSource: 'offer',
+      modeOfStudyCode: 'full-time', intakeCode: '2027-09', academicYearOfEntry: '2027-28', startDate: '2027-09-20', feeStatusBasisCode: null,
+      handoffTaskId: 'task-1', handoffTaskStatus: 'assigned', blockers: [],
+    };
+    server.use(
+      ...baseHandlers(),
+      http.get(`${API}/api/v1/applications/app-1`, () => HttpResponse.json(application({ statusCode: 'offered', offers: [offer({ statusCode: 'confirmed', conditions: [] })] }))),
+      http.get(`${API}/api/v1/applications/app-1/enrolment-conversion`, () => HttpResponse.json(conversion)),
+      http.post(`${API}/api/v1/applications/app-1/enrolment-conversion`, async ({ request }) => {
+        body = await request.json();
+        return HttpResponse.json({ ...conversion, enrolmentExists: true, handoffTaskStatus: 'completed' });
+      }),
+    );
+    const { container } = renderDetail(['registry-administrator']);
+    expect(await screen.findByText(/Complete the hand-off/)).toBeVisible();
+    expect(screen.getByText('2027-28')).toBeVisible();
+    await expectNoA11yViolations(container);
+    await userEvent.click(screen.getByRole('button', { name: 'Create enrolment' }));
+    expect(await screen.findByText(/in pre-registration until they register/)).toBeVisible();
+    expect(screen.getByRole('link', { name: 'Open the student record' })).toBeVisible();
+    expect(body).toEqual({ startDate: '2027-09-20' });
+  });
 });

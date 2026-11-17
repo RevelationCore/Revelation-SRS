@@ -646,6 +646,7 @@ export class HesaService {
          AND pr.recorded_until IS NULL
         WHERE e.tenant_id = ${tenantId}
           AND e.recorded_until IS NULL
+          AND e.status_code <> 'pre-registration'
           AND e.academic_year_of_entry = ${academicYear}
         ORDER BY e.person_id, e.academic_year_of_entry
       `) as unknown as Array<{

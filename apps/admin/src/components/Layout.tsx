@@ -131,6 +131,7 @@ function Sidebar({ onLogout, displayName, roles }: { onLogout: () => void; displ
       <nav className="flex-1 overflow-y-auto px-2 py-3">
         <NavItem to="/dashboard" label="Dashboard" end icon={LayoutDashboard} />
         {can('application:read') && <NavItem to="/applications" label="Applications" icon={Inbox} />}
+        {(can('clearing:decide') || can('clearing:review')) && <NavItem to="/clearing" label="Clearing" icon={Inbox} />}
         {canViewStudents && <NavItem to="/students" label="Students" icon={Users} />}
         {canViewTasks && <NavItem to="/tasks" label="Tasks" end icon={ListChecks} />}
         {canViewModuleSelectionProposals && <NavItem to="/module-selection-proposals" label="Module selection" end icon={ListChecks} />}

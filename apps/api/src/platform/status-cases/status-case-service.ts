@@ -43,7 +43,7 @@ const STARTS_FROM: Record<StatusCaseType, string[]> = {
   interruption: ['enrolled'],
   suspension: ['enrolled'],
   return: ['intermitting', 'suspended'],
-  withdrawal: ['enrolled', 'intermitting', 'suspended'],
+  withdrawal: ['pre-registration', 'enrolled', 'intermitting', 'suspended'],
   transfer: ['enrolled'],
   'leaver-closure': ['withdrawn', 'graduated'],
 };

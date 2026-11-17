@@ -81,7 +81,7 @@ All eleven processes already pass integration tests through the API.
 
 ## Phase 2 — Build the missing processes (large)
 
-**Status: in progress.** Decisions are recorded in [Phase 2 gap-closure decisions](../decisions/phase-2-gap-closure-decisions.md) (D-8 to D-13). Delivered so far: assessment structures and programme rules screens, reassessment plans at ratification (D-12), governed curriculum binding changes (D-11), annual re-registration (D-8) and failure to register (D-9). Remaining: initial registration and applicant conversion (D-10) and Clearing (D-13).
+**Status: delivered.** Decisions are recorded in [Phase 2 gap-closure decisions](../decisions/phase-2-gap-closure-decisions.md) (D-8 to D-13). Delivered so far: assessment structures and programme rules screens, reassessment plans at ratification (D-12), governed curriculum binding changes (D-11), annual re-registration (D-8), failure to register (D-9), and initial registration with applicant conversion (D-10)., and Clearing (D-13). Every one of the 49 processes now exists: 44 are usable on screen and 5 are partly built.
 
 | Process | Work |
 |---|---|

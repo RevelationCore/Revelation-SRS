@@ -180,6 +180,9 @@ export const PERMISSION_ROLES = {
   'registration:confirm:assisted':       ['registry-administrator'] as Role[],
   // Failure to register (BP-02-011; D-9): chase lapsed students and decide non-registration.
   'non-registration:manage':             ['registry-administrator'] as Role[],
+  // Clearing (BP-01-006; D-13): the one-step decision, and the next-day review by someone else.
+  'clearing:decide':                     ['programme-approver', 'registry-administrator'] as Role[],
+  'clearing:review':                     ['programme-approver'] as Role[],
   'registration:confirm:own':            ['student'] as Role[],
   'pgr-case:read':                       ['pgr-administrator', 'pgr-director', 'research-supervisor', 'registry-administrator'] as Role[],
   'pgr-case:read:own':                   ['student'] as Role[],

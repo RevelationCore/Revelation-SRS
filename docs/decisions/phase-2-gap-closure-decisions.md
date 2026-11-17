@@ -37,6 +37,8 @@ The enrolment starts in a new status, `pre-registration`, which can move only to
 
 **Institution must confirm.** The declarations required at registration, and anything that must be completed in person.
 
+**Implementation note (D-10).** The enrolment ID is a name-based UUID derived from the tenant and the confirmed offer, so no column on the append-only `offer_confirmation_decision` is needed. The start date is the start of the first academic period beginning in the intake month, or the first of that month; the registry can change it. Activation (`pre-registration` to `enrolled`) happens before the confirmation is stored, so a failed confirmation can be retried. HESA, OfS B3 and FOI enrolment counts exclude `pre-registration`; SLC and UKVI CAS are driven by triggers, which a pre-registration enrolment does not create.
+
 ## D-11: Changing one student's curriculum binding (BP-03-002)
 
 **Decision.** A change of programme or mode goes only through a transfer status case. A route or rule-set change within the same programme needs a reason code and an effective date. A registry administrator makes it alone if nothing yet depends on the binding in the current year (no module registrations, no pending or approved selection proposal, no marks); otherwise a programme approver (`curriculum-binding:approve`) decides it, and never the proposer. Replacing a binding happens in one transaction.
@@ -56,6 +58,8 @@ Implementation note: the proposal and its decision are held in a `curriculum_bin
 **Decision.** A Clearing call creates a channel-neutral application on the `clearing` channel; a UCAS Clearing choice for the same applicant reconciles with it rather than creating a second one. While the tenant's Clearing window is open, and only for programmes listed as open in Clearing, a holder of `clearing:decide` (programme approvers and registry administrators) may assess, recommend and decide in one audited step, provided there is no safeguarding, conviction or fitness-to-practise concern, no CAS is needed, and a reason and call reference are recorded. Verbal offers are recorded as offers that expire after a set time (default 48 hours). Every fast-path decision is reviewed by a different programme approver the next working day; corrections go through an offer change with a reason.
 
 **Institution must confirm.** Who holds `clearing:decide`, the published Clearing criteria, and the verbal-offer hold period.
+
+**Implementation note (D-13).** The fast path is `ApplicationService.clearingFastPath`, which writes the assessment, recommendation and offer in one transaction by one person; the separation of duties of the ordinary route is replaced by the next-day review, a `business_case` with process `BP-01-006` whose outcome (`upheld` or `correction-needed`) is a `case_decision`. Safeguarding, conviction, fitness-to-practise and visa needs are declared on the call, and any one sends the applicant to the standard route. The verbal-offer expiry is stored as a date, so a 48-hour hold ends at the end of that day.
 
 ## Risks recorded
 

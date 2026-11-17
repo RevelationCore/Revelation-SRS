@@ -378,6 +378,7 @@ export class OfsService {
           WHERE e.tenant_id = ${tenantId}
             AND e.academic_year_of_entry = ${academicYear}
             AND e.recorded_until IS NULL
+            AND e.status_code <> 'pre-registration'
         ),
         awarded AS (
           SELECT DISTINCT enrolment_id
@@ -422,6 +423,7 @@ export class OfsService {
           WHERE e.tenant_id = ${tenantId}
             AND e.academic_year_of_entry = ${academicYear}
             AND e.recorded_until IS NULL
+            AND e.status_code <> 'pre-registration'
         ),
         profiles AS (
           SELECT DISTINCT ON (enrolment_id)

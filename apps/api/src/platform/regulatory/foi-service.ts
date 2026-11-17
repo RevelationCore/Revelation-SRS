@@ -284,6 +284,7 @@ export class FoiService {
           FROM enrolment
           WHERE tenant_id = ${tenantId}
             AND recorded_until IS NULL
+            AND status_code <> 'pre-registration'
           GROUP BY academic_year_of_entry
         ),
         award_counts AS (

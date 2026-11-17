@@ -1,5 +1,5 @@
 import { Type } from '@sinclair/typebox';
-import { requirePermission } from '@revelation-srs/auth';
+import { requireAnyPermission, requirePermission } from '@revelation-srs/auth';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 
 import type { ApplicationDto } from '../platform/admissions/application-service.js';
@@ -112,6 +112,90 @@ export function applicationRoutes(fastify: FastifyInstance): void {
   action('/offer-conditions/:id/decision', 'offer:decide', Type.Object({
     statusCode: Type.Union([Type.Literal('met'), Type.Literal('waived'), Type.Literal('unmet')]), note: Type.Optional(Type.String({ maxLength: 2000 })),
   }), (r, id) => fastify.applicationService.decideCondition(r.tenantId, id, r.body as never, r.user.sub), () => ['offer_condition', 'Condition decided']);
+
+  // Applicant conversion (BP-01-007, BP-02-001; D-10): completing the hand-off creates the enrolment.
+  const Conversion = Type.Record(Type.String(), Type.Unknown());
+  fastify.get('/applications/:applicationId/enrolment-conversion', {
+    schema: { params: Type.Object({ applicationId: Type.String() }), response: { 200: Conversion, 404: ErrorSchema } },
+    preHandler: [requirePermission('enrolment:write')],
+  }, async (request, reply) => {
+    const { applicationId } = request.params as { applicationId: string };
+    await reply.send(await fastify.applicantConversionService.preview(request.tenantId, applicationId));
+  });
+
+  fastify.post('/applications/:applicationId/enrolment-conversion', {
+    schema: {
+      params: Type.Object({ applicationId: Type.String() }),
+      body: Type.Object({ startDate: Type.Optional(Type.String({ format: 'date' })) }),
+      response: { 200: Conversion, 404: ErrorSchema, 409: ErrorSchema, 422: ErrorSchema },
+    },
+    preHandler: [requirePermission('enrolment:write')],
+  }, async (request, reply) => {
+    const { applicationId } = request.params as { applicationId: string };
+    const result = await fastify.applicantConversionService.convert(request.tenantId, applicationId, request.body as { startDate?: string }, request.user.sub);
+    await audit(fastify, request, 'enrolment', result.enrolmentId!, 'create', `Enrolment created in pre-registration from the confirmed offer on application ${applicationId}`);
+    await reply.send(result);
+  });
+
+  // Clearing (BP-01-006; D-13).
+  const ClearingJson = Type.Record(Type.String(), Type.Unknown());
+  fastify.get('/clearing/status', {
+    schema: { response: { 200: ClearingJson } },
+    preHandler: [requireAnyPermission('clearing:decide', 'clearing:review')],
+  }, async (request, reply) => {
+    await reply.send(await fastify.clearingService.status(request.tenantId));
+  });
+
+  fastify.post('/clearing/calls', {
+    schema: {
+      body: Type.Object({
+        callReference: Type.String({ minLength: 1, maxLength: 100 }), reason: Type.String({ minLength: 1, maxLength: 2000 }),
+        cycle: Type.String({ minLength: 4, maxLength: 10 }), ucasPersonalId: Type.Optional(Type.String({ pattern: '^\\d{10}$' })),
+        applicant: Type.Object({
+          legalFirstName: Type.String({ minLength: 1 }), legalFamilyName: Type.String({ minLength: 1 }),
+          dateOfBirth: Type.Optional(Type.String({ format: 'date' })), emailPersonal: Type.Optional(Type.String()),
+          personId: Type.Optional(Type.String()), studentNumber: Type.Optional(Type.String()),
+        }),
+        programmeId: Type.String(), intakeCode: Type.String({ pattern: '^\\d{4}-\\d{2}$' }), modeOfStudyCode: Type.String(),
+        declarations: Type.Object({
+          safeguardingConcern: Type.Boolean(), convictionDeclared: Type.Boolean(), fitnessToPractiseRequired: Type.Boolean(), studentVisaRequired: Type.Boolean(),
+        }),
+        offer: Type.Object({
+          offerTypeCode: Type.Union([Type.Literal('clearing-verbal'), Type.Literal('conditional'), Type.Literal('unconditional')]),
+          feeStatusBasisCode: Type.Optional(Type.String()),
+          conditions: Type.Optional(Type.Array(Type.Object({ conditionTypeCode: Type.String(), description: Type.String(), requiredValue: Type.Optional(Type.String()) }), { maxItems: 30 })),
+        }),
+      }),
+      response: { 201: ClearingJson, 409: ErrorSchema, 422: ErrorSchema },
+    },
+    preHandler: [requirePermission('clearing:decide')],
+  }, async (request, reply) => {
+    const result = await fastify.clearingService.takeCall(request.tenantId, request.body as never, request.user.sub);
+    await audit(fastify, request, 'student_application', result.application.id, 'update', `Clearing decision on call ${(request.body as { callReference: string }).callReference}: assessed, recommended and offered in one step`);
+    await reply.code(201).send({ application: wire(result.application), reviewCaseId: result.reviewCaseId });
+  });
+
+  fastify.get('/clearing/reviews', {
+    schema: { querystring: Type.Object({ pending: Type.Optional(Type.Boolean()) }), response: { 200: Type.Array(ClearingJson) } },
+    preHandler: [requireAnyPermission('clearing:decide', 'clearing:review')],
+  }, async (request, reply) => {
+    const { pending } = request.query as { pending?: boolean };
+    await reply.send(await fastify.clearingService.listReviews(request.tenantId, pending ? { pending: true } : {}));
+  });
+
+  fastify.post('/clearing/reviews/:caseId', {
+    schema: {
+      params: Type.Object({ caseId: Type.String() }),
+      body: Type.Object({ outcomeCode: Type.Union([Type.Literal('upheld'), Type.Literal('correction-needed')]), note: Type.Optional(Type.String({ maxLength: 2000 })) }),
+      response: { 200: ClearingJson, 404: ErrorSchema, 409: ErrorSchema, 422: ErrorSchema },
+    },
+    preHandler: [requirePermission('clearing:review')],
+  }, async (request, reply) => {
+    const { caseId } = request.params as { caseId: string };
+    const reviewed = await fastify.clearingService.review(request.tenantId, caseId, request.body as never, request.user.sub);
+    await audit(fastify, request, 'business_case', caseId, 'update', `Clearing decision reviewed: ${reviewed.review?.outcomeCode ?? ''}`);
+    await reply.send(reviewed);
+  });
 }
 
 async function audit(fastify: FastifyInstance, request: FastifyRequest, entityType: string, entityId: string, actionType: 'create' | 'update', reasonText: string) {

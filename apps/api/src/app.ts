@@ -118,6 +118,9 @@ import { deliveryRoutes, inboundRoutes } from './routes/delivery.js';
 import { supportRoutes } from './routes/support.js';
 import { statusCaseRoutes } from './routes/status-cases.js';
 import { nonRegistrationRoutes, registrationPeriodRoutes } from './routes/registration-periods.js';
+import { clockNow } from './platform/clock.js';
+import { ClearingService } from './platform/admissions/clearing-service.js';
+import { ApplicantConversionService } from './platform/admissions/applicant-conversion-service.js';
 import { NonRegistrationService } from './platform/registration-periods/non-registration-service.js';
 import { RegistrationPeriodService } from './platform/registration-periods/service.js';
 import { curriculumPublicationRoutes } from './routes/curriculum-publications.js';
@@ -527,6 +530,15 @@ export async function buildApp(
   const notificationService = new NotificationService(db);
   const nonRegistration = new NonRegistrationService(db, valueSets, businessCases, statusCases, notificationService);
   registrationPeriods.onLapse(nonRegistration);
+  registrationPeriods.onInitialRegistration(async (tenantId, enrolmentId, actorId) => {
+    const enrolment = await enrolments.getEnrolment(enrolmentId, tenantId);
+    if (enrolment?.statusCode === 'pre-registration') {
+      await enrolments.transitionStatus(enrolmentId, tenantId, 'enrolled', clockNow(), actorId, { reasonText: 'Initial registration confirmed' });
+    }
+  });
+  const applicantConversion = new ApplicantConversionService(db, enrolments, workflowBridge, workflowTasks, reviewExecution);
+  fastify.decorate('applicantConversionService', applicantConversion);
+  fastify.decorate('clearingService', new ClearingService(db, applications, businessCases));
   fastify.decorate('nonRegistrationService', nonRegistration);
   fastify.decorate('notificationService', notificationService);
 
@@ -654,6 +666,7 @@ export async function buildApp(
       ['/registration-periods',      'enrolments'],
       ['/registration-confirmations', 'enrolments'],
       ['/non-registration-cases', 'enrolments'],
+      ['/clearing', 'admissions'],
       ['/academic-exceptions',       'enrolments'],
       ['/rule-exceptions',           'enrolments'],
       ['/award-recommendations',     'progression'],
@@ -834,6 +847,8 @@ declare module 'fastify' {
     bindingChangeService: BindingChangeService;
     registrationPeriodService: RegistrationPeriodService;
     nonRegistrationService: NonRegistrationService;
+    applicantConversionService: ApplicantConversionService;
+    clearingService: ClearingService;
     tenantAdminService: TenantAdminService;
     assessmentComponentService: AssessmentComponentService;
     moduleResultService: ModuleResultService;

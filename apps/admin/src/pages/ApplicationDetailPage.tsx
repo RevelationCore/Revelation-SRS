@@ -8,7 +8,8 @@ import type { Permission } from '@revelation-srs/domain';
 
 import { ApiError } from '../api/client.js';
 import {
-  type ApplicationDetail, type ConditionInput, type Offer, type OfferCondition,
+  type ApplicationDetail, type ConditionInput, type EnrolmentConversion, type Offer, type OfferCondition,
+  convertToEnrolment, getEnrolmentConversion,
   getApplication, confirmIdentity, routeApplication, recordAssessment, recommendApplication, decideApplication,
   recordOfferResponse, changeOffer, withdrawOffer, confirmOffer, recordConditionEvidence, decideCondition,
 } from '../api/applications.js';
@@ -156,6 +157,10 @@ export function ApplicationDetailPage() {
           />
         )}
 
+        {can('enrolment:write') && offers.some((o) => o.statusCode === 'confirmed') && (
+          <ConversionCard applicationId={app.id} programmeName={(id) => programmeLabel(programmes, id)} />
+        )}
+
         {offers.map((offer) => (
           <OfferCard
             key={offer.id}
@@ -168,6 +173,62 @@ export function ApplicationDetailPage() {
         ))}
       </div>
     </div>
+  );
+}
+
+/**
+ * Completing the admissions hand-off (D-10): creates the student's enrolment
+ * from the confirmed offer, in pre-registration until they register. Doing it
+ * again returns the same enrolment.
+ */
+function ConversionCard({ applicationId, programmeName }: { applicationId: string; programmeName: (id: string | null) => string }) {
+  const [conversion, setConversion] = useState<EnrolmentConversion | null>(null);
+  const [startDate, setStartDate] = useState('');
+  const [error, setError] = useState('');
+  useEffect(() => {
+    getEnrolmentConversion(applicationId).then((c) => { setConversion(c); setStartDate(c.startDate ?? ''); })
+      .catch((err: unknown) => setError(message(err, 'Failed to load the enrolment details')));
+  }, [applicationId]);
+
+  async function convert(e: FormEvent) {
+    e.preventDefault();
+    setError('');
+    try { setConversion(await convertToEnrolment(applicationId, startDate || undefined)); } catch (err) { setError(message(err, 'Failed to create the enrolment')); }
+  }
+
+  if (!conversion) return error ? <p className="text-sm text-danger-600" role="alert">{error}</p> : null;
+  return (
+    <Card>
+      <CardHeader
+        title="Enrolment"
+        description={conversion.enrolmentExists
+          ? 'The enrolment has been created. The student is in pre-registration until they register in the portal.'
+          : 'Complete the hand-off: create the student\'s enrolment from the confirmed offer. It starts in pre-registration; nothing is sent to finance or regulators until the student registers.'}
+      />
+      <CardBody>
+        {error && <p className="mb-3 text-sm text-danger-600" role="alert">{error}</p>}
+        <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm md:grid-cols-3">
+          <Fact label="Programme">{programmeName(conversion.programmeId)}{conversion.programmeSource === 'alternative' ? ' (alternative)' : ''}</Fact>
+          <Fact label="Mode of study">{conversion.modeOfStudyCode ?? '—'}</Fact>
+          <Fact label="Year of entry">{conversion.academicYearOfEntry ?? '—'}</Fact>
+          <Fact label="Fee status basis">{conversion.feeStatusBasisCode ?? 'Not recorded'}</Fact>
+          <Fact label="Hand-off task">{conversion.handoffTaskStatus ?? 'None'}</Fact>
+        </dl>
+        {conversion.blockers.length > 0 && (
+          <ul className="mt-3 list-disc pl-5 text-sm text-danger-700">{conversion.blockers.map((b) => <li key={b.code}>{b.message}</li>)}</ul>
+        )}
+        {conversion.enrolmentExists && conversion.personId ? (
+          <p className="mt-4 text-sm"><Link to={`/students/${conversion.personId}`} className="text-primary-600 hover:underline">Open the student record</Link></p>
+        ) : conversion.blockers.length === 0 && (
+          <form className="mt-4 flex flex-wrap items-end gap-3" onSubmit={(e) => void convert(e)}>
+            <LabelledField label="Start date" htmlFor="conversion-start" hint="From the intake; change only if the course starts on a different date">
+              <Input id="conversion-start" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+            </LabelledField>
+            <Button type="submit" disabled={!startDate}>Create enrolment</Button>
+          </form>
+        )}
+      </CardBody>
+    </Card>
   );
 }
 

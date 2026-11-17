@@ -125,3 +125,35 @@ export const decideCondition = (conditionId: string, body: { statusCode: 'met' |
 
 export interface ProgrammeSummary { programmeId: string; code: string; title: string }
 export const listProgrammes = () => api.get<ProgrammeSummary[]>('/api/v1/programmes');
+
+/** Applicant conversion (BP-01-007, BP-02-001; D-10). */
+export interface EnrolmentConversion {
+  applicationId: string; personId: string | null; offerId: string | null; enrolmentId: string | null; enrolmentExists: boolean;
+  programmeId: string | null; programmeSource: 'offer' | 'alternative' | null; modeOfStudyCode: string | null; intakeCode: string | null;
+  academicYearOfEntry: string | null; startDate: string | null; feeStatusBasisCode: string | null;
+  handoffTaskId: string | null; handoffTaskStatus: string | null;
+  blockers: Array<{ code: string; message: string }>;
+}
+export const getEnrolmentConversion = (applicationId: string) => api.get<EnrolmentConversion>(`/api/v1/applications/${applicationId}/enrolment-conversion`);
+export const convertToEnrolment = (applicationId: string, startDate?: string) =>
+  api.post<EnrolmentConversion>(`/api/v1/applications/${applicationId}/enrolment-conversion`, startDate ? { startDate } : {});
+
+/** Clearing (BP-01-006; D-13). */
+export interface ClearingStatus { open: boolean; opensAt: string | null; closesAt: string | null; programmeIds: string[]; verbalOfferHours: number }
+export interface ClearingDeclarations { safeguardingConcern: boolean; convictionDeclared: boolean; fitnessToPractiseRequired: boolean; studentVisaRequired: boolean }
+export interface ClearingCall {
+  callReference: string; reason: string; cycle: string; ucasPersonalId?: string;
+  applicant: { legalFirstName: string; legalFamilyName: string; dateOfBirth?: string; emailPersonal?: string };
+  programmeId: string; intakeCode: string; modeOfStudyCode: string; declarations: ClearingDeclarations;
+  offer: { offerTypeCode: 'clearing-verbal' | 'unconditional' };
+}
+export interface ClearingReview {
+  caseId: string; statusCode: string; applicationId: string; sourceReference: string; offerId: string; offerTypeCode: string; expiresOn: string | null;
+  programmeId: string; decidedBy: string; decidedAt: string; reviewDueBy: string;
+  review: { outcomeCode: string; reviewedBy: string; reviewedAt: string; note: string | null } | null;
+}
+export const getClearingStatus = () => api.get<ClearingStatus>('/api/v1/clearing/status');
+export const takeClearingCall = (body: ClearingCall) => api.post<{ application: { id: string }; reviewCaseId: string }>('/api/v1/clearing/calls', body);
+export const listClearingReviews = (pending = true) => api.get<ClearingReview[]>(`/api/v1/clearing/reviews${pending ? '?pending=true' : ''}`);
+export const reviewClearingDecision = (caseId: string, body: { outcomeCode: 'upheld' | 'correction-needed'; note?: string }) =>
+  api.post<ClearingReview>(`/api/v1/clearing/reviews/${caseId}`, body);

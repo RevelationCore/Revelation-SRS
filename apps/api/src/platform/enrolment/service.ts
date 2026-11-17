@@ -32,6 +32,7 @@ import { onEnrolmentChanged } from '../delivery/producers/enrolment-flows.js';
 // ── Types ────────────────────────────────────────────────────────────────────
 
 export type EnrolmentStatusCode =
+  | 'pre-registration'
   | 'enrolled'
   | 'intermitting'
   | 'withdrawn'
@@ -51,6 +52,17 @@ export interface CreateEnrolmentInput {
   slcReference?:       string;
   ucasPersonalId?:     string;
   ukviCasRequired?:    boolean;
+}
+
+/**
+ * How an enrolment starts. A pre-registration enrolment (D-10) is created
+ * from a confirmed offer under a caller-chosen ID, so creating it again
+ * returns the same enrolment; it has no fee liability, downstream triggers,
+ * delivery flows or srs.student.enrolled event until the student registers.
+ */
+export interface CreateEnrolmentOptions {
+  enrolmentId?:   string;
+  initialStatus?: 'enrolled' | 'pre-registration';
 }
 
 export interface EnrolmentDto {
@@ -131,6 +143,8 @@ export interface EnrolmentVolumesDto {
 
 // Valid status transitions
 const ALLOWED_TRANSITIONS: Record<EnrolmentStatusCode, EnrolmentStatusCode[]> = {
+  // Created from a confirmed offer, before the student registers (D-10).
+  'pre-registration': ['enrolled', 'withdrawn'],
   enrolled:    ['intermitting', 'withdrawn', 'suspended', 'graduated'],
   intermitting: ['enrolled', 'withdrawn'],
   suspended:   ['enrolled', 'withdrawn'],
@@ -200,16 +214,19 @@ export class EnrolmentService {
     tenantId: string,
     input: CreateEnrolmentInput,
     actorId: string,
+    options: CreateEnrolmentOptions = {},
   ): Promise<string> {
+    if (options.enrolmentId && (await this.getEnrolment(options.enrolmentId, tenantId))) return options.enrolmentId;
+    const preRegistration = options.initialStatus === 'pre-registration';
     await this.#ensurePersonExists(input.personId, tenantId);
     await this.#validateFieldValue(tenantId, 'enrolment', 'mode_of_study_code', input.modeOfStudyCode);
     await this.#validateFieldValue(tenantId, 'enrolment', 'funding_source_code', input.fundingSourceCode);
 
-    const enrolmentId = randomUUID();
+    const enrolmentId = options.enrolmentId ?? randomUUID();
     const now         = clockNow();
     const createdFeeLiabilityIds: string[] = [];
     const createdTriggers: Array<{ id: string; trigger: EnrolmentTriggerDecision }> = [];
-    const triggerDecisions = await this.triggerRules.evaluateEnrolmentCreation(tenantId, input);
+    const triggerDecisions = preRegistration ? [] : await this.triggerRules.evaluateEnrolmentCreation(tenantId, input);
 
     await withTenantContext(this.db, tenantId, async (tx) => {
       await tx.insert(enrolments).values({
@@ -218,7 +235,7 @@ export class EnrolmentService {
         tenantId:            tenantId as `${string}-${string}-${string}-${string}-${string}`,
         personId:            input.personId as `${string}-${string}-${string}-${string}-${string}`,
         programmeId:         (input.programmeId ?? null) as (`${string}-${string}-${string}-${string}-${string}` | null),
-        statusCode:          'enrolled',
+        statusCode:          preRegistration ? 'pre-registration' : 'enrolled',
         modeOfStudyCode:     input.modeOfStudyCode,
         attendanceTypeCode:  input.attendanceTypeCode ?? null,
         academicYearOfEntry: input.academicYearOfEntry,
@@ -235,6 +252,7 @@ export class EnrolmentService {
         recordedUntil:       null,
       });
 
+      if (!preRegistration) {
       const feeLiabilityId = randomUUID();
       await tx.insert(feeLiabilities).values({
         id:                feeLiabilityId,
@@ -248,6 +266,7 @@ export class EnrolmentService {
         generatedAt:       now,
       });
       createdFeeLiabilityIds.push(feeLiabilityId);
+      }
 
       for (const trigger of triggerDecisions) {
         const triggerId = randomUUID();
@@ -267,6 +286,7 @@ export class EnrolmentService {
 
       await this.#updatePersonStatusFromEnrolments(input.personId, tenantId, tx);
     });
+    if (preRegistration) return enrolmentId;
 
     if (this.eventBus.isConnected()) {
       const payload: StudentEnrolledV1Payload = {
@@ -532,10 +552,18 @@ export class EnrolmentService {
       defaultTransitions: ALLOWED_TRANSITIONS,
       asAt: validFrom,
     });
-    const triggerDecisions = await this.triggerRules.evaluateEnrolmentStatusTransition(tenantId, {
-      current,
-      newStatus,
-    });
+    // Registering a pre-registration student (D-10) does what creating an enrolled one would.
+    const activating = from === 'pre-registration' && newStatus === 'enrolled';
+    const activationInput: CreateEnrolmentInput = {
+      personId: current.personId, modeOfStudyCode: current.modeOfStudyCode, academicYearOfEntry: current.academicYearOfEntry, startDate: current.startDate,
+      ...(current.programmeId ? { programmeId: current.programmeId } : {}),
+      ...(current.feeBandCode ? { feeBandCode: current.feeBandCode } : {}),
+      ...(current.fundingSourceCode ? { fundingSourceCode: current.fundingSourceCode } : {}),
+    };
+    const triggerDecisions = [
+      ...(await this.triggerRules.evaluateEnrolmentStatusTransition(tenantId, { current, newStatus })),
+      ...(activating ? await this.triggerRules.evaluateEnrolmentCreation(tenantId, activationInput) : []),
+    ];
 
     const now = clockNow();
 
@@ -601,10 +629,29 @@ export class EnrolmentService {
         });
       }
 
+      if (activating) {
+        await tx.insert(feeLiabilities).values({
+          tenantId: tenantId as `${string}-${string}-${string}-${string}-${string}`,
+          enrolmentId: enrolmentId as `${string}-${string}-${string}-${string}-${string}`,
+          personId: current.personId as `${string}-${string}-${string}-${string}-${string}`,
+          academicYear: current.academicYearOfEntry, feeBandCode: current.feeBandCode ?? null, fundingSourceCode: current.fundingSourceCode ?? null,
+          statusCode: 'generated', generatedAt: now,
+        }).onConflictDoNothing();
+      }
+
       await this.#updatePersonStatusFromEnrolments(current.personId, tenantId, tx);
     });
 
-    if (this.delivery) {
+    if (activating && this.eventBus.isConnected()) {
+      const payload: StudentEnrolledV1Payload = {
+        personId: current.personId, enrolmentId, programmeId: activationInput.programmeId, academicYear: current.academicYearOfEntry,
+        modeOfStudy: current.modeOfStudyCode, fundingSource: activationInput.fundingSourceCode,
+      };
+      await this.eventBus.publish(EVENT_TYPES.STUDENT_ENROLLED, '1.0.0', tenantId, actorId, 'personal', payload);
+    }
+
+    // A student withdrawn before registering never had delivery flows to end.
+    if (this.delivery && (from !== 'pre-registration' || activating)) {
       await onEnrolmentChanged(this.delivery, this.db, tenantId, {
         enrolmentId,
         changeKey: `enrolment-status:${enrolmentId}:${newStatus}:${validFrom.toISOString()}`,
@@ -897,6 +944,8 @@ export class EnrolmentService {
 function derivePersonStatus(
   enrolmentStatuses: string[],
 ): 'prospective' | 'student' | 'alumnus' {
+  // A pre-registration enrolment (D-10) does not make the person a student yet.
+  enrolmentStatuses = enrolmentStatuses.filter((s) => s !== 'pre-registration');
   if (enrolmentStatuses.length === 0) return 'prospective';
 
   const hasActive = enrolmentStatuses.some(

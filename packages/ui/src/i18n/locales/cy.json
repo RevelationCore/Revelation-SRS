@@ -64,6 +64,7 @@
     },
     "enrolment": {
       "status": {
+        "pre-registration": "Heb gofrestru eto",
         "enrolled":     "Wedi cofrestru",
         "intermitting": "Yn seibio",
         "suspended":    "Wedi'i ohirio",
