@@ -21,6 +21,9 @@ export const examBoards = pgTable('exam_board', {
   deferralReason:    text('deferral_reason'),
   quorumCount:       integer('quorum_count'),
   quorumRecordedAt:  timestamp('quorum_recorded_at', { withTimezone: true }),
+  /** The pack, and its hash, the board was ratified against (Phase 5 D-36). */
+  ratifiedDataPackId: uuid('ratified_data_pack_id'),
+  ratifiedPackHash:   text('ratified_pack_hash'),
   actorId:           text('actor_id').notNull(),
   createdAt:         timestamp('created_at',          { withTimezone: true }).notNull().defaultNow(),
 });
@@ -160,6 +163,8 @@ export const examBoardDecisions = pgTable('exam_board_decision', {
   decidedBy:       text('decided_by').notNull(),
   decidedAt:       timestamp('decided_at', { withTimezone: true }).notNull().defaultNow(),
   rationale:       text('rationale'),
+  /** The hash of the pack the decision was made on (D-36). */
+  packHash:        text('pack_hash'),
 });
 
 export type ExamBoardDecision    = typeof examBoardDecisions.$inferSelect;
@@ -188,3 +193,14 @@ export const resultPublications = pgTable('result_publication', {
 
 export type ResultPublication    = typeof resultPublications.$inferSelect;
 export type NewResultPublication = typeof resultPublications.$inferInsert;
+
+/** A content-addressed record of the rules in force for a data pack (D-36). Append-only. */
+export const ruleManifests = pgTable('rule_manifest', {
+  id:           uuid('id').primaryKey().defaultRandom(),
+  tenantId:     uuid('tenant_id').notNull().references(() => tenants.id),
+  manifestHash: text('manifest_hash').notNull(),
+  content:      jsonb('content').notNull().$type<Record<string, unknown>>(),
+  createdAt:    timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type RuleManifest = typeof ruleManifests.$inferSelect;

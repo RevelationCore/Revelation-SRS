@@ -19,6 +19,9 @@
         },
         "externalExaminerConfirmedAt": {
           "type": "string"
+        },
+        "packHash": {
+          "type": "string"
         }
       },
       "required": [

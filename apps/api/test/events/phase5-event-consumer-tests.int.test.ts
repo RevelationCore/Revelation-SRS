@@ -12,6 +12,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import type { IntegrationBusPublisher } from '../../src/platform/integration-bus/publisher.js';
+import { ratifyThroughDecision } from '../helpers/board-ratification.js';
 import { startTestApp, type TestApp } from '../helpers/test-app.js';
 import { conferViaBoard } from '../helpers/award.js';
 
@@ -651,9 +652,6 @@ async function signAndRatify(examBoardId: string, chairJwt: string): Promise<voi
     method: 'POST', url: `/api/v1/exam-boards/${examBoardId}/external-examiner-signoff`,
     headers: { authorization: `Bearer ${chairJwt}` }, payload: { commentary: 'Approved' },
   });
-  const res = await ctx.app.inject({
-    method: 'POST', url: `/api/v1/exam-boards/${examBoardId}/ratification`,
-    headers: { authorization: `Bearer ${chairJwt}` },
-  });
+  const res = await ratifyThroughDecision(ctx, chairJwt, examBoardId);
   expect(res.statusCode).toBe(204);
 }

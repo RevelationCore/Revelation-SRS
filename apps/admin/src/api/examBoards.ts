@@ -25,6 +25,22 @@ export interface ExamBoardDataPack {
   candidateCount:       number;
   generatedAt:          string;
   generatedBy:          string;
+  /** sha256 of the pack's canonical content (D-36); null for packs generated before hashing. */
+  packHash:             string | null;
+  ruleManifestRef:      string | null;
+}
+
+export interface PackVerification {
+  dataPackId: string; storedHash: string | null; recomputedHash: string | null;
+  status: 'verified' | 'mismatch' | 'unhashed'; superseded: boolean; supersededById: string | null;
+  ruleManifestRef: string | null; manifestHashMatches: boolean | null;
+  drift: Array<{ versionId: string; ruleTypeCode: string }>;
+  decisions: Array<{ decisionId: string; decisionTypeCode: string; packHash: string | null; matches: boolean; decidedAt: string }>;
+  ratifiedAgainst: { dataPackId: string | null; packHash: string | null } | null;
+}
+
+export function verifyDataPack(boardId: string, dataPackId: string): Promise<PackVerification> {
+  return api.get<PackVerification>(`/api/v1/exam-boards/${boardId}/data-packs/${dataPackId}/verification`);
 }
 
 export interface ExamEntry {
@@ -100,6 +116,7 @@ export function signOffExternalExaminer(
   return api.post(`/api/v1/exam-boards/${boardId}/external-examiner-signoff`, { commentary });
 }
 
-export function ratifyExamBoard(boardId: string): Promise<void> {
-  return api.post(`/api/v1/exam-boards/${boardId}/ratification`, {});
+/** Ratification names the hash of the pack the board decided on (D-36). */
+export function ratifyExamBoard(boardId: string, packHash: string): Promise<void> {
+  return api.post(`/api/v1/exam-boards/${boardId}/ratification`, { packHash });
 }

@@ -53,6 +53,8 @@ const DataPackSchema = Type.Object({
   candidateCount: Type.Number(),
   generatedAt: Type.String(),
   generatedBy: Type.String(),
+  packHash: Type.Union([Type.String(), Type.Null()], { description: 'sha256 of the pack\'s canonical content (D-36); null for packs generated before hashing' }),
+  ruleManifestRef: Type.Union([Type.String(), Type.Null()], { description: 'The hash of the rule manifest the pack was generated under (D-36)' }),
 });
 
 const CandidateProfileSchema = Type.Object({
@@ -439,13 +441,15 @@ export function examBoardRoutes(fastify: FastifyInstance): void {
     {
       schema: {
         params: Type.Object({ boardId: Type.String() }),
-        response: { 204: Type.Null(), 404: ErrorSchema, 422: ErrorSchema },
+        body: Type.Object({ packHash: Type.String({ pattern: '^sha256:[0-9a-f]{64}$', description: 'The hash of the current data pack, on which the board decided to ratify (D-36)' }) }),
+        response: { 204: Type.Null(), 404: ErrorSchema, 409: ErrorSchema, 422: ErrorSchema },
       },
       preHandler: [requirePermission('exam-board:ratify')],
     },
     async (request, reply) => {
       const { boardId } = request.params as { boardId: string };
-      await fastify.boardService.ratifyBoard(boardId, request.tenantId, request.user.sub);
+      const { packHash } = request.body as { packHash: string };
+      await fastify.boardService.ratifyBoard(boardId, request.tenantId, request.user.sub, packHash);
       await fastify.audit.record({
         tenantId: request.tenantId,
         entityType: 'exam_board',

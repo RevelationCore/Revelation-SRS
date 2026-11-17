@@ -17,6 +17,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { sql } from 'drizzle-orm';
 
+import { ratifyThroughDecision } from './helpers/board-ratification.js';
 import { startTestApp, type TestApp } from './helpers/test-app.js';
 
 let ctx: TestApp;
@@ -80,11 +81,7 @@ async function signoffBoard(examBoardId: string): Promise<void> {
 }
 
 async function ratifyBoard(examBoardId: string): Promise<number> {
-  const res = await ctx.app.inject({
-    method:  'POST',
-    url:     `/api/v1/exam-boards/${examBoardId}/ratification`,
-    headers: { authorization: `Bearer ${chairJwt}` },
-  });
+  const res = await ratifyThroughDecision(ctx, chairJwt, examBoardId);
   return res.statusCode;
 }
 
@@ -409,11 +406,7 @@ describe('record lock integrity (service guards unchanged)', () => {
     // registry-administrator also holds exam-board:ratify (see
     // permissions.ts) — module-tutor is the role that genuinely lacks it.
     const moduleTutorJwt = await ctx.makeJwt({ roles: ['module-tutor'] });
-    const res = await ctx.app.inject({
-      method:  'POST',
-      url:     `/api/v1/exam-boards/${examBoardId}/ratification`,
-      headers: { authorization: `Bearer ${moduleTutorJwt}` },
-    });
+    const res = await ratifyThroughDecision(ctx, moduleTutorJwt, examBoardId);
     expect(res.statusCode).toBe(403);
   });
 });

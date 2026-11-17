@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import { and, eq, gt, inArray, isNull, lte, or, sql } from 'drizzle-orm';
+import { and, desc, eq, gt, inArray, isNull, lte, or, sql } from 'drizzle-orm';
 import {
   academicPeriods,
   adjustmentDistributions,
@@ -8,6 +8,7 @@ import {
   enrolments,
   examBoardCandidateProfiles,
   examBoardDataPacks,
+  examBoardDecisions,
   examBoardMemberAttendance,
   examBoards,
   exceptionalCircumstances,
@@ -26,7 +27,7 @@ import {
   type Db,
   withTenantContext,
 } from '@revelation-srs/db';
-import { EVENT_TYPES, NotFoundError, RuleNotConfiguredError, ValidationError } from '@revelation-srs/domain';
+import { ConflictError, EVENT_TYPES, NotFoundError, RuleNotConfiguredError, ValidationError } from '@revelation-srs/domain';
 import type {
   AssessmentModuleResultRatifiedV1Payload,
   GovernanceExamBoardDataPackReadyV1Payload,
@@ -41,6 +42,9 @@ import type { ValueSetService } from '../value-sets/service.js';
 import type { RulesEngine } from '../rules-engine/engine.js';
 import { DEFAULT_RESIT_MARK_CAP, planReassessmentsAtRatification } from '../progression/reassessment-at-ratification.js';
 import { clockNow } from '../clock.js';
+import type { RuleVersionCitation } from '../rules-engine/engine.js';
+
+import { buildRuleManifest, citedInProfiles, packHash, storeRuleManifest } from './pack-evidence.js';
 
 export interface DeferBoardInput {
   reason?: string;
@@ -82,6 +86,10 @@ export interface DataPackDto {
   candidateCount: number;
   generatedAt: Date;
   generatedBy: string;
+  /** sha256 of the pack's canonical content (D-36); null for packs generated before hashing. */
+  packHash: string | null;
+  /** The hash of the rule manifest the pack was generated under (D-36). */
+  ruleManifestRef: string | null;
 }
 
 export interface CandidateProfileDto {
@@ -136,6 +144,7 @@ interface CandidateRegistration {
   moduleOfferingId: string;
   academicPeriodId: string;
   registrationStatusCode: string;
+  programmeId: string | null;
 }
 
 interface CoveredModuleResult {
@@ -236,6 +245,9 @@ export class BoardService {
     const sourceTransactionTime = clockNow();
     const dataPackId = randomUUID();
     const candidates = await this.#buildCandidateProfiles(board, tenantId, sourceTransactionTime);
+    const registrations = await this.#getBoardRegistrations(board, tenantId, sourceTransactionTime);
+    const programmeIds = [...new Set(registrations.map((r) => r.programmeId).filter((p): p is string => p !== null))];
+    const cited = [...citedInProfiles(candidates), ...await this.#progressionCitations(board, tenantId)];
     let packVersion = 1;
 
     await withTenantContext(this.db, tenantId, async (tx) => {
@@ -249,6 +261,13 @@ export class BoardService {
       const previousPack = previousRows[0] ? dataPackToDto(previousRows[0]) : null;
       packVersion = previousPack ? previousPack.packVersion + 1 : 1;
 
+      // The rule manifest and the pack hash are written with the pack (D-36).
+      const manifest = await buildRuleManifest(tx, tenantId, {
+        asOf: sourceTransactionTime, programmeIds, enrolmentIds: candidates.map((c) => c.enrolmentId), cited,
+      });
+      const ruleManifestRef = await storeRuleManifest(tx, tenantId, manifest);
+      const hash = packHash({ tenantId, examBoardId, dataPackId, packVersion, sourceTransactionTime, ruleManifestRef, candidates });
+
       await tx.insert(examBoardDataPacks).values({
         id: dataPackId,
         tenantId: tenantId as `${string}-${string}-${string}-${string}-${string}`,
@@ -261,6 +280,8 @@ export class BoardService {
         candidateCount: candidates.length,
         generatedAt: sourceTransactionTime,
         generatedBy: actorId,
+        packHash: hash,
+        ruleManifestRef,
       });
 
       if (previousPack) {
@@ -442,8 +463,28 @@ export class BoardService {
     });
   }
 
-  async ratifyBoard(examBoardId: string, tenantId: string, actorId: string): Promise<void> {
+  /**
+   * Ratifies and locks a board (ADR-020, D-36). Ratification names the hash
+   * of the current data pack, and the board's latest decision on that pack
+   * must be to ratify: a pack regenerated after the decision makes it stale.
+   */
+  async ratifyBoard(examBoardId: string, tenantId: string, actorId: string, expectedPackHash: string): Promise<void> {
     const board = await this.#getBoard(examBoardId, tenantId);
+    const pack = await this.#getCurrentDataPack(examBoardId, tenantId);
+    if (!pack?.packHash) throw new ConflictError('Generate the board\'s data pack and record its decision before ratifying');
+    if (pack.packHash !== expectedPackHash) {
+      throw new ConflictError('The data pack has changed since it was shown; reload it and record the decision again');
+    }
+    const [latest] = await withTenantContext(this.db, tenantId, (tx) => tx.select().from(examBoardDecisions).where(and(
+      eq(examBoardDecisions.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
+      eq(examBoardDecisions.examBoardId, examBoardId as `${string}-${string}-${string}-${string}-${string}`),
+    )).orderBy(desc(examBoardDecisions.decidedAt)).limit(1));
+    if (!latest || latest.dataPackId !== pack.dataPackId || latest.packHash !== pack.packHash) {
+      throw new ConflictError('The board has not decided on the current data pack; record its decision first');
+    }
+    if (latest.decisionTypeCode !== 'ratify') {
+      throw new ConflictError(`The board's latest decision on this pack is '${latest.decisionTypeCode}', not 'ratify'`);
+    }
     if (board.ratifiedAt) {
       throw new ValidationError('Exam board has already been ratified', [
         { field: 'examBoardId', message: 'Board is already ratified' },
@@ -497,7 +538,7 @@ export class BoardService {
 
     await withTenantContext(this.db, tenantId, async (tx) => {
       await tx.update(examBoards)
-        .set({ ratifiedAt })
+        .set({ ratifiedAt, ratifiedDataPackId: pack.dataPackId, ratifiedPackHash: pack.packHash })
         .where(and(
           eq(examBoards.id, examBoardId as `${string}-${string}-${string}-${string}-${string}`),
           eq(examBoards.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
@@ -554,6 +595,7 @@ export class BoardService {
       academicYear: board.academicYear,
       ratifiedAt: ratifiedAt.toISOString(),
       externalExaminerConfirmedAt: externalExaminerConfirmedAt?.toISOString() ?? '',
+      packHash: pack.packHash,
     };
     await this.eventBus.publish(
       EVENT_TYPES.GOVERNANCE_EXAM_BOARD_RATIFIED,
@@ -667,6 +709,19 @@ export class BoardService {
     return profiles;
   }
 
+  /** The rule versions behind the progression decisions a board covers (D-36 manifest). */
+  async #progressionCitations(board: BoardRow, tenantId: string): Promise<RuleVersionCitation[]> {
+    const decisions = await this.#getCoveredProgressionDecisions(board, tenantId);
+    if (decisions.length === 0) return [];
+    const rows = await withTenantContext(this.db, tenantId, (tx) => tx.execute(sql`
+      SELECT DISTINCT ON (progression_decision_id) rule_versions FROM progression_calculation_evidence
+      WHERE tenant_id = ${tenantId}::uuid
+        AND progression_decision_id IN (${sql.join(decisions.map((d) => sql`${d.progressionDecisionId}::uuid`), sql`, `)})
+      ORDER BY progression_decision_id, calculated_at DESC
+    `)) as unknown as Array<{ rule_versions: RuleVersionCitation[] }>;
+    return rows.flatMap((r) => r.rule_versions ?? []);
+  }
+
   async #getClassificationRecommendation(enrolmentId: string, tenantId: string): Promise<Record<string, unknown>> {
     if (!this.awardService) {
       return { type: 'not-available', reason: 'Classification service not configured' };
@@ -679,6 +734,8 @@ export class BoardService {
         classificationCode: rec.classificationCode,
         algorithm:          rec.algorithm,
         boundariesApplied:  rec.boundariesApplied,
+        inDiscretionZone:   rec.inDiscretionZone,
+        ruleVersions:       rec.ruleVersions,
         note:               'Pre-board recommendation only — not ratified',
       };
     } catch {
@@ -698,6 +755,7 @@ export class BoardService {
         moduleOfferingId: moduleRegistrations.moduleOfferingId,
         academicPeriodId: moduleOfferings.academicPeriodId,
         registrationStatusCode: moduleRegistrations.statusCode,
+        programmeId: enrolments.programmeId,
       })
         .from(moduleRegistrations)
         .innerJoin(enrolments, eq(moduleRegistrations.enrolmentId, enrolments.id))
@@ -818,6 +876,7 @@ export class BoardService {
       resultCode: row.resultCode,
       locked: row.locked,
       calculatedAt: row.calculatedAt.toISOString(),
+      ruleVersions: row.ruleVersions ?? [],
     }));
   }
 
@@ -835,6 +894,7 @@ export class BoardService {
         attemptNumber: marks.attemptNumber,
         penaltyApplied: marks.penaltyApplied,
         locked: marks.locked,
+        ruleVersions: marks.ruleVersions,
       })
         .from(marks)
         .innerJoin(assessmentComponents, eq(marks.assessmentComponentId, assessmentComponents.id))
@@ -1091,6 +1151,8 @@ function dataPackToDto(row: typeof examBoardDataPacks.$inferSelect): DataPackDto
     candidateCount: row.candidateCount,
     generatedAt: row.generatedAt,
     generatedBy: row.generatedBy,
+    packHash: row.packHash,
+    ruleManifestRef: row.ruleManifestRef,
   };
 }
 

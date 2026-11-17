@@ -22,7 +22,7 @@ export type BoardDecisionTypeCode = 'ratify' | 'defer' | 'refer-back';
 
 export function recordBoardDecision(
   examBoardId: string,
-  body: { dataPackId: string; decisionTypeCode: BoardDecisionTypeCode; rationale?: string },
+  body: { dataPackId: string; packHash: string; decisionTypeCode: BoardDecisionTypeCode; rationale?: string },
 ): Promise<{ decisionId: string }> {
   return api.post(`/api/v1/exam-boards/${examBoardId}/decisions`, body);
 }

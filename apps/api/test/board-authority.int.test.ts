@@ -52,6 +52,11 @@ async function generatePack(examBoardId: string): Promise<string> {
   return pack.json<{ dataPackId: string }>().dataPackId;
 }
 
+async function hashOf(examBoardId: string): Promise<string> {
+  const pack = await ctx.app.inject({ method: 'GET', url: `/api/v1/exam-boards/${examBoardId}/data-pack`, headers: { authorization: `Bearer ${jwt}` } });
+  return pack.json<{ packHash: string }>().packHash;
+}
+
 describe('Board authority & ratification (BPR-D11)', () => {
   it('declares a conflict, records quorum, decides, ratifies, and publishes', async () => {
     const academicPeriodId = await createAcademicPeriod('BA101');
@@ -87,7 +92,7 @@ describe('Board authority & ratification (BPR-D11)', () => {
       method: 'POST',
       url: `/api/v1/exam-boards/${examBoardId}/decisions`,
       headers: { authorization: `Bearer ${jwt}` },
-      payload: { dataPackId, decisionTypeCode: 'ratify', rationale: 'All candidates meet the pass criteria' },
+      payload: { dataPackId, packHash: await hashOf(examBoardId), decisionTypeCode: 'ratify', rationale: 'All candidates meet the pass criteria' },
     });
     expect(decision.statusCode).toBe(201);
     const { decisionId } = decision.json<{ decisionId: string }>();
@@ -125,7 +130,7 @@ describe('Board authority & ratification (BPR-D11)', () => {
       method: 'POST',
       url: `/api/v1/exam-boards/${examBoardId}/decisions`,
       headers: { authorization: `Bearer ${jwt}` },
-      payload: { dataPackId, decisionTypeCode: 'defer', rationale: 'Awaiting late evidence' },
+      payload: { dataPackId, packHash: await hashOf(examBoardId), decisionTypeCode: 'defer', rationale: 'Awaiting late evidence' },
     });
     expect(decision.statusCode).toBe(201);
     const { decisionId } = decision.json<{ decisionId: string }>();

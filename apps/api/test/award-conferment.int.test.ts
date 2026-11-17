@@ -6,6 +6,7 @@ import { randomUUID } from 'node:crypto';
 import { sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
+import { ratifyThroughDecision } from './helpers/board-ratification.js';
 import { startTestApp, type TestApp } from './helpers/test-app.js';
 
 let ctx: TestApp;
@@ -239,7 +240,7 @@ async function signoffBoard(examBoardId: string): Promise<void> {
 }
 
 async function ratifyBoard(examBoardId: string): Promise<void> {
-  expect((await call('POST', `/exam-boards/${examBoardId}/ratification`, chairJwt)).statusCode).toBe(204);
+  expect((await ratifyThroughDecision(ctx, chairJwt, examBoardId)).statusCode).toBe(204);
 }
 
 async function seedClassificationRules(): Promise<void> {

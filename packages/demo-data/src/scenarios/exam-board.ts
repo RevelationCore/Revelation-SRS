@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+
 import { eq } from 'drizzle-orm';
 import {
   academicPeriods,
@@ -9,6 +11,7 @@ import {
   examBoardCandidateProfiles,
   examBoardDataPacks,
   examBoardMemberAttendance,
+  examBoardDecisions,
   examBoards,
   examEntries,
   externalExaminerSignoffs,
@@ -30,6 +33,7 @@ import {
   studentContactMethods,
   type Db,
 } from '@revelation-srs/db';
+import { examBoardPackCanonical } from '@revelation-srs/domain';
 
 import {
   // ID helpers
@@ -592,6 +596,31 @@ async function loadBoards(db: Db, tenantId: string): Promise<void> {
     }
   }
   await batchInsert(db, examBoardCandidateProfiles, profiles);
+
+  // Phase 5 D-36: each ratified board's pack carries its content hash, the
+  // board's ratify decision cites it, and the board records the pack it was
+  // ratified against. The hash is taken over the profiles as stored. Demo
+  // packs carry no rule manifest (the loader does not run calculations).
+  for (const [boardId, packId, decidedAt] of [
+    [autumnBoardId, autumnPackId, AUTUMN_RATIFIED_AT],
+    [springBoardId, springPackId, SPRING_RATIFIED_AT],
+    [awardBId,      awardPackId,  AWARD_RATIFIED_AT],
+  ] as [string, string, Date][]) {
+    const pack = dataPacks.find((p) => p.id === packId)!;
+    const stored = await db.select({
+      enrolmentId: examBoardCandidateProfiles.enrolmentId, personId: examBoardCandidateProfiles.personId, profileData: examBoardCandidateProfiles.profileData,
+    }).from(examBoardCandidateProfiles).where(eq(examBoardCandidateProfiles.dataPackId, packId));
+    const packHash = `sha256:${createHash('sha256').update(examBoardPackCanonical({
+      tenantId, examBoardId: boardId, dataPackId: packId, packVersion: pack.packVersion ?? 1,
+      sourceTransactionTime: pack.sourceTransactionTime, ruleManifestRef: null, candidates: stored,
+    }), 'utf8').digest('hex')}`;
+    await db.update(examBoardDataPacks).set({ packHash }).where(eq(examBoardDataPacks.id, packId));
+    await batchInsert(db, examBoardDecisions, [{
+      id: deterministicId('board-decision', tenantId, boardId), tenantId, examBoardId: boardId, dataPackId: packId,
+      decisionTypeCode: 'ratify', decidedBy: `demo-chair-${boardId}`, decidedAt, rationale: 'Results confirmed by the board', packHash,
+    }]);
+    await db.update(examBoards).set({ ratifiedDataPackId: packId, ratifiedPackHash: packHash }).where(eq(examBoards.id, boardId));
+  }
 
   // Member attendance — chair + 2 members per ratified board (9 rows total)
   const attendances: typeof examBoardMemberAttendance.$inferInsert[] = [];

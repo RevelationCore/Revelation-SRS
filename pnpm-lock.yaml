@@ -657,6 +657,9 @@ importers:
       '@revelation-srs/db':
         specifier: workspace:*
         version: link:../db
+      '@revelation-srs/domain':
+        specifier: workspace:*
+        version: link:../domain
       drizzle-orm:
         specifier: ^0.45.4
         version: 0.45.4(@opentelemetry/api@1.9.1)(@types/pg@8.15.6)(postgres@3.4.9)
@@ -9039,7 +9042,7 @@ snapshots:
       magicast: 0.5.5
       obug: 2.2.1
       tinyrainbow: 3.2.0
-      vitest: 4.1.12(@opentelemetry/api@1.9.1)(@types/node@22.20.5)(@vitest/coverage-istanbul@4.1.12)(jsdom@26.1.0)(msw@2.15.0(@types/node@22.20.5)(typescript@6.0.3))(vite@6.4.6(@types/node@22.20.5)(jiti@1.21.7)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
+      vitest: 4.1.12(@opentelemetry/api@1.9.1)(@types/node@26.6.6)(@vitest/coverage-istanbul@4.1.12)(jsdom@26.1.0)(msw@2.15.0(@types/node@26.6.6)(typescript@6.0.3))(vite@6.4.6(@types/node@26.6.6)(jiti@1.21.7)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
     transitivePeerDependencies:
       - supports-color
 

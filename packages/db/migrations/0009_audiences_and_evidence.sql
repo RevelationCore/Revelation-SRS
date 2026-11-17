@@ -27,3 +27,40 @@ BEGIN
     EXECUTE format('CREATE POLICY tenant_isolation ON %I USING ("tenant_id" = current_setting(''app.current_tenant_id'', true)::uuid) WITH CHECK ("tenant_id" = current_setting(''app.current_tenant_id'', true)::uuid)', t);
   END LOOP;
 END $$;
+
+-- ── D-36: data pack hash, rule manifest, decisions that cite the hash ───────
+-- A rule manifest is content-addressed: rule_manifest_ref on a pack holds the
+-- manifest's sha256 hash, so the reference also proves the content.
+CREATE TABLE IF NOT EXISTS "rule_manifest" (
+  "id"            uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+  "tenant_id"     uuid        NOT NULL REFERENCES "tenant"("id"),
+  "manifest_hash" text        NOT NULL CHECK ("manifest_hash" ~ '^sha256:[0-9a-f]{64}$'),
+  "content"       jsonb       NOT NULL,
+  "created_at"    timestamptz NOT NULL DEFAULT now(),
+  UNIQUE ("tenant_id", "manifest_hash")
+);
+ALTER TABLE "rule_manifest" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "rule_manifest" FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "rule_manifest";
+CREATE POLICY tenant_isolation ON "rule_manifest"
+  USING ("tenant_id" = current_setting('app.current_tenant_id', true)::uuid)
+  WITH CHECK ("tenant_id" = current_setting('app.current_tenant_id', true)::uuid);
+
+-- Append-only: a manifest is never changed once written.
+CREATE OR REPLACE FUNCTION "rule_manifest_append_only"() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  RAISE EXCEPTION 'rule_manifest is append-only';
+END $$;
+DROP TRIGGER IF EXISTS "rule_manifest_append_only" ON "rule_manifest";
+CREATE TRIGGER "rule_manifest_append_only" BEFORE UPDATE OR DELETE ON "rule_manifest"
+  FOR EACH ROW EXECUTE FUNCTION "rule_manifest_append_only"();
+
+ALTER TABLE "exam_board_data_pack" DROP CONSTRAINT IF EXISTS "exam_board_data_pack_pack_hash_check";
+ALTER TABLE "exam_board_data_pack" ADD CONSTRAINT "exam_board_data_pack_pack_hash_check"
+  CHECK ("pack_hash" IS NULL OR "pack_hash" ~ '^sha256:[0-9a-f]{64}$');
+
+ALTER TABLE "exam_board_decision" ADD COLUMN IF NOT EXISTS "pack_hash" text;
+-- A logical reference: exam_board_data_pack already references exam_board, and
+-- a foreign key back would make a cycle (which the demo reset refuses).
+ALTER TABLE "exam_board" ADD COLUMN IF NOT EXISTS "ratified_data_pack_id" uuid;
+ALTER TABLE "exam_board" ADD COLUMN IF NOT EXISTS "ratified_pack_hash" text;

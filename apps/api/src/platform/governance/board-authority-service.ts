@@ -1,19 +1,26 @@
 import { randomUUID } from 'node:crypto';
 
-import { and, eq } from 'drizzle-orm';
+import { and, asc, eq } from 'drizzle-orm';
 import {
   boardMemberConflicts,
   boardQuorumDecisions,
+  examBoardCandidateProfiles,
   examBoardDecisions,
+  examBoards,
   ratificationRecords,
   resultPublications,
   examBoardDataPacks,
+  ruleManifests,
+  tenants,
   type Db,
   withTenantContext,
 } from '@revelation-srs/db';
-import { NotFoundError, ValidationError } from '@revelation-srs/domain';
+import { ConflictError, NotFoundError, ValidationError } from '@revelation-srs/domain';
 
+import { canonicalHash } from '../canonical-hash.js';
 import { clockNow } from '../clock.js';
+
+import { packHash, type RuleManifestContent } from './pack-evidence.js';
 
 type Uuid = `${string}-${string}-${string}-${string}-${string}`;
 
@@ -38,8 +45,24 @@ export interface RecordQuorumDecisionInput {
 
 export interface RecordBoardDecisionInput {
   dataPackId:        string;
+  /** The hash of the pack the decider was shown (D-36). */
+  packHash:          string;
   decisionTypeCode:  string;
   rationale?:        string;
+}
+
+export interface PackVerification {
+  dataPackId: string;
+  storedHash: string | null;
+  recomputedHash: string | null;
+  status: 'verified' | 'mismatch' | 'unhashed';
+  superseded: boolean;
+  supersededById: string | null;
+  ruleManifestRef: string | null;
+  manifestHashMatches: boolean | null;
+  drift: Array<{ versionId: string; ruleTypeCode: string }>;
+  decisions: Array<{ decisionId: string; decisionTypeCode: string; packHash: string | null; matches: boolean; decidedAt: Date }>;
+  ratifiedAgainst: { dataPackId: string | null; packHash: string | null } | null;
 }
 
 export class BoardAuthorityService {
@@ -96,14 +119,31 @@ export class BoardAuthorityService {
     return id;
   }
 
+  /**
+   * Records a board decision on a data pack (D-36). The decision names the
+   * hash of the pack the board was shown: it must be this board's current
+   * pack, with that hash. With examBoard.pack.blockOnRuleDrift, a pack whose
+   * calculations cite superseded rule versions cannot be decided.
+   */
   async recordBoardDecision(tenantId: string, examBoardId: string, input: RecordBoardDecisionInput, decidedBy: string): Promise<string> {
-    const packRows = await withTenantContext(this.db, tenantId, async (tx) =>
-      tx.select({ id: examBoardDataPacks.id }).from(examBoardDataPacks).where(and(
+    const [pack] = await withTenantContext(this.db, tenantId, async (tx) =>
+      tx.select().from(examBoardDataPacks).where(and(
         eq(examBoardDataPacks.id,       input.dataPackId as Uuid),
         eq(examBoardDataPacks.tenantId, tenantId          as Uuid),
       )).limit(1),
     );
-    if (!packRows[0]) throw new NotFoundError('ExamBoardDataPack', input.dataPackId);
+    if (!pack) throw new NotFoundError('ExamBoardDataPack', input.dataPackId);
+    if (pack.examBoardId !== examBoardId) throw new ConflictError('This data pack belongs to another exam board');
+    if (pack.supersededById) throw new ConflictError('This data pack has been superseded by a newer one; decide on the current pack');
+    if (!pack.packHash || pack.packHash !== input.packHash) {
+      throw new ConflictError('The data pack has changed since it was shown; reload it before deciding');
+    }
+    if (await this.#blocksOnDrift(tenantId)) {
+      const manifest = await this.#manifest(tenantId, pack.ruleManifestRef);
+      if (manifest && manifest.drift.length > 0) {
+        throw new ConflictError(`The pack's calculations cite ${manifest.drift.length} rule version(s) no longer in force; recalculate and regenerate the pack`);
+      }
+    }
 
     const decisionId = randomUUID();
     await withTenantContext(this.db, tenantId, async (tx) => {
@@ -116,6 +156,7 @@ export class BoardAuthorityService {
         decidedBy,
         decidedAt:         clockNow(),
         rationale:         input.rationale ?? null,
+        packHash:          pack.packHash,
       });
     });
     return decisionId;
@@ -133,6 +174,9 @@ export class BoardAuthorityService {
     if (decision.decisionTypeCode !== 'ratify') {
       throw new ValidationError(`Only a 'ratify' decision can produce a ratification record; decision is '${decision.decisionTypeCode}'`);
     }
+    const [pack] = await withTenantContext(this.db, tenantId, (tx) => tx.select({ supersededById: examBoardDataPacks.supersededById })
+      .from(examBoardDataPacks).where(and(eq(examBoardDataPacks.tenantId, tenantId as Uuid), eq(examBoardDataPacks.id, decision.dataPackId))).limit(1));
+    if (pack?.supersededById) throw new ConflictError('The data pack this decision was made on has since been superseded; decide on the current pack');
 
     const recordId = randomUUID();
     await withTenantContext(this.db, tenantId, async (tx) => {
@@ -173,5 +217,69 @@ export class BoardAuthorityService {
         .set({ statusCode: 'published', publishedAt: clockNow(), publishedBy })
         .where(eq(resultPublications.id, publication.id));
     });
+  }
+
+  /**
+   * Recomputes a pack's hash from its stored rows (D-36) and checks its
+   * manifest and the decisions made on it.
+   */
+  async verifyDataPack(tenantId: string, examBoardId: string, dataPackId: string): Promise<PackVerification> {
+    const [pack] = await withTenantContext(this.db, tenantId, (tx) => tx.select().from(examBoardDataPacks).where(and(
+      eq(examBoardDataPacks.tenantId, tenantId as Uuid), eq(examBoardDataPacks.id, dataPackId as Uuid), eq(examBoardDataPacks.examBoardId, examBoardId as Uuid),
+    )).limit(1));
+    if (!pack) throw new NotFoundError('ExamBoardDataPack', dataPackId);
+    const [profiles, decisions, board, manifestRow] = await withTenantContext(this.db, tenantId, async (tx) => [
+      await tx.select().from(examBoardCandidateProfiles).where(and(eq(examBoardCandidateProfiles.tenantId, tenantId as Uuid), eq(examBoardCandidateProfiles.dataPackId, pack.id))),
+      await tx.select().from(examBoardDecisions).where(and(eq(examBoardDecisions.tenantId, tenantId as Uuid), eq(examBoardDecisions.dataPackId, pack.id))).orderBy(asc(examBoardDecisions.decidedAt)),
+      (await tx.select({ ratifiedDataPackId: examBoards.ratifiedDataPackId, ratifiedPackHash: examBoards.ratifiedPackHash, ratifiedAt: examBoards.ratifiedAt })
+        .from(examBoards).where(and(eq(examBoards.tenantId, tenantId as Uuid), eq(examBoards.id, examBoardId as Uuid))).limit(1))[0],
+      pack.ruleManifestRef
+        ? (await tx.select().from(ruleManifests).where(and(eq(ruleManifests.tenantId, tenantId as Uuid), eq(ruleManifests.manifestHash, pack.ruleManifestRef))).limit(1))[0]
+        : undefined,
+    ] as const);
+    const recomputed = pack.packHash ? packHash({
+      tenantId, examBoardId, dataPackId: pack.id, packVersion: pack.packVersion, sourceTransactionTime: pack.sourceTransactionTime,
+      ruleManifestRef: pack.ruleManifestRef,
+      candidates: profiles.map((p) => ({ enrolmentId: p.enrolmentId, personId: p.personId, profileData: p.profileData })),
+    }) : null;
+    const manifest = manifestRow?.content as RuleManifestContent | undefined;
+    return {
+      dataPackId: pack.id,
+      storedHash: pack.packHash,
+      recomputedHash: recomputed,
+      status: !pack.packHash ? 'unhashed' : recomputed === pack.packHash ? 'verified' : 'mismatch',
+      superseded: pack.supersededById !== null,
+      supersededById: pack.supersededById,
+      ruleManifestRef: pack.ruleManifestRef,
+      manifestHashMatches: manifestRow ? canonicalHash(manifestRow.content) === pack.ruleManifestRef : null,
+      drift: manifest?.drift ?? [],
+      decisions: decisions.map((d) => ({ decisionId: d.id, decisionTypeCode: d.decisionTypeCode, packHash: d.packHash, matches: d.packHash !== null && d.packHash === pack.packHash, decidedAt: d.decidedAt })),
+      ratifiedAgainst: board?.ratifiedAt ? { dataPackId: board.ratifiedDataPackId, packHash: board.ratifiedPackHash } : null,
+    };
+  }
+
+  /** A pack's rule manifest content (D-36). */
+  async getRuleManifest(tenantId: string, examBoardId: string, dataPackId: string): Promise<{ manifestHash: string; content: RuleManifestContent }> {
+    const [pack] = await withTenantContext(this.db, tenantId, (tx) => tx.select().from(examBoardDataPacks).where(and(
+      eq(examBoardDataPacks.tenantId, tenantId as Uuid), eq(examBoardDataPacks.id, dataPackId as Uuid), eq(examBoardDataPacks.examBoardId, examBoardId as Uuid),
+    )).limit(1));
+    if (!pack) throw new NotFoundError('ExamBoardDataPack', dataPackId);
+    const content = await this.#manifest(tenantId, pack.ruleManifestRef);
+    if (!content || !pack.ruleManifestRef) throw new NotFoundError('RuleManifest', dataPackId);
+    return { manifestHash: pack.ruleManifestRef, content };
+  }
+
+  async #manifest(tenantId: string, ref: string | null): Promise<RuleManifestContent | null> {
+    if (!ref) return null;
+    const [row] = await withTenantContext(this.db, tenantId, (tx) => tx.select().from(ruleManifests)
+      .where(and(eq(ruleManifests.tenantId, tenantId as Uuid), eq(ruleManifests.manifestHash, ref))).limit(1));
+    return (row?.content as RuleManifestContent | undefined) ?? null;
+  }
+
+  async #blocksOnDrift(tenantId: string): Promise<boolean> {
+    const [row] = await this.db.select({ configuration: tenants.configuration }).from(tenants).where(eq(tenants.id, tenantId as Uuid)).limit(1);
+    const examBoard = (row?.configuration?.['examBoard'] ?? {}) as Record<string, unknown>;
+    const pack = (examBoard['pack'] ?? {}) as Record<string, unknown>;
+    return pack['blockOnRuleDrift'] === true;
   }
 }

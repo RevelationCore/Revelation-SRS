@@ -24,6 +24,7 @@
 import { sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
+import { ratifyThroughDecision } from './helpers/board-ratification.js';
 import { startTestApp, type TestApp } from './helpers/test-app.js';
 import { transitionEnrolment } from './helpers/transition.js';
 
@@ -377,17 +378,11 @@ describe('Stage 8 — Clean Architecture Acceptance Review', () => {
       });
 
       // First ratification succeeds
-      const first = await ctx.app.inject({
-        method: 'POST', url: `/api/v1/exam-boards/${examBoardId}/ratification`,
-        headers: { authorization: `Bearer ${chair}` },
-      });
+      const first = await ratifyThroughDecision(ctx, chair, examBoardId);
       expect(first.statusCode).toBe(204);
 
       // Second ratification is blocked by record lock
-      const second = await ctx.app.inject({
-        method: 'POST', url: `/api/v1/exam-boards/${examBoardId}/ratification`,
-        headers: { authorization: `Bearer ${chair}` },
-      });
+      const second = await ratifyThroughDecision(ctx, chair, examBoardId);
       expect([422, 409]).toContain(second.statusCode);
     });
   });

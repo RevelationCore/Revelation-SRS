@@ -28,6 +28,14 @@ function baseHandlers() {
   ];
 }
 
+const PACK_HASH = `sha256:${'a'.repeat(64)}`;
+const pack = {
+  dataPackId: 'pack-001', examBoardId: BOARD_ID, packVersion: 2, supersededById: null, sourceTransactionTime: '2026-06-01T09:00:00Z',
+  candidateCount: 12, generatedAt: '2026-06-01T09:00:00Z', generatedBy: 'staff-001', packHash: PACK_HASH, ruleManifestRef: `sha256:${'b'.repeat(64)}`,
+};
+/** The board's current pack (D-36): decisions are made on it and cite its hash. */
+const currentPack = () => http.get(`${API}/api/v1/exam-boards/${BOARD_ID}/data-pack`, () => HttpResponse.json(pack));
+
 async function openAuthorityTab() {
   await screen.findByRole('heading', { name: /progression/i });
   await userEvent.click(screen.getByRole('tab', { name: 'Board authority' }));
@@ -79,9 +87,11 @@ describe('exam-board authority workflow', () => {
   });
 
   it('decision → ratification → publish: the full authority chain progresses one governed step at a time', async () => {
+    let decisionBody: unknown = null;
     server.use(
+      currentPack(),
       ...baseHandlers(),
-      http.post(`${API}/api/v1/exam-boards/${BOARD_ID}/decisions`, () => HttpResponse.json({ decisionId: 'decision-001' })),
+      http.post(`${API}/api/v1/exam-boards/${BOARD_ID}/decisions`, async ({ request }) => { decisionBody = await request.json(); return HttpResponse.json({ decisionId: 'decision-001' }); }),
       http.post(`${API}/api/v1/board-decisions/decision-001/ratification`, () => HttpResponse.json({ ratificationRecordId: 'ratification-001' })),
       http.patch(`${API}/api/v1/ratification-records/ratification-001/publish`, () => new HttpResponse(null, { status: 204 })),
     );
@@ -92,9 +102,11 @@ describe('exam-board authority workflow', () => {
     expect(screen.queryByRole('button', { name: 'Create ratification record' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Publish results' })).not.toBeInTheDocument();
 
-    await userEvent.type(screen.getByLabelText(/Data pack ID/), 'pack-001');
-    await userEvent.click(screen.getByRole('button', { name: 'Record decision' }));
+    // The decision is made on the pack shown, citing its hash.
+    expect(await screen.findByText(/Data pack v2, 12 candidates/)).toBeVisible();
+    await userEvent.click(screen.getByRole('button', { name: 'Record decision on this pack' }));
     expect(await screen.findByText('decision-001')).toBeVisible();
+    expect(decisionBody).toMatchObject({ dataPackId: 'pack-001', packHash: PACK_HASH, decisionTypeCode: 'ratify' });
 
     await userEvent.click(screen.getByRole('button', { name: 'Create ratification record' }));
     expect(await screen.findByText('ratification-001')).toBeVisible();
@@ -107,16 +119,17 @@ describe('exam-board authority workflow', () => {
 
   it('API failure: a rejected decision keeps the form visible with the server-provided reason', async () => {
     server.use(
+      currentPack(),
       ...baseHandlers(),
       http.post(`${API}/api/v1/exam-boards/${BOARD_ID}/decisions`, () => HttpResponse.json({ type: 'about:blank', title: 'Conflict', detail: 'An unresolved conflict of interest blocks this decision.' }, { status: 409 })),
     );
     renderWithProviders(<Routes><Route path="/exam-boards/:boardId" element={<ExamBoardDetailPage />} /></Routes>, { roles: ['exam-board-chair'], route: ROUTE });
     await openAuthorityTab();
 
-    await userEvent.type(screen.getByLabelText(/Data pack ID/), 'pack-001');
-    await userEvent.click(screen.getByRole('button', { name: 'Record decision' }));
+    await screen.findByText(/Data pack v2, 12 candidates/);
+    await userEvent.click(screen.getByRole('button', { name: 'Record decision on this pack' }));
 
     expect(await screen.findByText('An unresolved conflict of interest blocks this decision.')).toBeVisible();
-    expect(screen.getByLabelText(/Data pack ID/)).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Record decision on this pack' })).toBeVisible();
   });
 });

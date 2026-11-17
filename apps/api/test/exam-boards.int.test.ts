@@ -2,6 +2,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import type { IntegrationBusPublisher } from '../src/platform/integration-bus/publisher.js';
 
+import { ratifyThroughDecision } from './helpers/board-ratification.js';
 import { startTestApp, type TestApp } from './helpers/test-app.js';
 
 interface CapturedEvent {
@@ -442,11 +443,7 @@ async function signoffBoard(boardId: string, token: string): Promise<void> {
 }
 
 async function ratifyBoard(boardId: string, token: string) {
-  return ctx.app.inject({
-    method: 'POST',
-    url: `/api/v1/exam-boards/${boardId}/ratification`,
-    headers: { authorization: `Bearer ${token}` },
-  });
+  return ratifyThroughDecision(ctx, token, boardId);
 }
 
 async function ingestMark(fixture: BoardFixture, rawMark: number): Promise<string> {

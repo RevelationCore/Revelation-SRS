@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import type { IntegrationBusPublisher } from '../src/platform/integration-bus/publisher.js';
 
+import { ratifyThroughDecision } from './helpers/board-ratification.js';
 import { startTestApp, type TestApp } from './helpers/test-app.js';
 import { conferViaBoard } from './helpers/award.js';
 
@@ -276,11 +277,7 @@ async function createHearFixture(code: string): Promise<HearFixture> {
     headers: { authorization: `Bearer ${chairJwt}` },
     payload: { commentary: 'Ready for HEAR fixture' },
   });
-  const ratification = await ctx.app.inject({
-    method: 'POST',
-    url: `/api/v1/exam-boards/${examBoardId}/ratification`,
-    headers: { authorization: `Bearer ${chairJwt}` },
-  });
+  const ratification = await ratifyThroughDecision(ctx, chairJwt, examBoardId);
   expect(ratification.statusCode).toBe(204);
 
   const award = await conferViaBoard(ctx, { enrolmentId, examBoardId, qualificationCode: 'BSc', classificationCode: 'upper-second', recommenderJwt: chairJwt });

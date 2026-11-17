@@ -5,6 +5,7 @@ import {
   type ExamBoard,
   type ExamBoardDataPack,
   type ExamEntry,
+  type PackVerification,
   generateDataPack,
   generateExamEntries,
   getCandidateProfile,
@@ -13,6 +14,7 @@ import {
   listExamEntries,
   ratifyExamBoard,
   signOffExternalExaminer,
+  verifyDataPack,
 } from '../api/examBoards.js';
 import { listIntegrationRegistrations, healthCheckIntegration, type HealthCheckResult } from '../api/integrations.js';
 import {
@@ -33,7 +35,7 @@ import { Spinner } from '../components/Spinner.js';
 import {
   Card, CardHeader, CardBody, Button, LabelledField, Input, Select, PageHeader,
   Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
-  Tabs, TabsList, TabsTrigger, TabsContent,
+  Tabs, TabsList, TabsTrigger, TabsContent, StatusNotice,
 } from '@revelation-srs/ui';
 
 type Tab = 'overview' | 'entries' | 'candidates' | 'signoff' | 'authority';
@@ -240,8 +242,60 @@ function QuorumCard({ boardId, onError }: { boardId: string; onError: (msg: stri
   );
 }
 
+/** The short form of a pack hash for display. */
+const shortHash = (h: string | null) => (h ? `${h.slice(7, 19)}…` : 'not hashed');
+
+/**
+ * The current data pack, its hash and its verification (D-36). Decisions and
+ * ratification send the hash of the pack shown here, so a pack regenerated
+ * elsewhere in the meantime is refused rather than decided blind.
+ */
+function CurrentPackPanel({ boardId, pack }: { boardId: string; pack: ExamBoardDataPack | null }) {
+  const [verification, setVerification] = useState<PackVerification | null>(null);
+  const [verifying, setVerifying] = useState(false);
+  const [error, setError] = useState('');
+  useEffect(() => { setVerification(null); }, [pack?.dataPackId]);
+  if (!pack) return <StatusNotice>Generate the board's data pack (Overview) before recording a decision.</StatusNotice>;
+  async function verify() {
+    if (!pack) return;
+    setVerifying(true); setError('');
+    try { setVerification(await verifyDataPack(boardId, pack.dataPackId)); }
+    catch (err) { setError(err instanceof ApiError ? (err.detail ?? err.message) : 'Verification failed'); }
+    finally { setVerifying(false); }
+  }
+  return (
+    <div className="rounded border border-neutral-200 p-3 text-sm">
+      <div className="flex flex-wrap items-center gap-3">
+        <span>Data pack v{pack.packVersion}, {pack.candidateCount} candidates</span>
+        <span className="font-mono text-xs" title={pack.packHash ?? ''}>hash {shortHash(pack.packHash)}</span>
+        <Button size="sm" variant="secondary" onClick={() => void verify()} disabled={verifying}>{verifying ? 'Verifying…' : 'Verify'}</Button>
+      </div>
+      {error && <p className="mt-2 text-xs text-danger-600" role="alert">{error}</p>}
+      {verification && (
+        <div className="mt-2 space-y-1 text-xs">
+          <p>
+            {verification.status === 'verified' && <span className="text-success-700">The stored pack matches its hash.</span>}
+            {verification.status === 'mismatch' && <span className="text-danger-700">The stored pack no longer matches its hash; it has been altered since it was generated.</span>}
+            {verification.status === 'unhashed' && <span className="text-neutral-600">This pack was generated before packs were hashed.</span>}
+            {verification.manifestHashMatches === false && <span className="ml-2 text-danger-700">Its rule manifest does not match its reference.</span>}
+          </p>
+          {verification.drift.length > 0 && (
+            <p className="text-warning-700">
+              {verification.drift.length} rule version{verification.drift.length > 1 ? 's' : ''} cited by this pack's results {verification.drift.length > 1 ? 'are' : 'is'} no longer in force
+              ({[...new Set(verification.drift.map((d) => d.ruleTypeCode))].join(', ')}). Recalculate and regenerate the pack if the change should apply.
+            </p>
+          )}
+          {verification.decisions.length > 0 && (
+            <p>Decisions on this pack: {verification.decisions.map((d) => `${d.decisionTypeCode}${d.matches ? '' : ' (different hash)'}`).join(', ')}</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function DecisionRatificationCard({ boardId, onError }: { boardId: string; onError: (msg: string) => void }) {
-  const [dataPackId, setDataPackId]             = useState('');
+  const [pack, setPack]                         = useState<ExamBoardDataPack | null>(null);
   const [decisionTypeCode, setDecisionTypeCode] = useState<BoardDecisionTypeCode>('ratify');
   const [rationale, setRationale]               = useState('');
   const [submitting, setSubmitting]             = useState(false);
@@ -252,12 +306,16 @@ function DecisionRatificationCard({ boardId, onError }: { boardId: string; onErr
   const [publishing, setPublishing]             = useState(false);
   const [published, setPublished]               = useState(false);
 
+  useEffect(() => { void getDataPack(boardId).then(setPack).catch(() => setPack(null)); }, [boardId]);
+
   async function handleDecide(e: FormEvent) {
     e.preventDefault();
+    if (!pack?.packHash) return;
     setSubmitting(true); onError('');
     try {
       const { decisionId: id } = await recordBoardDecision(boardId, {
-        dataPackId: dataPackId.trim(),
+        dataPackId: pack.dataPackId,
+        packHash: pack.packHash,
         decisionTypeCode,
         ...(rationale.trim() ? { rationale: rationale.trim() } : {}),
       });
@@ -293,11 +351,9 @@ function DecisionRatificationCard({ boardId, onError }: { boardId: string; onErr
     <Card>
       <CardHeader title="Board decision, ratification & publication" />
       <CardBody className="space-y-4">
+        <CurrentPackPanel boardId={boardId} pack={pack} />
         {!decisionId ? (
           <form onSubmit={(e) => void handleDecide(e)} className="grid grid-cols-3 gap-3 items-end">
-            <LabelledField label="Data pack ID" htmlFor="ba-datapack" required>
-              <Input id="ba-datapack" value={dataPackId} onChange={(e) => setDataPackId(e.target.value)} />
-            </LabelledField>
             <LabelledField label="Decision" htmlFor="ba-decision">
               <Select id="ba-decision" value={decisionTypeCode} onChange={(e) => setDecisionTypeCode(e.target.value as BoardDecisionTypeCode)}>
                 <option value="ratify">Ratify</option>
@@ -309,7 +365,7 @@ function DecisionRatificationCard({ boardId, onError }: { boardId: string; onErr
               <Input id="ba-rationale" value={rationale} onChange={(e) => setRationale(e.target.value)} />
             </LabelledField>
             <div className="col-span-3">
-              <Button type="submit" disabled={submitting}>{submitting ? 'Recording…' : 'Record decision'}</Button>
+              <Button type="submit" disabled={submitting || !pack?.packHash}>{submitting ? 'Recording…' : 'Record decision on this pack'}</Button>
             </div>
           </form>
         ) : (
@@ -434,6 +490,7 @@ function OverviewTab({
             <InfoRow label="Pack ID"    value={dataPack.dataPackId} />
             <InfoRow label="Version"    value={String(dataPack.packVersion)} />
             <InfoRow label="Candidates" value={String(dataPack.candidateCount)} />
+            <InfoRow label="Pack hash"  value={dataPack.packHash ?? 'Not hashed (generated before Phase 5)'} />
             <InfoRow label="Generated"  value={new Date(dataPack.generatedAt).toLocaleString('en-GB')} />
           </dl>
         ) : (
@@ -700,12 +757,14 @@ function SignoffTab({
     setActionError('');
     setSuccessMsg('');
     try {
-      await ratifyExamBoard(boardId);
+      const pack = await getDataPack(boardId);
+      if (!pack.packHash) throw new Error('Generate the data pack and record the board\'s decision first');
+      await ratifyExamBoard(boardId, pack.packHash);
       setConfirmRatify(false);
       setSuccessMsg('Board ratified successfully.');
       onRefresh();
     } catch (err) {
-      setActionError(err instanceof ApiError ? (err.detail ?? err.message) : 'Ratification failed');
+      setActionError(err instanceof ApiError ? (err.detail ?? err.message) : err instanceof Error ? err.message : 'Ratification failed');
     } finally {
       setRatifying(false);
     }
@@ -744,7 +803,7 @@ function SignoffTab({
           <div>
             <h2 className="text-sm font-semibold text-neutral-700">Ratification</h2>
             <p className="text-xs text-neutral-500 mt-0.5">
-              Ratifying locks the board. This action cannot be undone.
+              Ratifying locks the board against its current data pack, on which the board must have decided to ratify. This action cannot be undone.
               {!canRatify && ' You do not have the exam-board-chair or registry-administrator role.'}
             </p>
           </div>

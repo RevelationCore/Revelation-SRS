@@ -5,4 +5,6 @@ export interface GovernanceExamBoardRatifiedV1Payload {
   academicYear:                string;
   ratifiedAt:                  string;
   externalExaminerConfirmedAt: string;
+  /** The hash of the data pack the board was ratified against (D-36). */
+  packHash?:                   string;
 }

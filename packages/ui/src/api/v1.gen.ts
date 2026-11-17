@@ -2485,6 +2485,38 @@ export interface paths {
         patch: operations["updateRatificationRecordsByRatificationRecordIdPublish"];
         trace?: never;
     };
+    "/api/v1/exam-boards/{examBoardId}/data-packs/{dataPackId}/verification": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getExamBoardsByExamBoardIdDataPacksByDataPackIdVerification"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/exam-boards/{examBoardId}/data-packs/{dataPackId}/rule-manifest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getExamBoardsByExamBoardIdDataPacksByDataPackIdRuleManifest"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/enrolments/{enrolmentId}/progression": {
         parameters: {
             query?: never;
@@ -16538,6 +16570,10 @@ export interface operations {
                         candidateCount: number;
                         generatedAt: string;
                         generatedBy: string;
+                        /** @description sha256 of the pack's canonical content (D-36); null for packs generated before hashing */
+                        packHash: string | null;
+                        /** @description The hash of the rule manifest the pack was generated under (D-36) */
+                        ruleManifestRef: string | null;
                     };
                 };
             };
@@ -17065,7 +17101,14 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description The hash of the current data pack, on which the board decided to ratify (D-36) */
+                    packHash: string;
+                };
+            };
+        };
         responses: {
             /** @description Default Response */
             204: {
@@ -17076,6 +17119,20 @@ export interface operations {
             };
             /** @description Default Response */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -17370,6 +17427,8 @@ export interface operations {
             content: {
                 "application/json": {
                     dataPackId: string;
+                    /** @description The hash of the pack the board was shown (D-36) */
+                    packHash: string;
                     decisionTypeCode: "ratify" | "defer" | "refer-back";
                     rationale?: string;
                 };
@@ -17389,6 +17448,20 @@ export interface operations {
             };
             /** @description Default Response */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -17427,6 +17500,20 @@ export interface operations {
             };
             /** @description Default Response */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -17489,6 +17576,109 @@ export interface operations {
             };
             /** @description Default Response */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getExamBoardsByExamBoardIdDataPacksByDataPackIdVerification: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                examBoardId: string;
+                dataPackId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        dataPackId: string;
+                        storedHash: string | null;
+                        recomputedHash: string | null;
+                        status: "verified" | "mismatch" | "unhashed";
+                        superseded: boolean;
+                        supersededById: string | null;
+                        ruleManifestRef: string | null;
+                        manifestHashMatches: boolean | null;
+                        drift: {
+                            versionId: string;
+                            ruleTypeCode: string;
+                        }[];
+                        decisions: {
+                            decisionId: string;
+                            decisionTypeCode: string;
+                            packHash: string | null;
+                            matches: boolean;
+                            decidedAt: string;
+                        }[];
+                        ratifiedAgainst: {
+                            dataPackId: string | null;
+                            packHash: string | null;
+                        } | null;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getExamBoardsByExamBoardIdDataPacksByDataPackIdRuleManifest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                examBoardId: string;
+                dataPackId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        manifestHash: string;
+                        content: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

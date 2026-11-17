@@ -27499,7 +27499,9 @@
                     "sourceTransactionTime",
                     "candidateCount",
                     "generatedAt",
-                    "generatedBy"
+                    "generatedBy",
+                    "packHash",
+                    "ruleManifestRef"
                   ],
                   "properties": {
                     "dataPackId": {
@@ -27532,6 +27534,28 @@
                     },
                     "generatedBy": {
                       "type": "string"
+                    },
+                    "packHash": {
+                      "description": "sha256 of the pack's canonical content (D-36); null for packs generated before hashing",
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "ruleManifestRef": {
+                      "description": "The hash of the rule manifest the pack was generated under (D-36)",
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     }
                   }
                 }
@@ -28658,6 +28682,26 @@
         "tags": [
           "governance"
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "packHash"
+                ],
+                "properties": {
+                  "packHash": {
+                    "pattern": "^sha256:[0-9a-f]{64}$",
+                    "description": "The hash of the current data pack, on which the board decided to ratify (D-36)",
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
         "parameters": [
           {
             "schema": {
@@ -28674,6 +28718,35 @@
             "description": "Default Response"
           },
           "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
             "description": "Default Response",
             "content": {
               "application/json": {
@@ -29206,10 +29279,16 @@
                 "type": "object",
                 "required": [
                   "dataPackId",
+                  "packHash",
                   "decisionTypeCode"
                 ],
                 "properties": {
                   "dataPackId": {
+                    "type": "string"
+                  },
+                  "packHash": {
+                    "pattern": "^sha256:[0-9a-f]{64}$",
+                    "description": "The hash of the pack the board was shown (D-36)",
                     "type": "string"
                   },
                   "decisionTypeCode": {
@@ -29300,6 +29379,35 @@
                 }
               }
             }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -29341,6 +29449,35 @@
             }
           },
           "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
             "description": "Default Response",
             "content": {
               "application/json": {
@@ -29452,6 +29589,339 @@
             }
           },
           "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/exam-boards/{examBoardId}/data-packs/{dataPackId}/verification": {
+      "get": {
+        "operationId": "getExamBoardsByExamBoardIdDataPacksByDataPackIdVerification",
+        "tags": [
+          "governance"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "examBoardId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "dataPackId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "dataPackId",
+                    "storedHash",
+                    "recomputedHash",
+                    "status",
+                    "superseded",
+                    "supersededById",
+                    "ruleManifestRef",
+                    "manifestHashMatches",
+                    "drift",
+                    "decisions",
+                    "ratifiedAgainst"
+                  ],
+                  "properties": {
+                    "dataPackId": {
+                      "type": "string"
+                    },
+                    "storedHash": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "recomputedHash": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "status": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "verified"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "mismatch"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "unhashed"
+                          ]
+                        }
+                      ]
+                    },
+                    "superseded": {
+                      "type": "boolean"
+                    },
+                    "supersededById": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "ruleManifestRef": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "manifestHashMatches": {
+                      "anyOf": [
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "drift": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "versionId",
+                          "ruleTypeCode"
+                        ],
+                        "properties": {
+                          "versionId": {
+                            "type": "string"
+                          },
+                          "ruleTypeCode": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "decisions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "decisionId",
+                          "decisionTypeCode",
+                          "packHash",
+                          "matches",
+                          "decidedAt"
+                        ],
+                        "properties": {
+                          "decisionId": {
+                            "type": "string"
+                          },
+                          "decisionTypeCode": {
+                            "type": "string"
+                          },
+                          "packHash": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "matches": {
+                            "type": "boolean"
+                          },
+                          "decidedAt": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "ratifiedAgainst": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": [
+                            "dataPackId",
+                            "packHash"
+                          ],
+                          "properties": {
+                            "dataPackId": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "packHash": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/exam-boards/{examBoardId}/data-packs/{dataPackId}/rule-manifest": {
+      "get": {
+        "operationId": "getExamBoardsByExamBoardIdDataPacksByDataPackIdRuleManifest",
+        "tags": [
+          "governance"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "examBoardId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "dataPackId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "manifestHash",
+                    "content"
+                  ],
+                  "properties": {
+                    "manifestHash": {
+                      "type": "string"
+                    },
+                    "content": {
+                      "type": "object",
+                      "additionalProperties": {}
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
             "description": "Default Response",
             "content": {
               "application/json": {

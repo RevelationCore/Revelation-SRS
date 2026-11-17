@@ -2,6 +2,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import type { IntegrationBusPublisher } from '../src/platform/integration-bus/publisher.js';
 
+import { ratifyThroughDecision } from './helpers/board-ratification.js';
 import { startTestApp, type TestApp } from './helpers/test-app.js';
 import { transitionEnrolment } from './helpers/transition.js';
 import { conferViaBoard } from './helpers/award.js';
@@ -372,11 +373,7 @@ async function signoffBoard(examBoardId: string): Promise<void> {
 }
 
 async function ratifyBoard(examBoardId: string): Promise<void> {
-  const res = await ctx.app.inject({
-    method: 'POST',
-    url: `/api/v1/exam-boards/${examBoardId}/ratification`,
-    headers: { authorization: `Bearer ${chairJwt}` },
-  });
+  const res = await ratifyThroughDecision(ctx, chairJwt, examBoardId);
   expect(res.statusCode).toBe(204);
 }
 

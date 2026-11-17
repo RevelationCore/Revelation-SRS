@@ -16,6 +16,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { sql } from 'drizzle-orm';
 
+import { ratifyThroughDecision } from './helpers/board-ratification.js';
 import { startTestApp, type TestApp } from './helpers/test-app.js';
 import { conferViaBoard } from './helpers/award.js';
 
@@ -215,11 +216,7 @@ async function seedRatifiedResult(
   });
   expect(signoffRes.statusCode).toBe(201);
 
-  const ratifyRes = await ctx.app.inject({
-    method:  'POST',
-    url:     `/api/v1/exam-boards/${examBoardId}/ratification`,
-    headers: { authorization: `Bearer ${chairJwt}` },
-  });
+  const ratifyRes = await ratifyThroughDecision(ctx, chairJwt, examBoardId);
   expect(ratifyRes.statusCode).toBe(204);
 }
 
@@ -678,11 +675,7 @@ describe('award_calculation_evidence', () => {
       headers: { authorization: `Bearer ${chairJwt}` },
       payload: { commentary: 'Ready for award conferral' },
     });
-    await ctx.app.inject({
-      method:  'POST',
-      url:     `/api/v1/exam-boards/${examBoardId}/ratification`,
-      headers: { authorization: `Bearer ${chairJwt}` },
-    });
+    await ratifyThroughDecision(ctx, chairJwt, examBoardId);
 
     const awardRes = await conferViaBoard(ctx, { enrolmentId, examBoardId, qualificationCode: 'BSc', classificationCode, recommenderJwt: chairJwt });
     expect(awardRes.statusCode).toBe(201);
