@@ -21,9 +21,9 @@ export function selectionFixtures(ctx: TestApp, tokens: { staff: string; admin: 
   return {
     inject,
     uniq,
-    async period(input: { startDate?: string; endDate?: string } = {}): Promise<string> {
+    async period(input: { academicYear?: string; startDate?: string; endDate?: string } = {}): Promise<string> {
       return (await created<{ academicPeriodId: string }>('POST', '/api/v1/academic-periods', {
-        academicYear: '2026-27', periodCode: uniq('P'), periodTypeCode: 'semester',
+        academicYear: input.academicYear ?? '2026-27', periodCode: uniq('P'), periodTypeCode: 'semester',
         startDate: input.startDate ?? '2026-09-21', endDate: input.endDate ?? '2027-01-15',
       })).academicPeriodId;
     },

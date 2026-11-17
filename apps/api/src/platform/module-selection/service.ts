@@ -13,6 +13,7 @@ import {
   moduleSelectionProposalItems,
   moduleSelectionProposals,
   programmeRuleSets,
+  reassessmentPlans,
   workflowDefinitions,
   workflowDefinitionVersions,
   academicPeriods,
@@ -41,6 +42,7 @@ import { approvedExemptionsFor } from '../curriculum/academic-exception-service.
 import type { ModuleRegistrationService } from '../registration/service.js';
 import type { RulesEngine } from '../rules-engine/engine.js';
 import type { SelectionWindowService } from './window-service.js';
+import { DEFAULT_REPEAT_RULE, type RepeatRule, failedModuleIds, groupMembership, repeatRequirements, repeatRuleFrom } from './repeat-requirements.js';
 import { clockNow } from '../clock.js';
 
 type Uuid = `${string}-${string}-${string}-${string}-${string}`;
@@ -240,6 +242,7 @@ export class ModuleSelectionService {
     });
 
     await this.#populateCompulsoryItems(tenantId, proposalId, programmeRuleSetId, input.academicPeriodId, input.fheqLevel, input.enrolmentId);
+    await this.#populateRepeatItems(tenantId, proposalId, enrolment, input.academicPeriodId);
 
     return proposalId;
   }
@@ -251,6 +254,13 @@ export class ModuleSelectionService {
   ): Promise<string> {
     const proposal = await this.#getCurrentProposalRow(proposalId, tenantId);
     this.#ensureEditable(proposal.statusCode);
+    if (input.replacesReassessmentPlanId) {
+      const [plan] = await withTenantContext(this.db, tenantId, (tx) => tx.select({ id: reassessmentPlans.id }).from(reassessmentPlans).where(and(
+        eq(reassessmentPlans.tenantId, tenantId as Uuid), eq(reassessmentPlans.id, input.replacesReassessmentPlanId as Uuid),
+        eq(reassessmentPlans.enrolmentId, proposal.enrolmentId as Uuid),
+      )).limit(1));
+      if (!plan) throw new NotFoundError('ReassessmentPlan', input.replacesReassessmentPlanId);
+    }
 
     const itemId = randomUUID();
     const now = clockNow();
@@ -832,9 +842,15 @@ export class ModuleSelectionService {
       for (const m of msgs) pushItemMessage(itemId, m);
     }
 
-    // Credit load requirement (mode-of-study aware)
-    const totalCredits = items.reduce((sum, i) => sum + (i.creditValue ?? 0), 0);
     const ruleCtx = { tenantId, programmeId: enrolment.programmeId ?? '' };
+
+    // Repeat-module requirement (D-28): what the board requires the student to repeat.
+    const repeat = await this.#checkRepeats(tenantId, proposal, enrolment, items, ruleCtx);
+    for (const [itemId, msgs] of repeat.itemMessages) for (const m of msgs) pushItemMessage(itemId, m);
+    errors.push(...repeat.errors);
+
+    // Credit load requirement (mode-of-study aware). Repeat credit is left out when the rule says it does not count.
+    const totalCredits = items.reduce((sum, i) => sum + (i.creditValue ?? 0), 0) - repeat.excludedCredits;
     // Each enrolment-scoped rule honours the student's approved rule exceptions.
     const { value: creditLoadValue } = await this.rules.resolveForEnrolment(ruleCtx, 'credit-load-requirement', enrolment.enrolmentId,
       () => this.rules.getCreditLoadRequirement(ruleCtx, enrolment.modeOfStudyCode));
@@ -1131,6 +1147,21 @@ export class ModuleSelectionService {
       })),
     }, actorId);
 
+    // A repeat plan records the registration that repeats it (D-28), so its mark cap can follow the new attempt.
+    const enrolment = await this.#getCurrentEnrolment(proposal.enrolmentId, tenantId);
+    const rule = await this.#repeatRule({ tenantId, programmeId: enrolment.programmeId ?? '' }, enrolment.enrolmentId);
+    const required = rule ? await repeatRequirements(this.db, tenantId, enrolment.enrolmentId, proposal.academicPeriodId, rule) : [];
+    const linked = new Set<string>();
+    for (const req of required) {
+      if (linked.has(req.planId)) continue;
+      const item = items.find((i) => i.moduleOfferingId && (i.moduleId === req.moduleId || (i.isReplacement && i.reassessmentPlanId === req.planId)));
+      if (!item) continue;
+      linked.add(req.planId);
+      await withTenantContext(this.db, tenantId, (tx) => tx.update(reassessmentPlans)
+        .set({ repeatModuleRegistrationId: deterministicUuid(`module-selection-registration:${proposalId}:${item.proposalItemId}`) as Uuid })
+        .where(and(eq(reassessmentPlans.tenantId, tenantId as Uuid), eq(reassessmentPlans.id, req.planId as Uuid), isNull(reassessmentPlans.repeatModuleRegistrationId))));
+    }
+
     await this.#transitionProposal(proposal, tenantId, {
       statusCode: 'confirmed',
       decidedAt: clockNow(),
@@ -1265,6 +1296,105 @@ export class ModuleSelectionService {
         });
       }
     }
+  }
+
+  async #repeatRule(ruleCtx: { tenantId: string; programmeId: string }, enrolmentId: string): Promise<RepeatRule | null> {
+    // Applies even when unconfigured (the board's decision is the authority); a waiver releases the student (D-33).
+    const { value, exception } = await this.rules.resolveForEnrolment(ruleCtx, 'repeat-module-requirement', enrolmentId,
+      async () => (await this.rules.getOptionalRule<Record<string, unknown>>(ruleCtx, 'repeat-module-requirement', ['default'])) ?? { ...DEFAULT_REPEAT_RULE });
+    if (exception?.exceptionTypeCode === 'waiver') return null;
+    return repeatRuleFrom(value);
+  }
+
+  /** Adds the modules the board requires the student to repeat (D-28), with source 'repeat-required'. */
+  async #populateRepeatItems(tenantId: string, proposalId: string, enrolment: CurrentEnrolment, academicPeriodId: string): Promise<void> {
+    const rule = await this.#repeatRule({ tenantId, programmeId: enrolment.programmeId ?? '' }, enrolment.enrolmentId);
+    if (!rule) return;
+    const required = await repeatRequirements(this.db, tenantId, enrolment.enrolmentId, academicPeriodId, rule);
+    const existing = await this.#listItems(tenantId, proposalId);
+    const now = clockNow();
+    for (const req of required) {
+      if (existing.some((i) => i.moduleId === req.moduleId)) continue;
+      const [offering] = await withTenantContext(this.db, tenantId, (tx) => tx.select({ id: moduleOfferings.id }).from(moduleOfferings).where(and(
+        eq(moduleOfferings.tenantId, tenantId as Uuid), eq(moduleOfferings.moduleId, req.moduleId as Uuid), eq(moduleOfferings.academicPeriodId, academicPeriodId as Uuid),
+      )).limit(1));
+      await withTenantContext(this.db, tenantId, (tx) => tx.insert(moduleSelectionProposalItems).values({
+        id: randomUUID(), tenantId: tenantId as Uuid, proposalId: proposalId as Uuid, moduleId: req.moduleId as Uuid,
+        moduleOfferingId: (offering?.id ?? null) as Uuid | null, sourceCode: 'repeat-required',
+        reassessmentPlanId: req.planId as Uuid, validationStateCode: 'pending', createdAt: now, updatedAt: now,
+      }));
+      existing.push({ moduleId: req.moduleId } as ProposalItemDto);
+    }
+  }
+
+  /**
+   * Each required repeat is met by the same module or an allowed replacement
+   * (D-28); total repeat credit stays within the cap. Returns the repeat
+   * credit to leave out of the credit load when the rule says so.
+   */
+  async #checkRepeats(
+    tenantId: string,
+    proposal: typeof moduleSelectionProposals.$inferSelect,
+    enrolment: CurrentEnrolment,
+    items: ProposalItemDto[],
+    ruleCtx: { tenantId: string; programmeId: string },
+  ): Promise<{ errors: ValidationMessage[]; itemMessages: Map<string, ValidationMessage[]>; excludedCredits: number }> {
+    const errors: ValidationMessage[] = [];
+    const itemMessages = new Map<string, ValidationMessage[]>();
+    const flag = (itemId: string, m: ValidationMessage) => { const l = itemMessages.get(itemId) ?? []; l.push(m); itemMessages.set(itemId, l); };
+    const rule = await this.#repeatRule(ruleCtx, enrolment.enrolmentId);
+    if (!rule) return { errors, itemMessages, excludedCredits: 0 };
+    const required = await repeatRequirements(this.db, tenantId, enrolment.enrolmentId, proposal.academicPeriodId, rule);
+    const replacements = items.filter((i) => i.isReplacement);
+    if (required.length === 0) {
+      for (const r of replacements) flag(r.proposalItemId, { ruleTypeCode: 'repeat-module-requirement', severity: 'error', message: `${r.moduleCode} is marked as a replacement, but no repeat is required` });
+      return { errors, itemMessages, excludedCredits: 0 };
+    }
+    const membership = await groupMembership(this.db, tenantId, proposal.programmeRuleSetId);
+    const failed = await failedModuleIds(this.db, tenantId, enrolment.enrolmentId);
+    const used = new Set<string>();
+    let repeatCredits = 0;
+
+    for (const req of required) {
+      const same = items.find((i) => i.moduleId === req.moduleId && !used.has(i.proposalItemId));
+      if (same) { used.add(same.proposalItemId); repeatCredits += same.creditValue ?? 0; continue; }
+      const replacement = replacements.find((i) => i.reassessmentPlanId === req.planId && !used.has(i.proposalItemId));
+      if (!replacement) {
+        errors.push({ ruleTypeCode: 'repeat-module-requirement', severity: 'error', message: `The exam board requires ${req.moduleCode} to be repeated; include it${rule.allowReplacement === 'never' ? '' : ' or an allowed replacement'}` });
+        continue;
+      }
+      used.add(replacement.proposalItemId);
+      const problem = this.#replacementProblem(rule, req, replacement, membership, failed);
+      if (problem) flag(replacement.proposalItemId, { ruleTypeCode: 'repeat-module-requirement', severity: 'error', message: problem });
+      repeatCredits += replacement.creditValue ?? 0;
+    }
+    for (const r of replacements.filter((i) => !used.has(i.proposalItemId))) {
+      flag(r.proposalItemId, { ruleTypeCode: 'repeat-module-requirement', severity: 'error', message: `${r.moduleCode} replaces a repeat that is already met or not required` });
+    }
+    if (rule.maxRepeatCredits !== null && repeatCredits > rule.maxRepeatCredits) {
+      errors.push({ ruleTypeCode: 'repeat-module-requirement', severity: 'error', message: `${repeatCredits} credits of repeated modules exceed the limit of ${rule.maxRepeatCredits}` });
+    }
+    return { errors, itemMessages, excludedCredits: rule.countTowardsCreditLoad ? 0 : repeatCredits };
+  }
+
+  #replacementProblem(
+    rule: RepeatRule,
+    req: { moduleId: string; moduleCode: string; creditValue: number },
+    item: ProposalItemDto,
+    membership: Map<string, Array<{ groupId: string; groupTypeCode: string; isNonCondonable: boolean }>>,
+    failed: Set<string>,
+  ): string | null {
+    if (rule.allowReplacement === 'never') return `${req.moduleCode} must be repeated itself; a replacement is not allowed`;
+    const failedGroups = membership.get(req.moduleId) ?? [];
+    if (failedGroups.some((g) => g.isNonCondonable)) return `${req.moduleCode} must be passed outright and cannot be replaced`;
+    if (failedGroups.some((g) => g.groupTypeCode === 'compulsory')) return `${req.moduleCode} is compulsory and cannot be replaced`;
+    if (rule.allowReplacement === 'optional-only') {
+      const replacementGroups = new Set((membership.get(item.moduleId) ?? []).map((g) => g.groupId));
+      if (!failedGroups.some((g) => replacementGroups.has(g.groupId))) return `${item.moduleCode} is not in the same optional group as ${req.moduleCode}`;
+    }
+    if ((item.creditValue ?? 0) < req.creditValue) return `${item.moduleCode} carries fewer credits than ${req.moduleCode} (${item.creditValue ?? 0} < ${req.creditValue})`;
+    if (failed.has(item.moduleId)) return `${item.moduleCode} has already been failed and cannot be a replacement`;
+    return null;
   }
 
   // ── Approval workflow ────────────────────────────────────────────────────────

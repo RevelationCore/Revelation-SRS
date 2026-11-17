@@ -72,6 +72,10 @@ export const ENROLMENT_RULE_FIELDS = {
   'adjacent-level-credit-limit':    ['maxCredits'],
   'progression-credit-requirement': ['requiredCredits'],
   'compensation-credit-limit':      ['maxCredits'],
+  // Phase 4 D-33. An empty list means the rule can only be waived.
+  'joint-honours-balance':          ['tolerancePercent'],
+  'repeat-module-requirement':      ['maxRepeatCredits'],
+  'timetable-clash-policy':         [],
 } as const satisfies Partial<Record<RuleTypeCode, readonly string[]>>;
 
 export type EnrolmentRuleType = keyof typeof ENROLMENT_RULE_FIELDS;
@@ -268,6 +272,18 @@ export class RulesEngine {
       if (err instanceof RuleNotConfiguredError) return null;
       throw err;
     }
+  }
+
+  /** Any configured value of an optional rule, programme over tenant; null when unconfigured. */
+  async getOptionalRule<T>(ctx: RuleContext, ruleType: RuleTypeCode, ruleKeys: string[]): Promise<T | null> {
+    for (const key of ruleKeys) {
+      try {
+        return await this.getRule<T>(ctx, ruleType, key);
+      } catch (err) {
+        if (!(err instanceof RuleNotConfiguredError)) throw err;
+      }
+    }
+    return null;
   }
 
   /**

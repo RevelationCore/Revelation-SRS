@@ -122,6 +122,7 @@ export class AcademicExceptionService {
       throw new ValidationError(`Rule '${input.ruleCode}' cannot be excepted for one student; use one of ${Object.keys(ENROLMENT_RULE_FIELDS).join(', ')}`);
     }
     if (input.exceptionTypeCode === 'waiver' && input.variationValue) throw new ValidationError('A waiver removes the rule; it takes no value');
+    if (input.exceptionTypeCode === 'variation' && fields.length === 0) throw new ValidationError(`${input.ruleCode} can only be waived`);
     if (input.exceptionTypeCode === 'variation') {
       const value = input.variationValue ?? {};
       const keys = Object.keys(value);
