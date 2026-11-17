@@ -59,14 +59,14 @@ describe('Progression decisions', () => {
     // No module results: without credit the student would repeat the year.
     const credited = await createProgressionFixture('PRG110');
     const otherYear = await post(`/enrolments/${credited.enrolmentId}/recognised-credits`, proposerJwt, {
-      recognitionTypeCode: 'rpcl', sourceDescription: 'Prior study', creditValue: 20, academicYear: '2028-29',
+      recognitionTypeCode: 'rpcl', sourceDescription: 'Prior study', creditValue: 20, academicYear: '2028-29', evidenceRef: 'docs:prior-1',
     });
     await approve(`/recognised-credits/${otherYear.json<{ recognisedCreditId: string }>().recognisedCreditId}/decision`);
     await evaluateProgression(credited.enrolmentId);
     expect((await getProgression(credited.enrolmentId)).json<{ decisionCode: string }>().decisionCode).toBe('repeat-year');
 
     const thisYear = await post(`/enrolments/${credited.enrolmentId}/recognised-credits`, proposerJwt, {
-      recognitionTypeCode: 'rpcl', sourceDescription: 'Prior study', creditValue: 20, academicYear: '2027-28',
+      recognitionTypeCode: 'rpcl', sourceDescription: 'Prior study', creditValue: 20, academicYear: '2027-28', evidenceRef: 'docs:prior-2',
     });
     const creditId = thisYear.json<{ recognisedCreditId: string }>().recognisedCreditId;
     await approve(`/recognised-credits/${creditId}/decision`);

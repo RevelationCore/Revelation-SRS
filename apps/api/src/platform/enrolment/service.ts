@@ -85,6 +85,8 @@ export interface EnrolmentDto {
   slcReference:        string | null;
   ucasPersonalId:      string | null;
   feeStatusCode:       string | null;
+  /** Percentage of full-time study; null means the mode's default (Phase 4 D-31). */
+  studyIntensityPercent: number | null;
   validFrom:           Date;
   recordedAt:          Date;
 }
@@ -617,6 +619,7 @@ export class EnrolmentService {
         slcReference:      current.slcReference,
         ucasPersonalId:    current.ucasPersonalId,
         feeStatusCode:     current.feeStatusCode,
+        studyIntensityPercent: current.studyIntensityPercent,
         validFrom,
         validTo:       null,
         recordedAt:    now,
@@ -707,7 +710,7 @@ export class EnrolmentService {
   async changeStudyArrangement(
     enrolmentId: string,
     tenantId: string,
-    change: { programmeId?: string | null; modeOfStudyCode?: string | null },
+    change: { programmeId?: string | null; modeOfStudyCode?: string | null; studyIntensityPercent?: number | null },
     validFrom: Date,
     actorId: string,
     options: TransitionOptions = {},
@@ -717,8 +720,11 @@ export class EnrolmentService {
     if (current.statusCode !== 'enrolled') {
       throw new ValidationError(`Only an enrolled student can transfer; this enrolment is ${current.statusCode}`);
     }
-    if (!change.programmeId && !change.modeOfStudyCode) {
-      throw new ValidationError('A transfer must change the programme or the mode of study');
+    if (!change.programmeId && !change.modeOfStudyCode && change.studyIntensityPercent == null) {
+      throw new ValidationError('A transfer must change the programme, the mode of study or the study intensity');
+    }
+    if (change.studyIntensityPercent != null && (!Number.isInteger(change.studyIntensityPercent) || change.studyIntensityPercent < 1 || change.studyIntensityPercent > 100)) {
+      throw new ValidationError('Study intensity must be a whole percentage from 1 to 100');
     }
     if (change.modeOfStudyCode) {
       await this.#validateFieldValue(tenantId, 'enrolment', 'mode_of_study_code', change.modeOfStudyCode);
@@ -749,6 +755,7 @@ export class EnrolmentService {
         slcReference:        current.slcReference,
         ucasPersonalId:      current.ucasPersonalId,
         feeStatusCode:       current.feeStatusCode,
+        studyIntensityPercent: change.studyIntensityPercent ?? current.studyIntensityPercent,
         validFrom,
         validTo:       null,
         recordedAt:    now,
@@ -766,6 +773,18 @@ export class EnrolmentService {
         actorId,
         createdAt:      now,
       });
+      // The SLC is told of a change of programme, mode or intensity for a funded student (Phase 4 D-31).
+      if (current.slcReference) {
+        await tx.insert(enrolmentDownstreamTriggers).values({
+          tenantId: tenantId as U, enrolmentId: enrolmentId as U, triggerTypeCode: 'slc-confirmation', statusCode: 'pending',
+          payloadSummary: {
+            slcReference: current.slcReference, notificationType: change.programmeId && change.programmeId !== current.programmeId ? 'change-of-course' : 'change-of-mode-or-intensity',
+            fromModeOfStudyCode: current.modeOfStudyCode, toModeOfStudyCode: change.modeOfStudyCode ?? current.modeOfStudyCode,
+            fromStudyIntensityPercent: current.studyIntensityPercent, toStudyIntensityPercent: change.studyIntensityPercent ?? current.studyIntensityPercent,
+            effectiveFrom: validFrom.toISOString().slice(0, 10),
+          },
+        });
+      }
     });
 
     if (this.delivery) {
@@ -966,6 +985,7 @@ export class EnrolmentService {
       slcReference:        row.slcReference,
       ucasPersonalId:      row.ucasPersonalId,
       feeStatusCode:       row.feeStatusCode,
+      studyIntensityPercent: row.studyIntensityPercent,
       validFrom:           row.validFrom,
       recordedAt:          row.recordedAt,
     };

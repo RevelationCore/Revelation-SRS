@@ -1,6 +1,7 @@
 import {
   modules,
   recognisedCredits,
+  studentStatusCases,
   ruleExceptions,
   type Db,
   type RecognisedCredit,
@@ -25,6 +26,8 @@ export interface RecognisedCreditInput {
   fheqLevel?: number;
   moduleId?: string;
   statusCaseId?: string;
+  /** On an internal transfer: the module result the credit comes from (Phase 4 D-32). */
+  sourceModuleResultId?: string;
   evidenceRef?: string;
   /** The academic year whose progression it counts towards (e.g. 2026-27); omit to count towards the award only. */
   academicYear?: string;
@@ -65,6 +68,18 @@ export class AcademicExceptionService {
     await this.#code(tenantId, 'recognised_credit', 'recognition_type_code', input.recognitionTypeCode);
     if (!Number.isInteger(input.creditValue) || input.creditValue <= 0) throw new ValidationError('Credit must be a positive whole number');
     if (input.recognitionTypeCode === 'exemption' && !input.moduleId) throw new ValidationError('An exemption must name the module it exempts');
+    // Prior or external learning needs its evidence (D-32); an internal transfer belongs to the transfer case that maps it.
+    if (['rpcl', 'rpel', 'transfer-in'].includes(input.recognitionTypeCode) && !input.evidenceRef?.trim()) {
+      throw new ValidationError('Recognition of prior or external learning needs evidence (a document reference)');
+    }
+    if (input.recognitionTypeCode === 'internal-transfer') {
+      if (!input.statusCaseId) throw new ValidationError('Credit carried across an internal transfer must name the transfer case');
+      const [c] = await withTenantContext(this.db, tenantId, (tx) => tx.select().from(studentStatusCases).where(and(
+        eq(studentStatusCases.tenantId, tenantId as Uuid), eq(studentStatusCases.id, input.statusCaseId as Uuid),
+      )).limit(1));
+      if (!c || c.enrolmentId !== enrolmentId || c.caseTypeCode !== 'transfer') throw new ValidationError('The status case must be a transfer of this enrolment');
+      if (c.statusCode !== 'requested') throw new ConflictError('Credit can be mapped only while the transfer is undecided');
+    }
     if (input.academicYear && !/^\d{4}-\d{2}$/.test(input.academicYear)) throw new ValidationError('academicYear must look like 2026-27');
     if (input.moduleId) {
       const found = await withTenantContext(this.db, tenantId, (tx) => tx.select({ id: modules.id }).from(modules)
@@ -76,6 +91,7 @@ export class AcademicExceptionService {
       sourceDescription: input.sourceDescription, creditValue: input.creditValue, fheqLevel: input.fheqLevel ?? null,
       moduleId: (input.moduleId ?? null) as Uuid | null, statusCaseId: (input.statusCaseId ?? null) as Uuid | null,
       evidenceRef: input.evidenceRef ?? null, academicYear: input.academicYear ?? null, createdBy: actorId,
+      sourceModuleResultId: (input.sourceModuleResultId ?? null) as Uuid | null,
     }).returning());
     return row!;
   }
@@ -227,7 +243,7 @@ export class AcademicExceptionService {
 
 // ── Read helpers for rule consumers (no service dependency needed) ───────────
 
-/** Approved module exemptions for an enrolment, for one academic year or year-independent ones. */
+/** Approved credit mapped to modules (exemptions, RPL, transfer credit) for an enrolment, for one academic year or year-independent ones. */
 export async function approvedExemptionsFor(
   db: Db, tenantId: string, enrolmentId: string, academicYear: string | null,
 ): Promise<Array<{ moduleId: string; creditValue: number; recognisedCreditId: string }>> {
@@ -235,8 +251,8 @@ export async function approvedExemptionsFor(
     eq(recognisedCredits.tenantId, tenantId as Uuid),
     eq(recognisedCredits.enrolmentId, enrolmentId as Uuid),
     eq(recognisedCredits.statusCode, 'approved'),
-    eq(recognisedCredits.recognitionTypeCode, 'exemption'),
   )));
+  // Any approved recognised credit that names a module maps to it, whatever its basis (D-32).
   return rows
     .filter((c) => c.moduleId && (c.academicYear === null || academicYear === null || c.academicYear === academicYear))
     .map((c) => ({ moduleId: c.moduleId!, creditValue: c.creditValue, recognisedCreditId: c.id }));

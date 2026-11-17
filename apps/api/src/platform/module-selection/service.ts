@@ -129,6 +129,7 @@ interface CurrentEnrolment {
   personId: string;
   programmeId: string | null;
   modeOfStudyCode: string;
+  studyIntensityPercent: number | null;
 }
 
 export interface CurriculumBindingDto {
@@ -902,7 +903,7 @@ export class ModuleSelectionService {
     const totalCredits = items.reduce((sum, i) => sum + (i.creditValue ?? 0), 0) - repeat.excludedCredits;
     // Each enrolment-scoped rule honours the student's approved rule exceptions.
     const { value: creditLoadValue } = await this.rules.resolveForEnrolment(ruleCtx, 'credit-load-requirement', enrolment.enrolmentId,
-      () => this.rules.getCreditLoadRequirement(ruleCtx, enrolment.modeOfStudyCode));
+      () => this.rules.getCreditLoadRequirement(ruleCtx, enrolment.modeOfStudyCode, enrolment.studyIntensityPercent));
     const creditLoad = creditLoadValue
       ? { minCredits: (creditLoadValue.minCredits as number | null | undefined) ?? null, maxCredits: (creditLoadValue.maxCredits as number | null | undefined) ?? null }
       : null;
@@ -1805,6 +1806,7 @@ export class ModuleSelectionService {
         personId: enrolments.personId,
         programmeId: enrolments.programmeId,
         modeOfStudyCode: enrolments.modeOfStudyCode,
+        studyIntensityPercent: enrolments.studyIntensityPercent,
       }).from(enrolments).where(
         and(
           eq(enrolments.id, enrolmentId as Uuid),

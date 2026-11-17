@@ -29,6 +29,7 @@ const EnrolmentSchema = Type.Object({
   slcReference:        Type.Union([Type.String(), Type.Null()]),
   ucasPersonalId:      Type.Union([Type.String(), Type.Null()]),
   feeStatusCode:       Type.Union([Type.String(), Type.Null()]),
+  studyIntensityPercent: Type.Union([Type.Integer(), Type.Null()]),
   validFrom:           Type.String(),
   recordedAt:          Type.String(),
 });

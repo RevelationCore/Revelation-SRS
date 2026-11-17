@@ -507,7 +507,7 @@ export async function buildApp(
   fastify.decorate('deliveryService', deliveries);
   const inboundRecords = new InboundRecordService(db, valueSets);
   const support = new SupportService(db, valueSets, deliveries);
-  const statusCases = new StatusCaseService(db, valueSets, enrolments, businessCases);
+  const statusCases = new StatusCaseService(db, valueSets, enrolments, businessCases, rules);
   // An approved leaver closure ends the institutional account after the grace period (D-19).
   statusCases.onLeaverClosure(async (tenantId, closure) => {
     const enrolment = await enrolments.getEnrolment(closure.enrolmentId, tenantId);

@@ -174,7 +174,7 @@ export function curriculumPublicationRoutes(fastify: FastifyInstance): void {
       body: Type.Object({
         recognitionTypeCode: Type.String(), sourceDescription: Type.String({ minLength: 1, maxLength: 500 }),
         creditValue: Type.Integer({ minimum: 1, maximum: 720 }), fheqLevel: Type.Optional(Type.Integer({ minimum: 3, maximum: 8 })),
-        moduleId: Type.Optional(Type.String()), statusCaseId: Type.Optional(Type.String()), evidenceRef: Type.Optional(Type.String({ maxLength: 200 })),
+        moduleId: Type.Optional(Type.String()), statusCaseId: Type.Optional(Type.String()), sourceModuleResultId: Type.Optional(Type.String()), evidenceRef: Type.Optional(Type.String({ maxLength: 200 })),
         academicYear: Type.Optional(Type.String({ pattern: '^\\d{4}-\\d{2}$' })),
       }),
       response: { 201: CreditSchema, 404: ErrorSchema, 422: ErrorSchema },

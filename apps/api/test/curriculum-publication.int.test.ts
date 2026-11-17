@@ -176,7 +176,7 @@ describe('approver worklist', () => {
       personId, modeOfStudyCode: 'full-time', academicYearOfEntry: '2026-27', startDate: '2026-09-21',
     })).json<{ enrolmentId: string }>().enrolmentId;
     const credit = (await call('POST', `/enrolments/${enrolmentId}/recognised-credits`, registryJwt, {
-      recognitionTypeCode: 'rpcl', sourceDescription: 'Pending HND', creditValue: 60,
+      recognitionTypeCode: 'rpcl', sourceDescription: 'Pending HND', creditValue: 60, evidenceRef: 'docs:transcript-2',
     })).json<{ recognisedCreditId: string }>().recognisedCreditId;
     const exception = (await call('POST', `/enrolments/${enrolmentId}/rule-exceptions`, registryJwt, {
       ruleCode: 'max-credits-per-period', exceptionTypeCode: 'waiver', description: 'Pending waiver', validFrom: '2026-09-01',

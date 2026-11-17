@@ -1,9 +1,14 @@
 import { randomUUID } from 'node:crypto';
 
 import {
+  academicPeriods,
   casCases,
   enrolmentStatusTransitions,
+  moduleOfferings,
+  moduleRegistrations,
+  modules,
   programmes,
+  recognisedCredits,
   statusCaseAssessments,
   statusCaseConditions,
   studentStatusCases,
@@ -15,13 +20,14 @@ import {
   withTenantContext,
 } from '@revelation-srs/db';
 import { ConflictError, NotFoundError, ValidationError } from '@revelation-srs/domain';
-import { and, desc, eq, isNull, ne } from 'drizzle-orm';
+import { and, desc, eq, isNull, ne, sql } from 'drizzle-orm';
 
 import type { BusinessCaseService } from '../cases/business-case-service.js';
 import { clockNow } from '../clock.js';
 import type { EnrolmentService } from '../enrolment/service.js';
 import { type EnrolmentSubject, subjectsForEnrolments } from '../enrolment/subjects.js';
 import { deterministicUuid } from '../platform-controls/governed-review.js';
+import type { RulesEngine } from '../rules-engine/engine.js';
 import type { ValueSetService } from '../value-sets/service.js';
 
 type Uuid = `${string}-${string}-${string}-${string}-${string}`;
@@ -66,6 +72,8 @@ export interface OpenStatusCaseInput {
   expectedReturnDate?: string;
   destinationProgrammeId?: string;
   destinationModeOfStudyCode?: string;
+  /** Reduced-intensity study as a transfer (Phase 4 D-31): percentage of full time. */
+  destinationStudyIntensityPercent?: number;
   relatedCaseId?: string;
   institutionalOutcomeRef?: string;
 }
@@ -116,6 +124,13 @@ export interface StatusCaseDto {
   expectedReturnDate: string | null;
   destinationProgrammeId: string | null;
   destinationModeOfStudyCode: string | null;
+  destinationStudyIntensityPercent: number | null;
+  /** For a transfer: what it changes (D-31). */
+  transferKinds: Array<'programme' | 'mode' | 'intensity'>;
+  /** Advice for the decider, such as an SLC intensity floor (D-31). */
+  warnings: string[];
+  /** Credit mapped to the destination by this transfer (D-32). */
+  creditMappings: Array<{ recognisedCreditId: string; moduleId: string | null; creditValue: number; statusCode: string; sourceDescription: string }>;
   relatedCaseId: string | null;
   institutionalOutcomeRef: string | null;
   statusCode: string;
@@ -167,6 +182,7 @@ export class StatusCaseService {
     private readonly valueSets: ValueSetService,
     private readonly enrolments: EnrolmentService,
     private readonly businessCases: BusinessCaseService,
+    private readonly rules?: RulesEngine,
   ) {}
 
   async openCase(tenantId: string, enrolmentId: string, input: OpenStatusCaseInput, actorId: string): Promise<StatusCaseDto> {
@@ -193,8 +209,11 @@ export class StatusCaseService {
       throw new ValidationError('An institutional suspension or withdrawal must reference the authorising process outcome');
     }
     if (type === 'transfer') {
-      if (!input.destinationProgrammeId && !input.destinationModeOfStudyCode) {
-        throw new ValidationError('A transfer needs a destination programme or mode of study');
+      if (!input.destinationProgrammeId && !input.destinationModeOfStudyCode && input.destinationStudyIntensityPercent == null) {
+        throw new ValidationError('A transfer needs a destination programme, mode of study or study intensity');
+      }
+      if (input.destinationStudyIntensityPercent != null && (!Number.isInteger(input.destinationStudyIntensityPercent) || input.destinationStudyIntensityPercent < 1 || input.destinationStudyIntensityPercent > 100)) {
+        throw new ValidationError('Study intensity must be a whole percentage from 1 to 100');
       }
       if (input.destinationProgrammeId) await this.#requireProgramme(tenantId, input.destinationProgrammeId);
       if (input.destinationModeOfStudyCode) await this.#code(tenantId, 'enrolment', 'mode_of_study_code', input.destinationModeOfStudyCode);
@@ -230,6 +249,7 @@ export class StatusCaseService {
         expectedReturnDate: input.expectedReturnDate ?? null,
         destinationProgrammeId: (input.destinationProgrammeId ?? null) as Uuid | null,
         destinationModeOfStudyCode: input.destinationModeOfStudyCode ?? null,
+        destinationStudyIntensityPercent: input.destinationStudyIntensityPercent ?? null,
         relatedCaseId: relatedCaseId as Uuid | null,
         institutionalOutcomeRef: input.institutionalOutcomeRef ?? null,
         createdBy: actorId,
@@ -389,10 +409,11 @@ export class StatusCaseService {
       && !assessments.some((a) => a.assessorRoleCode === 'destination-academic' && a.outcomeCode === 'supports')) {
       throw new ConflictError('A transfer to another programme needs the destination programme\'s support before it is approved');
     }
-    if (SPONSOR_REPORTABLE.includes(type) && await isSponsoredEnrolment(this.db, tenantId, row.enrolmentId)
-      && !assessments.some((a) => a.assessorRoleCode === 'compliance')) {
+    const sponsored = SPONSOR_REPORTABLE.includes(type) && await isSponsoredEnrolment(this.db, tenantId, row.enrolmentId);
+    if (sponsored && !assessments.some((a) => a.assessorRoleCode === 'compliance')) {
       throw new ConflictError('This student is sponsored on a Student visa: record UKVI compliance advice before deciding (the change must be reported to UKVI)');
     }
+    if (type === 'transfer') await this.#checkTransfer(tenantId, row, effectiveDate, sponsored, assessments);
 
     // Apply the change first. If the enrolment refuses it, the case stays open.
     const transitionId = type === 'leaver-closure' ? null : deterministicUuid(`status-case:${row.id}`);
@@ -402,6 +423,7 @@ export class StatusCaseService {
       if (type === 'transfer') {
         await this.enrolments.changeStudyArrangement(row.enrolmentId, tenantId, {
           programmeId: row.destinationProgrammeId, modeOfStudyCode: row.destinationModeOfStudyCode,
+          studyIntensityPercent: row.destinationStudyIntensityPercent,
         }, validFrom, actorId, { ...options, reasonCode: 'transfer' });
       } else {
         await this.enrolments.transitionStatus(row.enrolmentId, tenantId, TARGET_STATUS[type]!, validFrom, actorId, options);
@@ -429,6 +451,54 @@ export class StatusCaseService {
   }
 
   // ── internals ──────────────────────────────────────────────────────────────
+
+  /**
+   * What a transfer needs before it is approved (D-31, D-32): no credit
+   * mapping still proposed; a sponsored student moving away from full-time
+   * study has compliance advice that supports it; and the student's
+   * registrations after the effective date fit the new credit maximum.
+   * Nothing is withdrawn automatically: the decider is told what to change.
+   */
+  async #checkTransfer(
+    tenantId: string,
+    row: StudentStatusCase,
+    effectiveDate: string,
+    sponsored: boolean,
+    assessments: Array<{ assessorRoleCode: string; outcomeCode: string }>,
+  ): Promise<void> {
+    const pending = await withTenantContext(this.db, tenantId, (tx) => tx.select({ id: recognisedCredits.id }).from(recognisedCredits).where(and(
+      eq(recognisedCredits.tenantId, tenantId as Uuid), eq(recognisedCredits.statusCaseId, row.id), eq(recognisedCredits.statusCode, 'proposed'),
+    )));
+    if (pending.length > 0) throw new ConflictError(`${pending.length} credit mapping(s) for this transfer are still awaiting a decision`);
+    if (sponsored && row.destinationModeOfStudyCode && row.destinationModeOfStudyCode !== 'full-time'
+      && !assessments.some((a) => a.assessorRoleCode === 'compliance' && a.outcomeCode === 'supports')) {
+      throw new ConflictError('A sponsored Student-route student moving away from full-time study needs compliance advice that supports it');
+    }
+    if (!this.rules) return;
+    const enrolment = await this.enrolments.getEnrolment(row.enrolmentId, tenantId);
+    if (!enrolment) return;
+    const mode = row.destinationModeOfStudyCode ?? enrolment.modeOfStudyCode;
+    const intensity = row.destinationStudyIntensityPercent ?? enrolment.studyIntensityPercent;
+    const load = await this.rules.getCreditLoadRequirement({ tenantId, programmeId: row.destinationProgrammeId ?? enrolment.programmeId ?? '' }, mode, intensity);
+    if (!load?.maxCredits) return;
+    const later = await withTenantContext(this.db, tenantId, (tx) => tx.select({ code: modules.code, credit: modules.creditValue, year: academicPeriods.academicYear })
+      .from(moduleRegistrations)
+      .innerJoin(moduleOfferings, eq(moduleOfferings.id, moduleRegistrations.moduleOfferingId))
+      .innerJoin(academicPeriods, eq(academicPeriods.id, moduleOfferings.academicPeriodId))
+      .innerJoin(modules, and(eq(modules.id, moduleOfferings.moduleId), isNull(modules.recordedUntil)))
+      .where(and(
+        eq(moduleRegistrations.tenantId, tenantId as Uuid), eq(moduleRegistrations.enrolmentId, row.enrolmentId), eq(moduleRegistrations.statusCode, 'registered'),
+        isNull(moduleRegistrations.recordedUntil), sql`${academicPeriods.startDate} >= ${effectiveDate}`,
+      )));
+    const byYear = new Map<string, Array<{ code: string; credit: number }>>();
+    for (const r of later) byYear.set(r.year, [...(byYear.get(r.year) ?? []), { code: r.code, credit: r.credit ?? 0 }]);
+    for (const [year, regs] of byYear) {
+      const total = regs.reduce((a, b) => a + b.credit, 0);
+      if (total > load.maxCredits) {
+        throw new ConflictError(`After the change the most this student may take in ${year} is ${load.maxCredits} credits, but ${total} are registered (${regs.map((r) => r.code).join(', ')}): withdraw modules through a change request first, or approve a rule exception`);
+      }
+    }
+  }
 
   async #recordDecision(tenantId: string, row: StudentStatusCase, outcome: string, reason: string, actorId: string, at: Date) {
     await this.businessCases.recordDecision(row.businessCaseId, tenantId, {
@@ -496,6 +566,17 @@ export class StatusCaseService {
       expectedReturnDate: row.expectedReturnDate,
       destinationProgrammeId: row.destinationProgrammeId,
       destinationModeOfStudyCode: row.destinationModeOfStudyCode,
+      destinationStudyIntensityPercent: row.destinationStudyIntensityPercent,
+      transferKinds: row.caseTypeCode !== 'transfer' ? [] : [
+        ...(row.destinationProgrammeId ? ['programme' as const] : []),
+        ...(row.destinationModeOfStudyCode ? ['mode' as const] : []),
+        ...(row.destinationStudyIntensityPercent != null ? ['intensity' as const] : []),
+      ],
+      warnings: await this.#warnings(tenantId, row),
+      creditMappings: row.caseTypeCode !== 'transfer' ? [] : (await withTenantContext(this.db, tenantId, (tx) => tx.select().from(recognisedCredits)
+        .where(and(eq(recognisedCredits.tenantId, tenantId as Uuid), eq(recognisedCredits.statusCaseId, row.id))))).map((c) => ({
+        recognisedCreditId: c.id, moduleId: c.moduleId, creditValue: c.creditValue, statusCode: c.statusCode, sourceDescription: c.sourceDescription,
+      })),
       relatedCaseId: row.relatedCaseId,
       institutionalOutcomeRef: row.institutionalOutcomeRef,
       statusCode: row.statusCode,
@@ -511,6 +592,15 @@ export class StatusCaseService {
       conditions,
       outstandingReturnConditions: outstanding,
     };
+  }
+
+  /** The SLC does not fund part-time study below 25% intensity in England; the SLC decides, so this only warns (D-31). */
+  async #warnings(tenantId: string, row: StudentStatusCase): Promise<string[]> {
+    if (row.caseTypeCode !== 'transfer' || row.destinationStudyIntensityPercent == null || row.destinationStudyIntensityPercent >= 25) return [];
+    const enrolment = await this.enrolments.getEnrolment(row.enrolmentId, tenantId);
+    return enrolment?.slcReference
+      ? [`At ${row.destinationStudyIntensityPercent}% intensity this SLC-funded student would fall below the 25% minimum for a part-time loan in England; the SLC decides eligibility`]
+      : [];
   }
 
   async #requireProgramme(tenantId: string, programmeId: string): Promise<void> {

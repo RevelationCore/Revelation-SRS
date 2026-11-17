@@ -231,18 +231,30 @@ export class RulesEngine {
 
   /**
    * Minimum/maximum total credits a student must select for a period, keyed
-   * by mode of study (falls back to 'default' if no mode-specific rule is
-   * configured). Returns null if no rule is configured for either key.
+   * by mode of study and, for reduced-intensity study, intensity (Phase 4
+   * D-31): `${mode}:${intensity}`, then `${mode}`, then 'default'. A matched
+   * rule that is not intensity-specific and sets scaleByIntensity is
+   * pro-rated: floor(min x i/100), ceil(max x i/100). Null if unconfigured.
    */
   async getCreditLoadRequirement(
     ctx: RuleContext,
     modeOfStudyCode: string,
+    studyIntensityPercent: number | null = null,
   ): Promise<{ minCredits: number | null; maxCredits: number | null } | null> {
-    for (const ruleKey of [modeOfStudyCode, 'default']) {
+    const intensity = studyIntensityPercent !== null && studyIntensityPercent < 100 ? studyIntensityPercent : null;
+    const keys = [...(intensity !== null ? [`${modeOfStudyCode}:${intensity}`] : []), modeOfStudyCode, 'default'];
+    for (const ruleKey of keys) {
       try {
-        return await this.getRule<{ minCredits: number | null; maxCredits: number | null }>(
+        const rule = await this.getRule<{ minCredits: number | null; maxCredits: number | null; scaleByIntensity?: boolean }>(
           ctx, 'credit-load-requirement', ruleKey,
         );
+        if (intensity !== null && !ruleKey.includes(':') && rule.scaleByIntensity) {
+          return {
+            minCredits: rule.minCredits === null ? null : Math.floor((rule.minCredits * intensity) / 100),
+            maxCredits: rule.maxCredits === null ? null : Math.ceil((rule.maxCredits * intensity) / 100),
+          };
+        }
+        return { minCredits: rule.minCredits ?? null, maxCredits: rule.maxCredits ?? null };
       } catch (err) {
         if (!(err instanceof RuleNotConfiguredError)) throw err;
       }
