@@ -8,7 +8,7 @@
 
 ## Implementation status (2026-11-17)
 
-Stages 1–6 were built on 2026-08-02. Phase 4 of the gap-closure plan ([decisions D-23 to D-34](../decisions/phase-4-gap-closure-decisions.md), migration `0009_rule_depth`) closed the gaps once listed here.
+Stages 1–6 were built on 2026-08-02. Phase 4 of the gap-closure plan ([decisions D-23 to D-34](../decisions/phase-4-gap-closure-decisions.md), migration `0008_registration_integrations_and_rule_depth` (section `0009_rule_depth`)) closed the gaps once listed here.
 
 - **Every selection rule type is enforced.** `RULE_TYPE_DOMAIN` in `rules-engine/engine.ts` classifies all 21 rule types. The seven classed as selection rules are all evaluated by validation, which `selection-rule-coverage.int.test.ts` checks.
 - **`max-credits-per-period` is checked during validation**, and confirmation is all or nothing.
