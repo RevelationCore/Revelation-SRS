@@ -295,3 +295,13 @@ export function decideOfsGenerationRequest(
 ): Promise<{ extractId: string | null }> {
   return api.post(`/api/v1/regulatory/ofs/generation-requests/${workflowInstanceId}/decision`, { decisionCode, reason });
 }
+
+/** UCAS outbound decisions (D-15). */
+export interface UcasOutboundDecision {
+  exchangeId: string; applicationId: string; sourceReference: string; outcome: string; ucasCode: string | null;
+  /** queued | sent | reconciled | mismatch */
+  statusCode: string; queuedAt: string; sentAt: string | null; attention: 'not-reconciled' | 'mismatch' | null;
+}
+export interface UcasDecisionFile { contract: string; generatedAt: string; transport: 'manual-file' | 'simulator'; processedCount: number; decisions: unknown[] }
+export const listUcasDecisions = () => api.get<UcasOutboundDecision[]>('/api/v1/regulatory/ucas/decisions');
+export const dispatchUcasDecisions = () => api.post<UcasDecisionFile>('/api/v1/regulatory/ucas/decisions/dispatch');

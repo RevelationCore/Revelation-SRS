@@ -1,0 +1,82 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://schemas.revelation-srs.io/file-contracts/ucas/decisions-outbound/v1.json",
+  "title": "UcasDecisionsOutboundV1",
+  "description": "Outbound admissions decisions for UCAS, produced by POST /api/v1/regulatory/ucas/decisions/dispatch (Phase 3 D-15). Each entry is one queued decision: an offer version, a withdrawal, a rejection or a confirmation outcome. ucasCode comes from the tenant's ucas-decision-crosswalk value set, confirmed per cycle. A sent item becomes reconciled when the next inbound UCAS status agrees.",
+  "type": "object",
+  "required": [
+    "contract",
+    "generatedAt",
+    "transport",
+    "processedCount",
+    "decisions"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "contract": {
+      "const": "ucas/decisions-outbound.v1"
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "transport": {
+      "enum": [
+        "manual-file",
+        "simulator"
+      ]
+    },
+    "processedCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "decisions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "exchangeId",
+          "sourceReference",
+          "cycle",
+          "outcome",
+          "ucasCode",
+          "detail"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "exchangeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sourceReference": {
+            "type": "string",
+            "description": "cycle:UCAS Personal ID"
+          },
+          "cycle": {
+            "type": "string"
+          },
+          "outcome": {
+            "enum": [
+              "offer-conditional",
+              "offer-unconditional",
+              "reject",
+              "withdraw",
+              "confirmed",
+              "confirmed-alternative",
+              "unsuccessful"
+            ]
+          },
+          "ucasCode": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "detail": {
+            "type": "object"
+          }
+        }
+      }
+    }
+  }
+}

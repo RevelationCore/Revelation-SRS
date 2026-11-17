@@ -4,7 +4,7 @@
 > Last updated: 2026-08-04
 > This catalogue enumerates every integration contract between Revelation SRS and external systems or first-party modules. Each contract maps to one or more reference model flows, defines direction, pattern, owner, payload, failure handling, and replay strategy.
 >
-> **Simulated contracts**: the 19 contracts marked *(simulated)* below have no real external system behind them. `apps/partner-systems-sandbox` is a standalone demo app that exercises both directions of each one against SRS's real integration registry/exchange surface (the same `integration_contract`/`integration_registration`/`integration_exchange` model every other contract in this catalogue uses), so a genuine future system can replace the stub without any change to the contract itself. It is explicitly a placeholder, not a production integration — see the sandbox's own README for scope and non-goals.
+> **Simulated contracts**: the 19 contracts marked *(simulated)* below have no real external system behind them. Their contracts are seeded in the integration registry, but the `apps/partner-systems-sandbox` app earlier versions of this page described is not in the repository (Phase 3 D-14 found it absent from the repo and its history), so these contracts are not exercised end to end. Under D-14, each party gets a versioned contract, one ledger item per authoritative version, a manual-file transport and an in-repo simulator under `apps/api/src/platform/integration/simulators/`; the first is UCAS (`ucas-simulator.ts`). A real transport is a deployment adapter enabled per tenant through `liveTrafficApproved`.
 
 ---
 
@@ -186,7 +186,7 @@ Every contract below must be implemented with the full field set above. Where de
 
 ---
 
-## CRM *(simulated — see `apps/partner-systems-sandbox`)*
+## CRM *(simulated: contract only, no simulator yet)*
 
 | Field | Value |
 |---|---|
@@ -239,7 +239,7 @@ Every contract below must be implemented with the full field set above. Where de
 
 ---
 
-## Library *(simulated — see `apps/partner-systems-sandbox`)*
+## Library *(simulated: contract only, no simulator yet)*
 
 | Field | Value |
 |---|---|
@@ -380,7 +380,7 @@ Every contract below must be implemented with the full field set above. Where de
 
 ## HR, Payroll, and Research
 
-Payroll and Research Proposals rows are *(simulated — see `apps/partner-systems-sandbox`)*; HR and CRIS rows are real, built for the PGR lifecycle (ADR-023).
+Payroll and Research Proposals rows are *(simulated: contract only, no simulator yet)*; HR and CRIS rows are real, built for the PGR lifecycle (ADR-023).
 
 | Contract ID | Flows | Direction | Pattern | Notes |
 |---|---|---|---|---|
@@ -395,7 +395,7 @@ Payroll and Research Proposals rows are *(simulated — see `apps/partner-system
 
 ---
 
-## Accommodation and Conferencing *(simulated — see `apps/partner-systems-sandbox`)*
+## Accommodation and Conferencing *(simulated: contract only, no simulator yet)*
 
 | Contract ID | Flows | Direction | Pattern | Owner | Notes |
 |---|---|---|---|---|---|
@@ -404,7 +404,7 @@ Payroll and Research Proposals rows are *(simulated — see `apps/partner-system
 
 ---
 
-## Estates *(simulated — see `apps/partner-systems-sandbox`)*
+## Estates *(simulated: contract only, no simulator yet)*
 
 | Contract ID | Flows | Direction | Pattern | Owner | Notes |
 |---|---|---|---|---|---|
@@ -413,7 +413,7 @@ Payroll and Research Proposals rows are *(simulated — see `apps/partner-system
 
 ---
 
-## Online ID Verification *(simulated — see `apps/partner-systems-sandbox`)*
+## Online ID Verification *(simulated: contract only, no simulator yet)*
 
 | Contract ID | Flows | Direction | Pattern | Owner | Notes |
 |---|---|---|---|---|---|
@@ -422,7 +422,7 @@ Payroll and Research Proposals rows are *(simulated — see `apps/partner-system
 
 ---
 
-## Student Evaluation of Teaching Software *(simulated — see `apps/partner-systems-sandbox`)*
+## Student Evaluation of Teaching Software *(simulated: contract only, no simulator yet)*
 
 | Contract ID | Flows | Direction | Pattern | Owner | Notes |
 |---|---|---|---|---|---|
@@ -431,7 +431,7 @@ Payroll and Research Proposals rows are *(simulated — see `apps/partner-system
 
 ---
 
-## Content Management Systems *(simulated — see `apps/partner-systems-sandbox`)*
+## Content Management Systems *(simulated: contract only, no simulator yet)*
 
 | Contract ID | Flows | Direction | Pattern | Owner | Notes |
 |---|---|---|---|---|---|
@@ -440,7 +440,7 @@ Payroll and Research Proposals rows are *(simulated — see `apps/partner-system
 
 ---
 
-## IT Service Management *(simulated — see `apps/partner-systems-sandbox`)*
+## IT Service Management *(simulated: contract only, no simulator yet)*
 
 | Contract ID | Flows | Direction | Pattern | Owner | Notes |
 |---|---|---|---|---|---|

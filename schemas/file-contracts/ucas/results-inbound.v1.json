@@ -1,0 +1,45 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://schemas.revelation-srs.io/file-contracts/ucas/results-inbound/v1.json",
+  "title": "UcasResultInboundV1",
+  "description": "One qualification result from UCAS (Awarding Body Linkage), received by POST /api/v1/regulatory/ucas/results (Phase 3 D-15). Matched to the applicant's current offer by UCAS Personal ID; structured conditions get evidence suggesting meets or below, free-text conditions get it for review. A result with a future publishedOn is embargoed until then.",
+  "type": "object",
+  "required": [
+    "ucasPersonalId",
+    "cycle",
+    "awardingBody",
+    "qualificationTypeCode",
+    "subject",
+    "series",
+    "grade"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "ucasPersonalId": {
+      "type": "string",
+      "pattern": "^\\d{10}$"
+    },
+    "cycle": {
+      "type": "string"
+    },
+    "awardingBody": {
+      "type": "string"
+    },
+    "qualificationTypeCode": {
+      "type": "string"
+    },
+    "subject": {
+      "type": "string"
+    },
+    "series": {
+      "type": "string"
+    },
+    "grade": {
+      "type": "string"
+    },
+    "publishedOn": {
+      "type": "string",
+      "format": "date"
+    }
+  }
+}

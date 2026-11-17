@@ -34,6 +34,7 @@ import type { ValueSetService } from '../value-sets/service.js';
 import { clockNow } from '../clock.js';
 
 import { RegulatoryExchangeService } from './exchange-service.js';
+import type { UcasDecisionOutbox } from './ucas-decision-outbox.js';
 
 export const ADMISSIONS_ENABLED_FLAG_KEY = 'admissions.enabled';
 export const ADMISSIONS_UCAS_ADAPTER_ENABLED_FLAG_KEY = 'admissions.ucas-adapter.enabled';
@@ -118,6 +119,13 @@ export interface UcasConfirmationPayload {
 }
 
 export class UcasService {
+  #outbox: UcasDecisionOutbox | null = null;
+
+  /** Inbound statuses reconcile outbound decisions (D-15). */
+  useDecisionOutbox(outbox: UcasDecisionOutbox): void {
+    this.#outbox = outbox;
+  }
+
   private readonly exchanges: RegulatoryExchangeService;
 
   constructor(
@@ -230,6 +238,8 @@ export class UcasService {
     );
 
     const studentApplicationId = await this.#feedApplication(tenantId, applicationId, payload, actorId);
+    // UCAS's status for the applicant reconciles (or contradicts) the decisions sent for them (D-15).
+    if (studentApplicationId) await this.#outbox?.reconcile(tenantId, studentApplicationId, payload.statusCode);
 
     await this.#publishApplicationReceived(tenantId, actorId, {
       applicationId,

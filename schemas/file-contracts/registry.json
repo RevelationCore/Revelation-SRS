@@ -37,6 +37,30 @@
           "schemaPath": "schemas/file-contracts/ucas/confirmation-outbound.v1.json",
           "idempotencyKey": "triggerId",
           "permission": "regulatory:write"
+        },
+        {
+          "direction": "outbound",
+          "name": "Admissions decisions",
+          "endpoint": "POST /api/v1/regulatory/ucas/decisions/dispatch",
+          "format": "json",
+          "transport": "manual-file",
+          "dataClassification": "personal",
+          "schemaRef": "https://schemas.revelation-srs.io/file-contracts/ucas/decisions-outbound/v1.json",
+          "schemaPath": "schemas/file-contracts/ucas/decisions-outbound.v1.json",
+          "idempotencyKey": "authoritative row id (offer version, confirmation decision, application)",
+          "permission": "regulatory:write"
+        },
+        {
+          "direction": "inbound",
+          "name": "Qualification results (Awarding Body Linkage)",
+          "endpoint": "POST /api/v1/regulatory/ucas/results",
+          "format": "json",
+          "transport": "https-api",
+          "dataClassification": "personal",
+          "schemaRef": "https://schemas.revelation-srs.io/file-contracts/ucas/results-inbound/v1.json",
+          "schemaPath": "schemas/file-contracts/ucas/results-inbound.v1.json",
+          "idempotencyKey": "ucasPersonalId + awardingBody + qualification + subject + series + grade",
+          "permission": "application:receive"
         }
       ]
     },

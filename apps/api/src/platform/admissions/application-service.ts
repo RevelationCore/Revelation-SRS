@@ -25,6 +25,7 @@ import { and, asc, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 
 import { clockNow } from '../clock.js';
 import type { StudentService } from '../students/service.js';
+import type { UcasDecisionOutbox, UcasOutcome } from '../regulatory/ucas-decision-outbox.js';
 import type { ValueSetService } from '../value-sets/service.js';
 
 import type { AdmissionSourceCode, AdmissionsService } from './admissions-service.js';
@@ -49,8 +50,11 @@ export interface OfferTerms {
   offerTypeCode: 'conditional' | 'unconditional';
   feeStatusBasisCode?: string;
   expiresOn?: string;
-  conditions?: Array<{ conditionTypeCode: string; description: string; requiredValue?: string }>;
+  conditions?: Array<{ conditionTypeCode: string; description: string; requiredValue?: string; matchCriteria?: ConditionMatchCriteria }>;
 }
+
+/** Structured criteria a UCAS result is matched against (D-15). Without them a result is only suggested for review. */
+export interface ConditionMatchCriteria { qualificationTypeCode: string; subject?: string; minimumGrade: string; gradeScale: string }
 
 export interface ApplicationDto extends StudentApplication {
   assessments: ApplicationAssessment[];
@@ -71,6 +75,25 @@ export class ApplicationService {
     private readonly students: StudentService,
     private readonly admissions: AdmissionsService,
   ) {}
+
+  #ucasOutbox: UcasDecisionOutbox | null = null;
+
+  /** Decisions on UCAS-channel applications are queued for UCAS in the same transaction (D-15). */
+  useUcasOutbox(outbox: UcasDecisionOutbox): void {
+    this.#ucasOutbox = outbox;
+  }
+
+  /** The outbox registration, when this application's decisions go to UCAS. */
+  async #ucasRegistration(tenantId: string, app: StudentApplication, actorId: string): Promise<string | null> {
+    return app.ucasApplicationId && this.#ucasOutbox ? this.#ucasOutbox.registration(tenantId, actorId) : null;
+  }
+
+  async #queueForUcas(tx: Parameters<Parameters<typeof withTenantContext>[2]>[0], tenantId: string, registrationId: string | null, app: StudentApplication, outcome: UcasOutcome, idempotencyKey: string, detail: Record<string, unknown>): Promise<void> {
+    if (!registrationId || !this.#ucasOutbox || !app.ucasApplicationId) return;
+    await this.#ucasOutbox.queue(tx, tenantId, registrationId, {
+      applicationId: app.id, ucasApplicationId: app.ucasApplicationId, sourceReference: app.sourceReference, cycle: app.cycle, outcome, idempotencyKey, detail,
+    });
+  }
 
   // ── Receive and route (BP-01-001) ──────────────────────────────────────────
 
@@ -193,9 +216,12 @@ export class ApplicationService {
     if (app.statusCode !== 'recommended') throw new ConflictError('An application is decided after a recommendation');
     if (app.recommendedBy === actorId) throw new ConflictError('The person who recommended an application cannot decide it');
 
+    const ucasRegistration = await this.#ucasRegistration(tenantId, app, actorId);
     if (input.decisionCode === 'reject') {
-      await withTenantContext(this.db, tenantId, (tx) => tx.update(studentApplications)
-        .set({ statusCode: 'rejected', updatedAt: clockNow() }).where(eq(studentApplications.id, app.id)));
+      await withTenantContext(this.db, tenantId, async (tx) => {
+        await tx.update(studentApplications).set({ statusCode: 'rejected', updatedAt: clockNow() }).where(eq(studentApplications.id, app.id));
+        await this.#queueForUcas(tx, tenantId, ucasRegistration, app, 'reject', `ucas-reject:${app.id}`, { reason: input.reason ?? null });
+      });
       return this.get(tenantId, applicationId);
     }
     if (!input.offer) throw new ValidationError('An offer decision needs the offer terms');
@@ -210,6 +236,8 @@ export class ApplicationService {
       }).returning();
       await this.#insertConditions(tx, tenantId, offer!.id, input.offer!.conditions ?? []);
       await tx.update(studentApplications).set({ statusCode: 'offered', updatedAt: clockNow() }).where(eq(studentApplications.id, app.id));
+      await this.#queueForUcas(tx, tenantId, ucasRegistration, app, input.offer!.offerTypeCode === 'conditional' ? 'offer-conditional' : 'offer-unconditional',
+        `ucas-decision:${offer!.id}`, { offerId: offer!.id, version: 1, conditions: (input.offer!.conditions ?? []).map((c) => c.description) });
     });
     return this.get(tenantId, applicationId);
   }
@@ -234,6 +262,7 @@ export class ApplicationService {
       await this.#validateTerms(tenantId, { offerTypeCode: input.offer.offerTypeCode, conditions: input.offer.conditions ?? [], ...(input.offer.feeStatusBasisCode ? { feeStatusBasisCode: input.offer.feeStatusBasisCode } : {}) });
     }
     const now = clockNow();
+    const clearingRegistration = await this.#ucasRegistration(tenantId, app, actorId);
     const offerId = await withTenantContext(this.db, tenantId, async (tx) => {
       await tx.insert(applicationAssessments).values({
         tenantId: tenantId as Uuid, applicationId: app.id, assessmentTypeCode: 'academic', outcomeCode: 'meets',
@@ -248,6 +277,8 @@ export class ApplicationService {
       await tx.update(studentApplications).set({
         statusCode: 'offered', recommendationCode: 'offer', recommendationReason: input.reason, recommendedBy: actorId, recommendedAt: now, updatedAt: now,
       }).where(eq(studentApplications.id, app.id));
+      await this.#queueForUcas(tx, tenantId, clearingRegistration, app, input.offer.offerTypeCode === 'conditional' ? 'offer-conditional' : 'offer-unconditional',
+        `ucas-decision:${offer!.id}`, { offerId: offer!.id, clearing: true });
       return offer!.id;
     });
     return { application: await this.get(tenantId, applicationId), offerId };
@@ -278,9 +309,12 @@ export class ApplicationService {
     const priorConditions = await withTenantContext(this.db, tenantId, (tx) => tx.select().from(offerConditions).where(eq(offerConditions.offerId, offer.id)));
     const conditions: NonNullable<OfferTerms['conditions']> = input.conditions ?? priorConditions.map((c) => ({
       conditionTypeCode: c.conditionTypeCode, description: c.description, ...(c.requiredValue ? { requiredValue: c.requiredValue } : {}),
+      ...(c.matchCriteria ? { matchCriteria: c.matchCriteria } : {}),
     }));
     const terms: OfferTerms = { offerTypeCode: input.offerTypeCode ?? (offer.offerTypeCode as OfferTerms['offerTypeCode']), conditions };
     await this.#validateTerms(tenantId, terms);
+    const changeApp = await this.#app(tenantId, offer.applicationId);
+    const changeRegistration = await this.#ucasRegistration(tenantId, changeApp, actorId);
     const newId = await withTenantContext(this.db, tenantId, async (tx) => {
       await tx.update(admissionsOffers).set({ statusCode: 'superseded' }).where(eq(admissionsOffers.id, offer.id));
       const [created] = await tx.insert(admissionsOffers).values({
@@ -293,6 +327,8 @@ export class ApplicationService {
         decidedBy: actorId, changeReason: input.reason,
       }).returning();
       await this.#insertConditions(tx, tenantId, created!.id, conditions);
+      await this.#queueForUcas(tx, tenantId, changeRegistration, changeApp, terms.offerTypeCode === 'conditional' ? 'offer-conditional' : 'offer-unconditional',
+        `ucas-decision:${created!.id}`, { offerId: created!.id, version: offer.version + 1, conditions: conditions.map((c) => c.description), changeReason: input.reason });
       return created!.id;
     });
     return this.#offer(tenantId, newId);
@@ -301,7 +337,13 @@ export class ApplicationService {
   async withdrawOffer(tenantId: string, offerId: string): Promise<AdmissionsOffer> {
     const offer = await this.#offer(tenantId, offerId);
     if (!['made', 'accepted'].includes(offer.statusCode)) throw new ConflictError(`An offer that is ${offer.statusCode} cannot be withdrawn`);
-    const [row] = await withTenantContext(this.db, tenantId, (tx) => tx.update(admissionsOffers).set({ statusCode: 'withdrawn' }).where(eq(admissionsOffers.id, offer.id)).returning());
+    const app = await this.#app(tenantId, offer.applicationId);
+    const registration = await this.#ucasRegistration(tenantId, app, 'system');
+    const row = await withTenantContext(this.db, tenantId, async (tx) => {
+      const [updated] = await tx.update(admissionsOffers).set({ statusCode: 'withdrawn' }).where(eq(admissionsOffers.id, offer.id)).returning();
+      await this.#queueForUcas(tx, tenantId, registration, app, 'withdraw', `ucas-withdraw:${offer.id}`, { offerId: offer.id });
+      return updated;
+    });
     return row!;
   }
 
@@ -362,6 +404,7 @@ export class ApplicationService {
       }, actorId);
       handoffWorkflowInstanceId = handoff.workflowInstanceId;
     }
+    const confirmRegistration = await this.#ucasRegistration(tenantId, app, actorId);
     return withTenantContext(this.db, tenantId, async (tx) => {
       const [decision] = await tx.insert(offerConfirmationDecisions).values({
         tenantId: tenantId as Uuid, offerId: offer.id, decisionCode: input.decisionCode,
@@ -371,6 +414,8 @@ export class ApplicationService {
       }).returning();
       await tx.update(admissionsOffers).set({ statusCode: input.decisionCode === 'unsuccessful' ? 'unsuccessful' : 'confirmed' })
         .where(eq(admissionsOffers.id, offer.id));
+      await this.#queueForUcas(tx, tenantId, confirmRegistration, app, input.decisionCode, `ucas-outcome:${decision!.id}`,
+        { offerId: offer.id, ...(input.alternativeProgrammeId ? { alternativeProgrammeId: input.alternativeProgrammeId } : {}) });
       return decision!;
     });
   }
@@ -478,14 +523,26 @@ export class ApplicationService {
     if (terms.feeStatusBasisCode) await this.#code(tenantId, 'admissions_offer', 'fee_status_basis_code', terms.feeStatusBasisCode);
     if (terms.offerTypeCode === 'conditional' && conditions.length === 0) throw new ValidationError('A conditional offer needs at least one condition');
     if (terms.offerTypeCode === 'unconditional' && conditions.length > 0) throw new ValidationError('An unconditional offer has no conditions');
-    for (const c of conditions) await this.#code(tenantId, 'offer_condition', 'condition_type_code', c.conditionTypeCode);
+    for (const c of conditions) {
+      await this.#code(tenantId, 'offer_condition', 'condition_type_code', c.conditionTypeCode);
+      if (c.matchCriteria) await this.#validateCriteria(c.matchCriteria);
+    }
+  }
+
+  async #validateCriteria(m: ConditionMatchCriteria): Promise<void> {
+    const { valueSetMembers, valueSets: sets } = await import('@revelation-srs/db');
+    const members = async (setCode: string) => (await this.db.select({ code: valueSetMembers.code }).from(valueSetMembers)
+      .innerJoin(sets, eq(sets.id, valueSetMembers.valueSetId)).where(eq(sets.setCode, setCode))).map((r) => r.code);
+    if (!(await members('qualification-type-code')).includes(m.qualificationTypeCode)) throw new ValidationError(`Unknown qualification type '${m.qualificationTypeCode}'`);
+    if (!m.gradeScale.startsWith('grade-scale-')) throw new ValidationError('A grade scale is a grade-scale value set');
+    if (!(await members(m.gradeScale)).includes(m.minimumGrade)) throw new ValidationError(`'${m.minimumGrade}' is not a grade on ${m.gradeScale}`);
   }
 
   async #insertConditions(tx: Parameters<Parameters<typeof withTenantContext>[2]>[0], tenantId: string, offerId: string, conditions: NonNullable<OfferTerms['conditions']>) {
     if (conditions.length === 0) return;
     await tx.insert(offerConditions).values(conditions.map((c) => ({
       tenantId: tenantId as Uuid, offerId: offerId as Uuid, conditionTypeCode: c.conditionTypeCode,
-      description: c.description, requiredValue: c.requiredValue ?? null,
+      description: c.description, requiredValue: c.requiredValue ?? null, matchCriteria: c.matchCriteria ?? null,
     })));
   }
 

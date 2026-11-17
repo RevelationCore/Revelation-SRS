@@ -17,8 +17,8 @@ How far each academic-journey process (areas 01–06) can be carried out in the 
 
 | Coverage | Processes |
 |---|---|
-| On screen | 45 |
-| On screen (simulated link) | 3 |
+| On screen | 43 |
+| On screen (simulated link) | 5 |
 | Partly built | 1 |
 | API only | 0 |
 | Not built | 0 |
@@ -27,8 +27,8 @@ How far each academic-journey process (areas 01–06) can be carried out in the 
 |---|---|---|---|---|
 | [BP-01-001](01-recruitment-and-admissions/bp-01-001-receive-an-application.md) Receive an application | On screen | Applications worklist and application page | — | UCAS adapter feeds applications; no applicant view |
 | [BP-01-002](01-recruitment-and-admissions/bp-01-002-assess-an-application.md) Assess an application | On screen | Application page: assessments, recommendation | — | Safeguarding concern blocks an offer recommendation |
-| [BP-01-003](01-recruitment-and-admissions/bp-01-003-make-and-manage-an-offer.md) Make and manage an offer | On screen | Application page: decision, offer change and withdrawal | — | Offers are not published to UCAS |
-| [BP-01-004](01-recruitment-and-admissions/bp-01-004-confirm-offer-conditions.md) Confirm offer conditions | On screen | Application page: condition evidence and decisions, confirmation | — | Results are not mapped to conditions automatically |
+| [BP-01-003](01-recruitment-and-admissions/bp-01-003-make-and-manage-an-offer.md) Make and manage an offer | On screen (simulated link) | Application page: decision, offer change and withdrawal; UCAS page: Decisions for UCAS (queue, send, reconciliation) | — | Decisions on UCAS applications queue with the decision and go by manual file or the in-repo simulator (D-14, D-15); a live UCAS link is a deployment adapter |
+| [BP-01-004](01-recruitment-and-admissions/bp-01-004-confirm-offer-conditions.md) Confirm offer conditions | On screen (simulated link) | Application page: condition evidence with UCAS match outcomes, bulk confirmation of conditions the results meet, decisions, confirmation | — | UCAS results are matched only to structured conditions; free text is suggested for review and nothing is decided automatically (D-15); embargoed results wait for results day |
 | [BP-01-005](01-recruitment-and-admissions/bp-01-005-create-and-assign-a-cas.md) Create and assign a CAS | On screen (simulated link) | Application page: Student visa card; UKVI page CAS tab: eligibility, preparation, approval by another officer, SMS export file, CAS number; student record CAS tab | — | One CAS record on `cas_case` (D-16); SMS is reached by manual file (D-14); conversion waits for the CAS |
 | [BP-01-006](01-recruitment-and-admissions/bp-01-006-place-an-applicant-through-clearing.md) Place an applicant through Clearing | On screen | Clearing: take a call to a verbal or unconditional offer in one step; next-day review list; Applications pages for the resulting application | — | Fast path only inside the window and for listed programmes, never with a safeguarding, conviction, fitness-to-practise or visa need (D-13); the window and programme list are set in tenant configuration, with no screen yet |
 | [BP-01-007](01-recruitment-and-admissions/bp-01-007-convert-an-accepted-applicant-to-a-prospective-student-record.md) Convert an accepted applicant to a prospective student record | On screen | Application page: Enrolment card creates the enrolment from the confirmed offer and completes the hand-off task | — | The enrolment starts in pre-registration (D-10); converting again returns the same enrolment |

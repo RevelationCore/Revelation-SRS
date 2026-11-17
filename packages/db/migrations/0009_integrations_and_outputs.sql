@@ -227,3 +227,65 @@ ALTER TABLE "document_verification"
   ADD COLUMN IF NOT EXISTS "method_code"          text NOT NULL DEFAULT 'code';
 ALTER TABLE "document_verification" DROP CONSTRAINT IF EXISTS "document_verification_method_check";
 ALTER TABLE "document_verification" ADD CONSTRAINT "document_verification_method_check" CHECK ("method_code" IN ('code', 'file', 'staff-lookup'));
+
+-- ── D-14, D-15: UCAS outbound decisions and results mapped to conditions ────
+-- Outbound items are integration_exchange rows queued with the decision (an
+-- outbox); a later decision supersedes a queued one; an inbound UCAS status
+-- that agrees reconciles a sent one.
+INSERT INTO "value_set_member" ("value_set_id", "code", "display_label", "sort_order")
+SELECT vs."id", v.code, v.display_label, v.sort_order
+FROM "value_set" vs,
+(VALUES
+  ('integration-exchange-status', 'queued',     'Queued',     5),
+  ('integration-exchange-status', 'superseded', 'Superseded', 70),
+  ('integration-exchange-status', 'reconciled', 'Reconciled', 80),
+  ('integration-exchange-status', 'mismatch',   'Mismatch',   90)
+) AS v(set_code, code, display_label, sort_order)
+WHERE vs."set_code" = v.set_code
+ON CONFLICT DO NOTHING;
+
+-- Structured criteria a result can be matched to; free-text conditions are only ever suggested for review.
+ALTER TABLE "offer_condition" ADD COLUMN IF NOT EXISTS "match_criteria" jsonb;
+ALTER TABLE "condition_evidence"
+  ADD COLUMN IF NOT EXISTS "match_outcome_code" text,
+  ADD COLUMN IF NOT EXISTS "embargoed_until"    date;
+ALTER TABLE "condition_evidence" DROP CONSTRAINT IF EXISTS "condition_evidence_match_outcome_check";
+ALTER TABLE "condition_evidence" ADD CONSTRAINT "condition_evidence_match_outcome_check"
+  CHECK ("match_outcome_code" IS NULL OR "match_outcome_code" IN ('meets', 'below', 'needs-review'));
+
+INSERT INTO "value_set" ("set_code", "display_name", "source", "source_version", "description", "is_extensible")
+VALUES
+  ('ucas-decision-crosswalk', 'UCAS Decision Crosswalk', 'srs-internal', NULL,
+   'SRS outcomes sent to UCAS: source_metadata.ucasCode is the UCAS decision code, source_metadata.reconcilesWith the inbound statuses that confirm it; confirm per cycle', true),
+  ('qualification-type-code', 'Qualification Type', 'srs-internal', NULL, 'Qualification a result is for', true),
+  ('grade-scale-a-level', 'A level grades', 'srs-internal', NULL, 'Ordered from highest (lowest sort order) to lowest', false)
+ON CONFLICT ("set_code") DO NOTHING;
+
+INSERT INTO "value_set_member" ("value_set_id", "code", "display_label", "sort_order", "active_from", "source_metadata")
+SELECT vs."id", v.code, v.display_label, v.sort_order, '2000-01-01T00:00:00Z', v.meta::jsonb
+FROM "value_set" vs,
+(VALUES
+  ('ucas-decision-crosswalk', 'offer-conditional',     'Conditional offer',             10, '{"ucasCode": "C", "reconcilesWith": ["offer-made", "offer-accepted"]}'),
+  ('ucas-decision-crosswalk', 'offer-unconditional',   'Unconditional offer',           20, '{"ucasCode": "U", "reconcilesWith": ["offer-made", "offer-accepted"]}'),
+  ('ucas-decision-crosswalk', 'reject',                'Unsuccessful application',      30, '{"ucasCode": "R", "reconcilesWith": ["withdrawn"]}'),
+  ('ucas-decision-crosswalk', 'withdraw',              'Offer withdrawn',               40, '{"ucasCode": "W", "reconcilesWith": ["withdrawn"]}'),
+  ('ucas-decision-crosswalk', 'confirmed',             'Confirmed',                     50, '{"ucasCode": "UF", "reconcilesWith": ["confirmed"]}'),
+  ('ucas-decision-crosswalk', 'confirmed-alternative', 'Confirmed on another course',   60, '{"ucasCode": "CC", "reconcilesWith": ["confirmed"]}'),
+  ('ucas-decision-crosswalk', 'unsuccessful',          'Unsuccessful at confirmation',  70, '{"ucasCode": "R", "reconcilesWith": ["withdrawn"]}'),
+  ('qualification-type-code', 'a-level',               'A level',                       10, NULL),
+  ('qualification-type-code', 'btec-extended-diploma', 'BTEC Extended Diploma',         20, NULL),
+  ('qualification-type-code', 'ib-diploma',            'International Baccalaureate',   30, NULL),
+  ('grade-scale-a-level', 'A*', 'A*', 10, NULL),
+  ('grade-scale-a-level', 'A',  'A',  20, NULL),
+  ('grade-scale-a-level', 'B',  'B',  30, NULL),
+  ('grade-scale-a-level', 'C',  'C',  40, NULL),
+  ('grade-scale-a-level', 'D',  'D',  50, NULL),
+  ('grade-scale-a-level', 'E',  'E',  60, NULL),
+  ('grade-scale-a-level', 'U',  'U',  70, NULL)
+) AS v(set_code, code, display_label, sort_order, meta)
+WHERE vs."set_code" = v.set_code
+ON CONFLICT DO NOTHING;
+
+INSERT INTO "integration_contract" ("contract_id", "display_name", "owner_module_code", "direction_code", "pattern_type", "current_contract_version", "data_classification_code")
+VALUES ('ucas-results-inbound.v1', 'UCAS Results (Awarding Body Linkage)', 'regulatory', 'inbound', 'file-and-api', '1.0.0', 'personal')
+ON CONFLICT ("contract_id") DO NOTHING;

@@ -91,6 +91,8 @@ export const offerConditions = pgTable('offer_condition', {
   decidedBy:         text('decided_by'),
   decidedAt:         timestamp('decided_at', { withTimezone: true }),
   decisionNote:      text('decision_note'),
+  /** Structured criteria a UCAS result can be matched to (D-15): qualification type, subject, minimum grade, grade scale. */
+  matchCriteria:     jsonb('match_criteria').$type<{ qualificationTypeCode: string; subject?: string; minimumGrade: string; gradeScale: string } | null>(),
 });
 export type OfferCondition = typeof offerConditions.$inferSelect;
 
@@ -104,6 +106,10 @@ export const conditionEvidence = pgTable('condition_evidence', {
   verified:       boolean('verified').notNull().default(false),
   receivedBy:     text('received_by').notNull(),
   receivedAt:     timestamp('received_at', { withTimezone: true }).notNull().defaultNow(),
+  /** What the matcher suggested (D-15); a person still decides the condition. */
+  matchOutcomeCode: text('match_outcome_code'), // meets | below | needs-review
+  /** An Awarding Body Linkage result received before its publication date stays hidden until then. */
+  embargoedUntil:   date('embargoed_until'),
 });
 export type ConditionEvidence = typeof conditionEvidence.$inferSelect;
 

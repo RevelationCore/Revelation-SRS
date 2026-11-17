@@ -12,6 +12,10 @@ const RecordSchema = Type.Record(Type.String(), Type.Unknown());
 const Channel = Type.Union(['ucas', 'direct', 'agent', 'international-direct', 'international-agent', 'clearing'].map((c) => Type.Literal(c)));
 const Conditions = Type.Array(Type.Object({
   conditionTypeCode: Type.String(), description: Type.String({ minLength: 1, maxLength: 1000 }), requiredValue: Type.Optional(Type.String({ maxLength: 200 })),
+  // Structured criteria a UCAS result can be matched to (D-15).
+  matchCriteria: Type.Optional(Type.Object({
+    qualificationTypeCode: Type.String(), subject: Type.Optional(Type.String({ maxLength: 100 })), minimumGrade: Type.String({ maxLength: 10 }), gradeScale: Type.String({ maxLength: 60 }),
+  }, { additionalProperties: false })),
 }), { maxItems: 30 });
 
 /** Applications and offers (BPR-D01, BPR-D02; BP-01-001 to BP-01-004). */

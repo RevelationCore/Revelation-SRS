@@ -1,6 +1,6 @@
 # Phase 3 Gap-Closure Decisions
 
-> Status: Adopted
+> Status: Implemented (2026-11-17)
 > Date: 2026-11-17
 > Context: [Academic journey gap-closure plan](../product/academic-journey-gap-closure-plan.md), Phase 3 (integrations and outputs)
 > Made by: the project's solutions-architect agent (`.claude/agents/solutions-architect.md`). Numbering continues from [Phase 2](phase-2-gap-closure-decisions.md).
@@ -59,6 +59,8 @@ The exchange row acts as an outbox; a dispatcher sends queued items through the 
 **Configurable.** `ucas.outbound.transport` (default `manual-file`); `ucas.reconciliation.working-days` (default 2).
 
 **Institution must confirm.** The UCAS link type and the code crosswalk per cycle; who may bulk-confirm; the near-miss and changed-course policy.
+
+**Implementation note (D-14, D-15).** Outbound decisions use the existing contract id `ucas-admissions-exchange.{cycle}` and new exchange statuses `queued`, `superseded`, `reconciled` and `mismatch`. The application service queues through an outbox inside each decision's transaction; the ledger registration is looked up before the transaction opens. The simulator replies with the application status UCAS would report, and that reply is reconciled exactly as an inbound UCAS status is. An inbound status that a different outcome would produce counts as a mismatch; an unrelated one (`received`) is ignored. The UCAS decision codes in the crosswalk are placeholders until the institution confirms them for the cycle. Embargoed evidence is marked and is not bulk-confirmed; the SRS shows condition evidence only to admissions staff, so nothing else needed hiding.
 
 ## D-16: One CAS record (BP-01-005)
 

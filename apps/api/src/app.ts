@@ -119,11 +119,14 @@ import { supportRoutes } from './routes/support.js';
 import { statusCaseRoutes } from './routes/status-cases.js';
 import { nonRegistrationRoutes, registrationPeriodRoutes } from './routes/registration-periods.js';
 import { publicVerificationRoutes } from './routes/public-verification.js';
+import { ucasDecisionRoutes } from './routes/ucas-decisions.js';
 import { signerFromEnv } from './platform/progression/document-signer.js';
 import { PdfmakeRenderer } from './platform/progression/document-renderer.js';
 import { registrationCheckRoutes } from './routes/registration-checks.js';
 import { clockNow } from './platform/clock.js';
 import { ClearingService } from './platform/admissions/clearing-service.js';
+import { UcasDecisionOutbox } from './platform/regulatory/ucas-decision-outbox.js';
+import { UcasResultsService } from './platform/regulatory/ucas-results-service.js';
 import { ApplicantConversionService } from './platform/admissions/applicant-conversion-service.js';
 import { NonRegistrationService } from './platform/registration-periods/non-registration-service.js';
 import { RegistrationPeriodService, composeBlockers } from './platform/registration-periods/service.js';
@@ -430,6 +433,13 @@ export async function buildApp(
   const communications  = new CommunicationService(db, localeService, featureFlags);
   const adjustmentTaskNotices = new AdjustmentTaskNoticeService(db, adjustments, adjustmentTargets, communications, config.adminAppUrl, deliveries);
   const ucas = new UcasService(db, valueSets, eventBus, enrolments, regulatoryExchanges, admissions, featureFlags, workflowBridge, reviewExecution, applications);
+  // UCAS outbound decisions and results mapped to conditions (Phase 3 D-14, D-15).
+  const ucasOutbox = new UcasDecisionOutbox(db, regulatoryExchanges);
+  applications.useUcasOutbox(ucasOutbox);
+  ucas.useDecisionOutbox(ucasOutbox);
+  const ucasResults = new UcasResultsService(db, applications, regulatoryExchanges);
+  fastify.decorate('ucasDecisionOutbox', ucasOutbox);
+  fastify.decorate('ucasResultsService', ucasResults);
   const hesa = new HesaService(db, eventBus, students, regulatoryExchanges, workflowBridge, reviewExecution);
   const slc = new SlcService(db, eventBus, valueSets, enrolments, regulatoryExchanges, workflowBridge, reviewExecution);
   // An SLC tuition-fee-loan confirmation arranges that year's financial registration (D-18).
@@ -833,6 +843,7 @@ export async function buildApp(
   await fastify.register(registrationPeriodRoutes,  { prefix: '/api/v1' });
   await fastify.register(nonRegistrationRoutes,  { prefix: '/api/v1' });
   await fastify.register(registrationCheckRoutes, { prefix: '/api/v1' });
+  await fastify.register(ucasDecisionRoutes, { prefix: '/api/v1' });
   // Verification without an account (D-21): unauthenticated, rate-limited, outside /api/v1.
   await fastify.register(publicVerificationRoutes, { prefix: '/public/v1' });
   await fastify.register(curriculumPublicationRoutes, { prefix: '/api/v1' });
@@ -914,6 +925,8 @@ declare module 'fastify' {
     financialRegistrationService: FinancialRegistrationService;
     applicantConversionService: ApplicantConversionService;
     clearingService: ClearingService;
+    ucasDecisionOutbox: UcasDecisionOutbox;
+    ucasResultsService: UcasResultsService;
     tenantAdminService: TenantAdminService;
     assessmentComponentService: AssessmentComponentService;
     moduleResultService: ModuleResultService;

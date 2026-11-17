@@ -12,6 +12,7 @@ import { useAuth } from '../auth/AuthContext.js';
 import { userHasAnyPermission } from '../auth/RequirePermission.js';
 import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
+import { UcasDecisionsCard } from './UcasDecisionsCard.js';
 import {
   PageHeader, Button, Select, Card, CardHeader, CardBody, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
 } from '@revelation-srs/ui';
@@ -66,6 +67,7 @@ export function UcasPage() {
 
   return (
     <div>
+      <div className="mb-6"><UcasDecisionsCard canSend={userHasAnyPermission(roles, ['regulatory:write'])} /></div>
       <PageHeader
         title="UCAS applications"
         actions={

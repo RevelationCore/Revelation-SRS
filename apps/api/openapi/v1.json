@@ -13678,6 +13678,243 @@
         }
       }
     },
+    "/api/v1/regulatory/ucas/decisions/dispatch": {
+      "post": {
+        "operationId": "createRegulatoryUcasDecisionsDispatch",
+        "tags": [
+          "regulatory"
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/regulatory/ucas/decisions": {
+      "get": {
+        "operationId": "getRegulatoryUcasDecisions",
+        "tags": [
+          "regulatory"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "boolean"
+            },
+            "in": "query",
+            "name": "attention",
+            "required": false
+          }
+        ],
+        "x-publication-class": "reporting",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/regulatory/ucas/results": {
+      "post": {
+        "operationId": "createRegulatoryUcasResults",
+        "tags": [
+          "regulatory"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "ucasPersonalId",
+                  "cycle",
+                  "awardingBody",
+                  "qualificationTypeCode",
+                  "subject",
+                  "series",
+                  "grade"
+                ],
+                "properties": {
+                  "ucasPersonalId": {
+                    "pattern": "^\\d{10}$",
+                    "type": "string"
+                  },
+                  "cycle": {
+                    "minLength": 4,
+                    "maxLength": 10,
+                    "type": "string"
+                  },
+                  "awardingBody": {
+                    "minLength": 1,
+                    "maxLength": 100,
+                    "type": "string"
+                  },
+                  "qualificationTypeCode": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "subject": {
+                    "minLength": 1,
+                    "maxLength": 100,
+                    "type": "string"
+                  },
+                  "series": {
+                    "minLength": 1,
+                    "maxLength": 20,
+                    "type": "string"
+                  },
+                  "grade": {
+                    "minLength": 1,
+                    "maxLength": 10,
+                    "type": "string"
+                  },
+                  "publishedOn": {
+                    "format": "date",
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-publication-class": "reporting",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admissions-offers/{offerId}/conditions/suggested-met-confirmation": {
+      "post": {
+        "operationId": "createAdmissionsOffersByOfferIdConditionsSuggestedMetConfirmation",
+        "tags": [
+          "admissions"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "offerId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "confirmed"
+                  ],
+                  "properties": {
+                    "confirmed": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/public/v1/verify/{tenantCode}/{code}": {
       "get": {
         "operationId": "publicgetVerifyByTenantCodeByCode",
@@ -23027,6 +23264,32 @@
                             "requiredValue": {
                               "maxLength": 200,
                               "type": "string"
+                            },
+                            "matchCriteria": {
+                              "additionalProperties": false,
+                              "type": "object",
+                              "required": [
+                                "qualificationTypeCode",
+                                "minimumGrade",
+                                "gradeScale"
+                              ],
+                              "properties": {
+                                "qualificationTypeCode": {
+                                  "type": "string"
+                                },
+                                "subject": {
+                                  "maxLength": 100,
+                                  "type": "string"
+                                },
+                                "minimumGrade": {
+                                  "maxLength": 10,
+                                  "type": "string"
+                                },
+                                "gradeScale": {
+                                  "maxLength": 60,
+                                  "type": "string"
+                                }
+                              }
                             }
                           }
                         }
@@ -23374,6 +23637,32 @@
                         "requiredValue": {
                           "maxLength": 200,
                           "type": "string"
+                        },
+                        "matchCriteria": {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "qualificationTypeCode",
+                            "minimumGrade",
+                            "gradeScale"
+                          ],
+                          "properties": {
+                            "qualificationTypeCode": {
+                              "type": "string"
+                            },
+                            "subject": {
+                              "maxLength": 100,
+                              "type": "string"
+                            },
+                            "minimumGrade": {
+                              "maxLength": 10,
+                              "type": "string"
+                            },
+                            "gradeScale": {
+                              "maxLength": 60,
+                              "type": "string"
+                            }
+                          }
                         }
                       }
                     }

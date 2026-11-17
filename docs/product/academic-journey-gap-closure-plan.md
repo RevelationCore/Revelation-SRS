@@ -102,6 +102,8 @@ All eleven processes already pass integration tests through the API.
 
 ## Phase 3 — Integrations and outputs (large; depends on external parties)
 
+**Status: delivered (simulated links).** Decisions are recorded in [Phase 3 gap-closure decisions](../decisions/phase-3-gap-closure-decisions.md) (D-14 to D-22). Built: one CAS record (D-16), right to study (D-17), financial registration (D-18), access following status and leaver closure (D-19), rendered and signed award documents with verification without an account (D-20, D-21), structured curriculum publications (D-22), and UCAS outbound decisions with results mapped to conditions (D-15). UCAS, SMS, Finance and IAM are reached by manual file, the delivery ledger or an in-repo simulator (D-14): live links are deployment adapters that need each party's agreement and test environment. The coverage table rates those processes "On screen (simulated link)".
+
 | Area | Work |
 |---|---|
 | UCAS outbound (BP-01-003/004) | Publish offer decisions and changes to UCAS. Map results received from UCAS to offer conditions as evidence, which staff then confirm |

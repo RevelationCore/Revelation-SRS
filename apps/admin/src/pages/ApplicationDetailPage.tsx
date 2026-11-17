@@ -9,7 +9,7 @@ import type { Permission } from '@revelation-srs/domain';
 import { ApiError } from '../api/client.js';
 import {
   type ApplicationDetail, type ConditionInput, type EnrolmentConversion, type Offer, type OfferCondition,
-  convertToEnrolment, getEnrolmentConversion,
+  confirmSuggestedMet, convertToEnrolment, getEnrolmentConversion,
   getApplication, confirmIdentity, routeApplication, recordAssessment, recommendApplication, decideApplication,
   recordOfferResponse, changeOffer, withdrawOffer, confirmOffer, recordConditionEvidence, decideCondition,
 } from '../api/applications.js';
@@ -21,6 +21,7 @@ import { useValueSet } from '../hooks/useValueSet.js';
 import { APPLICATION_STATUS_LABELS, ROUTING_LABELS, programmeLabel, useProgrammeNames } from './ApplicationsPage.js';
 
 const OPEN_OFFER = ['made', 'accepted'];
+const MATCH_LABELS: Record<string, string> = { meets: 'results meet this', below: 'results fall below this', 'needs-review': 'check against the results' };
 
 function message(err: unknown, fallback: string): string {
   return err instanceof ApiError ? (err.detail ?? err.message) : fallback;
@@ -524,7 +525,14 @@ function OfferCard({ offer, programmeName, canDecide, canReceive, act }: {
           )}
 
           {offer.conditions.length > 0 && (
+            <>
             <ConditionsTable conditions={offer.conditions} offerOpen={open} canDecide={canDecide} canReceive={canReceive} act={act} offerVersion={offer.version} />
+            {open && canDecide && offer.conditions.some((c) => c.statusCode === 'pending' && c.evidence.length > 0 && c.evidence.every((e) => e.matchOutcomeCode === 'meets')) && (
+              <div className="mt-3">
+                <Button size="sm" variant="secondary" onClick={() => void act(() => confirmSuggestedMet(offer.id))}>Confirm every condition the UCAS results meet</Button>
+              </div>
+            )}
+            </>
           )}
 
           {offer.confirmation && (
@@ -574,7 +582,11 @@ function ConditionsTable({ conditions, offerOpen, canDecide, canReceive, act, of
             <TableCell className="text-sm">{c.requiredValue ?? '—'}</TableCell>
             <TableCell className="text-xs">
               {c.evidence.length === 0 ? 'None' : c.evidence.map((e) => (
-                <div key={e.id}>{e.provenanceCode}: {e.evidenceRef}{e.reportedValue ? ` = ${e.reportedValue}` : ''} {e.verified ? '(verified)' : '(unverified)'}</div>
+                <div key={e.id}>
+                  {e.provenanceCode}: {e.evidenceRef}{e.reportedValue ? ` = ${e.reportedValue}` : ''} {e.verified ? '(verified)' : '(unverified)'}
+                  {e.matchOutcomeCode && <span className="ml-1 font-medium">· {MATCH_LABELS[e.matchOutcomeCode]}</span>}
+                  {e.embargoedUntil && <span className="ml-1 text-warning-700">· embargoed until {e.embargoedUntil}</span>}
+                </div>
               ))}
             </TableCell>
             <TableCell>

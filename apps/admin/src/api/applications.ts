@@ -46,6 +46,9 @@ export interface ConditionEvidence {
   verified: boolean;
   receivedBy: string;
   receivedAt: string;
+  /** What the UCAS results matcher suggested (D-15); a person still decides. */
+  matchOutcomeCode?: 'meets' | 'below' | 'needs-review' | null;
+  embargoedUntil?: string | null;
 }
 
 export interface OfferCondition {
@@ -157,3 +160,7 @@ export const takeClearingCall = (body: ClearingCall) => api.post<{ application: 
 export const listClearingReviews = (pending = true) => api.get<ClearingReview[]>(`/api/v1/clearing/reviews${pending ? '?pending=true' : ''}`);
 export const reviewClearingDecision = (caseId: string, body: { outcomeCode: 'upheld' | 'correction-needed'; note?: string }) =>
   api.post<ClearingReview>(`/api/v1/clearing/reviews/${caseId}`, body);
+
+/** Confirms as met every pending condition whose UCAS evidence all meets (D-15). */
+export const confirmSuggestedMet = (offerId: string) =>
+  api.post<{ confirmed: string[] }>(`/api/v1/admissions-offers/${offerId}/conditions/suggested-met-confirmation`);

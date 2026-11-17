@@ -1124,6 +1124,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/regulatory/ucas/decisions/dispatch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createRegulatoryUcasDecisionsDispatch"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/regulatory/ucas/decisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getRegulatoryUcasDecisions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/regulatory/ucas/results": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createRegulatoryUcasResults"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admissions-offers/{offerId}/conditions/suggested-met-confirmation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createAdmissionsOffersByOfferIdConditionsSuggestedMetConfirmation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/public/v1/verify/{tenantCode}/{code}": {
         parameters: {
             query?: never;
@@ -11290,6 +11354,140 @@ export interface operations {
             };
         };
     };
+    createRegulatoryUcasDecisionsDispatch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    getRegulatoryUcasDecisions: {
+        parameters: {
+            query?: {
+                attention?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    }[];
+                };
+            };
+        };
+    };
+    createRegulatoryUcasResults: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    ucasPersonalId: string;
+                    cycle: string;
+                    awardingBody: string;
+                    qualificationTypeCode: string;
+                    subject: string;
+                    series: string;
+                    grade: string;
+                    /** Format: date */
+                    publishedOn?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    createAdmissionsOffersByOfferIdConditionsSuggestedMetConfirmation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                offerId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        confirmed: string[];
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
     publicgetVerifyByTenantCodeByCode: {
         parameters: {
             query?: never;
@@ -14502,6 +14700,12 @@ export interface operations {
                             conditionTypeCode: string;
                             description: string;
                             requiredValue?: string;
+                            matchCriteria?: {
+                                qualificationTypeCode: string;
+                                subject?: string;
+                                minimumGrade: string;
+                                gradeScale: string;
+                            };
                         }[];
                     };
                 };
@@ -14658,6 +14862,12 @@ export interface operations {
                         conditionTypeCode: string;
                         description: string;
                         requiredValue?: string;
+                        matchCriteria?: {
+                            qualificationTypeCode: string;
+                            subject?: string;
+                            minimumGrade: string;
+                            gradeScale: string;
+                        };
                     }[];
                 };
             };
