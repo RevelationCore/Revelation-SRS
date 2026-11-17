@@ -206,6 +206,14 @@ export async function mockApiRoutes(page: Page): Promise<void> {
       return;
     }
 
+    // Status-case request options (portal enrolment page): object-shaped
+    // like value-sets above — an empty array has no `requestableTypes`, and
+    // the enrolment page crashed on `.length` of undefined.
+    if (/\/enrolments\/[^/]+\/status-case-options$/.test(url)) {
+      await route.fulfill({ json: { enrolmentStatusCode: 'enrolled', requestableTypes: [], openCaseId: null, returnFrom: null, sponsored: false } });
+      return;
+    }
+
     // Portal: student profile (no trailing path segment after the id)
     if (/\/students\/test-student-001$/.test(url)) {
       await route.fulfill({ json: MOCK.student });
