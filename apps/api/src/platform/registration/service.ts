@@ -36,6 +36,8 @@ import { assertChangeAfterCurrentVersion } from '../bitemporal-guard.js';
 import { clockNow } from '../clock.js';
 
 import type { SelectionWindowService } from '../module-selection/window-service.js';
+import type { DeliveryService } from '../delivery/delivery-service.js';
+import { requestTimetableDemand } from '../delivery/producers/timetable-demand.js';
 
 type Uuid = `${string}-${string}-${string}-${string}-${string}`;
 
@@ -146,7 +148,20 @@ export class ModuleRegistrationService {
     private readonly selectionWindows: SelectionWindowService,
     private readonly workflowBridge: WorkflowBridgeService,
     private readonly reviewExecution?: ReviewExecutionService,
+    private readonly delivery?: DeliveryService,
   ) {}
+
+  /** Tells timetabling about a registration change (D-26). A delivery problem never undoes the registration (BP-03-006 BR-4). */
+  async #provision(tenantId: string, moduleRegistrationIds: string[]): Promise<void> {
+    if (!this.delivery) return;
+    for (const id of moduleRegistrationIds) {
+      try {
+        await requestTimetableDemand(this.delivery, this.db, tenantId, id);
+      } catch {
+        // The ledger's reconcile and the roster snapshot recover it.
+      }
+    }
+  }
 
   /**
    * On Temporal-run change requests, an approval's registration/withdrawal
@@ -234,6 +249,7 @@ export class ModuleRegistrationService {
       );
     }
 
+    await this.#provision(tenantId, [moduleRegistrationId]);
     return moduleRegistrationId;
   }
 
@@ -306,6 +322,7 @@ export class ModuleRegistrationService {
         await this.eventBus.publish(EVENT_TYPES.ENROLMENT_MODULE_REGISTERED, '1.0.0', tenantId, actorId, 'personal', payload);
       }
     }
+    await this.#provision(tenantId, created.map((c) => c.id));
     return created.map((c) => c.id);
   }
 
@@ -831,6 +848,7 @@ export class ModuleRegistrationService {
         );
       }
     }
+    await this.#provision(tenantId, [moduleRegistrationId]);
   }
 
   async #getCurrentEnrolment(enrolmentId: string, tenantId: string): Promise<CurrentEnrolment> {

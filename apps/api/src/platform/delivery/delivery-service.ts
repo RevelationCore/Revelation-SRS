@@ -221,19 +221,28 @@ export class DeliveryService {
     return tasks;
   }
 
-  async acknowledge(tenantId: string, itemId: string, actor: DeliveryReplyActor): Promise<void> {
+  async acknowledge(tenantId: string, itemId: string, actor: DeliveryReplyActor, opts: { targetCount?: number } = {}): Promise<{ statusCode: 'delivered' | 'failed' }> {
     const item = await this.#get(tenantId, itemId);
     assertActor(item, actor);
-    if (item.statusCode === 'delivered') return;
+    if (item.statusCode === 'delivered') return { statusCode: 'delivered' };
     if (item.statusCode === 'superseded') {
       throw new ConflictError('A later change for this record replaced this item; apply that one instead');
     }
     const now = clockNow();
+    // A roster acknowledged with a different count did not apply as sent (Phase 4 D-26; BP-03-006 E5).
+    const expected = (item.payload as { count?: unknown }).count;
+    if (opts.targetCount !== undefined && typeof expected === 'number' && opts.targetCount !== expected) {
+      await withTenantContext(this.db, tenantId, (tx) => tx.update(deliveryItems)
+        .set({ statusCode: 'failed', failureReason: `count-mismatch: the target holds ${opts.targetCount}, the SRS sent ${expected}`, updatedAt: now })
+        .where(and(eq(deliveryItems.id, itemId as Uuid), inArray(deliveryItems.statusCode, ['pending', 'failed']))));
+      return { statusCode: 'failed' };
+    }
     await withTenantContext(this.db, tenantId, (tx) =>
       tx.update(deliveryItems)
         .set({ statusCode: 'delivered', deliveredAt: now, failureReason: null, updatedAt: now })
         .where(and(eq(deliveryItems.id, itemId as Uuid), inArray(deliveryItems.statusCode, ['pending', 'failed']))),
     );
+    return { statusCode: 'delivered' };
   }
 
   /**

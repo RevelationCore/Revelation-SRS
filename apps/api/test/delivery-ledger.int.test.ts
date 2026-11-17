@@ -51,11 +51,11 @@ describe('Delivery flows', () => {
     const flows = (await get('/api/v1/delivery-flows', adminJwt)).json<Array<{ flowCode: string; producer: string; fulfilmentModeCode: string; isDefault: boolean }>>();
     expect(flows.map((f) => f.flowCode).sort()).toEqual([
       'F-SIS-ACC-01', 'F-SIS-CM-01', 'F-SIS-CMS-01', 'F-SIS-CRM-01', 'F-SIS-EST-01', 'F-SIS-FIN-01', 'F-SIS-HR-01', 'F-SIS-IAM-01', 'F-SIS-ITSM-01',
-      'F-SIS-LIB-01', 'F-SIS-OIV-01', 'F-SIS-PAY-01', 'F-SIS-RP-01', 'F-SIS-SETS-01',
+      'F-SIS-LIB-01', 'F-SIS-OIV-01', 'F-SIS-PAY-01', 'F-SIS-RP-01', 'F-SIS-SETS-01', 'F-SIS-TTB-01',
     ]);
     expect(flows.find((f) => f.flowCode === LIB)).toMatchObject({ producer: 'implemented', fulfilmentModeCode: 'manual', isDefault: true });
     expect(flows.filter((f) => f.producer === 'implemented').map((f) => f.flowCode).sort())
-      .toEqual([ACC, 'F-SIS-CMS-01', CRM, 'F-SIS-FIN-01', 'F-SIS-HR-01', 'F-SIS-IAM-01', 'F-SIS-ITSM-01', LIB, 'F-SIS-OIV-01', 'F-SIS-PAY-01', 'F-SIS-RP-01']);
+      .toEqual([ACC, 'F-SIS-CMS-01', CRM, 'F-SIS-FIN-01', 'F-SIS-HR-01', 'F-SIS-IAM-01', 'F-SIS-ITSM-01', LIB, 'F-SIS-OIV-01', 'F-SIS-PAY-01', 'F-SIS-RP-01', 'F-SIS-TTB-01']);
     expect(flows.filter((f) => f.producer === 'extract').map((f) => f.flowCode).sort()).toEqual(['F-SIS-CM-01', 'F-SIS-EST-01', 'F-SIS-SETS-01']);
     expect(flows.filter((f) => f.producer === 'none').map((f) => f.flowCode)).toEqual([]);
   });

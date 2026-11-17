@@ -2,12 +2,13 @@ import { randomUUID } from 'node:crypto';
 
 import { Type } from '@sinclair/typebox';
 import { requireAnyPermission, requirePermission } from '@revelation-srs/auth';
-import { hasPermission } from '@revelation-srs/domain';
+import { ValidationError, hasPermission } from '@revelation-srs/domain';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 
 import type { DeliveryItemDto, DeliveryReplyActor, DeliveryTaskDto, FlowConfigDto } from '../platform/delivery/delivery-service.js';
 import { INBOUND_FLOWS, type ExternalRecordDto } from '../platform/delivery/inbound.js';
 import { runExtract } from '../platform/delivery/producers/extracts.js';
+import { TIMETABLING_FLOW, runTimetableDemandSnapshot } from '../platform/delivery/producers/timetable-demand.js';
 
 const ErrorSchema = Type.Object({
   type: Type.String(),
@@ -157,7 +158,10 @@ export function deliveryRoutes(fastify: FastifyInstance): void {
   }, async (request, reply) => {
     const { flowCode } = request.params as { flowCode: string };
     const { academicPeriodId } = request.body as { academicPeriodId: string };
-    const result = await runExtract(fastify.deliveryService, fastify.db, request.tenantId, flowCode, academicPeriodId);
+    // F-SIS-TTB-01 runs a roster snapshot for reconciliation (Phase 4 D-26); the others are aggregate extracts.
+    const result = flowCode === TIMETABLING_FLOW
+      ? { flowCode, ...(await runTimetableDemandSnapshot(fastify.deliveryService, fastify.db, request.tenantId, academicPeriodId)) }
+      : await runExtract(fastify.deliveryService, fastify.db, request.tenantId, flowCode, academicPeriodId);
     await fastify.audit.record({
       tenantId: request.tenantId,
       entityType: 'delivery_flow_config',
@@ -210,14 +214,19 @@ export function deliveryRoutes(fastify: FastifyInstance): void {
   fastify.post('/delivery-items/:deliveryItemId/acknowledge', {
     schema: {
       params: Type.Object({ deliveryItemId: Type.String() }),
-      response: { 204: Type.Null(), 404: ErrorSchema, 409: ErrorSchema },
+      // Optional { targetCount }: what the target now holds, for a roster snapshot (Phase 4 D-26).
+      response: { 204: Type.Null(), 404: ErrorSchema, 409: ErrorSchema, 422: ErrorSchema },
     },
     preHandler: [requireAnyPermission('integration:manage', 'delivery:fulfil')],
   }, async (request, reply) => {
     const { deliveryItemId } = request.params as { deliveryItemId: string };
     const actor = actorOf(request);
-    await fastify.deliveryService.acknowledge(request.tenantId, deliveryItemId, actor);
-    await auditPerson(fastify, request, actor, deliveryItemId, 'Integration task: confirmed applied');
+    const targetCount = (request.body as { targetCount?: unknown } | null | undefined)?.targetCount;
+    if (targetCount !== undefined && (typeof targetCount !== 'number' || !Number.isInteger(targetCount) || targetCount < 0)) {
+      throw new ValidationError('targetCount must be a whole number');
+    }
+    const result = await fastify.deliveryService.acknowledge(request.tenantId, deliveryItemId, actor, targetCount === undefined ? {} : { targetCount });
+    await auditPerson(fastify, request, actor, deliveryItemId, result.statusCode === 'failed' ? 'Integration task: target count did not match' : 'Integration task: confirmed applied');
     await reply.code(204).send();
   });
 

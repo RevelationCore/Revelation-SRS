@@ -47,6 +47,12 @@ export const DELIVERY_FLOWS: readonly DeliveryFlow[] = [
     producerNote: 'Conversion, each status change and an approved leaver closure send the person\'s account access (limited, full, suspended or ended) and its effective date; the account ends at leaver closure plus a grace period (Phase 3 D-19).',
   },
   {
+    flowCode: 'F-SIS-TTB-01', targetSystem: 'ttb', targetLabel: 'timetabling system',
+    name: 'Confirmed module registrations to timetabling', defaultMode: 'manual', stateSync: true,
+    producer: 'implemented',
+    producerNote: 'A module registration being created, withdrawn or changing status sends add, update or remove for that student and offering; a roster snapshot per offering can be run for reconciliation, and an acknowledgement with a different count is a mismatch (Phase 4 D-26).',
+  },
+  {
     flowCode: 'F-SIS-LIB-01', targetSystem: 'lib', targetLabel: 'library system',
     name: 'Library access from enrolment status', defaultMode: 'manual', stateSync: true,
     producer: 'implemented',

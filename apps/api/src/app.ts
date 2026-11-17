@@ -373,7 +373,7 @@ export async function buildApp(
   const calendar   = new CalendarService(db);
   const selectionWindows = new SelectionWindowService(db);
   const timetables = new TimetableService(db, valueSets);
-  const registrations = new ModuleRegistrationService(db, eventBus, rules, selectionWindows, workflowBridge, reviewExecution);
+  const registrations = new ModuleRegistrationService(db, eventBus, rules, selectionWindows, workflowBridge, reviewExecution, deliveries);
   registrations.registerWorkflowEffects(reviewActivities);
   const tenantAdmin = new TenantAdminService(db);
   const assessmentComponents = new AssessmentComponentService(db, valueSets);
