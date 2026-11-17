@@ -44,7 +44,7 @@ export const DELIVERY_FLOWS: readonly DeliveryFlow[] = [
     flowCode: 'F-SIS-IAM-01', targetSystem: 'iam', targetLabel: 'identity and access management',
     name: 'Identity, enrolment status and access level to IAM', defaultMode: 'manual', stateSync: true,
     producer: 'implemented',
-    producerNote: 'Conversion, each status change and an approved leaver closure send the person\'s account access (limited, full, suspended or ended) and its effective date; the account ends at leaver closure plus a grace period (Phase 3 D-19).',
+    producerNote: 'Conversion, each status change, an approved leaver closure, a bound application, a supervision assignment and an examiner appointment send the person\'s account (contract v2: kind, portal roles, access level limited, full, suspended or ended, and effective date); a student account ends at leaver closure plus a grace period (Phase 3 D-19, Phase 5 D-38).',
   },
   {
     flowCode: 'F-SIS-TTB-01', targetSystem: 'ttb', targetLabel: 'timetabling system',

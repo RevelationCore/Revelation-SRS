@@ -43,7 +43,12 @@
       { "name": "dpo",                     "composite": false },
       { "name": "tenant-administrator",    "composite": false },
       { "name": "system-administrator",    "composite": false },
-      { "name": "integration-service",     "composite": false }
+      { "name": "integration-service",     "composite": false },
+      { "name": "programme-approver",      "composite": false },
+      { "name": "pgr-administrator",       "composite": false },
+      { "name": "pgr-director",            "composite": false },
+      { "name": "applicant",               "composite": false },
+      { "name": "pgr-examiner",            "composite": false }
     ]
   },
 

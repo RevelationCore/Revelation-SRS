@@ -24,6 +24,9 @@ export const ROLES = [
   'programme-approver',
   'pgr-administrator',
   'pgr-director',
+  // Phase 5 D-38: self-service audiences outside the back office.
+  'applicant',
+  'pgr-examiner',
 ] as const;
 
 export type Role = (typeof ROLES)[number];

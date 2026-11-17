@@ -7,24 +7,26 @@ import {
 } from 'lucide-react';
 import type { ComponentType } from 'react';
 import { useAuth } from '../auth/AuthContext.js';
+import { type Audience, audiencesFor } from '../auth/audiences.js';
 import { getDisplayName, SkipLink } from '@revelation-srs/ui';
 import { DemoBanner } from './DemoBanner.js';
 
-const NAV_ITEMS: Array<{ to: string; label: string; icon: ComponentType<{ className?: string }> }> = [
-  { to: '/dashboard',     label: 'portal.nav.dashboard',     icon: LayoutDashboard },
-  { to: '/profile',       label: 'portal.nav.profile',       icon: UserCircle },
-  { to: '/registration',  label: 'portal.nav.registration',  icon: ClipboardCheck },
-  { to: '/enrolments',    label: 'portal.nav.enrolments',    icon: GraduationCap },
-  { to: '/modules',       label: 'portal.nav.modules',       icon: BookOpen },
-  { to: '/results',       label: 'portal.nav.results',       icon: FileText },
-  { to: '/timetable',     label: 'portal.nav.timetable',     icon: Calendar },
-  { to: '/exams',         label: 'portal.nav.exams',         icon: PenSquare },
-  { to: '/adjustments',   label: 'portal.nav.adjustments',   icon: Accessibility },
-  { to: '/disability',    label: 'portal.nav.disability',    icon: HeartPulse },
-  { to: '/circumstances', label: 'portal.nav.circumstances', icon: AlertTriangle },
-  { to: '/notifications', label: 'portal.nav.notifications', icon: Bell },
-  { to: '/documents',     label: 'portal.nav.documents',     icon: FileText },
-  { to: '/graduation',    label: 'portal.nav.graduation',    icon: GraduationCap },
+/** Each item says which audience it is for (D-38); 'all' items show to everyone signed in. */
+const NAV_ITEMS: Array<{ to: string; label: string; icon: ComponentType<{ className?: string }>; audience: Audience | 'all' }> = [
+  { to: '/dashboard',     label: 'portal.nav.dashboard',     icon: LayoutDashboard, audience: 'all' },
+  { to: '/profile',       label: 'portal.nav.profile',       icon: UserCircle,      audience: 'student' },
+  { to: '/registration',  label: 'portal.nav.registration',  icon: ClipboardCheck,  audience: 'student' },
+  { to: '/enrolments',    label: 'portal.nav.enrolments',    icon: GraduationCap,   audience: 'student' },
+  { to: '/modules',       label: 'portal.nav.modules',       icon: BookOpen,        audience: 'student' },
+  { to: '/results',       label: 'portal.nav.results',       icon: FileText,        audience: 'student' },
+  { to: '/timetable',     label: 'portal.nav.timetable',     icon: Calendar,        audience: 'student' },
+  { to: '/exams',         label: 'portal.nav.exams',         icon: PenSquare,       audience: 'student' },
+  { to: '/adjustments',   label: 'portal.nav.adjustments',   icon: Accessibility,   audience: 'student' },
+  { to: '/disability',    label: 'portal.nav.disability',    icon: HeartPulse,      audience: 'student' },
+  { to: '/circumstances', label: 'portal.nav.circumstances', icon: AlertTriangle,   audience: 'student' },
+  { to: '/notifications', label: 'portal.nav.notifications', icon: Bell,            audience: 'student' },
+  { to: '/documents',     label: 'portal.nav.documents',     icon: FileText,        audience: 'student' },
+  { to: '/graduation',    label: 'portal.nav.graduation',    icon: GraduationCap,   audience: 'student' },
 ];
 
 function navLinkClass({ isActive }: { isActive: boolean }) {
@@ -36,7 +38,8 @@ function navLinkClass({ isActive }: { isActive: boolean }) {
 }
 
 export function Layout() {
-  const { logout, user } = useAuth();
+  const { logout, user, roles } = useAuth();
+  const audiences        = audiencesFor(roles);
   const navigate         = useNavigate();
   const { t }            = useTranslation();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -50,7 +53,7 @@ export function Layout() {
 
   const navItems = (
     <>
-      {NAV_ITEMS.map(({ to, label, icon: Icon }) => (
+      {NAV_ITEMS.filter((i) => i.audience === 'all' || audiences.has(i.audience)).map(({ to, label, icon: Icon }) => (
         <NavLink
           key={to}
           to={to}

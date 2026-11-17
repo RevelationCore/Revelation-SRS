@@ -9,7 +9,7 @@ export interface PersonaSpec {
   lastName:     string;
   roles:        string[];
   personaId:    string;
-  /** SRS database person UUID to expose as the srs_person_id JWT claim. Only set for student personas. */
+  /** SRS database person UUID to expose as the srs_person_id JWT claim: set for anyone with a person row (D-38). */
   srsPersonId?: string;
 }
 

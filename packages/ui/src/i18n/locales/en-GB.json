@@ -60,7 +60,14 @@
       "notifications": "Notifications",
       "documents":     "Award documents",
       "graduation":    "Graduation",
-      "registration":  "Registration"
+      "registration":  "Registration",
+      "applications":  "Applications",
+      "research":      "Research"
+    },
+    "dashboard": {
+      "applicationsDesc": "Your applications, offers and conditions",
+      "researchDesc":     "Research students, review panels and examinations you are assigned to",
+      "nothingYet":       "There is nothing for you here yet."
     },
     "enrolment": {
       "status": {

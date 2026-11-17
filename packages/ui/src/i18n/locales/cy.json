@@ -60,7 +60,14 @@
       "notifications": "Hysbysiadau",
       "documents":     "Dogfennau dyfarnu",
       "graduation":    "Graddio",
-      "registration":  "Cofrestru"
+      "registration":  "Cofrestru",
+      "applications":  "Ceisiadau",
+      "research":      "Ymchwil"
+    },
+    "dashboard": {
+      "applicationsDesc": "Eich ceisiadau, cynigion ac amodau",
+      "researchDesc":     "Myfyrwyr ymchwil, paneli adolygu ac arholiadau a neilltuwyd i chi",
+      "nothingYet":       "Nid oes dim i chi yma eto."
     },
     "enrolment": {
       "status": {

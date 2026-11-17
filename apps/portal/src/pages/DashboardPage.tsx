@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../auth/AuthContext.js';
+import { type Audience, audiencesFor } from '../auth/audiences.js';
 import { useApiData } from '../hooks/useApiData.js';
 import { getProfile, getEnrolments } from '../api/me.js';
 import {
@@ -10,7 +11,31 @@ import {
   PageHeader, StatCard, Card, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, Badge,
 } from '@revelation-srs/ui';
 
+/** The dashboard: a student's summary, or for other audiences their own entry points (D-38). */
 export function DashboardPage() {
+  const { roles } = useAuth();
+  const audiences = audiencesFor(roles);
+  if (!audiences.has('student')) return <AudienceDashboard audiences={audiences} />;
+  return <StudentDashboard />;
+}
+
+function AudienceDashboard({ audiences }: { audiences: Set<Audience> }) {
+  const { t } = useTranslation();
+  const { user } = useAuth();
+  const displayName = user ? getDisplayName(user) : t('status.loading');
+  return (
+    <div>
+      <PageHeader title={`${t('nav.home')}, ${displayName}`} description={formatDate(new Date())} />
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {audiences.has('applicant') && <QuickLink to="/applications" label={t('portal.nav.applications')} desc={t('portal.dashboard.applicationsDesc')} />}
+        {audiences.has('research') && <QuickLink to="/research" label={t('portal.nav.research')} desc={t('portal.dashboard.researchDesc')} />}
+        {audiences.size === 0 && <p className="text-sm text-neutral-600">{t('portal.dashboard.nothingYet')}</p>}
+      </div>
+    </div>
+  );
+}
+
+function StudentDashboard() {
   const { t }  = useTranslation();
   const { user, personId } = useAuth();
 

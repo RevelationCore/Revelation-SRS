@@ -15,7 +15,12 @@ export interface AuthenticatedUser {
   email: string;
   /** Raw `preferred_username` claim. */
   preferredUsername: string;
-  /** SRS person UUID — present only for student personas (from srs_person_id JWT claim). */
+  /**
+   * SRS person UUID from the srs_person_id JWT claim: present for anyone with
+   * an SRS person row (students, applicants, supervisors, examiners), set by
+   * IAM (Phase 5 D-38, ADR-025). Self-service scoping always matches it to
+   * database rows, never `sub` or email.
+   */
   srsPersonId?: string;
 }
 

@@ -36,7 +36,9 @@ describe('access and entitlements (D-19)', () => {
     const enrolmentId = (await call('POST', '/enrolments', registryJwt, { personId, modeOfStudyCode: 'full-time', academicYearOfEntry: '2026-27', startDate: '2026-09-21' }))
       .json<{ enrolmentId: string }>().enrolmentId;
     await ctx.db.execute(sql`UPDATE enrolment SET valid_from = '2026-01-01' WHERE id = ${enrolmentId} AND recorded_until IS NULL`);
-    expect((await iamItems(personId)).at(-1)?.payload).toMatchObject({ accessLevel: 'full' });
+    expect((await iamItems(personId)).at(-1)?.payload).toMatchObject({
+      accessLevel: 'full', contractVersion: 2, accountKind: 'student', roles: ['student'], stateHash: expect.stringMatching(/^sha256:/) as string,
+    });
 
     // Withdrawal: study access is revoked (library), the account stays limited for results and appeals.
     const withdrawal = (await call('POST', `/enrolments/${enrolmentId}/status-cases`, registryJwt, { caseTypeCode: 'withdrawal', initiatedByCode: 'institution', requestedEffectiveDate: '2027-01-10', institutionalOutcomeRef: 'board:1' })).json<{ statusCaseId: string }>();
