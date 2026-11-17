@@ -7,6 +7,7 @@ import {
   marks,
   moduleRegistrations,
   moduleResults,
+  reassessmentPlans,
   type Db,
   withTenantContext,
 } from '@revelation-srs/db';
@@ -18,7 +19,7 @@ import {
 import type { AssessmentModuleResultCalculatedV1Payload } from '@revelation-srs/domain';
 
 import type { IntegrationBusPublisher } from '../integration-bus/publisher.js';
-import type { RulesEngine } from '../rules-engine/engine.js';
+import { RuleTrace, type RuleVersionCitation, type RulesEngine } from '../rules-engine/engine.js';
 import { clockNow } from '../clock.js';
 
 import { assertNotLocked } from './lock.js';
@@ -30,6 +31,8 @@ export interface ModuleResultDto {
   resultCode: string;
   locked: boolean;
   calculatedAt: Date;
+  /** The rules this result used (D-35); empty for results calculated before that was recorded. */
+  ruleVersions: RuleVersionCitation[];
   validFrom: Date;
   validTo: Date | null;
   recordedAt: Date;
@@ -67,13 +70,24 @@ export class ModuleResultService {
     const current = await this.#getCurrentResult(moduleRegistrationId, tenantId);
     if (current) assertNotLocked(current, 'ModuleResult', current.moduleResultId);
 
-    const aggregateMark = roundMark(
+    const trace = new RuleTrace();
+    const uncapped = roundMark(
       components.reduce(
         (total, component) => total + ((component.adjustedMark ?? 0) * component.weighting) / 100,
         0,
       ),
     );
-    const resultCode = await this.#deriveResultCode(tenantId, registration, components, aggregateMark);
+    // A repeat registration's result is capped by its reassessment plan (D-43b).
+    const plan = await this.#reassessmentCap(tenantId, moduleRegistrationId);
+    let aggregateMark = uncapped;
+    if (plan) {
+      trace.cite({
+        ruleTypeCode: 'resit-mark-cap', ruleKey: null, ruleId: null, versionId: null, programmeId: null, validFrom: null,
+        source: 'reassessment-plan', planId: plan.id, value: { cap: plan.markCap, uncappedMark: uncapped },
+      });
+      aggregateMark = Math.min(uncapped, plan.markCap);
+    }
+    const resultCode = await this.#deriveResultCode(tenantId, registration, components, aggregateMark, trace);
     const moduleResultId = current?.moduleResultId ?? randomUUID();
     const now = clockNow();
 
@@ -100,6 +114,7 @@ export class ModuleResultService {
         resultCode,
         locked: current?.locked ?? false,
         calculatedAt: now,
+        ruleVersions: trace.entries,
         validFrom: now,
         validTo: null,
         recordedAt: now,
@@ -308,12 +323,20 @@ export class ModuleResultService {
     registration: RegistrationContext,
     components: ComponentMark[],
     aggregateMark: number,
+    trace: RuleTrace,
   ): Promise<string> {
     if (components.some((component) => component.adjustedMark === null)) {
       return 'deferred';
     }
 
-    const defaultPassMark = await this.#getDefaultPassMark(tenantId, registration.programmeId);
+    const defaultPassMark = await this.#getDefaultPassMark(tenantId, registration.programmeId, trace);
+    for (const component of components) {
+      if (component.passMarkOverride === null) continue;
+      trace.cite({
+        ruleTypeCode: 'pass-mark', ruleKey: null, ruleId: null, versionId: null, programmeId: null, validFrom: null,
+        source: 'component-override', componentId: component.assessmentComponentId, value: { mark: component.passMarkOverride },
+      });
+    }
     const componentFailed = components.some((component) =>
       component.adjustedMark !== null
       && component.adjustedMark < (component.passMarkOverride ?? defaultPassMark),
@@ -323,13 +346,37 @@ export class ModuleResultService {
     return aggregateMark >= defaultPassMark ? 'pass' : 'fail';
   }
 
-  async #getDefaultPassMark(tenantId: string, programmeId: string | null): Promise<number> {
+  async #getDefaultPassMark(tenantId: string, programmeId: string | null, trace: RuleTrace): Promise<number> {
+    const ctx = { tenantId, programmeId: programmeId ?? '' };
     try {
-      return await this.rules.getPassMark({ tenantId, programmeId: programmeId ?? '' });
+      return await this.rules.getPassMark(ctx, trace);
     } catch (err) {
-      if (err instanceof RuleNotConfiguredError) return 40;
-      throw err;
+      if (!(err instanceof RuleNotConfiguredError)) throw err;
+      return (await this.rules.builtInDefault(ctx, 'pass-mark', 'undergraduate-default', { mark: 40 }, trace)).mark;
     }
+  }
+
+  /** The cap of an open reassessment plan this registration repeats, if it has one. */
+  async #reassessmentCap(tenantId: string, moduleRegistrationId: string): Promise<{ id: string; markCap: number } | null> {
+    const [plan] = await withTenantContext(this.db, tenantId, (tx) => tx.select({ id: reassessmentPlans.id, markCap: reassessmentPlans.markCap })
+      .from(reassessmentPlans)
+      .where(and(
+        eq(reassessmentPlans.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
+        eq(reassessmentPlans.repeatModuleRegistrationId, moduleRegistrationId as `${string}-${string}-${string}-${string}-${string}`),
+      ))
+      .limit(1));
+    return plan && plan.markCap !== null ? { id: plan.id, markCap: plan.markCap } : null;
+  }
+
+  /** How a result was calculated (D-35): the version's rule citations and the marks it aggregated. */
+  async getEvidence(tenantId: string, moduleResultId: string): Promise<ModuleResultDto & { versionId: string }> {
+    const [row] = await withTenantContext(this.db, tenantId, (tx) => tx.select().from(moduleResults).where(and(
+      eq(moduleResults.id, moduleResultId as `${string}-${string}-${string}-${string}-${string}`),
+      eq(moduleResults.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
+      isNull(moduleResults.recordedUntil),
+    )).limit(1));
+    if (!row) throw new NotFoundError('ModuleResult', moduleResultId);
+    return { ...moduleResultToDto(row), versionId: row.versionId };
   }
 }
 
@@ -341,6 +388,7 @@ function moduleResultToDto(row: typeof moduleResults.$inferSelect): ModuleResult
     resultCode: row.resultCode,
     locked: row.locked,
     calculatedAt: row.calculatedAt,
+    ruleVersions: (row.ruleVersions ?? []) as RuleVersionCitation[],
     validFrom: row.validFrom,
     validTo: row.validTo,
     recordedAt: row.recordedAt,

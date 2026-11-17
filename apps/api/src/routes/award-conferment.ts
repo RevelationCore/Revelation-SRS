@@ -3,6 +3,8 @@ import { requirePermission } from '@revelation-srs/auth';
 import type { AwardConferment, AwardRecommendation, ReassessmentPlan } from '@revelation-srs/db';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 
+import { RuleVersionSchema } from './rule-version-schema.js';
+
 const ErrorSchema = Type.Object({ type: Type.String(), title: Type.String(), status: Type.Number(), detail: Type.Optional(Type.String()) });
 const Nullable = <T extends ReturnType<typeof Type.String>>(t: T) => Type.Union([t, Type.Null()]);
 const DateString = Type.String({ pattern: '^\\d{4}-\\d{2}-\\d{2}$' });
@@ -55,6 +57,32 @@ export function awardConfermentRoutes(fastify: FastifyInstance): void {
     const rec = await fastify.confermentService.recommend(request.tenantId, enrolmentId, request.body as never, request.user.sub);
     await audit(fastify, request, 'award_recommendation', rec.id, 'create', `Recommended ${rec.awardTypeCode} ${rec.qualificationCode} ${rec.classificationCode}`);
     await reply.code(201).send(recommendationToWire(rec, null));
+  });
+
+  // The classification evidence a recommendation was made on (D-35).
+  fastify.get('/award-recommendations/:recommendationId/evidence', {
+    schema: {
+      params: Type.Object({ recommendationId: Type.String() }),
+      response: {
+        200: Type.Object({
+          awardId: Nullable(Type.String()), aggregateMark: Type.Number(), classificationCode: Type.String(), algorithm: Type.String(),
+          boundariesApplied: Type.Array(Type.Object({ code: Type.String(), minimumMark: Type.Number() })),
+          outcomeCount: Type.Number(), totalCreditValue: Type.Number(), earnedCredits: Type.Number(), recognisedCredits: Type.Number(),
+          requiredCredits: Type.Union([Type.Number(), Type.Null()]), inDiscretionZone: Type.Boolean(),
+          ruleVersions: Type.Array(RuleVersionSchema), calculatedAt: Type.String(),
+        }),
+        404: ErrorSchema,
+      },
+    },
+    preHandler: [requirePermission('progression:read')],
+  }, async (request, reply) => {
+    const { recommendationId } = request.params as { recommendationId: string };
+    const evidence = await fastify.awardService.getRecommendationEvidence(request.tenantId, recommendationId);
+    if (!evidence) {
+      await reply.code(404).send({ type: 'about:blank', title: 'Not Found', status: 404, detail: 'This recommendation has no calculation evidence (it is not a calculated award, or predates evidence recording)' });
+      return;
+    }
+    await reply.send({ ...evidence, calculatedAt: evidence.calculatedAt.toISOString() });
   });
 
   fastify.post('/award-recommendations/:recommendationId/conferment', {

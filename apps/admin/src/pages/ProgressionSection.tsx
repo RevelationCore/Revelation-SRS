@@ -1,4 +1,5 @@
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
+import { RuleVersionsPanel } from '../components/RuleVersionsPanel.js';
 import {
   Card, CardHeader, CardBody, Button, Input, LabelledField, Badge, Spinner,
   Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
@@ -69,6 +70,9 @@ export function ProgressionSection({ enrolmentId, canRun }: { enrolmentId: strin
                     <div><dt className="text-xs text-neutral-500">Compensated</dt><dd>{ev.compensationCredits} (limit {ev.compensationCreditLimit})</dd></div>
                     <div><dt className="text-xs text-neutral-500">Unresolved</dt><dd>{ev.unresolvedCredits}</dd></div>
                     <div><dt className="text-xs text-neutral-500">Recognised credit</dt><dd>{ev.recognisedCredits}</dd></div>
+                    {ev.minimumModulePasses !== null && (
+                      <div><dt className="text-xs text-neutral-500">Modules passed</dt><dd>{ev.modulesPassed ?? '?'} of {ev.minimumModulePasses} required</dd></div>
+                    )}
                     {ev.appliedExceptions.length > 0 && (
                       <div className="col-span-2 md:col-span-4">
                         <dt className="text-xs text-neutral-500">Rule exceptions applied</dt>
@@ -77,6 +81,7 @@ export function ProgressionSection({ enrolmentId, canRun }: { enrolmentId: strin
                     )}
                   </dl>
                 )}
+                {ev && <RuleVersionsPanel ruleVersions={ev.ruleVersions ?? []} />}
               </div>
             );
           })}

@@ -258,6 +258,15 @@ export async function approvedExemptionsFor(
     .map((c) => ({ moduleId: c.moduleId!, creditValue: c.creditValue, recognisedCreditId: c.id }));
 }
 
+/** All approved recognised credit for an enrolment, counting towards its award (D-35). */
+export async function approvedCreditFor(db: Db, tenantId: string, enrolmentId: string): Promise<RecognisedCredit[]> {
+  return withTenantContext(db, tenantId, (tx) => tx.select().from(recognisedCredits).where(and(
+    eq(recognisedCredits.tenantId, tenantId as Uuid),
+    eq(recognisedCredits.enrolmentId, enrolmentId as Uuid),
+    eq(recognisedCredits.statusCode, 'approved'),
+  )));
+}
+
 /** Approved recognised credit counting towards one academic year's progression. */
 export async function approvedCreditForYearFor(db: Db, tenantId: string, enrolmentId: string, academicYear: string): Promise<RecognisedCredit[]> {
   return withTenantContext(db, tenantId, (tx) => tx.select().from(recognisedCredits).where(and(

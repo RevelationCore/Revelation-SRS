@@ -1,4 +1,5 @@
 import { type ChangeEvent, type FormEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { RuleVersionsPanel } from '../components/RuleVersionsPanel.js';
 import { useParams } from 'react-router-dom';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import {
@@ -945,6 +946,7 @@ function AssessmentTab({ personId }: { personId: string }) {
                 )}
               </div>
               <div className="px-4 py-3">
+                {row.result && <RuleVersionsPanel ruleVersions={row.result.ruleVersions ?? []} title="How the result was calculated" />}
                 {row.error ? (
                   <p className="text-xs text-danger-600">{row.error}</p>
                 ) : row.marks.length === 0 ? (

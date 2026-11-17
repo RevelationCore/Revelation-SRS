@@ -64,6 +64,13 @@
       "when": 1785000047000,
       "tag": "0008_registration_integrations_and_rule_depth",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1785000048000,
+      "tag": "0009_audiences_and_evidence",
+      "breakpoints": true
     }
   ]
 }

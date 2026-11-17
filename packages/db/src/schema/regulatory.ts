@@ -145,6 +145,8 @@ export const ukviComplianceAlerts = pgTable('ukvi_compliance_alert', {
   triggeredAt:   timestamp('triggered_at', { withTimezone: true }).notNull().defaultNow(),
   resolvedAt:    timestamp('resolved_at', { withTimezone: true }),
   resolvedBy:    text('resolved_by'),
+  /** The attendance threshold rule that raised the alert (Phase 5 D-35). */
+  ruleVersions:  jsonb('rule_versions').notNull().default([]).$type<Array<Record<string, unknown>>>(),
 });
 
 export const ukviEngagementEvidenceSnapshots = pgTable('ukvi_engagement_evidence_snapshot', {

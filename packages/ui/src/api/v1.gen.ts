@@ -1396,6 +1396,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/award-recommendations/{recommendationId}/evidence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getAwardRecommendationsByRecommendationIdEvidence"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/award-recommendations/{recommendationId}/conferment": {
         parameters: {
             query?: never;
@@ -5025,6 +5041,22 @@ export interface paths {
             cookie?: never;
         };
         get: operations["getModuleRegistrationsByModuleRegistrationIdResultHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/module-results/{moduleResultId}/evidence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getModuleResultsByModuleResultIdEvidence"];
         put?: never;
         post?: never;
         delete?: never;
@@ -13000,6 +13032,72 @@ export interface operations {
             };
         };
     };
+    getAwardRecommendationsByRecommendationIdEvidence: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recommendationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        awardId: string | null;
+                        aggregateMark: number;
+                        classificationCode: string;
+                        algorithm: string;
+                        boundariesApplied: {
+                            code: string;
+                            minimumMark: number;
+                        }[];
+                        outcomeCount: number;
+                        totalCreditValue: number;
+                        earnedCredits: number;
+                        recognisedCredits: number;
+                        requiredCredits: number | null;
+                        inDiscretionZone: boolean;
+                        ruleVersions: {
+                            ruleTypeCode: string;
+                            ruleKey: string | null;
+                            ruleId: string | null;
+                            versionId: string | null;
+                            programmeId: string | null;
+                            validFrom: string | null;
+                            /** @description programme | tenant-default | exception | component-override | built-in-default | reassessment-plan */
+                            source: string;
+                            value: unknown;
+                            exceptionId?: string;
+                            componentId?: string;
+                            planId?: string;
+                        }[];
+                        calculatedAt: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
     createAwardRecommendationsByRecommendationIdConferment: {
         parameters: {
             query?: never;
@@ -17596,6 +17694,23 @@ export interface operations {
                             ruleCode: string;
                             exceptionTypeCode: string;
                         }[];
+                        minimumModulePasses: number | null;
+                        modulesPassed: number | null;
+                        /** @description The rule versions the decision used (D-35); empty for evidence recorded before that */
+                        ruleVersions: {
+                            ruleTypeCode: string;
+                            ruleKey: string | null;
+                            ruleId: string | null;
+                            versionId: string | null;
+                            programmeId: string | null;
+                            validFrom: string | null;
+                            /** @description programme | tenant-default | exception | component-override | built-in-default | reassessment-plan */
+                            source: string;
+                            value: unknown;
+                            exceptionId?: string;
+                            componentId?: string;
+                            planId?: string;
+                        }[];
                         calculatedAt: string;
                     };
                 };
@@ -17641,6 +17756,31 @@ export interface operations {
                         boundariesApplied: {
                             code: string;
                             minimumMark: number;
+                        }[];
+                        outcomeCount: number;
+                        totalCreditValue: number;
+                        earnedCredits: number;
+                        recognisedCredits: number;
+                        requiredCredits: number | null;
+                        inDiscretionZone: boolean;
+                        discretionZone: {
+                            widthPercent: number;
+                            nextBoundaryCode: string;
+                            nextBoundaryMark: number;
+                        } | null;
+                        ruleVersions: {
+                            ruleTypeCode: string;
+                            ruleKey: string | null;
+                            ruleId: string | null;
+                            versionId: string | null;
+                            programmeId: string | null;
+                            validFrom: string | null;
+                            /** @description programme | tenant-default | exception | component-override | built-in-default | reassessment-plan */
+                            source: string;
+                            value: unknown;
+                            exceptionId?: string;
+                            componentId?: string;
+                            planId?: string;
                         }[];
                     };
                 };
@@ -26690,6 +26830,21 @@ export interface operations {
                         resultCode: string;
                         locked: boolean;
                         calculatedAt: string;
+                        /** @description The rules this result used (D-35); empty for results calculated before that was recorded */
+                        ruleVersions: {
+                            ruleTypeCode: string;
+                            ruleKey: string | null;
+                            ruleId: string | null;
+                            versionId: string | null;
+                            programmeId: string | null;
+                            validFrom: string | null;
+                            /** @description programme | tenant-default | exception | component-override | built-in-default | reassessment-plan */
+                            source: string;
+                            value: unknown;
+                            exceptionId?: string;
+                            componentId?: string;
+                            planId?: string;
+                        }[];
                         validFrom: string;
                         validTo: string | null;
                         recordedAt: string;
@@ -26737,11 +26892,90 @@ export interface operations {
                         resultCode: string;
                         locked: boolean;
                         calculatedAt: string;
+                        /** @description The rules this result used (D-35); empty for results calculated before that was recorded */
+                        ruleVersions: {
+                            ruleTypeCode: string;
+                            ruleKey: string | null;
+                            ruleId: string | null;
+                            versionId: string | null;
+                            programmeId: string | null;
+                            validFrom: string | null;
+                            /** @description programme | tenant-default | exception | component-override | built-in-default | reassessment-plan */
+                            source: string;
+                            value: unknown;
+                            exceptionId?: string;
+                            componentId?: string;
+                            planId?: string;
+                        }[];
                         validFrom: string;
                         validTo: string | null;
                         recordedAt: string;
                         recordedUntil: string | null;
                     }[];
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getModuleResultsByModuleResultIdEvidence: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                moduleResultId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        moduleResultId: string;
+                        moduleRegistrationId: string;
+                        aggregateMark: number;
+                        resultCode: string;
+                        locked: boolean;
+                        calculatedAt: string;
+                        /** @description The rules this result used (D-35); empty for results calculated before that was recorded */
+                        ruleVersions: {
+                            ruleTypeCode: string;
+                            ruleKey: string | null;
+                            ruleId: string | null;
+                            versionId: string | null;
+                            programmeId: string | null;
+                            validFrom: string | null;
+                            /** @description programme | tenant-default | exception | component-override | built-in-default | reassessment-plan */
+                            source: string;
+                            value: unknown;
+                            exceptionId?: string;
+                            componentId?: string;
+                            planId?: string;
+                        }[];
+                        validFrom: string;
+                        validTo: string | null;
+                        recordedAt: string;
+                        recordedUntil: string | null;
+                    } & {
+                        versionId: string;
+                    };
                 };
             };
             /** @description Default Response */

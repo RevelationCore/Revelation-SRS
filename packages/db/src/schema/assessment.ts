@@ -3,6 +3,21 @@ import { pgTable } from 'drizzle-orm/pg-core';
 
 import { bitemporalColumns } from '../temporal.js';
 
+/** One rule a calculation cited (D-35); the API's RuleVersionCitation. */
+export interface RuleVersionRecord {
+  ruleTypeCode: string;
+  ruleKey: string | null;
+  ruleId: string | null;
+  versionId: string | null;
+  programmeId: string | null;
+  validFrom: string | null;
+  source: string;
+  value: unknown;
+  exceptionId?: string;
+  componentId?: string;
+  planId?: string;
+}
+
 import { tenants } from './tenant.js';
 
 /**
@@ -81,6 +96,8 @@ export const marks = pgTable('mark', {
   locked:                boolean('locked').notNull().default(false),
   sourceSystem:          text('source_system'),
   actorId:               text('actor_id').notNull(),
+  /** The rules this mark's penalty and cap used (Phase 5 D-35). */
+  ruleVersions:          jsonb('rule_versions').notNull().default([]).$type<RuleVersionRecord[]>(),
 });
 
 export type Mark    = typeof marks.$inferSelect;
@@ -102,6 +119,8 @@ export const moduleResults = pgTable('module_result', {
   resultCode:           text('result_code').notNull(), // pass | fail | compensated | condoned | deferred | resit-required
   locked:               boolean('locked').notNull().default(false),
   calculatedAt:         timestamp('calculated_at', { withTimezone: true }).notNull().defaultNow(),
+  /** The rules this result used: pass mark, overrides, a reassessment cap (Phase 5 D-35). */
+  ruleVersions:         jsonb('rule_versions').notNull().default([]).$type<RuleVersionRecord[]>(),
 });
 
 export type ModuleResult    = typeof moduleResults.$inferSelect;

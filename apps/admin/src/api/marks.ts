@@ -1,3 +1,5 @@
+import type { RuleVersion } from '../components/RuleVersionsPanel.js';
+
 import { api } from './client.js';
 
 export interface Mark {
@@ -39,6 +41,7 @@ export interface ModuleResult {
   resultCode:           string;
   locked:               boolean;
   calculatedAt:         string;
+  ruleVersions:         RuleVersion[];
   validFrom:            string;
   validTo:              string | null;
   recordedAt:           string;

@@ -13,12 +13,13 @@ import {
   type Db,
   withTenantContext,
 } from '@revelation-srs/db';
-import { EVENT_TYPES, NotFoundError, ValidationError, RuleNotConfiguredError } from '@revelation-srs/domain';
+import { EVENT_TYPES, NotFoundError, ValidationError } from '@revelation-srs/domain';
 import type { AwardConferredV1Payload } from '@revelation-srs/domain';
 
 import type { IntegrationBusPublisher } from '../integration-bus/publisher.js';
 import type { EnrolmentService } from '../enrolment/service.js';
-import type { RulesEngine } from '../rules-engine/engine.js';
+import { approvedCreditFor } from '../curriculum/academic-exception-service.js';
+import { RuleTrace, type RuleVersionCitation, type RulesEngine } from '../rules-engine/engine.js';
 import { clockNow } from '../clock.js';
 
 // ── DTOs ─────────────────────────────────────────────────────────────────────
@@ -29,6 +30,18 @@ export interface ClassificationRecommendation {
   classificationCode: string;
   algorithm:          string;
   boundariesApplied:  Array<{ code: string; minimumMark: number }>;
+  outcomeCount:       number;
+  totalCreditValue:   number;
+  /** Credit passed, compensated or condoned, plus approved recognised credit. */
+  earnedCredits:      number;
+  recognisedCredits:  number;
+  /** award-credit-requirement for the qualification, or null when unconfigured. */
+  requiredCredits:    number | null;
+  /** The mark sits within classification-discretion-zone below the next boundary up. */
+  inDiscretionZone:   boolean;
+  discretionZone:     { widthPercent: number; nextBoundaryCode: string; nextBoundaryMark: number } | null;
+  /** Every rule the calculation used (D-35). */
+  ruleVersions:       RuleVersionCitation[];
 }
 
 export interface AwardDto {
@@ -83,16 +96,31 @@ export class AwardService {
   async calculateClassification(
     enrolmentId: string,
     tenantId: string,
+    qualificationCode?: string,
   ): Promise<ClassificationRecommendation> {
     const enrolment = await this.#getEnrolment(enrolmentId, tenantId);
     const outcomes = await this.#getRatifiedOutcomes(enrolmentId, tenantId);
 
+    const trace = new RuleTrace();
     const ctx = { tenantId, programmeId: enrolment.programmeId ?? '' };
-    const algorithm = await this.#getAlgorithm(ctx);
-    const boundaries = await this.#getBoundaries(ctx);
+    const algorithm = await this.#getAlgorithm(ctx, trace);
+    const boundaries = await this.#getBoundaries(ctx, trace);
 
     const aggregateMark = this.#applyAlgorithm(algorithm, outcomes);
     const classificationCode = this.#classify(aggregateMark, boundaries);
+
+    const recognised = (await approvedCreditFor(this.db, tenantId, enrolmentId)).reduce((sum, c) => sum + c.creditValue, 0);
+    const earnedCredits = outcomes.filter((o) => ['pass', 'compensated', 'condoned'].includes(o.resultCode)).reduce((sum, o) => sum + o.creditValue, 0) + recognised;
+    const creditRule = await this.rules.getOptionalRule<Record<string, unknown>>(
+      ctx, 'award-credit-requirement', [...(qualificationCode ? [qualificationCode] : []), 'default'], trace,
+    );
+    const requiredCredits = creditRule ? Number(creditRule['requiredCredits'] ?? creditRule['credits'] ?? 0) : null;
+
+    // The discretion zone: within widthPercent marks below the next boundary up (D-35).
+    const zoneRule = await this.rules.getOptionalRule<Record<string, unknown>>(ctx, 'classification-discretion-zone', ['undergraduate', 'default'], trace);
+    const width = zoneRule ? Number(zoneRule['widthPercent'] ?? zoneRule['width'] ?? 0) : 0;
+    const next = [...boundaries].sort((a, b) => a.minimumMark - b.minimumMark).find((b) => b.minimumMark > aggregateMark) ?? null;
+    const discretionZone = zoneRule && next ? { widthPercent: width, nextBoundaryCode: next.code, nextBoundaryMark: next.minimumMark } : null;
 
     return {
       enrolmentId,
@@ -100,6 +128,69 @@ export class AwardService {
       classificationCode,
       algorithm,
       boundariesApplied: boundaries,
+      outcomeCount: outcomes.length,
+      totalCreditValue: outcomes.reduce((sum, o) => sum + o.creditValue, 0),
+      earnedCredits,
+      recognisedCredits: recognised,
+      requiredCredits,
+      inDiscretionZone: discretionZone !== null && next !== null && next.minimumMark - aggregateMark <= width,
+      discretionZone,
+      ruleVersions: trace.entries,
+    };
+  }
+
+  /**
+   * Writes a recommendation's classification evidence in the caller's
+   * transaction (D-35), so the evidence and the recommendation stand or
+   * fall together. The award is linked at conferment.
+   */
+  async writeClassificationEvidence(tx: Pick<Db, 'execute'>, tenantId: string, recommendationId: string, c: ClassificationRecommendation): Promise<void> {
+    await tx.execute(sql`
+      INSERT INTO award_calculation_evidence (
+        tenant_id, award_id, award_recommendation_id, algorithm,
+        aggregate_mark, classification_code,
+        boundaries_applied, outcome_count, total_credit_value,
+        rule_snapshot, rule_versions
+      ) VALUES (
+        ${tenantId}::uuid, NULL, ${recommendationId}::uuid, ${c.algorithm},
+        ${c.aggregateMark}, ${c.classificationCode},
+        ${JSON.stringify(c.boundariesApplied)}::jsonb, ${c.outcomeCount}, ${c.totalCreditValue},
+        ${JSON.stringify({
+          earnedCredits: c.earnedCredits, recognisedCredits: c.recognisedCredits, requiredCredits: c.requiredCredits,
+          inDiscretionZone: c.inDiscretionZone, discretionZone: c.discretionZone,
+        })}::jsonb, ${JSON.stringify(c.ruleVersions)}::jsonb
+      )
+    `);
+  }
+
+  /** The evidence a recommendation was made on, if any. */
+  async getRecommendationEvidence(tenantId: string, recommendationId: string): Promise<(ClassificationRecommendation & { awardId: string | null; calculatedAt: Date }) | null> {
+    const rows = (await withTenantContext(this.db, tenantId, (tx) => tx.execute(sql`
+      SELECT award_id, algorithm, aggregate_mark::float AS aggregate_mark, classification_code, boundaries_applied,
+             outcome_count, total_credit_value::float AS total_credit_value, rule_snapshot, rule_versions, calculated_at
+      FROM award_calculation_evidence
+      WHERE tenant_id = ${tenantId}::uuid AND award_recommendation_id = ${recommendationId}::uuid
+      ORDER BY calculated_at DESC LIMIT 1
+    `))) as unknown as Array<Record<string, unknown>>;
+    const row = rows[0];
+    if (!row) return null;
+    const snap = (row['rule_snapshot'] ?? {}) as Partial<ClassificationRecommendation>;
+    return {
+      enrolmentId: '',
+      awardId: (row['award_id'] as string | null) ?? null,
+      aggregateMark: row['aggregate_mark'] as number,
+      classificationCode: row['classification_code'] as string,
+      algorithm: row['algorithm'] as string,
+      boundariesApplied: row['boundaries_applied'] as Array<{ code: string; minimumMark: number }>,
+      outcomeCount: Number(row['outcome_count']),
+      totalCreditValue: row['total_credit_value'] as number,
+      earnedCredits: snap.earnedCredits ?? 0,
+      recognisedCredits: snap.recognisedCredits ?? 0,
+      requiredCredits: snap.requiredCredits ?? null,
+      inDiscretionZone: snap.inDiscretionZone ?? false,
+      discretionZone: snap.discretionZone ?? null,
+      ruleVersions: (row['rule_versions'] ?? []) as RuleVersionCitation[],
+      calculatedAt: new Date(row['calculated_at'] as string),
     };
   }
 
@@ -114,13 +205,14 @@ export class AwardService {
     tenantId: string,
     input: Omit<ConferAwardInput, 'examBoardId'> & { examBoardId: string | null; awardId: string },
     actorId: string,
-    recommendation: ClassificationRecommendation | null,
+    /** The recommendation whose classification evidence the award is linked to. */
+    evidenceRecommendationId: string | null,
   ): Promise<string> {
     const existing = await this.#getCurrentAward(enrolmentId, tenantId);
     if (existing?.awardId === input.awardId) return input.awardId;
     if (existing) throw new ValidationError(`Enrolment '${enrolmentId}' already has a conferred award`);
     const enrolment = await this.#getEnrolment(enrolmentId, tenantId);
-    return this.#recordAward(enrolmentId, enrolment, tenantId, input, actorId, recommendation, input.awardId);
+    return this.#recordAward(enrolmentId, enrolment, tenantId, input, actorId, evidenceRecommendationId, input.awardId);
   }
 
   /** Throws unless the exam board is ratified and covers the enrolment. */
@@ -134,7 +226,7 @@ export class AwardService {
     tenantId: string,
     input: Omit<ConferAwardInput, 'examBoardId'> & { examBoardId: string | null },
     actorId: string,
-    recommendation: ClassificationRecommendation | null,
+    evidenceRecommendationId: string | null,
     requestedAwardId?: string,
   ): Promise<string> {
     const now   = clockNow();
@@ -161,9 +253,11 @@ export class AwardService {
         recordedAt:          now,
         recordedUntil:       null,
       });
+      if (evidenceRecommendationId) {
+        await tx.execute(sql`UPDATE award_calculation_evidence SET award_id = ${awardId}::uuid
+          WHERE tenant_id = ${tenantId}::uuid AND award_recommendation_id = ${evidenceRecommendationId}::uuid`);
+      }
     });
-
-    if (recommendation) await this.#writeAwardEvidence(tenantId, awardId, recommendation);
 
     // Graduate the enrolment via the standard transition path to preserve
     // the transition ledger and person status cascade (→ alumnus).
@@ -380,31 +474,22 @@ export class AwardService {
     return rows[0] ? awardToDto(rows[0]) : null;
   }
 
-  async #getAlgorithm(ctx: { tenantId: string; programmeId: string }): Promise<string> {
-    try {
-      const rule = await this.rules.getRule<{ algorithm: string }>(ctx, 'classification-algorithm', 'undergraduate');
-      return rule.algorithm ?? 'weighted-average';
-    } catch (err) {
-      if (err instanceof RuleNotConfiguredError) return 'weighted-average';
-      throw err;
-    }
+  async #getAlgorithm(ctx: { tenantId: string; programmeId: string }, trace: RuleTrace): Promise<string> {
+    const rule = await this.rules.getRuleOrDefault<{ algorithm?: string }>(ctx, 'classification-algorithm', 'undergraduate', { algorithm: 'weighted-average' }, trace);
+    return rule.algorithm ?? 'weighted-average';
   }
 
-  async #getBoundaries(ctx: { tenantId: string; programmeId: string }): Promise<Array<{ code: string; minimumMark: number }>> {
-    try {
-      return await this.rules.getClassificationBoundaries(ctx);
-    } catch (err) {
-      if (err instanceof RuleNotConfiguredError) {
-        // Sensible UK HE defaults
-        return [
-          { code: 'first',        minimumMark: 70 },
-          { code: 'upper-second', minimumMark: 60 },
-          { code: 'lower-second', minimumMark: 50 },
-          { code: 'third',        minimumMark: 40 },
-        ];
-      }
-      throw err;
-    }
+  async #getBoundaries(ctx: { tenantId: string; programmeId: string }, trace: RuleTrace): Promise<Array<{ code: string; minimumMark: number }>> {
+    // Unconfigured: the usual UK HE boundaries, recorded as built-in defaults (D-35).
+    const rule = await this.rules.getRuleOrDefault<{ boundaries: Array<{ code: string; minimumMark: number }> }>(ctx, 'classification-boundary', 'undergraduate', {
+      boundaries: [
+        { code: 'first',        minimumMark: 70 },
+        { code: 'upper-second', minimumMark: 60 },
+        { code: 'lower-second', minimumMark: 50 },
+        { code: 'third',        minimumMark: 40 },
+      ],
+    }, trace);
+    return rule.boundaries;
   }
 
   #applyAlgorithm(
@@ -447,30 +532,6 @@ export class AwardService {
     return 'fail';
   }
 
-  async #writeAwardEvidence(
-    tenantId: string,
-    awardId: string,
-    recommendation: ClassificationRecommendation,
-  ): Promise<void> {
-    try {
-      const boundariesJson = JSON.stringify(recommendation.boundariesApplied);
-      await this.db.execute(sql`
-        INSERT INTO award_calculation_evidence (
-          tenant_id, award_id, algorithm,
-          aggregate_mark, classification_code,
-          boundaries_applied, outcome_count, total_credit_value,
-          rule_snapshot
-        ) VALUES (
-          ${tenantId}::uuid, ${awardId}::uuid, ${recommendation.algorithm},
-          ${recommendation.aggregateMark}, ${recommendation.classificationCode},
-          ${boundariesJson}::jsonb, 0, 0,
-          '{}'::jsonb
-        )
-      `);
-    } catch {
-      // Evidence write failure must not block the award itself
-    }
-  }
 }
 
 // ── Wire helper ───────────────────────────────────────────────────────────────

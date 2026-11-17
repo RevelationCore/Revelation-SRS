@@ -10,6 +10,8 @@ import type {
 import type { AwardDto } from '../platform/progression/award-service.js';
 import type { HearDto } from '../platform/progression/hear-service.js';
 
+import { RuleVersionSchema } from './rule-version-schema.js';
+
 const ErrorSchema = Type.Object({
   type: Type.String(),
   title: Type.String(),
@@ -140,6 +142,9 @@ export function progressionRoutes(fastify: FastifyInstance): void {
             condonementThreshold: Type.Union([Type.Number(), Type.Null()]), decisionCode: Type.String(),
             recognisedCredits: Type.Number(), recognisedCreditIds: Type.Array(Type.String()),
             appliedExceptions: Type.Array(Type.Object({ exceptionId: Type.String(), ruleCode: Type.String(), exceptionTypeCode: Type.String() })),
+            minimumModulePasses: Type.Union([Type.Number(), Type.Null()]),
+            modulesPassed: Type.Union([Type.Number(), Type.Null()]),
+            ruleVersions: Type.Array(RuleVersionSchema, { description: 'The rule versions the decision used (D-35); empty for evidence recorded before that' }),
             calculatedAt: Type.String(),
           }),
           404: ErrorSchema,
@@ -168,6 +173,14 @@ export function progressionRoutes(fastify: FastifyInstance): void {
             classificationCode: Type.String(),
             algorithm:          Type.String(),
             boundariesApplied:  Type.Array(Type.Object({ code: Type.String(), minimumMark: Type.Number() })),
+            outcomeCount:       Type.Number(),
+            totalCreditValue:   Type.Number(),
+            earnedCredits:      Type.Number(),
+            recognisedCredits:  Type.Number(),
+            requiredCredits:    Type.Union([Type.Number(), Type.Null()]),
+            inDiscretionZone:   Type.Boolean(),
+            discretionZone:     Type.Union([Type.Object({ widthPercent: Type.Number(), nextBoundaryCode: Type.String(), nextBoundaryMark: Type.Number() }), Type.Null()]),
+            ruleVersions:       Type.Array(RuleVersionSchema),
           }),
           404: ErrorSchema,
         },

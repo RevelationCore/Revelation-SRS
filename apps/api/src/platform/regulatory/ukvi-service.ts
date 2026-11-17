@@ -21,7 +21,7 @@ import {
 } from '@revelation-srs/domain';
 
 import type { IntegrationBusPublisher } from '../integration-bus/publisher.js';
-import type { RulesEngine } from '../rules-engine/engine.js';
+import { RuleTrace, type RuleVersionCitation, type RulesEngine } from '../rules-engine/engine.js';
 import type { WorkflowBridgeService } from '../platform-controls/workflow-bridge-service.js';
 import type { ReviewActivitiesService } from '../platform-controls/review-activities.js';
 import type { ReviewExecutionService } from '../platform-controls/review-execution-service.js';
@@ -265,7 +265,8 @@ export class UkviService {
   }
 
   async evaluateComplianceAlerts(tenantId: string, actorId: string): Promise<{ alertsRaised: number }> {
-    const threshold = await this.#getAttendanceThreshold(tenantId);
+    const trace = new RuleTrace();
+    const threshold = await this.#getAttendanceThreshold(tenantId, trace);
     const latestReport = await this.#loadLatestAttendanceReport(tenantId);
     const students = extractAttendanceStudents(latestReport?.report_payload);
     const now = clockNow();
@@ -281,6 +282,7 @@ export class UkviService {
         actorId,
         now,
         true,
+        trace.entries,
       );
       if (alertId) alertsRaised += 1;
     }
@@ -646,6 +648,7 @@ export class UkviService {
     actorId: string,
     triggeredAt: Date,
     includeResolvedDuplicates = false,
+    ruleVersions: RuleVersionCitation[] = [],
   ): Promise<string | null> {
     const existing = await withTenantContext(this.db, tenantId, async (tx) =>
       tx
@@ -677,6 +680,7 @@ export class UkviService {
           triggeredAt,
           resolvedAt: null,
           resolvedBy: null,
+          ruleVersions: ruleVersions as unknown as Array<Record<string, unknown>>,
         })
         .onConflictDoNothing()
         .returning({ id: ukviComplianceAlerts.id }),
@@ -703,18 +707,13 @@ export class UkviService {
     }
   }
 
-  async #getAttendanceThreshold(tenantId: string): Promise<number> {
-    try {
-      const rule = await this.rules.getRule<{ maxUnauthorisedAbsences?: number; threshold?: number } | number>(
-        { tenantId, programmeId: '' },
-        'ukvi-attendance-threshold',
-        'default',
-      );
-      if (typeof rule === 'number') return rule;
-      return rule.maxUnauthorisedAbsences ?? rule.threshold ?? 10;
-    } catch {
-      return 10;
-    }
+  async #getAttendanceThreshold(tenantId: string, trace: RuleTrace): Promise<number> {
+    const ctx = { tenantId, programmeId: '' };
+    const rule = await this.rules.getRuleOrDefault<{ maxUnauthorisedAbsences?: number; threshold?: number } | number>(
+      ctx, 'ukvi-attendance-threshold', 'default', { maxUnauthorisedAbsences: 10 }, trace,
+    );
+    if (typeof rule === 'number') return rule;
+    return rule.maxUnauthorisedAbsences ?? rule.threshold ?? 10;
   }
 
   async #publishAttendanceSubmitted(

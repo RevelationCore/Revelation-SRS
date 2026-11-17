@@ -1,3 +1,5 @@
+import type { RuleVersion } from '../components/RuleVersionsPanel.js';
+
 import { ApiError, api, getStoredToken } from './client.js';
 
 /** Award recommendation and conferment, and reassessment plans (BPR-D14; BP-06-002/003). */
@@ -98,11 +100,21 @@ export interface ProgressionEvidence {
   recognisedCredits: number;
   recognisedCreditIds: string[];
   appliedExceptions: Array<{ exceptionId: string; ruleCode: string; exceptionTypeCode: string }>;
+  minimumModulePasses: number | null;
+  modulesPassed: number | null;
+  ruleVersions: RuleVersion[];
   calculatedAt: string;
 }
 
 export const evaluateProgression = (enrolmentId: string, academicYear: string) =>
   api.post(`/api/v1/enrolments/${enrolmentId}/progression`, { academicYear });
+export interface RecommendationEvidence {
+  awardId: string | null; aggregateMark: number; classificationCode: string; algorithm: string;
+  earnedCredits: number; requiredCredits: number | null; inDiscretionZone: boolean; ruleVersions: RuleVersion[]; calculatedAt: string;
+}
+export const getRecommendationEvidence = (recommendationId: string) =>
+  api.get<RecommendationEvidence>(`/api/v1/award-recommendations/${recommendationId}/evidence`);
+
 export const getProgressionEvidence = (progressionDecisionId: string) =>
   api.get<ProgressionEvidence>(`/api/v1/progression-decisions/${progressionDecisionId}/evidence`);
 

@@ -1,5 +1,5 @@
 import { and, desc, eq, sql } from 'drizzle-orm';
-import { ruleExceptions, withTenantContext, type Db } from '@revelation-srs/db';
+import { ruleExceptions, tenants, withTenantContext, type Db } from '@revelation-srs/db';
 import { RuleNotConfiguredError } from '@revelation-srs/domain';
 
 import { clockNow } from '../clock.js';
@@ -93,7 +93,76 @@ export interface RuleContext {
 }
 
 interface RuleRow {
+  id: string;
+  version_id: string;
+  programme_id: string | null;
+  valid_from: Date | string;
   rule_value: unknown;
+}
+
+/** Where a value a calculation used came from (Phase 5 D-35). */
+export type RuleSource =
+  | 'programme'
+  | 'tenant-default'
+  | 'exception'
+  | 'component-override'
+  | 'built-in-default'
+  | 'reassessment-plan';
+
+/** One rule a calculation used, citing the exact academic_rule version. */
+export interface RuleVersionCitation {
+  ruleTypeCode: string;
+  ruleKey: string | null;
+  ruleId: string | null;
+  versionId: string | null;
+  programmeId: string | null;
+  validFrom: string | null;
+  source: RuleSource;
+  value: unknown;
+  exceptionId?: string;
+  componentId?: string;
+  planId?: string;
+}
+
+export interface RuleWithProvenance<T> {
+  value: T;
+  ruleId: string;
+  versionId: string;
+  programmeId: string | null;
+  validFrom: string;
+  source: 'programme' | 'tenant-default';
+}
+
+/**
+ * The rules one calculation used (D-35): every configured rule read, every
+ * exception, component override and built-in fallback. Stored with the
+ * result as `rule_versions`, so a result can be traced to the bitemporal
+ * academic_rule rows that produced it.
+ */
+export class RuleTrace {
+  readonly #entries = new Map<string, RuleVersionCitation>();
+
+  cite(citation: RuleVersionCitation): void {
+    const key = [citation.ruleTypeCode, citation.ruleKey, citation.versionId, citation.source, citation.exceptionId, citation.componentId, citation.planId].join('|');
+    if (!this.#entries.has(key)) this.#entries.set(key, citation);
+  }
+
+  merge(other: RuleTrace | RuleVersionCitation[]): void {
+    for (const c of Array.isArray(other) ? other : other.entries) this.cite(c);
+  }
+
+  get entries(): RuleVersionCitation[] {
+    return [...this.#entries.values()];
+  }
+
+  /** The cited academic_rule version ids, sorted, for comparing two calculations. */
+  versionIds(): string[] {
+    return this.entries.map((e) => e.versionId).filter((v): v is string => v !== null).sort();
+  }
+}
+
+function citationOf<T>(ruleType: string, ruleKey: string, p: RuleWithProvenance<T>): RuleVersionCitation {
+  return { ruleTypeCode: ruleType, ruleKey, ruleId: p.ruleId, versionId: p.versionId, programmeId: p.programmeId, validFrom: p.validFrom, source: p.source, value: p.value };
 }
 
 /**
@@ -114,14 +183,29 @@ export class RulesEngine {
     ctx:      RuleContext,
     ruleType: RuleTypeCode,
     ruleKey:  string,
+    trace?:   RuleTrace,
   ): Promise<T> {
+    const p = await this.getRuleWithProvenance<T>(ctx, ruleType, ruleKey);
+    trace?.cite(citationOf(ruleType, ruleKey, p));
+    return p.value;
+  }
+
+  /**
+   * A rule's value with the exact academic_rule row and version it came
+   * from (D-35). Programme rules take precedence over tenant defaults.
+   */
+  async getRuleWithProvenance<T>(
+    ctx:      RuleContext,
+    ruleType: RuleTypeCode,
+    ruleKey:  string,
+  ): Promise<RuleWithProvenance<T>> {
     // Include date in cache key so historical and current lookups are separate entries
     const asOfDay  = (ctx.asOfDate ?? clockNow()).toISOString().slice(0, 10);
     const cacheKey = `${ctx.tenantId}:${ctx.programmeId}:${ruleType}:${ruleKey}:${asOfDay}`;
     const cached   = this.cache.get(cacheKey);
 
     if (cached && cached.expiresAt > Date.now()) {  // clock:allow
-      return cached.value as T;
+      return cached.value as RuleWithProvenance<T>;
     }
 
     const asOf = ctx.asOfDate ?? clockNow();
@@ -136,7 +220,7 @@ export class RulesEngine {
 
     const rows = await withTenantContext(this.db, ctx.tenantId, async (tx) =>
       tx.execute(
-        sql`SELECT rule_value FROM academic_rule
+        sql`SELECT id, version_id, programme_id, valid_from, rule_value FROM academic_rule
             WHERE tenant_id = ${ctx.tenantId}
               AND rule_type_code = ${ruleType}
               AND rule_key = ${ruleKey}
@@ -149,16 +233,54 @@ export class RulesEngine {
       ),
     ) as unknown as RuleRow[];
 
-    if (rows.length === 0) {
+    const row = rows[0];
+    if (!row) {
       throw new RuleNotConfiguredError(
         `${ruleType}:${ruleKey}`,
         `programme=${ctx.programmeId} tenant=${ctx.tenantId}`,
       );
     }
 
-    const value = rows[0]?.rule_value as T;
-    this.cache.set(cacheKey, { value, expiresAt: Date.now() + 5 * 60 * 1000 });  // clock:allow
+    const result: RuleWithProvenance<T> = {
+      value: row.rule_value as T,
+      ruleId: row.id,
+      versionId: row.version_id,
+      programmeId: row.programme_id,
+      validFrom: new Date(row.valid_from).toISOString(),
+      source: row.programme_id ? 'programme' : 'tenant-default',
+    };
+    this.cache.set(cacheKey, { value: result, expiresAt: Date.now() + 5 * 60 * 1000 });  // clock:allow
+    return result;
+  }
+
+  /**
+   * A built-in value used because no rule is configured (D-35). Recorded in
+   * the trace as `built-in-default`; refused with RuleNotConfiguredError when
+   * the tenant sets `rules.builtInDefaults` to `refuse`.
+   */
+  async builtInDefault<T>(ctx: RuleContext, ruleType: RuleTypeCode, ruleKey: string, value: T, trace?: RuleTrace): Promise<T> {
+    if (await this.#refusesBuiltInDefaults(ctx.tenantId)) {
+      throw new RuleNotConfiguredError(`${ruleType}:${ruleKey}`, `programme=${ctx.programmeId} tenant=${ctx.tenantId} (built-in defaults refused)`);
+    }
+    trace?.cite({ ruleTypeCode: ruleType, ruleKey, ruleId: null, versionId: null, programmeId: null, validFrom: null, source: 'built-in-default', value });
     return value;
+  }
+
+  /** The configured rule, or the built-in value when none is configured (recorded as such). */
+  async getRuleOrDefault<T>(ctx: RuleContext, ruleType: RuleTypeCode, ruleKey: string, fallback: T, trace?: RuleTrace): Promise<T> {
+    try {
+      return await this.getRule<T>(ctx, ruleType, ruleKey, trace);
+    } catch (err) {
+      if (!(err instanceof RuleNotConfiguredError)) throw err;
+      return this.builtInDefault(ctx, ruleType, ruleKey, fallback, trace);
+    }
+  }
+
+  async #refusesBuiltInDefaults(tenantId: string): Promise<boolean> {
+    const [row] = await this.db.select({ configuration: tenants.configuration }).from(tenants)
+      .where(eq(tenants.id, tenantId as `${string}-${string}-${string}-${string}-${string}`)).limit(1);
+    const rules = (row?.configuration?.['rules'] ?? {}) as Record<string, unknown>;
+    return rules['builtInDefaults'] === 'refuse';
   }
 
   /** Invalidate cache for a tenant (call when a rule is updated). */
@@ -181,6 +303,7 @@ export class RulesEngine {
     ruleType: EnrolmentRuleType,
     enrolmentId: string,
     programmeRule: () => Promise<T | null>,
+    trace?: RuleTrace,
   ): Promise<{ value: T | null; exception: AppliedRuleException | null }> {
     const onDate = (ctx.asOfDate ?? clockNow()).toISOString().slice(0, 10);
     const rows = await withTenantContext(this.db, ctx.tenantId, (tx) => tx.select().from(ruleExceptions).where(and(
@@ -197,24 +320,29 @@ export class RulesEngine {
     const applied: AppliedRuleException = {
       exceptionId: exception.id, ruleCode: ruleType, exceptionTypeCode: exception.exceptionTypeCode as 'waiver' | 'variation',
     };
-    if (exception.exceptionTypeCode === 'waiver') return { value: null, exception: applied };
+    const cite = (value: unknown) => trace?.cite({
+      ruleTypeCode: ruleType, ruleKey: null, ruleId: null, versionId: null, programmeId: null, validFrom: null,
+      source: 'exception', exceptionId: exception.id, value,
+    });
+    if (exception.exceptionTypeCode === 'waiver') { cite(null); return { value: null, exception: applied }; }
     const base = await programmeRule();
+    cite(exception.variationValue ?? {});
     return { value: { ...(base ?? {}), ...(exception.variationValue ?? {}) } as T, exception: applied };
   }
 
-  async getPassMark(ctx: RuleContext): Promise<number> {
-    const rule = await this.getRule<{ mark: number }>(ctx, 'pass-mark', 'undergraduate-default');
+  async getPassMark(ctx: RuleContext, trace?: RuleTrace): Promise<number> {
+    const rule = await this.getRule<{ mark: number }>(ctx, 'pass-mark', 'undergraduate-default', trace);
     return rule.mark;
   }
 
-  async getResitMarkCap(ctx: RuleContext): Promise<number> {
-    const rule = await this.getRule<{ cap: number }>(ctx, 'resit-mark-cap', 'default');
+  async getResitMarkCap(ctx: RuleContext, trace?: RuleTrace): Promise<number> {
+    const rule = await this.getRule<{ cap: number }>(ctx, 'resit-mark-cap', 'default', trace);
     return rule.cap;
   }
 
-  async getClassificationBoundaries(ctx: RuleContext): Promise<Array<{ code: string; minimumMark: number }>> {
+  async getClassificationBoundaries(ctx: RuleContext, trace?: RuleTrace): Promise<Array<{ code: string; minimumMark: number }>> {
     const rule = await this.getRule<{ boundaries: Array<{ code: string; minimumMark: number }> }>(
-      ctx, 'classification-boundary', 'undergraduate',
+      ctx, 'classification-boundary', 'undergraduate', trace,
     );
     return rule.boundaries;
   }
@@ -287,10 +415,10 @@ export class RulesEngine {
   }
 
   /** Any configured value of an optional rule, programme over tenant; null when unconfigured. */
-  async getOptionalRule<T>(ctx: RuleContext, ruleType: RuleTypeCode, ruleKeys: string[]): Promise<T | null> {
+  async getOptionalRule<T>(ctx: RuleContext, ruleType: RuleTypeCode, ruleKeys: string[], trace?: RuleTrace): Promise<T | null> {
     for (const key of ruleKeys) {
       try {
-        return await this.getRule<T>(ctx, ruleType, key);
+        return await this.getRule<T>(ctx, ruleType, key, trace);
       } catch (err) {
         if (!(err instanceof RuleNotConfiguredError)) throw err;
       }

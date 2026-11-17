@@ -18768,6 +18768,233 @@
         }
       }
     },
+    "/api/v1/award-recommendations/{recommendationId}/evidence": {
+      "get": {
+        "operationId": "getAwardRecommendationsByRecommendationIdEvidence",
+        "tags": [
+          "progression"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "recommendationId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "awardId",
+                    "aggregateMark",
+                    "classificationCode",
+                    "algorithm",
+                    "boundariesApplied",
+                    "outcomeCount",
+                    "totalCreditValue",
+                    "earnedCredits",
+                    "recognisedCredits",
+                    "requiredCredits",
+                    "inDiscretionZone",
+                    "ruleVersions",
+                    "calculatedAt"
+                  ],
+                  "properties": {
+                    "awardId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "aggregateMark": {
+                      "type": "number"
+                    },
+                    "classificationCode": {
+                      "type": "string"
+                    },
+                    "algorithm": {
+                      "type": "string"
+                    },
+                    "boundariesApplied": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "code",
+                          "minimumMark"
+                        ],
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "minimumMark": {
+                            "type": "number"
+                          }
+                        }
+                      }
+                    },
+                    "outcomeCount": {
+                      "type": "number"
+                    },
+                    "totalCreditValue": {
+                      "type": "number"
+                    },
+                    "earnedCredits": {
+                      "type": "number"
+                    },
+                    "recognisedCredits": {
+                      "type": "number"
+                    },
+                    "requiredCredits": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "inDiscretionZone": {
+                      "type": "boolean"
+                    },
+                    "ruleVersions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "ruleTypeCode",
+                          "ruleKey",
+                          "ruleId",
+                          "versionId",
+                          "programmeId",
+                          "validFrom",
+                          "source",
+                          "value"
+                        ],
+                        "properties": {
+                          "ruleTypeCode": {
+                            "type": "string"
+                          },
+                          "ruleKey": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "ruleId": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "versionId": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "programmeId": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "validFrom": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "source": {
+                            "description": "programme | tenant-default | exception | component-override | built-in-default | reassessment-plan",
+                            "type": "string"
+                          },
+                          "value": {},
+                          "exceptionId": {
+                            "type": "string"
+                          },
+                          "componentId": {
+                            "type": "string"
+                          },
+                          "planId": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "calculatedAt": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/award-recommendations/{recommendationId}/conferment": {
       "post": {
         "operationId": "createAwardRecommendationsByRecommendationIdConferment",
@@ -29684,6 +29911,9 @@
                     "recognisedCredits",
                     "recognisedCreditIds",
                     "appliedExceptions",
+                    "minimumModulePasses",
+                    "modulesPassed",
+                    "ruleVersions",
                     "calculatedAt"
                   ],
                   "properties": {
@@ -29751,6 +29981,112 @@
                             "type": "string"
                           },
                           "exceptionTypeCode": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "minimumModulePasses": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "modulesPassed": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "ruleVersions": {
+                      "description": "The rule versions the decision used (D-35); empty for evidence recorded before that",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "ruleTypeCode",
+                          "ruleKey",
+                          "ruleId",
+                          "versionId",
+                          "programmeId",
+                          "validFrom",
+                          "source",
+                          "value"
+                        ],
+                        "properties": {
+                          "ruleTypeCode": {
+                            "type": "string"
+                          },
+                          "ruleKey": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "ruleId": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "versionId": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "programmeId": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "validFrom": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "source": {
+                            "description": "programme | tenant-default | exception | component-override | built-in-default | reassessment-plan",
+                            "type": "string"
+                          },
+                          "value": {},
+                          "exceptionId": {
+                            "type": "string"
+                          },
+                          "componentId": {
+                            "type": "string"
+                          },
+                          "planId": {
                             "type": "string"
                           }
                         }
@@ -29825,7 +30161,15 @@
                     "aggregateMark",
                     "classificationCode",
                     "algorithm",
-                    "boundariesApplied"
+                    "boundariesApplied",
+                    "outcomeCount",
+                    "totalCreditValue",
+                    "earnedCredits",
+                    "recognisedCredits",
+                    "requiredCredits",
+                    "inDiscretionZone",
+                    "discretionZone",
+                    "ruleVersions"
                   ],
                   "properties": {
                     "enrolmentId": {
@@ -29854,6 +30198,142 @@
                           },
                           "minimumMark": {
                             "type": "number"
+                          }
+                        }
+                      }
+                    },
+                    "outcomeCount": {
+                      "type": "number"
+                    },
+                    "totalCreditValue": {
+                      "type": "number"
+                    },
+                    "earnedCredits": {
+                      "type": "number"
+                    },
+                    "recognisedCredits": {
+                      "type": "number"
+                    },
+                    "requiredCredits": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "inDiscretionZone": {
+                      "type": "boolean"
+                    },
+                    "discretionZone": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": [
+                            "widthPercent",
+                            "nextBoundaryCode",
+                            "nextBoundaryMark"
+                          ],
+                          "properties": {
+                            "widthPercent": {
+                              "type": "number"
+                            },
+                            "nextBoundaryCode": {
+                              "type": "string"
+                            },
+                            "nextBoundaryMark": {
+                              "type": "number"
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "ruleVersions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "ruleTypeCode",
+                          "ruleKey",
+                          "ruleId",
+                          "versionId",
+                          "programmeId",
+                          "validFrom",
+                          "source",
+                          "value"
+                        ],
+                        "properties": {
+                          "ruleTypeCode": {
+                            "type": "string"
+                          },
+                          "ruleKey": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "ruleId": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "versionId": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "programmeId": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "validFrom": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "source": {
+                            "description": "programme | tenant-default | exception | component-override | built-in-default | reassessment-plan",
+                            "type": "string"
+                          },
+                          "value": {},
+                          "exceptionId": {
+                            "type": "string"
+                          },
+                          "componentId": {
+                            "type": "string"
+                          },
+                          "planId": {
+                            "type": "string"
                           }
                         }
                       }
@@ -51187,6 +51667,7 @@
                     "resultCode",
                     "locked",
                     "calculatedAt",
+                    "ruleVersions",
                     "validFrom",
                     "validTo",
                     "recordedAt",
@@ -51210,6 +51691,92 @@
                     },
                     "calculatedAt": {
                       "type": "string"
+                    },
+                    "ruleVersions": {
+                      "description": "The rules this result used (D-35); empty for results calculated before that was recorded",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "ruleTypeCode",
+                          "ruleKey",
+                          "ruleId",
+                          "versionId",
+                          "programmeId",
+                          "validFrom",
+                          "source",
+                          "value"
+                        ],
+                        "properties": {
+                          "ruleTypeCode": {
+                            "type": "string"
+                          },
+                          "ruleKey": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "ruleId": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "versionId": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "programmeId": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "validFrom": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "source": {
+                            "description": "programme | tenant-default | exception | component-override | built-in-default | reassessment-plan",
+                            "type": "string"
+                          },
+                          "value": {},
+                          "exceptionId": {
+                            "type": "string"
+                          },
+                          "componentId": {
+                            "type": "string"
+                          },
+                          "planId": {
+                            "type": "string"
+                          }
+                        }
+                      }
                     },
                     "validFrom": {
                       "type": "string"
@@ -51307,6 +51874,7 @@
                       "resultCode",
                       "locked",
                       "calculatedAt",
+                      "ruleVersions",
                       "validFrom",
                       "validTo",
                       "recordedAt",
@@ -51330,6 +51898,92 @@
                       },
                       "calculatedAt": {
                         "type": "string"
+                      },
+                      "ruleVersions": {
+                        "description": "The rules this result used (D-35); empty for results calculated before that was recorded",
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "required": [
+                            "ruleTypeCode",
+                            "ruleKey",
+                            "ruleId",
+                            "versionId",
+                            "programmeId",
+                            "validFrom",
+                            "source",
+                            "value"
+                          ],
+                          "properties": {
+                            "ruleTypeCode": {
+                              "type": "string"
+                            },
+                            "ruleKey": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "ruleId": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "versionId": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "programmeId": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "validFrom": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "source": {
+                              "description": "programme | tenant-default | exception | component-override | built-in-default | reassessment-plan",
+                              "type": "string"
+                            },
+                            "value": {},
+                            "exceptionId": {
+                              "type": "string"
+                            },
+                            "componentId": {
+                              "type": "string"
+                            },
+                            "planId": {
+                              "type": "string"
+                            }
+                          }
+                        }
                       },
                       "validFrom": {
                         "type": "string"
@@ -51359,6 +52013,224 @@
                       }
                     }
                   }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/module-results/{moduleResultId}/evidence": {
+      "get": {
+        "operationId": "getModuleResultsByModuleResultIdEvidence",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "moduleResultId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "allOf": [
+                    {
+                      "type": "object",
+                      "required": [
+                        "moduleResultId",
+                        "moduleRegistrationId",
+                        "aggregateMark",
+                        "resultCode",
+                        "locked",
+                        "calculatedAt",
+                        "ruleVersions",
+                        "validFrom",
+                        "validTo",
+                        "recordedAt",
+                        "recordedUntil"
+                      ],
+                      "properties": {
+                        "moduleResultId": {
+                          "type": "string"
+                        },
+                        "moduleRegistrationId": {
+                          "type": "string"
+                        },
+                        "aggregateMark": {
+                          "type": "number"
+                        },
+                        "resultCode": {
+                          "type": "string"
+                        },
+                        "locked": {
+                          "type": "boolean"
+                        },
+                        "calculatedAt": {
+                          "type": "string"
+                        },
+                        "ruleVersions": {
+                          "description": "The rules this result used (D-35); empty for results calculated before that was recorded",
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "ruleTypeCode",
+                              "ruleKey",
+                              "ruleId",
+                              "versionId",
+                              "programmeId",
+                              "validFrom",
+                              "source",
+                              "value"
+                            ],
+                            "properties": {
+                              "ruleTypeCode": {
+                                "type": "string"
+                              },
+                              "ruleKey": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "ruleId": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "versionId": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "programmeId": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "validFrom": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "source": {
+                                "description": "programme | tenant-default | exception | component-override | built-in-default | reassessment-plan",
+                                "type": "string"
+                              },
+                              "value": {},
+                              "exceptionId": {
+                                "type": "string"
+                              },
+                              "componentId": {
+                                "type": "string"
+                              },
+                              "planId": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        },
+                        "validFrom": {
+                          "type": "string"
+                        },
+                        "validTo": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "recordedAt": {
+                          "type": "string"
+                        },
+                        "recordedUntil": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "versionId"
+                      ],
+                      "properties": {
+                        "versionId": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  ]
                 }
               }
             }

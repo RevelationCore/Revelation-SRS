@@ -19,7 +19,7 @@ import type { EnrolmentService } from '../enrolment/service.js';
 import { deterministicUuid } from '../platform-controls/governed-review.js';
 import type { ValueSetService } from '../value-sets/service.js';
 
-import type { AwardService } from './award-service.js';
+import type { AwardService, ClassificationRecommendation } from './award-service.js';
 
 type Uuid = `${string}-${string}-${string}-${string}-${string}`;
 
@@ -77,9 +77,16 @@ export class ConfermentService {
     if (!input.examBoardId) throw new ValidationError('An award recommendation needs the recommending exam board');
     await this.awards.assertRatifiedBoardCoversEnrolment(input.examBoardId, enrolmentId, tenantId);
 
-    let calculated: { classificationCode: string; aggregateMark: number } | null = null;
+    let calculated: ClassificationRecommendation | null = null;
     if (input.awardTypeCode === 'standard' || input.awardTypeCode === 'exit') {
-      calculated = await this.awards.calculateClassification(enrolmentId, tenantId);
+      calculated = await this.awards.calculateClassification(enrolmentId, tenantId, input.qualificationCode);
+      // award-credit-requirement (D-35): a calculated award needs the credit; an aegrotat, which cites a policy authority, does not.
+      if (calculated.requiredCredits !== null && calculated.earnedCredits < calculated.requiredCredits) {
+        throw new ValidationError(
+          `${input.qualificationCode} needs ${calculated.requiredCredits} credits; this student has ${calculated.earnedCredits}`,
+          [{ field: 'qualificationCode', message: 'Below the award credit requirement' }],
+        );
+      }
       if (calculated.classificationCode !== input.classificationCode && !input.discretionReason) {
         throw new ValidationError(
           `The calculated classification is '${calculated.classificationCode}'; recommending '${input.classificationCode}' needs a discretion reason`,
@@ -91,7 +98,8 @@ export class ConfermentService {
     }
 
     try {
-      const [row] = await withTenantContext(this.db, tenantId, (tx) => tx.insert(awardRecommendations).values({
+      const [row] = await withTenantContext(this.db, tenantId, async (tx) => {
+        const inserted = await tx.insert(awardRecommendations).values({
         tenantId: tenantId as Uuid,
         enrolmentId: enrolmentId as Uuid,
         personId: enrolment.personId as Uuid,
@@ -104,7 +112,11 @@ export class ConfermentService {
         discretionReason: calculated && calculated.classificationCode !== input.classificationCode ? input.discretionReason! : null,
         authorityRef: input.authorityRef ?? null,
         recommendedBy: actorId,
-      }).returning());
+      }).returning();
+        // The classification evidence stands or falls with the recommendation (D-35).
+        if (calculated) await this.awards.writeClassificationEvidence(tx, tenantId, inserted[0]!.id, calculated);
+        return inserted;
+      });
       return row!;
     } catch (error) {
       if (isUniqueViolation(error)) throw new ConflictError('This enrolment already has an open award recommendation');
@@ -125,16 +137,25 @@ export class ConfermentService {
     }
 
     const awardId = deterministicUuid(`award-conferment:${recommendation.id}`);
-    const evidence = recommendation.calculatedClassificationCode !== null
-      ? await this.awards.calculateClassification(recommendation.enrolmentId, tenantId)
-      : null;
+    // The award is conferred on the calculation the board recommended against (D-35): if the
+    // classification or any rule version it cited has changed since, the board recommends again.
+    let evidenceRecommendationId: string | null = null;
+    if (recommendation.calculatedClassificationCode !== null) {
+      const now = await this.awards.calculateClassification(recommendation.enrolmentId, tenantId, recommendation.qualificationCode);
+      const then = await this.awards.getRecommendationEvidence(tenantId, recommendation.id);
+      const ids = (c: { ruleVersions: Array<{ versionId: string | null }> }) => c.ruleVersions.map((v) => v.versionId).filter((v): v is string => v !== null).sort().join(',');
+      if (now.classificationCode !== recommendation.calculatedClassificationCode || (then && ids(then) !== ids(now))) {
+        throw new ConflictError('The calculation changed since the recommendation; recommend again');
+      }
+      evidenceRecommendationId = then ? recommendation.id : null;
+    }
     await this.awards.recordConferredAward(recommendation.enrolmentId, tenantId, {
       awardId,
       examBoardId: recommendation.examBoardId,
       qualificationCode: recommendation.qualificationCode,
       classificationCode: recommendation.classificationCode,
       awardDate: input.confermentDate,
-    }, actorId, evidence);
+    }, actorId, evidenceRecommendationId);
 
     const now = clockNow();
     const conferment = await withTenantContext(this.db, tenantId, async (tx) => {

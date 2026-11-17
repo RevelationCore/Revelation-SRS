@@ -50,7 +50,7 @@ export class ValidationError extends DomainError {
 
 export class RuleNotConfiguredError extends DomainError {
   constructor(ruleType: string, context: string) {
-    super(`Rule '${ruleType}' is not configured for ${context}`, 'rule-not-configured', 500);
+    super(`Rule '${ruleType}' is not configured for ${context}`, 'rule-not-configured', 422);
     this.name = 'RuleNotConfiguredError';
   }
 }

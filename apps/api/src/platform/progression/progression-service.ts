@@ -18,7 +18,7 @@ import type { ProgressionDecidedV1Payload } from '@revelation-srs/domain';
 import { assertNotLocked } from '../assessment/lock.js';
 import type { IntegrationBusPublisher } from '../integration-bus/publisher.js';
 import { approvedCreditForYearFor } from '../curriculum/academic-exception-service.js';
-import type { AppliedRuleException, RulesEngine } from '../rules-engine/engine.js';
+import { RuleTrace, type AppliedRuleException, type RuleVersionCitation, type RulesEngine } from '../rules-engine/engine.js';
 import { clockNow } from '../clock.js';
 import type { DeliveryService } from '../delivery/delivery-service.js';
 import { onEnrolmentChanged } from '../delivery/producers/enrolment-flows.js';
@@ -66,9 +66,14 @@ interface ProgressionRules {
   recognisedCreditIds: string[];
   /** Approved rule exceptions that changed a rule for this student. */
   appliedExceptions: AppliedRuleException[];
+  /** Minimum modules passed for the year (progression-pass-requirement), or null. */
+  minimumModulePasses: number | null;
+  /** Every rule the decision used (D-35). */
+  trace: RuleTrace;
 }
 
 interface DecisionEvidence {
+  modulesPassed: number;
   earnedCredits: number;
   compensationCredits: number;
   unresolvedCredits: number;
@@ -87,6 +92,10 @@ export interface ProgressionEvidenceDto {
   recognisedCredits: number;
   recognisedCreditIds: string[];
   appliedExceptions: AppliedRuleException[];
+  minimumModulePasses: number | null;
+  modulesPassed: number | null;
+  /** The rule versions the decision used (D-35); empty for evidence recorded before that. */
+  ruleVersions: RuleVersionCitation[];
   calculatedAt: Date;
 }
 
@@ -144,9 +153,9 @@ export class ProgressionService {
         recordedAt: now,
         recordedUntil: null,
       });
+      // In the decision's transaction: an evidence failure fails the decision (D-35).
+      await this.#writeProgressionEvidence(tx, tenantId, progressionDecisionId, academicYear, rules, evidence);
     });
-
-    await this.#writeProgressionEvidence(tenantId, progressionDecisionId, academicYear, rules, evidence);
 
     if (this.delivery) {
       await onEnrolmentChanged(this.delivery, this.db, tenantId, {
@@ -249,14 +258,17 @@ export class ProgressionService {
       SELECT required_credits::float AS required_credits, earned_credits::float AS earned_credits,
              compensation_credits::float AS compensation_credits, unresolved_credits::float AS unresolved_credits,
              compensation_threshold::float AS compensation_threshold, compensation_credit_limit::float AS compensation_credit_limit,
-             condonement_threshold::float AS condonement_threshold, decision_code, rule_snapshot, calculated_at
+             condonement_threshold::float AS condonement_threshold, decision_code, rule_snapshot, rule_versions, calculated_at
       FROM progression_calculation_evidence
       WHERE tenant_id = ${tenantId}::uuid AND progression_decision_id = ${progressionDecisionId}::uuid
       ORDER BY calculated_at DESC LIMIT 1
     `))) as unknown as Array<Record<string, unknown>>;
     const row = rows[0];
     if (!row) throw new NotFoundError('ProgressionCalculationEvidence', progressionDecisionId);
-    const snapshot = (row['rule_snapshot'] ?? {}) as { recognisedCredits?: number; recognisedCreditIds?: string[]; appliedExceptions?: AppliedRuleException[] };
+    const snapshot = (row['rule_snapshot'] ?? {}) as {
+      recognisedCredits?: number; recognisedCreditIds?: string[]; appliedExceptions?: AppliedRuleException[];
+      minimumModulePasses?: number | null; modulesPassed?: number;
+    };
     return {
       requiredCredits: row['required_credits'] as number,
       earnedCredits: row['earned_credits'] as number,
@@ -269,6 +281,9 @@ export class ProgressionService {
       recognisedCredits: snapshot.recognisedCredits ?? 0,
       recognisedCreditIds: snapshot.recognisedCreditIds ?? [],
       appliedExceptions: snapshot.appliedExceptions ?? [],
+      minimumModulePasses: snapshot.minimumModulePasses ?? null,
+      modulesPassed: snapshot.modulesPassed ?? null,
+      ruleVersions: (row['rule_versions'] ?? []) as RuleVersionCitation[],
       calculatedAt: new Date(row['calculated_at'] as string),
     };
   }
@@ -359,25 +374,36 @@ export class ProgressionService {
     const recognisedCredits = credit.reduce((sum, c) => sum + c.creditValue, 0);
     const totalCredits = outcomes.reduce((sum, outcome) => sum + outcome.creditValue, 0) + recognisedCredits;
     const appliedExceptions: AppliedRuleException[] = [];
+    const trace = new RuleTrace();
 
     // A waiver of the credit requirement removes it; a waiver of the compensation limit lets any
     // eligible credit be compensated. A variation replaces the named fields.
     const required = await this.rules.resolveForEnrolment(ctx, 'progression-credit-requirement', enrolmentId,
-      () => this.#getRawRule(ctx, 'progression-credit-requirement', 'default'));
+      () => this.#getRawRule(ctx, 'progression-credit-requirement', 'default', trace), trace);
     if (required.exception) appliedExceptions.push(required.exception);
     const compensation = await this.rules.resolveForEnrolment(ctx, 'compensation-credit-limit', enrolmentId,
-      () => this.#getRawRule(ctx, 'compensation-credit-limit', 'default'));
+      () => this.#getRawRule(ctx, 'compensation-credit-limit', 'default', trace), trace);
     if (compensation.exception) appliedExceptions.push(compensation.exception);
 
     const waived = (r: { value: unknown; exception: AppliedRuleException | null }) => r.exception?.exceptionTypeCode === 'waiver';
+    // Unconfigured, every credit attempted is required and none may be compensated: recorded as built-in defaults.
+    const requiredCredits = waived(required) ? 0
+      : required.value ? numberFromRule(required.value, ['requiredCredits', 'credits', 'minimumCredits'], totalCredits)
+      : (await this.rules.builtInDefault(ctx, 'progression-credit-requirement', 'default', { requiredCredits: totalCredits }, trace)).requiredCredits;
+    const compensationCreditLimit = waived(compensation) ? totalCredits
+      : compensation.value ? numberFromRule(compensation.value, ['maxCredits', 'creditLimit', 'credits'], 0)
+      : (await this.rules.builtInDefault(ctx, 'compensation-credit-limit', 'default', { maxCredits: 0 }, trace)).maxCredits;
+    const passRule = await this.#getRawRule(ctx, 'progression-pass-requirement', 'default', trace);
     return {
-      requiredCredits: waived(required) ? 0 : numberFromRule(required.value, ['requiredCredits', 'credits', 'minimumCredits'], totalCredits),
-      compensationThreshold: await this.#getOptionalNumericRule(ctx, 'compensation-threshold', 'default', ['minimumMark', 'threshold', 'mark']),
-      compensationCreditLimit: waived(compensation) ? totalCredits : numberFromRule(compensation.value, ['maxCredits', 'creditLimit', 'credits'], 0),
-      condonementThreshold: await this.#getOptionalNumericRule(ctx, 'condonement-threshold', 'default', ['minimumMark', 'threshold', 'mark']),
+      requiredCredits,
+      compensationThreshold: await this.#getOptionalNumericRule(ctx, 'compensation-threshold', 'default', ['minimumMark', 'threshold', 'mark'], trace),
+      compensationCreditLimit,
+      condonementThreshold: await this.#getOptionalNumericRule(ctx, 'condonement-threshold', 'default', ['minimumMark', 'threshold', 'mark'], trace),
       recognisedCredits,
       recognisedCreditIds: credit.map((c) => c.id),
       appliedExceptions,
+      minimumModulePasses: passRule ? numberFromRule(passRule, ['minimumModulePasses', 'minimumPasses', 'modules'], 0) : null,
+      trace,
     };
   }
 
@@ -385,9 +411,10 @@ export class ProgressionService {
     ctx: { tenantId: string; programmeId: string; asOfDate: Date },
     ruleType: Parameters<RulesEngine['getRule']>[1],
     ruleKey: string,
+    trace: RuleTrace,
   ): Promise<Record<string, unknown> | null> {
     try {
-      return await this.rules.getRule<Record<string, unknown>>(ctx, ruleType, ruleKey);
+      return await this.rules.getRule<Record<string, unknown>>(ctx, ruleType, ruleKey, trace);
     } catch (err) {
       if (err instanceof RuleNotConfiguredError) return null;
       throw err;
@@ -399,9 +426,10 @@ export class ProgressionService {
     ruleType: Parameters<RulesEngine['getRule']>[1],
     ruleKey: string,
     fields: string[],
+    trace: RuleTrace,
   ): Promise<number | null> {
     try {
-      const rule = await this.rules.getRule<Record<string, unknown>>(ctx, ruleType, ruleKey);
+      const rule = await this.rules.getRule<Record<string, unknown>>(ctx, ruleType, ruleKey, trace);
       return numberFromRule(rule, fields, 0);
     } catch (err) {
       if (err instanceof RuleNotConfiguredError) return null;
@@ -413,6 +441,7 @@ export class ProgressionService {
     let earnedCredits = rules.recognisedCredits;
     let compensationCredits = 0;
     let unresolvedCredits = 0;
+    const modulesPassed = outcomes.filter((o) => o.resultCode === 'pass').length;
 
     for (const outcome of outcomes) {
       if (['pass', 'compensated', 'condoned'].includes(outcome.resultCode)) {
@@ -438,42 +467,43 @@ export class ProgressionService {
       unresolvedCredits += outcome.creditValue;
     }
 
+    // Progression needs the credit and, where configured, a minimum number of modules passed outright.
+    const passesMet = rules.minimumModulePasses === null || modulesPassed >= rules.minimumModulePasses;
     let decisionCode: string;
-    if (earnedCredits >= rules.requiredCredits) decisionCode = 'progress';
+    if (earnedCredits >= rules.requiredCredits && passesMet) decisionCode = 'progress';
     else if (unresolvedCredits > 0 || outcomes.length > 0) decisionCode = 'resit';
     else decisionCode = 'repeat-year';
 
-    return { earnedCredits, compensationCredits, unresolvedCredits, decisionCode };
+    return { modulesPassed, earnedCredits, compensationCredits, unresolvedCredits, decisionCode };
   }
 
   async #writeProgressionEvidence(
+    tx: Pick<Db, 'execute'>,
     tenantId: string,
     progressionDecisionId: string,
     academicYear: string,
     rules: ProgressionRules,
     evidence: DecisionEvidence,
   ): Promise<void> {
-    try {
-      await this.db.execute(sql`
-        INSERT INTO progression_calculation_evidence (
-          tenant_id, progression_decision_id, academic_year,
-          required_credits, compensation_threshold, compensation_credit_limit, condonement_threshold,
-          earned_credits, compensation_credits, unresolved_credits,
-          decision_code, rule_snapshot
-        ) VALUES (
-          ${tenantId}::uuid, ${progressionDecisionId}::uuid, ${academicYear},
-          ${rules.requiredCredits}, ${rules.compensationThreshold}, ${rules.compensationCreditLimit}, ${rules.condonementThreshold},
-          ${evidence.earnedCredits}, ${evidence.compensationCredits}, ${evidence.unresolvedCredits},
-          ${evidence.decisionCode}, ${JSON.stringify({
-            recognisedCredits: rules.recognisedCredits,
-            recognisedCreditIds: rules.recognisedCreditIds,
-            appliedExceptions: rules.appliedExceptions,
-          })}::jsonb
-        )
-      `);
-    } catch {
-      // Evidence write failure must not block the progression decision itself
-    }
+    await tx.execute(sql`
+      INSERT INTO progression_calculation_evidence (
+        tenant_id, progression_decision_id, academic_year,
+        required_credits, compensation_threshold, compensation_credit_limit, condonement_threshold,
+        earned_credits, compensation_credits, unresolved_credits,
+        decision_code, rule_snapshot, rule_versions
+      ) VALUES (
+        ${tenantId}::uuid, ${progressionDecisionId}::uuid, ${academicYear},
+        ${rules.requiredCredits}, ${rules.compensationThreshold}, ${rules.compensationCreditLimit}, ${rules.condonementThreshold},
+        ${evidence.earnedCredits}, ${evidence.compensationCredits}, ${evidence.unresolvedCredits},
+        ${evidence.decisionCode}, ${JSON.stringify({
+          recognisedCredits: rules.recognisedCredits,
+          recognisedCreditIds: rules.recognisedCreditIds,
+          appliedExceptions: rules.appliedExceptions,
+          minimumModulePasses: rules.minimumModulePasses,
+          modulesPassed: evidence.modulesPassed,
+        })}::jsonb, ${JSON.stringify(rules.trace.entries)}::jsonb
+      )
+    `);
   }
 }
 

@@ -24,7 +24,7 @@ import type {
 
 import type { IntegrationBusPublisher } from '../integration-bus/publisher.js';
 import type { FeatureFlagService } from '../platform-controls/feature-flag-service.js';
-import type { RulesEngine } from '../rules-engine/engine.js';
+import { RuleTrace, type RulesEngine } from '../rules-engine/engine.js';
 import { clockNow } from '../clock.js';
 
 import { assertNotLocked } from './lock.js';
@@ -84,6 +84,8 @@ interface PenaltyResult {
   resitCapApplied: boolean;
   resitCapMark: number | null;
   latePenaltyEnabled: boolean;
+  /** The rules the penalty and cap used (D-35). */
+  trace: RuleTrace;
 }
 
 export class MarkService {
@@ -141,14 +143,15 @@ export class MarkService {
         locked: false,
         sourceSystem: input.sourceSystem ?? null,
         actorId,
+        ruleVersions: penalty.trace.entries,
         validFrom: now,
         validTo: null,
         recordedAt: now,
         recordedUntil: null,
       });
+      await this.#writeMarkEvidence(tx, tenantId, markId, input.attemptNumber ?? 1, input.rawMark, penalty);
     });
 
-    await this.#writeMarkEvidence(tenantId, markId, input.attemptNumber ?? 1, input.rawMark, penalty);
     await this.moduleResults?.recalculate(moduleRegistrationId, tenantId);
 
     if (this.eventBus.isConnected()) {
@@ -239,6 +242,7 @@ export class MarkService {
         locked: current.locked,
         sourceSystem: current.sourceSystem,
         actorId,
+        ruleVersions: penalty.trace.entries,
         validFrom: now,
         validTo: null,
         recordedAt: now,
@@ -440,6 +444,7 @@ export class MarkService {
       resitCapApplied: false,
       resitCapMark: null,
       latePenaltyEnabled: true,
+      trace: new RuleTrace(),
     };
 
     // Stage 3: honour assessment.late-penalty.enabled flag
@@ -472,6 +477,7 @@ export class MarkService {
         { tenantId, programmeId: registration.programmeId ?? '' },
         'late-penalty-rate',
         'default',
+        noPenalty.trace,
       );
       percentPerDay = Number(rule['percentPerDay'] ?? rule['rate'] ?? rule['percent'] ?? 0);
     } catch (err) {
@@ -496,6 +502,7 @@ export class MarkService {
         { tenantId, programmeId: registration.programmeId ?? '' },
         'late-penalty-cap',
         'default',
+        noPenalty.trace,
       );
       const cap = Number(capRule['maxPenaltyPercent'] ?? capRule['cap'] ?? 100);
       if (Number.isFinite(cap) && penaltyPercent > cap) {
@@ -518,6 +525,7 @@ export class MarkService {
       resitCapApplied: false,
       resitCapMark: null,
       latePenaltyEnabled: true,
+      trace: noPenalty.trace,
     };
 
     return this.#applyResitCap(tenantId, registration, adjustedAfterPenalty, attemptNumber, afterPenalty);
@@ -536,28 +544,17 @@ export class MarkService {
     const resitCapEnabled = await this.#evaluateBooleanFlag(tenantId, 'assessment.resit-cap.enabled', false);
     if (!resitCapEnabled) return partial;
 
+    const ctx = { tenantId, programmeId: registration.programmeId ?? '' };
+    let cap: number;
     try {
-      const cap = await this.rules.getResitMarkCap({ tenantId, programmeId: registration.programmeId ?? '' });
-      if (Number.isFinite(cap) && currentMark > cap) {
-        return {
-          ...partial,
-          adjustedMark: cap,
-          resitCapApplied: true,
-          resitCapMark: cap,
-        };
-      }
+      cap = await this.rules.getResitMarkCap(ctx, partial.trace);
     } catch (err) {
       if (!(err instanceof RuleNotConfiguredError)) throw err;
-      // no resit cap configured — use default cap of 40 per UK HE convention
-      const defaultCap = 40;
-      if (currentMark > defaultCap) {
-        return {
-          ...partial,
-          adjustedMark: defaultCap,
-          resitCapApplied: true,
-          resitCapMark: defaultCap,
-        };
-      }
+      // No resit cap configured: the UK HE convention of 40, recorded as a built-in default (D-35).
+      cap = await this.rules.builtInDefault(ctx, 'resit-mark-cap', 'default', 40, partial.trace);
+    }
+    if (Number.isFinite(cap) && currentMark > cap) {
+      return { ...partial, adjustedMark: cap, resitCapApplied: true, resitCapMark: cap };
     }
 
     return partial;
@@ -585,6 +582,7 @@ export class MarkService {
         resitCapApplied: false,
         resitCapMark: null,
         latePenaltyEnabled: true,
+        trace: new RuleTrace(),
       };
       return this.#applyResitCap(tenantId, registration, afterPenalty, current.attemptNumber, partial);
     }
@@ -598,6 +596,7 @@ export class MarkService {
       resitCapApplied: false,
       resitCapMark: null,
       latePenaltyEnabled: true,
+      trace: new RuleTrace(),
     };
     return this.#applyResitCap(tenantId, registration, rawMark, current.attemptNumber, noPenalty);
   }
@@ -613,34 +612,32 @@ export class MarkService {
     }
   }
 
+  /** Written in the mark's transaction: an evidence failure fails the mark (D-35). */
   async #writeMarkEvidence(
+    tx: Pick<Db, 'execute'>,
     tenantId: string,
     markId: string,
     attemptNumber: number,
     rawMark: number,
     penalty: PenaltyResult,
   ): Promise<void> {
-    try {
-      await this.db.execute(sql`
-        INSERT INTO mark_calculation_evidence (
-          tenant_id, mark_id, attempt_number, raw_mark,
-          late_penalty_enabled,
-          late_penalty_percent, late_penalty_cap_applied, late_penalty_cap_percent,
-          resit_cap_applied, resit_cap_mark,
-          adjusted_mark,
-          rule_snapshot
-        ) VALUES (
-          ${tenantId}::uuid, ${markId}::uuid, ${attemptNumber}, ${rawMark},
-          ${penalty.latePenaltyEnabled},
-          ${penalty.penaltyPercent}, ${penalty.latePenaltyCapApplied}, ${penalty.latePenaltyCapPercent},
-          ${penalty.resitCapApplied}, ${penalty.resitCapMark},
-          ${penalty.adjustedMark},
-          '{}'::jsonb
-        )
-      `);
-    } catch {
-      // Evidence write failure must not block the mark itself
-    }
+    await tx.execute(sql`
+      INSERT INTO mark_calculation_evidence (
+        tenant_id, mark_id, attempt_number, raw_mark,
+        late_penalty_enabled,
+        late_penalty_percent, late_penalty_cap_applied, late_penalty_cap_percent,
+        resit_cap_applied, resit_cap_mark,
+        adjusted_mark,
+        rule_snapshot, rule_versions
+      ) VALUES (
+        ${tenantId}::uuid, ${markId}::uuid, ${attemptNumber}, ${rawMark},
+        ${penalty.latePenaltyEnabled},
+        ${penalty.penaltyPercent}, ${penalty.latePenaltyCapApplied}, ${penalty.latePenaltyCapPercent},
+        ${penalty.resitCapApplied}, ${penalty.resitCapMark},
+        ${penalty.adjustedMark},
+        '{}'::jsonb, ${JSON.stringify(penalty.trace.entries)}::jsonb
+      )
+    `);
   }
 
   async #hasActiveDeadlineExtension(

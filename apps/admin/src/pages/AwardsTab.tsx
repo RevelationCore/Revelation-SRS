@@ -9,11 +9,13 @@ import {
   type AwardRecommendation, type ProgressionDecision, type ReassessmentPlan, type AwardTypeCode,
   listAwardRecommendations, recommendAward, conferAward, withdrawAwardRecommendation,
   listReassessmentPlans, createReassessmentPlan, closeReassessmentPlan, listProgressionHistory,
+  type RecommendationEvidence, getRecommendationEvidence,
 } from '../api/awards.js';
 import { type ExamBoard, listExamBoards } from '../api/examBoards.js';
 import { type ModuleRegistration, listAllModuleRegistrations } from '../api/registrations.js';
 import { useAuth } from '../auth/AuthContext.js';
 import { EnrolmentScoped } from '../components/EnrolmentScoped.js';
+import { type RuleVersion, RuleVersionsPanel } from '../components/RuleVersionsPanel.js';
 import { useValueSet } from '../hooks/useValueSet.js';
 import { AwardDocumentsSection } from './AwardDocumentsSection.js';
 import { ProgressionSection } from './ProgressionSection.js';
@@ -35,7 +37,12 @@ export interface AwardsTabPermissions {
   canReadDocuments?: boolean;
 }
 
-interface Classification { aggregateMark: number; classificationCode: string; boundariesApplied: Array<{ code: string; minimumMark: number }> }
+interface Classification {
+  aggregateMark: number; classificationCode: string; boundariesApplied: Array<{ code: string; minimumMark: number }>;
+  earnedCredits: number; requiredCredits: number | null; inDiscretionZone: boolean;
+  discretionZone: { widthPercent: number; nextBoundaryCode: string; nextBoundaryMark: number } | null;
+  ruleVersions: RuleVersion[];
+}
 
 /**
  * The award for one enrolment (BPR-D14; BP-06-003): a ratified board's
@@ -107,6 +114,7 @@ function AwardRecommendations({ enrolmentId, permissions }: { enrolmentId: strin
                         <div className="text-xs text-neutral-500">Calculated {r.calculatedClassificationCode}; discretion: {r.discretionReason}</div>
                       )}
                       {r.aggregateMark !== null && <div className="text-xs text-neutral-500">Aggregate {r.aggregateMark}</div>}
+                      {r.calculatedClassificationCode !== null && <RecommendationEvidencePanel recommendationId={r.recommendationId} />}
                     </TableCell>
                     <TableCell className="text-xs">{r.recommendedBy}<div>{new Date(r.recommendedAt).toLocaleDateString('en-GB')}</div></TableCell>
                     <TableCell>
@@ -185,9 +193,18 @@ function RecommendForm({ enrolmentId, canReadBoards, onSubmit }: {
     <form className="grid grid-cols-1 gap-3 items-end md:grid-cols-3" onSubmit={submit}>
       <p className="text-sm font-medium md:col-span-3">Recommend an award</p>
       {classification && (
-        <p className="text-sm text-neutral-600 md:col-span-3">
+        <div className="text-sm text-neutral-600 md:col-span-3">
           Calculated classification: <strong>{classification.classificationCode}</strong> (aggregate {classification.aggregateMark}).
-        </p>
+          {classification.inDiscretionZone && classification.discretionZone && (
+            <span className="ml-2 rounded bg-warning-100 px-1.5 py-0.5 text-xs text-warning-700">
+              In the discretion zone: within {classification.discretionZone.widthPercent} of {classification.discretionZone.nextBoundaryCode} ({classification.discretionZone.nextBoundaryMark})
+            </span>
+          )}
+          {classification.requiredCredits !== null && classification.earnedCredits < classification.requiredCredits && (
+            <span className="ml-2 text-xs text-danger-600">Below the award credit requirement ({classification.earnedCredits} of {classification.requiredCredits})</span>
+          )}
+          <RuleVersionsPanel ruleVersions={classification.ruleVersions ?? []} />
+        </div>
       )}
       <LabelledField label="Award type" htmlFor="award-type" required>
         <Select id="award-type" value={awardType} onChange={(e) => setAwardType(e.target.value as AwardTypeCode)}>
@@ -234,6 +251,14 @@ function RecommendForm({ enrolmentId, canReadBoards, onSubmit }: {
       <Button type="submit" disabled={!boardId || !qualification.trim() || !classificationCode.trim()}>Recommend award</Button>
     </form>
   );
+}
+
+/** The calculation a recommendation was made on (D-35). */
+function RecommendationEvidencePanel({ recommendationId }: { recommendationId: string }) {
+  const [evidence, setEvidence] = useState<RecommendationEvidence | null>(null);
+  useEffect(() => { void getRecommendationEvidence(recommendationId).then(setEvidence).catch(() => setEvidence(null)); }, [recommendationId]);
+  if (!evidence) return null;
+  return <RuleVersionsPanel ruleVersions={evidence.ruleVersions} />;
 }
 
 function ConferForm({ onSubmit }: { onSubmit: (body: { confermentDate: string; authorityRef: string }) => Promise<boolean> }) {

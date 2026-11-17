@@ -87,6 +87,31 @@ describe('award recommendation and conferment', () => {
     expect(rec).toMatchObject({ calculatedClassificationCode: 'lower-second', discretionReason: expect.stringContaining('regulation 12.4') as unknown });
   });
 
+  it('records the calculation with the recommendation, and refuses conferment once the rules behind it change (D-35)', async () => {
+    const f = await createAwardFixture('CON4');
+    await seedRatifiedResult(f, 'CON4A', 66, 20);
+    const examBoardId = await createExamBoard();
+    const rec = (await call('POST', `/enrolments/${f.enrolmentId}/award-recommendations`, chairJwt, {
+      awardTypeCode: 'standard', qualificationCode: 'BSc', classificationCode: 'upper-second', examBoardId,
+    })).json<Recommendation>();
+
+    const evidence = await call('GET', `/award-recommendations/${rec.recommendationId}/evidence`, chairJwt);
+    expect(evidence.statusCode).toBe(200);
+    const body = evidence.json<{ awardId: string | null; outcomeCount: number; totalCreditValue: number; ruleVersions: Array<{ ruleTypeCode: string; source: string; versionId: string | null }> }>();
+    expect(body).toMatchObject({ awardId: null, outcomeCount: 1, totalCreditValue: 20 });
+    expect(body.ruleVersions.find((v) => v.ruleTypeCode === 'classification-boundary')).toMatchObject({ source: 'tenant-default', versionId: expect.any(String) as string });
+    expect(body.ruleVersions.find((v) => v.ruleTypeCode === 'classification-algorithm')).toMatchObject({ source: 'built-in-default', versionId: null });
+
+    // The algorithm is now configured: the classification is the same, but not the rules it rests on.
+    const adminJwt = await ctx.makeJwt({ roles: ['tenant-administrator'] });
+    expect((await call('POST', '/academic-rules', adminJwt, {
+      ruleTypeCode: 'classification-algorithm', ruleKey: 'undergraduate', ruleValue: { algorithm: 'weighted-average' }, description: 'Configured explicitly',
+    })).statusCode).toBe(201);
+    const refused = await call('POST', `/award-recommendations/${rec.recommendationId}/conferment`, conferrerJwt, { confermentDate: '2026-07-15', authorityRef: 'Senate 2026/07' });
+    expect(refused.statusCode).toBe(409);
+    expect(refused.json<{ detail: string }>().detail).toMatch(/recommend again/);
+  });
+
   it('an aegrotat award must cite its policy authority', async () => {
     // Aegrotat: the student has some ratified results but could not complete.
     const f = await createAwardFixture('CON3');
