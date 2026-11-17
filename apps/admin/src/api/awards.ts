@@ -1,4 +1,4 @@
-import { api } from './client.js';
+import { ApiError, api, getStoredToken } from './client.js';
 
 /** Award recommendation and conferment, and reassessment plans (BPR-D14; BP-06-002/003). */
 
@@ -122,6 +122,29 @@ export interface DocumentIssue {
   issuedBy: string;
   issuedAt: string;
   revocation: { reasonCode: string; reasonText: string; revokedBy: string; revokedAt: string } | null;
+  /** Rendered and signed (D-20); null for an issue made before rendering existed. */
+  rendered?: { documentId: string; templateCode: string; templateVersion: string; pdfSha256: string; signingKeyId: string | null } | null;
+}
+
+/** Revoking needs two people (D-20). */
+export interface RevocationRequest {
+  caseId: string; documentIssueId: string; statusCode: string; reasonCode: string; reasonText: string; requestedBy: string; requestedAt: string;
+  decision: { outcome: string; decidedBy: string; decidedAt: string; note: string | null } | null;
+}
+export const listRevocationRequests = (documentIssueId?: string) =>
+  api.get<RevocationRequest[]>(`/api/v1/document-revocation-requests?open=true${documentIssueId ? `&documentIssueId=${documentIssueId}` : ''}`);
+export const decideRevocation = (caseId: string, outcome: 'approved' | 'rejected', note?: string) =>
+  api.post<RevocationRequest>(`/api/v1/document-revocation-requests/${caseId}/decision`, { outcome, ...(note ? { note } : {}) });
+
+/** Downloads an issued PDF and saves it. */
+export async function downloadDocumentPdf(documentIssueId: string, filename: string): Promise<void> {
+  const token = getStoredToken();
+  const res = await fetch(`${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000'}/api/v1/document-issues/${documentIssueId}/pdf`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+  if (!res.ok) throw new ApiError(res.status, `Download failed (${res.status})`);
+  const url = URL.createObjectURL(await res.blob());
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
 }
 
 export const listAwardDocuments = (awardId: string) => api.get<DocumentIssue[]>(`/api/v1/awards/${awardId}/documents`);
@@ -133,6 +156,11 @@ export const revokeDocumentIssue = (documentIssueId: string, body: { reasonCode:
 export interface VerificationResult {
   outcomeCode: string;
   document: { documentTypeCode: string; holderName: string; qualificationCode: string; classificationCode: string; awardDate: string; issuedAt: string } | null;
+  signature?: { status: 'valid' | 'invalid' | 'key-withdrawn' | 'unsigned'; keyId: string | null };
+  issuer?: string;
 }
+/** A lookup by name and date of birth, which needs the holder's consent (D-21). */
+export const lookupDocuments = (body: { legalFamilyName: string; dateOfBirth: string; consentEvidenceRef: string }) =>
+  api.post<VerificationResult[]>('/api/v1/document-verifications/lookup', body);
 export const verifyDocument = (verificationCode: string, requesterNote?: string) =>
   api.post<VerificationResult>('/api/v1/document-verifications', { verificationCode, ...(requesterNote ? { requesterNote } : {}) });

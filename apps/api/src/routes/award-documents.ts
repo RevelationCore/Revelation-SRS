@@ -4,7 +4,7 @@ import type { CeremonyAllocation, GraduationInvitation } from '@revelation-srs/d
 import { ForbiddenError, hasPermission } from '@revelation-srs/domain';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 
-import type { DocumentIssueDto } from '../platform/progression/award-document-service.js';
+import type { DocumentIssueDto, RevocationRequestDto, VerificationResult } from '../platform/progression/award-document-service.js';
 import type { CycleDto } from '../platform/progression/graduation-service.js';
 
 const ErrorSchema = Type.Object({ type: Type.String(), title: Type.String(), status: Type.Number(), detail: Type.Optional(Type.String()) });
@@ -17,6 +17,20 @@ const IssueSchema = Type.Object({
   contentHash: Type.String(), verificationCode: Type.String(), channelCode: Type.String(), statusCode: Type.String(),
   issuedBy: Type.String(), issuedAt: Type.String(),
   revocation: Type.Union([Type.Object({ reasonCode: Type.String(), reasonText: Type.String(), revokedBy: Type.String(), revokedAt: Type.String() }), Type.Null()]),
+  personId: Type.String(),
+  rendered: Type.Union([Type.Object({
+    documentId: Type.String(), templateCode: Type.String(), templateVersion: Type.String(), pdfSha256: Type.String(), signingKeyId: Nullable(Type.String()),
+  }), Type.Null()]),
+});
+const Json = Type.Record(Type.String(), Type.Unknown());
+export const VerificationSchema = Type.Object({
+  outcomeCode: Type.String(),
+  document: Type.Union([Type.Object({
+    documentTypeCode: Type.String(), holderName: Type.String(), qualificationCode: Type.String(),
+    classificationCode: Type.String(), awardDate: Type.String(), issuedAt: Type.String(),
+  }), Type.Null()]),
+  signature: Type.Optional(Type.Object({ status: Type.String(), keyId: Type.Union([Type.String(), Type.Null()]) })),
+  issuer: Type.Optional(Type.String()),
 });
 const InvitationSchema = Type.Object({
   invitationId: Type.String(), cycleId: Type.String(), awardId: Type.String(), personId: Type.String(), responseCode: Type.String(),
@@ -77,38 +91,106 @@ export function awardDocumentRoutes(fastify: FastifyInstance): void {
     await reply.send((await fastify.awardDocumentService.listForPerson(request.tenantId, personId)).map(issueToWire));
   });
 
+  // Revoking needs two people (D-20): a request, then a decision by someone else.
   fastify.post('/document-issues/:documentIssueId/revocation', {
     schema: {
       params: Type.Object({ documentIssueId: Type.String() }),
       body: Type.Object({ reasonCode: Type.String(), reasonText: Type.String({ minLength: 1, maxLength: 2000 }) }),
-      response: { 200: IssueSchema, 404: ErrorSchema, 409: ErrorSchema, 422: ErrorSchema },
+      response: { 201: Json, 404: ErrorSchema, 409: ErrorSchema, 422: ErrorSchema },
     },
     preHandler: [requirePermission('document:revoke')],
   }, async (request, reply) => {
     const { documentIssueId } = request.params as { documentIssueId: string };
-    const revoked = await fastify.awardDocumentService.revoke(request.tenantId, documentIssueId, request.body as never, request.user.sub);
-    await audit(fastify, request, 'document_issue', documentIssueId, 'update', `Revoked: ${revoked.revocation?.reasonCode ?? ''}`);
-    await reply.send(issueToWire(revoked));
+    const requested = await fastify.awardDocumentService.requestRevocation(request.tenantId, documentIssueId, request.body as never, request.user.sub);
+    await audit(fastify, request, 'document_issue', documentIssueId, 'update', `Revocation requested: ${requested.reasonCode}`);
+    await reply.code(201).send(revocationToWire(requested));
+  });
+
+  fastify.get('/document-revocation-requests', {
+    schema: { querystring: Type.Object({ open: Type.Optional(Type.Boolean()), documentIssueId: Type.Optional(Type.String()) }), response: { 200: Type.Array(Json) } },
+    preHandler: [requireAnyPermission('document:revoke', 'document:revoke:approve')],
+  }, async (request, reply) => {
+    const q = request.query as { open?: boolean; documentIssueId?: string };
+    await reply.send((await fastify.awardDocumentService.listRevocationRequests(request.tenantId, { ...(q.open ? { open: true } : {}), ...(q.documentIssueId ? { documentIssueId: q.documentIssueId } : {}) })).map(revocationToWire));
+  });
+
+  fastify.post('/document-revocation-requests/:caseId/decision', {
+    schema: {
+      params: Type.Object({ caseId: Type.String() }),
+      body: Type.Object({ outcome: Type.Union([Type.Literal('approved'), Type.Literal('rejected')]), note: Type.Optional(Type.String({ maxLength: 2000 })) }),
+      response: { 200: Json, 404: ErrorSchema, 409: ErrorSchema },
+    },
+    preHandler: [requirePermission('document:revoke:approve')],
+  }, async (request, reply) => {
+    const { caseId } = request.params as { caseId: string };
+    const decided = await fastify.awardDocumentService.decideRevocation(request.tenantId, caseId, request.body as never, request.user.sub);
+    await audit(fastify, request, 'document_issue', decided.documentIssueId, 'update', `Revocation ${decided.decision?.outcome ?? ''}`);
+    await reply.send(revocationToWire(decided));
+  });
+
+  // The issued PDF (D-20): staff, or the student it belongs to.
+  fastify.get('/document-issues/:documentIssueId/pdf', {
+    schema: { params: Type.Object({ documentIssueId: Type.String() }) },
+    preHandler: [requireAnyPermission('document:read', 'document:read:own')],
+  }, async (request, reply) => {
+    const { documentIssueId } = request.params as { documentIssueId: string };
+    assertOwn(request, await fastify.awardDocumentService.personForIssue(request.tenantId, documentIssueId), 'document:read');
+    const file = await fastify.awardDocumentService.pdf(request.tenantId, documentIssueId, request.user.sub);
+    await reply.header('content-type', 'application/pdf').header('content-disposition', `attachment; filename="${file.filename}"`).send(file.content);
+  });
+
+  // The institution's signing keys (D-20): tenant administrators retire or withdraw them.
+  fastify.get('/document-signing-keys', {
+    schema: { response: { 200: Type.Array(Json) } },
+    preHandler: [requirePermission('document-signing-key:manage')],
+  }, async (request, reply) => {
+    await reply.send((await fastify.awardDocumentService.listSigningKeys(request.tenantId)).map((k) => ({
+      keyId: k.keyId, algorithm: k.algorithm, providerCode: k.providerCode, statusCode: k.statusCode, registeredAt: k.registeredAt.toISOString(),
+      retiredAt: k.retiredAt?.toISOString() ?? null, compromisedAt: k.compromisedAt?.toISOString() ?? null,
+    })));
+  });
+
+  fastify.post('/document-signing-keys/:keyId/status', {
+    schema: {
+      params: Type.Object({ keyId: Type.String() }),
+      body: Type.Object({ statusCode: Type.Union([Type.Literal('retired'), Type.Literal('compromised')]) }),
+      response: { 200: Json, 404: ErrorSchema },
+    },
+    preHandler: [requirePermission('document-signing-key:manage')],
+  }, async (request, reply) => {
+    const { keyId } = request.params as { keyId: string };
+    const result = await fastify.awardDocumentService.setSigningKeyStatus(request.tenantId, keyId, (request.body as { statusCode: 'retired' | 'compromised' }).statusCode, request.user.sub);
+    await fastify.audit.record({
+      tenantId: request.tenantId, entityType: 'document_signing_key', entityId: request.tenantId, actionType: 'update', actorType: 'user', actorId: request.user.sub,
+      actorDisplayName: request.user.displayName, correlationId: request.id, reasonText: `Signing key ${keyId} ${result.statusCode}; ${result.affectedIssueIds.length} issue(s) to re-issue`,
+    });
+    await reply.send(result);
+  });
+
+  // A check by name and date of birth needs the holder's recorded consent (D-21).
+  fastify.post('/document-verifications/lookup', {
+    schema: {
+      body: Type.Object({ legalFamilyName: Type.String({ minLength: 1 }), dateOfBirth: DateString, consentEvidenceRef: Type.String({ minLength: 1, maxLength: 300 }) }),
+      response: { 200: Type.Array(Json), 422: ErrorSchema },
+    },
+    preHandler: [requirePermission('document:verify')],
+  }, async (request, reply) => {
+    const results = await fastify.awardDocumentService.staffLookup(request.tenantId, request.body as never, request.user.sub);
+    await reply.send(results.map(resultToWire));
   });
 
   fastify.post('/document-verifications', {
     schema: {
       body: Type.Object({ verificationCode: Type.String({ minLength: 4, maxLength: 64 }), requesterNote: Type.Optional(Type.String({ maxLength: 300 })) }),
       response: {
-        200: Type.Object({
-          outcomeCode: Type.String(),
-          document: Type.Union([Type.Object({
-            documentTypeCode: Type.String(), holderName: Type.String(), qualificationCode: Type.String(),
-            classificationCode: Type.String(), awardDate: Type.String(), issuedAt: Type.String(),
-          }), Type.Null()]),
-        }),
+        200: VerificationSchema,
       },
     },
     preHandler: [requirePermission('document:verify')],
   }, async (request, reply) => {
     const { verificationCode, requesterNote } = request.body as { verificationCode: string; requesterNote?: string };
     const result = await fastify.awardDocumentService.verify(request.tenantId, verificationCode, request.user.sub, requesterNote);
-    await reply.send({ ...result, document: result.document ? { ...result.document, issuedAt: result.document.issuedAt.toISOString() } : null });
+    await reply.send(resultToWire(result));
   });
 
   // ── Graduation ───────────────────────────────────────────────────────────
@@ -258,6 +340,14 @@ async function audit(fastify: FastifyInstance, request: FastifyRequest, entityTy
     tenantId: request.tenantId, entityType, entityId, actionType, actorType: 'user', actorId: request.user.sub,
     actorDisplayName: request.user.displayName, correlationId: request.id, reasonText,
   });
+}
+
+function revocationToWire(r: RevocationRequestDto) {
+  return { ...r, requestedAt: r.requestedAt.toISOString(), decision: r.decision ? { ...r.decision, decidedAt: r.decision.decidedAt.toISOString() } : null };
+}
+
+export function resultToWire(r: VerificationResult) {
+  return { ...r, document: r.document ? { ...r.document, issuedAt: r.document.issuedAt.toISOString() } : null };
 }
 
 function issueToWire(i: DocumentIssueDto) {

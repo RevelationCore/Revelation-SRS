@@ -29,6 +29,13 @@ export const documentIssues = pgTable('document_issue', {
   statusCode:        text('status_code').notNull().default('issued'), // issued | superseded | revoked
   issuedBy:          text('issued_by').notNull(),
   issuedAt:          timestamp('issued_at', { withTimezone: true }).notNull().defaultNow(),
+  // Rendering and signing (Phase 3 D-20).
+  renderedDocumentId: uuid('rendered_document_id'),
+  templateCode:       text('template_code'),
+  templateVersion:    text('template_version'),
+  pdfSha256:          text('pdf_sha256'),
+  signingKeyId:       text('signing_key_id'),
+  signatureJws:       text('signature_jws'),
 });
 export type DocumentIssue = typeof documentIssues.$inferSelect;
 
@@ -53,6 +60,10 @@ export const documentVerifications = pgTable('document_verification', {
   requestedBy:      text('requested_by').notNull(),
   requesterNote:    text('requester_note'),
   outcomeCode:      text('outcome_code').notNull(), // valid | revoked | superseded | not-found
+  // Phase 3 D-21: how it was checked, a salted hash of a public requester's IP, and a staff lookup's consent.
+  methodCode:         text('method_code').notNull().default('code'), // code | file | staff-lookup
+  requesterIpHash:    text('requester_ip_hash'),
+  consentEvidenceRef: text('consent_evidence_ref'),
   checkedAt:        timestamp('checked_at', { withTimezone: true }).notNull().defaultNow(),
 });
 export type DocumentVerification = typeof documentVerifications.$inferSelect;
@@ -110,3 +121,20 @@ export const ceremonyAllocations = pgTable('ceremony_allocation', {
   attendanceRecordedAt: timestamp('attendance_recorded_at', { withTimezone: true }),
 });
 export type CeremonyAllocation = typeof ceremonyAllocations.$inferSelect;
+
+/** The institution's public document-signing keys (Phase 3 D-20), published at its JWKS endpoint. */
+export const documentSigningKeys = pgTable('document_signing_key', {
+  id:            uuid('id').primaryKey().defaultRandom(),
+  tenantId:      uuid('tenant_id').notNull().references(() => tenants.id),
+  keyId:         text('key_id').notNull(),
+  algorithm:     text('algorithm').notNull().default('ES256'),
+  publicKeyPem:  text('public_key_pem').notNull(),
+  providerCode:  text('provider_code').notNull(), // local-key | openbao-transit
+  statusCode:    text('status_code').notNull().default('active'), // active | retired | compromised
+  registeredBy:  text('registered_by').notNull(),
+  registeredAt:  timestamp('registered_at', { withTimezone: true }).notNull().defaultNow(),
+  retiredAt:     timestamp('retired_at', { withTimezone: true }),
+  compromisedAt: timestamp('compromised_at', { withTimezone: true }),
+});
+
+export type DocumentSigningKey = typeof documentSigningKeys.$inferSelect;

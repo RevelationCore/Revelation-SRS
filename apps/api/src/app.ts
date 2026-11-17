@@ -118,6 +118,9 @@ import { deliveryRoutes, inboundRoutes } from './routes/delivery.js';
 import { supportRoutes } from './routes/support.js';
 import { statusCaseRoutes } from './routes/status-cases.js';
 import { nonRegistrationRoutes, registrationPeriodRoutes } from './routes/registration-periods.js';
+import { publicVerificationRoutes } from './routes/public-verification.js';
+import { signerFromEnv } from './platform/progression/document-signer.js';
+import { PdfmakeRenderer } from './platform/progression/document-renderer.js';
 import { registrationCheckRoutes } from './routes/registration-checks.js';
 import { clockNow } from './platform/clock.js';
 import { ClearingService } from './platform/admissions/clearing-service.js';
@@ -384,7 +387,8 @@ export async function buildApp(
   const progression = new ProgressionService(db, eventBus, rules, deliveries);
   const awards      = new AwardService(db, eventBus, rules, enrolments);
   const conferment = new ConfermentService(db, valueSets, enrolments, awards);
-  const awardDocuments = new AwardDocumentService(db, valueSets);
+  // Rendered with pdfmake and signed by the configured signer (Phase 3 D-20).
+  const awardDocuments = new AwardDocumentService(db, valueSets, businessCases, signerFromEnv(), new PdfmakeRenderer(), config.publicApiUrl ?? `http://localhost:${config.port}`);
   const graduation = new GraduationService(db);
   const boards = new BoardService(db, eventBus, valueSets, awards, featureFlags, rules);
   const boardAuthority = new BoardAuthorityService(db);
@@ -660,6 +664,7 @@ export async function buildApp(
         { name: 'students',             description: 'Student identity and personal data' },
         { name: 'admissions',           description: 'Applications, assessments, offers and conditions' },
         { name: 'enrolments',           description: 'Enrolment lifecycle' },
+        { name: 'public-verification',  description: 'Verification of issued award documents without an account (D-21)' },
         { name: 'module-registrations', description: 'Module registration' },
         { name: 'catalogue',            description: 'Programme and module catalogue' },
         { name: 'calendar',             description: 'Academic calendar and periods' },
@@ -690,6 +695,13 @@ export async function buildApp(
 
   // Inject OpenAPI metadata from URL pattern so individual route files stay declaration-free
   fastify.addHook('onRoute', (routeOptions) => {
+    // Verification without an account (D-21) is published too, as its own surface.
+    if (routeOptions.url.startsWith('/public/v1')) {
+      const m = Array.isArray(routeOptions.method) ? (routeOptions.method[0] ?? 'GET') : routeOptions.method;
+      Object.assign(routeOptions, { schema: { ...(routeOptions.schema ?? {}),
+        operationId: `public${generateOperationId(m, routeOptions.url.replace(/^\/public\/v1/, ''))}`, 'x-publication-class': 'public', tags: ['public-verification'] } });
+      return;
+    }
     if (!routeOptions.url.startsWith('/api/v1')) return;
     if ((routeOptions.schema as { hide?: boolean } | undefined)?.hide) return;
 
@@ -718,6 +730,8 @@ export async function buildApp(
       ['/award-recommendations',     'progression'],
       ['/document-issues',           'progression'],
       ['/document-verifications',    'progression'],
+      ['/document-revocation-requests', 'progression'],
+      ['/document-signing-keys',     'progression'],
       ['/graduation-',               'progression'],
       ['/ceremony-allocations',      'progression'],
       ['/api/v1/applications',       'admissions'],  // anchored: UCAS has /regulatory/ucas/applications
@@ -819,6 +833,8 @@ export async function buildApp(
   await fastify.register(registrationPeriodRoutes,  { prefix: '/api/v1' });
   await fastify.register(nonRegistrationRoutes,  { prefix: '/api/v1' });
   await fastify.register(registrationCheckRoutes, { prefix: '/api/v1' });
+  // Verification without an account (D-21): unauthenticated, rate-limited, outside /api/v1.
+  await fastify.register(publicVerificationRoutes, { prefix: '/public/v1' });
   await fastify.register(curriculumPublicationRoutes, { prefix: '/api/v1' });
   await fastify.register(awardConfermentRoutes,     { prefix: '/api/v1' });
   await fastify.register(awardDocumentRoutes,       { prefix: '/api/v1' });

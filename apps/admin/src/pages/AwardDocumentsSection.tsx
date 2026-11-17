@@ -5,7 +5,8 @@ import {
 } from '@revelation-srs/ui';
 
 import { ApiError } from '../api/client.js';
-import { type DocumentIssue, issueAwardDocument, listAwardDocuments, revokeDocumentIssue } from '../api/awards.js';
+import { type DocumentIssue, type RevocationRequest, decideRevocation, downloadDocumentPdf, issueAwardDocument, listAwardDocuments, listRevocationRequests, revokeDocumentIssue } from '../api/awards.js';
+import { useAuth } from '../auth/AuthContext.js';
 import { useValueSet } from '../hooks/useValueSet.js';
 
 function message(err: unknown, fallback: string): string {
@@ -13,18 +14,28 @@ function message(err: unknown, fallback: string): string {
 }
 
 /**
- * Documents issued for a conferred award (BP-06-004; D-4). Each issue keeps a
- * content hash and a verification code; documents are not yet rendered or
- * signed (Phase 3). Revoking needs a reason and a confirmation.
+ * Documents issued for a conferred award (BP-06-004; D-4, D-20). Each issue is
+ * rendered to a PDF from its frozen content and signed; the PDF carries the
+ * verification code. Revoking needs a reason and a second registry
+ * administrator's decision.
  */
 export function AwardDocumentsSection({ awardId, canIssue, canRevoke }: { awardId: string; canIssue: boolean; canRevoke: boolean }) {
   const [issues, setIssues] = useState<DocumentIssue[] | null>(null);
   const [error, setError] = useState('');
   const [actionError, setActionError] = useState('');
+  const [requests, setRequests] = useState<RevocationRequest[]>([]);
+  const { user } = useAuth();
 
   const load = useCallback(async () => {
-    try { setIssues(await listAwardDocuments(awardId)); } catch (err) { setError(message(err, 'Failed to load documents')); }
-  }, [awardId]);
+    try {
+      const list = await listAwardDocuments(awardId);
+      setIssues(list);
+      if (canRevoke) {
+        const ids = new Set(list.map((d) => d.documentIssueId));
+        setRequests((await listRevocationRequests()).filter((r) => ids.has(r.documentIssueId)));
+      }
+    } catch (err) { setError(message(err, 'Failed to load documents')); }
+  }, [awardId, canRevoke]);
   useEffect(() => { void load(); }, [load]);
 
   const act = useCallback(async (run: () => Promise<unknown>): Promise<boolean> => {
@@ -37,7 +48,7 @@ export function AwardDocumentsSection({ awardId, canIssue, canRevoke }: { awardI
 
   return (
     <Card>
-      <CardHeader title="Award documents" description="Certificates, transcripts, the HEAR and award letters issued for this award. Each has a verification code. Documents are not yet rendered or signed." />
+      <CardHeader title="Award documents" description="Certificates, transcripts, the HEAR and award letters issued for this award. Each is a signed PDF carrying its verification code, which anyone holding it can check online." />
       <CardBody>
         <div className="flex flex-col gap-4">
           {actionError && <p className="text-sm text-danger-600" role="alert">{actionError}</p>}
@@ -61,9 +72,30 @@ export function AwardDocumentsSection({ awardId, canIssue, canRevoke }: { awardI
                       {d.revocation && <div className="text-xs text-neutral-500">{d.revocation.reasonCode}: {d.revocation.reasonText}</div>}
                     </TableCell>
                     <TableCell className="text-right">
-                      {canRevoke && d.statusCode === 'issued' && (
-                        <RevokeControl issue={d} onRevoke={(body) => act(() => revokeDocumentIssue(d.documentIssueId, body))} />
-                      )}
+                      <div className="flex flex-col items-end gap-2">
+                        {d.rendered && (
+                          <Button size="sm" variant="ghost" onClick={() => void act(() => downloadDocumentPdf(d.documentIssueId, `${d.documentTypeCode}-${d.issueNumber}.pdf`))}>
+                            Download PDF<span className="sr-only"> of {d.documentTypeCode} issue {d.issueNumber}</span>
+                          </Button>
+                        )}
+                        {(() => {
+                          const pending = requests.find((r) => r.documentIssueId === d.documentIssueId && r.statusCode === 'open');
+                          if (pending) {
+                            return pending.requestedBy === user?.sub
+                              ? <p className="text-xs text-neutral-600">Revocation requested; another registry administrator decides it.</p>
+                              : (
+                                <div className="flex gap-2">
+                                  <span className="text-xs text-neutral-600">Revoke requested ({pending.reasonCode})</span>
+                                  <Button size="sm" variant="danger" onClick={() => void act(() => decideRevocation(pending.caseId, 'approved'))}>Approve revocation</Button>
+                                  <Button size="sm" variant="ghost" onClick={() => void act(() => decideRevocation(pending.caseId, 'rejected'))}>Reject</Button>
+                                </div>
+                              );
+                          }
+                          return canRevoke && d.statusCode === 'issued'
+                            ? <RevokeControl issue={d} onRevoke={(body) => act(() => revokeDocumentIssue(d.documentIssueId, body))} />
+                            : null;
+                        })()}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -122,9 +154,9 @@ function RevokeControl({ issue, onRevoke }: { issue: DocumentIssue; onRevoke: (b
   if (stage === 'confirm') {
     return (
       <div className="inline-flex flex-col items-end gap-2">
-        <p className="text-sm">Revoke {issue.documentTypeCode} #{issue.issueNumber}? Verification will report it as revoked.</p>
+        <p className="text-sm">Ask to revoke {issue.documentTypeCode} #{issue.issueNumber}? Another registry administrator must approve it; verification will then report it as revoked.</p>
         <div className="flex gap-2">
-          <Button size="sm" onClick={() => void onRevoke({ reasonCode, reasonText: reasonText.trim() }).then((ok) => { if (ok) setStage('closed'); })}>Confirm revocation</Button>
+          <Button size="sm" onClick={() => void onRevoke({ reasonCode, reasonText: reasonText.trim() }).then((ok) => { if (ok) setStage('closed'); })}>Request revocation</Button>
           <Button size="sm" variant="ghost" onClick={() => setStage('form')}>Back</Button>
         </div>
       </div>

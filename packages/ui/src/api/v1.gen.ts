@@ -1124,6 +1124,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/public/v1/verify/{tenantCode}/{code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["publicgetVerifyByTenantCodeByCode"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/public/v1/verify/{tenantCode}/file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["publiccreateVerifyByTenantCodeFile"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/public/v1/keys/{tenantCode}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["publicgetKeysByTenantCode"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/curriculum-publications": {
         parameters: {
             query?: never;
@@ -1406,6 +1454,102 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["createDocumentIssuesByDocumentIssueIdRevocation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/document-revocation-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getDocumentRevocationRequests"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/document-revocation-requests/{caseId}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createDocumentRevocationRequestsByCaseIdDecision"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/document-issues/{documentIssueId}/pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getDocumentIssuesByDocumentIssueIdPdf"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/document-signing-keys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getDocumentSigningKeys"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/document-signing-keys/{keyId}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createDocumentSigningKeysByKeyIdStatus"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/document-verifications/lookup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createDocumentVerificationsLookup"];
         delete?: never;
         options?: never;
         head?: never;
@@ -11146,6 +11290,143 @@ export interface operations {
             };
         };
     };
+    publicgetVerifyByTenantCodeByCode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantCode: string;
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        outcomeCode: string;
+                        document: {
+                            documentTypeCode: string;
+                            holderName: string;
+                            qualificationCode: string;
+                            classificationCode: string;
+                            awardDate: string;
+                            issuedAt: string;
+                        } | null;
+                        signature?: {
+                            status: string;
+                            keyId: string | null;
+                        };
+                        issuer?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    publiccreateVerifyByTenantCodeFile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantCode: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        outcomeCode: string;
+                        document: {
+                            documentTypeCode: string;
+                            holderName: string;
+                            qualificationCode: string;
+                            classificationCode: string;
+                            awardDate: string;
+                            issuedAt: string;
+                        } | null;
+                        signature?: {
+                            status: string;
+                            keyId: string | null;
+                        };
+                        issuer?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    publicgetKeysByTenantCode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantCode: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     getCurriculumPublications: {
         parameters: {
             query?: never;
@@ -12670,6 +12951,14 @@ export interface operations {
                             revokedBy: string;
                             revokedAt: string;
                         } | null;
+                        personId: string;
+                        rendered: {
+                            documentId: string;
+                            templateCode: string;
+                            templateVersion: string;
+                            pdfSha256: string;
+                            signingKeyId: string | null;
+                        } | null;
                     }[];
                 };
             };
@@ -12721,6 +13010,14 @@ export interface operations {
                             reasonText: string;
                             revokedBy: string;
                             revokedAt: string;
+                        } | null;
+                        personId: string;
+                        rendered: {
+                            documentId: string;
+                            templateCode: string;
+                            templateVersion: string;
+                            pdfSha256: string;
+                            signingKeyId: string | null;
                         } | null;
                     };
                 };
@@ -12808,6 +13105,14 @@ export interface operations {
                             revokedBy: string;
                             revokedAt: string;
                         } | null;
+                        personId: string;
+                        rendered: {
+                            documentId: string;
+                            templateCode: string;
+                            templateVersion: string;
+                            pdfSha256: string;
+                            signingKeyId: string | null;
+                        } | null;
                     }[];
                 };
             };
@@ -12846,33 +13151,13 @@ export interface operations {
         };
         responses: {
             /** @description Default Response */
-            200: {
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": {
-                        documentIssueId: string;
-                        studentDocumentId: string;
-                        documentTypeCode: string;
-                        awardId: string;
-                        issueNumber: number;
-                        issueTypeCode: string;
-                        contentSnapshot: {
-                            [key: string]: unknown;
-                        };
-                        contentHash: string;
-                        verificationCode: string;
-                        channelCode: string;
-                        statusCode: string;
-                        issuedBy: string;
-                        issuedAt: string;
-                        revocation: {
-                            reasonCode: string;
-                            reasonText: string;
-                            revokedBy: string;
-                            revokedAt: string;
-                        } | null;
+                        [key: string]: unknown;
                     };
                 };
             };
@@ -12902,6 +13187,220 @@ export interface operations {
                         status: number;
                         detail?: string;
                     };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getDocumentRevocationRequests: {
+        parameters: {
+            query?: {
+                open?: boolean;
+                documentIssueId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    }[];
+                };
+            };
+        };
+    };
+    createDocumentRevocationRequestsByCaseIdDecision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                caseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    outcome: "approved" | "rejected";
+                    note?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getDocumentIssuesByDocumentIssueIdPdf: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                documentIssueId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getDocumentSigningKeys: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    }[];
+                };
+            };
+        };
+    };
+    createDocumentSigningKeysByKeyIdStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                keyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    statusCode: "retired" | "compromised";
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createDocumentVerificationsLookup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    legalFamilyName: string;
+                    dateOfBirth: string;
+                    consentEvidenceRef: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    }[];
                 };
             };
             /** @description Default Response */
@@ -12952,6 +13451,11 @@ export interface operations {
                             awardDate: string;
                             issuedAt: string;
                         } | null;
+                        signature?: {
+                            status: string;
+                            keyId: string | null;
+                        };
+                        issuer?: string;
                     };
                 };
             };

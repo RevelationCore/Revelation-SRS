@@ -216,6 +216,9 @@ export const PERMISSION_ROLES = {
   'document:read:own':                   ['student'] as Role[],
   'document:issue':                      ['registry-administrator'] as Role[],
   'document:revoke':                     ['registry-administrator'] as Role[],
+  // Revoking an issued document takes two people (Phase 3 D-20): a different registry administrator decides.
+  'document:revoke:approve':             ['registry-administrator'] as Role[],
+  'document-signing-key:manage':         ['tenant-administrator'] as Role[],
   'document:verify':                     ['registry-administrator', 'integration-service'] as Role[],
   // Graduation (BPR-D15): the graduation team runs cycles; students respond.
   'graduation:read':                     ['registry-administrator'] as Role[],

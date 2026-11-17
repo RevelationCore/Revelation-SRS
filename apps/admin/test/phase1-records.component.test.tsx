@@ -49,21 +49,22 @@ describe('progression (D-3)', () => {
 });
 
 describe('award documents (D-4)', () => {
-  it('revoking needs a reason and a confirmation', async () => {
+  it('revoking needs a reason and a confirmation, and is sent as a request (D-20)', async () => {
     let body: unknown;
     server.use(valueSets,
       http.get(`${API}/api/v1/awards/a-1/documents`, () => HttpResponse.json([{
         documentIssueId: 'di-1', studentDocumentId: 'sd-1', documentTypeCode: 'certificate', awardId: 'a-1', issueNumber: 1, issueTypeCode: 'original',
         contentHash: 'h', verificationCode: 'VER-111', channelCode: 'post', statusCode: 'issued', issuedBy: 'reg', issuedAt: '2027-07-01T00:00:00Z', revocation: null,
       }])),
-      http.post(`${API}/api/v1/document-issues/di-1/revocation`, async ({ request }) => { body = await request.json(); return HttpResponse.json({}); }));
+      http.get(`${API}/api/v1/document-revocation-requests`, () => HttpResponse.json([])),
+      http.post(`${API}/api/v1/document-issues/di-1/revocation`, async ({ request }) => { body = await request.json(); return HttpResponse.json({}, { status: 201 }); }));
     renderWithProviders(<AwardDocumentsSection awardId="a-1" canIssue canRevoke />, { roles: ['registry-administrator'] });
     await userEvent.click(await screen.findByRole('button', { name: 'Revoke certificate #1' }));
     await userEvent.selectOptions(screen.getByLabelText(/^Reason/), 'error');
     await userEvent.type(screen.getByLabelText(/Explanation/), 'Wrong classification printed');
     await userEvent.click(screen.getByRole('button', { name: 'Continue' }));
     expect(body).toBeUndefined();
-    await userEvent.click(screen.getByRole('button', { name: 'Confirm revocation' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Request revocation' }));
     await screen.findByText('VER-111');
     expect(body).toEqual({ reasonCode: 'error', reasonText: 'Wrong classification printed' });
   });
@@ -147,5 +148,25 @@ describe('graduation (D-4)', () => {
     await screen.findByText('Ada Lovelace');
     expect(body).toEqual({ ceremonyId: 'c-pm' });
     await expectNoA11yViolations(container);
+  });
+});
+
+describe('two-person revocation (D-20)', () => {
+  it('another registry administrator approves a pending revocation; the requester cannot', async () => {
+    let decided: unknown;
+    const issue = {
+      documentIssueId: 'di-2', studentDocumentId: 'sd-2', documentTypeCode: 'certificate', awardId: 'a-2', issueNumber: 1, issueTypeCode: 'original',
+      contentHash: 'h', verificationCode: 'VER-222', channelCode: 'post', statusCode: 'issued', issuedBy: 'reg', issuedAt: '2027-07-01T00:00:00Z', revocation: null,
+      rendered: { documentId: 'doc-2', templateCode: 'certificate', templateVersion: 'builtin-1', pdfSha256: 'x', signingKeyId: 'k' },
+    };
+    const request = { caseId: 'rc-1', documentIssueId: 'di-2', statusCode: 'open', reasonCode: 'error', reasonText: 'Wrong name', requestedBy: 'someone-else', requestedAt: '2027-07-02T00:00:00Z', decision: null };
+    server.use(valueSets,
+      http.get(`${API}/api/v1/awards/a-2/documents`, () => HttpResponse.json([issue])),
+      http.get(`${API}/api/v1/document-revocation-requests`, () => HttpResponse.json([request])),
+      http.post(`${API}/api/v1/document-revocation-requests/rc-1/decision`, async ({ request: r }) => { decided = await r.json(); return HttpResponse.json({}); }));
+    renderWithProviders(<AwardDocumentsSection awardId="a-2" canIssue canRevoke />, { roles: ['registry-administrator'] });
+    expect(await screen.findByRole('button', { name: /Download PDF/ })).toBeVisible();
+    await userEvent.click(await screen.findByRole('button', { name: 'Approve revocation' }));
+    expect(decided).toEqual({ outcome: 'approved' });
   });
 });

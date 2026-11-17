@@ -557,6 +557,8 @@ export function listCatalogueProgrammes(): Promise<Array<{ programmeId: string; 
 export interface MyDocument {
   documentIssueId: string; documentTypeCode: string; issueNumber: number; issueTypeCode: string; channelCode: string;
   verificationCode: string; statusCode: string; issuedAt: string;
+  /** A signed PDF is available (D-20). */
+  rendered?: { documentId: string } | null;
 }
 export interface MyGraduationInvitation {
   invitationId: string; cycleId: string; awardId: string; responseCode: string; guestCount: number;
@@ -590,4 +592,15 @@ export function confirmMyRegistration(confirmationId: string, acceptedTermsVersi
 /** Right to study (D-17): the student shares a View and Prove code. */
 export function submitRightToStudyShareCode(personId: string, shareCode: string): Promise<unknown> {
   return api.post(`/api/v1/students/${personId}/right-to-study/share-code`, { shareCode });
+}
+
+/** Downloads one of my issued documents as its signed PDF (D-20). */
+export async function downloadMyDocument(documentIssueId: string, filename: string): Promise<void> {
+  const token = localStorage.getItem('srs_portal_token');
+  const res = await fetch(`${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000'}/api/v1/document-issues/${documentIssueId}/pdf`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+  if (!res.ok) throw new Error(`Download failed (${res.status})`);
+  const url = URL.createObjectURL(await res.blob());
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
 }

@@ -59,13 +59,20 @@ describe('award documents', () => {
       .json<{ outcomeCode: string; document: { holderName: string } | null }>();
     expect(await verify(original.verificationCode)).toMatchObject({ outcomeCode: 'superseded' });
     expect(await verify(replacement.verificationCode.toLowerCase())).toMatchObject({ outcomeCode: 'valid', document: { holderName: 'Docu Graduand' } });
-    expect(await verify('NOPE-NOPE-NOPE')).toEqual({ outcomeCode: 'not-found', document: null });
+    expect(await verify('NOPE-NOPE-NOPE')).toMatchObject({ outcomeCode: 'not-found', document: null });
 
-    const revoked = (await call('POST', `/document-issues/${replacement.documentIssueId}/revocation`, registryJwt, {
+    // Revoking takes two people (D-20): a request, then someone else's decision.
+    const request = await call('POST', `/document-issues/${replacement.documentIssueId}/revocation`, registryJwt, {
       reasonCode: 'compromised', reasonText: 'Reported lost and misused',
-    })).json<Issue>();
-    expect(revoked.statusCode).toBe('revoked');
-    expect(await verify(replacement.verificationCode)).toEqual({ outcomeCode: 'revoked', document: null });
+    });
+    expect(request.statusCode).toBe(201);
+    const caseId = request.json<{ caseId: string }>().caseId;
+    expect((await call('POST', `/document-issues/${replacement.documentIssueId}/revocation`, registryJwt, { reasonCode: 'error', reasonText: 'again' })).statusCode).toBe(409);
+    expect((await call('POST', `/document-revocation-requests/${caseId}/decision`, registryJwt, { outcome: 'approved' })).statusCode).toBe(409);
+    const secondRegistryJwt = await ctx.makeJwt({ sub: 'registry-docs-2', roles: ['registry-administrator'] });
+    expect((await call('POST', `/document-revocation-requests/${caseId}/decision`, secondRegistryJwt, { outcome: 'approved' })).json()).toMatchObject({ statusCode: 'decided' });
+    expect((await call('GET', `/awards/${g.awardId}/documents`, registryJwt)).json<Issue[]>().find((i) => i.documentIssueId === replacement.documentIssueId)?.statusCode).toBe('revoked');
+    expect(await verify(replacement.verificationCode)).toMatchObject({ outcomeCode: 'revoked', document: null });
     expect((await call('POST', `/document-issues/${replacement.documentIssueId}/revocation`, registryJwt, { reasonCode: 'error', reasonText: 'again' })).statusCode).toBe(409);
 
     await expect(ctx.db.execute(sql`DELETE FROM document_revocation WHERE document_issue_id = ${replacement.documentIssueId}`))
@@ -79,14 +86,16 @@ describe('award documents', () => {
   it('a student sees only their own documents', async () => {
     const a = await graduate('Own', '2026-07-15');
     const b = await graduate('Other', '2026-07-15');
-    await call('POST', `/awards/${a.awardId}/documents`, registryJwt, { documentTypeCode: 'transcript', channelCode: 'digital' });
+    // A transcript states the HEAR's module results, so it waits for the HEAR (D-20).
+    expect((await call('POST', `/awards/${a.awardId}/documents`, registryJwt, { documentTypeCode: 'transcript', channelCode: 'digital' })).statusCode).toBe(422);
+    await call('POST', `/awards/${a.awardId}/documents`, registryJwt, { documentTypeCode: 'certificate', channelCode: 'digital' });
     expect((await call('GET', `/students/${a.personId}/documents`, a.jwt)).json<Issue[]>()).toHaveLength(1);
     expect((await call('GET', `/students/${b.personId}/documents`, a.jwt)).statusCode).toBe(403);
   });
 
   it('a replacement needs an original first', async () => {
     const g = await graduate('Rep', '2026-07-15');
-    expect((await call('POST', `/awards/${g.awardId}/documents`, registryJwt, { documentTypeCode: 'hear', channelCode: 'digital', issueTypeCode: 'replacement' })).statusCode).toBe(409);
+    expect((await call('POST', `/awards/${g.awardId}/documents`, registryJwt, { documentTypeCode: 'certificate', channelCode: 'digital', issueTypeCode: 'replacement' })).statusCode).toBe(409);
   });
 });
 

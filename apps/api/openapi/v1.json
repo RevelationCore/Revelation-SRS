@@ -13678,6 +13678,336 @@
         }
       }
     },
+    "/public/v1/verify/{tenantCode}/{code}": {
+      "get": {
+        "operationId": "publicgetVerifyByTenantCodeByCode",
+        "tags": [
+          "public-verification"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "maxLength": 64,
+              "type": "string"
+            },
+            "in": "path",
+            "name": "tenantCode",
+            "required": true
+          },
+          {
+            "schema": {
+              "minLength": 4,
+              "maxLength": 64,
+              "type": "string"
+            },
+            "in": "path",
+            "name": "code",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "outcomeCode",
+                    "document"
+                  ],
+                  "properties": {
+                    "outcomeCode": {
+                      "type": "string"
+                    },
+                    "document": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": [
+                            "documentTypeCode",
+                            "holderName",
+                            "qualificationCode",
+                            "classificationCode",
+                            "awardDate",
+                            "issuedAt"
+                          ],
+                          "properties": {
+                            "documentTypeCode": {
+                              "type": "string"
+                            },
+                            "holderName": {
+                              "type": "string"
+                            },
+                            "qualificationCode": {
+                              "type": "string"
+                            },
+                            "classificationCode": {
+                              "type": "string"
+                            },
+                            "awardDate": {
+                              "type": "string"
+                            },
+                            "issuedAt": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "signature": {
+                      "type": "object",
+                      "required": [
+                        "status",
+                        "keyId"
+                      ],
+                      "properties": {
+                        "status": {
+                          "type": "string"
+                        },
+                        "keyId": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
+                    },
+                    "issuer": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/public/v1/verify/{tenantCode}/file": {
+      "post": {
+        "operationId": "publiccreateVerifyByTenantCodeFile",
+        "tags": [
+          "public-verification"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "maxLength": 64,
+              "type": "string"
+            },
+            "in": "path",
+            "name": "tenantCode",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "outcomeCode",
+                    "document"
+                  ],
+                  "properties": {
+                    "outcomeCode": {
+                      "type": "string"
+                    },
+                    "document": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": [
+                            "documentTypeCode",
+                            "holderName",
+                            "qualificationCode",
+                            "classificationCode",
+                            "awardDate",
+                            "issuedAt"
+                          ],
+                          "properties": {
+                            "documentTypeCode": {
+                              "type": "string"
+                            },
+                            "holderName": {
+                              "type": "string"
+                            },
+                            "qualificationCode": {
+                              "type": "string"
+                            },
+                            "classificationCode": {
+                              "type": "string"
+                            },
+                            "awardDate": {
+                              "type": "string"
+                            },
+                            "issuedAt": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "signature": {
+                      "type": "object",
+                      "required": [
+                        "status",
+                        "keyId"
+                      ],
+                      "properties": {
+                        "status": {
+                          "type": "string"
+                        },
+                        "keyId": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
+                    },
+                    "issuer": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/public/v1/keys/{tenantCode}": {
+      "get": {
+        "operationId": "publicgetKeysByTenantCode",
+        "tags": [
+          "public-verification"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "maxLength": 64,
+              "type": "string"
+            },
+            "in": "path",
+            "name": "tenantCode",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
     "/api/v1/curriculum-publications": {
       "post": {
         "operationId": "createCurriculumPublications",
@@ -18988,7 +19318,9 @@
                     "statusCode",
                     "issuedBy",
                     "issuedAt",
-                    "revocation"
+                    "revocation",
+                    "personId",
+                    "rendered"
                   ],
                   "properties": {
                     "documentIssueId": {
@@ -19053,6 +19385,50 @@
                             },
                             "revokedAt": {
                               "type": "string"
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "personId": {
+                      "type": "string"
+                    },
+                    "rendered": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": [
+                            "documentId",
+                            "templateCode",
+                            "templateVersion",
+                            "pdfSha256",
+                            "signingKeyId"
+                          ],
+                          "properties": {
+                            "documentId": {
+                              "type": "string"
+                            },
+                            "templateCode": {
+                              "type": "string"
+                            },
+                            "templateVersion": {
+                              "type": "string"
+                            },
+                            "pdfSha256": {
+                              "type": "string"
+                            },
+                            "signingKeyId": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
                             }
                           }
                         },
@@ -19194,7 +19570,9 @@
                       "statusCode",
                       "issuedBy",
                       "issuedAt",
-                      "revocation"
+                      "revocation",
+                      "personId",
+                      "rendered"
                     ],
                     "properties": {
                       "documentIssueId": {
@@ -19266,6 +19644,50 @@
                             "type": "null"
                           }
                         ]
+                      },
+                      "personId": {
+                        "type": "string"
+                      },
+                      "rendered": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "required": [
+                              "documentId",
+                              "templateCode",
+                              "templateVersion",
+                              "pdfSha256",
+                              "signingKeyId"
+                            ],
+                            "properties": {
+                              "documentId": {
+                                "type": "string"
+                              },
+                              "templateCode": {
+                                "type": "string"
+                              },
+                              "templateVersion": {
+                                "type": "string"
+                              },
+                              "pdfSha256": {
+                                "type": "string"
+                              },
+                              "signingKeyId": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            }
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
                       }
                     }
                   }
@@ -19316,7 +19738,9 @@
                       "statusCode",
                       "issuedBy",
                       "issuedAt",
-                      "revocation"
+                      "revocation",
+                      "personId",
+                      "rendered"
                     ],
                     "properties": {
                       "documentIssueId": {
@@ -19381,6 +19805,50 @@
                               },
                               "revokedAt": {
                                 "type": "string"
+                              }
+                            }
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "personId": {
+                        "type": "string"
+                      },
+                      "rendered": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "required": [
+                              "documentId",
+                              "templateCode",
+                              "templateVersion",
+                              "pdfSha256",
+                              "signingKeyId"
+                            ],
+                            "properties": {
+                              "documentId": {
+                                "type": "string"
+                              },
+                              "templateCode": {
+                                "type": "string"
+                              },
+                              "templateVersion": {
+                                "type": "string"
+                              },
+                              "pdfSha256": {
+                                "type": "string"
+                              },
+                              "signingKeyId": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
                               }
                             }
                           },
@@ -19469,100 +19937,13 @@
         ],
         "x-publication-class": "public",
         "responses": {
-          "200": {
+          "201": {
             "description": "Default Response",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": [
-                    "documentIssueId",
-                    "studentDocumentId",
-                    "documentTypeCode",
-                    "awardId",
-                    "issueNumber",
-                    "issueTypeCode",
-                    "contentSnapshot",
-                    "contentHash",
-                    "verificationCode",
-                    "channelCode",
-                    "statusCode",
-                    "issuedBy",
-                    "issuedAt",
-                    "revocation"
-                  ],
-                  "properties": {
-                    "documentIssueId": {
-                      "type": "string"
-                    },
-                    "studentDocumentId": {
-                      "type": "string"
-                    },
-                    "documentTypeCode": {
-                      "type": "string"
-                    },
-                    "awardId": {
-                      "type": "string"
-                    },
-                    "issueNumber": {
-                      "type": "integer"
-                    },
-                    "issueTypeCode": {
-                      "type": "string"
-                    },
-                    "contentSnapshot": {
-                      "type": "object",
-                      "additionalProperties": {}
-                    },
-                    "contentHash": {
-                      "type": "string"
-                    },
-                    "verificationCode": {
-                      "type": "string"
-                    },
-                    "channelCode": {
-                      "type": "string"
-                    },
-                    "statusCode": {
-                      "type": "string"
-                    },
-                    "issuedBy": {
-                      "type": "string"
-                    },
-                    "issuedAt": {
-                      "type": "string"
-                    },
-                    "revocation": {
-                      "anyOf": [
-                        {
-                          "type": "object",
-                          "required": [
-                            "reasonCode",
-                            "reasonText",
-                            "revokedBy",
-                            "revokedAt"
-                          ],
-                          "properties": {
-                            "reasonCode": {
-                              "type": "string"
-                            },
-                            "reasonText": {
-                              "type": "string"
-                            },
-                            "revokedBy": {
-                              "type": "string"
-                            },
-                            "revokedAt": {
-                              "type": "string"
-                            }
-                          }
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    }
-                  }
+                  "additionalProperties": {}
                 }
               }
             }
@@ -19620,6 +20001,399 @@
                     "detail": {
                       "type": "string"
                     }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/document-revocation-requests": {
+      "get": {
+        "operationId": "getDocumentRevocationRequests",
+        "tags": [
+          "progression"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "boolean"
+            },
+            "in": "query",
+            "name": "open",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "documentIssueId",
+            "required": false
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/document-revocation-requests/{caseId}/decision": {
+      "post": {
+        "operationId": "createDocumentRevocationRequestsByCaseIdDecision",
+        "tags": [
+          "progression"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "outcome"
+                ],
+                "properties": {
+                  "outcome": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "approved"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "rejected"
+                        ]
+                      }
+                    ]
+                  },
+                  "note": {
+                    "maxLength": 2000,
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "caseId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/document-issues/{documentIssueId}/pdf": {
+      "get": {
+        "operationId": "getDocumentIssuesByDocumentIssueIdPdf",
+        "tags": [
+          "progression"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "documentIssueId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/v1/document-signing-keys": {
+      "get": {
+        "operationId": "getDocumentSigningKeys",
+        "tags": [
+          "progression"
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/document-signing-keys/{keyId}/status": {
+      "post": {
+        "operationId": "createDocumentSigningKeysByKeyIdStatus",
+        "tags": [
+          "progression"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "statusCode"
+                ],
+                "properties": {
+                  "statusCode": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "retired"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "compromised"
+                        ]
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "keyId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/document-verifications/lookup": {
+      "post": {
+        "operationId": "createDocumentVerificationsLookup",
+        "tags": [
+          "progression"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "legalFamilyName",
+                  "dateOfBirth",
+                  "consentEvidenceRef"
+                ],
+                "properties": {
+                  "legalFamilyName": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "dateOfBirth": {
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                    "type": "string"
+                  },
+                  "consentEvidenceRef": {
+                    "minLength": 1,
+                    "maxLength": 300,
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": {}
                   }
                 }
               }
@@ -19740,6 +20514,31 @@
                           "type": "null"
                         }
                       ]
+                    },
+                    "signature": {
+                      "type": "object",
+                      "required": [
+                        "status",
+                        "keyId"
+                      ],
+                      "properties": {
+                        "status": {
+                          "type": "string"
+                        },
+                        "keyId": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
+                    },
+                    "issuer": {
+                      "type": "string"
                     }
                   }
                 }
@@ -67731,6 +68530,10 @@
     {
       "name": "enrolments",
       "description": "Enrolment lifecycle"
+    },
+    {
+      "name": "public-verification",
+      "description": "Verification of issued award documents without an account (D-21)"
     },
     {
       "name": "module-registrations",

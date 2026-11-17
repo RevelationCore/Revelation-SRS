@@ -203,6 +203,8 @@ A check by name and date of birth (an employer or HEDD request) is not public: i
 
 **Institution must confirm.** The lawful basis and privacy-notice wording; whether to join HEDD.
 
+**Implementation note (D-20, D-21).** The PDF is rendered and signed before the issue row is written, then the issue, its stored PDF and its signature are written in one transaction, so an issue never exists without its document. The local-key signer generates a key when the process starts unless `DOCUMENT_SIGNING_KEY_PEM` is set; each signing key is registered in `document_signing_key` on first use, so documents signed by an earlier process still verify. The OpenBao transit signer is written to the transit API but has not been run against a live OpenBao. Templates are code-defined neutral layouts (`builtin-1`); storing institution templates through the documents library is not done. A transcript or HEAR needs the HEAR generated first, since it states the HEAR's module results. Verification codes are now drawn without modulo bias (risk 7). The planned security review and ZAP scan of the public routes have not been done.
+
 ## D-22: Curriculum publication beyond programmes and modules (BP-03-001)
 
 **Decision.** Publications add four object types in the same atomic unit:

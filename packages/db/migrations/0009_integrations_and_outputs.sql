@@ -183,3 +183,47 @@ ON CONFLICT DO NOTHING;
 ALTER TABLE "curriculum_publication_item" DROP CONSTRAINT IF EXISTS "curriculum_publication_item_type_check";
 ALTER TABLE "curriculum_publication_item" ADD CONSTRAINT "curriculum_publication_item_type_check"
   CHECK ("object_type_code" IN ('programme', 'module', 'route', 'rule-set', 'module-group', 'module-group-member', 'learning-outcome', 'module-offering'));
+
+-- ── D-20: rendering and signing award documents ─────────────────────────────
+ALTER TABLE "document_issue"
+  ADD COLUMN IF NOT EXISTS "rendered_document_id" uuid,
+  ADD COLUMN IF NOT EXISTS "template_code"        text,
+  ADD COLUMN IF NOT EXISTS "template_version"     text,
+  ADD COLUMN IF NOT EXISTS "pdf_sha256"           text,
+  ADD COLUMN IF NOT EXISTS "signing_key_id"       text,
+  ADD COLUMN IF NOT EXISTS "signature_jws"        text;
+CREATE UNIQUE INDEX IF NOT EXISTS "document_issue_pdf_sha256_unique" ON "document_issue" ("tenant_id", "pdf_sha256") WHERE "pdf_sha256" IS NOT NULL;
+
+-- The institution's public signing keys, published at its JWKS endpoint; retired keys stay published.
+CREATE TABLE IF NOT EXISTS "document_signing_key" (
+  "id"             uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+  "tenant_id"      uuid        NOT NULL REFERENCES "tenant"("id"),
+  "key_id"         text        NOT NULL,
+  "algorithm"      text        NOT NULL DEFAULT 'ES256',
+  "public_key_pem" text        NOT NULL,
+  "provider_code"  text        NOT NULL,
+  "status_code"    text        NOT NULL DEFAULT 'active',
+  "registered_by"  text        NOT NULL,
+  "registered_at"  timestamptz NOT NULL DEFAULT now(),
+  "retired_at"     timestamptz,
+  "compromised_at" timestamptz,
+  CONSTRAINT "document_signing_key_status_check" CHECK ("status_code" IN ('active', 'retired', 'compromised')),
+  CONSTRAINT "document_signing_key_provider_check" CHECK ("provider_code" IN ('local-key', 'openbao-transit'))
+);
+CREATE UNIQUE INDEX IF NOT EXISTS "document_signing_key_unique" ON "document_signing_key" ("tenant_id", "key_id");
+ALTER TABLE "document_signing_key" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "document_signing_key" FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "document_signing_key";
+CREATE POLICY tenant_isolation ON "document_signing_key"
+  USING ("tenant_id" = current_setting('app.current_tenant_id', true)::uuid)
+  WITH CHECK ("tenant_id" = current_setting('app.current_tenant_id', true)::uuid);
+
+-- ── D-21: verification without an account ───────────────────────────────────
+-- Public checks are logged with a salted hash of the IP, never the IP; a staff
+-- lookup by name and date of birth records the holder's consent.
+ALTER TABLE "document_verification"
+  ADD COLUMN IF NOT EXISTS "requester_ip_hash"    text,
+  ADD COLUMN IF NOT EXISTS "consent_evidence_ref" text,
+  ADD COLUMN IF NOT EXISTS "method_code"          text NOT NULL DEFAULT 'code';
+ALTER TABLE "document_verification" DROP CONSTRAINT IF EXISTS "document_verification_method_check";
+ALTER TABLE "document_verification" ADD CONSTRAINT "document_verification_method_check" CHECK ("method_code" IN ('code', 'file', 'staff-lookup'));

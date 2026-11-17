@@ -1,8 +1,8 @@
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { PageHeader, Card, Spinner, Problem, Badge, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, formatDate } from '@revelation-srs/ui';
+import { PageHeader, Button, Card, Spinner, Problem, Badge, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, formatDate } from '@revelation-srs/ui';
 
-import { listMyDocuments } from '../api/me.js';
+import { downloadMyDocument, listMyDocuments } from '../api/me.js';
 import { useAuth } from '../auth/AuthContext.js';
 import { useApiData } from '../hooks/useApiData.js';
 
@@ -22,7 +22,7 @@ export function DocumentsPage() {
 
   return (
     <div>
-      <PageHeader title={t('portal.nav.documents')} description="Documents issued for your award. Give the verification code to anyone who needs to check a document with the university." />
+      <PageHeader title={t('portal.nav.documents')} description="Documents issued for your award. Download your signed documents. Anyone you give a document to can check it online with its verification code, without an account." />
       <div className="mt-6">
         {loading ? <div className="flex justify-center py-16"><Spinner /></div>
           : error ? <Problem title="We could not load your documents" detail={error} />
@@ -30,7 +30,7 @@ export function DocumentsPage() {
               : (
                 <Card>
                   <Table>
-                    <TableHead><tr><TableHeaderCell>Document</TableHeaderCell><TableHeaderCell>Issued</TableHeaderCell><TableHeaderCell>Verification code</TableHeaderCell><TableHeaderCell>Status</TableHeaderCell></tr></TableHead>
+                    <TableHead><tr><TableHeaderCell>Document</TableHeaderCell><TableHeaderCell>Issued</TableHeaderCell><TableHeaderCell>Verification code</TableHeaderCell><TableHeaderCell>Status</TableHeaderCell><TableHeaderCell><span className="sr-only">Download</span></TableHeaderCell></tr></TableHead>
                     <TableBody>
                       {data.map((d) => (
                         <TableRow key={d.documentIssueId}>
@@ -38,6 +38,13 @@ export function DocumentsPage() {
                           <TableCell>{formatDate(d.issuedAt)}</TableCell>
                           <TableCell className="font-mono text-xs">{d.statusCode === 'issued' ? d.verificationCode : '—'}</TableCell>
                           <TableCell><Badge value={d.statusCode === 'issued' ? 'approved' : 'rejected'} label={d.statusCode === 'issued' ? 'Valid' : d.statusCode === 'superseded' ? 'Replaced' : 'Revoked'} /></TableCell>
+                          <TableCell className="text-right">
+                            {d.rendered && d.statusCode === 'issued' && (
+                              <Button size="sm" variant="ghost" onClick={() => void downloadMyDocument(d.documentIssueId, `${d.documentTypeCode}-${d.issueNumber}.pdf`)}>
+                                Download PDF<span className="sr-only"> of {DOCUMENT_LABELS[d.documentTypeCode] ?? d.documentTypeCode}</span>
+                              </Button>
+                            )}
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
