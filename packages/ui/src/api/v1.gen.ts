@@ -27637,6 +27637,7 @@ export interface operations {
                         submittedBy: string | null;
                         approvedBy: string | null;
                         appliedAt: string | null;
+                        workflowInstanceId: string | null;
                         results?: {
                             proposalId: string;
                             enrolmentId: string;
@@ -27698,6 +27699,7 @@ export interface operations {
                         submittedBy: string | null;
                         approvedBy: string | null;
                         appliedAt: string | null;
+                        workflowInstanceId: string | null;
                         results?: {
                             proposalId: string;
                             enrolmentId: string;
@@ -27781,6 +27783,7 @@ export interface operations {
                         submittedBy: string | null;
                         approvedBy: string | null;
                         appliedAt: string | null;
+                        workflowInstanceId: string | null;
                         results?: {
                             proposalId: string;
                             enrolmentId: string;
@@ -27850,6 +27853,7 @@ export interface operations {
                         submittedBy: string | null;
                         approvedBy: string | null;
                         appliedAt: string | null;
+                        workflowInstanceId: string | null;
                         results?: {
                             proposalId: string;
                             enrolmentId: string;
@@ -27939,6 +27943,7 @@ export interface operations {
                         submittedBy: string | null;
                         approvedBy: string | null;
                         appliedAt: string | null;
+                        workflowInstanceId: string | null;
                         results?: {
                             proposalId: string;
                             enrolmentId: string;
@@ -27950,6 +27955,20 @@ export interface operations {
                             moduleCode: string | null;
                             reason: string | null;
                         }[];
+                    };
+                };
+            };
+            /** @description Default Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        status: "pending";
+                        commandId: string;
+                        statusUrl: string;
                     };
                 };
             };

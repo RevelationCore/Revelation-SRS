@@ -44,6 +44,7 @@ implementation chose between options, ADR-024 records the choice.
 | Builder-authored single reviews | (per definition) | Bridge → **Temporal when flagged** | Migrated (Stage 3) |
 | Module registration change | `module-registration-change-approval` | Bridge → **Temporal when flagged** | Migrated (Stage 4) |
 | Module selection | `module-selection-approval` | Bridge → **Temporal when flagged** | Migrated (Stage 6a) |
+| Module allocation run | `module-allocation-run` | Bridge → **Temporal when flagged** | Built on GovernedReview (Phase 4 D-30) |
 | Legal identity change | `legal-identity-change-approval` | Bridge → **Temporal when flagged** | Migrated (Stage 6a) |
 | Admissions hand-off | per source (`SOURCE_WORKFLOW`) | Bridge → **Temporal when flagged** | Migrated (Stage 6a) |
 | HESA return submission | `hesa-return-submission-approval` | Bridge → **Temporal when flagged** | Migrated (Stage 6a) |

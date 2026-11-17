@@ -15,6 +15,7 @@ import { sql } from 'drizzle-orm';
 import { GenericContainer, Wait, type StartedTestContainer } from 'testcontainers';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
+import { selectionFixtures } from './helpers/selection-fixtures.js';
 import { startTestApp, type TestApp } from './helpers/test-app.js';
 
 const TEMPORAL_IMAGE = 'temporalio/temporal:1.10.0';
@@ -81,6 +82,7 @@ describe('coverage', () => {
     expect(ctx.app.reviewActivitiesService.effectWorkflowCodes()).toEqual([
       'hesa-return-submission-approval',
       'legal-identity-change-approval',
+      'module-allocation-run',
       'module-registration-change-approval',
       'module-selection-approval',
       'ofs-extract-generation-approval',
@@ -351,5 +353,67 @@ describe('module selection approval on Temporal', () => {
       { decisionCode: 'rejected', reason: 'No capacity' }, approverJwt);
     expect(decided.statusCode).toBe('rejected');
     expect(await registrationCount(enrolmentId)).toBe(0);
+  });
+});
+
+describe('allocation run approval on Temporal (D-30)', () => {
+  let f: ReturnType<typeof selectionFixtures>;
+  let runner: string;
+  let approver: string;
+  const iso = (days: number) => new Date(Date.now() + days * 86_400_000).toISOString();
+
+  beforeAll(async () => {
+    f = selectionFixtures(ctx, { staff: await ctx.makeJwt(), admin: await ctx.makeJwt({ roles: ['tenant-administrator'] }) });
+    runner = await ctx.makeJwt({ sub: 't-alloc-runner', roles: ['registry-administrator'] });
+    approver = await ctx.makeJwt({ sub: 't-alloc-approver', roles: ['programme-approver'] });
+  });
+
+  /** A submitted run over two ranked students competing for one place. */
+  async function submittedRun(): Promise<{ runId: string; instanceId: string; proposals: string[] }> {
+    const periodId = await f.period();
+    const programmeId = await f.programme();
+    await f.ruleSet(programmeId);
+    const x = await f.module(); const y = await f.module();
+    const ox = await f.offering(x.moduleId, periodId, 1);
+    const oy = await f.offering(y.moduleId, periodId, 5);
+    const w = await f.inject('POST', '/api/v1/module-selection-windows', { academicPeriodId: periodId, opensAt: iso(-1), closesAt: iso(1), allocationModeCode: 'ranked' });
+    const windowId = w.json<{ moduleSelectionWindowId: string }>().moduleSelectionWindowId;
+    const proposals: string[] = [];
+    for (let i = 0; i < 2; i++) {
+      const { enrolmentId } = await f.student(programmeId);
+      const proposalId = await f.proposal(enrolmentId, periodId);
+      await f.item(proposalId, x.moduleId, ox, { choiceSlot: 1, preferenceRank: 1 });
+      await f.item(proposalId, y.moduleId, oy, { choiceSlot: 1, preferenceRank: 2 });
+      expect((await f.submit(proposalId)).json<{ statusCode: string }>().statusCode).toBe('awaiting-allocation');
+      proposals.push(proposalId);
+    }
+    const run = (await f.inject('POST', `/api/v1/module-selection-windows/${windowId}/allocation-runs`, { kindCode: 'main' }, runner)).json<{ allocationRunId: string }>();
+    const submitted = await f.inject('POST', `/api/v1/allocation-runs/${run.allocationRunId}/submission`, undefined, runner);
+    expect(submitted.statusCode, submitted.body).toBe(200);
+    return { runId: run.allocationRunId, instanceId: submitted.json<{ workflowInstanceId: string }>().workflowInstanceId, proposals };
+  }
+
+  const registrations = async (proposals: string[]) => Number((await row<{ n: string }>(sql`
+    SELECT count(*) AS n FROM module_registration r JOIN module_selection_proposal p ON p.enrolment_id = r.enrolment_id AND p.recorded_until IS NULL
+    WHERE p.id IN (${sql.join(proposals.map((p) => sql`${p}::uuid`), sql`, `)}) AND r.recorded_until IS NULL`)).n);
+
+  it('applies an approved run once, even when the activity is replayed', async () => {
+    const { runId, instanceId, proposals } = await submittedRun();
+    expect((await instanceRow(instanceId)).execution_backend).toBe('temporal');
+    const decided = await f.inject('POST', `/api/v1/allocation-runs/${runId}/decision`, { decisionCode: 'approved' }, approver);
+    expect(decided.statusCode, decided.body).toBe(200);
+    expect(decided.json<{ statusCode: string }>().statusCode).toBe('applied');
+    expect(await registrations(proposals)).toBe(2);
+    expect((await instanceRow(instanceId)).status_code).toBe('completed');
+
+    await replayAppliedCommand(instanceId);
+    expect(await registrations(proposals)).toBe(2);
+  });
+
+  it('a rejection applies nothing', async () => {
+    const { runId, proposals } = await submittedRun();
+    const decided = await f.inject('POST', `/api/v1/allocation-runs/${runId}/decision`, { decisionCode: 'rejected' }, approver);
+    expect(decided.json<{ statusCode: string }>().statusCode).toBe('rejected');
+    expect(await registrations(proposals)).toBe(0);
   });
 });

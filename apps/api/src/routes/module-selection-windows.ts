@@ -5,6 +5,8 @@ import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { AllocationMode, SelectionWindowDto } from '../platform/module-selection/window-service.js';
 import type { AllocationRunDto } from '../platform/module-selection/allocation-service.js';
 
+import { PendingDecisionSchema, pendingDecision } from './workflow-decision-response.js';
+
 const ErrorSchema = Type.Object({
   type:   Type.String(),
   title:  Type.String(),
@@ -138,6 +140,7 @@ const RunSchema = Type.Object({
     compulsoryOverflow: Type.Array(Type.Object({ moduleCode: Type.String(), over: Type.Integer() })),
   }),
   createdBy: Type.String(), createdAt: Type.String(), submittedBy: Nullable(Type.String()), approvedBy: Nullable(Type.String()), appliedAt: Nullable(Type.String()),
+  workflowInstanceId: Nullable(Type.String()),
   results: Type.Optional(Type.Array(ResultSchema)),
 });
 
@@ -188,14 +191,18 @@ export function moduleAllocationRoutes(fastify: FastifyInstance): void {
     schema: {
       params: Type.Object({ allocationRunId: Type.String() }),
       body: Type.Object({ decisionCode: Type.Union([Type.Literal('approved'), Type.Literal('rejected')]) }),
-      response: { 200: RunSchema, 403: ErrorSchema, 404: ErrorSchema, 409: ErrorSchema },
+      response: { 200: RunSchema, 202: PendingDecisionSchema, 403: ErrorSchema, 404: ErrorSchema, 409: ErrorSchema },
     },
     preHandler: [requirePermission('module-selection:decide')],
   }, async (request, reply) => {
     const { allocationRunId } = request.params as { allocationRunId: string };
     const { decisionCode } = request.body as { decisionCode: 'approved' | 'rejected' };
-    const run = await fastify.allocationService.decide(request.tenantId, allocationRunId, decisionCode, request.user.sub);
+    const { decisionStatus, ...run } = await fastify.allocationService.decide(request.tenantId, allocationRunId, decisionCode, request.user.sub);
     await auditRun(fastify, request, run, 'update');
+    if (decisionStatus === 'pending' && 'commandId' in run) {
+      await reply.code(202).send(pendingDecision(run.commandId));
+      return;
+    }
     await reply.send(runToWire(run));
   });
 }

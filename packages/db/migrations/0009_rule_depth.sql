@@ -295,3 +295,65 @@ VALUES
   ('module_selection_window',        'allocation_mode_code',             'module-selection-window-allocation-mode-code', NULL),
   ('module_selection_proposal_item', 'source_code',                      'proposal-item-source-code',    NULL)
 ON CONFLICT DO NOTHING;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Allocation run approval (D-30): the runner submits a run for review, and a
+-- different holder of module-selection:decide approves (and so applies) or
+-- rejects it, through the governed review family, on Temporal when the
+-- tenant's rollout selects it.
+
+INSERT INTO "workflow_definition" (
+  "definition_code", "display_name", "owner_module_code", "status_code", "current_version_number", "description", "created_by"
+) VALUES (
+  'module-allocation-run',
+  'Module allocation run approval',
+  'registration',
+  'active',
+  1,
+  'A ranked allocation run submitted for approval. A person other than its runner and submitter approves it, which applies it while its inputs are unchanged, or rejects it.',
+  'system'
+)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO "workflow_definition_version" (
+  "workflow_definition_id", "version_number", "status_code", "definition_json", "effective_from", "created_by"
+)
+SELECT
+  wd."id", 1, 'active',
+  jsonb_build_object(
+    'source', 'docs/decisions/phase-4-gap-closure-decisions.md',
+    'decisionStepKey', 'approve-or-reject-allocation',
+    'decisionGatewayAuditTable', 'workflow_decision_audit'
+  ),
+  '2026-11-17T00:00:00Z'::timestamptz, 'system'
+FROM "workflow_definition" wd
+WHERE wd."definition_code" = 'module-allocation-run'
+ON CONFLICT ("workflow_definition_id", "version_number") DO NOTHING;
+
+INSERT INTO "workflow_step" (
+  "workflow_definition_version_id", "step_key", "step_type_code", "display_name", "owner_role_code", "sort_order", "configuration"
+)
+SELECT wdv."id", s."step_key", s."step_type_code", s."display_name", s."owner_role_code", s."sort_order", s."configuration"::jsonb
+FROM "workflow_definition_version" wdv
+JOIN "workflow_definition" wd ON wd."id" = wdv."workflow_definition_id"
+JOIN (VALUES
+  ('run-submitted',                'start',      'Allocation run submitted',          null,                 10, '{}'),
+  ('approve-or-reject-allocation', 'human-task', 'Second-person allocation approval', 'programme-approver', 20, '{"assignmentRulesRequired": true}'),
+  ('decision-gateway',             'decision',   'Allocation decision gateway',       'programme-approver', 30, '{"auditTable": "workflow_decision_audit"}'),
+  ('run-closed',                   'end',        'Allocation run closed',             null,                 40, '{}')
+) AS s("step_key", "step_type_code", "display_name", "owner_role_code", "sort_order", "configuration") ON true
+WHERE wd."definition_code" = 'module-allocation-run'
+  AND wdv."version_number" = 1
+ON CONFLICT ("workflow_definition_version_id", "step_key") DO NOTHING;
+
+INSERT INTO "workflow_decision_gateway" (
+  "workflow_definition_version_id", "gateway_key", "display_name", "decision_type_code", "source_reference", "configuration"
+)
+SELECT
+  wdv."id", 'G01', 'Approve or reject the allocation run?', 'exclusive', 'phase-4-gap-closure-decisions.md',
+  jsonb_build_object('ownerRole', 'Programme approver or registry (not the runner)', 'policySource', 'D-30 allocation governance')
+FROM "workflow_definition_version" wdv
+JOIN "workflow_definition" wd ON wd."id" = wdv."workflow_definition_id"
+WHERE wd."definition_code" = 'module-allocation-run'
+  AND wdv."version_number" = 1
+ON CONFLICT ("workflow_definition_version_id", "gateway_key") DO NOTHING;

@@ -95,6 +95,8 @@ export interface AllocationRun {
   priorityOrder: string[]; inputsHash: string;
   summary: { proposals: number; fullyAllocated: number; partlyAllocated: number; compulsoryOverflow: Array<{ moduleCode: string; over: number }> };
   createdBy: string; createdAt: string; submittedBy: string | null; approvedBy: string | null; appliedAt: string | null;
+  /** The run's approval review, once submitted. */
+  workflowInstanceId: string | null;
   results?: AllocationResult[];
 }
 
@@ -103,8 +105,14 @@ export const getAllocationRun = (runId: string) => api.get<AllocationRun>(`/api/
 export const previewAllocation = (windowId: string, kindCode: 'main' | 'top-up') =>
   api.post<AllocationRun>(`/api/v1/module-selection-windows/${windowId}/allocation-runs`, { kindCode });
 export const submitAllocationRun = (runId: string) => api.post<AllocationRun>(`/api/v1/allocation-runs/${runId}/submission`, {});
-export const decideAllocationRun = (runId: string, decisionCode: 'approved' | 'rejected') =>
-  api.post<AllocationRun>(`/api/v1/allocation-runs/${runId}/decision`, { decisionCode });
+/**
+ * Decides a submitted run through its approval review. On Temporal the
+ * decision may still be applying (202); the run is then fetched as it stands.
+ */
+export async function decideAllocationRun(runId: string, decisionCode: 'approved' | 'rejected'): Promise<AllocationRun> {
+  const res = await api.post<AllocationRun | { commandId: string }>(`/api/v1/allocation-runs/${runId}/decision`, { decisionCode });
+  return 'allocationRunId' in res ? res : getAllocationRun(runId);
+}
 
 // ── Module subject areas (D-27) ──────────────────────────────────────────────
 

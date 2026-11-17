@@ -18,7 +18,8 @@ const STATUS_LABEL: Record<string, string> = {
 
 /**
  * Ranked allocation for one selection window (Phase 4 D-30). Registry
- * previews runs, as many as needed (each is kept); submits one; a
+ * previews runs, as many as needed (each is kept); submits one, which
+ * starts its approval review (and a task in the approvers' inbox); a
  * different person with authority to decide selections approves it, which
  * applies it. Approval is refused if selections or places changed since
  * the preview. The order is random but fixed for the window.
@@ -89,7 +90,10 @@ export function AllocationRunsPage() {
                       <TableCell><Badge value={r.statusCode === 'applied' ? 'approved' : r.statusCode === 'rejected' ? 'rejected' : 'pending'} label={STATUS_LABEL[r.statusCode] ?? r.statusCode} /></TableCell>
                       <TableCell className="text-right space-x-3 whitespace-nowrap">
                         <button className="text-xs text-primary-600 hover:underline" onClick={() => void act(() => getAllocationRun(r.allocationRunId))}>View</button>
-                        {canRun && r.statusCode === 'previewed' && (
+                        {r.workflowInstanceId && (
+                          <Link to={`/workflow/${r.workflowInstanceId}`} className="text-xs text-primary-600 hover:underline">Approval review</Link>
+                        )}
+                        {canRun && r.statusCode === 'previewed' && !runs.some((x) => x.statusCode === 'submitted') && (
                           <button className="text-xs text-primary-600 hover:underline" disabled={busy} onClick={() => void act(() => submitAllocationRun(r.allocationRunId))}>Submit for approval</button>
                         )}
                         {canDecide && r.statusCode === 'submitted' && r.submittedBy !== user?.sub && r.createdBy !== user?.sub && (

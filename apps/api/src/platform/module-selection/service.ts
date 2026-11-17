@@ -1159,6 +1159,9 @@ export class ModuleSelectionService {
   /** Confirms a proposal whose every slot an applied allocation filled (D-30). */
   async confirmAfterAllocation(tenantId: string, proposalId: string, actorId: string): Promise<ProposalDto> {
     const proposal = await this.#getCurrentProposalRow(proposalId, tenantId);
+    if (proposal.statusCode === 'confirmed') return (await this.getProposal(proposalId, tenantId))!;
+    // Resume a confirmation an interrupted allocation left part way through.
+    if (proposal.statusCode === 'validated' && proposal.decisionAuthorityCode === 'allocation') return this.#confirmProposal(tenantId, proposalId, actorId);
     if (proposal.statusCode !== 'awaiting-allocation' && proposal.statusCode !== 'returned') {
       throw new ConflictError(`Proposal is ${proposal.statusCode}, not awaiting allocation`);
     }

@@ -53427,7 +53427,8 @@
                     "createdAt",
                     "submittedBy",
                     "approvedBy",
-                    "appliedAt"
+                    "appliedAt",
+                    "workflowInstanceId"
                   ],
                   "properties": {
                     "allocationRunId": {
@@ -53519,6 +53520,16 @@
                       ]
                     },
                     "appliedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "workflowInstanceId": {
                       "anyOf": [
                         {
                           "type": "string"
@@ -53705,7 +53716,8 @@
                       "createdAt",
                       "submittedBy",
                       "approvedBy",
-                      "appliedAt"
+                      "appliedAt",
+                      "workflowInstanceId"
                     ],
                     "properties": {
                       "allocationRunId": {
@@ -53797,6 +53809,16 @@
                         ]
                       },
                       "appliedAt": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "workflowInstanceId": {
                         "anyOf": [
                           {
                             "type": "string"
@@ -53926,7 +53948,8 @@
                     "createdAt",
                     "submittedBy",
                     "approvedBy",
-                    "appliedAt"
+                    "appliedAt",
+                    "workflowInstanceId"
                   ],
                   "properties": {
                     "allocationRunId": {
@@ -54018,6 +54041,16 @@
                       ]
                     },
                     "appliedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "workflowInstanceId": {
                       "anyOf": [
                         {
                           "type": "string"
@@ -54175,7 +54208,8 @@
                     "createdAt",
                     "submittedBy",
                     "approvedBy",
-                    "appliedAt"
+                    "appliedAt",
+                    "workflowInstanceId"
                   ],
                   "properties": {
                     "allocationRunId": {
@@ -54267,6 +54301,16 @@
                       ]
                     },
                     "appliedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "workflowInstanceId": {
                       "anyOf": [
                         {
                           "type": "string"
@@ -54484,7 +54528,8 @@
                     "createdAt",
                     "submittedBy",
                     "approvedBy",
-                    "appliedAt"
+                    "appliedAt",
+                    "workflowInstanceId"
                   ],
                   "properties": {
                     "allocationRunId": {
@@ -54585,6 +54630,16 @@
                         }
                       ]
                     },
+                    "workflowInstanceId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "results": {
                       "type": "array",
                       "items": {
@@ -54658,6 +54713,35 @@
                           }
                         }
                       }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "commandId",
+                    "statusUrl"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "pending"
+                      ]
+                    },
+                    "commandId": {
+                      "type": "string"
+                    },
+                    "statusUrl": {
+                      "type": "string"
                     }
                   }
                 }

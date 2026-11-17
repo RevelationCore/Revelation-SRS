@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { selectionFixtures } from './helpers/selection-fixtures.js';
@@ -20,7 +21,7 @@ afterAll(async () => { await ctx?.teardown(); });
 
 const iso = (offsetDays: number) => new Date(Date.now() + offsetDays * 86_400_000).toISOString();
 
-interface Run { allocationRunId: string; statusCode: string; summary: { proposals: number; fullyAllocated: number; partlyAllocated: number }; results: Array<{ proposalId: string; orderPosition: number; outcomeCode: string; choiceSlot: number | null; reason: string | null }> }
+interface Run { allocationRunId: string; statusCode: string; workflowInstanceId: string | null; summary: { proposals: number; fullyAllocated: number; partlyAllocated: number }; results: Array<{ proposalId: string; orderPosition: number; outcomeCode: string; choiceSlot: number | null; reason: string | null }> }
 
 async function setUp(capX: number, capY: number) {
   const periodId = await f.period();
@@ -48,6 +49,11 @@ async function rankedStudent(s: Awaited<ReturnType<typeof setUp>>, withFixed = f
   return proposalId;
 }
 
+const instance = async (id: string) => (await ctx.db.execute(sql`
+  SELECT i.workflow_code, i.status_code, t.status_code AS task_status, t.assignee_role_code
+  FROM workflow_instance i LEFT JOIN workflow_task t ON t.workflow_instance_id = i.id
+  WHERE i.id = ${id}`) as unknown as Array<{ workflow_code: string; status_code: string; task_status: string | null; assignee_role_code: string | null }>)[0]!;
+
 const preview = async (windowId: string) => {
   const res = await f.inject('POST', `/api/v1/module-selection-windows/${windowId}/allocation-runs`, { kindCode: 'main' }, runner);
   expect(res.statusCode, res.body).toBe(201);
@@ -66,12 +72,19 @@ describe('Ranked allocation', () => {
     const second = await preview(s.windowId);
     expect(second.results.map((r) => [r.proposalId, r.orderPosition])).toEqual(first.results.map((r) => [r.proposalId, r.orderPosition]));
 
-    expect((await f.inject('POST', `/api/v1/allocation-runs/${second.allocationRunId}/submission`, undefined, runner)).statusCode).toBe(200);
+    const submitted = await f.inject('POST', `/api/v1/allocation-runs/${second.allocationRunId}/submission`, undefined, runner);
+    expect(submitted.statusCode).toBe(200);
+    // Submission starts a governed review, with a task for the approvers.
+    const instanceId = submitted.json<Run>().workflowInstanceId!;
+    expect(await instance(instanceId)).toMatchObject({ workflow_code: 'module-allocation-run', status_code: 'running', assignee_role_code: 'programme-approver' });
+    // Only one run per window may await a decision.
+    expect((await f.inject('POST', `/api/v1/allocation-runs/${first.allocationRunId}/submission`, undefined, runner)).statusCode).toBe(409);
     // The runner cannot approve their own run, even holding module-selection:decide.
     expect((await f.inject('POST', `/api/v1/allocation-runs/${second.allocationRunId}/decision`, { decisionCode: 'approved' }, runner)).statusCode).toBe(403);
     const applied = await f.inject('POST', `/api/v1/allocation-runs/${second.allocationRunId}/decision`, { decisionCode: 'approved' }, approver);
     expect(applied.statusCode, applied.body).toBe(200);
     expect(applied.json<Run>().statusCode).toBe('applied');
+    expect(await instance(instanceId)).toMatchObject({ status_code: 'completed', task_status: 'completed' });
 
     const regs = await Promise.all(proposals.map(async (id) => {
       const p = await f.getProposal(id);
@@ -92,6 +105,13 @@ describe('Ranked allocation', () => {
     await f.inject('POST', `/api/v1/allocation-runs/${run.allocationRunId}/submission`, undefined, runner);
     await rankedStudent(s);
     expect((await f.inject('POST', `/api/v1/allocation-runs/${run.allocationRunId}/decision`, { decisionCode: 'approved' }, approver)).statusCode).toBe(409);
+    // The refused approval leaves the review open, so the approver can reject the stale run instead.
+    const stale = (await f.inject('GET', `/api/v1/allocation-runs/${run.allocationRunId}`)).json<Run>();
+    expect(stale.statusCode).toBe('submitted');
+    expect((await instance(stale.workflowInstanceId!)).status_code).toBe('running');
+    const rejected = await f.inject('POST', `/api/v1/allocation-runs/${run.allocationRunId}/decision`, { decisionCode: 'rejected' }, approver);
+    expect(rejected.json<Run>().statusCode).toBe('rejected');
+    expect((await instance(stale.workflowInstanceId!)).status_code).toBe('completed');
   });
 
   it('returns a student it could not fill, holding their other places, and takes the resubmission first come', async () => {

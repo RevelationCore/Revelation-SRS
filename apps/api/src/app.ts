@@ -490,8 +490,10 @@ export async function buildApp(
   fastify.decorate('moduleSubjectService', new ModuleSubjectService(db, valueSets));
   fastify.decorate('timetableService', timetables);
   // An applied allocation sends timetabling the rosters it produced (D-26).
-  fastify.decorate('allocationService', new AllocationService(db, moduleSelection, selectionWindows, timetables,
-    async (tenantId, academicPeriodId) => { await runTimetableDemandSnapshot(deliveries, db, tenantId, academicPeriodId); }));
+  const allocation = new AllocationService(db, moduleSelection, selectionWindows, timetables, workflowBridge, reviewExecution,
+    async (tenantId, academicPeriodId) => { await runTimetableDemandSnapshot(deliveries, db, tenantId, academicPeriodId); });
+  allocation.registerWorkflowEffects(reviewActivities);
+  fastify.decorate('allocationService', allocation);
   fastify.decorate('moduleSelectionService', moduleSelection);
   fastify.decorate('bindingChangeService', bindingChanges);
   fastify.decorate('registrationPeriodService', registrationPeriods);

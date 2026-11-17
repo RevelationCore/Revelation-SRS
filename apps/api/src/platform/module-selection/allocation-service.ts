@@ -12,11 +12,19 @@ import {
   type Db,
   type ModuleAllocationRun,
   withTenantContext,
+  workflowDefinitionVersions,
+  workflowDefinitions,
+  workflowInstances,
+  workflowTasks,
 } from '@revelation-srs/db';
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '@revelation-srs/domain';
 import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
 
 import { clockNow } from '../clock.js';
+import { GovernedReview } from '../platform-controls/governed-review.js';
+import type { ReviewActivitiesService } from '../platform-controls/review-activities.js';
+import type { ReviewExecutionService } from '../platform-controls/review-execution-service.js';
+import type { WorkflowBridgeService } from '../platform-controls/workflow-bridge-service.js';
 import type { TimetableService } from '../timetabling/timetable-service.js';
 import { type ClashPolicy, clashBetween } from '../timetabling/clash-detector.js';
 
@@ -26,6 +34,10 @@ import type { SelectionWindowService } from './window-service.js';
 type Uuid = `${string}-${string}-${string}-${string}-${string}`;
 
 export const ALGORITHM_VERSION = 'rsd-1';
+
+/** The governed review family a submitted run is approved through (D-30). */
+export const ALLOCATION_REVIEW_WORKFLOW_CODE = 'module-allocation-run';
+const ALLOCATION_DECISION_STEP_KEY = 'approve-or-reject-allocation';
 
 export interface AllocationResultDto {
   proposalId: string;
@@ -53,6 +65,8 @@ export interface AllocationRunDto {
   submittedBy: string | null;
   approvedBy: string | null;
   appliedAt: Date | null;
+  /** The run's approval review, once submitted. */
+  workflowInstanceId: string | null;
   results?: AllocationResultDto[];
 }
 
@@ -75,9 +89,11 @@ interface Candidate {
  * Ranking honestly is each student's best strategy.
  *
  * Governance: a holder of module-selection:allocate previews runs (every
- * preview is kept) and submits one; a holder of module-selection:decide
- * who did not submit it approves, and approval applies it, but only while
- * the inputs are unchanged. The seed is fixed per window at its first
+ * preview is kept) and submits one, which starts a governed review
+ * (module-allocation-run, on Temporal when the tenant's rollout selects it).
+ * A holder of module-selection:decide who neither ran nor submitted it
+ * approves, and approval applies it, but only while the inputs are
+ * unchanged; otherwise the review stays open and can be rejected. The seed is fixed per window at its first
  * preview, so re-running cannot reshuffle the order.
  */
 export class AllocationService {
@@ -86,8 +102,29 @@ export class AllocationService {
     private readonly selection: ModuleSelectionService,
     private readonly windows: SelectionWindowService,
     private readonly timetables: TimetableService,
+    private readonly workflowBridge: WorkflowBridgeService,
+    private readonly reviewExecution?: ReviewExecutionService,
     private readonly onApplied?: (tenantId: string, academicPeriodId: string) => Promise<void>,
   ) {}
+
+  readonly #review = (): GovernedReview => new GovernedReview(this.workflowBridge, this.reviewExecution, {
+    workflowCode: ALLOCATION_REVIEW_WORKFLOW_CODE,
+    stepKey: ALLOCATION_DECISION_STEP_KEY,
+    gatewayKey: 'G01',
+    outcomeStepKey: 'run-closed',
+    assigneeRoleCode: 'programme-approver',
+    subjectEntityType: 'module_allocation_run',
+    effectDecisionCodes: ['approved', 'rejected'],
+  });
+
+  /** On Temporal-run reviews the worker applies the decision to the run before the review closes. */
+  registerWorkflowEffects(activities: ReviewActivitiesService): void {
+    this.#review().register(activities, async (input) => {
+      const runId = input.context['allocationRunId'] as string;
+      await this.#applyDecision(input.tenantId, runId, input.decisionCode as 'approved' | 'rejected', input.actorId);
+      return { allocationRunId: runId };
+    });
+  }
 
   async preview(tenantId: string, windowId: string, kind: 'main' | 'top-up', actorId: string): Promise<AllocationRunDto> {
     const window = await this.windows.getWindow(tenantId, windowId);
@@ -170,42 +207,113 @@ export class AllocationService {
     return this.getRun(tenantId, run.id, { withResults: true });
   }
 
+  /**
+   * Submits a preview for approval, starting its governed review. Only one
+   * run per window may await a decision: reject it before submitting another.
+   */
   async submit(tenantId: string, runId: string, actorId: string): Promise<AllocationRunDto> {
     const run = await this.#run(tenantId, runId);
     if (run.statusCode !== 'previewed') throw new ConflictError(`This run is ${run.statusCode}; only a preview can be submitted`);
-    await withTenantContext(this.db, tenantId, async (tx) => {
-      await tx.update(moduleAllocationRuns).set({ statusCode: 'superseded' }).where(and(
-        eq(moduleAllocationRuns.tenantId, tenantId as Uuid), eq(moduleAllocationRuns.windowId, run.windowId), eq(moduleAllocationRuns.statusCode, 'submitted'),
-      ));
-      await tx.update(moduleAllocationRuns).set({ statusCode: 'submitted', submittedBy: actorId }).where(eq(moduleAllocationRuns.id, run.id));
+    const [pending] = await withTenantContext(this.db, tenantId, (tx) => tx.select({ id: moduleAllocationRuns.id }).from(moduleAllocationRuns).where(and(
+      eq(moduleAllocationRuns.tenantId, tenantId as Uuid), eq(moduleAllocationRuns.windowId, run.windowId), eq(moduleAllocationRuns.statusCode, 'submitted'),
+    )).limit(1));
+    if (pending) throw new ConflictError('Another run for this window is awaiting approval; it must be decided first');
+
+    const started = await this.#review().start(tenantId, {
+      workflowDefinitionVersionId: await this.#activeVersionId(tenantId),
+      subjectEntityId: run.id,
+      startedBy: actorId,
+      context: { allocationRunId: run.id, windowId: run.windowId, createdBy: run.createdBy, submittedBy: actorId, summary: run.summary },
     });
+    await withTenantContext(this.db, tenantId, (tx) => tx.update(moduleAllocationRuns)
+      .set({ statusCode: 'submitted', submittedBy: actorId, workflowInstanceId: started.workflowInstanceId })
+      .where(eq(moduleAllocationRuns.id, run.id)));
     return this.getRun(tenantId, runId);
   }
 
-  /** A second person approves (and so applies) or rejects a submitted run. */
-  async decide(tenantId: string, runId: string, decision: 'approved' | 'rejected', actorId: string): Promise<AllocationRunDto> {
+  /**
+   * A second person approves (and so applies) or rejects a submitted run,
+   * through its governed review. On Temporal the decision may still be
+   * applying when this returns ('pending').
+   */
+  async decide(tenantId: string, runId: string, decision: 'approved' | 'rejected', actorId: string): Promise<
+    AllocationRunDto & ({ decisionStatus: 'applied' } | { decisionStatus: 'pending'; commandId: string })
+  > {
     const run = await this.#run(tenantId, runId);
     if (run.statusCode !== 'submitted') throw new ConflictError(`This run is ${run.statusCode}; only a submitted run can be decided`);
     if (run.submittedBy === actorId || run.createdBy === actorId) throw new ForbiddenError('The person who ran or submitted an allocation cannot approve it');
-    if (decision === 'rejected') {
-      await withTenantContext(this.db, tenantId, (tx) => tx.update(moduleAllocationRuns).set({ statusCode: 'rejected', approvedBy: actorId }).where(eq(moduleAllocationRuns.id, run.id)));
-      return this.getRun(tenantId, runId);
-    }
-    const window = await this.windows.getWindow(tenantId, run.windowId);
-    const candidates = await this.#candidates(tenantId, window, run.kindCode as 'main' | 'top-up');
-    const capacity = await this.#remainingCapacity(tenantId, candidates);
-    if (this.#inputsHash(candidates, capacity) !== run.inputsHash) {
-      throw new ConflictError('Selections or places have changed since this run was previewed; preview again');
-    }
-    await withTenantContext(this.db, tenantId, (tx) => tx.update(moduleAllocationRuns).set({ statusCode: 'approved', approvedBy: actorId }).where(eq(moduleAllocationRuns.id, run.id)));
+    if (!run.workflowInstanceId) throw new ConflictError('This run has no approval review; submit it again');
 
+    const [instance] = await withTenantContext(this.db, tenantId, (tx) => tx.select().from(workflowInstances).where(and(
+      eq(workflowInstances.tenantId, tenantId as Uuid), eq(workflowInstances.id, run.workflowInstanceId!),
+      eq(workflowInstances.workflowCode, ALLOCATION_REVIEW_WORKFLOW_CODE),
+    )).limit(1));
+    if (!instance) throw new NotFoundError('WorkflowInstance', run.workflowInstanceId);
+    if (instance.statusCode !== 'running') throw new ConflictError(`This run's approval is ${instance.statusCode}`);
+    const [task] = await withTenantContext(this.db, tenantId, (tx) => tx.select({ id: workflowTasks.id }).from(workflowTasks).where(and(
+      eq(workflowTasks.tenantId, tenantId as Uuid), eq(workflowTasks.workflowInstanceId, instance.id), eq(workflowTasks.stepKey, ALLOCATION_DECISION_STEP_KEY),
+    )).limit(1));
+
+    const result = await this.#review().decide(tenantId, {
+      instance, legacyTaskId: task?.id ?? null, decisionCode: decision, actorId,
+      metadata: { allocationRunId: run.id },
+      effect: async (input) => {
+        await this.#applyDecision(tenantId, run.id, decision, input.actorId);
+        return { allocationRunId: run.id };
+      },
+    });
+    const current = await this.getRun(tenantId, runId, { withResults: true });
+    return result.status === 'pending'
+      ? { ...current, decisionStatus: 'pending', commandId: result.commandId }
+      : { ...current, decisionStatus: 'applied' };
+  }
+
+  /**
+   * Applies a decision to a run. Safe to repeat for one decision, as a
+   * retried Temporal activity does: a rejected run stays rejected, and an
+   * approval interrupted part way through resumes with the proposals it had
+   * not yet confirmed or returned. Throws ConflictError, which keeps the
+   * review open, when the decider ran or submitted the run, or when its
+   * inputs have changed.
+   */
+  async #applyDecision(tenantId: string, runId: string, decision: 'approved' | 'rejected', actorId: string): Promise<void> {
+    const run = await this.#run(tenantId, runId);
+    if (run.submittedBy === actorId || run.createdBy === actorId) throw new ConflictError('The person who ran or submitted an allocation cannot approve it');
+    if (decision === 'rejected') {
+      if (run.statusCode === 'rejected') return;
+      if (run.statusCode !== 'submitted') throw new ConflictError(`This run is ${run.statusCode}; only a submitted run can be rejected`);
+      await withTenantContext(this.db, tenantId, (tx) => tx.update(moduleAllocationRuns).set({ statusCode: 'rejected', approvedBy: actorId }).where(eq(moduleAllocationRuns.id, run.id)));
+      return;
+    }
+
+    const window = await this.windows.getWindow(tenantId, run.windowId);
     const results = await withTenantContext(this.db, tenantId, (tx) => tx.select().from(moduleAllocationResults)
       .where(and(eq(moduleAllocationResults.tenantId, tenantId as Uuid), eq(moduleAllocationResults.runId, run.id))));
-    // Mark applied first, so the proposals' effective choices read this run's results.
-    await withTenantContext(this.db, tenantId, (tx) => tx.update(moduleAllocationRuns).set({ statusCode: 'applied', appliedAt: clockNow() }).where(eq(moduleAllocationRuns.id, run.id)));
+    let candidates: Candidate[];
+    let appliedAt: Date;
+    if (run.statusCode === 'applied') {
+      // A retry: carry on with the proposals this run covers.
+      appliedAt = run.appliedAt ?? clockNow();
+      candidates = await this.#candidatesFromResults(tenantId, results);
+    } else {
+      if (run.statusCode !== 'submitted') throw new ConflictError(`This run is ${run.statusCode}; only a submitted run can be approved`);
+      candidates = await this.#candidates(tenantId, window, run.kindCode as 'main' | 'top-up');
+      const capacity = await this.#remainingCapacity(tenantId, candidates);
+      if (this.#inputsHash(candidates, capacity) !== run.inputsHash) {
+        throw new ConflictError('Selections or places have changed since this run was previewed; preview again');
+      }
+      appliedAt = clockNow();
+      // Mark applied first, so the proposals' effective choices read this run's results.
+      await withTenantContext(this.db, tenantId, (tx) => tx.update(moduleAllocationRuns)
+        .set({ statusCode: 'applied', approvedBy: actorId, appliedAt }).where(eq(moduleAllocationRuns.id, run.id)));
+    }
+
     const holdUntil = window.resubmissionClosesAt ?? window.closesAt;
     const offerings = await this.#offeringsWithPlaces(tenantId, candidates);
     for (const c of candidates) {
+      const proposal = await this.selection.getProposal(c.proposalId, tenantId);
+      if (!proposal || proposal.statusCode === 'confirmed') continue;
+      if (proposal.statusCode === 'returned' && proposal.decisionAuthorityCode === 'allocation' && proposal.decidedAt && proposal.decidedAt >= appliedAt) continue;
       const mine = results.filter((r) => r.proposalId === c.proposalId);
       const unfilled = mine.filter((r) => r.outcomeCode === 'unallocated');
       if (unfilled.length === 0) {
@@ -221,7 +329,6 @@ export class AllocationService {
       eq(moduleAllocationRuns.tenantId, tenantId as Uuid), eq(moduleAllocationRuns.windowId, run.windowId), eq(moduleAllocationRuns.statusCode, 'previewed'),
     )));
     if (this.onApplied) await this.onApplied(tenantId, window.academicPeriodId).catch(() => undefined);
-    return this.getRun(tenantId, runId, { withResults: true });
   }
 
   async listRuns(tenantId: string, windowId: string): Promise<AllocationRunDto[]> {
@@ -267,6 +374,33 @@ export class AllocationService {
       .where(and(eq(moduleAllocationRuns.tenantId, tenantId as Uuid), eq(moduleAllocationRuns.id, runId as Uuid))).limit(1));
     if (!run) throw new NotFoundError('ModuleAllocationRun', runId);
     return run;
+  }
+
+  /** The proposals a run's results cover, for resuming an interrupted application. */
+  async #candidatesFromResults(tenantId: string, results: Array<{ proposalId: string }>): Promise<Candidate[]> {
+    const out: Candidate[] = [];
+    for (const proposalId of [...new Set(results.map((r) => r.proposalId))]) {
+      const p = await this.selection.getProposal(proposalId, tenantId);
+      if (!p) continue;
+      out.push({ proposalId, enrolmentId: p.enrolmentId, programmeId: null, fheqLevel: p.fheqLevel, items: await this.selection.itemsFor(tenantId, proposalId) });
+    }
+    return out;
+  }
+
+  async #activeVersionId(tenantId: string): Promise<string> {
+    const [row] = await withTenantContext(this.db, tenantId, (tx) => tx.select({ versionId: workflowDefinitionVersions.id })
+      .from(workflowDefinitions)
+      .innerJoin(workflowDefinitionVersions, and(
+        eq(workflowDefinitionVersions.workflowDefinitionId, workflowDefinitions.id),
+        eq(workflowDefinitionVersions.versionNumber, workflowDefinitions.currentVersionNumber),
+      ))
+      .where(and(
+        eq(workflowDefinitions.definitionCode, ALLOCATION_REVIEW_WORKFLOW_CODE),
+        eq(workflowDefinitions.statusCode, 'active'), eq(workflowDefinitionVersions.statusCode, 'active'),
+      ))
+      .limit(1));
+    if (!row) throw new NotFoundError('WorkflowDefinition', ALLOCATION_REVIEW_WORKFLOW_CODE);
+    return row.versionId;
   }
 
   async #priority(tenantId: string): Promise<string[]> {
@@ -377,5 +511,6 @@ function runDto(r: ModuleAllocationRun): AllocationRunDto {
     allocationRunId: r.id, windowId: r.windowId, kindCode: r.kindCode as 'main' | 'top-up', statusCode: r.statusCode, algorithmVersion: r.algorithmVersion,
     priorityOrder: r.priorityOrder, inputsHash: r.inputsHash, summary: (r.summary ?? { proposals: 0, fullyAllocated: 0, partlyAllocated: 0, compulsoryOverflow: [] }) as AllocationRunDto['summary'],
     createdBy: r.createdBy, createdAt: r.createdAt, submittedBy: r.submittedBy, approvedBy: r.approvedBy, appliedAt: r.appliedAt,
+    workflowInstanceId: r.workflowInstanceId,
   };
 }
