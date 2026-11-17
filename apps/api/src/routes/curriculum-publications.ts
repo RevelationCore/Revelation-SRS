@@ -1,5 +1,6 @@
 import { Type } from '@sinclair/typebox';
 import { requirePermission } from '@revelation-srs/auth';
+import { hasPermission } from '@revelation-srs/domain';
 import type { RecognisedCredit, RuleException } from '@revelation-srs/db';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 
@@ -14,10 +15,11 @@ const PublicationSchema = Type.Object({
   publicationId: Type.String(), sourceSystemCode: Type.String(), sourcePublicationRef: Type.String(),
   publicationVersion: Type.String(), approvalRef: Nullable(Type.String()), effectiveFrom: Type.String(), statusCode: Type.String(),
   counts: Type.Object({ added: Type.Integer(), changed: Type.Integer(), closed: Type.Integer(), unchanged: Type.Integer(), rejected: Type.Integer() }),
+  affectsStudents: Type.Integer(),
   receivedBy: Type.String(), receivedAt: Type.String(), appliedBy: Nullable(Type.String()), appliedAt: Nullable(Type.String()),
   items: Type.Array(Type.Object({
     itemId: Type.String(), objectTypeCode: Type.String(), objectCode: Type.String(), sourceReference: Nullable(Type.String()),
-    changeTypeCode: Type.String(), issue: Nullable(Type.String()), appliedEntityId: Nullable(Type.String()),
+    changeTypeCode: Type.String(), issue: Nullable(Type.String()), appliedEntityId: Nullable(Type.String()), affectsStudents: Type.Integer(),
   })),
 });
 
@@ -27,6 +29,31 @@ const ProgrammeItem = Type.Object({
   owningSchool: Type.Optional(Type.String()), creditFrameworkCode: Type.Optional(Type.String()),
   fheqLevel: Type.Optional(Type.Integer()), creditTotal: Type.Optional(Type.Integer()),
   durationYears: Type.Optional(Type.Integer()), modeOfStudyCode: Type.Optional(Type.String()),
+}, { additionalProperties: false });
+// Phase 3 D-22: routes, rule sets (with groups and members), learning outcomes and offerings.
+const Opt = <T extends Parameters<typeof Type.Optional>[0]>(t: T) => Type.Optional(t);
+const RouteItem = Type.Object({
+  programmeCode: Type.String({ maxLength: 50 }), routeCode: Type.String({ maxLength: 50 }), sourceReference: Opt(Type.String()), closed: Opt(Type.Boolean()),
+  title: Opt(Type.String({ maxLength: 300 })),
+}, { additionalProperties: false });
+const MemberItem = Type.Object({ moduleCode: Type.String({ maxLength: 50 }), closed: Opt(Type.Boolean()), isDefault: Opt(Type.Boolean()), isNonCondonable: Opt(Type.Boolean()) }, { additionalProperties: false });
+const GroupItem = Type.Object({
+  groupCode: Type.String({ maxLength: 50 }), closed: Opt(Type.Boolean()), title: Opt(Type.String({ maxLength: 300 })),
+  groupTypeCode: Opt(Type.Union([Type.Literal('compulsory'), Type.Literal('optional-pool'), Type.Literal('elective-pool')])), fheqLevel: Opt(Type.Integer()),
+  minModules: Opt(Type.Integer()), maxModules: Opt(Type.Integer()), minCredits: Opt(Type.Integer()), maxCredits: Opt(Type.Integer()),
+  minFheqLevel: Opt(Type.Integer()), maxFheqLevel: Opt(Type.Integer()), members: Opt(Type.Array(MemberItem, { maxItems: 200 })),
+}, { additionalProperties: false });
+const RuleSetItem = Type.Object({
+  programmeCode: Type.String({ maxLength: 50 }), ruleSetCode: Type.String({ maxLength: 50 }), routeCode: Opt(Type.String()), entryAcademicYear: Opt(Type.String()),
+  description: Opt(Type.String({ maxLength: 2000 })), sourceReference: Opt(Type.String()), closed: Opt(Type.Boolean()), groups: Opt(Type.Array(GroupItem, { maxItems: 100 })),
+}, { additionalProperties: false });
+const OutcomeItem = Type.Object({
+  ownerType: Type.Union([Type.Literal('programme'), Type.Literal('module')]), ownerCode: Type.String({ maxLength: 50 }), outcomeCode: Type.String({ maxLength: 50 }),
+  description: Opt(Type.String({ maxLength: 2000 })), sourceReference: Opt(Type.String()), closed: Opt(Type.Boolean()),
+}, { additionalProperties: false });
+const OfferingItem = Type.Object({
+  moduleCode: Type.String({ maxLength: 50 }), academicYear: Type.String({ pattern: '^\\d{4}-\\d{2}$' }), periodCode: Type.String({ maxLength: 50 }),
+  deliveryModeCode: Opt(Type.String()), capacity: Opt(Type.Integer()), sourceReference: Opt(Type.String()), closed: Opt(Type.Boolean()),
 }, { additionalProperties: false });
 const ModuleItem = Type.Object({
   code: Type.String({ maxLength: 50 }), sourceReference: Type.Optional(Type.String()), closed: Type.Optional(Type.Boolean()),
@@ -70,6 +97,10 @@ export function curriculumPublicationRoutes(fastify: FastifyInstance): void {
         correctionRationale: Type.Optional(Type.String({ maxLength: 2000 })),
         programmes: Type.Optional(Type.Array(ProgrammeItem, { maxItems: 2000 })),
         modules: Type.Optional(Type.Array(ModuleItem, { maxItems: 5000 })),
+        routes: Type.Optional(Type.Array(RouteItem, { maxItems: 2000 })),
+        ruleSets: Type.Optional(Type.Array(RuleSetItem, { maxItems: 2000 })),
+        learningOutcomes: Type.Optional(Type.Array(OutcomeItem, { maxItems: 10000 })),
+        offerings: Type.Optional(Type.Array(OfferingItem, { maxItems: 10000 })),
       }),
       response: { 200: PublicationSchema, 201: PublicationSchema, 409: ErrorSchema, 422: ErrorSchema },
     },
@@ -96,11 +127,14 @@ export function curriculumPublicationRoutes(fastify: FastifyInstance): void {
   });
 
   fastify.post('/curriculum-publications/:publicationId/application', {
-    schema: { params: Type.Object({ publicationId: Type.String() }), response: { 200: PublicationSchema, 404: ErrorSchema, 409: ErrorSchema } },
+    schema: { params: Type.Object({ publicationId: Type.String() }), response: { 200: PublicationSchema, 403: ErrorSchema, 404: ErrorSchema, 409: ErrorSchema } },
     preHandler: [requirePermission('curriculum-publication:apply')],
   }, async (request, reply) => {
     const { publicationId } = request.params as { publicationId: string };
-    const applied = await fastify.curriculumPublicationService.apply(request.tenantId, publicationId, request.user.sub);
+    // A publication that changes what students are bound to needs a binding approver (D-22, D-11).
+    const applied = await fastify.curriculumPublicationService.apply(request.tenantId, publicationId, request.user.sub, {
+      canApproveBindingChanges: hasPermission(request.user.roles, 'curriculum-binding:approve'),
+    });
     await audit(fastify, request, 'curriculum_publication', publicationId, 'update', 'Applied curriculum publication');
     await reply.send(publicationToWire(applied));
   });

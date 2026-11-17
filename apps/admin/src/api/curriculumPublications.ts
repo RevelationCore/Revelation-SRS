@@ -10,6 +10,8 @@ export interface Publication {
   publicationId: string; sourceSystemCode: string; sourcePublicationRef: string; publicationVersion: string; approvalRef: string | null;
   effectiveFrom: string; statusCode: 'validated' | 'rejected' | 'applied';
   counts: { added: number; changed: number; closed: number; unchanged: number; rejected: number };
+  /** Students bound to or registered on what this publication changes (D-22). */
+  affectsStudents?: number;
   receivedBy: string; receivedAt: string; appliedBy: string | null; appliedAt: string | null; items: PublicationItem[];
 }
 

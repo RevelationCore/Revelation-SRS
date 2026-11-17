@@ -230,6 +230,8 @@ Out of scope: assessment patterns (the SRS owns them), academic rules (rules eng
 
 **Institution must confirm.** Which system masters each object type; who approves corrections that affect students.
 
+**Implementation note (D-22).** The only schema change is widening `curriculum_publication_item`'s object-type check. Each item stores its natural key in its payload (`_keys`) and the version it was compared with (`_baseVersionId`), so apply resolves parents in dependency order and refuses if anything changed since receipt. Adding a group or member to a bound rule set counts as changing it. A closed offering is deleted, since `module_offering` is not bitemporal; one with registrations cannot be closed. The master guard is a request hook on the programme, module, learning-outcome, offering, rule-set and module-group write routes.
+
 ## Implementation order
 
 1. Start the external-party conversations for UCAS, SMS, Finance and IAM now; they take the longest.

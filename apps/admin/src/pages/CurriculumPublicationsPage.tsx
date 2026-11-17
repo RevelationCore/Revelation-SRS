@@ -21,6 +21,11 @@ const STATUS: Record<string, { value: string; label: string }> = {
 };
 
 /** Curriculum publications received from the curriculum system (BP-03-001; D-7). */
+const OBJECT_TYPE_LABELS: Record<string, string> = {
+  programme: 'Programme', module: 'Module', route: 'Route', 'rule-set': 'Rule set', 'module-group': 'Module group',
+  'module-group-member': 'Group member', 'learning-outcome': 'Learning outcome', 'module-offering': 'Module offering',
+};
+
 export function CurriculumPublicationsPage() {
   const [publications, setPublications] = useState<Publication[] | null>(null);
   const [error, setError] = useState('');
@@ -66,6 +71,7 @@ export function CurriculumPublicationDetailPage() {
   const [error, setError] = useState('');
   const [actionError, setActionError] = useState('');
   const canApply = userHasAnyPermission(roles, ['curriculum-publication:apply']);
+  const canApproveBindings = userHasAnyPermission(roles, ['curriculum-binding:approve']);
 
   const load = useCallback(async () => {
     if (!publicationId) return;
@@ -95,7 +101,7 @@ export function CurriculumPublicationDetailPage() {
               {publication.items.map((i) => (
                 <TableRow key={i.itemId}>
                   <TableCell className="font-mono text-xs">{i.objectCode}</TableCell>
-                  <TableCell>{i.objectTypeCode}</TableCell>
+                  <TableCell>{OBJECT_TYPE_LABELS[i.objectTypeCode] ?? i.objectTypeCode}</TableCell>
                   <TableCell><Badge value={i.changeTypeCode === 'invalid' ? 'rejected' : i.changeTypeCode === 'unchanged' ? 'pending' : 'approved'} label={i.changeTypeCode} /></TableCell>
                   <TableCell className="text-sm text-danger-700">{i.issue ?? ''}</TableCell>
                 </TableRow>
@@ -103,6 +109,12 @@ export function CurriculumPublicationDetailPage() {
             </TableBody>
           </Table>
         </Card>
+        {(publication.affectsStudents ?? 0) > 0 && publication.statusCode === 'validated' && (
+          <div className="mt-4"><StatusNotice>
+            This publication changes what {publication.affectsStudents} student(s) are bound to or registered on (under its correction rationale).
+            {canApproveBindings ? ' Check the change before applying it.' : ' Only a curriculum-binding approver can apply it.'}
+          </StatusNotice></div>
+        )}
         {publication.statusCode === 'validated' && canApply && (
           <Card>
             <CardBody>

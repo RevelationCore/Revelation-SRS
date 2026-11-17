@@ -302,6 +302,20 @@ export async function buildApp(
     done();
   });
 
+  // Each curriculum object type has one master (Phase 3 D-22 rule 5): when the
+  // curriculum system masters a type, the SRS's own write routes for it refuse.
+  fastify.addHook('preHandler', async (request, reply) => {
+    if (request.method === 'GET' || !request.tenantId) return;
+    const type = curriculumWriteType(request.method, request.routeOptions.url ?? '');
+    if (!type) return;
+    if ((await fastify.curriculumPublicationService.masteredBy(request.tenantId, type)) === 'curriculum-system') {
+      await reply.code(409).send({
+        type: 'https://srs.example.com/errors/conflict', title: 'Mastered by the curriculum system', status: 409,
+        detail: `${type.replace(/-/g, ' ')} records are mastered by the curriculum system: change them there and they arrive in a publication`,
+      });
+    }
+  });
+
   // - Platform infrastructure -
 
   const db         = createDb(config.databaseUrl);
@@ -960,4 +974,18 @@ function academicYearOf(isoDate: string): string {
   const year = Number(isoDate.slice(0, 4));
   const start = Number(isoDate.slice(5, 7)) >= 8 ? year : year - 1;
   return `${start}-${String((start + 1) % 100).padStart(2, '0')}`;
+}
+
+/** The curriculum object type a write route changes, for the master check (D-22). */
+function curriculumWriteType(method: string, url: string): 'programme' | 'module' | 'rule-set' | 'module-group' | 'module-group-member' | 'learning-outcome' | 'module-offering' | null {
+  if (!['POST', 'PATCH', 'PUT', 'DELETE'].includes(method)) return null;
+  const path = url.replace(/^\/api\/v1/, '');
+  if (/^\/programmes(\/:programmeId)?$/.test(path)) return 'programme';
+  if (/^\/modules(\/:moduleId)?$/.test(path)) return 'module';
+  if (/^\/learning-outcomes/.test(path)) return 'learning-outcome';
+  if (/^\/module-offerings(\/:moduleOfferingId)?$/.test(path)) return 'module-offering';
+  if (/^\/programme-rule-sets/.test(path)) return 'rule-set';
+  if (/^\/module-groups\/:moduleGroupId\/members/.test(path)) return 'module-group-member';
+  if (/^\/module-groups/.test(path)) return 'module-group';
+  return null;
 }

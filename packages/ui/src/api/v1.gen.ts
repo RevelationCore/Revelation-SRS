@@ -11176,6 +11176,7 @@ export interface operations {
                             unchanged: number;
                             rejected: number;
                         };
+                        affectsStudents: number;
                         receivedBy: string;
                         receivedAt: string;
                         appliedBy: string | null;
@@ -11188,6 +11189,7 @@ export interface operations {
                             changeTypeCode: string;
                             issue: string | null;
                             appliedEntityId: string | null;
+                            affectsStudents: number;
                         }[];
                     }[];
                 };
@@ -11231,6 +11233,58 @@ export interface operations {
                         creditValue?: number;
                         fheqLevel?: number;
                     }[];
+                    routes?: {
+                        programmeCode: string;
+                        routeCode: string;
+                        sourceReference?: string;
+                        closed?: boolean;
+                        title?: string;
+                    }[];
+                    ruleSets?: {
+                        programmeCode: string;
+                        ruleSetCode: string;
+                        routeCode?: string;
+                        entryAcademicYear?: string;
+                        description?: string;
+                        sourceReference?: string;
+                        closed?: boolean;
+                        groups?: {
+                            groupCode: string;
+                            closed?: boolean;
+                            title?: string;
+                            groupTypeCode?: "compulsory" | "optional-pool" | "elective-pool";
+                            fheqLevel?: number;
+                            minModules?: number;
+                            maxModules?: number;
+                            minCredits?: number;
+                            maxCredits?: number;
+                            minFheqLevel?: number;
+                            maxFheqLevel?: number;
+                            members?: {
+                                moduleCode: string;
+                                closed?: boolean;
+                                isDefault?: boolean;
+                                isNonCondonable?: boolean;
+                            }[];
+                        }[];
+                    }[];
+                    learningOutcomes?: {
+                        ownerType: "programme" | "module";
+                        ownerCode: string;
+                        outcomeCode: string;
+                        description?: string;
+                        sourceReference?: string;
+                        closed?: boolean;
+                    }[];
+                    offerings?: {
+                        moduleCode: string;
+                        academicYear: string;
+                        periodCode: string;
+                        deliveryModeCode?: string;
+                        capacity?: number;
+                        sourceReference?: string;
+                        closed?: boolean;
+                    }[];
                 };
             };
         };
@@ -11256,6 +11310,7 @@ export interface operations {
                             unchanged: number;
                             rejected: number;
                         };
+                        affectsStudents: number;
                         receivedBy: string;
                         receivedAt: string;
                         appliedBy: string | null;
@@ -11268,6 +11323,7 @@ export interface operations {
                             changeTypeCode: string;
                             issue: string | null;
                             appliedEntityId: string | null;
+                            affectsStudents: number;
                         }[];
                     };
                 };
@@ -11293,6 +11349,7 @@ export interface operations {
                             unchanged: number;
                             rejected: number;
                         };
+                        affectsStudents: number;
                         receivedBy: string;
                         receivedAt: string;
                         appliedBy: string | null;
@@ -11305,6 +11362,7 @@ export interface operations {
                             changeTypeCode: string;
                             issue: string | null;
                             appliedEntityId: string | null;
+                            affectsStudents: number;
                         }[];
                     };
                 };
@@ -11371,6 +11429,7 @@ export interface operations {
                             unchanged: number;
                             rejected: number;
                         };
+                        affectsStudents: number;
                         receivedBy: string;
                         receivedAt: string;
                         appliedBy: string | null;
@@ -11383,6 +11442,7 @@ export interface operations {
                             changeTypeCode: string;
                             issue: string | null;
                             appliedEntityId: string | null;
+                            affectsStudents: number;
                         }[];
                     };
                 };
@@ -11435,6 +11495,7 @@ export interface operations {
                             unchanged: number;
                             rejected: number;
                         };
+                        affectsStudents: number;
                         receivedBy: string;
                         receivedAt: string;
                         appliedBy: string | null;
@@ -11447,7 +11508,22 @@ export interface operations {
                             changeTypeCode: string;
                             issue: string | null;
                             appliedEntityId: string | null;
+                            affectsStudents: number;
                         }[];
+                    };
+                };
+            };
+            /** @description Default Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
                     };
                 };
             };

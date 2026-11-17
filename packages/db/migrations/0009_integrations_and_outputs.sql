@@ -178,3 +178,8 @@ VALUES
   ('fee_liability',        'payer_arrangement_code','payer-arrangement-code',        NULL),
   ('fee_liability',        'hold_reason_code',    'financial-hold-reason-code',      NULL)
 ON CONFLICT DO NOTHING;
+
+-- ── D-22: curriculum publication beyond programmes and modules ──────────────
+ALTER TABLE "curriculum_publication_item" DROP CONSTRAINT IF EXISTS "curriculum_publication_item_type_check";
+ALTER TABLE "curriculum_publication_item" ADD CONSTRAINT "curriculum_publication_item_type_check"
+  CHECK ("object_type_code" IN ('programme', 'module', 'route', 'rule-set', 'module-group', 'module-group-member', 'learning-outcome', 'module-offering'));

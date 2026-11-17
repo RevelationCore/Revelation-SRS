@@ -13804,6 +13804,257 @@
                         }
                       }
                     }
+                  },
+                  "routes": {
+                    "maxItems": 2000,
+                    "type": "array",
+                    "items": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "programmeCode",
+                        "routeCode"
+                      ],
+                      "properties": {
+                        "programmeCode": {
+                          "maxLength": 50,
+                          "type": "string"
+                        },
+                        "routeCode": {
+                          "maxLength": 50,
+                          "type": "string"
+                        },
+                        "sourceReference": {
+                          "type": "string"
+                        },
+                        "closed": {
+                          "type": "boolean"
+                        },
+                        "title": {
+                          "maxLength": 300,
+                          "type": "string"
+                        }
+                      }
+                    }
+                  },
+                  "ruleSets": {
+                    "maxItems": 2000,
+                    "type": "array",
+                    "items": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "programmeCode",
+                        "ruleSetCode"
+                      ],
+                      "properties": {
+                        "programmeCode": {
+                          "maxLength": 50,
+                          "type": "string"
+                        },
+                        "ruleSetCode": {
+                          "maxLength": 50,
+                          "type": "string"
+                        },
+                        "routeCode": {
+                          "type": "string"
+                        },
+                        "entryAcademicYear": {
+                          "type": "string"
+                        },
+                        "description": {
+                          "maxLength": 2000,
+                          "type": "string"
+                        },
+                        "sourceReference": {
+                          "type": "string"
+                        },
+                        "closed": {
+                          "type": "boolean"
+                        },
+                        "groups": {
+                          "maxItems": 100,
+                          "type": "array",
+                          "items": {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "groupCode"
+                            ],
+                            "properties": {
+                              "groupCode": {
+                                "maxLength": 50,
+                                "type": "string"
+                              },
+                              "closed": {
+                                "type": "boolean"
+                              },
+                              "title": {
+                                "maxLength": 300,
+                                "type": "string"
+                              },
+                              "groupTypeCode": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "compulsory"
+                                    ]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "optional-pool"
+                                    ]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "elective-pool"
+                                    ]
+                                  }
+                                ]
+                              },
+                              "fheqLevel": {
+                                "type": "integer"
+                              },
+                              "minModules": {
+                                "type": "integer"
+                              },
+                              "maxModules": {
+                                "type": "integer"
+                              },
+                              "minCredits": {
+                                "type": "integer"
+                              },
+                              "maxCredits": {
+                                "type": "integer"
+                              },
+                              "minFheqLevel": {
+                                "type": "integer"
+                              },
+                              "maxFheqLevel": {
+                                "type": "integer"
+                              },
+                              "members": {
+                                "maxItems": 200,
+                                "type": "array",
+                                "items": {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "moduleCode"
+                                  ],
+                                  "properties": {
+                                    "moduleCode": {
+                                      "maxLength": 50,
+                                      "type": "string"
+                                    },
+                                    "closed": {
+                                      "type": "boolean"
+                                    },
+                                    "isDefault": {
+                                      "type": "boolean"
+                                    },
+                                    "isNonCondonable": {
+                                      "type": "boolean"
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "learningOutcomes": {
+                    "maxItems": 10000,
+                    "type": "array",
+                    "items": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "ownerType",
+                        "ownerCode",
+                        "outcomeCode"
+                      ],
+                      "properties": {
+                        "ownerType": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "programme"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "module"
+                              ]
+                            }
+                          ]
+                        },
+                        "ownerCode": {
+                          "maxLength": 50,
+                          "type": "string"
+                        },
+                        "outcomeCode": {
+                          "maxLength": 50,
+                          "type": "string"
+                        },
+                        "description": {
+                          "maxLength": 2000,
+                          "type": "string"
+                        },
+                        "sourceReference": {
+                          "type": "string"
+                        },
+                        "closed": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  },
+                  "offerings": {
+                    "maxItems": 10000,
+                    "type": "array",
+                    "items": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "moduleCode",
+                        "academicYear",
+                        "periodCode"
+                      ],
+                      "properties": {
+                        "moduleCode": {
+                          "maxLength": 50,
+                          "type": "string"
+                        },
+                        "academicYear": {
+                          "pattern": "^\\d{4}-\\d{2}$",
+                          "type": "string"
+                        },
+                        "periodCode": {
+                          "maxLength": 50,
+                          "type": "string"
+                        },
+                        "deliveryModeCode": {
+                          "type": "string"
+                        },
+                        "capacity": {
+                          "type": "integer"
+                        },
+                        "sourceReference": {
+                          "type": "string"
+                        },
+                        "closed": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
                   }
                 }
               }
@@ -13827,6 +14078,7 @@
                     "effectiveFrom",
                     "statusCode",
                     "counts",
+                    "affectsStudents",
                     "receivedBy",
                     "receivedAt",
                     "appliedBy",
@@ -13889,6 +14141,9 @@
                         }
                       }
                     },
+                    "affectsStudents": {
+                      "type": "integer"
+                    },
                     "receivedBy": {
                       "type": "string"
                     },
@@ -13926,7 +14181,8 @@
                           "sourceReference",
                           "changeTypeCode",
                           "issue",
-                          "appliedEntityId"
+                          "appliedEntityId",
+                          "affectsStudents"
                         ],
                         "properties": {
                           "itemId": {
@@ -13970,6 +14226,9 @@
                                 "type": "null"
                               }
                             ]
+                          },
+                          "affectsStudents": {
+                            "type": "integer"
                           }
                         }
                       }
@@ -13994,6 +14253,7 @@
                     "effectiveFrom",
                     "statusCode",
                     "counts",
+                    "affectsStudents",
                     "receivedBy",
                     "receivedAt",
                     "appliedBy",
@@ -14056,6 +14316,9 @@
                         }
                       }
                     },
+                    "affectsStudents": {
+                      "type": "integer"
+                    },
                     "receivedBy": {
                       "type": "string"
                     },
@@ -14093,7 +14356,8 @@
                           "sourceReference",
                           "changeTypeCode",
                           "issue",
-                          "appliedEntityId"
+                          "appliedEntityId",
+                          "affectsStudents"
                         ],
                         "properties": {
                           "itemId": {
@@ -14137,6 +14401,9 @@
                                 "type": "null"
                               }
                             ]
+                          },
+                          "affectsStudents": {
+                            "type": "integer"
                           }
                         }
                       }
@@ -14230,6 +14497,7 @@
                       "effectiveFrom",
                       "statusCode",
                       "counts",
+                      "affectsStudents",
                       "receivedBy",
                       "receivedAt",
                       "appliedBy",
@@ -14292,6 +14560,9 @@
                           }
                         }
                       },
+                      "affectsStudents": {
+                        "type": "integer"
+                      },
                       "receivedBy": {
                         "type": "string"
                       },
@@ -14329,7 +14600,8 @@
                             "sourceReference",
                             "changeTypeCode",
                             "issue",
-                            "appliedEntityId"
+                            "appliedEntityId",
+                            "affectsStudents"
                           ],
                           "properties": {
                             "itemId": {
@@ -14373,6 +14645,9 @@
                                   "type": "null"
                                 }
                               ]
+                            },
+                            "affectsStudents": {
+                              "type": "integer"
                             }
                           }
                         }
@@ -14419,6 +14694,7 @@
                     "effectiveFrom",
                     "statusCode",
                     "counts",
+                    "affectsStudents",
                     "receivedBy",
                     "receivedAt",
                     "appliedBy",
@@ -14481,6 +14757,9 @@
                         }
                       }
                     },
+                    "affectsStudents": {
+                      "type": "integer"
+                    },
                     "receivedBy": {
                       "type": "string"
                     },
@@ -14518,7 +14797,8 @@
                           "sourceReference",
                           "changeTypeCode",
                           "issue",
-                          "appliedEntityId"
+                          "appliedEntityId",
+                          "affectsStudents"
                         ],
                         "properties": {
                           "itemId": {
@@ -14562,6 +14842,9 @@
                                 "type": "null"
                               }
                             ]
+                          },
+                          "affectsStudents": {
+                            "type": "integer"
                           }
                         }
                       }
@@ -14636,6 +14919,7 @@
                     "effectiveFrom",
                     "statusCode",
                     "counts",
+                    "affectsStudents",
                     "receivedBy",
                     "receivedAt",
                     "appliedBy",
@@ -14698,6 +14982,9 @@
                         }
                       }
                     },
+                    "affectsStudents": {
+                      "type": "integer"
+                    },
                     "receivedBy": {
                       "type": "string"
                     },
@@ -14735,7 +15022,8 @@
                           "sourceReference",
                           "changeTypeCode",
                           "issue",
-                          "appliedEntityId"
+                          "appliedEntityId",
+                          "affectsStudents"
                         ],
                         "properties": {
                           "itemId": {
@@ -14779,9 +15067,41 @@
                                 "type": "null"
                               }
                             ]
+                          },
+                          "affectsStudents": {
+                            "type": "integer"
                           }
                         }
                       }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
                     }
                   }
                 }
