@@ -42,6 +42,16 @@ const TimetableRegistrationSchema = Type.Object({
   startDate: Type.String(),
   endDate: Type.String(),
   deliveryModeCode: Type.Union([Type.String(), Type.Null()]),
+  /** The offering's current published timetable (Phase 4 D-24); empty until one is published. */
+  activities: Type.Array(Type.Object({
+    activityTypeCode: Type.String(),
+    groupSetCode: Type.Union([Type.String(), Type.Null()]),
+    groupCode: Type.Union([Type.String(), Type.Null()]),
+    slots: Type.Array(Type.Object({
+      dayOfWeek: Type.Integer(), startTime: Type.String(), endTime: Type.String(),
+      weekCommencing: Type.Array(Type.String()), locationRef: Type.Union([Type.String(), Type.Null()]),
+    })),
+  })),
 });
 
 const ErrorSchema = Type.Object({
@@ -96,7 +106,11 @@ export function moduleRegistrationsRoutes(fastify: FastifyInstance): void {
         request.tenantId,
         enrolmentId,
       );
-      await reply.send(registrations.map(timetableRegistrationToWire));
+      const timetables = await fastify.timetableService.currentFor(request.tenantId, registrations.map((r) => r.moduleOfferingId));
+      await reply.send(registrations.map((r) => ({
+        ...timetableRegistrationToWire(r),
+        activities: (timetables.get(r.moduleOfferingId)?.activities ?? []).map(({ activityTypeCode, groupSetCode, groupCode, slots }) => ({ activityTypeCode, groupSetCode, groupCode, slots })),
+      })));
     },
   );
 

@@ -50,6 +50,7 @@ import { CorrectionService } from './platform/governance/correction-service.js';
 import { ModuleRegistrationService } from './platform/registration/service.js';
 import { SelectionWindowService } from './platform/module-selection/window-service.js';
 import { ModuleSubjectService } from './platform/module-selection/joint-honours.js';
+import { TimetableService } from './platform/timetabling/timetable-service.js';
 import { ModuleSelectionService } from './platform/module-selection/service.js';
 import { BindingChangeService } from './platform/module-selection/binding-change-service.js';
 import { IntegrationRegistryService } from './platform/integration/registry-service.js';
@@ -99,6 +100,7 @@ import { moderationRoutes } from './routes/moderation.js';
 import { moduleResultRoutes } from './routes/module-results.js';
 import { moduleRegistrationsRoutes } from './routes/module-registrations.js';
 import { moduleSelectionWindowsRoutes } from './routes/module-selection-windows.js';
+import { timetablingRoutes } from './routes/timetabling.js';
 import { moduleSelectionProposalsRoutes } from './routes/module-selection-proposals.js';
 import { programmesRoutes } from './routes/programmes.js';
 import { progressionRoutes } from './routes/progression.js';
@@ -370,6 +372,7 @@ export async function buildApp(
   const catalogue  = new CatalogueService(db, eventBus, valueSets);
   const calendar   = new CalendarService(db);
   const selectionWindows = new SelectionWindowService(db);
+  const timetables = new TimetableService(db, valueSets);
   const registrations = new ModuleRegistrationService(db, eventBus, rules, selectionWindows, workflowBridge, reviewExecution);
   registrations.registerWorkflowEffects(reviewActivities);
   const tenantAdmin = new TenantAdminService(db);
@@ -413,7 +416,7 @@ export async function buildApp(
   const workflowDefinitions = new WorkflowDefinitionService(db);
   const workflowInstances = new WorkflowInstanceService(db);
   const workflowTasks = new WorkflowTaskService(db);
-  const moduleSelection = new ModuleSelectionService(db, eventBus, rules, workflowBridge, registrations, selectionWindows, reviewExecution);
+  const moduleSelection = new ModuleSelectionService(db, eventBus, rules, workflowBridge, registrations, selectionWindows, timetables, reviewExecution);
   const bindingChanges = new BindingChangeService(db, valueSets, enrolments, moduleSelection);
   const notificationService = new NotificationService(db);
   // Registration is blocked by right to study and, if the tenant chooses, a tuition hold (Phase 3 D-17, D-18).
@@ -483,6 +486,7 @@ export async function buildApp(
   fastify.decorate('moduleRegistrationService', registrations);
   fastify.decorate('selectionWindowService', selectionWindows);
   fastify.decorate('moduleSubjectService', new ModuleSubjectService(db, valueSets));
+  fastify.decorate('timetableService', timetables);
   fastify.decorate('moduleSelectionService', moduleSelection);
   fastify.decorate('bindingChangeService', bindingChanges);
   fastify.decorate('registrationPeriodService', registrationPeriods);
@@ -694,6 +698,7 @@ export async function buildApp(
         { name: 'communications',       description: 'Communication templates, channel dispatch, and audit log' },
         { name: 'integration-registry', description: 'Integration contracts, registrations, and exchange audit' },
         { name: 'module-selection',     description: 'Module selection proposals, diet groups, and curriculum rule-set binding' },
+        { name: 'timetabling',          description: 'Timetable publications from the timetabling system, and clash data for selection (Phase 4 D-24)' },
         { name: 'pgr',                  description: 'Postgraduate research supervision, progress review, and examination' },
       ],
     },
@@ -794,6 +799,7 @@ export async function buildApp(
       ['/learning-outcomes',         'catalogue'],
       ['/academic-periods',          'calendar'],
       ['/module-selection-windows',  'calendar'],
+      ['/timetable-publications',    'timetabling'],
       ['/components',                'assessment'],
       ['/module-offerings',          'calendar'],
       ['/value-sets',                'value-sets'],
@@ -879,6 +885,7 @@ export async function buildApp(
   await fastify.register(moduleResultRoutes,        { prefix: '/api/v1' });
   await fastify.register(moduleRegistrationsRoutes, { prefix: '/api/v1' });
   await fastify.register(moduleSelectionWindowsRoutes, { prefix: '/api/v1' });
+  await fastify.register(timetablingRoutes, { prefix: '/api/v1' });
   await fastify.register(moduleSelectionProposalsRoutes, { prefix: '/api/v1' });
   await fastify.register(tenantAdminRoutes,         { prefix: '/api/v1' });
   await fastify.register(platformControlRoutes,         { prefix: '/api/v1' });
@@ -920,6 +927,7 @@ declare module 'fastify' {
     moduleRegistrationService: ModuleRegistrationService;
     selectionWindowService: SelectionWindowService;
     moduleSubjectService: ModuleSubjectService;
+    timetableService: TimetableService;
     moduleSelectionService: ModuleSelectionService;
     bindingChangeService: BindingChangeService;
     registrationPeriodService: RegistrationPeriodService;

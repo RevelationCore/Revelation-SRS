@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import { and, eq, inArray, isNull } from 'drizzle-orm';
+import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
 import {
   enrolmentCurriculumBindings,
   enrolments,
@@ -44,6 +44,8 @@ import type { ModuleRegistrationService } from '../registration/service.js';
 import type { RulesEngine } from '../rules-engine/engine.js';
 import type { SelectionWindowService } from './window-service.js';
 import { type JointHonoursRule, evaluateJointHonours } from './joint-honours.js';
+import type { TimetableService } from '../timetabling/timetable-service.js';
+import { DEFAULT_CLASH_POLICY, clashBetween, clashPolicyFrom, describeClash } from '../timetabling/clash-detector.js';
 import { DEFAULT_REPEAT_RULE, type RepeatRule, failedModuleIds, groupMembership, repeatRequirements, repeatRuleFrom } from './repeat-requirements.js';
 import { clockNow } from '../clock.js';
 
@@ -190,6 +192,7 @@ export class ModuleSelectionService {
     private readonly workflowBridge: WorkflowBridgeService,
     private readonly moduleRegistrations: ModuleRegistrationService,
     private readonly windows: SelectionWindowService,
+    private readonly timetables: TimetableService,
     private readonly reviewExecution?: ReviewExecutionService,
   ) {}
 
@@ -865,6 +868,11 @@ export class ModuleSelectionService {
 
     const ruleCtx = { tenantId, programmeId: enrolment.programmeId ?? '' };
 
+    // Timetable clashes (D-25): advisory warnings or blocking errors, by policy.
+    for (const m of await this.#checkClashes(tenantId, proposal, enrolment, items, ruleCtx)) {
+      pushItemMessage(m.proposalItemId, { ruleTypeCode: 'timetable-clash-policy', severity: m.severity, message: m.message });
+    }
+
     // Repeat-module requirement (D-28): what the board requires the student to repeat.
     const repeat = await this.#checkRepeats(tenantId, proposal, enrolment, items, ruleCtx);
     for (const [itemId, msgs] of repeat.itemMessages) for (const m of msgs) pushItemMessage(itemId, m);
@@ -1317,6 +1325,66 @@ export class ModuleSelectionService {
         });
       }
     }
+  }
+
+  /**
+   * Clashes between the proposal's offerings, and with the student's current
+   * registrations in overlapping periods (D-25). An offering with no
+   * published timetable gets a warning, never an error. A waiver of the
+   * policy turns blocking clashes into warnings (D-33).
+   */
+  async #checkClashes(
+    tenantId: string,
+    proposal: typeof moduleSelectionProposals.$inferSelect,
+    enrolment: CurrentEnrolment,
+    items: ProposalItemDto[],
+    ruleCtx: { tenantId: string; programmeId: string },
+  ): Promise<Array<{ proposalItemId: string; severity: 'error' | 'warning'; message: string }>> {
+    const withOffering = items.filter((i) => i.moduleOfferingId);
+    if (withOffering.length === 0) return [];
+    const { value, exception } = await this.rules.resolveForEnrolment(ruleCtx, 'timetable-clash-policy', enrolment.enrolmentId,
+      async () => (await this.rules.getOptionalRule<Record<string, unknown>>(ruleCtx, 'timetable-clash-policy', ['default'])) ?? { ...DEFAULT_CLASH_POLICY });
+    const policy = clashPolicyFrom(exception?.exceptionTypeCode === 'waiver' ? { ...DEFAULT_CLASH_POLICY, policy: 'advisory' } : value);
+    const severity: 'error' | 'warning' = policy.policy === 'blocking' ? 'error' : 'warning';
+
+    const [period] = await withTenantContext(this.db, tenantId, (tx) => tx.select().from(academicPeriods)
+      .where(and(eq(academicPeriods.tenantId, tenantId as Uuid), eq(academicPeriods.id, proposal.academicPeriodId as Uuid))).limit(1));
+    const existing = !period ? [] : await withTenantContext(this.db, tenantId, (tx) => tx.select({ offeringId: moduleOfferings.id, code: modules.code })
+      .from(moduleRegistrationRows)
+      .innerJoin(moduleOfferings, eq(moduleOfferings.id, moduleRegistrationRows.moduleOfferingId))
+      .innerJoin(academicPeriods, eq(academicPeriods.id, moduleOfferings.academicPeriodId))
+      .innerJoin(modules, and(eq(modules.id, moduleOfferings.moduleId), isNull(modules.recordedUntil)))
+      .where(and(
+        eq(moduleRegistrationRows.tenantId, tenantId as Uuid), eq(moduleRegistrationRows.enrolmentId, enrolment.enrolmentId as Uuid),
+        eq(moduleRegistrationRows.statusCode, 'registered'), isNull(moduleRegistrationRows.recordedUntil),
+        sql`${academicPeriods.startDate} <= ${period.endDate}`, sql`${academicPeriods.endDate} >= ${period.startDate}`,
+      )));
+    const proposed = new Set(withOffering.map((i) => i.moduleOfferingId!));
+    const registered = existing.filter((e) => !proposed.has(e.offeringId));
+    const timetables = await this.timetables.currentFor(tenantId, [...proposed, ...registered.map((r) => r.offeringId)]);
+
+    const out: Array<{ proposalItemId: string; severity: 'error' | 'warning'; message: string }> = [];
+    for (const item of withOffering) {
+      if (!timetables.has(item.moduleOfferingId!)) out.push({ proposalItemId: item.proposalItemId, severity: 'warning', message: `The timetable for ${item.moduleCode} is not yet published, so clashes cannot be checked` });
+    }
+    for (const [n, a] of withOffering.entries()) {
+      const ta = timetables.get(a.moduleOfferingId!);
+      if (!ta) continue;
+      for (const b of withOffering.slice(n + 1)) {
+        const tb = timetables.get(b.moduleOfferingId!);
+        if (!tb || a.moduleOfferingId === b.moduleOfferingId) continue;
+        const clash = clashBetween(ta, tb, policy);
+        if (!clash) continue;
+        const message = describeClash(clash, a.moduleCode, b.moduleCode);
+        out.push({ proposalItemId: a.proposalItemId, severity, message }, { proposalItemId: b.proposalItemId, severity, message });
+      }
+      for (const r of registered) {
+        const tr = timetables.get(r.offeringId);
+        const clash = tr ? clashBetween(ta, tr, policy) : null;
+        if (clash) out.push({ proposalItemId: a.proposalItemId, severity, message: `${describeClash(clash, a.moduleCode, r.code)}, which you are already registered for` });
+      }
+    }
+    return out;
   }
 
   async #routeCode(tenantId: string, programmeRuleSetId: string): Promise<string | null> {

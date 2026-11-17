@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://schemas.revelation-srs.io/file-contracts/timetabling/timetable-demand-feed/v1.json",
+  "title": "TimetableDemandFeedV1",
+  "description": "Confirmed module registrations sent to the timetabling system as delivery-ledger items of flow F-SIS-TTB-01 (Phase 4 D-26; BP-03-006). A registration item says add, update or remove for one student and offering; a snapshot item gives the full roster of one offering, for reconciliation. Proposals and pre-registration enrolments send nothing. Contains no names, contact details or adjustment data.",
+  "oneOf": [
+    {
+      "title": "Registration change",
+      "type": "object",
+      "required": ["kind", "action", "moduleRegistrationId", "studentNumber", "moduleOfferingId", "moduleCode", "academicYear", "periodCode", "registrationStatusCode", "effectiveFrom"],
+      "properties": {
+        "kind": { "const": "registration" },
+        "action": { "enum": ["add", "update", "remove"] },
+        "moduleRegistrationId": { "type": "string", "format": "uuid" },
+        "studentNumber": { "type": ["string", "null"] },
+        "moduleOfferingId": { "type": "string", "format": "uuid" },
+        "moduleCode": { "type": "string" },
+        "academicYear": { "type": "string" },
+        "periodCode": { "type": "string" },
+        "registrationStatusCode": { "type": "string" },
+        "effectiveFrom": { "type": "string", "format": "date-time" }
+      }
+    },
+    {
+      "title": "Offering roster snapshot",
+      "type": "object",
+      "required": ["kind", "moduleOfferingId", "moduleCode", "academicYear", "periodCode", "studentNumbers", "count", "highWaterMark"],
+      "properties": {
+        "kind": { "const": "snapshot" },
+        "moduleOfferingId": { "type": "string", "format": "uuid" },
+        "moduleCode": { "type": "string" },
+        "academicYear": { "type": "string" },
+        "periodCode": { "type": "string" },
+        "studentNumbers": { "type": "array", "items": { "type": "string" } },
+        "count": { "type": "integer", "minimum": 0 },
+        "highWaterMark": { "type": ["string", "null"], "format": "date-time" }
+      }
+    }
+  ],
+  "type": "object"
+}

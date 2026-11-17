@@ -234,6 +234,42 @@
           "permission": "regulatory:write"
         }
       ]
+    },
+    {
+      "contractId": "timetabling-exchange.v1",
+      "name": "Timetabling Exchange",
+      "description": "Timetable publications in from the timetabling system and confirmed registration demand out to it (Phase 4 D-24, D-26).",
+      "statutoryBody": null,
+      "flows": [
+        "F-TTB-SIS-01",
+        "F-SIS-TTB-01"
+      ],
+      "exchanges": [
+        {
+          "direction": "inbound",
+          "name": "Timetable publication",
+          "endpoint": "POST /api/v1/timetable-publications",
+          "format": "json",
+          "transport": "https-api",
+          "dataClassification": "operational",
+          "schemaRef": "https://schemas.revelation-srs.io/file-contracts/timetabling/timetable-publication/v1.json",
+          "schemaPath": "schemas/file-contracts/timetabling/timetable-publication.v1.json",
+          "idempotencyKey": "sourceSystemCode + sourceVersion",
+          "permission": "timetable:manage"
+        },
+        {
+          "direction": "outbound",
+          "name": "Timetable demand",
+          "endpoint": "delivery ledger flow F-SIS-TTB-01",
+          "format": "json",
+          "transport": "delivery-ledger",
+          "dataClassification": "personal",
+          "schemaRef": "https://schemas.revelation-srs.io/file-contracts/timetabling/timetable-demand-feed/v1.json",
+          "schemaPath": "schemas/file-contracts/timetabling/timetable-demand-feed.v1.json",
+          "idempotencyKey": "ttb-demand:<registrationId>:<versionId>",
+          "permission": "integration:manage"
+        }
+      ]
     }
   ]
 }
