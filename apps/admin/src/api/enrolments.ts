@@ -7,6 +7,7 @@ export interface Enrolment {
   programmeCode:       string | null;
   programmeName:       string | null;
   statusCode:          string;
+  feeStatusCode?:      string | null;
   modeOfStudyCode:     string;
   attendanceTypeCode:  string | null;
   academicYearOfEntry: string;

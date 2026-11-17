@@ -51,6 +51,8 @@ export interface CreateEnrolmentInput {
   fundingSourceCode?:  string;
   slcReference?:       string;
   ucasPersonalId?:     string;
+  /** The provider's fee status determination (D-18). */
+  feeStatusCode?:      string;
   ukviCasRequired?:    boolean;
 }
 
@@ -82,6 +84,7 @@ export interface EnrolmentDto {
   fundingSourceCode:   string | null;
   slcReference:        string | null;
   ucasPersonalId:      string | null;
+  feeStatusCode:       string | null;
   validFrom:           Date;
   recordedAt:          Date;
 }
@@ -221,6 +224,7 @@ export class EnrolmentService {
     await this.#ensurePersonExists(input.personId, tenantId);
     await this.#validateFieldValue(tenantId, 'enrolment', 'mode_of_study_code', input.modeOfStudyCode);
     await this.#validateFieldValue(tenantId, 'enrolment', 'funding_source_code', input.fundingSourceCode);
+    await this.#validateFieldValue(tenantId, 'enrolment', 'fee_status_code', input.feeStatusCode);
 
     const enrolmentId = options.enrolmentId ?? randomUUID();
     const now         = clockNow();
@@ -246,6 +250,7 @@ export class EnrolmentService {
         fundingSourceCode:   input.fundingSourceCode  ?? null,
         slcReference:        input.slcReference       ?? null,
         ucasPersonalId:      input.ucasPersonalId     ?? null,
+        feeStatusCode:       input.feeStatusCode      ?? null,
         validFrom:           now,
         validTo:             null,
         recordedAt:          now,
@@ -262,6 +267,7 @@ export class EnrolmentService {
         academicYear:      input.academicYearOfEntry,
         feeBandCode:       input.feeBandCode ?? null,
         fundingSourceCode: input.fundingSourceCode ?? null,
+        feeStatusCode:     input.feeStatusCode ?? null,
         statusCode:        'generated',
         generatedAt:       now,
       });
@@ -603,6 +609,7 @@ export class EnrolmentService {
         fundingSourceCode: current.fundingSourceCode,
         slcReference:      current.slcReference,
         ucasPersonalId:    current.ucasPersonalId,
+        feeStatusCode:     current.feeStatusCode,
         validFrom,
         validTo:       null,
         recordedAt:    now,
@@ -638,7 +645,7 @@ export class EnrolmentService {
           enrolmentId: enrolmentId as `${string}-${string}-${string}-${string}-${string}`,
           personId: current.personId as `${string}-${string}-${string}-${string}-${string}`,
           academicYear: current.academicYearOfEntry, feeBandCode: current.feeBandCode ?? null, fundingSourceCode: current.fundingSourceCode ?? null,
-          statusCode: 'generated', generatedAt: now,
+          feeStatusCode: current.feeStatusCode ?? null, statusCode: 'generated', generatedAt: now,
         }).onConflictDoNothing();
       }
 
@@ -734,6 +741,7 @@ export class EnrolmentService {
         fundingSourceCode:   current.fundingSourceCode,
         slcReference:        current.slcReference,
         ucasPersonalId:      current.ucasPersonalId,
+        feeStatusCode:       current.feeStatusCode,
         validFrom,
         validTo:       null,
         recordedAt:    now,
@@ -760,6 +768,24 @@ export class EnrolmentService {
         effectiveFrom: validFrom,
       });
     }
+  }
+
+  /**
+   * Records an approved fee-status reassessment (D-18) as a new enrolment
+   * version. Called only by the governed reassessment, never directly.
+   */
+  async setFeeStatus(tenantId: string, enrolmentId: string, feeStatusCode: string, actorId: string): Promise<void> {
+    const current = await this.getEnrolment(enrolmentId, tenantId);
+    if (!current) throw new NotFoundError('Enrolment', enrolmentId);
+    const now = clockNow();
+    await withTenantContext(this.db, tenantId, async (tx) => {
+      const [row] = await tx.select().from(enrolments).where(and(eq(enrolments.id, enrolmentId as `${string}-${string}-${string}-${string}-${string}`), isNull(enrolments.recordedUntil))).limit(1);
+      if (!row) throw new NotFoundError('Enrolment', enrolmentId);
+      await tx.update(enrolments).set({ recordedUntil: now, validTo: now }).where(eq(enrolments.versionId, row.versionId));
+      const { versionId: _v, recordedUntil: _ru, validTo: _vt, ...rest } = row;
+      await tx.insert(enrolments).values({ ...rest, feeStatusCode, versionId: randomUUID(), validFrom: now, recordedAt: now });
+    });
+    void actorId;
   }
 
   async getEnrolmentHistory(enrolmentId: string, tenantId: string): Promise<EnrolmentHistoryDto[]> {
@@ -932,6 +958,7 @@ export class EnrolmentService {
       fundingSourceCode:   row.fundingSourceCode,
       slcReference:        row.slcReference,
       ucasPersonalId:      row.ucasPersonalId,
+      feeStatusCode:       row.feeStatusCode,
       validFrom:           row.validFrom,
       recordedAt:          row.recordedAt,
     };

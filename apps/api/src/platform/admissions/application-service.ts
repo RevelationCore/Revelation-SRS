@@ -231,7 +231,7 @@ export class ApplicationService {
       if ((input.offer.conditions ?? []).length > 0) throw new ValidationError('A verbal Clearing offer has no conditions');
       if (!input.offer.expiresOn) throw new ValidationError('A verbal Clearing offer expires');
     } else {
-      await this.#validateTerms(tenantId, { offerTypeCode: input.offer.offerTypeCode, conditions: input.offer.conditions ?? [] });
+      await this.#validateTerms(tenantId, { offerTypeCode: input.offer.offerTypeCode, conditions: input.offer.conditions ?? [], ...(input.offer.feeStatusBasisCode ? { feeStatusBasisCode: input.offer.feeStatusBasisCode } : {}) });
     }
     const now = clockNow();
     const offerId = await withTenantContext(this.db, tenantId, async (tx) => {
@@ -475,6 +475,7 @@ export class ApplicationService {
 
   async #validateTerms(tenantId: string, terms: OfferTerms): Promise<void> {
     const conditions = terms.conditions ?? [];
+    if (terms.feeStatusBasisCode) await this.#code(tenantId, 'admissions_offer', 'fee_status_basis_code', terms.feeStatusBasisCode);
     if (terms.offerTypeCode === 'conditional' && conditions.length === 0) throw new ValidationError('A conditional offer needs at least one condition');
     if (terms.offerTypeCode === 'unconditional' && conditions.length > 0) throw new ValidationError('An unconditional offer has no conditions');
     for (const c of conditions) await this.#code(tenantId, 'offer_condition', 'condition_type_code', c.conditionTypeCode);

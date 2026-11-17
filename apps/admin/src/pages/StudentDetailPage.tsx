@@ -73,6 +73,8 @@ import { AwardsTab } from './AwardsTab.js';
 import { StatusCasesTab } from './StatusCasesTab.js';
 import { MisconductTab } from './MisconductTab.js';
 import { IdentityVerificationSection } from './IdentityVerificationSection.js';
+import { FinancialRegistrationSection } from './FinancialRegistrationSection.js';
+import { RightToStudySection } from './RightToStudySection.js';
 import {
   PageHeader, Card, CardHeader, CardBody, Button, Input, Select, Textarea, LabelledField,
   Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, Dialog, DialogClose,
@@ -202,12 +204,16 @@ export function StudentDetailPage() {
           {personId && userHasAnyPermission(roles, ['identity-verification:read']) && (
             <div className="mt-6"><IdentityVerificationSection personId={personId} canWrite={canWriteStudent} /></div>
           )}
+          {personId && userHasAnyPermission(roles, ['right-to-study:read']) && (
+            <div className="mt-6"><RightToStudySection personId={personId} /></div>
+          )}
         </TabsContent>
         <TabsContent value="misconduct">
           {personId && <MisconductTab personId={personId} canRecord={userHasAnyPermission(roles, ['misconduct:record'])} />}
         </TabsContent>
         <TabsContent value="enrolments">
           {personId && <EnrolmentsTab personId={personId} student={student} onUpdated={reload} onOpenStatusCases={userHasAnyPermission(roles, ['status-case:read']) ? () => setTab('status') : undefined} />}
+          {personId && userHasAnyPermission(roles, ['financial-registration:read', 'fee-status:propose']) && <PersonFinances personId={personId} />}
         </TabsContent>
         <TabsContent value="registrations">
           {personId && <RegistrationsTab personId={personId} />}
@@ -1403,6 +1409,22 @@ function AmendmentSection({ caseId }: { caseId: string }) {
           </div>
         </form>
       )}
+    </div>
+  );
+}
+
+/** Each enrolment's fees and financial registration (D-18). */
+function PersonFinances({ personId }: { personId: string }) {
+  const [enrols, setEnrols] = useState<Enrolment[]>([]);
+  useEffect(() => { listStudentEnrolments(personId).then(setEnrols).catch(() => undefined); }, [personId]);
+  return (
+    <div className="mt-6 flex flex-col gap-4">
+      {enrols.filter((e) => e.statusCode !== 'withdrawn').map((e) => (
+        <div key={e.enrolmentId}>
+          <p className="mb-2 text-sm font-medium text-neutral-700">{e.programmeCode ?? 'Enrolment'} {e.academicYearOfEntry}</p>
+          <FinancialRegistrationSection enrolmentId={e.enrolmentId} feeStatusCode={e.feeStatusCode ?? null} />
+        </div>
+      ))}
     </div>
   );
 }

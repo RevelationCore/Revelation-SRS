@@ -253,7 +253,15 @@ export class UkviService {
       });
     }
 
+    for (const listener of this.#visaListeners) await listener(tenantId, casCase.personId, update.statusCode, actorId);
     return { visaStatusId, alertId };
+  }
+
+  #visaListeners: Array<(tenantId: string, personId: string, statusCode: string, actorId: string) => Promise<unknown>> = [];
+
+  /** Something that follows a visa status change, such as a right-to-study recheck (D-17). */
+  onVisaStatus(listener: (tenantId: string, personId: string, statusCode: string, actorId: string) => Promise<unknown>): void {
+    this.#visaListeners.push(listener);
   }
 
   async evaluateComplianceAlerts(tenantId: string, actorId: string): Promise<{ alertsRaised: number }> {

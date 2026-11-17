@@ -118,11 +118,14 @@ import { deliveryRoutes, inboundRoutes } from './routes/delivery.js';
 import { supportRoutes } from './routes/support.js';
 import { statusCaseRoutes } from './routes/status-cases.js';
 import { nonRegistrationRoutes, registrationPeriodRoutes } from './routes/registration-periods.js';
+import { registrationCheckRoutes } from './routes/registration-checks.js';
 import { clockNow } from './platform/clock.js';
 import { ClearingService } from './platform/admissions/clearing-service.js';
 import { ApplicantConversionService } from './platform/admissions/applicant-conversion-service.js';
 import { NonRegistrationService } from './platform/registration-periods/non-registration-service.js';
-import { RegistrationPeriodService } from './platform/registration-periods/service.js';
+import { RegistrationPeriodService, composeBlockers } from './platform/registration-periods/service.js';
+import { FinancialRegistrationService } from './platform/registration/financial-registration-service.js';
+import { RightToStudyService } from './platform/registration/right-to-study-service.js';
 import { curriculumPublicationRoutes } from './routes/curriculum-publications.js';
 import { awardConfermentRoutes } from './routes/award-conferment.js';
 import { awardDocumentRoutes } from './routes/award-documents.js';
@@ -389,7 +392,13 @@ export async function buildApp(
   const workflowTasks = new WorkflowTaskService(db);
   const moduleSelection = new ModuleSelectionService(db, eventBus, rules, workflowBridge, registrations, reviewExecution);
   const bindingChanges = new BindingChangeService(db, valueSets, enrolments, moduleSelection);
-  const registrationPeriods = new RegistrationPeriodService(db, valueSets, eventBus);
+  const notificationService = new NotificationService(db);
+  // Registration is blocked by right to study and, if the tenant chooses, a tuition hold (Phase 3 D-17, D-18).
+  const rightToStudy = new RightToStudyService(db, valueSets, notificationService);
+  const financialRegistration = new FinancialRegistrationService(db, valueSets, enrolments, businessCases, deliveries);
+  const registrationPeriods = new RegistrationPeriodService(db, valueSets, eventBus, composeBlockers(rightToStudy, financialRegistration));
+  fastify.decorate('rightToStudyService', rightToStudy);
+  fastify.decorate('financialRegistrationService', financialRegistration);
   moduleSelection.registerWorkflowEffects(reviewActivities);
   const workflowResponsibilities = new WorkflowResponsibilityService(db);
   const workflowBuilder = new WorkflowBuilderService(db, workflowResponsibilities);
@@ -404,8 +413,20 @@ export async function buildApp(
   const ucas = new UcasService(db, valueSets, eventBus, enrolments, regulatoryExchanges, admissions, featureFlags, workflowBridge, reviewExecution, applications);
   const hesa = new HesaService(db, eventBus, students, regulatoryExchanges, workflowBridge, reviewExecution);
   const slc = new SlcService(db, eventBus, valueSets, enrolments, regulatoryExchanges, workflowBridge, reviewExecution);
+  // An SLC tuition-fee-loan confirmation arranges that year's financial registration (D-18).
+  slc.onNotification(async (tenantId, notification, actorId) => {
+    const loanType = (notification.rawPayload?.['loanType'] as string | undefined) ?? 'tuition-fee';
+    if (notification.notificationTypeCode !== 'entitlement-confirmed' || loanType !== 'tuition-fee') return;
+    const academicYear = typeof notification.rawPayload?.['academicYear'] === 'string'
+      ? notification.rawPayload['academicYear']
+      : academicYearOf(notification.effectiveDate);
+    await financialRegistration.applySlcTuitionLoan(tenantId, notification.enrolmentId, academicYear, actorId);
+  });
   const casCases = new CasCaseService(db, eventBus, regulatoryExchanges);
   const ukvi = new UkviService(db, eventBus, valueSets, rules, regulatoryExchanges, workflowBridge, reviewExecution, casCases);
+  // A visa status change means the right to study is checked again; it is never inferred from the update (D-17).
+  ukvi.onVisaStatus((tenantId, personId, statusCode, actorId) =>
+    rightToStudy.markRecheckRequired(tenantId, personId, `UKVI visa status changed to ${statusCode}`, actorId));
   const ofs = new OfsService(db, eventBus, workflowBridge, reviewExecution);
   // ADR-024 Stage 6a: approvals that change a record, applied by the worker on Temporal-run reviews.
   for (const service of [ucas, hesa, slc, ofs]) service.registerWorkflowEffects(reviewActivities);
@@ -526,7 +547,6 @@ export async function buildApp(
   fastify.decorate('retentionService', retentionService);
   fastify.decorate('rightsRequestService', rightsRequestService);
 
-  const notificationService = new NotificationService(db);
   const nonRegistration = new NonRegistrationService(db, valueSets, businessCases, statusCases, notificationService);
   registrationPeriods.onLapse(nonRegistration);
   registrationPeriods.onInitialRegistration(async (tenantId, enrolmentId, actorId) => {
@@ -665,6 +685,10 @@ export async function buildApp(
       ['/registration-periods',      'enrolments'],
       ['/registration-confirmations', 'enrolments'],
       ['/non-registration-cases', 'enrolments'],
+      ['/right-to-study', 'enrolments'],
+      ['/financial-registration', 'enrolments'],
+      ['/fee-liabilities', 'enrolments'],
+      ['/fee-status-reassessments', 'enrolments'],
       ['/clearing', 'admissions'],
       ['/academic-exceptions',       'enrolments'],
       ['/rule-exceptions',           'enrolments'],
@@ -771,6 +795,7 @@ export async function buildApp(
   await fastify.register(statusCaseRoutes,          { prefix: '/api/v1' });
   await fastify.register(registrationPeriodRoutes,  { prefix: '/api/v1' });
   await fastify.register(nonRegistrationRoutes,  { prefix: '/api/v1' });
+  await fastify.register(registrationCheckRoutes, { prefix: '/api/v1' });
   await fastify.register(curriculumPublicationRoutes, { prefix: '/api/v1' });
   await fastify.register(awardConfermentRoutes,     { prefix: '/api/v1' });
   await fastify.register(awardDocumentRoutes,       { prefix: '/api/v1' });
@@ -846,6 +871,8 @@ declare module 'fastify' {
     bindingChangeService: BindingChangeService;
     registrationPeriodService: RegistrationPeriodService;
     nonRegistrationService: NonRegistrationService;
+    rightToStudyService: RightToStudyService;
+    financialRegistrationService: FinancialRegistrationService;
     applicantConversionService: ApplicantConversionService;
     clearingService: ClearingService;
     tenantAdminService: TenantAdminService;
@@ -917,4 +944,11 @@ declare module 'fastify' {
   interface FastifyContextConfig {
     skipAuth?: boolean;
   }
+}
+
+/** The academic year (August to July) a date falls in. */
+function academicYearOf(isoDate: string): string {
+  const year = Number(isoDate.slice(0, 4));
+  const start = Number(isoDate.slice(5, 7)) >= 8 ? year : year - 1;
+  return `${start}-${String((start + 1) % 100).padStart(2, '0')}`;
 }

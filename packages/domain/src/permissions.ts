@@ -129,6 +129,16 @@ export const PERMISSION_ROLES = {
   'cas:read':                           ['regulatory-officer', 'registry-administrator'] as Role[],
   'cas:prepare':                        ['regulatory-officer'] as Role[],
   'cas:approve':                        ['regulatory-officer'] as Role[],
+  // Right to study (Phase 3 D-17), separate from identity verification.
+  'right-to-study:read':                ['registry-administrator', 'regulatory-officer', 'dpo'] as Role[],
+  'right-to-study:record':              ['registry-administrator', 'regulatory-officer'] as Role[],
+  'right-to-study:decide':              ['regulatory-officer'] as Role[],
+  'right-to-study:submit:own':          ['student'] as Role[],
+  // Financial registration (Phase 3 D-18): Finance owns amounts; the SRS owns fee status.
+  'financial-registration:read':        ['finance-administrator', 'registry-administrator'] as Role[],
+  'financial-registration:write':       ['finance-administrator', 'integration-service'] as Role[],
+  'fee-status:propose':                 ['registry-administrator', 'finance-administrator'] as Role[],
+  'fee-status:decide':                  ['finance-administrator'] as Role[],
   'regulatory:decide':                  ['registry-administrator', 'regulatory-officer'] as Role[],
   'workflow:read':                      ['registry-administrator', 'tenant-administrator'] as Role[],
   'workflow:write':                     ['tenant-administrator'] as Role[],

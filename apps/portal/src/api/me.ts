@@ -586,3 +586,8 @@ export function listMyRegistrations(personId: string): Promise<MyRegistration[]>
 export function confirmMyRegistration(confirmationId: string, acceptedTermsVersion: string): Promise<unknown> {
   return api.post(`/api/v1/registration-confirmations/${confirmationId}/confirmation`, { acceptedTermsVersion });
 }
+
+/** Right to study (D-17): the student shares a View and Prove code. */
+export function submitRightToStudyShareCode(personId: string, shareCode: string): Promise<unknown> {
+  return api.post(`/api/v1/students/${personId}/right-to-study/share-code`, { shareCode });
+}

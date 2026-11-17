@@ -47,6 +47,7 @@ export function RegistrationPeriodsPage() {
         description="Annual re-registration of continuing students. Students confirm in the portal by accepting the current terms; the registry can register a student on their behalf."
         actions={
           <div className="flex gap-2">
+            <Link to="/registration/checks" className="inline-flex items-center rounded-md border border-neutral-300 px-3 py-1.5 text-sm text-neutral-700 hover:bg-neutral-50">Registration checks</Link>
             <Link to="/registration/non-registration" className="inline-flex items-center rounded-md border border-neutral-300 px-3 py-1.5 text-sm text-neutral-700 hover:bg-neutral-50">Students who did not register</Link>
             {canManage && <Button size="sm" onClick={() => setOpening((v) => !v)}>{opening ? 'Cancel' : 'Open a period'}</Button>}
           </div>

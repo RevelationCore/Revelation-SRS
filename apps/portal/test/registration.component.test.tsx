@@ -44,4 +44,20 @@ describe('registering for the year', () => {
     renderWithProviders(<RegistrationPage />);
     expect(await screen.findByText(/They can register you late/)).toBeVisible();
   });
+
+  it('a student blocked on right to study can share a View and Prove code', async () => {
+    let body: unknown;
+    server.use(
+      http.get(`${API}/api/v1/students/${ME}/registrations`, () => HttpResponse.json([reg({ periodTypeCode: 'initial', blockers: [{ code: 'right-to-study', message: 'Your right to study in the UK has not been confirmed yet.' }] })])),
+      http.post(`${API}/api/v1/students/${ME}/right-to-study/share-code`, async ({ request }) => { body = await request.json(); return HttpResponse.json({}, { status: 201 }); }),
+    );
+    const { container } = renderWithProviders(<RegistrationPage />);
+    const send = await screen.findByRole('button', { name: 'Send share code' });
+    expect(send).toBeDisabled();
+    await expectNoA11yViolations(container);
+    await userEvent.type(screen.getByLabelText(/View and Prove share code/), 'W2X4YZ7AB');
+    await userEvent.click(send);
+    expect(await screen.findByText(/The registry will check your share code/)).toBeVisible();
+    expect(body).toEqual({ shareCode: 'W2X4YZ7AB' });
+  });
 });

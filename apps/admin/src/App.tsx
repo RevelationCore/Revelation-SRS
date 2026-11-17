@@ -27,6 +27,7 @@ const AssessmentStructuresPage = lazy(() => import('./pages/AssessmentStructures
 const ProgrammeRulesPage = lazy(() => import('./pages/ProgrammeRulesPage.js').then((m) => ({ default: m.ProgrammeRulesPage })));
 const ClearingPage = lazy(() => import('./pages/ClearingPage.js').then((m) => ({ default: m.ClearingPage })));
 const RegistrationPeriodsPage = lazy(() => import('./pages/RegistrationPeriodsPage.js').then((m) => ({ default: m.RegistrationPeriodsPage })));
+const RegistrationChecksPage = lazy(() => import('./pages/RegistrationChecksPage.js').then((m) => ({ default: m.RegistrationChecksPage })));
 const NonRegistrationPage = lazy(() => import('./pages/NonRegistrationPage.js').then((m) => ({ default: m.NonRegistrationPage })));
 const RegistrationPeriodDetailPage = lazy(() => import('./pages/RegistrationPeriodsPage.js').then((m) => ({ default: m.RegistrationPeriodDetailPage })));
 const IntegrationsPage = lazy(() => import('./pages/IntegrationsPage.js').then((m) => ({ default: m.IntegrationsPage })));
@@ -133,6 +134,7 @@ export function App() {
                 <Route path="exam-boards" element={<RequirePermission permissions={['exam-board:read']}><ExamBoardsPage /></RequirePermission>} />
                 <Route path="exam-boards/:boardId" element={<RequirePermission permissions={['exam-board:read']}><ExamBoardDetailPage /></RequirePermission>} />
                 <Route path="registration" element={<RequirePermission permissions={['registration:read']}><RegistrationPeriodsPage /></RequirePermission>} />
+                <Route path="registration/checks" element={<RequirePermission permissions={['right-to-study:read', 'financial-registration:read', 'fee-status:decide']}><RegistrationChecksPage /></RequirePermission>} />
                 <Route path="registration/non-registration" element={<RequirePermission permissions={['non-registration:manage', 'registration:read']}><NonRegistrationPage /></RequirePermission>} />
                 <Route path="registration/:periodId" element={<RequirePermission permissions={['registration:read']}><RegistrationPeriodDetailPage /></RequirePermission>} />
                 <Route path="programme-rules" element={<RequirePermission permissions={['module-selection:configure', 'curriculum-binding:read']}><ProgrammeRulesPage /></RequirePermission>} />

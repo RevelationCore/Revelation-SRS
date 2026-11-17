@@ -130,6 +130,8 @@ The exchange row acts as an outbox; a dispatcher sends queued items through the 
 
 **Institution must confirm.** Its fee-status assessment policy and appeal route, and whether any tuition hold is used.
 
+**Implementation note (D-17, D-18).** The registration blocker providers now receive the period type, so initial and annual registration can differ; right to study and financial registration are composed into one provider. The expiry scan runs in the worker's reconcile loop and is idempotent: a warning is sent once per check (`expiry_warning_sent_at`) and the UKVI alert is unique while open. A fee-status reassessment is a `business_case` (process BP-02-004) whose proposal and decision are both `case_decision` rows (`proposed`, then `approved` or `rejected`). The tuition flag on a hold reason is held in the value-set member's `source_metadata`. An SLC `entitlement-confirmed` notification counts as a tuition-fee loan unless its payload says another loan type.
+
 ## D-19: Access and entitlements follow status, then leaver closure (BP-02-005)
 
 **Decision.** Access ends in two stages, by kind of entitlement:

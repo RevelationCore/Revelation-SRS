@@ -35,6 +35,18 @@ export interface DeliveryFlow {
 
 export const DELIVERY_FLOWS: readonly DeliveryFlow[] = [
   {
+    flowCode: 'F-SIS-FIN-01', targetSystem: 'fin', targetLabel: 'finance system',
+    name: 'Enrolment and tuition fee liability to finance', defaultMode: 'manual', stateSync: true,
+    producer: 'implemented',
+    producerNote: 'A year\'s fee liability changing financial status sends its snapshot: fee status, financial status and payer arrangement (Phase 3 D-18).',
+  },
+  {
+    flowCode: 'F-SIS-IAM-01', targetSystem: 'iam', targetLabel: 'identity and access management',
+    name: 'Identity, enrolment status and access level to IAM', defaultMode: 'manual', stateSync: true,
+    producer: 'none',
+    producerNote: 'Registered for Phase 3 D-19: conversion, each status change and an approved leaver closure will send the access level and its effective date.',
+  },
+  {
     flowCode: 'F-SIS-LIB-01', targetSystem: 'lib', targetLabel: 'library system',
     name: 'Library access from enrolment status', defaultMode: 'manual', stateSync: true,
     producer: 'implemented',

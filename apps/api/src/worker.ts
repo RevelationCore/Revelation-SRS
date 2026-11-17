@@ -71,7 +71,13 @@ const reconcile = async (): Promise<void> => {
     const overdueNotices = (await app.adjustmentTaskNoticeService.sendAll()).length;
     // Connected delivery-ledger items not yet published.
     const deliveryItems = await app.deliveryService.drain();
-    const result = { ...workflows, adjustmentInstructions, examWithdrawals, overdueNotices, deliveryItems };
+    // Right-to-study expiry warnings and UKVI alerts (D-17): idempotent, so running often is safe.
+    let rightToStudy = { warned: 0, alerts: 0 };
+    for (const tenantId of await app.adjustmentDispatcher.tenantIds()) {
+      const r = await app.rightToStudyService.scanExpiry(tenantId);
+      rightToStudy = { warned: rightToStudy.warned + r.warned, alerts: rightToStudy.alerts + r.alerts };
+    }
+    const result = { ...workflows, adjustmentInstructions, examWithdrawals, overdueNotices, deliveryItems, rightToStudy };
     lastReconcile = { at: clockNow().toISOString(), ok: true, result };
   } catch (err) {
     lastReconcile = { at: clockNow().toISOString(), ok: false, error: err instanceof Error ? err.message : String(err) };

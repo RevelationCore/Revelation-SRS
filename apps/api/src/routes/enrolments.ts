@@ -28,6 +28,7 @@ const EnrolmentSchema = Type.Object({
   fundingSourceCode:   Type.Union([Type.String(), Type.Null()]),
   slcReference:        Type.Union([Type.String(), Type.Null()]),
   ucasPersonalId:      Type.Union([Type.String(), Type.Null()]),
+  feeStatusCode:       Type.Union([Type.String(), Type.Null()]),
   validFrom:           Type.String(),
   recordedAt:          Type.String(),
 });
@@ -140,6 +141,7 @@ export function enrolmentRoutes(fastify: FastifyInstance): void {
           fundingSourceCode:   Type.Optional(Type.String()),
           slcReference:        Type.Optional(Type.String()),
           ucasPersonalId:      Type.Optional(Type.String()),
+          feeStatusCode:       Type.Optional(Type.String()),
           ukviCasRequired:     Type.Optional(Type.Boolean()),
         }),
         response: {

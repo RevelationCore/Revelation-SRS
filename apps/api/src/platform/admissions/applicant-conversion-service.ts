@@ -145,6 +145,8 @@ export class ApplicantConversionService {
         personId: preview.personId!, modeOfStudyCode: preview.modeOfStudyCode!, academicYearOfEntry: preview.academicYearOfEntry!, startDate,
         ...(preview.programmeId ? { programmeId: preview.programmeId } : {}),
       ...(preview.ucasPersonalId ? { ucasPersonalId: preview.ucasPersonalId } : {}),
+      // Fee status is assessed in admissions and carried at conversion (D-18).
+      ...(preview.feeStatusBasisCode ? { feeStatusCode: preview.feeStatusBasisCode } : {}),
       }, actorId, { enrolmentId: preview.enrolmentId!, initialStatus: 'pre-registration' });
     }
     await this.casCases?.attachEnrolment(tenantId, applicationId, preview.enrolmentId!, actorId);

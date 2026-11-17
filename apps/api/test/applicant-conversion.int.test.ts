@@ -82,6 +82,8 @@ describe('applicant conversion', () => {
       academicYear: '2027-28', opensAt: '2026-01-01T00:00:00Z', closesAt: '2030-01-01T00:00:00Z', periodTypeCode: 'initial',
     });
     expect(period.statusCode).toBe(201);
+    // Initial registration needs a current right-to-study check (D-17).
+    expect((await call('POST', `/students/${personId}/right-to-study`, registryJwt, { basisCode: 'british-irish', methodCode: 'identity-passport', outcomeCode: 'eligible' })).statusCode).toBe(201);
     const studentJwt = await ctx.makeJwt({ sub: 'conv-student', roles: ['student'], srsPersonId: personId });
     const [mine] = (await call('GET', `/students/${personId}/registrations`, studentJwt)).json<Array<{ confirmation: { confirmationId: string; statusCode: string } }>>();
     expect(mine!.confirmation.statusCode).toBe('pending');

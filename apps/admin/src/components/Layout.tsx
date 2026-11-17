@@ -137,6 +137,7 @@ function Sidebar({ onLogout, displayName, roles }: { onLogout: () => void; displ
         {canViewModuleSelectionProposals && <NavItem to="/module-selection-proposals" label="Module selection" end icon={ListChecks} />}
         {canViewModuleRegistrationRequests && <NavItem to="/module-registration-requests" label="Registration requests" end icon={ListChecks} />}
         {can('registration:read') && <NavItem to="/registration" label="Registration" icon={ListChecks} />}
+        {!can('registration:read') && can('financial-registration:read') && <NavItem to="/registration/checks" label="Fees and registration" icon={ListChecks} />}
         {can('status-case:read') && <NavItem to="/status-cases" label="Status cases" icon={ListChecks} />}
         {can('academic-exception:approve') && <NavItem to="/credit-approvals" label="Credit & exception approvals" end icon={ListChecks} />}
         {canViewIdentityChangeRequests && <NavItem to="/identity-change-requests" label="Identity change requests" end icon={ListChecks} />}

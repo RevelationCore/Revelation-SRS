@@ -17,9 +17,9 @@ How far each academic-journey process (areas 01–06) can be carried out in the 
 
 | Coverage | Processes |
 |---|---|
-| On screen | 44 |
-| On screen (simulated link) | 1 |
-| Partly built | 4 |
+| On screen | 45 |
+| On screen (simulated link) | 2 |
+| Partly built | 2 |
 | API only | 0 |
 | Not built | 0 |
 
@@ -33,9 +33,9 @@ How far each academic-journey process (areas 01–06) can be carried out in the 
 | [BP-01-006](01-recruitment-and-admissions/bp-01-006-place-an-applicant-through-clearing.md) Place an applicant through Clearing | On screen | Clearing: take a call to a verbal or unconditional offer in one step; next-day review list; Applications pages for the resulting application | — | Fast path only inside the window and for listed programmes, never with a safeguarding, conviction, fitness-to-practise or visa need (D-13); the window and programme list are set in tenant configuration, with no screen yet |
 | [BP-01-007](01-recruitment-and-admissions/bp-01-007-convert-an-accepted-applicant-to-a-prospective-student-record.md) Convert an accepted applicant to a prospective student record | On screen | Application page: Enrolment card creates the enrolment from the confirmed offer and completes the hand-off task | — | The enrolment starts in pre-registration (D-10); converting again returns the same enrolment |
 | [BP-02-001](02-registration-and-student-status/bp-02-001-prepare-initial-registration.md) Prepare a student for initial registration | On screen | Application page: Enrolment card; Registration: initial registration periods invite pre-registration students | Registration | Required declarations and in-person steps are not modelled (institution to confirm, D-10) |
-| [BP-02-002](02-registration-and-student-status/bp-02-002-verify-identity-and-right-to-study.md) Verify identity, nationality and right to study | Partly built | Identity tab: verification checks | — | Right to study is not a separate outcome (held with UKVI) |
+| [BP-02-002](02-registration-and-student-status/bp-02-002-verify-identity-and-right-to-study.md) Verify identity, nationality and right to study | On screen | Identity tab: verification checks and Right to study (basis, method, expiry, referral and decision); Registration checks worklist | Registration: share a View and Prove code when blocked | Right to study is its own outcome and blocks initial registration (D-17); expiry warnings and UKVI alerts come from the worker's daily scan |
 | [BP-02-003](02-registration-and-student-status/bp-02-003-complete-initial-academic-registration.md) Complete initial academic registration | On screen | Registration: initial period worklist and assisted registration; student record Enrolments tab | Registration: accept the terms and register, which moves the enrolment to enrolled | The accepted terms version is recorded; other declarations are not |
-| [BP-02-004](02-registration-and-student-status/bp-02-004-complete-financial-registration.md) Complete financial registration | Partly built | SLC page | Enrolment page: fees | No financial-registration state alongside academic registration |
+| [BP-02-004](02-registration-and-student-status/bp-02-004-complete-financial-registration.md) Complete financial registration | On screen (simulated link) | Enrolments tab: Fees and financial registration (status per year, fee-status reassessment); Registration checks worklist | Enrolment page: fees | Finance is reached through the F-SIS-FIN-01 delivery flow and F-FIN-SIS-01 updates (D-14, D-18); only a tuition hold can block, and only if the institution chooses |
 | [BP-02-005](02-registration-and-student-status/bp-02-005-activate-access-and-entitlements.md) Activate student access and entitlements | Partly built | Operations: delivery tasks per flow | — | Access is driven by delivery flows; no entitlement view per student |
 | [BP-02-006](02-registration-and-student-status/bp-02-006-transfer-programme-route-or-mode.md) Transfer programme, route or mode | On screen | Status cases worklist and case page; Status changes tab | Enrolment page: request a transfer | Needs destination-programme support to approve |
 | [BP-02-007](02-registration-and-student-status/bp-02-007-interrupt-or-suspend-studies.md) Interrupt or suspend studies | On screen | Status cases (interruption, suspension) | Enrolment page: request an interruption | Funding and Student-visa notices before requesting |

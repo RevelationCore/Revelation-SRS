@@ -12357,6 +12357,1204 @@
         }
       }
     },
+    "/api/v1/students/{personId}/right-to-study": {
+      "get": {
+        "operationId": "getStudentsByPersonIdRightToStudy",
+        "tags": [
+          "enrolments"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "personId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": {}
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createStudentsByPersonIdRightToStudy",
+        "tags": [
+          "enrolments"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "basisCode",
+                  "methodCode",
+                  "outcomeCode"
+                ],
+                "properties": {
+                  "basisCode": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "methodCode": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "outcomeCode": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "eligible"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "not-eligible"
+                        ]
+                      }
+                    ]
+                  },
+                  "enrolmentId": {
+                    "type": "string"
+                  },
+                  "casCaseId": {
+                    "type": "string"
+                  },
+                  "permissionExpiresOn": {
+                    "format": "date",
+                    "type": "string"
+                  },
+                  "ukEntryDate": {
+                    "format": "date",
+                    "type": "string"
+                  },
+                  "restrictionCode": {
+                    "type": "string"
+                  },
+                  "evidenceRef": {
+                    "type": "string"
+                  },
+                  "identityVerificationCheckId": {
+                    "type": "string"
+                  },
+                  "recheckDueOn": {
+                    "format": "date",
+                    "type": "string"
+                  },
+                  "note": {
+                    "maxLength": 2000,
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "personId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/right-to-study/{checkId}/decision": {
+      "post": {
+        "operationId": "createRightToStudyByCheckIdDecision",
+        "tags": [
+          "enrolments"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "outcomeCode",
+                  "note"
+                ],
+                "properties": {
+                  "outcomeCode": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "eligible"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "not-eligible"
+                        ]
+                      }
+                    ]
+                  },
+                  "note": {
+                    "minLength": 1,
+                    "maxLength": 2000,
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "checkId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/students/{personId}/right-to-study/share-code": {
+      "post": {
+        "operationId": "createStudentsByPersonIdRightToStudyShareCode",
+        "tags": [
+          "enrolments"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "shareCode"
+                ],
+                "properties": {
+                  "shareCode": {
+                    "minLength": 9,
+                    "maxLength": 12,
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "personId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/right-to-study/worklist": {
+      "get": {
+        "operationId": "getRightToStudyWorklist",
+        "tags": [
+          "enrolments"
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/enrolments/{enrolmentId}/financial-registration": {
+      "get": {
+        "operationId": "getEnrolmentsByEnrolmentIdFinancialRegistration",
+        "tags": [
+          "enrolments"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "enrolmentId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/financial-registration": {
+      "get": {
+        "operationId": "getFinancialRegistration",
+        "tags": [
+          "enrolments"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "pending"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "arranged"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "hold"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "not-required"
+                  ]
+                }
+              ]
+            },
+            "in": "query",
+            "name": "financialStatusCode",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "academicYear",
+            "required": false
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/fee-liabilities/{liabilityId}/financial-status": {
+      "post": {
+        "operationId": "createFeeLiabilitiesByLiabilityIdFinancialStatus",
+        "tags": [
+          "enrolments"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "financialStatusCode"
+                ],
+                "properties": {
+                  "financialStatusCode": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "pending"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "arranged"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "hold"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "not-required"
+                        ]
+                      }
+                    ]
+                  },
+                  "payerArrangementCode": {
+                    "type": "string"
+                  },
+                  "financeReference": {
+                    "maxLength": 200,
+                    "type": "string"
+                  },
+                  "holdReasonCode": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "liabilityId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/financial-registration/finance-updates": {
+      "post": {
+        "operationId": "createFinancialRegistrationFinanceUpdates",
+        "tags": [
+          "enrolments"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "allOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "financialStatusCode"
+                    ],
+                    "properties": {
+                      "financialStatusCode": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "enum": [
+                              "pending"
+                            ]
+                          },
+                          {
+                            "type": "string",
+                            "enum": [
+                              "arranged"
+                            ]
+                          },
+                          {
+                            "type": "string",
+                            "enum": [
+                              "hold"
+                            ]
+                          },
+                          {
+                            "type": "string",
+                            "enum": [
+                              "not-required"
+                            ]
+                          }
+                        ]
+                      },
+                      "payerArrangementCode": {
+                        "type": "string"
+                      },
+                      "financeReference": {
+                        "maxLength": 200,
+                        "type": "string"
+                      },
+                      "holdReasonCode": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "enrolmentId",
+                      "academicYear"
+                    ],
+                    "properties": {
+                      "enrolmentId": {
+                        "type": "string"
+                      },
+                      "academicYear": {
+                        "pattern": "^\\d{4}-\\d{2}$",
+                        "type": "string"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/fee-status-reassessments": {
+      "get": {
+        "operationId": "getFeeStatusReassessments",
+        "tags": [
+          "enrolments"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "enrolmentId",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "boolean"
+            },
+            "in": "query",
+            "name": "open",
+            "required": false
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/enrolments/{enrolmentId}/fee-status-reassessments": {
+      "post": {
+        "operationId": "createEnrolmentsByEnrolmentIdFeeStatusReassessments",
+        "tags": [
+          "enrolments"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "feeStatusCode",
+                  "reason"
+                ],
+                "properties": {
+                  "feeStatusCode": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "reason": {
+                    "minLength": 1,
+                    "maxLength": 2000,
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "enrolmentId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/fee-status-reassessments/{caseId}/decision": {
+      "post": {
+        "operationId": "createFeeStatusReassessmentsByCaseIdDecision",
+        "tags": [
+          "enrolments"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "outcome"
+                ],
+                "properties": {
+                  "outcome": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "approved"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "rejected"
+                        ]
+                      }
+                    ]
+                  },
+                  "note": {
+                    "maxLength": 2000,
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "caseId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/curriculum-publications": {
       "post": {
         "operationId": "createCurriculumPublications",
@@ -42597,7 +43795,7 @@
       "get": {
         "operationId": "getStudentsByPersonIdEnrolmentsByEnrolmentIdFeeLiabilities",
         "tags": [
-          "students"
+          "enrolments"
         ],
         "parameters": [
           {
@@ -43024,6 +44222,7 @@
                       "fundingSourceCode",
                       "slcReference",
                       "ucasPersonalId",
+                      "feeStatusCode",
                       "validFrom",
                       "recordedAt"
                     ],
@@ -43153,6 +44352,16 @@
                           }
                         ]
                       },
+                      "feeStatusCode": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
                       "validFrom": {
                         "type": "string"
                       },
@@ -43220,6 +44429,9 @@
                     "type": "string"
                   },
                   "ucasPersonalId": {
+                    "type": "string"
+                  },
+                  "feeStatusCode": {
                     "type": "string"
                   },
                   "ukviCasRequired": {
@@ -43357,6 +44569,7 @@
                           "fundingSourceCode",
                           "slcReference",
                           "ucasPersonalId",
+                          "feeStatusCode",
                           "validFrom",
                           "recordedAt"
                         ],
@@ -43477,6 +44690,16 @@
                             ]
                           },
                           "ucasPersonalId": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "feeStatusCode": {
                             "anyOf": [
                               {
                                 "type": "string"
@@ -43953,6 +45176,7 @@
                     "fundingSourceCode",
                     "slcReference",
                     "ucasPersonalId",
+                    "feeStatusCode",
                     "validFrom",
                     "recordedAt"
                   ],
@@ -44073,6 +45297,16 @@
                       ]
                     },
                     "ucasPersonalId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "feeStatusCode": {
                       "anyOf": [
                         {
                           "type": "string"

@@ -1,9 +1,9 @@
-import { useCallback, useState } from 'react';
+import { type FormEvent, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { PageHeader, Card, CardHeader, CardBody, Button, Checkbox, Spinner, Problem, StatusNotice, formatDate } from '@revelation-srs/ui';
+import { PageHeader, Card, CardHeader, CardBody, Button, Checkbox, Input, LabelledField, Spinner, Problem, StatusNotice, formatDate } from '@revelation-srs/ui';
 
 import { ApiError } from '../api/client.js';
-import { type MyRegistration, confirmMyRegistration, listMyRegistrations } from '../api/me.js';
+import { type MyRegistration, confirmMyRegistration, listMyRegistrations, submitRightToStudyShareCode } from '../api/me.js';
 import { useAuth } from '../auth/AuthContext.js';
 import { useApiData } from '../hooks/useApiData.js';
 
@@ -76,6 +76,7 @@ function RegistrationCard({ registration, onDone }: { registration: MyRegistrati
               <ul className="mt-1 list-disc pl-5 text-sm text-neutral-700">{blockers.map((b) => <li key={b.code}>{b.message}</li>)}</ul>
             </div>
           )}
+          {blockers.some((b) => b.code === 'right-to-study' || b.code === 'permission-expired') && <ShareCodeForm id={id} />}
           {!ended && blockers.length === 0 && termsVersion && (
             <>
               <label className="flex items-start gap-2 text-sm" htmlFor={`reg-${id}-terms`}>
@@ -88,5 +89,31 @@ function RegistrationCard({ registration, onDone }: { registration: MyRegistrati
         </div>
       </CardBody>
     </Card>
+  );
+}
+
+/** Shares a View and Prove code with the registry so they can check the right to study (D-17). */
+function ShareCodeForm({ id }: { id: string }) {
+  const { personId } = useAuth();
+  const [code, setCode] = useState('');
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState('');
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    if (!personId) return;
+    setError('');
+    try { await submitRightToStudyShareCode(personId, code); setSent(true); } catch (err) {
+      setError(err instanceof ApiError ? (err.detail ?? err.message) : 'We could not send your share code.');
+    }
+  }
+  if (sent) return <p className="text-sm text-success-700" role="status">Thank you. The registry will check your share code and tell you when you can register.</p>;
+  return (
+    <form className="flex flex-wrap items-end gap-2" onSubmit={(e) => void submit(e)}>
+      {error && <p className="w-full text-sm text-danger-600" role="alert">{error}</p>}
+      <LabelledField label="View and Prove share code" htmlFor={`reg-${id}-share`} hint="From gov.uk/view-prove-immigration-status: 9 letters and numbers">
+        <Input id={`reg-${id}-share`} value={code} onChange={(e) => setCode(e.target.value)} />
+      </LabelledField>
+      <Button type="submit" variant="secondary" disabled={code.replace(/\s/g, '').length !== 9}>Send share code</Button>
+    </form>
   );
 }

@@ -476,7 +476,15 @@ export class SlcService {
     });
 
     void exchange;
+    for (const listener of this.#notificationListeners) await listener(tenantId, notification, actorId);
     return notificationId;
+  }
+
+  #notificationListeners: Array<(tenantId: string, notification: SlcNotificationInput, actorId: string) => Promise<unknown>> = [];
+
+  /** Something that follows an SLC notification, such as financial registration (D-18). */
+  onNotification(listener: (tenantId: string, notification: SlcNotificationInput, actorId: string) => Promise<unknown>): void {
+    this.#notificationListeners.push(listener);
   }
 
   async listNotifications(enrolmentId: string, tenantId: string): Promise<SlcNotificationDto[]> {

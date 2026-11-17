@@ -33,6 +33,8 @@ export const enrolments = pgTable('enrolment', {
   fundingSourceCode:    text('funding_source_code'),
   slcReference:         text('slc_reference'),
   ucasPersonalId:       text('ucas_personal_id'),
+  /** The provider's fee status determination (D-18), from the offer at conversion. */
+  feeStatusCode:        text('fee_status_code'),
 });
 
 export type Enrolment    = typeof enrolments.$inferSelect;
@@ -78,6 +80,15 @@ export const feeLiabilities = pgTable('fee_liability', {
   amountMinorUnits:   bigint('amount_minor_units', { mode: 'bigint' }),
   statusCode:         text('status_code').notNull().default('generated'),
   generatedAt:        timestamp('generated_at', { withTimezone: true }).notNull().defaultNow(),
+  // Financial registration (Phase 3 D-18): separate from academic registration.
+  feeStatusCode:        text('fee_status_code'),
+  financialStatusCode:  text('financial_status_code').notNull().default('pending'), // pending | arranged | hold | not-required
+  payerArrangementCode: text('payer_arrangement_code'),
+  financeReference:     text('finance_reference'),
+  holdReasonCode:       text('hold_reason_code'),
+  statusSourceCode:     text('status_source_code'), // finance | slc | manual
+  statusUpdatedBy:      text('status_updated_by'),
+  statusUpdatedAt:      timestamp('status_updated_at', { withTimezone: true }),
 });
 
 export type FeeLiability = typeof feeLiabilities.$inferSelect;

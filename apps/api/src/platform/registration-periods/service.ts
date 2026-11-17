@@ -29,7 +29,7 @@ type Uuid = `${string}-${string}-${string}-${string}-${string}`;
  */
 export interface RegistrationBlocker { code: string; message: string }
 export interface RegistrationBlockerProvider {
-  blockersFor(tenantId: string, enrolmentId: string, academicYear: string): Promise<RegistrationBlocker[]>;
+  blockersFor(tenantId: string, enrolmentId: string, academicYear: string, periodTypeCode?: 'annual' | 'initial'): Promise<RegistrationBlocker[]>;
 }
 /** Told when registrations lapse at close, and when a lapsed one is confirmed late (BP-02-011; D-9). */
 export interface RegistrationLapseHandler {
@@ -38,6 +38,14 @@ export interface RegistrationLapseHandler {
 }
 
 export const noRegistrationBlockers: RegistrationBlockerProvider = { blockersFor: () => Promise.resolve([]) };
+
+/** Several providers' blockers together (right to study, financial registration: D-17, D-18). */
+export function composeBlockers(...providers: RegistrationBlockerProvider[]): RegistrationBlockerProvider {
+  return {
+    blockersFor: async (tenantId, enrolmentId, academicYear, periodTypeCode) =>
+      (await Promise.all(providers.map((p) => p.blockersFor(tenantId, enrolmentId, academicYear, periodTypeCode)))).flat(),
+  };
+}
 
 export interface OpenPeriodInput {
   academicYear: string;
@@ -234,7 +242,7 @@ export class RegistrationPeriodService {
       if (enrolment) {
         await tx.insert(feeLiabilities).values({
           tenantId: tenantId as Uuid, enrolmentId: enrolment.id, personId: enrolment.personId, academicYear: period.academicYear,
-          feeBandCode: enrolment.feeBandCode ?? null, fundingSourceCode: enrolment.fundingSourceCode ?? null, statusCode: 'generated', generatedAt: now,
+          feeBandCode: enrolment.feeBandCode ?? null, fundingSourceCode: enrolment.fundingSourceCode ?? null, feeStatusCode: enrolment.feeStatusCode ?? null, statusCode: 'generated', generatedAt: now,
         }).onConflictDoNothing();
       }
       return { row: row!, personId: enrolment?.personId ?? null };
@@ -294,7 +302,7 @@ export class RegistrationPeriodService {
         isNull(progressionDecisions.recordedUntil), lt(progressionDecisions.academicYear, period.academicYear)))
       .orderBy(desc(progressionDecisions.academicYear)).limit(1));
     if (latest && !latest.locked) found.push({ code: 'results-pending', message: 'Your results for last year are not yet confirmed by the exam board' });
-    return [...found, ...(await this.blockers.blockersFor(tenantId, enrolmentId, period.academicYear))];
+    return [...found, ...(await this.blockers.blockersFor(tenantId, enrolmentId, period.academicYear, period.periodTypeCode as 'annual' | 'initial'))];
   }
 
   /** The terms version students accept now (tenant configuration registrationTermsVersion). */
