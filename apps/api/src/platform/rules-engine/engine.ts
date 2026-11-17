@@ -6,7 +6,6 @@ import { clockNow } from '../clock.js';
 
 export type RuleTypeCode =
   | 'pass-mark'
-  | 'late-penalty'
   | 'late-penalty-rate'
   | 'late-penalty-cap'
   | 'resit-mark-cap'
@@ -27,6 +26,39 @@ export type RuleTypeCode =
   | 'joint-honours-balance'
   | 'repeat-module-requirement'
   | 'timetable-clash-policy';
+
+export type RuleDomain = 'selection' | 'assessment' | 'progression' | 'award' | 'regulatory';
+
+/**
+ * Which process consumes each rule type (Phase 4 D-23). A Record, so a new
+ * rule type that is not classified fails to compile.
+ */
+export const RULE_TYPE_DOMAIN: Record<RuleTypeCode, RuleDomain> = {
+  'max-credits-per-period':         'selection',
+  'credit-load-requirement':        'selection',
+  'level-credit-requirement':       'selection',
+  'adjacent-level-credit-limit':    'selection',
+  'joint-honours-balance':          'selection',
+  'repeat-module-requirement':      'selection',
+  'timetable-clash-policy':         'selection',
+  'pass-mark':                      'assessment',
+  'late-penalty-rate':              'assessment',
+  'late-penalty-cap':               'assessment',
+  'resit-mark-cap':                 'assessment',
+  'compensation-threshold':         'progression',
+  'compensation-credit-limit':      'progression',
+  'condonement-threshold':          'progression',
+  'progression-credit-requirement': 'progression',
+  'progression-pass-requirement':   'progression',
+  'classification-boundary':        'award',
+  'classification-algorithm':       'award',
+  'classification-discretion-zone': 'award',
+  'award-credit-requirement':       'award',
+  'ukvi-attendance-threshold':      'regulatory',
+};
+
+/** The rule types module-selection validation must enforce (the Phase 4 exit). */
+export const SELECTION_RULE_TYPES = (Object.keys(RULE_TYPE_DOMAIN) as RuleTypeCode[]).filter((t) => RULE_TYPE_DOMAIN[t] === 'selection');
 
 /**
  * Rules evaluated for one student, which an approved rule exception

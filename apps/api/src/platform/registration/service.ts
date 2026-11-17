@@ -235,6 +235,83 @@ export class ModuleRegistrationService {
     return moduleRegistrationId;
   }
 
+  /**
+   * Confirms a validated module selection as registrations, all or nothing
+   * (Phase 4 D-23; BP-03-004 E2). Selection validation has already applied
+   * every rule, and the window was checked at submission (D-29), so neither
+   * is re-checked. With `enforceCapacity` the offerings are locked and
+   * recounted, so two concurrent first-come confirmations cannot both take
+   * the last place; a full offering refuses the whole confirmation.
+   * Registrations that already exist (a retried confirmation) are skipped.
+   */
+  async confirmSelection(
+    tenantId: string,
+    input: { enrolmentId: string; items: Array<{ moduleOfferingId: string; moduleRegistrationId: string }>; enforceCapacity?: boolean },
+    actorId: string,
+  ): Promise<string[]> {
+    const enrolment = await this.#getCurrentEnrolment(input.enrolmentId, tenantId);
+    if (enrolment.statusCode !== 'enrolled') {
+      throw new ValidationError(`Cannot register modules for enrolment in status '${enrolment.statusCode}'`);
+    }
+    const t = tenantId as Uuid;
+    const registrationDate = clockNow().toISOString().slice(0, 10);
+    const created: Array<{ id: string; offering: OfferingContext }> = [];
+    const offerings = new Map<string, OfferingContext>();
+    for (const item of input.items) offerings.set(item.moduleOfferingId, await this.#getOfferingContext(item.moduleOfferingId, tenantId));
+
+    await withTenantContext(this.db, tenantId, async (tx) => {
+      if (input.enforceCapacity) {
+        const ids = [...offerings.keys()].sort();
+        if (ids.length > 0) {
+          await tx.select({ id: moduleOfferings.id }).from(moduleOfferings)
+            .where(and(eq(moduleOfferings.tenantId, t), inArray(moduleOfferings.id, ids as Uuid[]))).for('update');
+        }
+      }
+      const now = clockNow();
+      for (const item of input.items) {
+        const offering = offerings.get(item.moduleOfferingId)!;
+        const existing = await tx.select({ id: moduleRegistrations.id }).from(moduleRegistrations)
+          .where(and(eq(moduleRegistrations.tenantId, t), eq(moduleRegistrations.id, item.moduleRegistrationId as Uuid))).limit(1);
+        if (existing[0]) continue;
+        const duplicate = await tx.select({ id: moduleRegistrations.id }).from(moduleRegistrations).where(and(
+          eq(moduleRegistrations.tenantId, t), eq(moduleRegistrations.enrolmentId, input.enrolmentId as Uuid),
+          eq(moduleRegistrations.moduleOfferingId, item.moduleOfferingId as Uuid),
+          inArray(moduleRegistrations.statusCode, ['registered', 'completed']), isNull(moduleRegistrations.recordedUntil),
+        )).limit(1);
+        if (duplicate[0]) throw new ConflictError('Enrolment already has an active registration for this module offering');
+        if (input.enforceCapacity && offering.capacity !== null) {
+          const taken = await tx.select({ id: moduleRegistrations.id }).from(moduleRegistrations).where(and(
+            eq(moduleRegistrations.tenantId, t), eq(moduleRegistrations.moduleOfferingId, item.moduleOfferingId as Uuid),
+            eq(moduleRegistrations.statusCode, 'registered'), isNull(moduleRegistrations.recordedUntil),
+          ));
+          if (taken.length >= offering.capacity) throw new ConflictError('Module offering capacity has been reached');
+        }
+        await tx.insert(moduleRegistrations).values({
+          versionId: randomUUID(), id: item.moduleRegistrationId as Uuid, tenantId: t, enrolmentId: input.enrolmentId as Uuid,
+          moduleOfferingId: item.moduleOfferingId as Uuid, statusCode: 'registered', registrationDate,
+          validFrom: now, validTo: null, recordedAt: now, recordedUntil: null,
+        });
+        created.push({ id: item.moduleRegistrationId, offering });
+      }
+    });
+
+    if (this.eventBus.isConnected()) {
+      for (const c of created) {
+        const payload: EnrolmentModuleRegisteredV1Payload = {
+          enrolmentId: input.enrolmentId, moduleRegistrationId: c.id, moduleOfferingId: c.offering.moduleOfferingId,
+          moduleId: c.offering.moduleId, academicPeriodId: c.offering.academicPeriodId, registrationDate,
+        };
+        await this.eventBus.publish(EVENT_TYPES.ENROLMENT_MODULE_REGISTERED, '1.0.0', tenantId, actorId, 'personal', payload);
+      }
+    }
+    return created.map((c) => c.id);
+  }
+
+  /** Credits the enrolment is currently registered for in one academic period. */
+  async registeredCreditsForPeriod(tenantId: string, enrolmentId: string, academicPeriodId: string): Promise<number> {
+    return this.#sumRegisteredCreditsForPeriod(enrolmentId, academicPeriodId, tenantId);
+  }
+
   async listRegistrations(
     tenantId: string,
     opts: { enrolmentId?: string; moduleOfferingId?: string; statusCode?: string } = {},

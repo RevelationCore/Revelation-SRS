@@ -360,7 +360,16 @@ export class ModuleSelectionService {
       decisionAuthorityCode: 'automatic',
       decidedAt: clockNow(),
     }, clockNow());
-    return this.#confirmProposal(tenantId, proposalId, actorId);
+    try {
+      return await this.#confirmProposal(tenantId, proposalId, actorId, { enforceCapacity: true });
+    } catch (err) {
+      // The last place went to a concurrent confirmation: route for allocation instead.
+      if (!(err instanceof ConflictError) || !/capacity/.test(err.message)) throw err;
+      const current = await this.#getCurrentProposalRow(proposalId, tenantId);
+      const workflowInstanceId = await this.#startApprovalWorkflow(tenantId, current, actorId, 'Capacity reached while confirming — awaiting approver allocation decision');
+      await this.#transitionProposal(current, tenantId, { statusCode: 'waitlisted', workflowInstanceId }, clockNow());
+      return (await this.getProposal(proposalId, tenantId))!;
+    }
   }
 
   /**
@@ -799,6 +808,22 @@ export class ModuleSelectionService {
       }
     }
 
+    // Maximum credits per period (D-23): the proposal plus what is already registered in the period.
+    const { value: maxValue, exception: maxException } = await this.rules.resolveForEnrolment(ruleCtx, 'max-credits-per-period', enrolment.enrolmentId, async () => {
+      const max = await this.rules.getMaxCreditsPerPeriod(ruleCtx);
+      return max === null ? null : { maxCredits: max };
+    });
+    const maxPerPeriod = (maxValue?.maxCredits as number | null | undefined) ?? null;
+    if (maxPerPeriod !== null) {
+      const alreadyRegistered = await this.moduleRegistrations.registeredCreditsForPeriod(tenantId, enrolment.enrolmentId, proposal.academicPeriodId);
+      if (alreadyRegistered + totalCredits > maxPerPeriod) {
+        errors.push({
+          ruleTypeCode: 'max-credits-per-period', severity: 'error',
+          message: `Selected credits (${totalCredits}${alreadyRegistered ? ` plus ${alreadyRegistered} already registered` : ''}) exceed the period maximum of ${maxPerPeriod}${maxException ? ' (as varied for this student)' : ''}`,
+        });
+      }
+    }
+
     // Level credit requirement — minimum credits at the modal (most common) level in the selection
     const levelCounts = new Map<number, number>();
     for (const item of items) {
@@ -1040,26 +1065,23 @@ export class ModuleSelectionService {
 
   // ── Confirmation ─────────────────────────────────────────────────────────────
 
-  async #confirmProposal(tenantId: string, proposalId: string, actorId: string): Promise<ProposalDto> {
+  async #confirmProposal(tenantId: string, proposalId: string, actorId: string, opts: { enforceCapacity?: boolean } = {}): Promise<ProposalDto> {
     const proposal = await this.#getCurrentProposalRow(proposalId, tenantId);
     const items = await this.#listItems(tenantId, proposalId);
 
-    for (const item of items) {
-      if (!item.moduleOfferingId) continue;
-      // Capacity was already assessed during #validateSelection (and, for a
-      // waitlisted proposal, explicitly authorised by an approver's decision) —
-      // re-checking it here would race against that decision. Duplicate,
-      // prerequisite/co-requisite/exclusion and credit-limit checks still apply.
-      // Derived from the item, so confirming again after an interruption
-      // finds the registrations it already created.
-      const moduleRegistrationId = deterministicUuid(`module-selection-registration:${proposalId}:${item.proposalItemId}`);
-      if (await this.moduleRegistrations.getRegistration(moduleRegistrationId, tenantId)) continue;
-      await this.moduleRegistrations.createRegistration(
-        tenantId,
-        { enrolmentId: proposal.enrolmentId, moduleOfferingId: item.moduleOfferingId, skipCapacityCheck: true, moduleRegistrationId },
-        actorId,
-      );
-    }
+    // All or nothing (D-23): validation already applied every rule, and an
+    // approver's decision authorised any capacity conflict, so nothing is
+    // re-checked except capacity on an automatic first-come confirmation.
+    // Registration ids derive from the items, so a retried confirmation finds
+    // the registrations it already created.
+    await this.moduleRegistrations.confirmSelection(tenantId, {
+      enrolmentId: proposal.enrolmentId,
+      enforceCapacity: opts.enforceCapacity ?? false,
+      items: items.filter((i) => i.moduleOfferingId).map((i) => ({
+        moduleOfferingId: i.moduleOfferingId!,
+        moduleRegistrationId: deterministicUuid(`module-selection-registration:${proposalId}:${i.proposalItemId}`),
+      })),
+    }, actorId);
 
     await this.#transitionProposal(proposal, tenantId, {
       statusCode: 'confirmed',
