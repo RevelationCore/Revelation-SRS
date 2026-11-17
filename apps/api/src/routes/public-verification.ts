@@ -41,7 +41,7 @@ export function publicVerificationRoutes(fastify: FastifyInstance): void {
     const { tenantCode, code } = request.params as { tenantCode: string; code: string };
     const tenant = await tenantFor(tenantCode);
     if (!tenant.enabled) return reply.code(404).send(disabled);
-    const started = Date.now();
+    const started = performance.now();
     const result = await fastify.awardDocumentService.verify(tenant.tenantId, code, 'public', undefined, { ipHash: ipHash(request), discloseFacts: tenant.discloseFacts });
     await uniformDelay(started);
     return reply.send(resultToWire(result));
@@ -57,7 +57,7 @@ export function publicVerificationRoutes(fastify: FastifyInstance): void {
     if (!Buffer.isBuffer(request.body)) {
       return reply.code(415).send({ type: 'https://srs.example.com/errors/unsupported-media-type', title: 'Unsupported Media Type', status: 415, detail: 'Send the PDF with content-type application/pdf' });
     }
-    const started = Date.now();
+    const started = performance.now();
     const result = await fastify.awardDocumentService.verifyFile(tenant.tenantId, request.body, 'public', { ipHash: ipHash(request), discloseFacts: tenant.discloseFacts });
     await uniformDelay(started);
     return reply.send(resultToWire(result));
@@ -75,6 +75,6 @@ export function publicVerificationRoutes(fastify: FastifyInstance): void {
 
 /** Answers no sooner than a fixed time, so a found and a not-found code take the same time. */
 async function uniformDelay(started: number, floorMs = 150): Promise<void> {
-  const wait = floorMs - (Date.now() - started);
+  const wait = floorMs - (performance.now() - started);
   if (wait > 0) await new Promise((r) => setTimeout(r, wait));
 }
