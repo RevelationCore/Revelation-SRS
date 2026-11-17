@@ -15,6 +15,8 @@ import {
   programmeRoutes,
   programmeRuleSets,
   reassessmentPlans,
+  moduleAllocationResults,
+  moduleAllocationRuns,
   workflowDefinitions,
   workflowDefinitionVersions,
   academicPeriods,
@@ -363,9 +365,18 @@ export class ModuleSelectionService {
     }
 
     const now = clockNow();
+    // Ranked allocation (D-30): inside an open ranked window whose main allocation has not run, a valid
+    // selection waits for allocation instead of taking places first come. A resubmission after allocation,
+    // or a late submission, is first come against the remaining places.
+    const returnedByAllocation = proposal.statusCode === 'returned' && proposal.decisionAuthorityCode === 'allocation';
+    const ranked = windowCheck.open && windowCheck.window?.allocationModeCode === 'ranked' && !returnedByAllocation
+      && !(await this.#allocationApplied(tenantId, windowCheck.window.id));
     await this.#transitionProposal(proposal, tenantId, { statusCode: 'submitted', submittedAt: now, ...lateFields }, now);
 
-    const validation = await this.#validateSelection(tenantId, proposal, enrolment, items);
+    // Validate the set made of fixed items and each slot's first (or allocated) choice; alternatives are checked on their own.
+    const effective = await this.#effectiveItems(tenantId, proposalId, items);
+    const validation = await this.#validateSelection(tenantId, proposal, enrolment, effective);
+    for (const [itemId, ms] of await this.#checkAlternatives(tenantId, proposal.enrolmentId, items, effective)) validation.itemMessages.set(itemId, ms);
     await this.#persistItemValidation(tenantId, validation.itemMessages);
 
     if (this.eventBus.isConnected()) {
@@ -389,6 +400,11 @@ export class ModuleSelectionService {
         decisionReason: validation.errors.map((m) => m.message).join('; '),
         decidedAt: clockNow(),
       }, clockNow());
+      return (await this.getProposal(proposalId, tenantId))!;
+    }
+
+    if (ranked) {
+      await this.#transitionProposal(updated, tenantId, { statusCode: 'awaiting-allocation' }, clockNow());
       return (await this.getProposal(proposalId, tenantId))!;
     }
 
@@ -428,7 +444,9 @@ export class ModuleSelectionService {
     const proposal = await this.#getCurrentProposalRow(proposalId, tenantId);
     const enrolment = await this.#getCurrentEnrolment(proposal.enrolmentId, tenantId);
     const items = await this.#listItems(tenantId, proposalId);
-    const v = await this.#validateSelection(tenantId, proposal, enrolment, items);
+    const effective = await this.#effectiveItems(tenantId, proposalId, items);
+    const v = await this.#validateSelection(tenantId, proposal, enrolment, effective);
+    for (const [itemId, ms] of await this.#checkAlternatives(tenantId, proposal.enrolmentId, items, effective)) v.itemMessages.set(itemId, ms);
     const itemLevel = [...v.itemMessages.entries()].flatMap(([proposalItemId, ms]) => ms.map((m) => ({ ...m, proposalItemId })));
     const seen = new Set(itemLevel.map((m) => m.message));
     const overall = v.errors.filter((e) => !seen.has(e.message)).map((m) => ({ ...m, proposalItemId: null }));
@@ -825,10 +843,12 @@ export class ModuleSelectionService {
       for (const m of relMessages) pushItemMessage(item.proposalItemId, m);
     }
 
-    // Capacity per offering
+    // Capacity per offering. A place held for this proposal by allocation is its own (D-30).
+    const nowForHolds = clockNow();
     for (const item of items) {
       if (!item.moduleOfferingId) continue;
-      const available = await this.#hasCapacity(tenantId, item.moduleOfferingId);
+      if (item.heldUntil && item.heldUntil > nowForHolds) continue;
+      const available = await this.#hasCapacity(tenantId, item.moduleOfferingId, proposal.id);
       if (!available) {
         capacityConflict = true;
         pushItemMessage(item.proposalItemId, {
@@ -1041,7 +1061,7 @@ export class ModuleSelectionService {
     return rows.length > 0;
   }
 
-  async #hasCapacity(tenantId: string, moduleOfferingId: string): Promise<boolean> {
+  async #hasCapacity(tenantId: string, moduleOfferingId: string, exceptProposalId?: string): Promise<boolean> {
     const offeringRows = await withTenantContext(this.db, tenantId, async (tx) =>
       tx.select({ capacity: moduleOfferings.capacity }).from(moduleOfferings).where(
         and(eq(moduleOfferings.id, moduleOfferingId as Uuid), eq(moduleOfferings.tenantId, tenantId as Uuid)),
@@ -1060,7 +1080,124 @@ export class ModuleSelectionService {
         ),
       ),
     );
-    return registeredRows.length < capacity;
+    // Places held by allocation for other returned proposals count as taken until resubmission closes (D-30).
+    const held = await this.heldPlaces(tenantId, [moduleOfferingId], exceptProposalId);
+    return registeredRows.length + (held.get(moduleOfferingId) ?? 0) < capacity;
+  }
+
+  /** Places held by allocation for returned proposals, per offering (D-30). */
+  async heldPlaces(tenantId: string, offeringIds: string[], exceptProposalId?: string): Promise<Map<string, number>> {
+    const map = new Map<string, number>();
+    if (offeringIds.length === 0) return map;
+    const rows = await withTenantContext(this.db, tenantId, (tx) => tx.select({ offeringId: moduleSelectionProposalItems.moduleOfferingId, proposalId: moduleSelectionProposalItems.proposalId })
+      .from(moduleSelectionProposalItems).where(and(
+        eq(moduleSelectionProposalItems.tenantId, tenantId as Uuid), inArray(moduleSelectionProposalItems.moduleOfferingId, offeringIds as Uuid[]),
+        sql`${moduleSelectionProposalItems.heldUntil} > ${clockNow()}`,
+      )));
+    for (const r of rows) {
+      if (!r.offeringId || r.proposalId === exceptProposalId) continue;
+      map.set(r.offeringId, (map.get(r.offeringId) ?? 0) + 1);
+    }
+    return map;
+  }
+
+  // ── Ranked choices and allocation (D-30) ────────────────────────────────────
+
+  /**
+   * The items that would be registered: fixed items, and for each choice
+   * slot the alternative allocated by the latest applied run, else the
+   * first-ranked one.
+   */
+  async #effectiveItems(tenantId: string, proposalId: string, items: ProposalItemDto[]): Promise<ProposalItemDto[]> {
+    if (!items.some((i) => i.choiceSlot !== null)) return items;
+    const allocated = await this.#allocatedChoices(tenantId, proposalId);
+    const fixed = items.filter((i) => i.choiceSlot === null);
+    const slots = [...new Set(items.filter((i) => i.choiceSlot !== null).map((i) => i.choiceSlot!))].sort((a, b) => a - b);
+    const chosen: ProposalItemDto[] = [];
+    for (const slot of slots) {
+      const options = items.filter((i) => i.choiceSlot === slot).sort((a, b) => (a.preferenceRank ?? 1) - (b.preferenceRank ?? 1));
+      const pick = allocated.has(slot) ? options.find((o) => o.proposalItemId === allocated.get(slot)) : options[0];
+      if (pick) chosen.push(pick);
+    }
+    return [...fixed, ...chosen];
+  }
+
+  async #allocatedChoices(tenantId: string, proposalId: string): Promise<Map<number, string>> {
+    const rows = await withTenantContext(this.db, tenantId, (tx) => tx.select({ slot: moduleAllocationResults.choiceSlot, itemId: moduleAllocationResults.allocatedItemId, appliedAt: moduleAllocationRuns.appliedAt })
+      .from(moduleAllocationResults)
+      .innerJoin(moduleAllocationRuns, eq(moduleAllocationRuns.id, moduleAllocationResults.runId))
+      .where(and(eq(moduleAllocationResults.tenantId, tenantId as Uuid), eq(moduleAllocationResults.proposalId, proposalId as Uuid), eq(moduleAllocationRuns.statusCode, 'applied'))));
+    const map = new Map<number, string>();
+    for (const r of rows.sort((a, b) => (a.appliedAt?.getTime() ?? 0) - (b.appliedAt?.getTime() ?? 0))) {
+      if (r.slot !== null && r.itemId) map.set(r.slot, r.itemId);
+    }
+    return map;
+  }
+
+  /** Each alternative is checked on its own; one that cannot be taken is flagged and will be skipped. */
+  async #checkAlternatives(tenantId: string, enrolmentId: string, items: ProposalItemDto[], effective: ProposalItemDto[]): Promise<Map<string, ValidationMessage[]>> {
+    const out = new Map<string, ValidationMessage[]>();
+    const chosen = new Set(effective.map((i) => i.proposalItemId));
+    for (const alt of items.filter((i) => i.choiceSlot !== null && !chosen.has(i.proposalItemId))) {
+      const siblings = [...effective.filter((e) => e.choiceSlot !== alt.choiceSlot), alt];
+      const problems = await this.#checkRelationships(tenantId, enrolmentId, alt, siblings);
+      out.set(alt.proposalItemId, problems.map((p) => ({ ...p, severity: 'warning' as const, message: `Alternative cannot be taken and will be skipped: ${p.message}` })));
+    }
+    return out;
+  }
+
+  async #allocationApplied(tenantId: string, windowId: string): Promise<boolean> {
+    const [row] = await withTenantContext(this.db, tenantId, (tx) => tx.select({ id: moduleAllocationRuns.id }).from(moduleAllocationRuns).where(and(
+      eq(moduleAllocationRuns.tenantId, tenantId as Uuid), eq(moduleAllocationRuns.windowId, windowId as Uuid),
+      eq(moduleAllocationRuns.kindCode, 'main'), eq(moduleAllocationRuns.statusCode, 'applied'),
+    )).limit(1));
+    return Boolean(row);
+  }
+
+  /** Confirms a proposal whose every slot an applied allocation filled (D-30). */
+  async confirmAfterAllocation(tenantId: string, proposalId: string, actorId: string): Promise<ProposalDto> {
+    const proposal = await this.#getCurrentProposalRow(proposalId, tenantId);
+    if (proposal.statusCode !== 'awaiting-allocation' && proposal.statusCode !== 'returned') {
+      throw new ConflictError(`Proposal is ${proposal.statusCode}, not awaiting allocation`);
+    }
+    await this.#transitionProposal(proposal, tenantId, { statusCode: 'validated', decisionAuthorityCode: 'allocation', decisionReason: 'Allocated', decidedAt: clockNow() }, clockNow());
+    return this.#confirmProposal(tenantId, proposalId, actorId);
+  }
+
+  /**
+   * Returns a proposal an allocation could not fill (D-30), holding the
+   * places it did get until resubmission closes.
+   */
+  async returnAfterAllocation(tenantId: string, proposalId: string, reason: string, heldItemIds: string[], holdUntil: Date): Promise<ProposalDto> {
+    const proposal = await this.#getCurrentProposalRow(proposalId, tenantId);
+    if (heldItemIds.length > 0) {
+      await withTenantContext(this.db, tenantId, (tx) => tx.update(moduleSelectionProposalItems).set({ heldUntil: holdUntil })
+        .where(and(eq(moduleSelectionProposalItems.tenantId, tenantId as Uuid), inArray(moduleSelectionProposalItems.id, heldItemIds as Uuid[]))));
+    }
+    await this.#transitionProposal(proposal, tenantId, { statusCode: 'returned', decisionAuthorityCode: 'allocation', decisionReason: reason, decidedAt: clockNow() }, clockNow());
+    return (await this.getProposal(proposalId, tenantId))!;
+  }
+
+  /** Exclusion relationships between two modules, either way round. */
+  async excludes(tenantId: string, moduleA: string, moduleB: string): Promise<boolean> {
+    const rows = await withTenantContext(this.db, tenantId, (tx) => tx.select({ id: moduleRelationships.id }).from(moduleRelationships).where(and(
+      eq(moduleRelationships.tenantId, tenantId as Uuid), eq(moduleRelationships.relationshipTypeCode, 'exclusion'), isNull(moduleRelationships.recordedUntil),
+      sql`((${moduleRelationships.moduleId} = ${moduleA} AND ${moduleRelationships.relatedModuleId} = ${moduleB}) OR (${moduleRelationships.moduleId} = ${moduleB} AND ${moduleRelationships.relatedModuleId} = ${moduleA}))`,
+    )).limit(1));
+    return rows.length > 0;
+  }
+
+  /** The proposal's items, for allocation. */
+  async itemsFor(tenantId: string, proposalId: string): Promise<ProposalItemDto[]> {
+    return this.#listItems(tenantId, proposalId);
+  }
+
+  /** The clash policy in force for a student (D-25), for allocation. */
+  async clashPolicyFor(tenantId: string, programmeId: string | null, enrolmentId: string) {
+    const ruleCtx = { tenantId, programmeId: programmeId ?? '' };
+    const { value, exception } = await this.rules.resolveForEnrolment(ruleCtx, 'timetable-clash-policy', enrolmentId,
+      async () => (await this.rules.getOptionalRule<Record<string, unknown>>(ruleCtx, 'timetable-clash-policy', ['default'])) ?? { ...DEFAULT_CLASH_POLICY });
+    return clashPolicyFrom(exception?.exceptionTypeCode === 'waiver' ? { ...DEFAULT_CLASH_POLICY, policy: 'advisory' } : value);
   }
 
   async #checkGroups(
@@ -1160,7 +1297,8 @@ export class ModuleSelectionService {
 
   async #confirmProposal(tenantId: string, proposalId: string, actorId: string, opts: { enforceCapacity?: boolean } = {}): Promise<ProposalDto> {
     const proposal = await this.#getCurrentProposalRow(proposalId, tenantId);
-    const items = await this.#listItems(tenantId, proposalId);
+    // Only fixed items and each slot's chosen alternative become registrations (D-30).
+    const items = await this.#effectiveItems(tenantId, proposalId, await this.#listItems(tenantId, proposalId));
 
     // All or nothing (D-23): validation already applied every rule, and an
     // approver's decision authorised any capacity conflict, so nothing is
@@ -1191,6 +1329,8 @@ export class ModuleSelectionService {
         .where(and(eq(reassessmentPlans.tenantId, tenantId as Uuid), eq(reassessmentPlans.id, req.planId as Uuid), isNull(reassessmentPlans.repeatModuleRegistrationId))));
     }
 
+    await withTenantContext(this.db, tenantId, (tx) => tx.update(moduleSelectionProposalItems).set({ heldUntil: null })
+      .where(and(eq(moduleSelectionProposalItems.tenantId, tenantId as Uuid), eq(moduleSelectionProposalItems.proposalId, proposalId as Uuid))));
     await this.#transitionProposal(proposal, tenantId, {
       statusCode: 'confirmed',
       decidedAt: clockNow(),

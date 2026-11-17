@@ -292,6 +292,25 @@ export function moduleSelectionProposalsRoutes(fastify: FastifyInstance): void {
     await reply.send(shares);
   });
 
+  /** The student's own allocation outcome and order position (D-30). */
+  fastify.get('/module-selection-proposals/:proposalId/allocation', {
+    schema: {
+      params: Type.Object({ proposalId: Type.String() }),
+      response: {
+        200: Type.Union([Type.Null(), Type.Object({
+          allocationRunId: Type.String(), orderPosition: Type.Integer(),
+          results: Type.Array(Type.Object({ choiceSlot: Type.Union([Type.Integer(), Type.Null()]), outcomeCode: Type.String(), allocatedItemId: Type.Union([Type.String(), Type.Null()]), reason: Type.Union([Type.String(), Type.Null()]) })),
+        })]),
+        403: ErrorSchema, 404: ErrorSchema,
+      },
+    },
+    preHandler: [requireAnyPermission('module-selection:read:own', 'module-selection:read:all')],
+  }, async (request, reply) => {
+    const { proposalId } = request.params as { proposalId: string };
+    if (!(await ensureOwnProposalOrStaff(fastify, request, reply, proposalId))) return;
+    await reply.send(await fastify.allocationService.outcomeFor(request.tenantId, proposalId));
+  });
+
   fastify.post(
     '/module-selection-proposals/:proposalId/submission',
     {

@@ -99,7 +99,9 @@ import { markRoutes } from './routes/marks.js';
 import { moderationRoutes } from './routes/moderation.js';
 import { moduleResultRoutes } from './routes/module-results.js';
 import { moduleRegistrationsRoutes } from './routes/module-registrations.js';
-import { moduleSelectionWindowsRoutes } from './routes/module-selection-windows.js';
+import { moduleAllocationRoutes, moduleSelectionWindowsRoutes } from './routes/module-selection-windows.js';
+import { AllocationService } from './platform/module-selection/allocation-service.js';
+import { runTimetableDemandSnapshot } from './platform/delivery/producers/timetable-demand.js';
 import { timetablingRoutes } from './routes/timetabling.js';
 import { moduleSelectionProposalsRoutes } from './routes/module-selection-proposals.js';
 import { programmesRoutes } from './routes/programmes.js';
@@ -487,6 +489,9 @@ export async function buildApp(
   fastify.decorate('selectionWindowService', selectionWindows);
   fastify.decorate('moduleSubjectService', new ModuleSubjectService(db, valueSets));
   fastify.decorate('timetableService', timetables);
+  // An applied allocation sends timetabling the rosters it produced (D-26).
+  fastify.decorate('allocationService', new AllocationService(db, moduleSelection, selectionWindows, timetables,
+    async (tenantId, academicPeriodId) => { await runTimetableDemandSnapshot(deliveries, db, tenantId, academicPeriodId); }));
   fastify.decorate('moduleSelectionService', moduleSelection);
   fastify.decorate('bindingChangeService', bindingChanges);
   fastify.decorate('registrationPeriodService', registrationPeriods);
@@ -799,6 +804,7 @@ export async function buildApp(
       ['/learning-outcomes',         'catalogue'],
       ['/academic-periods',          'calendar'],
       ['/module-selection-windows',  'calendar'],
+      ['/allocation-runs',           'module-selection'],
       ['/timetable-publications',    'timetabling'],
       ['/components',                'assessment'],
       ['/module-offerings',          'calendar'],
@@ -885,6 +891,7 @@ export async function buildApp(
   await fastify.register(moduleResultRoutes,        { prefix: '/api/v1' });
   await fastify.register(moduleRegistrationsRoutes, { prefix: '/api/v1' });
   await fastify.register(moduleSelectionWindowsRoutes, { prefix: '/api/v1' });
+  await fastify.register(moduleAllocationRoutes, { prefix: '/api/v1' });
   await fastify.register(timetablingRoutes, { prefix: '/api/v1' });
   await fastify.register(moduleSelectionProposalsRoutes, { prefix: '/api/v1' });
   await fastify.register(tenantAdminRoutes,         { prefix: '/api/v1' });
@@ -928,6 +935,7 @@ declare module 'fastify' {
     selectionWindowService: SelectionWindowService;
     moduleSubjectService: ModuleSubjectService;
     timetableService: TimetableService;
+    allocationService: AllocationService;
     moduleSelectionService: ModuleSelectionService;
     bindingChangeService: BindingChangeService;
     registrationPeriodService: RegistrationPeriodService;
