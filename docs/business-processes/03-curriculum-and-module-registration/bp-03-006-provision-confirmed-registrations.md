@@ -190,7 +190,7 @@ sequenceDiagram
 
 | ID | Question/decision | Owner | Status |
 |---|---|---|---|
-| OQ-1 | Generalise `adjustment_distribution` pattern for registration provisioning? | Data/integration architect | Open |
+| OQ-1 | Generalise `adjustment_distribution` pattern for registration provisioning? | Data/integration architect | **Resolved** (2026-11-17) — no: the platform delivery ledger already is the generalisation; timetabling is flow F-SIS-TTB-01 with roster snapshots and count reconciliation; attendance reads registrations directly ([D-26](../../decisions/phase-4-gap-closure-decisions.md)) |
 | OQ-2 | Does the VLE adapter persist complete add/remove reconciliation for every target? | Integration owner | Open |
 
 ## Sources

@@ -159,30 +159,31 @@ Every contract below must be implemented with the full field set above. Where de
 
 ---
 
-## Timetabling
+## Timetabling *(simulated: manual file or the in-repo simulator, Phase 4)*
 
 | Field | Value |
 |---|---|
-| **Contract ID** | `timetable-demand-feed.v1` |
+| **Contract ID** | `timetable-demand-feed.v1` ([schema](../../schemas/file-contracts/timetabling/timetable-demand-feed.v1.json)) |
 | **Flows** | F-SIS-TTB-01 |
 | **Direction** | Outbound |
-| **Pattern** | Event (`srs.enrolment.module-registered`) + scheduled file |
+| **Pattern** | Platform delivery ledger item per registration version, plus roster snapshots (D-26) |
 | **Owner module** | Enrolment & Registration |
-| **Trigger** | Module registration confirmed; or scheduled extract at registration close |
-| **Payload** | Student enrolments, confirmed module registrations, credit load, academic period |
-| **Replay** | Snapshot: `GET /api/v1/module-registrations?periodId=&status=registered` |
+| **Trigger** | A module registration being created, confirmed, withdrawn or changing status; a snapshot run (`POST /delivery-flows/F-SIS-TTB-01/run`) or an applied allocation |
+| **Payload** | Add, update or remove for a student number and offering; a snapshot holds an offering's sorted student numbers, count and high-water mark. No names, contacts or adjustments |
+| **Reconciliation** | Acknowledgement means applied; acknowledging a snapshot with a different `targetCount` records a count mismatch |
+| **Idempotency key** | `ttb-demand:<registrationId>:<versionId>`; snapshots by roster fingerprint |
 
 | Field | Value |
 |---|---|
-| **Contract ID** | `timetable-publication.v1` |
+| **Contract ID** | `timetable-publication.v1` ([schema](../../schemas/file-contracts/timetabling/timetable-publication.v1.json)) |
 | **Flows** | F-TTB-SIS-01 |
 | **Direction** | Inbound |
-| **Pattern** | REST POST or file |
+| **Pattern** | REST POST (`/timetable-publications`) or a file uploaded on the admin Timetables page; the in-repo simulator (`/academic-periods/:id/timetable-simulation`) for tests and demos (D-24) |
 | **Owner module** | Enrolment & Registration |
-| **Trigger** | TTB publishes finalised timetable |
-| **Payload** | Activity IDs, room references, scheduled times, change indicators |
-| **Failure handling** | Validation rejection; TTB resubmits; previous publication retained |
-| **Idempotency key** | TTB publication version ID |
+| **Trigger** | The timetabling system publishes a timetable for a period |
+| **Payload** | Activities per offering (type, group set, group) with slots: day, start, end, week-commencing dates, room code. No personal data |
+| **Failure handling** | An unknown or ambiguous offering, bad times or a non-Monday week rejects the whole publication; the previous one stays current |
+| **Idempotency key** | Source system plus source version; the same version with different content conflicts |
 
 ---
 

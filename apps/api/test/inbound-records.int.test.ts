@@ -35,7 +35,7 @@ describe('Inbound flows', () => {
     const flows = (await get('/api/v1/inbound-flows', tutorJwt)).json<Array<{ flowCode: string; handling: string; handlingNote?: string }>>();
     const by = (h: string) => flows.filter((f) => f.handling === h).map((f) => f.flowCode).sort();
     expect(by('record')).toEqual(['F-ACC-SIS-01', 'F-ITSM-SIS-01', 'F-LIB-SIS-01', 'F-PAY-SIS-01', 'F-RP-SIS-01']);
-    expect(by('dedicated')).toEqual(['F-CM-SIS-01', 'F-CRM-SIS-01', 'F-OIV-SIS-01']);
+    expect(by('dedicated')).toEqual(['F-CM-SIS-01', 'F-CRM-SIS-01', 'F-OIV-SIS-01', 'F-TTB-SIS-01']);
     expect(by('not-per-student')).toEqual(['F-CMS-SIS-01', 'F-EST-SIS-01', 'F-SETS-SIS-01']);
     expect(flows.find((f) => f.flowCode === 'F-OIV-SIS-01')?.handlingNote).toContain('identity-verifications');
   });

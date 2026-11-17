@@ -123,6 +123,18 @@ All eleven processes already pass integration tests through the API.
 
 ## Phase 4 — Rule depth in module selection and status (medium)
 
+**Status: delivered.** Decisions are recorded in [Phase 4 gap-closure decisions](../decisions/phase-4-gap-closure-decisions.md) (D-23 to D-34). The exit was narrowed to the seven rule types the engine classifies as selection rules (D-23); the other fourteen belong to assessment, progression, award or UKVI attendance. The `selection-rule-coverage` integration test builds a violating selection for each of the seven and checks that validation reports it. Built:
+- selection windows with scope, a resubmission period and late submission (D-29);
+- repeat-module requirements from ratified board plans (D-28);
+- subject areas and joint-honours balance (D-27);
+- timetable publications and clash checks (D-24, D-25);
+- confirmed registrations sent to timetabling as F-SIS-TTB-01 (D-26), which moves BP-03-006 to "On screen (simulated link)";
+- ranked preference allocation with two-person approval (D-30);
+- reduced-intensity study as a transfer (D-31);
+- transfer credit mapping (D-32).
+
+The timetabling system is reached by manual file or the in-repo simulator (D-14).
+
 | Gap | Work |
 |---|---|
 | Timetable clashes and provisioning (BP-03-006) | A timetable-slot entity, fed from the timetabling system, and the existing clash policy enforced against it; send confirmed registrations to timetabling as they already go to the VLE |
@@ -131,9 +143,9 @@ All eleven processes already pass integration tests through the API.
 | Selection windows | Enforce open and close dates at proposal submission |
 | Reduced-intensity study and transfer credit mapping | Model both as status-case outcomes |
 
-**Exit:** module-selection validation enforces every rule type the rules engine defines.
+**Exit:** module-selection validation enforces every rule type the rules engine classifies as a selection rule (D-23).
 
-**Decision needed:** which timetabling system is the source, and how often slots are refreshed.
+**Decision taken:** the timetabling source is a versioned publication feed. Each publication applies as it arrives, and a timetable is marked stale after `timetabling.staleAfterHours` (D-24). The institution names its system and how often it publishes.
 
 ## Phase 5 — Audiences and evidence (medium)
 
@@ -155,7 +167,7 @@ All eleven processes already pass integration tests through the API.
 | 1 Screens over existing APIs — **done** | Medium | 37 (41 claimed before checking) | Decided (D-1 to D-7) |
 | 2 Missing processes | Large | 44+ of 49, all 49 built | Re-registration and Clearing policy |
 | 3 Integrations and outputs | Large | 49 | UCAS access; signing approach |
-| 4 Rule depth | Medium | 49, with full selection rules | Timetabling source |
+| 4 Rule depth — **done** | Medium | 49 (43 on screen, 6 with a simulated link), with every selection rule enforced | Timetabling source |
 | 5 Audiences and evidence | Medium | 49, at implemented baseline | Independent and SME review |
 
 Phases 4 and 5 can run alongside Phase 3, which mostly waits on external parties.

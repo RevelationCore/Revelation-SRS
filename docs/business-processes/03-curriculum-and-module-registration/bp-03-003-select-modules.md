@@ -124,8 +124,8 @@ Selection window opens or an authorised actor invites/resets selection.
 | BR-2 | SECTOR | Normal full-time taught load is commonly 120 UK credits annually, but programme/mode rules govern | UK | SRC-043–SRC-046 |
 | BR-3 | INSTITUTIONAL | Windows, ranking, cross-school choice and pre-selection vary | UK | SRC-043–SRC-046 |
 | BR-4 | REVELATION | Proposed choices are distinct from confirmed `module_registration`: `module_selection_proposal`/`module_selection_proposal_item` hold the draft/submitted/validated/returned/waitlisted state; `module_registration` rows are only created once BP-03-004 confirms the proposal | Revelation | `apps/api/src/platform/module-selection/service.ts` |
-| BR-5 | GAP | Selection windows (open/close dates per period/cohort) are not yet enforced — a proposal can be created at any time | Revelation gap | Process analysis |
-| BR-6 | GAP | Ranked/oversubscribed preference ordering (A3) is not yet modelled — `preference_rank` exists on `module_selection_proposal_item` but allocation logic does not yet consume it; oversubscription is currently all-or-nothing per module (BP-03-004 A5 waitlist) | Revelation gap | Process analysis |
+| BR-5 | Implemented | Selection windows per period, optionally per programme and level, are enforced at submission with a resubmission period and staff late submission with a reason; drafts can be edited at any time ([D-29](../../decisions/phase-4-gap-closure-decisions.md)) | Phase 4 | `module-selection/window-service.ts` |
+| BR-6 | Implemented | Ranked alternatives share a choice slot; in a ranked window oversubscribed offerings are allocated by random serial dictatorship after the window, approved by a second person ([D-30](../../decisions/phase-4-gap-closure-decisions.md)) | Phase 4 | `module-selection/allocation-service.ts` |
 
 ## National and institutional variations
 

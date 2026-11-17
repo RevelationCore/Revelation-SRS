@@ -121,8 +121,8 @@ Submission of a module-selection proposal.
 | BR-2 | INSTITUTIONAL | Parent/teaching-unit authority, capacity and timetable checks vary | UK | SRC-043–SRC-046 |
 | BR-3 | REVELATION | `ModuleSelectionService#submitProposal` validates: duplicate module selection; prerequisite/co-requisite/exclusion (`module_relationship`, co-requisites additionally satisfied by a sibling item in the same proposal); diet-group count/credit bounds (`module_group`); `credit-load-requirement` and `level-credit-requirement`/`adjacent-level-credit-limit` rules (mode-of-study and FHEQ-level aware); and offering capacity | Revelation | `apps/api/src/platform/module-selection/service.ts` |
 | BR-4 | REVELATION | A fully valid proposal with capacity available confirms automatically (A4) by creating `module_registration` rows via the existing `ModuleRegistrationService`. A capacity conflict alone routes to a `programme-approver` via the `module-selection-approval` workflow and a waitlist status, without failing the whole proposal (A5). Any rule violation returns the proposal with itemised, per-item validation messages (E2) — never a silent partial registration | Revelation | `apps/api/src/platform/module-selection/service.ts`; `apps/api/src/routes/module-selection-proposals.ts` |
-| BR-5 | REVELATION gap | Timetable clash detection (OQ-2) is not implemented: the schema and rules engine expose a configurable `timetable-clash-policy` (`advisory`\|`blocking`, default `advisory`), but there is no timetable-slot data model yet to actually detect a clash against — the policy getter exists ahead of the check it would gate | Revelation gap | `apps/api/src/platform/rules-engine/engine.ts` |
-| BR-6 | REVELATION gap | Joint-honours credit balance and repeat-module requirements are named in the rules taxonomy (`joint-honours-balance`, `repeat-module-requirement` rule types) but not yet consumed by `validateSelection` — there is no "subject area" attribute on programme/module to make the former real, and the latter needs progression/fail data wired in | Revelation gap | `docs/architecture/module-selection-rules.md` |
+| BR-5 | Implemented | Clashes are checked against timetable publications: advisory warnings or blocking errors, with tolerance, excluded activity types and group sets as alternatives ([D-24, D-25](../../decisions/phase-4-gap-closure-decisions.md)) | Phase 4 | `timetabling/clash-detector.ts` |
+| BR-6 | Implemented | Joint-honours balance uses module subject areas with proportions; repeat requirements come from ratified reassessment plans ([D-27, D-28](../../decisions/phase-4-gap-closure-decisions.md)) | Phase 4 | `module-selection/joint-honours.ts`, `repeat-requirements.ts` |
 
 ## National and institutional variations
 
@@ -189,7 +189,7 @@ sequenceDiagram
 | ID | Question/decision | Owner | Status |
 |---|---|---|---|
 | OQ-1 | Add proposal, approval, exception and waitlist entities/statuses? | Data/product owner | **Resolved** (2026-08-02) — `module_selection_proposal` status lifecycle (`draft`/`submitted`/`validated`/`approved`/`returned`/`waitlisted`/`rejected`/`confirmed`) plus the `module-selection-approval` workflow for exception decisions; see [docs/architecture/module-selection-rules.md](../../architecture/module-selection-rules.md) |
-| OQ-2 | Is timetable clash hard validation or advisory by tenant/programme? | Curriculum owner | **Partially resolved** — the policy is configurable per tenant/programme (`timetable-clash-policy` rule, default `advisory`) but no clash is actually detected yet, since there is no timetable-slot entity in the current data model (BR-5 gap) |
+| OQ-2 | Is timetable clash hard validation or advisory by tenant/programme? | Curriculum owner | **Resolved** (2026-11-17) — configurable per tenant or programme, default advisory; clashes are detected against timetable publications ([D-25](../../decisions/phase-4-gap-closure-decisions.md)); the institution confirms its policy |
 
 ## Sources
 

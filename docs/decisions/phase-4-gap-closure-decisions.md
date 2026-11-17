@@ -1,6 +1,6 @@
 # Phase 4 Gap-Closure Decisions
 
-> Status: Accepted (2026-11-17); implementation notes are added per decision as slices land
+> Status: Implemented (2026-11-17)
 > Date: 2026-11-17
 > Context: [Academic journey gap-closure plan](../product/academic-journey-gap-closure-plan.md), Phase 4 (rule depth in module selection and status)
 > Made by: the project's solutions-architect agent (`.claude/agents/solutions-architect.md`). Numbering continues from [Phase 3](phase-3-gap-closure-decisions.md).
@@ -322,4 +322,43 @@ S0 foundation (D-23); S1 windows (D-29); S2 repeat (D-28); S3 joint honours (D-2
 
 ## Implementation notes
 
-Added per slice as it lands.
+The core migration set is at 10 of 10 again, so the next migration must squash first.
+
+- **D-34: migrations.**
+  - The squash was committed separately (`0008_admissions_registration_and_integrations`), with schema and data identical per `scripts/verify-migration-squash.sh`.
+  - `0009_rule_depth` holds all Phase 4 schema. It also adds `module_selection_proposal.fheq_level`, the student's current level, which window scoping and allocation tiers need, and `module_selection_proposal_item.held_until` for held allocated places.
+  - The `academic-rule-type-code` value set now lists the 21 engine rule types, each tagged with its domain. The six old category codes are retired.
+- **D-23: rule-type domains.**
+  - `RULE_TYPE_DOMAIN` and `SELECTION_RULE_TYPES` are in `rules-engine/engine.ts`, and `late-penalty` is removed.
+  - Confirmation goes through `ModuleRegistrationService.confirmSelection`: one transaction, no rule re-checks.
+  - An automatic first-come confirmation locks the offerings and recounts places. If the last place has gone, the proposal routes to the approver instead.
+  - The exit test is `apps/api/test/selection-rule-coverage.int.test.ts`. It is read through the new `GET /module-selection-proposals/:id/validation` preview, because proposal-level errors otherwise reach only `decisionReason`.
+- **D-29: selection windows.**
+  - The service is `module-selection/window-service.ts` and the routes are `/module-selection-windows`. `/registration-windows` is gone: a breaking change, acceptable in Alpha.
+  - Direct registration requests use whole-programme windows, because their level is not known.
+- **D-28: repeat modules.**
+  - Plans are read from `reassessment_plan`, and `repeat-stage` failures come from current `module_result` rows (`fail`, `resit-required`) in the decision's year.
+  - **Not built:** the plan's mark cap is recorded against the repeat registration, but `module-result-service` does not yet apply it.
+- **D-27: joint honours.**
+  - Subjects are managed on Programme rules. The value set has no seed rows, so each tenant adds its own.
+  - Exemptions count by their module's subjects.
+- **D-24 and D-25: timetables and clashes.**
+  - The routes are `/timetable-publications`, `/academic-periods/:id/timetable-simulation`, `/academic-periods/:id/timetable-status` and `/module-offerings/:id/timetable`.
+  - The manual file is a JSON upload. CSV is not accepted.
+  - Clash messages name the overlap and cite the publications.
+- **D-26: timetabling provisioning.**
+  - The producer is `delivery/producers/timetable-demand.ts`, called from every registration create, confirm and transition.
+  - The snapshot runs through `POST /delivery-flows/F-SIS-TTB-01/run` and after an applied allocation. It does not yet run automatically when a window closes.
+  - `acknowledge` accepts `targetCount`.
+- **D-30: ranked allocation.**
+  - The service is `module-selection/allocation-service.ts`, with routes under `/module-selection-windows/:id/allocation-runs` and `/allocation-runs/:id`.
+  - **Deviation:** two-person approval is enforced directly. The approver must hold `module-selection:decide` and be neither the runner nor the submitter. It is not a GovernedReview workflow family, so a Temporal-run review is still to do.
+  - Alternatives are blocked by a blocking clash, an exclusion, or carrying more credit than their slot's first choice. That is an approximation of "no blocking errors" that avoids judging a partial selection against minimum bounds.
+  - Priority comes from `moduleSelection.allocation.priority`, defaulting to stage descending. `minAlternatives` is not enforced.
+- **D-31: reduced intensity.**
+  - `study_intensity_percent` is carried on every enrolment version.
+  - The 25% SLC warning appears on the case.
+  - **Not done:** HESA `mapMode` still reads the current version, not the session's, and the change is not yet sent to finance as a fee recalculation beyond the existing F-SIS-FIN-01 snapshot.
+- **D-32: transfer credit mapping.**
+  - `approvedExemptionsFor` now treats any approved credit with a module as a mapping.
+  - **Not done:** a transcript and HEAR line for recognised credit, and `recognisedCreditExcluded` in the classification evidence. Classification already ignores recognised credit, because it averages module outcomes only.

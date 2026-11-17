@@ -6,27 +6,22 @@
 
 ---
 
-## Implementation status (2026-08-02)
+## Implementation status (2026-11-17)
 
-Stages 1–6 are built and tested (migration `0005_curriculum_regulatory_and_pgr` (section `0005_module_selection_rules`),
-`RulesEngine` extensions, `ModuleSelectionService`, portal/admin UI, demo data).
-Known gaps, tracked in BP-03-003/BP-03-004 as BR-5/BR-6 rather than silently
-assumed:
+Stages 1–6 were built on 2026-08-02. Phase 4 of the gap-closure plan ([decisions D-23 to D-34](../decisions/phase-4-gap-closure-decisions.md), migration `0009_rule_depth`) closed the gaps once listed here.
 
-- **Timetable clash detection** — `timetable-clash-policy` is configurable
-  (advisory/blocking) but nothing evaluates it yet: there is no timetable-slot
-  data model to detect an actual clash against (BP-03-004 BR-5/OQ-2).
-- **Joint-honours balance** — the `joint-honours-balance` rule type exists for
-  admins to configure, but `validateSelection` doesn't consume it: there is no
-  "subject area" attribute on programme/module to make the check real.
-- **Repeat-module requirement** — the `repeat-module-requirement` rule type
-  exists but isn't wired to progression/fail data.
-- **Ranked/oversubscribed preference allocation** — `preference_rank` is
-  captured on `module_selection_proposal_item` but not consumed; oversubscription
-  today is all-or-nothing per module (capacity conflict → waitlist → approver
-  decision), not a ranked allocation across competing students.
-- **Selection windows** — proposals can be created at any time; no
-  open/close enforcement per period/cohort yet.
+- **Every selection rule type is enforced.** `RULE_TYPE_DOMAIN` in `rules-engine/engine.ts` classifies all 21 rule types. The seven classed as selection rules are all evaluated by validation, which `selection-rule-coverage.int.test.ts` checks.
+- **`max-credits-per-period` is checked during validation**, and confirmation is all or nothing.
+- **Timetable clashes.** These are checked against timetable publications (`timetable_publication`, activity and slot), received from the timetabling system or the in-repo simulator. Group sets count as alternatives, and the policy is advisory or blocking (D-24, D-25).
+- **Joint-honours balance.** Each module has subject areas with proportions (`module_subject`), and the rule's `components` set the bounds on each subject's share of the year's credit (D-27).
+- **Repeat-module requirement.** Ratified `repeat-module` and `repeat-stage` plans become required items, and a replacement is allowed only under the rule's limits (D-28).
+- **Ranked allocation.** Items that share a `choice_slot` are ranked alternatives. In a ranked window, an allocation run by random serial dictatorship fills places; another person approves the run (D-30).
+- **Selection windows.** `module_selection_window` is scoped by period, programme and level, with a resubmission period, and staff can submit late with a reason (D-29).
+
+Still not enforced:
+- **Approximate clash detection.** Clashes are checked pair by pair, so a clash that appears only across three or more group choices can be missed.
+- **No year-wide view.** Credit-load and joint-honours checks assume a proposal covers the whole year, or that the year's other periods are already registered.
+- **No priority for diet modules.** Allocation does not favour students whose diet includes the module.
 
 ## Purpose
 
