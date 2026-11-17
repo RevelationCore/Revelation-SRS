@@ -19,6 +19,7 @@ Until there are production tenants, the core set stays small by re-squashing. `n
 | 2026-11-16 | `0008`–`0009` (rule exceptions applied, UCAS bridge) became `0008_rule_exceptions_and_ucas_bridge` |
 | 2026-11-16 | `0008`–`0009` (that file and the person foreign-key indexes) became `0008_rules_admissions_and_person_indexes` |
 | 2026-11-17 | `0008`–`0009` (that file and the Phase 2 registration migration) became `0008_rules_admissions_and_phase2` |
+| 2026-11-17 | `0008`–`0009` (that file and the Phase 3 integrations migration) became `0008_admissions_registration_and_integrations` |
 
 To squash:
 
