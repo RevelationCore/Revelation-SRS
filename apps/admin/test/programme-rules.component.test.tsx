@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
@@ -33,7 +33,8 @@ describe('programme rules (BP-03-002)', () => {
     expect(await screen.findByText(/Compulsory · level 4 · 2–any modules/)).toBeVisible();
     await expectNoA11yViolations(container);
     // Modules already in the group are not offered again.
-    expect(screen.queryByRole('option', { name: 'CS101 — Programming' })).toBeNull();
+    // A module already in the group is not offered again for it.
+    expect(within(screen.getByLabelText('Add a module to Core modules')).queryByRole('option', { name: 'CS101 — Programming' })).toBeNull();
     await userEvent.selectOptions(screen.getByLabelText('Add a module to Core modules'), 'm-2');
     await userEvent.click(screen.getByRole('button', { name: 'Add module' }));
     await screen.findByText(/Compulsory · level 4/);

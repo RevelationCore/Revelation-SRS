@@ -25,21 +25,21 @@ type T = `${string}-${string}-${string}-${string}-${string}`;
 /** A ratified board outcome: the student failed `offeringId` last year and must repeat it. */
 async function boardRequiresRepeat(enrolmentId: string, failedOfferingId: string, planTypeCode: 'repeat-module' | 'repeat-stage', academicPeriodId: string): Promise<string> {
   const now = new Date('2026-07-01T00:00:00Z');
-  const registrationId = randomUUID() as T;
-  const decisionId = randomUUID() as T;
-  const planId = randomUUID() as T;
+  const registrationId = randomUUID();
+  const decisionId = randomUUID();
+  const planId = randomUUID();
   const t = ctx.tenantId as T;
   await withTenantContext(ctx.db, ctx.tenantId, async (tx) => {
     await tx.insert(moduleRegistrations).values({
-      versionId: randomUUID() as T, id: registrationId, tenantId: t, enrolmentId: enrolmentId as T, moduleOfferingId: failedOfferingId as T,
+      versionId: randomUUID(), id: registrationId, tenantId: t, enrolmentId: enrolmentId as T, moduleOfferingId: failedOfferingId as T,
       statusCode: 'completed', registrationDate: '2025-10-01', validFrom: new Date('2025-10-01T00:00:00Z'), validTo: null, recordedAt: now, recordedUntil: null,
     });
     await tx.insert(moduleResults).values({
-      versionId: randomUUID() as T, id: randomUUID() as T, tenantId: t, moduleRegistrationId: registrationId, aggregateMark: '22.00', resultCode: 'fail',
+      versionId: randomUUID(), id: randomUUID(), tenantId: t, moduleRegistrationId: registrationId, aggregateMark: '22.00', resultCode: 'fail',
       locked: true, validFrom: now, validTo: null, recordedAt: now, recordedUntil: null,
     });
     await tx.insert(progressionDecisions).values({
-      versionId: randomUUID() as T, id: decisionId, tenantId: t, enrolmentId: enrolmentId as T, academicYear: '2025-26', yearOfStudy: '1',
+      versionId: randomUUID(), id: decisionId, tenantId: t, enrolmentId: enrolmentId as T, academicYear: '2025-26', yearOfStudy: '1',
       decisionCode: 'repeat-year', locked: true, actorId: 'board', validFrom: now, validTo: null, recordedAt: now, recordedUntil: null,
     });
     await tx.insert(reassessmentPlans).values({
@@ -81,7 +81,7 @@ describe('Repeat-module requirement', () => {
     await f.inject('DELETE', `/api/v1/module-selection-proposals/${proposalId}/items/${repeatItem!.proposalItemId}`);
     const preview = (await f.inject('GET', `/api/v1/module-selection-proposals/${proposalId}/validation`)).json<{ valid: boolean; messages: Array<{ ruleTypeCode: string; message: string }> }>();
     expect(preview.valid).toBe(false);
-    expect(preview.messages).toContainEqual(expect.objectContaining({ ruleTypeCode: 'repeat-module-requirement', message: expect.stringContaining(s.failed.code) }));
+    expect(preview.messages).toContainEqual(expect.objectContaining({ ruleTypeCode: 'repeat-module-requirement', message: expect.stringContaining(s.failed.code) as string }));
 
     await f.item(proposalId, s.failed.moduleId, s.failedNow);
     expect((await f.submit(proposalId)).json<{ statusCode: string }>().statusCode).toBe('confirmed');
@@ -99,7 +99,7 @@ describe('Repeat-module requirement', () => {
     await f.clearItems(proposalId);
     const smallItem = await f.item(proposalId, s.small.moduleId, s.smallNow, { replacesReassessmentPlanId: planId });
     let preview = (await f.inject('GET', `/api/v1/module-selection-proposals/${proposalId}/validation`)).json<{ messages: Array<{ proposalItemId: string | null; message: string }> }>();
-    expect(preview.messages).toContainEqual(expect.objectContaining({ proposalItemId: smallItem, message: expect.stringContaining('fewer credits') }));
+    expect(preview.messages).toContainEqual(expect.objectContaining({ proposalItemId: smallItem, message: expect.stringContaining('fewer credits') as string }));
 
     await f.inject('DELETE', `/api/v1/module-selection-proposals/${proposalId}/items/${smallItem}`);
     await f.item(proposalId, s.alt.moduleId, s.altNow, { replacesReassessmentPlanId: planId });

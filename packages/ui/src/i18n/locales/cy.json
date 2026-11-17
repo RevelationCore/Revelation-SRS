@@ -149,14 +149,29 @@
         "returned":   "Wedi'i ddychwelyd — angen newidiadau",
         "waitlisted": "Ar restr aros",
         "rejected":   "Wedi'i wrthod",
-        "confirmed":  "Wedi cadarnhau"
+        "confirmed":  "Wedi cadarnhau",
+        "awaiting-allocation": "Yn aros am ddyraniad"
       },
       "noItems":           "Dim modiwlau wedi'u dewis eto.",
       "sourceCompulsory":  "Gorfodol",
       "sourceChoice":      "Eich dewis",
       "addModule":         "Ychwanegu modiwl",
       "chooseModule":      "Dewiswch fodiwl…",
-      "submitButton":      "Cyflwyno'r dewis"
+      "submitButton":      "Cyflwyno'r dewis",
+      "sourceRepeat": "Rhaid ailadrodd yn ôl y bwrdd arholi",
+      "sourceStaff": "Ychwanegwyd gan staff",
+      "choiceLabel": "Dewis {{slot}}, blaenoriaeth {{rank}}",
+      "fixedLabel": "Wedi'i ddewis",
+      "rankedHint": "Mae gan rai modiwlau fwy o ymgeiswyr na lleoedd, felly caiff lleoedd eu dyrannu ar ôl i'r cyfnod dewis gau. Rhowch ddewisiadau amgen yn nhrefn blaenoriaeth: byddwch yn cael yr uchaf sydd â lle.",
+      "addAs": "Ychwanegu fel",
+      "addFixed": "Modiwl rwy'n ei astudio",
+      "addNewChoice": "Dewis newydd yn ôl blaenoriaeth",
+      "addAlternative": "Dewis amgen ar gyfer dewis {{slot}}",
+      "checkButton": "Gwirio fy newisiadau",
+      "checkValid": "Dim problemau gyda'r dewisiadau hyn.",
+      "checkHeading": "Canlyniadau'r gwiriadau",
+      "allocationOutcome": "Dyraniad: roeddech yn rhif {{position}} yn y drefn ar hap a gyhoeddwyd.",
+      "heldUntil": "Lle wedi'i gadw tan {{date}}"
     },
     "results": {
       "subheading":    "Canlyniadau cyhoeddedig yn unig. Dangosir canlyniadau unwaith y cânt eu cadarnhau gan eich bwrdd arholi.",

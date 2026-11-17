@@ -3360,6 +3360,35 @@
                 }
               }
             }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -6153,6 +6182,10 @@
                       "expectedReturnDate",
                       "destinationProgrammeId",
                       "destinationModeOfStudyCode",
+                      "destinationStudyIntensityPercent",
+                      "transferKinds",
+                      "warnings",
+                      "creditMappings",
                       "relatedCaseId",
                       "institutionalOutcomeRef",
                       "statusCode",
@@ -6229,6 +6262,65 @@
                             "type": "null"
                           }
                         ]
+                      },
+                      "destinationStudyIntensityPercent": {
+                        "anyOf": [
+                          {
+                            "type": "integer"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "transferKinds": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "warnings": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "creditMappings": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "required": [
+                            "recognisedCreditId",
+                            "moduleId",
+                            "creditValue",
+                            "statusCode",
+                            "sourceDescription"
+                          ],
+                          "properties": {
+                            "recognisedCreditId": {
+                              "type": "string"
+                            },
+                            "moduleId": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "creditValue": {
+                              "type": "integer"
+                            },
+                            "statusCode": {
+                              "type": "string"
+                            },
+                            "sourceDescription": {
+                              "type": "string"
+                            }
+                          }
+                        }
                       },
                       "relatedCaseId": {
                         "anyOf": [
@@ -6618,6 +6710,10 @@
                       "expectedReturnDate",
                       "destinationProgrammeId",
                       "destinationModeOfStudyCode",
+                      "destinationStudyIntensityPercent",
+                      "transferKinds",
+                      "warnings",
+                      "creditMappings",
                       "relatedCaseId",
                       "institutionalOutcomeRef",
                       "statusCode",
@@ -6694,6 +6790,65 @@
                             "type": "null"
                           }
                         ]
+                      },
+                      "destinationStudyIntensityPercent": {
+                        "anyOf": [
+                          {
+                            "type": "integer"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "transferKinds": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "warnings": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "creditMappings": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "required": [
+                            "recognisedCreditId",
+                            "moduleId",
+                            "creditValue",
+                            "statusCode",
+                            "sourceDescription"
+                          ],
+                          "properties": {
+                            "recognisedCreditId": {
+                              "type": "string"
+                            },
+                            "moduleId": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "creditValue": {
+                              "type": "integer"
+                            },
+                            "statusCode": {
+                              "type": "string"
+                            },
+                            "sourceDescription": {
+                              "type": "string"
+                            }
+                          }
+                        }
                       },
                       "relatedCaseId": {
                         "anyOf": [
@@ -7191,6 +7346,11 @@
                   "destinationModeOfStudyCode": {
                     "type": "string"
                   },
+                  "destinationStudyIntensityPercent": {
+                    "minimum": 1,
+                    "maximum": 100,
+                    "type": "integer"
+                  },
                   "relatedCaseId": {
                     "type": "string"
                   },
@@ -7233,6 +7393,10 @@
                     "expectedReturnDate",
                     "destinationProgrammeId",
                     "destinationModeOfStudyCode",
+                    "destinationStudyIntensityPercent",
+                    "transferKinds",
+                    "warnings",
+                    "creditMappings",
                     "relatedCaseId",
                     "institutionalOutcomeRef",
                     "statusCode",
@@ -7309,6 +7473,65 @@
                           "type": "null"
                         }
                       ]
+                    },
+                    "destinationStudyIntensityPercent": {
+                      "anyOf": [
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "transferKinds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "warnings": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "creditMappings": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "recognisedCreditId",
+                          "moduleId",
+                          "creditValue",
+                          "statusCode",
+                          "sourceDescription"
+                        ],
+                        "properties": {
+                          "recognisedCreditId": {
+                            "type": "string"
+                          },
+                          "moduleId": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "creditValue": {
+                            "type": "integer"
+                          },
+                          "statusCode": {
+                            "type": "string"
+                          },
+                          "sourceDescription": {
+                            "type": "string"
+                          }
+                        }
+                      }
                     },
                     "relatedCaseId": {
                       "anyOf": [
@@ -8061,6 +8284,10 @@
                     "expectedReturnDate",
                     "destinationProgrammeId",
                     "destinationModeOfStudyCode",
+                    "destinationStudyIntensityPercent",
+                    "transferKinds",
+                    "warnings",
+                    "creditMappings",
                     "relatedCaseId",
                     "institutionalOutcomeRef",
                     "statusCode",
@@ -8137,6 +8364,65 @@
                           "type": "null"
                         }
                       ]
+                    },
+                    "destinationStudyIntensityPercent": {
+                      "anyOf": [
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "transferKinds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "warnings": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "creditMappings": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "recognisedCreditId",
+                          "moduleId",
+                          "creditValue",
+                          "statusCode",
+                          "sourceDescription"
+                        ],
+                        "properties": {
+                          "recognisedCreditId": {
+                            "type": "string"
+                          },
+                          "moduleId": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "creditValue": {
+                            "type": "integer"
+                          },
+                          "statusCode": {
+                            "type": "string"
+                          },
+                          "sourceDescription": {
+                            "type": "string"
+                          }
+                        }
+                      }
                     },
                     "relatedCaseId": {
                       "anyOf": [
@@ -8607,6 +8893,10 @@
                     "expectedReturnDate",
                     "destinationProgrammeId",
                     "destinationModeOfStudyCode",
+                    "destinationStudyIntensityPercent",
+                    "transferKinds",
+                    "warnings",
+                    "creditMappings",
                     "relatedCaseId",
                     "institutionalOutcomeRef",
                     "statusCode",
@@ -8683,6 +8973,65 @@
                           "type": "null"
                         }
                       ]
+                    },
+                    "destinationStudyIntensityPercent": {
+                      "anyOf": [
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "transferKinds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "warnings": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "creditMappings": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "recognisedCreditId",
+                          "moduleId",
+                          "creditValue",
+                          "statusCode",
+                          "sourceDescription"
+                        ],
+                        "properties": {
+                          "recognisedCreditId": {
+                            "type": "string"
+                          },
+                          "moduleId": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "creditValue": {
+                            "type": "integer"
+                          },
+                          "statusCode": {
+                            "type": "string"
+                          },
+                          "sourceDescription": {
+                            "type": "string"
+                          }
+                        }
+                      }
                     },
                     "relatedCaseId": {
                       "anyOf": [
@@ -9184,6 +9533,10 @@
                     "expectedReturnDate",
                     "destinationProgrammeId",
                     "destinationModeOfStudyCode",
+                    "destinationStudyIntensityPercent",
+                    "transferKinds",
+                    "warnings",
+                    "creditMappings",
                     "relatedCaseId",
                     "institutionalOutcomeRef",
                     "statusCode",
@@ -9260,6 +9613,65 @@
                           "type": "null"
                         }
                       ]
+                    },
+                    "destinationStudyIntensityPercent": {
+                      "anyOf": [
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "transferKinds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "warnings": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "creditMappings": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "recognisedCreditId",
+                          "moduleId",
+                          "creditValue",
+                          "statusCode",
+                          "sourceDescription"
+                        ],
+                        "properties": {
+                          "recognisedCreditId": {
+                            "type": "string"
+                          },
+                          "moduleId": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "creditValue": {
+                            "type": "integer"
+                          },
+                          "statusCode": {
+                            "type": "string"
+                          },
+                          "sourceDescription": {
+                            "type": "string"
+                          }
+                        }
+                      }
                     },
                     "relatedCaseId": {
                       "anyOf": [
@@ -10014,6 +10426,10 @@
                     "expectedReturnDate",
                     "destinationProgrammeId",
                     "destinationModeOfStudyCode",
+                    "destinationStudyIntensityPercent",
+                    "transferKinds",
+                    "warnings",
+                    "creditMappings",
                     "relatedCaseId",
                     "institutionalOutcomeRef",
                     "statusCode",
@@ -10090,6 +10506,65 @@
                           "type": "null"
                         }
                       ]
+                    },
+                    "destinationStudyIntensityPercent": {
+                      "anyOf": [
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "transferKinds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "warnings": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "creditMappings": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "recognisedCreditId",
+                          "moduleId",
+                          "creditValue",
+                          "statusCode",
+                          "sourceDescription"
+                        ],
+                        "properties": {
+                          "recognisedCreditId": {
+                            "type": "string"
+                          },
+                          "moduleId": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "creditValue": {
+                            "type": "integer"
+                          },
+                          "statusCode": {
+                            "type": "string"
+                          },
+                          "sourceDescription": {
+                            "type": "string"
+                          }
+                        }
+                      }
                     },
                     "relatedCaseId": {
                       "anyOf": [
@@ -10563,6 +11038,10 @@
                     "expectedReturnDate",
                     "destinationProgrammeId",
                     "destinationModeOfStudyCode",
+                    "destinationStudyIntensityPercent",
+                    "transferKinds",
+                    "warnings",
+                    "creditMappings",
                     "relatedCaseId",
                     "institutionalOutcomeRef",
                     "statusCode",
@@ -10639,6 +11118,65 @@
                           "type": "null"
                         }
                       ]
+                    },
+                    "destinationStudyIntensityPercent": {
+                      "anyOf": [
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "transferKinds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "warnings": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "creditMappings": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "recognisedCreditId",
+                          "moduleId",
+                          "creditValue",
+                          "statusCode",
+                          "sourceDescription"
+                        ],
+                        "properties": {
+                          "recognisedCreditId": {
+                            "type": "string"
+                          },
+                          "moduleId": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "creditValue": {
+                            "type": "integer"
+                          },
+                          "statusCode": {
+                            "type": "string"
+                          },
+                          "sourceDescription": {
+                            "type": "string"
+                          }
+                        }
+                      }
                     },
                     "relatedCaseId": {
                       "anyOf": [
@@ -16318,6 +16856,9 @@
                     "type": "string"
                   },
                   "statusCaseId": {
+                    "type": "string"
+                  },
+                  "sourceModuleResultId": {
                     "type": "string"
                   },
                   "evidenceRef": {
@@ -45754,6 +46295,7 @@
                       "slcReference",
                       "ucasPersonalId",
                       "feeStatusCode",
+                      "studyIntensityPercent",
                       "validFrom",
                       "recordedAt"
                     ],
@@ -45887,6 +46429,16 @@
                         "anyOf": [
                           {
                             "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "studyIntensityPercent": {
+                        "anyOf": [
+                          {
+                            "type": "integer"
                           },
                           {
                             "type": "null"
@@ -46101,6 +46653,7 @@
                           "slcReference",
                           "ucasPersonalId",
                           "feeStatusCode",
+                          "studyIntensityPercent",
                           "validFrom",
                           "recordedAt"
                         ],
@@ -46234,6 +46787,16 @@
                             "anyOf": [
                               {
                                 "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "studyIntensityPercent": {
+                            "anyOf": [
+                              {
+                                "type": "integer"
                               },
                               {
                                 "type": "null"
@@ -46708,6 +47271,7 @@
                     "slcReference",
                     "ucasPersonalId",
                     "feeStatusCode",
+                    "studyIntensityPercent",
                     "validFrom",
                     "recordedAt"
                   ],
@@ -46841,6 +47405,16 @@
                       "anyOf": [
                         {
                           "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "studyIntensityPercent": {
+                      "anyOf": [
+                        {
+                          "type": "integer"
                         },
                         {
                           "type": "null"
@@ -51167,7 +51741,8 @@
                       "periodTypeCode",
                       "startDate",
                       "endDate",
-                      "deliveryModeCode"
+                      "deliveryModeCode",
+                      "activities"
                     ],
                     "properties": {
                       "moduleRegistrationId": {
@@ -51215,6 +51790,83 @@
                             "type": "null"
                           }
                         ]
+                      },
+                      "activities": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "required": [
+                            "activityTypeCode",
+                            "groupSetCode",
+                            "groupCode",
+                            "slots"
+                          ],
+                          "properties": {
+                            "activityTypeCode": {
+                              "type": "string"
+                            },
+                            "groupSetCode": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "groupCode": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "slots": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "required": [
+                                  "dayOfWeek",
+                                  "startTime",
+                                  "endTime",
+                                  "weekCommencing",
+                                  "locationRef"
+                                ],
+                                "properties": {
+                                  "dayOfWeek": {
+                                    "type": "integer"
+                                  },
+                                  "startTime": {
+                                    "type": "string"
+                                  },
+                                  "endTime": {
+                                    "type": "string"
+                                  },
+                                  "weekCommencing": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "locationRef": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
                       }
                     }
                   }
@@ -52291,11 +52943,21 @@
         }
       }
     },
-    "/api/v1/registration-windows": {
+    "/api/v1/module-selection-windows": {
       "get": {
-        "operationId": "getRegistrationWindows",
+        "operationId": "getModuleSelectionWindows",
         "tags": [
           "calendar"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "academicPeriodId",
+            "required": false
+          }
         ],
         "x-publication-class": "public",
         "responses": {
@@ -52308,15 +52970,20 @@
                   "items": {
                     "type": "object",
                     "required": [
-                      "registrationWindowId",
+                      "moduleSelectionWindowId",
                       "academicPeriodId",
                       "academicYear",
                       "periodCode",
+                      "programmeId",
+                      "fheqLevel",
                       "opensAt",
-                      "closesAt"
+                      "closesAt",
+                      "resubmissionClosesAt",
+                      "allocationModeCode",
+                      "allocationSeeded"
                     ],
                     "properties": {
-                      "registrationWindowId": {
+                      "moduleSelectionWindowId": {
                         "type": "string"
                       },
                       "academicPeriodId": {
@@ -52328,11 +52995,60 @@
                       "periodCode": {
                         "type": "string"
                       },
+                      "programmeId": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "fheqLevel": {
+                        "anyOf": [
+                          {
+                            "type": "integer"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
                       "opensAt": {
                         "type": "string"
                       },
                       "closesAt": {
                         "type": "string"
+                      },
+                      "resubmissionClosesAt": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "allocationModeCode": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "enum": [
+                              "first-come"
+                            ]
+                          },
+                          {
+                            "type": "string",
+                            "enum": [
+                              "ranked"
+                            ]
+                          }
+                        ]
+                      },
+                      "allocationSeeded": {
+                        "type": "boolean"
                       }
                     }
                   }
@@ -52343,7 +53059,7 @@
         }
       },
       "post": {
-        "operationId": "createRegistrationWindows",
+        "operationId": "createModuleSelectionWindows",
         "tags": [
           "calendar"
         ],
@@ -52362,6 +53078,14 @@
                   "academicPeriodId": {
                     "type": "string"
                   },
+                  "programmeId": {
+                    "type": "string"
+                  },
+                  "fheqLevel": {
+                    "minimum": 3,
+                    "maximum": 8,
+                    "type": "integer"
+                  },
                   "opensAt": {
                     "format": "date-time",
                     "type": "string"
@@ -52369,6 +53093,26 @@
                   "closesAt": {
                     "format": "date-time",
                     "type": "string"
+                  },
+                  "resubmissionClosesAt": {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  "allocationModeCode": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "first-come"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "ranked"
+                        ]
+                      }
+                    ]
                   }
                 }
               }
@@ -52384,10 +53128,39 @@
                 "schema": {
                   "type": "object",
                   "required": [
-                    "registrationWindowId"
+                    "moduleSelectionWindowId"
                   ],
                   "properties": {
-                    "registrationWindowId": {
+                    "moduleSelectionWindowId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
                       "type": "string"
                     }
                   }
@@ -52427,9 +53200,9 @@
         }
       }
     },
-    "/api/v1/registration-windows/{registrationWindowId}": {
+    "/api/v1/module-selection-windows/{moduleSelectionWindowId}": {
       "patch": {
-        "operationId": "updateRegistrationWindowsByRegistrationWindowId",
+        "operationId": "updateModuleSelectionWindowsByModuleSelectionWindowId",
         "tags": [
           "calendar"
         ],
@@ -52451,6 +53224,33 @@
                   "closesAt": {
                     "format": "date-time",
                     "type": "string"
+                  },
+                  "resubmissionClosesAt": {
+                    "anyOf": [
+                      {
+                        "format": "date-time",
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "allocationModeCode": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "first-come"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "ranked"
+                        ]
+                      }
+                    ]
                   }
                 }
               }
@@ -52463,7 +53263,7 @@
               "type": "string"
             },
             "in": "path",
-            "name": "registrationWindowId",
+            "name": "moduleSelectionWindowId",
             "required": true
           }
         ],
@@ -52471,6 +53271,341 @@
         "responses": {
           "204": {
             "description": "Default Response"
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/module-selection-windows/{moduleSelectionWindowId}/allocation-runs": {
+      "post": {
+        "operationId": "createModuleSelectionWindowsByModuleSelectionWindowIdAllocationRuns",
+        "tags": [
+          "calendar"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "kindCode": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "main"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "top-up"
+                        ]
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "moduleSelectionWindowId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "allocationRunId",
+                    "windowId",
+                    "kindCode",
+                    "statusCode",
+                    "algorithmVersion",
+                    "priorityOrder",
+                    "inputsHash",
+                    "summary",
+                    "createdBy",
+                    "createdAt",
+                    "submittedBy",
+                    "approvedBy",
+                    "appliedAt"
+                  ],
+                  "properties": {
+                    "allocationRunId": {
+                      "type": "string"
+                    },
+                    "windowId": {
+                      "type": "string"
+                    },
+                    "kindCode": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "type": "string"
+                    },
+                    "algorithmVersion": {
+                      "type": "string"
+                    },
+                    "priorityOrder": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "inputsHash": {
+                      "type": "string"
+                    },
+                    "summary": {
+                      "type": "object",
+                      "required": [
+                        "proposals",
+                        "fullyAllocated",
+                        "partlyAllocated",
+                        "compulsoryOverflow"
+                      ],
+                      "properties": {
+                        "proposals": {
+                          "type": "integer"
+                        },
+                        "fullyAllocated": {
+                          "type": "integer"
+                        },
+                        "partlyAllocated": {
+                          "type": "integer"
+                        },
+                        "compulsoryOverflow": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "moduleCode",
+                              "over"
+                            ],
+                            "properties": {
+                              "moduleCode": {
+                                "type": "string"
+                              },
+                              "over": {
+                                "type": "integer"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "createdBy": {
+                      "type": "string"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "submittedBy": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "approvedBy": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "appliedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "proposalId",
+                          "enrolmentId",
+                          "orderPosition",
+                          "tier",
+                          "choiceSlot",
+                          "outcomeCode",
+                          "allocatedItemId",
+                          "moduleCode",
+                          "reason"
+                        ],
+                        "properties": {
+                          "proposalId": {
+                            "type": "string"
+                          },
+                          "enrolmentId": {
+                            "type": "string"
+                          },
+                          "orderPosition": {
+                            "type": "integer"
+                          },
+                          "tier": {
+                            "type": "integer"
+                          },
+                          "choiceSlot": {
+                            "anyOf": [
+                              {
+                                "type": "integer"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "outcomeCode": {
+                            "type": "string"
+                          },
+                          "allocatedItemId": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "moduleCode": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "reason": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
           },
           "404": {
             "description": "Default Response",
@@ -52531,6 +53666,1794 @@
             }
           }
         }
+      },
+      "get": {
+        "operationId": "getModuleSelectionWindowsByModuleSelectionWindowIdAllocationRuns",
+        "tags": [
+          "calendar"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "moduleSelectionWindowId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "allocationRunId",
+                      "windowId",
+                      "kindCode",
+                      "statusCode",
+                      "algorithmVersion",
+                      "priorityOrder",
+                      "inputsHash",
+                      "summary",
+                      "createdBy",
+                      "createdAt",
+                      "submittedBy",
+                      "approvedBy",
+                      "appliedAt"
+                    ],
+                    "properties": {
+                      "allocationRunId": {
+                        "type": "string"
+                      },
+                      "windowId": {
+                        "type": "string"
+                      },
+                      "kindCode": {
+                        "type": "string"
+                      },
+                      "statusCode": {
+                        "type": "string"
+                      },
+                      "algorithmVersion": {
+                        "type": "string"
+                      },
+                      "priorityOrder": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "inputsHash": {
+                        "type": "string"
+                      },
+                      "summary": {
+                        "type": "object",
+                        "required": [
+                          "proposals",
+                          "fullyAllocated",
+                          "partlyAllocated",
+                          "compulsoryOverflow"
+                        ],
+                        "properties": {
+                          "proposals": {
+                            "type": "integer"
+                          },
+                          "fullyAllocated": {
+                            "type": "integer"
+                          },
+                          "partlyAllocated": {
+                            "type": "integer"
+                          },
+                          "compulsoryOverflow": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "required": [
+                                "moduleCode",
+                                "over"
+                              ],
+                              "properties": {
+                                "moduleCode": {
+                                  "type": "string"
+                                },
+                                "over": {
+                                  "type": "integer"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "createdBy": {
+                        "type": "string"
+                      },
+                      "createdAt": {
+                        "type": "string"
+                      },
+                      "submittedBy": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "approvedBy": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "appliedAt": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "results": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "required": [
+                            "proposalId",
+                            "enrolmentId",
+                            "orderPosition",
+                            "tier",
+                            "choiceSlot",
+                            "outcomeCode",
+                            "allocatedItemId",
+                            "moduleCode",
+                            "reason"
+                          ],
+                          "properties": {
+                            "proposalId": {
+                              "type": "string"
+                            },
+                            "enrolmentId": {
+                              "type": "string"
+                            },
+                            "orderPosition": {
+                              "type": "integer"
+                            },
+                            "tier": {
+                              "type": "integer"
+                            },
+                            "choiceSlot": {
+                              "anyOf": [
+                                {
+                                  "type": "integer"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "outcomeCode": {
+                              "type": "string"
+                            },
+                            "allocatedItemId": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "moduleCode": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "reason": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/allocation-runs/{allocationRunId}": {
+      "get": {
+        "operationId": "getAllocationRunsByAllocationRunId",
+        "tags": [
+          "module-selection"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "allocationRunId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "allocationRunId",
+                    "windowId",
+                    "kindCode",
+                    "statusCode",
+                    "algorithmVersion",
+                    "priorityOrder",
+                    "inputsHash",
+                    "summary",
+                    "createdBy",
+                    "createdAt",
+                    "submittedBy",
+                    "approvedBy",
+                    "appliedAt"
+                  ],
+                  "properties": {
+                    "allocationRunId": {
+                      "type": "string"
+                    },
+                    "windowId": {
+                      "type": "string"
+                    },
+                    "kindCode": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "type": "string"
+                    },
+                    "algorithmVersion": {
+                      "type": "string"
+                    },
+                    "priorityOrder": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "inputsHash": {
+                      "type": "string"
+                    },
+                    "summary": {
+                      "type": "object",
+                      "required": [
+                        "proposals",
+                        "fullyAllocated",
+                        "partlyAllocated",
+                        "compulsoryOverflow"
+                      ],
+                      "properties": {
+                        "proposals": {
+                          "type": "integer"
+                        },
+                        "fullyAllocated": {
+                          "type": "integer"
+                        },
+                        "partlyAllocated": {
+                          "type": "integer"
+                        },
+                        "compulsoryOverflow": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "moduleCode",
+                              "over"
+                            ],
+                            "properties": {
+                              "moduleCode": {
+                                "type": "string"
+                              },
+                              "over": {
+                                "type": "integer"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "createdBy": {
+                      "type": "string"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "submittedBy": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "approvedBy": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "appliedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "proposalId",
+                          "enrolmentId",
+                          "orderPosition",
+                          "tier",
+                          "choiceSlot",
+                          "outcomeCode",
+                          "allocatedItemId",
+                          "moduleCode",
+                          "reason"
+                        ],
+                        "properties": {
+                          "proposalId": {
+                            "type": "string"
+                          },
+                          "enrolmentId": {
+                            "type": "string"
+                          },
+                          "orderPosition": {
+                            "type": "integer"
+                          },
+                          "tier": {
+                            "type": "integer"
+                          },
+                          "choiceSlot": {
+                            "anyOf": [
+                              {
+                                "type": "integer"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "outcomeCode": {
+                            "type": "string"
+                          },
+                          "allocatedItemId": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "moduleCode": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "reason": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/allocation-runs/{allocationRunId}/submission": {
+      "post": {
+        "operationId": "createAllocationRunsByAllocationRunIdSubmission",
+        "tags": [
+          "module-selection"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "allocationRunId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "allocationRunId",
+                    "windowId",
+                    "kindCode",
+                    "statusCode",
+                    "algorithmVersion",
+                    "priorityOrder",
+                    "inputsHash",
+                    "summary",
+                    "createdBy",
+                    "createdAt",
+                    "submittedBy",
+                    "approvedBy",
+                    "appliedAt"
+                  ],
+                  "properties": {
+                    "allocationRunId": {
+                      "type": "string"
+                    },
+                    "windowId": {
+                      "type": "string"
+                    },
+                    "kindCode": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "type": "string"
+                    },
+                    "algorithmVersion": {
+                      "type": "string"
+                    },
+                    "priorityOrder": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "inputsHash": {
+                      "type": "string"
+                    },
+                    "summary": {
+                      "type": "object",
+                      "required": [
+                        "proposals",
+                        "fullyAllocated",
+                        "partlyAllocated",
+                        "compulsoryOverflow"
+                      ],
+                      "properties": {
+                        "proposals": {
+                          "type": "integer"
+                        },
+                        "fullyAllocated": {
+                          "type": "integer"
+                        },
+                        "partlyAllocated": {
+                          "type": "integer"
+                        },
+                        "compulsoryOverflow": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "moduleCode",
+                              "over"
+                            ],
+                            "properties": {
+                              "moduleCode": {
+                                "type": "string"
+                              },
+                              "over": {
+                                "type": "integer"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "createdBy": {
+                      "type": "string"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "submittedBy": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "approvedBy": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "appliedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "proposalId",
+                          "enrolmentId",
+                          "orderPosition",
+                          "tier",
+                          "choiceSlot",
+                          "outcomeCode",
+                          "allocatedItemId",
+                          "moduleCode",
+                          "reason"
+                        ],
+                        "properties": {
+                          "proposalId": {
+                            "type": "string"
+                          },
+                          "enrolmentId": {
+                            "type": "string"
+                          },
+                          "orderPosition": {
+                            "type": "integer"
+                          },
+                          "tier": {
+                            "type": "integer"
+                          },
+                          "choiceSlot": {
+                            "anyOf": [
+                              {
+                                "type": "integer"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "outcomeCode": {
+                            "type": "string"
+                          },
+                          "allocatedItemId": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "moduleCode": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "reason": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/allocation-runs/{allocationRunId}/decision": {
+      "post": {
+        "operationId": "createAllocationRunsByAllocationRunIdDecision",
+        "tags": [
+          "module-selection"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "decisionCode"
+                ],
+                "properties": {
+                  "decisionCode": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "approved"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "rejected"
+                        ]
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "allocationRunId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "allocationRunId",
+                    "windowId",
+                    "kindCode",
+                    "statusCode",
+                    "algorithmVersion",
+                    "priorityOrder",
+                    "inputsHash",
+                    "summary",
+                    "createdBy",
+                    "createdAt",
+                    "submittedBy",
+                    "approvedBy",
+                    "appliedAt"
+                  ],
+                  "properties": {
+                    "allocationRunId": {
+                      "type": "string"
+                    },
+                    "windowId": {
+                      "type": "string"
+                    },
+                    "kindCode": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "type": "string"
+                    },
+                    "algorithmVersion": {
+                      "type": "string"
+                    },
+                    "priorityOrder": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "inputsHash": {
+                      "type": "string"
+                    },
+                    "summary": {
+                      "type": "object",
+                      "required": [
+                        "proposals",
+                        "fullyAllocated",
+                        "partlyAllocated",
+                        "compulsoryOverflow"
+                      ],
+                      "properties": {
+                        "proposals": {
+                          "type": "integer"
+                        },
+                        "fullyAllocated": {
+                          "type": "integer"
+                        },
+                        "partlyAllocated": {
+                          "type": "integer"
+                        },
+                        "compulsoryOverflow": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "moduleCode",
+                              "over"
+                            ],
+                            "properties": {
+                              "moduleCode": {
+                                "type": "string"
+                              },
+                              "over": {
+                                "type": "integer"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "createdBy": {
+                      "type": "string"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "submittedBy": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "approvedBy": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "appliedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "proposalId",
+                          "enrolmentId",
+                          "orderPosition",
+                          "tier",
+                          "choiceSlot",
+                          "outcomeCode",
+                          "allocatedItemId",
+                          "moduleCode",
+                          "reason"
+                        ],
+                        "properties": {
+                          "proposalId": {
+                            "type": "string"
+                          },
+                          "enrolmentId": {
+                            "type": "string"
+                          },
+                          "orderPosition": {
+                            "type": "integer"
+                          },
+                          "tier": {
+                            "type": "integer"
+                          },
+                          "choiceSlot": {
+                            "anyOf": [
+                              {
+                                "type": "integer"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "outcomeCode": {
+                            "type": "string"
+                          },
+                          "allocatedItemId": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "moduleCode": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "reason": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/timetable-publications": {
+      "post": {
+        "operationId": "createTimetablePublications",
+        "tags": [
+          "timetabling"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "academicPeriodId",
+                  "sourceVersion",
+                  "activities"
+                ],
+                "properties": {
+                  "academicPeriodId": {
+                    "type": "string"
+                  },
+                  "sourceVersion": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "fullPeriod": {
+                    "type": "boolean"
+                  },
+                  "sourceSystemCode": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "ttb"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "srs-admin"
+                        ]
+                      }
+                    ]
+                  },
+                  "activities": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "activityRef",
+                        "activityTypeCode",
+                        "slots"
+                      ],
+                      "properties": {
+                        "moduleOfferingId": {
+                          "type": "string"
+                        },
+                        "moduleCode": {
+                          "type": "string"
+                        },
+                        "academicYear": {
+                          "type": "string"
+                        },
+                        "periodCode": {
+                          "type": "string"
+                        },
+                        "activityRef": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "activityTypeCode": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "groupSetCode": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "groupCode": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "slots": {
+                          "minItems": 1,
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "dayOfWeek",
+                              "startTime",
+                              "endTime",
+                              "weekCommencing"
+                            ],
+                            "properties": {
+                              "dayOfWeek": {
+                                "minimum": 1,
+                                "maximum": 7,
+                                "type": "integer"
+                              },
+                              "startTime": {
+                                "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+                                "type": "string"
+                              },
+                              "endTime": {
+                                "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+                                "type": "string"
+                              },
+                              "weekCommencing": {
+                                "minItems": 1,
+                                "type": "array",
+                                "items": {
+                                  "format": "date",
+                                  "type": "string"
+                                }
+                              },
+                              "locationRef": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-publication-class": "public",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "timetablePublicationId",
+                    "academicPeriodId",
+                    "sourceSystemCode",
+                    "sourceVersion",
+                    "fullPeriod",
+                    "statusCode",
+                    "rejectionReasons",
+                    "rowCount",
+                    "receivedBy",
+                    "receivedAt",
+                    "appliedAt"
+                  ],
+                  "properties": {
+                    "timetablePublicationId": {
+                      "type": "string"
+                    },
+                    "academicPeriodId": {
+                      "type": "string"
+                    },
+                    "sourceSystemCode": {
+                      "type": "string"
+                    },
+                    "sourceVersion": {
+                      "type": "string"
+                    },
+                    "fullPeriod": {
+                      "type": "boolean"
+                    },
+                    "statusCode": {
+                      "type": "string"
+                    },
+                    "rejectionReasons": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "rowCount": {
+                      "type": "integer"
+                    },
+                    "receivedBy": {
+                      "type": "string"
+                    },
+                    "receivedAt": {
+                      "type": "string"
+                    },
+                    "appliedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "getTimetablePublications",
+        "tags": [
+          "timetabling"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "academicPeriodId",
+            "required": false
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "timetablePublicationId",
+                      "academicPeriodId",
+                      "sourceSystemCode",
+                      "sourceVersion",
+                      "fullPeriod",
+                      "statusCode",
+                      "rejectionReasons",
+                      "rowCount",
+                      "receivedBy",
+                      "receivedAt",
+                      "appliedAt"
+                    ],
+                    "properties": {
+                      "timetablePublicationId": {
+                        "type": "string"
+                      },
+                      "academicPeriodId": {
+                        "type": "string"
+                      },
+                      "sourceSystemCode": {
+                        "type": "string"
+                      },
+                      "sourceVersion": {
+                        "type": "string"
+                      },
+                      "fullPeriod": {
+                        "type": "boolean"
+                      },
+                      "statusCode": {
+                        "type": "string"
+                      },
+                      "rejectionReasons": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "rowCount": {
+                        "type": "integer"
+                      },
+                      "receivedBy": {
+                        "type": "string"
+                      },
+                      "receivedAt": {
+                        "type": "string"
+                      },
+                      "appliedAt": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/academic-periods/{academicPeriodId}/timetable-status": {
+      "get": {
+        "operationId": "getAcademicPeriodsByAcademicPeriodIdTimetableStatus",
+        "tags": [
+          "calendar"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "academicPeriodId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "lastAppliedAt",
+                    "stale",
+                    "staleAfterHours"
+                  ],
+                  "properties": {
+                    "lastAppliedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "stale": {
+                      "type": "boolean"
+                    },
+                    "staleAfterHours": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/academic-periods/{academicPeriodId}/timetable-simulation": {
+      "post": {
+        "operationId": "createAcademicPeriodsByAcademicPeriodIdTimetableSimulation",
+        "tags": [
+          "calendar"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "academicPeriodId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "timetablePublicationId",
+                    "academicPeriodId",
+                    "sourceSystemCode",
+                    "sourceVersion",
+                    "fullPeriod",
+                    "statusCode",
+                    "rejectionReasons",
+                    "rowCount",
+                    "receivedBy",
+                    "receivedAt",
+                    "appliedAt"
+                  ],
+                  "properties": {
+                    "timetablePublicationId": {
+                      "type": "string"
+                    },
+                    "academicPeriodId": {
+                      "type": "string"
+                    },
+                    "sourceSystemCode": {
+                      "type": "string"
+                    },
+                    "sourceVersion": {
+                      "type": "string"
+                    },
+                    "fullPeriod": {
+                      "type": "boolean"
+                    },
+                    "statusCode": {
+                      "type": "string"
+                    },
+                    "rejectionReasons": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "rowCount": {
+                      "type": "integer"
+                    },
+                    "receivedBy": {
+                      "type": "string"
+                    },
+                    "receivedAt": {
+                      "type": "string"
+                    },
+                    "appliedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/module-offerings/{moduleOfferingId}/timetable": {
+      "get": {
+        "operationId": "getModuleOfferingsByModuleOfferingIdTimetable",
+        "tags": [
+          "calendar"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "moduleOfferingId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "moduleOfferingId",
+                    "publicationId",
+                    "activities"
+                  ],
+                  "properties": {
+                    "moduleOfferingId": {
+                      "type": "string"
+                    },
+                    "publicationId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "activities": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "activityRef",
+                          "activityTypeCode",
+                          "groupSetCode",
+                          "groupCode",
+                          "slots"
+                        ],
+                        "properties": {
+                          "activityRef": {
+                            "type": "string"
+                          },
+                          "activityTypeCode": {
+                            "type": "string"
+                          },
+                          "groupSetCode": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "groupCode": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "slots": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "required": [
+                                "dayOfWeek",
+                                "startTime",
+                                "endTime",
+                                "weekCommencing",
+                                "locationRef"
+                              ],
+                              "properties": {
+                                "dayOfWeek": {
+                                  "type": "integer"
+                                },
+                                "startTime": {
+                                  "type": "string"
+                                },
+                                "endTime": {
+                                  "type": "string"
+                                },
+                                "weekCommencing": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "locationRef": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/module-selection-proposals": {
@@ -52578,6 +55501,9 @@
                       "decisionAuthorityCode",
                       "decisionReason",
                       "workflowInstanceId",
+                      "fheqLevel",
+                      "lateSubmissionReasonCode",
+                      "lateSubmittedBy",
                       "items"
                     ],
                     "properties": {
@@ -52646,6 +55572,36 @@
                           }
                         ]
                       },
+                      "fheqLevel": {
+                        "anyOf": [
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "lateSubmissionReasonCode": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "lateSubmittedBy": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
                       "items": {
                         "type": "array",
                         "items": {
@@ -52659,6 +55615,10 @@
                             "fheqLevel",
                             "moduleOfferingId",
                             "preferenceRank",
+                            "choiceSlot",
+                            "reassessmentPlanId",
+                            "isReplacement",
+                            "heldUntil",
                             "sourceCode",
                             "validationStateCode",
                             "validationMessages"
@@ -52710,6 +55670,39 @@
                               "anyOf": [
                                 {
                                   "type": "number"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "choiceSlot": {
+                              "anyOf": [
+                                {
+                                  "type": "number"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "reassessmentPlanId": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "isReplacement": {
+                              "type": "boolean"
+                            },
+                            "heldUntil": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
                                 },
                                 {
                                   "type": "null"
@@ -52973,6 +55966,9 @@
                     "decisionAuthorityCode",
                     "decisionReason",
                     "workflowInstanceId",
+                    "fheqLevel",
+                    "lateSubmissionReasonCode",
+                    "lateSubmittedBy",
                     "items"
                   ],
                   "properties": {
@@ -53041,6 +56037,36 @@
                         }
                       ]
                     },
+                    "fheqLevel": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "lateSubmissionReasonCode": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "lateSubmittedBy": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "items": {
                       "type": "array",
                       "items": {
@@ -53054,6 +56080,10 @@
                           "fheqLevel",
                           "moduleOfferingId",
                           "preferenceRank",
+                          "choiceSlot",
+                          "reassessmentPlanId",
+                          "isReplacement",
+                          "heldUntil",
                           "sourceCode",
                           "validationStateCode",
                           "validationMessages"
@@ -53105,6 +56135,39 @@
                             "anyOf": [
                               {
                                 "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "choiceSlot": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "reassessmentPlanId": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "isReplacement": {
+                            "type": "boolean"
+                          },
+                          "heldUntil": {
+                            "anyOf": [
+                              {
+                                "type": "string"
                               },
                               {
                                 "type": "null"
@@ -53261,6 +56324,13 @@
                         ]
                       }
                     ]
+                  },
+                  "choiceSlot": {
+                    "minimum": 1,
+                    "type": "integer"
+                  },
+                  "replacesReassessmentPlanId": {
+                    "type": "string"
                   }
                 }
               }
@@ -53506,6 +56576,479 @@
         }
       }
     },
+    "/api/v1/module-selection-proposals/{proposalId}/validation": {
+      "get": {
+        "operationId": "getModuleSelectionProposalsByProposalIdValidation",
+        "tags": [
+          "module-selection"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "proposalId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "valid",
+                    "capacityConflict",
+                    "messages"
+                  ],
+                  "properties": {
+                    "valid": {
+                      "type": "boolean"
+                    },
+                    "capacityConflict": {
+                      "type": "boolean"
+                    },
+                    "messages": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "ruleTypeCode",
+                          "message",
+                          "severity",
+                          "proposalItemId"
+                        ],
+                        "properties": {
+                          "ruleTypeCode": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          },
+                          "severity": {
+                            "type": "string"
+                          },
+                          "proposalItemId": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/modules/{moduleId}/subjects": {
+      "get": {
+        "operationId": "getModulesByModuleIdSubjects",
+        "tags": [
+          "catalogue"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "moduleId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "subjectAreaCode",
+                      "proportionPercent"
+                    ],
+                    "properties": {
+                      "subjectAreaCode": {
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "proportionPercent": {
+                        "minimum": 1,
+                        "maximum": 100,
+                        "type": "integer"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "replaceModulesByModuleIdSubjects",
+        "tags": [
+          "catalogue"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "subjectAreaCode",
+                    "proportionPercent"
+                  ],
+                  "properties": {
+                    "subjectAreaCode": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "proportionPercent": {
+                      "minimum": 1,
+                      "maximum": 100,
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "moduleId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "subjectAreaCode",
+                      "proportionPercent"
+                    ],
+                    "properties": {
+                      "subjectAreaCode": {
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "proportionPercent": {
+                        "minimum": 1,
+                        "maximum": 100,
+                        "type": "integer"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/module-selection-proposals/{proposalId}/allocation": {
+      "get": {
+        "operationId": "getModuleSelectionProposalsByProposalIdAllocation",
+        "tags": [
+          "module-selection"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "proposalId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "allocationRunId",
+                        "orderPosition",
+                        "results"
+                      ],
+                      "properties": {
+                        "allocationRunId": {
+                          "type": "string"
+                        },
+                        "orderPosition": {
+                          "type": "integer"
+                        },
+                        "results": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "choiceSlot",
+                              "outcomeCode",
+                              "allocatedItemId",
+                              "reason"
+                            ],
+                            "properties": {
+                              "choiceSlot": {
+                                "anyOf": [
+                                  {
+                                    "type": "integer"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "outcomeCode": {
+                                "type": "string"
+                              },
+                              "allocatedItemId": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "reason": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/module-selection-proposals/{proposalId}/submission": {
       "post": {
         "operationId": "createModuleSelectionProposalsByProposalIdSubmission",
@@ -53541,6 +57084,9 @@
                     "decisionAuthorityCode",
                     "decisionReason",
                     "workflowInstanceId",
+                    "fheqLevel",
+                    "lateSubmissionReasonCode",
+                    "lateSubmittedBy",
                     "items"
                   ],
                   "properties": {
@@ -53609,6 +57155,36 @@
                         }
                       ]
                     },
+                    "fheqLevel": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "lateSubmissionReasonCode": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "lateSubmittedBy": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "items": {
                       "type": "array",
                       "items": {
@@ -53622,6 +57198,10 @@
                           "fheqLevel",
                           "moduleOfferingId",
                           "preferenceRank",
+                          "choiceSlot",
+                          "reassessmentPlanId",
+                          "isReplacement",
+                          "heldUntil",
                           "sourceCode",
                           "validationStateCode",
                           "validationMessages"
@@ -53673,6 +57253,39 @@
                             "anyOf": [
                               {
                                 "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "choiceSlot": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "reassessmentPlanId": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "isReplacement": {
+                            "type": "boolean"
+                          },
+                          "heldUntil": {
+                            "anyOf": [
+                              {
+                                "type": "string"
                               },
                               {
                                 "type": "null"
@@ -53894,6 +57507,9 @@
                     "decisionAuthorityCode",
                     "decisionReason",
                     "workflowInstanceId",
+                    "fheqLevel",
+                    "lateSubmissionReasonCode",
+                    "lateSubmittedBy",
                     "items"
                   ],
                   "properties": {
@@ -53962,6 +57578,36 @@
                         }
                       ]
                     },
+                    "fheqLevel": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "lateSubmissionReasonCode": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "lateSubmittedBy": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "items": {
                       "type": "array",
                       "items": {
@@ -53975,6 +57621,10 @@
                           "fheqLevel",
                           "moduleOfferingId",
                           "preferenceRank",
+                          "choiceSlot",
+                          "reassessmentPlanId",
+                          "isReplacement",
+                          "heldUntil",
                           "sourceCode",
                           "validationStateCode",
                           "validationMessages"
@@ -54026,6 +57676,39 @@
                             "anyOf": [
                               {
                                 "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "choiceSlot": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "reassessmentPlanId": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "isReplacement": {
+                            "type": "boolean"
+                          },
+                          "heldUntil": {
+                            "anyOf": [
+                              {
+                                "type": "string"
                               },
                               {
                                 "type": "null"
@@ -55400,6 +59083,9 @@
                   },
                   "isNonCondonable": {
                     "type": "boolean"
+                  },
+                  "countsTowardsSubjectAreaCode": {
+                    "type": "string"
                   }
                 }
               }
@@ -55429,6 +59115,35 @@
                   ],
                   "properties": {
                     "moduleGroupMemberId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
                       "type": "string"
                     }
                   }
@@ -68891,6 +72606,10 @@
     {
       "name": "module-selection",
       "description": "Module selection proposals, diet groups, and curriculum rule-set binding"
+    },
+    {
+      "name": "timetabling",
+      "description": "Timetable publications from the timetabling system, and clash data for selection (Phase 4 D-24)"
     },
     {
       "name": "pgr",

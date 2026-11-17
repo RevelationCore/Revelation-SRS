@@ -149,14 +149,29 @@
         "returned":   "Returned — needs changes",
         "waitlisted": "Waitlisted",
         "rejected":   "Rejected",
-        "confirmed":  "Confirmed"
+        "confirmed":  "Confirmed",
+        "awaiting-allocation": "Waiting for allocation"
       },
       "noItems":           "No modules selected yet.",
       "sourceCompulsory":  "Compulsory",
       "sourceChoice":      "Your choice",
       "addModule":         "Add a module",
       "chooseModule":      "Choose a module…",
-      "submitButton":      "Submit selection"
+      "submitButton":      "Submit selection",
+      "sourceRepeat": "Repeat required by the exam board",
+      "sourceStaff": "Added by staff",
+      "choiceLabel": "Choice {{slot}}, preference {{rank}}",
+      "fixedLabel": "Taken as chosen",
+      "rankedHint": "Some modules have more applicants than places, so places are allocated after the selection window closes. Rank alternatives for a choice in order of preference: you get the highest one that has a place.",
+      "addAs": "Add as",
+      "addFixed": "A module I am taking",
+      "addNewChoice": "A new ranked choice",
+      "addAlternative": "An alternative for choice {{slot}}",
+      "checkButton": "Check my choices",
+      "checkValid": "No problems found with these choices.",
+      "checkHeading": "What the checks found",
+      "allocationOutcome": "Allocation: you were number {{position}} in the published random order.",
+      "heldUntil": "Place held until {{date}}"
     },
     "results": {
       "subheading":    "Published results only. Results are shown once ratified by your exam board.",

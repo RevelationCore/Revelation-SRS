@@ -44,12 +44,13 @@ import type { ReviewExecutionService } from '../platform-controls/review-executi
 import { approvedExemptionsFor } from '../curriculum/academic-exception-service.js';
 import type { ModuleRegistrationService } from '../registration/service.js';
 import type { RulesEngine } from '../rules-engine/engine.js';
-import type { SelectionWindowService } from './window-service.js';
-import { type JointHonoursRule, evaluateJointHonours } from './joint-honours.js';
 import type { TimetableService } from '../timetabling/timetable-service.js';
 import { DEFAULT_CLASH_POLICY, clashBetween, clashPolicyFrom, describeClash } from '../timetabling/clash-detector.js';
-import { DEFAULT_REPEAT_RULE, type RepeatRule, failedModuleIds, groupMembership, repeatRequirements, repeatRuleFrom } from './repeat-requirements.js';
 import { clockNow } from '../clock.js';
+
+import type { SelectionWindowService } from './window-service.js';
+import { type JointHonoursRule, evaluateJointHonours } from './joint-honours.js';
+import { DEFAULT_REPEAT_RULE, type RepeatRule, failedModuleIds, groupMembership, repeatRequirements, repeatRuleFrom } from './repeat-requirements.js';
 
 type Uuid = `${string}-${string}-${string}-${string}-${string}`;
 
@@ -1326,7 +1327,7 @@ export class ModuleSelectionService {
       if (!item) continue;
       linked.add(req.planId);
       await withTenantContext(this.db, tenantId, (tx) => tx.update(reassessmentPlans)
-        .set({ repeatModuleRegistrationId: deterministicUuid(`module-selection-registration:${proposalId}:${item.proposalItemId}`) as Uuid })
+        .set({ repeatModuleRegistrationId: deterministicUuid(`module-selection-registration:${proposalId}:${item.proposalItemId}`) })
         .where(and(eq(reassessmentPlans.tenantId, tenantId as Uuid), eq(reassessmentPlans.id, req.planId as Uuid), isNull(reassessmentPlans.repeatModuleRegistrationId))));
     }
 

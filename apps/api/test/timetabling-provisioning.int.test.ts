@@ -58,7 +58,7 @@ describe('Timetable demand', () => {
     expect(snapshot!.payload).toMatchObject({ kind: 'snapshot', count: 2 });
     expect((await f.inject('POST', `/api/v1/delivery-items/${snapshot!.deliveryItemId}/acknowledge`, { targetCount: 1 }, integration)).statusCode).toBe(204);
     const [after] = await items(offeringId);
-    expect(after).toMatchObject({ statusCode: 'failed', failureReason: expect.stringContaining('count-mismatch') });
+    expect(after).toMatchObject({ statusCode: 'failed', failureReason: expect.stringContaining('count-mismatch') as string });
     expect((await f.inject('POST', `/api/v1/delivery-items/${snapshot!.deliveryItemId}/acknowledge`, { targetCount: 2 }, integration)).statusCode).toBe(204);
     expect((await items(offeringId))[0]!.statusCode).toBe('delivered');
   });

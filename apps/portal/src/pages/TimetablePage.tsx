@@ -70,6 +70,7 @@ export function TimetablePage() {
                     <TableHeaderCell>Start</TableHeaderCell>
                     <TableHeaderCell>End</TableHeaderCell>
                     <TableHeaderCell>Delivery</TableHeaderCell>
+                    <TableHeaderCell>When</TableHeaderCell>
                   </tr>
                 </TableHead>
                 <TableBody>
@@ -80,6 +81,15 @@ export function TimetablePage() {
                       <TableCell>{formatDate(e.startDate)}</TableCell>
                       <TableCell>{formatDate(e.endDate)}</TableCell>
                       <TableCell>{e.deliveryModeCode}</TableCell>
+                      <TableCell className="text-xs">
+                        {(e.activities ?? []).length === 0 ? (
+                          <span className="text-neutral-500">Not yet published</span>
+                        ) : (
+                          <ul className="space-y-0.5">
+                            {groupActivities(e.activities ?? []).map((line) => <li key={line}>{line}</li>)}
+                          </ul>
+                        )}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -90,4 +100,23 @@ export function TimetablePage() {
       </div>
     </div>
   );
+}
+
+const DAYS = ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+/** One line per activity; a group set (the student attends one group) reads "Seminar, one of: …". */
+function groupActivities(activities: NonNullable<import('../api/me.js').TimetableEntry['activities']>): string[] {
+  const slotText = (s: { dayOfWeek: number; startTime: string; endTime: string; weekCommencing: string[]; locationRef: string | null }) =>
+    `${DAYS[s.dayOfWeek]} ${s.startTime}–${s.endTime}${s.locationRef ? `, ${s.locationRef}` : ''} (${s.weekCommencing.length} week${s.weekCommencing.length === 1 ? '' : 's'})`;
+  const label = (type: string) => type.charAt(0).toUpperCase() + type.slice(1).replace(/-/g, ' ');
+  const lines: string[] = [];
+  const sets = new Map<string, typeof activities>();
+  for (const a of activities) {
+    if (a.groupSetCode) sets.set(a.groupSetCode, [...(sets.get(a.groupSetCode) ?? []), a]);
+    else lines.push(`${label(a.activityTypeCode)}: ${a.slots.map(slotText).join('; ')}`);
+  }
+  for (const group of sets.values()) {
+    lines.push(`${label(group[0]!.activityTypeCode)}, one of: ${group.map((g) => `${g.groupCode ?? ''} ${g.slots.map(slotText).join('; ')}`.trim()).join(' / ')}`);
+  }
+  return lines;
 }

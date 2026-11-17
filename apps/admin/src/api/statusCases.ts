@@ -30,6 +30,12 @@ export interface StatusCase {
   expectedReturnDate: string | null;
   destinationProgrammeId: string | null;
   destinationModeOfStudyCode: string | null;
+  destinationStudyIntensityPercent: number | null;
+  transferKinds: string[];
+  /** Advice for the decider, such as the SLC 25% intensity floor (Phase 4 D-31). */
+  warnings: string[];
+  /** Credit this transfer maps to the destination (D-32). */
+  creditMappings: Array<{ recognisedCreditId: string; moduleId: string | null; creditValue: number; statusCode: string; sourceDescription: string }>;
   relatedCaseId: string | null;
   institutionalOutcomeRef: string | null;
   statusCode: 'requested' | 'approved' | 'rejected' | 'withdrawn';
@@ -54,6 +60,7 @@ export interface OpenStatusCaseInput {
   expectedReturnDate?: string;
   destinationProgrammeId?: string;
   destinationModeOfStudyCode?: string;
+  destinationStudyIntensityPercent?: number;
   relatedCaseId?: string;
   institutionalOutcomeRef?: string;
 }

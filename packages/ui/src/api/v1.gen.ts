@@ -5193,23 +5193,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/registration-windows": {
+    "/api/v1/module-selection-windows": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["getRegistrationWindows"];
+        get: operations["getModuleSelectionWindows"];
         put?: never;
-        post: operations["createRegistrationWindows"];
+        post: operations["createModuleSelectionWindows"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/registration-windows/{registrationWindowId}": {
+    "/api/v1/module-selection-windows/{moduleSelectionWindowId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -5222,7 +5222,135 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch: operations["updateRegistrationWindowsByRegistrationWindowId"];
+        patch: operations["updateModuleSelectionWindowsByModuleSelectionWindowId"];
+        trace?: never;
+    };
+    "/api/v1/module-selection-windows/{moduleSelectionWindowId}/allocation-runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getModuleSelectionWindowsByModuleSelectionWindowIdAllocationRuns"];
+        put?: never;
+        post: operations["createModuleSelectionWindowsByModuleSelectionWindowIdAllocationRuns"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/allocation-runs/{allocationRunId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getAllocationRunsByAllocationRunId"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/allocation-runs/{allocationRunId}/submission": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createAllocationRunsByAllocationRunIdSubmission"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/allocation-runs/{allocationRunId}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createAllocationRunsByAllocationRunIdDecision"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/timetable-publications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getTimetablePublications"];
+        put?: never;
+        post: operations["createTimetablePublications"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academic-periods/{academicPeriodId}/timetable-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getAcademicPeriodsByAcademicPeriodIdTimetableStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academic-periods/{academicPeriodId}/timetable-simulation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createAcademicPeriodsByAcademicPeriodIdTimetableSimulation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/module-offerings/{moduleOfferingId}/timetable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getModuleOfferingsByModuleOfferingIdTimetable"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/module-selection-proposals": {
@@ -5284,6 +5412,54 @@ export interface paths {
         put?: never;
         post?: never;
         delete: operations["deleteModuleSelectionProposalsByProposalIdItemsByProposalItemId"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/module-selection-proposals/{proposalId}/validation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getModuleSelectionProposalsByProposalIdValidation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/modules/{moduleId}/subjects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getModulesByModuleIdSubjects"];
+        put: operations["replaceModulesByModuleIdSubjects"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/module-selection-proposals/{proposalId}/allocation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getModuleSelectionProposalsByProposalIdAllocation"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -7900,6 +8076,20 @@ export interface operations {
                     };
                 };
             };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
         };
     };
     createDeliveryItemsByDeliveryItemIdFailure: {
@@ -8907,6 +9097,16 @@ export interface operations {
                         expectedReturnDate: string | null;
                         destinationProgrammeId: string | null;
                         destinationModeOfStudyCode: string | null;
+                        destinationStudyIntensityPercent: number | null;
+                        transferKinds: string[];
+                        warnings: string[];
+                        creditMappings: {
+                            recognisedCreditId: string;
+                            moduleId: string | null;
+                            creditValue: number;
+                            statusCode: string;
+                            sourceDescription: string;
+                        }[];
                         relatedCaseId: string | null;
                         institutionalOutcomeRef: string | null;
                         statusCode: string;
@@ -8991,6 +9191,16 @@ export interface operations {
                         expectedReturnDate: string | null;
                         destinationProgrammeId: string | null;
                         destinationModeOfStudyCode: string | null;
+                        destinationStudyIntensityPercent: number | null;
+                        transferKinds: string[];
+                        warnings: string[];
+                        creditMappings: {
+                            recognisedCreditId: string;
+                            moduleId: string | null;
+                            creditValue: number;
+                            statusCode: string;
+                            sourceDescription: string;
+                        }[];
                         relatedCaseId: string | null;
                         institutionalOutcomeRef: string | null;
                         statusCode: string;
@@ -9093,6 +9303,7 @@ export interface operations {
                     expectedReturnDate?: string;
                     destinationProgrammeId?: string;
                     destinationModeOfStudyCode?: string;
+                    destinationStudyIntensityPercent?: number;
                     relatedCaseId?: string;
                     institutionalOutcomeRef?: string;
                 };
@@ -9117,6 +9328,16 @@ export interface operations {
                         expectedReturnDate: string | null;
                         destinationProgrammeId: string | null;
                         destinationModeOfStudyCode: string | null;
+                        destinationStudyIntensityPercent: number | null;
+                        transferKinds: string[];
+                        warnings: string[];
+                        creditMappings: {
+                            recognisedCreditId: string;
+                            moduleId: string | null;
+                            creditValue: number;
+                            statusCode: string;
+                            sourceDescription: string;
+                        }[];
                         relatedCaseId: string | null;
                         institutionalOutcomeRef: string | null;
                         statusCode: string;
@@ -9330,6 +9551,16 @@ export interface operations {
                         expectedReturnDate: string | null;
                         destinationProgrammeId: string | null;
                         destinationModeOfStudyCode: string | null;
+                        destinationStudyIntensityPercent: number | null;
+                        transferKinds: string[];
+                        warnings: string[];
+                        creditMappings: {
+                            recognisedCreditId: string;
+                            moduleId: string | null;
+                            creditValue: number;
+                            statusCode: string;
+                            sourceDescription: string;
+                        }[];
                         relatedCaseId: string | null;
                         institutionalOutcomeRef: string | null;
                         statusCode: string;
@@ -9450,6 +9681,16 @@ export interface operations {
                         expectedReturnDate: string | null;
                         destinationProgrammeId: string | null;
                         destinationModeOfStudyCode: string | null;
+                        destinationStudyIntensityPercent: number | null;
+                        transferKinds: string[];
+                        warnings: string[];
+                        creditMappings: {
+                            recognisedCreditId: string;
+                            moduleId: string | null;
+                            creditValue: number;
+                            statusCode: string;
+                            sourceDescription: string;
+                        }[];
                         relatedCaseId: string | null;
                         institutionalOutcomeRef: string | null;
                         statusCode: string;
@@ -9584,6 +9825,16 @@ export interface operations {
                         expectedReturnDate: string | null;
                         destinationProgrammeId: string | null;
                         destinationModeOfStudyCode: string | null;
+                        destinationStudyIntensityPercent: number | null;
+                        transferKinds: string[];
+                        warnings: string[];
+                        creditMappings: {
+                            recognisedCreditId: string;
+                            moduleId: string | null;
+                            creditValue: number;
+                            statusCode: string;
+                            sourceDescription: string;
+                        }[];
                         relatedCaseId: string | null;
                         institutionalOutcomeRef: string | null;
                         statusCode: string;
@@ -9802,6 +10053,16 @@ export interface operations {
                         expectedReturnDate: string | null;
                         destinationProgrammeId: string | null;
                         destinationModeOfStudyCode: string | null;
+                        destinationStudyIntensityPercent: number | null;
+                        transferKinds: string[];
+                        warnings: string[];
+                        creditMappings: {
+                            recognisedCreditId: string;
+                            moduleId: string | null;
+                            creditValue: number;
+                            statusCode: string;
+                            sourceDescription: string;
+                        }[];
                         relatedCaseId: string | null;
                         institutionalOutcomeRef: string | null;
                         statusCode: string;
@@ -9928,6 +10189,16 @@ export interface operations {
                         expectedReturnDate: string | null;
                         destinationProgrammeId: string | null;
                         destinationModeOfStudyCode: string | null;
+                        destinationStudyIntensityPercent: number | null;
+                        transferKinds: string[];
+                        warnings: string[];
+                        creditMappings: {
+                            recognisedCreditId: string;
+                            moduleId: string | null;
+                            creditValue: number;
+                            statusCode: string;
+                            sourceDescription: string;
+                        }[];
                         relatedCaseId: string | null;
                         institutionalOutcomeRef: string | null;
                         statusCode: string;
@@ -12169,6 +12440,7 @@ export interface operations {
                     fheqLevel?: number;
                     moduleId?: string;
                     statusCaseId?: string;
+                    sourceModuleResultId?: string;
                     evidenceRef?: string;
                     academicYear?: string;
                 };
@@ -24596,6 +24868,7 @@ export interface operations {
                         slcReference: string | null;
                         ucasPersonalId: string | null;
                         feeStatusCode: string | null;
+                        studyIntensityPercent: number | null;
                         validFrom: string;
                         recordedAt: string;
                     }[];
@@ -24706,6 +24979,7 @@ export interface operations {
                         slcReference: string | null;
                         ucasPersonalId: string | null;
                         feeStatusCode: string | null;
+                        studyIntensityPercent: number | null;
                         validFrom: string;
                         recordedAt: string;
                     } & {
@@ -24903,6 +25177,7 @@ export interface operations {
                         slcReference: string | null;
                         ucasPersonalId: string | null;
                         feeStatusCode: string | null;
+                        studyIntensityPercent: number | null;
                         validFrom: string;
                         recordedAt: string;
                     };
@@ -26644,6 +26919,18 @@ export interface operations {
                         startDate: string;
                         endDate: string;
                         deliveryModeCode: string | null;
+                        activities: {
+                            activityTypeCode: string;
+                            groupSetCode: string | null;
+                            groupCode: string | null;
+                            slots: {
+                                dayOfWeek: number;
+                                startTime: string;
+                                endTime: string;
+                                weekCommencing: string[];
+                                locationRef: string | null;
+                            }[];
+                        }[];
                     }[];
                 };
             };
@@ -27139,9 +27426,11 @@ export interface operations {
             };
         };
     };
-    getRegistrationWindows: {
+    getModuleSelectionWindows: {
         parameters: {
-            query?: never;
+            query?: {
+                academicPeriodId?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -27155,18 +27444,23 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        registrationWindowId: string;
+                        moduleSelectionWindowId: string;
                         academicPeriodId: string;
                         academicYear: string;
                         periodCode: string;
+                        programmeId: string | null;
+                        fheqLevel: number | null;
                         opensAt: string;
                         closesAt: string;
+                        resubmissionClosesAt: string | null;
+                        allocationModeCode: "first-come" | "ranked";
+                        allocationSeeded: boolean;
                     }[];
                 };
             };
         };
     };
-    createRegistrationWindows: {
+    createModuleSelectionWindows: {
         parameters: {
             query?: never;
             header?: never;
@@ -27177,10 +27471,15 @@ export interface operations {
             content: {
                 "application/json": {
                     academicPeriodId: string;
+                    programmeId?: string;
+                    fheqLevel?: number;
                     /** Format: date-time */
                     opensAt: string;
                     /** Format: date-time */
                     closesAt: string;
+                    /** Format: date-time */
+                    resubmissionClosesAt?: string;
+                    allocationModeCode?: "first-come" | "ranked";
                 };
             };
         };
@@ -27192,7 +27491,21 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        registrationWindowId: string;
+                        moduleSelectionWindowId: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
                     };
                 };
             };
@@ -27212,12 +27525,12 @@ export interface operations {
             };
         };
     };
-    updateRegistrationWindowsByRegistrationWindowId: {
+    updateModuleSelectionWindowsByModuleSelectionWindowId: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                registrationWindowId: string;
+                moduleSelectionWindowId: string;
             };
             cookie?: never;
         };
@@ -27228,6 +27541,8 @@ export interface operations {
                     opensAt: string;
                     /** Format: date-time */
                     closesAt: string;
+                    resubmissionClosesAt?: string | null;
+                    allocationModeCode?: "first-come" | "ranked";
                 };
             };
         };
@@ -27254,6 +27569,20 @@ export interface operations {
                 };
             };
             /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -27264,6 +27593,651 @@ export interface operations {
                         title: string;
                         status: number;
                         detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getModuleSelectionWindowsByModuleSelectionWindowIdAllocationRuns: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                moduleSelectionWindowId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        allocationRunId: string;
+                        windowId: string;
+                        kindCode: string;
+                        statusCode: string;
+                        algorithmVersion: string;
+                        priorityOrder: string[];
+                        inputsHash: string;
+                        summary: {
+                            proposals: number;
+                            fullyAllocated: number;
+                            partlyAllocated: number;
+                            compulsoryOverflow: {
+                                moduleCode: string;
+                                over: number;
+                            }[];
+                        };
+                        createdBy: string;
+                        createdAt: string;
+                        submittedBy: string | null;
+                        approvedBy: string | null;
+                        appliedAt: string | null;
+                        results?: {
+                            proposalId: string;
+                            enrolmentId: string;
+                            orderPosition: number;
+                            tier: number;
+                            choiceSlot: number | null;
+                            outcomeCode: string;
+                            allocatedItemId: string | null;
+                            moduleCode: string | null;
+                            reason: string | null;
+                        }[];
+                    }[];
+                };
+            };
+        };
+    };
+    createModuleSelectionWindowsByModuleSelectionWindowIdAllocationRuns: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                moduleSelectionWindowId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    kindCode?: "main" | "top-up";
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        allocationRunId: string;
+                        windowId: string;
+                        kindCode: string;
+                        statusCode: string;
+                        algorithmVersion: string;
+                        priorityOrder: string[];
+                        inputsHash: string;
+                        summary: {
+                            proposals: number;
+                            fullyAllocated: number;
+                            partlyAllocated: number;
+                            compulsoryOverflow: {
+                                moduleCode: string;
+                                over: number;
+                            }[];
+                        };
+                        createdBy: string;
+                        createdAt: string;
+                        submittedBy: string | null;
+                        approvedBy: string | null;
+                        appliedAt: string | null;
+                        results?: {
+                            proposalId: string;
+                            enrolmentId: string;
+                            orderPosition: number;
+                            tier: number;
+                            choiceSlot: number | null;
+                            outcomeCode: string;
+                            allocatedItemId: string | null;
+                            moduleCode: string | null;
+                            reason: string | null;
+                        }[];
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getAllocationRunsByAllocationRunId: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                allocationRunId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        allocationRunId: string;
+                        windowId: string;
+                        kindCode: string;
+                        statusCode: string;
+                        algorithmVersion: string;
+                        priorityOrder: string[];
+                        inputsHash: string;
+                        summary: {
+                            proposals: number;
+                            fullyAllocated: number;
+                            partlyAllocated: number;
+                            compulsoryOverflow: {
+                                moduleCode: string;
+                                over: number;
+                            }[];
+                        };
+                        createdBy: string;
+                        createdAt: string;
+                        submittedBy: string | null;
+                        approvedBy: string | null;
+                        appliedAt: string | null;
+                        results?: {
+                            proposalId: string;
+                            enrolmentId: string;
+                            orderPosition: number;
+                            tier: number;
+                            choiceSlot: number | null;
+                            outcomeCode: string;
+                            allocatedItemId: string | null;
+                            moduleCode: string | null;
+                            reason: string | null;
+                        }[];
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createAllocationRunsByAllocationRunIdSubmission: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                allocationRunId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        allocationRunId: string;
+                        windowId: string;
+                        kindCode: string;
+                        statusCode: string;
+                        algorithmVersion: string;
+                        priorityOrder: string[];
+                        inputsHash: string;
+                        summary: {
+                            proposals: number;
+                            fullyAllocated: number;
+                            partlyAllocated: number;
+                            compulsoryOverflow: {
+                                moduleCode: string;
+                                over: number;
+                            }[];
+                        };
+                        createdBy: string;
+                        createdAt: string;
+                        submittedBy: string | null;
+                        approvedBy: string | null;
+                        appliedAt: string | null;
+                        results?: {
+                            proposalId: string;
+                            enrolmentId: string;
+                            orderPosition: number;
+                            tier: number;
+                            choiceSlot: number | null;
+                            outcomeCode: string;
+                            allocatedItemId: string | null;
+                            moduleCode: string | null;
+                            reason: string | null;
+                        }[];
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createAllocationRunsByAllocationRunIdDecision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                allocationRunId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    decisionCode: "approved" | "rejected";
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        allocationRunId: string;
+                        windowId: string;
+                        kindCode: string;
+                        statusCode: string;
+                        algorithmVersion: string;
+                        priorityOrder: string[];
+                        inputsHash: string;
+                        summary: {
+                            proposals: number;
+                            fullyAllocated: number;
+                            partlyAllocated: number;
+                            compulsoryOverflow: {
+                                moduleCode: string;
+                                over: number;
+                            }[];
+                        };
+                        createdBy: string;
+                        createdAt: string;
+                        submittedBy: string | null;
+                        approvedBy: string | null;
+                        appliedAt: string | null;
+                        results?: {
+                            proposalId: string;
+                            enrolmentId: string;
+                            orderPosition: number;
+                            tier: number;
+                            choiceSlot: number | null;
+                            outcomeCode: string;
+                            allocatedItemId: string | null;
+                            moduleCode: string | null;
+                            reason: string | null;
+                        }[];
+                    };
+                };
+            };
+            /** @description Default Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getTimetablePublications: {
+        parameters: {
+            query?: {
+                academicPeriodId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        timetablePublicationId: string;
+                        academicPeriodId: string;
+                        sourceSystemCode: string;
+                        sourceVersion: string;
+                        fullPeriod: boolean;
+                        statusCode: string;
+                        rejectionReasons: string[];
+                        rowCount: number;
+                        receivedBy: string;
+                        receivedAt: string;
+                        appliedAt: string | null;
+                    }[];
+                };
+            };
+        };
+    };
+    createTimetablePublications: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    academicPeriodId: string;
+                    sourceVersion: string;
+                    fullPeriod?: boolean;
+                    sourceSystemCode?: "ttb" | "srs-admin";
+                    activities: {
+                        moduleOfferingId?: string;
+                        moduleCode?: string;
+                        academicYear?: string;
+                        periodCode?: string;
+                        activityRef: string;
+                        activityTypeCode: string;
+                        groupSetCode?: string | null;
+                        groupCode?: string | null;
+                        slots: {
+                            dayOfWeek: number;
+                            startTime: string;
+                            endTime: string;
+                            weekCommencing: string[];
+                            locationRef?: string | null;
+                        }[];
+                    }[];
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        timetablePublicationId: string;
+                        academicPeriodId: string;
+                        sourceSystemCode: string;
+                        sourceVersion: string;
+                        fullPeriod: boolean;
+                        statusCode: string;
+                        rejectionReasons: string[];
+                        rowCount: number;
+                        receivedBy: string;
+                        receivedAt: string;
+                        appliedAt: string | null;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getAcademicPeriodsByAcademicPeriodIdTimetableStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                academicPeriodId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        lastAppliedAt: string | null;
+                        stale: boolean;
+                        staleAfterHours: number;
+                    };
+                };
+            };
+        };
+    };
+    createAcademicPeriodsByAcademicPeriodIdTimetableSimulation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                academicPeriodId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        timetablePublicationId: string;
+                        academicPeriodId: string;
+                        sourceSystemCode: string;
+                        sourceVersion: string;
+                        fullPeriod: boolean;
+                        statusCode: string;
+                        rejectionReasons: string[];
+                        rowCount: number;
+                        receivedBy: string;
+                        receivedAt: string;
+                        appliedAt: string | null;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getModuleOfferingsByModuleOfferingIdTimetable: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                moduleOfferingId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        moduleOfferingId: string;
+                        publicationId: string | null;
+                        activities: {
+                            activityRef: string;
+                            activityTypeCode: string;
+                            groupSetCode: string | null;
+                            groupCode: string | null;
+                            slots: {
+                                dayOfWeek: number;
+                                startTime: string;
+                                endTime: string;
+                                weekCommencing: string[];
+                                locationRef: string | null;
+                            }[];
+                        }[];
                     };
                 };
             };
@@ -27298,6 +28272,9 @@ export interface operations {
                         decisionAuthorityCode: string | null;
                         decisionReason: string | null;
                         workflowInstanceId: string | null;
+                        fheqLevel: number | null;
+                        lateSubmissionReasonCode: string | null;
+                        lateSubmittedBy: string | null;
                         items: {
                             proposalItemId: string;
                             moduleId: string;
@@ -27307,6 +28284,10 @@ export interface operations {
                             fheqLevel: number | null;
                             moduleOfferingId: string | null;
                             preferenceRank: number | null;
+                            choiceSlot: number | null;
+                            reassessmentPlanId: string | null;
+                            isReplacement: boolean;
+                            heldUntil: string | null;
                             sourceCode: string;
                             validationStateCode: string;
                             validationMessages: {
@@ -27434,6 +28415,9 @@ export interface operations {
                         decisionAuthorityCode: string | null;
                         decisionReason: string | null;
                         workflowInstanceId: string | null;
+                        fheqLevel: number | null;
+                        lateSubmissionReasonCode: string | null;
+                        lateSubmittedBy: string | null;
                         items: {
                             proposalItemId: string;
                             moduleId: string;
@@ -27443,6 +28427,10 @@ export interface operations {
                             fheqLevel: number | null;
                             moduleOfferingId: string | null;
                             preferenceRank: number | null;
+                            choiceSlot: number | null;
+                            reassessmentPlanId: string | null;
+                            isReplacement: boolean;
+                            heldUntil: string | null;
                             sourceCode: string;
                             validationStateCode: string;
                             validationMessages: {
@@ -27500,6 +28488,8 @@ export interface operations {
                     moduleOfferingId?: string;
                     preferenceRank?: number;
                     sourceCode?: "student-choice" | "staff-assisted";
+                    choiceSlot?: number;
+                    replacesReassessmentPlanId?: string;
                 };
             };
         };
@@ -27622,6 +28612,209 @@ export interface operations {
             };
         };
     };
+    getModuleSelectionProposalsByProposalIdValidation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                proposalId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        valid: boolean;
+                        capacityConflict: boolean;
+                        messages: {
+                            ruleTypeCode: string;
+                            message: string;
+                            severity: string;
+                            proposalItemId: string | null;
+                        }[];
+                    };
+                };
+            };
+            /** @description Default Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getModulesByModuleIdSubjects: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                moduleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        subjectAreaCode: string;
+                        proportionPercent: number;
+                    }[];
+                };
+            };
+        };
+    };
+    replaceModulesByModuleIdSubjects: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                moduleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    subjectAreaCode: string;
+                    proportionPercent: number;
+                }[];
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        subjectAreaCode: string;
+                        proportionPercent: number;
+                    }[];
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getModuleSelectionProposalsByProposalIdAllocation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                proposalId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": null | {
+                        allocationRunId: string;
+                        orderPosition: number;
+                        results: {
+                            choiceSlot: number | null;
+                            outcomeCode: string;
+                            allocatedItemId: string | null;
+                            reason: string | null;
+                        }[];
+                    };
+                };
+            };
+            /** @description Default Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
     createModuleSelectionProposalsByProposalIdSubmission: {
         parameters: {
             query?: never;
@@ -27650,6 +28843,9 @@ export interface operations {
                         decisionAuthorityCode: string | null;
                         decisionReason: string | null;
                         workflowInstanceId: string | null;
+                        fheqLevel: number | null;
+                        lateSubmissionReasonCode: string | null;
+                        lateSubmittedBy: string | null;
                         items: {
                             proposalItemId: string;
                             moduleId: string;
@@ -27659,6 +28855,10 @@ export interface operations {
                             fheqLevel: number | null;
                             moduleOfferingId: string | null;
                             preferenceRank: number | null;
+                            choiceSlot: number | null;
+                            reassessmentPlanId: string | null;
+                            isReplacement: boolean;
+                            heldUntil: string | null;
                             sourceCode: string;
                             validationStateCode: string;
                             validationMessages: {
@@ -27749,6 +28949,9 @@ export interface operations {
                         decisionAuthorityCode: string | null;
                         decisionReason: string | null;
                         workflowInstanceId: string | null;
+                        fheqLevel: number | null;
+                        lateSubmissionReasonCode: string | null;
+                        lateSubmittedBy: string | null;
                         items: {
                             proposalItemId: string;
                             moduleId: string;
@@ -27758,6 +28961,10 @@ export interface operations {
                             fheqLevel: number | null;
                             moduleOfferingId: string | null;
                             preferenceRank: number | null;
+                            choiceSlot: number | null;
+                            reassessmentPlanId: string | null;
+                            isReplacement: boolean;
+                            heldUntil: string | null;
                             sourceCode: string;
                             validationStateCode: string;
                             validationMessages: {
@@ -28248,6 +29455,7 @@ export interface operations {
                     moduleId: string;
                     isDefault?: boolean;
                     isNonCondonable?: boolean;
+                    countsTowardsSubjectAreaCode?: string;
                 };
             };
         };
@@ -28260,6 +29468,20 @@ export interface operations {
                 content: {
                     "application/json": {
                         moduleGroupMemberId: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
                     };
                 };
             };

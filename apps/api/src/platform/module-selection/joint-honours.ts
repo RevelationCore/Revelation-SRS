@@ -70,7 +70,7 @@ export class ModuleSubjectService {
       ));
       for (const s of shares) {
         await tx.insert(moduleSubjects).values({
-          versionId: randomUUID() as Uuid, id: randomUUID() as Uuid, tenantId: tenantId as Uuid, moduleId: moduleId as Uuid,
+          versionId: randomUUID(), id: randomUUID(), tenantId: tenantId as Uuid, moduleId: moduleId as Uuid,
           subjectAreaCode: s.subjectAreaCode, proportionPercent: s.proportionPercent, validFrom: now, validTo: null, recordedAt: now, recordedUntil: null,
         });
       }

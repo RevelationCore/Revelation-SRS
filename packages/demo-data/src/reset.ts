@@ -39,8 +39,8 @@ export const PRESERVED_TENANT_TABLES: ReadonlyMap<string, string> = new Map([
   ['public.programme', 'catalogue'], ['public.programme_route', 'catalogue'], ['public.programme_rule_set', 'catalogue'],
   ['public.module', 'catalogue'], ['public.module_offering', 'catalogue'], ['public.module_relationship', 'catalogue'],
   ['public.module_group', 'catalogue'], ['public.module_group_member', 'catalogue'], ['public.learning_outcome', 'catalogue'],
-  ['public.assessment_pattern', 'catalogue'], ['public.awarding_body', 'catalogue'],
-  ['public.academic_period', 'calendar'], ['public.registration_window', 'calendar'], ['public.reenrolment_period', 'calendar'],
+  ['public.assessment_pattern', 'catalogue'], ['public.awarding_body', 'catalogue'], ['public.module_subject', 'catalogue'],
+  ['public.academic_period', 'calendar'], ['public.module_selection_window', 'calendar'], ['public.reenrolment_period', 'calendar'],
   // Rules, value sets and tenant configuration.
   ['public.academic_rule', 'rules'], ['public.work_limit_rule', 'rules'], ['public.value_set_member', 'value sets'],
   ['public.tenant_currency_config', 'configuration'], ['public.tenant_locale_config', 'configuration'],

@@ -34,7 +34,6 @@ import type { ReviewExecutionService } from '../platform-controls/review-executi
 import type { RulesEngine } from '../rules-engine/engine.js';
 import { assertChangeAfterCurrentVersion } from '../bitemporal-guard.js';
 import { clockNow } from '../clock.js';
-
 import type { SelectionWindowService } from '../module-selection/window-service.js';
 import type { DeliveryService } from '../delivery/delivery-service.js';
 import { requestTimetableDemand } from '../delivery/producers/timetable-demand.js';

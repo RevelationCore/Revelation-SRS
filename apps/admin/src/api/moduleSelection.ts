@@ -82,3 +82,32 @@ export function updateSelectionWindow(
 ): Promise<void> {
   return api.patch(`/api/v1/module-selection-windows/${moduleSelectionWindowId}`, body);
 }
+
+// ── Ranked allocation (Phase 4 D-30) ────────────────────────────────────────
+
+export interface AllocationResult {
+  proposalId: string; enrolmentId: string; orderPosition: number; tier: number; choiceSlot: number | null;
+  outcomeCode: 'allocated' | 'unallocated' | 'fixed'; allocatedItemId: string | null; moduleCode: string | null; reason: string | null;
+}
+
+export interface AllocationRun {
+  allocationRunId: string; windowId: string; kindCode: 'main' | 'top-up'; statusCode: string; algorithmVersion: string;
+  priorityOrder: string[]; inputsHash: string;
+  summary: { proposals: number; fullyAllocated: number; partlyAllocated: number; compulsoryOverflow: Array<{ moduleCode: string; over: number }> };
+  createdBy: string; createdAt: string; submittedBy: string | null; approvedBy: string | null; appliedAt: string | null;
+  results?: AllocationResult[];
+}
+
+export const listAllocationRuns = (windowId: string) => api.get<AllocationRun[]>(`/api/v1/module-selection-windows/${windowId}/allocation-runs`);
+export const getAllocationRun = (runId: string) => api.get<AllocationRun>(`/api/v1/allocation-runs/${runId}`);
+export const previewAllocation = (windowId: string, kindCode: 'main' | 'top-up') =>
+  api.post<AllocationRun>(`/api/v1/module-selection-windows/${windowId}/allocation-runs`, { kindCode });
+export const submitAllocationRun = (runId: string) => api.post<AllocationRun>(`/api/v1/allocation-runs/${runId}/submission`, {});
+export const decideAllocationRun = (runId: string, decisionCode: 'approved' | 'rejected') =>
+  api.post<AllocationRun>(`/api/v1/allocation-runs/${runId}/decision`, { decisionCode });
+
+// ── Module subject areas (D-27) ──────────────────────────────────────────────
+
+export interface SubjectShare { subjectAreaCode: string; proportionPercent: number }
+export const getModuleSubjects = (moduleId: string) => api.get<SubjectShare[]>(`/api/v1/modules/${moduleId}/subjects`);
+export const putModuleSubjects = (moduleId: string, shares: SubjectShare[]) => api.put<SubjectShare[]>(`/api/v1/modules/${moduleId}/subjects`, shares);

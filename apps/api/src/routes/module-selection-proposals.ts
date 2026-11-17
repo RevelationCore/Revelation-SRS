@@ -335,7 +335,7 @@ export function moduleSelectionProposalsRoutes(fastify: FastifyInstance): void {
           return;
         }
         if ((await fastify.valueSetService.validateFieldValue('module_selection_proposal', 'late_submission_reason_code', late.reasonCode as string, request.tenantId)) === false) {
-          throw new ValidationError(`Invalid late submission reason '${late.reasonCode}'`);
+          throw new ValidationError(`Invalid late submission reason '${String(late.reasonCode)}'`);
         }
       }
       const proposal = await fastify.moduleSelectionService.submitProposal(request.tenantId, proposalId, request.user.sub, late as { reasonCode: string; note: string } | undefined);

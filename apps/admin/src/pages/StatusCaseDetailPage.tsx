@@ -73,12 +73,27 @@ export function StatusCaseDetailPage() {
               {found.expectedReturnDate && <Fact label="Expected return">{found.expectedReturnDate}</Fact>}
               {found.destinationProgrammeId && <Fact label="Destination programme">{found.destinationProgrammeId}</Fact>}
               {found.destinationModeOfStudyCode && <Fact label="Destination mode">{found.destinationModeOfStudyCode}</Fact>}
+              {found.destinationStudyIntensityPercent !== null && found.destinationStudyIntensityPercent !== undefined && <Fact label="Destination intensity">{found.destinationStudyIntensityPercent}% of full time</Fact>}
               {found.institutionalOutcomeRef && <Fact label="Authorising outcome">{found.institutionalOutcomeRef}</Fact>}
               <Fact label="Opened">{new Date(found.createdAt).toLocaleString('en-GB')} by {found.createdBy}</Fact>
               {can('student:read:all') && subject?.personId && (
                 <Fact label="Student record"><Link to={`/students/${subject.personId}`} className="text-primary-600 hover:underline">Open</Link></Fact>
               )}
             </dl>
+            {(found.warnings ?? []).map((w) => (
+              <p key={w} className="mt-3 text-xs text-warning-700 bg-warning-50 border border-warning-200 rounded px-3 py-2">{w}</p>
+            ))}
+            {(found.creditMappings ?? []).length > 0 && (
+              <div className="mt-4 text-sm">
+                <p className="font-medium">Credit mapped by this transfer</p>
+                <ul className="ml-5 list-disc">
+                  {found.creditMappings.map((c) => (
+                    <li key={c.recognisedCreditId}>{c.sourceDescription}: {c.creditValue} credits ({c.statusCode})</li>
+                  ))}
+                </ul>
+                <p className="text-xs text-neutral-600">A transfer is decided only once every mapping is approved or rejected, by someone other than its proposer.</p>
+              </div>
+            )}
             {found.decidedAt && (
               <p className="mt-4 text-sm">
                 {found.statusCode === 'approved' ? 'Approved' : found.statusCode === 'rejected' ? 'Rejected' : 'Closed'} by {found.decidedBy} on {new Date(found.decidedAt).toLocaleDateString('en-GB')}: {found.decisionReason}

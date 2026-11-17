@@ -65,7 +65,7 @@ describe('Reduced-intensity study as a transfer', () => {
     expect((await decide(c.statusCaseId)).statusCode).toBe(200);
     const triggers = (await f.inject('GET', `/api/v1/enrolments/${enrolmentId}/downstream-triggers`)).json<Array<{ triggerTypeCode: string; payloadSummary: Record<string, unknown> }>>();
     expect(triggers).toContainEqual(expect.objectContaining({
-      triggerTypeCode: 'slc-confirmation', payloadSummary: expect.objectContaining({ notificationType: 'change-of-mode-or-intensity', toStudyIntensityPercent: 20 }),
+      triggerTypeCode: 'slc-confirmation', payloadSummary: expect.objectContaining({ notificationType: 'change-of-mode-or-intensity', toStudyIntensityPercent: 20 }) as Record<string, unknown>,
     }));
   });
 });

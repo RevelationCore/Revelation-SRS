@@ -273,7 +273,7 @@ export class AllocationService {
     const [row] = await this.db.select({ configuration: tenants.configuration }).from(tenants).where(eq(tenants.id, tenantId as Uuid)).limit(1);
     const alloc = ((row?.configuration?.['moduleSelection'] ?? {}) as Record<string, unknown>)['allocation'] as Record<string, unknown> | undefined;
     const p = alloc?.['priority'];
-    return Array.isArray(p) && p.every((x) => typeof x === 'string') ? [...(p as string[]), 'random'] : ['stage-descending', 'random'];
+    return Array.isArray(p) && p.every((x) => typeof x === 'string') ? [...(p), 'random'] : ['stage-descending', 'random'];
   }
 
   /**

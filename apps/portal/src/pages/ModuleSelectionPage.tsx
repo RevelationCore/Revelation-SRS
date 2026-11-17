@@ -15,7 +15,11 @@ import {
   postProposalItem,
   postProposalSubmission,
   deleteProposalItem,
+  getProposalValidation,
+  getProposalAllocation,
   type ModuleSelectionProposal,
+  type ProposalItem,
+  type ProposalValidationPreview,
 } from '../api/me.js';
 import {
   Spinner, Problem, EmptyState, PageHeader, Button, Badge, Select,
@@ -31,6 +35,9 @@ export function ModuleSelectionPage() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [selectedPeriodId, setSelectedPeriodId] = useState<string>('');
   const [addingModuleId, setAddingModuleId] = useState<string>('');
+  /** How the module is added: 'fixed', 'new' (a new ranked choice) or the number of an existing choice slot. */
+  const [addAs, setAddAs] = useState<string>('fixed');
+  const [check, setCheck] = useState<ProposalValidationPreview | null>(null);
 
   const fetchEnrolments = useCallback(
     () => personId ? getEnrolments(personId) : Promise.reject(new Error('')),
@@ -86,19 +93,47 @@ export function ModuleSelectionPage() {
   const handleAddItem = async () => {
     if (!activeProposal || !addingModuleId) return;
     const offering = offerings?.find(o => o.moduleId === addingModuleId);
+    const slots = activeProposal.items.map(i => i.choiceSlot).filter((n): n is number => n !== null);
+    const slot = addAs === 'fixed' ? null : addAs === 'new' ? Math.max(0, ...slots) + 1 : Number(addAs);
+    const rank = slot === null ? null : activeProposal.items.filter(i => i.choiceSlot === slot).length + 1;
     await submit(() => postProposalItem(activeProposal.moduleSelectionProposalId, {
       moduleId: addingModuleId,
       ...(offering ? { moduleOfferingId: offering.moduleOfferingId } : {}),
+      ...(slot !== null && rank !== null ? { choiceSlot: slot, preferenceRank: rank } : {}),
     }));
     setAddingModuleId('');
+    setAddAs('fixed');
+    setCheck(null);
     setRefreshKey(k => k + 1);
   };
 
   const handleRemoveItem = async (proposalItemId: string) => {
     if (!activeProposal) return;
     await submit(() => deleteProposalItem(activeProposal.moduleSelectionProposalId, proposalItemId));
+    setCheck(null);
     setRefreshKey(k => k + 1);
   };
+
+  const handleCheck = async () => {
+    if (!activeProposal) return;
+    await submit(async () => { setCheck(await getProposalValidation(activeProposal.moduleSelectionProposalId)); });
+  };
+
+  const fetchAllocation = useCallback(
+    () => activeProposal ? getProposalAllocation(activeProposal.moduleSelectionProposalId) : Promise.resolve(null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [activeProposal?.moduleSelectionProposalId, activeProposal?.statusCode],
+  );
+  const { data: allocation } = useApiData(activeProposal?.decisionAuthorityCode === 'allocation' ? fetchAllocation : null);
+
+  const sourceLabel = (item: ProposalItem) => item.sourceCode === 'compulsory-auto' ? t('portal.moduleSelection.sourceCompulsory')
+    : item.sourceCode === 'repeat-required' ? t('portal.moduleSelection.sourceRepeat')
+      : item.sourceCode === 'staff-assisted' ? t('portal.moduleSelection.sourceStaff')
+        : t('portal.moduleSelection.sourceChoice');
+  const existingSlots = [...new Set((activeProposal?.items ?? []).map(i => i.choiceSlot).filter((n): n is number => n !== null))].sort((a, b) => a - b);
+  // Sort ranked alternatives under their choice, after the fixed modules.
+  const sortedItems = [...(activeProposal?.items ?? [])].sort((a, b) =>
+    (a.choiceSlot ?? 0) - (b.choiceSlot ?? 0) || (a.preferenceRank ?? 0) - (b.preferenceRank ?? 0));
 
   const handleSubmitProposal = async () => {
     if (!activeProposal) return;
@@ -179,7 +214,14 @@ export function ModuleSelectionPage() {
                 <p className="text-sm text-neutral-600 max-w-md text-right">{activeProposal.decisionReason}</p>
               )}
             </div>
+            {allocation && (
+              <p className="px-4 pb-4 text-xs text-neutral-600">{t('portal.moduleSelection.allocationOutcome', { position: allocation.orderPosition })}</p>
+            )}
           </Card>
+
+          {existingSlots.length > 0 && (
+            <p className="text-sm text-neutral-600">{t('portal.moduleSelection.rankedHint')}</p>
+          )}
 
           {activeProposal.items.length === 0 ? (
             <EmptyState title={t('portal.moduleSelection.noItems')} />
@@ -191,22 +233,27 @@ export function ModuleSelectionPage() {
                     <TableHeaderCell>Module</TableHeaderCell>
                     <TableHeaderCell>Credits</TableHeaderCell>
                     <TableHeaderCell>Source</TableHeaderCell>
+                    <TableHeaderCell>Choice</TableHeaderCell>
                     <TableHeaderCell>Validation</TableHeaderCell>
                     <TableHeaderCell><span className="sr-only">Actions</span></TableHeaderCell>
                   </tr>
                 </TableHead>
                 <TableBody>
-                  {activeProposal.items.map(item => (
+                  {sortedItems.map(item => (
                     <TableRow key={item.proposalItemId}>
                       <TableCell className="text-neutral-800">
                         <span className="font-mono text-xs text-neutral-500 mr-1">{item.moduleCode}</span>
                         <span className="font-medium">{item.moduleTitle}</span>
                       </TableCell>
                       <TableCell>{item.creditValue ?? '—'}</TableCell>
-                      <TableCell>
-                        {item.sourceCode === 'compulsory-auto'
-                          ? t('portal.moduleSelection.sourceCompulsory')
-                          : t('portal.moduleSelection.sourceChoice')}
+                      <TableCell>{sourceLabel(item)}</TableCell>
+                      <TableCell className="text-xs">
+                        {item.choiceSlot !== null
+                          ? t('portal.moduleSelection.choiceLabel', { slot: item.choiceSlot, rank: item.preferenceRank ?? 1 })
+                          : t('portal.moduleSelection.fixedLabel')}
+                        {item.heldUntil && (
+                          <span className="block text-success-700">{t('portal.moduleSelection.heldUntil', { date: new Date(item.heldUntil).toLocaleDateString('en-GB') })}</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         {item.validationMessages.length === 0 ? (
@@ -225,7 +272,7 @@ export function ModuleSelectionPage() {
                         )}
                       </TableCell>
                       <TableCell className="text-right">
-                        {EDITABLE_STATUSES.includes(activeProposal.statusCode) && item.sourceCode !== 'compulsory-auto' && (
+                        {EDITABLE_STATUSES.includes(activeProposal.statusCode) && item.sourceCode !== 'compulsory-auto' && item.sourceCode !== 'repeat-required' && (
                           <Button
                             variant="ghost"
                             size="sm"
@@ -254,8 +301,18 @@ export function ModuleSelectionPage() {
                   <p className="text-sm text-neutral-500">{t('portal.modules.noOfferings')}</p>
                 ) : (
                   <div className="flex items-end gap-3">
+                    <div className="w-56">
+                      <label htmlFor="add-as" className="block text-xs text-neutral-500 mb-1">{t('portal.moduleSelection.addAs')}</label>
+                      <Select id="add-as" value={addAs} onChange={(e) => setAddAs(e.target.value)}>
+                        <option value="fixed">{t('portal.moduleSelection.addFixed')}</option>
+                        <option value="new">{t('portal.moduleSelection.addNewChoice')}</option>
+                        {existingSlots.map(slot => (
+                          <option key={slot} value={String(slot)}>{t('portal.moduleSelection.addAlternative', { slot })}</option>
+                        ))}
+                      </Select>
+                    </div>
                     <div className="flex-1 max-w-md">
-                      <Select value={addingModuleId} onChange={(e) => setAddingModuleId(e.target.value)}>
+                      <Select aria-label={t('portal.moduleSelection.chooseModule')} value={addingModuleId} onChange={(e) => setAddingModuleId(e.target.value)}>
                         <option value="">{t('portal.moduleSelection.chooseModule')}</option>
                         {availableToAdd.map(o => (
                           <option key={o.moduleOfferingId} value={o.moduleId}>
@@ -275,7 +332,29 @@ export function ModuleSelectionPage() {
                   </div>
                 )}
 
-                <div className="pt-2">
+                {check && (
+                  <div className="rounded border border-neutral-200 p-3 text-sm" role="status">
+                    <p className="font-medium text-neutral-700">{t('portal.moduleSelection.checkHeading')}</p>
+                    {check.messages.length === 0 ? (
+                      <p className="text-neutral-600">{t('portal.moduleSelection.checkValid')}</p>
+                    ) : (
+                      <ul className="mt-1 space-y-1">
+                        {check.messages.map((m, i) => (
+                          <li key={i} className={m.severity === 'error' ? 'text-danger-600 text-xs' : 'text-warning-600 text-xs'}>{m.message}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
+
+                <div className="pt-2 flex gap-3">
+                  <Button
+                    variant="secondary"
+                    disabled={activeProposal.items.length === 0 || submitting}
+                    onClick={handleCheck}
+                  >
+                    {t('portal.moduleSelection.checkButton')}
+                  </Button>
                   <Button
                     disabled={activeProposal.items.length === 0 || submitting}
                     icon={submitting ? <Spinner size="sm" /> : undefined}

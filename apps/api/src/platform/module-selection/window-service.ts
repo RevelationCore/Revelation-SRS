@@ -74,7 +74,7 @@ export class SelectionWindowService {
     await this.#refuseOverlap(tenantId, scope, input.opensAt, input.resubmissionClosesAt ?? input.closesAt, null);
     const id = randomUUID();
     await withTenantContext(this.db, tenantId, (tx) => tx.insert(moduleSelectionWindows).values({
-      id: id as Uuid, tenantId: tenantId as Uuid, academicPeriodId: input.academicPeriodId as Uuid,
+      id: id, tenantId: tenantId as Uuid, academicPeriodId: input.academicPeriodId as Uuid,
       programmeId: (scope.programmeId ?? null) as Uuid | null, fheqLevel: scope.fheqLevel,
       opensAt: input.opensAt, closesAt: input.closesAt, resubmissionClosesAt: input.resubmissionClosesAt ?? null,
       allocationModeCode: input.allocationModeCode ?? 'ranked', createdBy: actorId,

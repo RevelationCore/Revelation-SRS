@@ -54,7 +54,7 @@ describe('Joint-honours balance', () => {
     expect(v.valid).toBe(false);
     expect(v.messages.filter((m) => m.severity === 'error').map((m) => m.message)).toEqual([expect.stringContaining('POL makes up 30%')]);
     expect(v.messages).toEqual(expect.arrayContaining([
-      expect.objectContaining({ ruleTypeCode: 'joint-honours-balance', severity: 'warning', message: expect.stringContaining(none.code) }),
+      expect.objectContaining({ ruleTypeCode: 'joint-honours-balance', severity: 'warning', message: expect.stringContaining(none.code) as string }),
     ]));
 
     // Swapping the unassigned module for politics balances it: 50 HIST, 50 POL of 100.

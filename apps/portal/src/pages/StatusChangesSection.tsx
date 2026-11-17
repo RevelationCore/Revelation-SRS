@@ -101,6 +101,7 @@ function RequestFlow({ options, enrolmentId, modeOfStudyCode, onDone, onCancel }
   const [expectedReturn, setExpectedReturn] = useState('');
   const [programmeId, setProgrammeId] = useState('');
   const [mode, setMode] = useState('');
+  const [intensity, setIntensity] = useState('');
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState('');
   const [reasons, setReasons] = useState<ValueSetDto | null>(null);
@@ -113,12 +114,12 @@ function RequestFlow({ options, enrolmentId, modeOfStudyCode, onDone, onCancel }
     listCatalogueProgrammes().then(setProgrammes).catch(() => undefined);
   }, []);
 
-  const fundingNotice = type === 'withdrawal' || type === 'interruption';
+  const fundingNotice = type === 'withdrawal' || type === 'interruption' || (type === 'transfer' && intensity !== '');
   const visaNotice = options.sponsored && (type === 'withdrawal' || type === 'interruption' || (type === 'transfer' && mode !== '' && mode !== modeOfStudyCode));
   const needsConfirmation = fundingNotice || visaNotice;
   const complete = type && effective
     && (type !== 'interruption' || expectedReturn)
-    && (type !== 'transfer' || programmeId || mode);
+    && (type !== 'transfer' || programmeId || mode || intensity);
 
   async function send() {
     setError('');
@@ -129,6 +130,7 @@ function RequestFlow({ options, enrolmentId, modeOfStudyCode, onDone, onCancel }
         ...(type === 'interruption' ? { expectedReturnDate: expectedReturn } : {}),
         ...(type === 'transfer' && programmeId ? { destinationProgrammeId: programmeId } : {}),
         ...(type === 'transfer' && mode ? { destinationModeOfStudyCode: mode } : {}),
+        ...(type === 'transfer' && intensity ? { destinationStudyIntensityPercent: Number(intensity) } : {}),
         ...(type === 'return' && options.returnFrom ? { relatedCaseId: options.returnFrom.statusCaseId } : {}),
       });
       onDone();
@@ -146,7 +148,7 @@ function RequestFlow({ options, enrolmentId, modeOfStudyCode, onDone, onCancel }
         <p className="text-sm font-medium">Before you send this request</p>
         {fundingNotice && (
           <StatusNotice>
-            {type === 'withdrawal' ? 'Leaving your course' : 'Taking a break'} can change your student finance payments and the tuition fees you owe. Talk to Student Support or your funding body before you go ahead.
+            {type === 'withdrawal' ? 'Leaving your course' : type === 'transfer' ? 'Studying at a different intensity' : 'Taking a break'} can change your student finance payments and the tuition fees you owe. Talk to Student Support or your funding body before you go ahead.
           </StatusNotice>
         )}
         {visaNotice && (
@@ -213,6 +215,9 @@ function RequestFlow({ options, enrolmentId, modeOfStudyCode, onDone, onCancel }
                 <option value="">Keep my current mode</option>
                 {(modes?.members ?? []).map((m) => <option key={m.code} value={m.code}>{m.displayLabel}</option>)}
               </Select>
+            </LabelledField>
+            <LabelledField label="Study intensity" htmlFor="sc-intensity" hint="As a percentage of full-time study, for example 50 for half time">
+              <Input id="sc-intensity" type="number" min={1} max={100} value={intensity} onChange={(e) => setIntensity(e.target.value)} />
             </LabelledField>
           </>
         )}

@@ -86,7 +86,7 @@ describe('Timetable clashes in selection', () => {
     const v = await preview(proposalId);
     const clashes = v.messages.filter((m) => m.ruleTypeCode === 'timetable-clash-policy');
     expect(clashes).toHaveLength(2);
-    expect(clashes[0]).toMatchObject({ severity: 'warning', message: expect.stringContaining('Monday 10:00–11:00') });
+    expect(clashes[0]).toMatchObject({ severity: 'warning', message: expect.stringContaining('Monday 10:00–11:00') as string });
     expect((await f.submit(proposalId)).json<{ statusCode: string }>().statusCode).toBe('confirmed');
   });
 
@@ -128,8 +128,8 @@ describe('Timetable clashes in selection', () => {
     await f.item(proposalId, n.moduleId, on);
     const v = await preview(proposalId);
     expect(v.messages).toEqual(expect.arrayContaining([
-      expect.objectContaining({ ruleTypeCode: 'timetable-clash-policy', message: expect.stringContaining('already registered for') }),
-      expect.objectContaining({ ruleTypeCode: 'timetable-clash-policy', severity: 'warning', message: expect.stringContaining(`${n.code} is not yet published`) }),
+      expect.objectContaining({ ruleTypeCode: 'timetable-clash-policy', message: expect.stringContaining('already registered for') as string }),
+      expect.objectContaining({ ruleTypeCode: 'timetable-clash-policy', severity: 'warning', message: expect.stringContaining(`${n.code} is not yet published`) as string }),
     ]));
 
     const tt = (await f.inject('GET', `/api/v1/module-registrations/timetable?enrolmentId=${enrolmentId}`)).json<Array<{ moduleOfferingId: string; activities: unknown[] }>>();

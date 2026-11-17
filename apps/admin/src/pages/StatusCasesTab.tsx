@@ -90,6 +90,7 @@ function OpenCaseForm({ approvedBreaks, onSubmit }: { approvedBreaks: StatusCase
   const [expectedReturn, setExpectedReturn] = useState('');
   const [programmeId, setProgrammeId] = useState('');
   const [mode, setMode] = useState('');
+  const [intensity, setIntensity] = useState('');
   const [relatedCaseId, setRelatedCaseId] = useState(approvedBreaks[0]?.statusCaseId ?? '');
   const [outcomeRef, setOutcomeRef] = useState('');
 
@@ -105,15 +106,16 @@ function OpenCaseForm({ approvedBreaks, onSubmit }: { approvedBreaks: StatusCase
       ...(type === 'interruption' && expectedReturn ? { expectedReturnDate: expectedReturn } : {}),
       ...(type === 'transfer' && programmeId ? { destinationProgrammeId: programmeId } : {}),
       ...(type === 'transfer' && mode ? { destinationModeOfStudyCode: mode } : {}),
+      ...(type === 'transfer' && intensity ? { destinationStudyIntensityPercent: Number(intensity) } : {}),
       ...(type === 'return' && relatedCaseId ? { relatedCaseId } : {}),
       ...(needsOutcome && outcomeRef.trim() ? { institutionalOutcomeRef: outcomeRef.trim() } : {}),
     });
-    if (ok) { setType(''); setReason(''); setEffective(''); setExpectedReturn(''); setProgrammeId(''); setMode(''); setOutcomeRef(''); }
+    if (ok) { setType(''); setReason(''); setEffective(''); setExpectedReturn(''); setProgrammeId(''); setMode(''); setIntensity(''); setOutcomeRef(''); }
   }
 
   const incomplete = !type || !effective
     || (type === 'interruption' && !expectedReturn)
-    || (type === 'transfer' && !programmeId && !mode)
+    || (type === 'transfer' && !programmeId && !mode && !intensity)
     || (type === 'return' && !relatedCaseId)
     || (needsOutcome && !outcomeRef.trim());
 
@@ -161,6 +163,9 @@ function OpenCaseForm({ approvedBreaks, onSubmit }: { approvedBreaks: StatusCase
               <option value="">Unchanged</option>
               {modes.map((m) => <option key={m.code} value={m.code}>{m.displayLabel}</option>)}
             </Select>
+          </LabelledField>
+          <LabelledField label="Destination study intensity (%)" htmlFor="open-case-intensity" hint="Reduced-intensity study, as a percentage of full time">
+            <Input id="open-case-intensity" type="number" min={1} max={100} value={intensity} onChange={(e) => setIntensity(e.target.value)} />
           </LabelledField>
         </>
       )}

@@ -8,6 +8,8 @@ import { ApiError } from '../api/client.js';
 import { type ProgrammeSummary, listProgrammes } from '../api/applications.js';
 import { type ModuleSummary, listModules } from '../api/academicExceptions.js';
 import { type DietGroup, type RuleSet, addDietGroupMember, createDietGroup, createRuleSet, listDietGroups, listRuleSets } from '../api/programmeRules.js';
+import { type SubjectShare, getModuleSubjects, putModuleSubjects } from '../api/moduleSelection.js';
+import { getFieldValueSet } from '../api/valueSets.js';
 import { useAuth } from '../auth/AuthContext.js';
 import { userHasAnyPermission } from '../auth/RequirePermission.js';
 
@@ -85,6 +87,7 @@ export function ProgrammeRulesPage() {
           </Card>
         )}
         {ruleSetId && <DietGroups key={ruleSetId} ruleSetId={ruleSetId} modules={modules} canConfigure={canConfigure} />}
+        <ModuleSubjects modules={modules} canConfigure={canConfigure} />
       </div>
     </div>
   );
@@ -224,5 +227,79 @@ function NewGroupForm({ onSubmit }: { onSubmit: (body: { groupCode: string; titl
       ))}
       <Button type="submit" variant="secondary" disabled={!code.trim() || !title.trim()}>Add diet group</Button>
     </form>
+  );
+}
+
+/**
+ * A module's subject areas, with proportions that sum to 100 (Phase 4 D-27).
+ * Joint-honours balance counts each module's credit towards its subjects.
+ */
+function ModuleSubjects({ modules, canConfigure }: { modules: ModuleSummary[]; canConfigure: boolean }) {
+  const [moduleId, setModuleId] = useState('');
+  const [shares, setShares] = useState<SubjectShare[]>([]);
+  const [areas, setAreas] = useState<Array<{ code: string; displayLabel: string }>>([]);
+  const [error, setError] = useState('');
+  const [saved, setSaved] = useState('');
+
+  useEffect(() => { getFieldValueSet('module_subject', 'subject_area_code').then((v) => setAreas(v.members)).catch(() => undefined); }, []);
+  useEffect(() => {
+    setSaved(''); setError('');
+    if (!moduleId) { setShares([]); return; }
+    getModuleSubjects(moduleId).then(setShares).catch((err: unknown) => setError(message(err, 'Failed to load subject areas')));
+  }, [moduleId]);
+
+  const total = shares.reduce((sum, s) => sum + (Number.isFinite(s.proportionPercent) ? s.proportionPercent : 0), 0);
+  async function save(e: FormEvent) {
+    e.preventDefault();
+    setError(''); setSaved('');
+    try { setShares(await putModuleSubjects(moduleId, shares)); setSaved('Saved.'); } catch (err) { setError(message(err, 'Could not save')); }
+  }
+
+  return (
+    <Card>
+      <CardHeader title="Module subject areas" description="Used for joint-honours balance. Add subject areas in the subject-area-code value set first." />
+      <CardBody>
+        <div className="flex flex-col gap-3">
+          <div className="w-80">
+            <LabelledField label="Module" htmlFor="subj-module">
+              <Select id="subj-module" value={moduleId} onChange={(e) => setModuleId(e.target.value)}>
+                <option value="">Choose a module…</option>
+                {modules.map((m) => <option key={m.moduleId} value={m.moduleId}>{m.code} — {m.title}</option>)}
+              </Select>
+            </LabelledField>
+          </div>
+          {moduleId && (
+            <form className="flex flex-col gap-2" onSubmit={(e) => void save(e)}>
+              {shares.length === 0 && <p className="text-sm text-neutral-600">No subject areas: the module counts towards neither subject.</p>}
+              {shares.map((s, i) => (
+                <div key={i} className="flex items-end gap-3">
+                  <LabelledField label="Subject area" htmlFor={`subj-area-${i}`}>
+                    <Select id={`subj-area-${i}`} value={s.subjectAreaCode} disabled={!canConfigure}
+                      onChange={(e) => setShares(shares.map((x, j) => (j === i ? { ...x, subjectAreaCode: e.target.value } : x)))}>
+                      {areas.map((a) => <option key={a.code} value={a.code}>{a.displayLabel}</option>)}
+                    </Select>
+                  </LabelledField>
+                  <LabelledField label="Proportion (%)" htmlFor={`subj-pct-${i}`}>
+                    <Input id={`subj-pct-${i}`} type="number" min={1} max={100} value={String(s.proportionPercent)} disabled={!canConfigure}
+                      onChange={(e) => setShares(shares.map((x, j) => (j === i ? { ...x, proportionPercent: Number(e.target.value) } : x)))} />
+                  </LabelledField>
+                  {canConfigure && <Button type="button" variant="ghost" onClick={() => setShares(shares.filter((_, j) => j !== i))}>Remove</Button>}
+                </div>
+              ))}
+              {canConfigure && (
+                <div className="flex items-center gap-3">
+                  <Button type="button" variant="secondary" disabled={areas.length === 0}
+                    onClick={() => setShares([...shares, { subjectAreaCode: areas[0]!.code, proportionPercent: Math.max(1, 100 - total) }])}>Add a subject area</Button>
+                  <Button type="submit" disabled={shares.length > 0 && total !== 100}>Save</Button>
+                  <span className={`text-xs ${shares.length > 0 && total !== 100 ? 'text-danger-600' : 'text-neutral-500'}`}>Total {total}%</span>
+                </div>
+              )}
+              {error && <p className="text-sm text-danger-600" role="alert">{error}</p>}
+              {saved && <p className="text-sm text-neutral-700" role="status">{saved}</p>}
+            </form>
+          )}
+        </div>
+      </CardBody>
+    </Card>
   );
 }

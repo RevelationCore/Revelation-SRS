@@ -15,6 +15,9 @@ import {
   programmes,
   studentAddresses,
   studentContactMethods,
+  timetableActivities,
+  timetablePublications,
+  timetableSlots,
   type Db,
 } from '@revelation-srs/db';
 
@@ -38,6 +41,7 @@ import { STORY_MARKERS } from '../story-markers.js';
 import type { ScenarioManifest } from '../types.js';
 import { batchInsert } from '../utils/batch.js';
 import { deterministicId } from '../generators/ids.js';
+import { generateTimetable } from '../generators/timetable.js';
 
 export const manifest: ScenarioManifest = {
   slug:             'module-selection',
@@ -58,7 +62,7 @@ export const manifest: ScenarioManifest = {
     STORY_MARKERS.S3_BOB_WAITLISTED,
     STORY_MARKERS.S3_CAROL_OVERRIDE,
   ],
-  phases: ['reference-data', 'personas', 'persons', 'enrolments', 'registrations', 'diet-groups', 'boards'],
+  phases: ['reference-data', 'timetable', 'personas', 'persons', 'enrolments', 'registrations', 'diet-groups', 'boards'],
 };
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -100,6 +104,7 @@ export async function load(
 
   switch (phase) {
     case 'reference-data': return loadReferenceData(db, tenantId);
+    case 'timetable':      return loadTimetable(db, tenantId);
     case 'personas':       return loadPersonas();
     case 'persons':        return loadPersons(db, tenantId);
     case 'enrolments':     return loadEnrolments(db, tenantId);
@@ -121,6 +126,21 @@ async function loadReferenceData(db: Db, tenantId: string): Promise<void> {
   await batchInsert(db, programmes,      curriculum.programmes);
   await batchInsert(db, modules,         curriculum.modules);
   await batchInsert(db, moduleOfferings, curriculum.moduleOfferings);
+}
+
+/** A simulator timetable for each 2025-26 period, so selection clash checks and student timetables have data (Phase 4 D-24). */
+async function loadTimetable(db: Db, tenantId: string): Promise<void> {
+  const periods = generateMultiYearCalendar(tenantId, manifest.academicYears).filter((p) => p.periodCode !== 'SUMMER');
+  const curriculum = generateCurriculum(tenantId, manifest.academicYears);
+  const codes = new Map(curriculum.modules.map((m) => [m.id, m.code]));
+  for (const p of periods) {
+    const offerings = curriculum.moduleOfferings.filter((o) => o.academicPeriodId === p.id).map((o) => ({ id: o.id!, moduleCode: codes.get(o.moduleId) ?? 'MOD' }));
+    if (offerings.length === 0) continue;
+    const tt = generateTimetable(tenantId, { id: p.id!, startDate: p.startDate, endDate: p.endDate, academicYear: p.academicYear, periodCode: p.periodCode }, offerings);
+    await batchInsert(db, timetablePublications, [tt.publication]);
+    await batchInsert(db, timetableActivities, tt.activities);
+    await batchInsert(db, timetableSlots, tt.slots);
+  }
 }
 
 async function loadPersonas(): Promise<void> {

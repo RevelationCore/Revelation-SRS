@@ -82,6 +82,13 @@ export interface TimetableEntry {
   startDate:            string;
   endDate:              string;
   deliveryModeCode:     string;
+  /** The offering's published timetable (Phase 4 D-24); empty until the timetabling system publishes it. */
+  activities?:          Array<{
+    activityTypeCode: string;
+    groupSetCode:     string | null;
+    groupCode:        string | null;
+    slots:            Array<{ dayOfWeek: number; startTime: string; endTime: string; weekCommencing: string[]; locationRef: string | null }>;
+  }>;
 }
 
 export interface ExamEntry {
@@ -466,6 +473,11 @@ export interface ProposalItem {
   fheqLevel:            number | null;
   moduleOfferingId:     string | null;
   preferenceRank:       number | null;
+  /** Items sharing a slot are ranked alternatives for one place (D-30). */
+  choiceSlot:           number | null;
+  reassessmentPlanId:   string | null;
+  isReplacement:        boolean;
+  heldUntil:            string | null;
   sourceCode:           string;
   validationStateCode:  string;
   validationMessages:   ProposalValidationMessage[];
@@ -503,7 +515,7 @@ export function postModuleSelectionProposal(body: {
 
 export function postProposalItem(
   proposalId: string,
-  body: { moduleId: string; moduleOfferingId?: string },
+  body: { moduleId: string; moduleOfferingId?: string; choiceSlot?: number; preferenceRank?: number },
 ): Promise<{ proposalItemId: string }> {
   return api.post(`/api/v1/module-selection-proposals/${proposalId}/items`, body);
 }
@@ -514,6 +526,22 @@ export function deleteProposalItem(proposalId: string, proposalItemId: string): 
 
 export function postProposalSubmission(proposalId: string): Promise<ModuleSelectionProposal> {
   return api.post(`/api/v1/module-selection-proposals/${proposalId}/submission`, {});
+}
+
+export interface ProposalValidationPreview {
+  valid: boolean;
+  capacityConflict: boolean;
+  messages: Array<ProposalValidationMessage & { proposalItemId: string | null }>;
+}
+
+/** Checks a selection without submitting it (Phase 4 D-25): rules, clashes and warnings. */
+export function getProposalValidation(proposalId: string): Promise<ProposalValidationPreview> {
+  return api.get(`/api/v1/module-selection-proposals/${proposalId}/validation`);
+}
+
+/** The student's own allocation outcome, once an allocation has been applied (D-30). */
+export function getProposalAllocation(proposalId: string): Promise<{ allocationRunId: string; orderPosition: number } | null> {
+  return api.get(`/api/v1/module-selection-proposals/${proposalId}/allocation`);
 }
 
 // ── Status changes (BP-02-006 to 009; D-2) ───────────────────────────────────
@@ -541,7 +569,7 @@ export function listMyStatusCases(enrolmentId: string): Promise<MyStatusCase[]> 
 }
 export function requestStatusCase(enrolmentId: string, body: {
   caseTypeCode: string; reasonCategoryCode?: string; requestedEffectiveDate: string; expectedReturnDate?: string;
-  destinationProgrammeId?: string; destinationModeOfStudyCode?: string; relatedCaseId?: string;
+  destinationProgrammeId?: string; destinationModeOfStudyCode?: string; destinationStudyIntensityPercent?: number; relatedCaseId?: string;
 }): Promise<MyStatusCase> {
   return api.post(`/api/v1/enrolments/${enrolmentId}/status-cases`, body);
 }

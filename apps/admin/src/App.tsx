@@ -9,6 +9,8 @@ import { LoginPage } from './pages/LoginPage.js';
 
 const AcademicRulesPage = lazy(() => import('./pages/AcademicRulesPage.js').then((m) => ({ default: m.AcademicRulesPage })));
 const SelectionWindowsPage = lazy(() => import('./pages/SelectionWindowsPage.js').then((m) => ({ default: m.SelectionWindowsPage })));
+const AllocationRunsPage = lazy(() => import('./pages/AllocationRunsPage.js').then((m) => ({ default: m.AllocationRunsPage })));
+const TimetablesPage = lazy(() => import('./pages/TimetablesPage.js').then((m) => ({ default: m.TimetablesPage })));
 const AuditPage = lazy(() => import('./pages/AuditPage.js').then((m) => ({ default: m.AuditPage })));
 const DashboardPage = lazy(() => import('./pages/DashboardPage.js').then((m) => ({ default: m.DashboardPage })));
 const EnrolmentReportPage = lazy(() => import('./pages/EnrolmentReportPage.js').then((m) => ({ default: m.EnrolmentReportPage })));
@@ -173,6 +175,14 @@ export function App() {
                 <Route
                   path="tenant-admin/selection-windows"
                   element={<RequirePermission permissions={['calendar:read']}><SelectionWindowsPage /></RequirePermission>}
+                />
+                <Route
+                  path="tenant-admin/selection-windows/:windowId/allocation"
+                  element={<RequirePermission permissions={['module-selection:allocate', 'module-selection:decide']}><AllocationRunsPage /></RequirePermission>}
+                />
+                <Route
+                  path="tenant-admin/timetables"
+                  element={<RequirePermission permissions={['timetable:read']}><TimetablesPage /></RequirePermission>}
                 />
                 <Route
                   path="tenant-admin/workflows"

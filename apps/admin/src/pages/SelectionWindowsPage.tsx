@@ -1,4 +1,5 @@
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   type AllocationMode,
   type SelectionWindow,
@@ -33,6 +34,7 @@ const MODE_LABEL: Record<AllocationMode, string> = {
 export function SelectionWindowsPage() {
   const { roles } = useAuth();
   const canWrite  = userHasAnyPermission(roles, ['calendar:write']);
+  const canAllocate = userHasAnyPermission(roles, ['module-selection:allocate', 'module-selection:decide']);
 
   const [windows, setWindows]       = useState<SelectionWindow[]>([]);
   const [periods, setPeriods]       = useState<AcademicPeriod[]>([]);
@@ -101,7 +103,10 @@ export function SelectionWindowsPage() {
                     {MODE_LABEL[w.allocationModeCode]}
                     {w.allocationSeeded && <span className="ml-2"><Badge value="in-progress" label="Allocation started" /></span>}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right space-x-3 whitespace-nowrap">
+                    {w.allocationModeCode === 'ranked' && canAllocate && (
+                      <Link to={`/tenant-admin/selection-windows/${w.moduleSelectionWindowId}/allocation`} className="text-xs text-primary-600 hover:text-primary-800">Allocation</Link>
+                    )}
                     {canWrite && (
                       <button onClick={() => setEditing(w)} className="text-xs text-primary-600 hover:text-primary-800">Edit</button>
                     )}

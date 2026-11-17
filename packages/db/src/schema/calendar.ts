@@ -1,9 +1,9 @@
 import { customType, date, smallint, text, timestamp, uuid } from 'drizzle-orm/pg-core';
-
-const bytea = customType<{ data: Buffer }>({ dataType: () => 'bytea' });
 import { pgTable } from 'drizzle-orm/pg-core';
 
 import { tenants } from './tenant.js';
+
+const bytea = customType<{ data: Buffer }>({ dataType: () => 'bytea' });
 
 /**
  * Academic periods — the canonical time divisions within an academic year
