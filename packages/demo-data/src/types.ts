@@ -16,7 +16,8 @@ export type LoadPhase =
   | 'corrections'
   | 'notifications'
   | 'pgr'
-  | 'timetable';
+  | 'timetable'
+  | 'applicant-portal';
 
 export type ScenarioClass = 'ci-only' | 'standard-demo' | 'performance-hosted';
 

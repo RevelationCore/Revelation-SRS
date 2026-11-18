@@ -141,8 +141,10 @@ import { curriculumPublicationRoutes } from './routes/curriculum-publications.js
 import { awardConfermentRoutes } from './routes/award-conferment.js';
 import { awardDocumentRoutes } from './routes/award-documents.js';
 import { applicationRoutes } from './routes/applications.js';
+import { applicantPortalRoutes } from './routes/applicant-portal.js';
+import { ApplicantPortalService } from './platform/admissions/applicant-portal-service.js';
 import { SupportService } from './platform/support/support-service.js';
-import { requestAccountClosure } from './platform/delivery/producers/access.js';
+import { requestAccountAccess, requestAccountClosure } from './platform/delivery/producers/access.js';
 import { StatusCaseService } from './platform/status-cases/status-case-service.js';
 import { CurriculumPublicationService } from './platform/curriculum/publication-service.js';
 import { AcademicExceptionService } from './platform/curriculum/academic-exception-service.js';
@@ -543,6 +545,9 @@ export async function buildApp(
   fastify.decorate('awardDocumentService', awardDocuments);
   fastify.decorate('graduationService', graduation);
   fastify.decorate('applicationService', applications);
+  // A person bound to an application gets an applicant account (D-38, D-39).
+  applications.useAccountRequests((tenantId, personId, changeKey) => requestAccountAccess(deliveries, db, tenantId, { personId, changeKey }));
+  fastify.decorate('applicantPortalService', new ApplicantPortalService(db, applications, valueSets));
   fastify.decorate('employmentService', employment);
   fastify.decorate('businessCaseService', businessCases);
   fastify.decorate('identityResolutionService', identityResolution);
@@ -758,6 +763,7 @@ export async function buildApp(
       ['/document-signing-keys',     'progression'],
       ['/graduation-',               'progression'],
       ['/ceremony-allocations',      'progression'],
+      ['/applicants/',               'admissions'],  // applicant self-service (D-39)
       ['/api/v1/applications',       'admissions'],  // anchored: UCAS has /regulatory/ucas/applications
       ['/admissions-offers',         'admissions'],
       ['/offer-conditions',          'admissions'],
@@ -866,6 +872,7 @@ export async function buildApp(
   await fastify.register(awardConfermentRoutes,     { prefix: '/api/v1' });
   await fastify.register(awardDocumentRoutes,       { prefix: '/api/v1' });
   await fastify.register(applicationRoutes,         { prefix: '/api/v1' });
+  await fastify.register(applicantPortalRoutes,     { prefix: '/api/v1' });
   await fastify.register(engagementOutcomeRoutes,   { prefix: '/api/v1' });
   await fastify.register(engagementProxyRoutes,     { prefix: '/api/v1' });
   await fastify.register(circumstancesRoutes,       { prefix: '/api/v1' });
@@ -938,6 +945,7 @@ declare module 'fastify' {
     moduleSubjectService: ModuleSubjectService;
     timetableService: TimetableService;
     allocationService: AllocationService;
+    applicantPortalService: ApplicantPortalService;
     moduleSelectionService: ModuleSelectionService;
     bindingChangeService: BindingChangeService;
     registrationPeriodService: RegistrationPeriodService;

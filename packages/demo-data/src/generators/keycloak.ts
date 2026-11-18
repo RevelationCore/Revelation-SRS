@@ -34,6 +34,9 @@ export const DEMO_PERSONAS: readonly PersonaSpec[] = [
   { email: 'bob.demo@demo.srs',   username: 'bob.demo',   firstName: 'DEMO Bob',       lastName: 'Demo',          roles: ['student'],                                        personaId: PERSONA_IDS.STUDENT_INTERMITTING, srsPersonId: '882c8f11-bfe2-5c58-9430-025dd9115221' },
   { email: 'carol.demo@demo.srs', username: 'carol.demo', firstName: 'DEMO Carol',     lastName: 'Demo',          roles: ['student'],                                        personaId: PERSONA_IDS.STUDENT_GRADUATED,    srsPersonId: 'acd20b94-4c57-5f6a-8397-17479d9bc5cb' },
   { email: 'examiner@demo.srs',   username: 'examiner',   firstName: 'DEMO External',  lastName: 'Examiner',      roles: ['external-examiner'],                              personaId: PERSONA_IDS.STAFF_EXAMINER       },
+  // Phase 5 D-39: applicants who sign in to the portal (applicant-pipeline seqs 14 and 4, default demo tenant).
+  { email: 'dee.applicant@demo.srs', username: 'dee.applicant', firstName: 'DEMO Dee', lastName: 'Applicant', roles: ['applicant'], personaId: PERSONA_IDS.APPLICANT_DIRECT, srsPersonId: 'c0ccdfac-ddcf-5f7a-952f-52b81b3ead8f' },
+  { email: 'uma.applicant@demo.srs', username: 'uma.applicant', firstName: 'DEMO Uma', lastName: 'Applicant', roles: ['applicant'], personaId: PERSONA_IDS.APPLICANT_UCAS,   srsPersonId: '158e84e8-2282-5b60-80bc-00df330b0409' },
   { email: 'ops@demo.srs',        username: 'ops',        firstName: 'DEMO Ops',       lastName: 'Operator',      roles: ['registry-administrator', 'tenant-administrator'], personaId: PERSONA_IDS.STAFF_OPS            },
 ];
 

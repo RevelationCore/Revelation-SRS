@@ -64,6 +64,67 @@
       "applications":  "Ceisiadau",
       "research":      "Ymchwil"
     },
+    "applications": {
+      "title": "Fy ngheisiadau",
+      "intro": "Eich ceisiadau, cynigion a'r amodau y mae angen i chi eu bodloni o hyd.",
+      "none": "Dim ceisiadau",
+      "noneDetail": "Bydd ceisiadau'n ymddangos yma unwaith y bydd derbyniadau wedi'u paru â chi.",
+      "programmeTbc": "Rhaglen i'w chadarnhau",
+      "back": "Pob cais",
+      "cas": "Cadarnhad Derbyn i Astudio: {{status}}",
+      "ucasHub": "Gwnaethoch gais drwy UCAS. Atebwch gynigion a thynnu'n ôl yn UCAS Hub; mae'r dudalen hon yn dangos ble mae eich cais.",
+      "offerTitle": "Cynnig {{type}}",
+      "expires": "Atebwch erbyn {{date}}",
+      "accept": "Derbyn y cynnig",
+      "decline": "Gwrthod y cynnig",
+      "conditions": "Amodau",
+      "upload": "Llwytho tystiolaeth",
+      "evidenceReceived": "Tystiolaeth wedi'i derbyn {{date}}; heb ei gwirio eto",
+      "evidenceVerified": "Tystiolaeth wedi'i derbyn {{date}} a'i gwirio",
+      "withdraw": "Tynnu'r cais hwn yn ôl",
+      "withdrawConfirm": "Tynnu'r cais hwn yn ôl? Ni ellir dadwneud hyn.",
+      "withdrawYes": "Ie, tynnu'n ôl",
+      "cancel": "Canslo",
+      "responded": {
+        "accept": "Gwnaethoch dderbyn y cynnig hwn.",
+        "decline": "Gwnaethoch wrthod y cynnig hwn."
+      },
+      "offerType": {
+        "conditional": "amodol",
+        "unconditional": "diamod"
+      },
+      "conditionStatus": {
+        "pending": "Heb ei fodloni eto",
+        "met": "Wedi'i fodloni",
+        "waived": "Wedi'i hepgor",
+        "unmet": "Heb ei fodloni"
+      },
+      "confirmation": {
+        "confirmed": "Mae eich lle wedi'i gadarnhau.",
+        "confirmed-alternative": "Cynigiwyd lle i chi ar gwrs arall.",
+        "unsuccessful": "Nid oedd eich cais yn llwyddiannus."
+      },
+      "channel": {
+        "ucas": "UCAS",
+        "direct": "Uniongyrchol",
+        "agent": "Drwy asiant",
+        "international-direct": "Rhyngwladol",
+        "international-agent": "Rhyngwladol, drwy asiant",
+        "clearing": "Clirio"
+      },
+      "status": {
+        "received": "Wedi'i dderbyn",
+        "under-consideration": "Yn cael ei ystyried",
+        "offer-made": "Cynnig wedi'i wneud",
+        "offer-accepted": "Cynnig wedi'i dderbyn",
+        "offer-declined": "Cynnig wedi'i wrthod",
+        "conditions-met": "Amodau wedi'u bodloni",
+        "unsuccessful": "Aflwyddiannus",
+        "withdrawn": "Wedi'i dynnu'n ôl",
+        "confirmed": "Lle wedi'i gadarnhau",
+        "confirmed-alternative": "Lle arall wedi'i gadarnhau"
+      }
+    },
     "dashboard": {
       "applicationsDesc": "Eich ceisiadau, cynigion ac amodau",
       "researchDesc":     "Myfyrwyr ymchwil, paneli adolygu ac arholiadau a neilltuwyd i chi",

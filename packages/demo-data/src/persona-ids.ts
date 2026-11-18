@@ -12,6 +12,9 @@ export const PERSONA_IDS = {
   STAFF_DPO:            'persona-02-0000-4000-8000-000000000004', // dpo@demo.srs
   STAFF_EXAMINER:       'persona-02-0000-4000-8000-000000000005', // examiner@demo.srs
   STAFF_OPS:            'persona-02-0000-4000-8000-000000000006', // ops@demo.srs
+  // Applicants and research staff (self-service portal, Phase 5 D-38 to D-40)
+  APPLICANT_DIRECT:     'persona-04-0000-4000-8000-000000000001', // dee.applicant@demo.srs
+  APPLICANT_UCAS:       'persona-04-0000-4000-8000-000000000002', // uma.applicant@demo.srs
   // Tenant/system admin
   ADMIN_SRS:            'persona-03-0000-4000-8000-000000000001', // sysadmin@demo.srs
 } as const;

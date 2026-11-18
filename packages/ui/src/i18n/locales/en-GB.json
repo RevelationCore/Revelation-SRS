@@ -64,6 +64,67 @@
       "applications":  "Applications",
       "research":      "Research"
     },
+    "applications": {
+      "title": "My applications",
+      "intro": "Your applications, offers and the conditions you still need to meet.",
+      "none": "No applications",
+      "noneDetail": "Applications appear here once admissions has matched them to you.",
+      "programmeTbc": "Programme to be confirmed",
+      "back": "All applications",
+      "cas": "Confirmation of Acceptance for Studies: {{status}}",
+      "ucasHub": "You applied through UCAS. Reply to offers and withdraw in UCAS Hub; this page shows where your application stands.",
+      "offerTitle": "{{type}} offer",
+      "expires": "Reply by {{date}}",
+      "accept": "Accept offer",
+      "decline": "Decline offer",
+      "conditions": "Conditions",
+      "upload": "Upload evidence",
+      "evidenceReceived": "Evidence received {{date}}; not yet checked",
+      "evidenceVerified": "Evidence received {{date}} and checked",
+      "withdraw": "Withdraw this application",
+      "withdrawConfirm": "Withdraw this application? This cannot be undone.",
+      "withdrawYes": "Yes, withdraw",
+      "cancel": "Cancel",
+      "responded": {
+        "accept": "You accepted this offer.",
+        "decline": "You declined this offer."
+      },
+      "offerType": {
+        "conditional": "Conditional",
+        "unconditional": "Unconditional"
+      },
+      "conditionStatus": {
+        "pending": "Outstanding",
+        "met": "Met",
+        "waived": "Waived",
+        "unmet": "Not met"
+      },
+      "confirmation": {
+        "confirmed": "Your place is confirmed.",
+        "confirmed-alternative": "You have been offered a place on another course.",
+        "unsuccessful": "Your application was not successful."
+      },
+      "channel": {
+        "ucas": "UCAS",
+        "direct": "Direct",
+        "agent": "Through an agent",
+        "international-direct": "International",
+        "international-agent": "International, through an agent",
+        "clearing": "Clearing"
+      },
+      "status": {
+        "received": "Received",
+        "under-consideration": "Being considered",
+        "offer-made": "Offer made",
+        "offer-accepted": "Offer accepted",
+        "offer-declined": "Offer declined",
+        "conditions-met": "Conditions met",
+        "unsuccessful": "Unsuccessful",
+        "withdrawn": "Withdrawn",
+        "confirmed": "Place confirmed",
+        "confirmed-alternative": "Alternative place confirmed"
+      }
+    },
     "dashboard": {
       "applicationsDesc": "Your applications, offers and conditions",
       "researchDesc":     "Research students, review panels and examinations you are assigned to",

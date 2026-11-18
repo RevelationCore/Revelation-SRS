@@ -96,3 +96,38 @@ ON CONFLICT DO NOTHING;
 INSERT INTO "field_value_set" ("entity_name", "field_name", "value_set_code", "description")
 VALUES ('source_version_reference', 'purpose_code', 'source-version-purpose-code', NULL)
 ON CONFLICT DO NOTHING;
+
+-- ── D-39: applicant self-service ────────────────────────────────────────────
+ALTER TABLE "admissions_offer" ADD COLUMN IF NOT EXISTS "responded_by" text;
+ALTER TABLE "admissions_offer" ADD COLUMN IF NOT EXISTS "response_channel_code" text;
+ALTER TABLE "student_application" ADD COLUMN IF NOT EXISTS "withdrawn_at" timestamptz;
+ALTER TABLE "student_application" ADD COLUMN IF NOT EXISTS "withdrawn_by" text;
+ALTER TABLE "student_application" ADD COLUMN IF NOT EXISTS "withdrawal_reason_code" text;
+
+INSERT INTO "value_set" ("set_code", "display_name", "source", "source_version", "description", "is_extensible")
+VALUES
+  ('offer-response-channel-code', 'Offer Response Channel', 'srs-internal', NULL, 'Where an applicant''s reply to an offer was made', false),
+  ('application-withdrawal-reason-code', 'Application Withdrawal Reason', 'srs-internal', NULL, 'Why an applicant withdrew; optional', true)
+ON CONFLICT ("set_code") DO NOTHING;
+
+INSERT INTO "value_set_member" ("value_set_id", "code", "display_label", "sort_order", "active_from", "source_metadata")
+SELECT vs."id", v.code, v.display_label, v.sort_order, '2000-01-01T00:00:00Z', NULL
+FROM "value_set" vs,
+(VALUES
+  ('offer-response-channel-code', 'ucas',             'UCAS',                     10),
+  ('offer-response-channel-code', 'applicant-portal', 'Applicant portal',         20),
+  ('offer-response-channel-code', 'staff-recorded',   'Recorded by staff',        30),
+  ('application-withdrawal-reason-code', 'accepted-elsewhere', 'Accepted a place elsewhere', 10),
+  ('application-withdrawal-reason-code', 'changed-plans',      'Changed plans',              20),
+  ('application-withdrawal-reason-code', 'financial',          'Financial reasons',          30),
+  ('application-withdrawal-reason-code', 'personal',           'Personal reasons',           40),
+  ('application-withdrawal-reason-code', 'other',              'Other',                      90)
+) AS v(set_code, code, display_label, sort_order)
+WHERE vs."set_code" = v.set_code
+ON CONFLICT DO NOTHING;
+
+INSERT INTO "field_value_set" ("entity_name", "field_name", "value_set_code", "description")
+VALUES
+  ('admissions_offer',    'response_channel_code',  'offer-response-channel-code', NULL),
+  ('student_application', 'withdrawal_reason_code', 'application-withdrawal-reason-code', NULL)
+ON CONFLICT DO NOTHING;

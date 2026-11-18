@@ -66,6 +66,8 @@ export interface CasCaseDetailDto extends CasCaseDto {
   subject: { studentName: string | null; programmeCode: string | null; programmeTitle: string | null };
   eligibilityChecks: Array<{ checkId: string; guidanceVersion: string; checkTypeCode: string; resultCode: string; checkedBy: string; checkedAt: Date }>;
   assignmentVersions: Array<{ assignmentVersionId: string; versionNumber: number; assignedPayloadHash: string; casNumber: string | null; approvedBy: string; approvedAt: Date; smsRequestSentAt: Date | null; smsReceiptRef: string | null }>;
+  /** Why a CAS officer must look at this case: the applicant withdrew while it was still in hand (D-39). */
+  attentionReason: 'application-withdrawn' | null;
 }
 
 export interface RecordEligibilityCheckInput {
@@ -395,7 +397,10 @@ export class CasCaseService {
       firsts: await tx.select({ id: casCases.id, at: sql<Date>`min(${casCases.recordedAt})` }).from(casCases).where(and(eq(casCases.tenantId, t), inArray(casCases.id, u))).groupBy(casCases.id),
       checks: await tx.select().from(casEligibilityChecks).where(and(eq(casEligibilityChecks.tenantId, t), inArray(casEligibilityChecks.casCaseId, u))).orderBy(asc(casEligibilityChecks.checkedAt)),
       versions: await tx.select().from(casAssignmentVersions).where(and(eq(casAssignmentVersions.tenantId, t), inArray(casAssignmentVersions.casCaseId, u))).orderBy(asc(casAssignmentVersions.versionNumber)),
+      withdrawnApps: await tx.select({ id: studentApplications.id }).from(studentApplications).innerJoin(casCases, eq(casCases.applicationId, studentApplications.id))
+        .where(and(eq(studentApplications.tenantId, t), inArray(casCases.id, u), eq(studentApplications.statusCode, 'withdrawn'))),
     }));
+    const withdrawn = new Set(data.withdrawnApps.map((a) => a.id));
     const personIds = [...new Set(data.cases.map((c) => c.personId))] as Uuid[];
     const names = personIds.length ? await withTenantContext(this.db, tenantId, (tx) => tx.select({ personId: personIdentities.personId, first: personIdentities.legalFirstName, family: personIdentities.legalFamilyName })
       .from(personIdentities).where(and(eq(personIdentities.tenantId, t), inArray(personIdentities.personId, personIds), isNull(personIdentities.recordedUntil)))) : [];
@@ -417,6 +422,8 @@ export class CasCaseService {
           assignmentVersionId: v.id, versionNumber: v.versionNumber, assignedPayloadHash: v.assignedPayloadHash, casNumber: v.casNumber,
           approvedBy: v.approvedBy, approvedAt: v.approvedAt, smsRequestSentAt: v.smsRequestSentAt, smsReceiptRef: v.smsReceiptRef,
         })),
+        attentionReason: c.applicationId && withdrawn.has(c.applicationId) && (OPEN_CAS_STATUSES.includes(c.statusCode) || c.statusCode === 'assigned')
+          ? 'application-withdrawn' : null,
       };
     });
   }

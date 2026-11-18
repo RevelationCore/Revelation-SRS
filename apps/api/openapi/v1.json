@@ -25801,6 +25801,1641 @@
         }
       }
     },
+    "/api/v1/applicants/{personId}/applications": {
+      "get": {
+        "operationId": "getApplicantsByPersonIdApplications",
+        "tags": [
+          "admissions"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "personId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "additionalProperties": false,
+                    "type": "object",
+                    "required": [
+                      "applicationId",
+                      "channelCode",
+                      "cycle",
+                      "programme",
+                      "intakeCode",
+                      "modeOfStudyCode",
+                      "status",
+                      "respondElsewhere",
+                      "offer",
+                      "confirmation",
+                      "cas",
+                      "withdrawnAt"
+                    ],
+                    "properties": {
+                      "applicationId": {
+                        "type": "string"
+                      },
+                      "channelCode": {
+                        "type": "string"
+                      },
+                      "cycle": {
+                        "type": "string"
+                      },
+                      "programme": {
+                        "type": "object",
+                        "required": [
+                          "programmeId",
+                          "code",
+                          "title"
+                        ],
+                        "properties": {
+                          "programmeId": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "code": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "title": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        }
+                      },
+                      "intakeCode": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "modeOfStudyCode": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "status": {
+                        "description": "received | under-consideration | offer-made | offer-accepted | offer-declined | conditions-met | unsuccessful | withdrawn | confirmed | confirmed-alternative",
+                        "type": "string"
+                      },
+                      "respondElsewhere": {
+                        "description": "True when the applicant replies through UCAS Hub, not this portal",
+                        "type": "boolean"
+                      },
+                      "offer": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "required": [
+                              "offerId",
+                              "version",
+                              "offerTypeCode",
+                              "statusCode",
+                              "expiresOn",
+                              "responseCode",
+                              "respondedAt",
+                              "conditions"
+                            ],
+                            "properties": {
+                              "offerId": {
+                                "type": "string"
+                              },
+                              "version": {
+                                "type": "number"
+                              },
+                              "offerTypeCode": {
+                                "type": "string"
+                              },
+                              "statusCode": {
+                                "type": "string"
+                              },
+                              "expiresOn": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "responseCode": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "respondedAt": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "conditions": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "required": [
+                                    "conditionId",
+                                    "description",
+                                    "requiredValue",
+                                    "statusCode",
+                                    "evidence"
+                                  ],
+                                  "properties": {
+                                    "conditionId": {
+                                      "type": "string"
+                                    },
+                                    "description": {
+                                      "type": "string"
+                                    },
+                                    "requiredValue": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string"
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    },
+                                    "statusCode": {
+                                      "type": "string"
+                                    },
+                                    "evidence": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "required": [
+                                          "evidenceId",
+                                          "receivedAt",
+                                          "verified"
+                                        ],
+                                        "properties": {
+                                          "evidenceId": {
+                                            "type": "string"
+                                          },
+                                          "receivedAt": {
+                                            "type": "string"
+                                          },
+                                          "verified": {
+                                            "type": "boolean"
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "confirmation": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "required": [
+                              "outcomeCode",
+                              "decidedAt"
+                            ],
+                            "properties": {
+                              "outcomeCode": {
+                                "type": "string"
+                              },
+                              "decidedAt": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "cas": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "required": [
+                              "statusCode",
+                              "casNumber"
+                            ],
+                            "properties": {
+                              "statusCode": {
+                                "type": "string"
+                              },
+                              "casNumber": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            }
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "withdrawnAt": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/applicants/{personId}/applications/{applicationId}": {
+      "get": {
+        "operationId": "getApplicantsByPersonIdApplicationsByApplicationId",
+        "tags": [
+          "admissions"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "personId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "applicationId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "applicationId",
+                    "channelCode",
+                    "cycle",
+                    "programme",
+                    "intakeCode",
+                    "modeOfStudyCode",
+                    "status",
+                    "respondElsewhere",
+                    "offer",
+                    "confirmation",
+                    "cas",
+                    "withdrawnAt"
+                  ],
+                  "properties": {
+                    "applicationId": {
+                      "type": "string"
+                    },
+                    "channelCode": {
+                      "type": "string"
+                    },
+                    "cycle": {
+                      "type": "string"
+                    },
+                    "programme": {
+                      "type": "object",
+                      "required": [
+                        "programmeId",
+                        "code",
+                        "title"
+                      ],
+                      "properties": {
+                        "programmeId": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "code": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "title": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
+                    },
+                    "intakeCode": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "modeOfStudyCode": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "status": {
+                      "description": "received | under-consideration | offer-made | offer-accepted | offer-declined | conditions-met | unsuccessful | withdrawn | confirmed | confirmed-alternative",
+                      "type": "string"
+                    },
+                    "respondElsewhere": {
+                      "description": "True when the applicant replies through UCAS Hub, not this portal",
+                      "type": "boolean"
+                    },
+                    "offer": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": [
+                            "offerId",
+                            "version",
+                            "offerTypeCode",
+                            "statusCode",
+                            "expiresOn",
+                            "responseCode",
+                            "respondedAt",
+                            "conditions"
+                          ],
+                          "properties": {
+                            "offerId": {
+                              "type": "string"
+                            },
+                            "version": {
+                              "type": "number"
+                            },
+                            "offerTypeCode": {
+                              "type": "string"
+                            },
+                            "statusCode": {
+                              "type": "string"
+                            },
+                            "expiresOn": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "responseCode": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "respondedAt": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "conditions": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "required": [
+                                  "conditionId",
+                                  "description",
+                                  "requiredValue",
+                                  "statusCode",
+                                  "evidence"
+                                ],
+                                "properties": {
+                                  "conditionId": {
+                                    "type": "string"
+                                  },
+                                  "description": {
+                                    "type": "string"
+                                  },
+                                  "requiredValue": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "statusCode": {
+                                    "type": "string"
+                                  },
+                                  "evidence": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "required": [
+                                        "evidenceId",
+                                        "receivedAt",
+                                        "verified"
+                                      ],
+                                      "properties": {
+                                        "evidenceId": {
+                                          "type": "string"
+                                        },
+                                        "receivedAt": {
+                                          "type": "string"
+                                        },
+                                        "verified": {
+                                          "type": "boolean"
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "confirmation": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": [
+                            "outcomeCode",
+                            "decidedAt"
+                          ],
+                          "properties": {
+                            "outcomeCode": {
+                              "type": "string"
+                            },
+                            "decidedAt": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "cas": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": [
+                            "statusCode",
+                            "casNumber"
+                          ],
+                          "properties": {
+                            "statusCode": {
+                              "type": "string"
+                            },
+                            "casNumber": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "withdrawnAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/applicants/{personId}/offers/{offerId}/response": {
+      "post": {
+        "operationId": "createApplicantsByPersonIdOffersByOfferIdResponse",
+        "tags": [
+          "admissions"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "responseCode"
+                ],
+                "properties": {
+                  "responseCode": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "accept"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "decline"
+                        ]
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "personId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "offerId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "applicationId",
+                    "channelCode",
+                    "cycle",
+                    "programme",
+                    "intakeCode",
+                    "modeOfStudyCode",
+                    "status",
+                    "respondElsewhere",
+                    "offer",
+                    "confirmation",
+                    "cas",
+                    "withdrawnAt"
+                  ],
+                  "properties": {
+                    "applicationId": {
+                      "type": "string"
+                    },
+                    "channelCode": {
+                      "type": "string"
+                    },
+                    "cycle": {
+                      "type": "string"
+                    },
+                    "programme": {
+                      "type": "object",
+                      "required": [
+                        "programmeId",
+                        "code",
+                        "title"
+                      ],
+                      "properties": {
+                        "programmeId": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "code": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "title": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
+                    },
+                    "intakeCode": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "modeOfStudyCode": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "status": {
+                      "description": "received | under-consideration | offer-made | offer-accepted | offer-declined | conditions-met | unsuccessful | withdrawn | confirmed | confirmed-alternative",
+                      "type": "string"
+                    },
+                    "respondElsewhere": {
+                      "description": "True when the applicant replies through UCAS Hub, not this portal",
+                      "type": "boolean"
+                    },
+                    "offer": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": [
+                            "offerId",
+                            "version",
+                            "offerTypeCode",
+                            "statusCode",
+                            "expiresOn",
+                            "responseCode",
+                            "respondedAt",
+                            "conditions"
+                          ],
+                          "properties": {
+                            "offerId": {
+                              "type": "string"
+                            },
+                            "version": {
+                              "type": "number"
+                            },
+                            "offerTypeCode": {
+                              "type": "string"
+                            },
+                            "statusCode": {
+                              "type": "string"
+                            },
+                            "expiresOn": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "responseCode": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "respondedAt": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "conditions": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "required": [
+                                  "conditionId",
+                                  "description",
+                                  "requiredValue",
+                                  "statusCode",
+                                  "evidence"
+                                ],
+                                "properties": {
+                                  "conditionId": {
+                                    "type": "string"
+                                  },
+                                  "description": {
+                                    "type": "string"
+                                  },
+                                  "requiredValue": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "statusCode": {
+                                    "type": "string"
+                                  },
+                                  "evidence": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "required": [
+                                        "evidenceId",
+                                        "receivedAt",
+                                        "verified"
+                                      ],
+                                      "properties": {
+                                        "evidenceId": {
+                                          "type": "string"
+                                        },
+                                        "receivedAt": {
+                                          "type": "string"
+                                        },
+                                        "verified": {
+                                          "type": "boolean"
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "confirmation": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": [
+                            "outcomeCode",
+                            "decidedAt"
+                          ],
+                          "properties": {
+                            "outcomeCode": {
+                              "type": "string"
+                            },
+                            "decidedAt": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "cas": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": [
+                            "statusCode",
+                            "casNumber"
+                          ],
+                          "properties": {
+                            "statusCode": {
+                              "type": "string"
+                            },
+                            "casNumber": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "withdrawnAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/applicants/{personId}/conditions/{conditionId}/evidence": {
+      "post": {
+        "operationId": "createApplicantsByPersonIdConditionsByConditionIdEvidence",
+        "tags": [
+          "admissions"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "personId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "conditionId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "evidenceId"
+                  ],
+                  "properties": {
+                    "evidenceId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/applicants/{personId}/applications/{applicationId}/withdrawal": {
+      "post": {
+        "operationId": "createApplicantsByPersonIdApplicationsByApplicationIdWithdrawal",
+        "tags": [
+          "admissions"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reasonCode": {
+                    "maxLength": 60,
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "personId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "applicationId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "applicationId",
+                    "channelCode",
+                    "cycle",
+                    "programme",
+                    "intakeCode",
+                    "modeOfStudyCode",
+                    "status",
+                    "respondElsewhere",
+                    "offer",
+                    "confirmation",
+                    "cas",
+                    "withdrawnAt"
+                  ],
+                  "properties": {
+                    "applicationId": {
+                      "type": "string"
+                    },
+                    "channelCode": {
+                      "type": "string"
+                    },
+                    "cycle": {
+                      "type": "string"
+                    },
+                    "programme": {
+                      "type": "object",
+                      "required": [
+                        "programmeId",
+                        "code",
+                        "title"
+                      ],
+                      "properties": {
+                        "programmeId": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "code": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "title": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
+                    },
+                    "intakeCode": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "modeOfStudyCode": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "status": {
+                      "description": "received | under-consideration | offer-made | offer-accepted | offer-declined | conditions-met | unsuccessful | withdrawn | confirmed | confirmed-alternative",
+                      "type": "string"
+                    },
+                    "respondElsewhere": {
+                      "description": "True when the applicant replies through UCAS Hub, not this portal",
+                      "type": "boolean"
+                    },
+                    "offer": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": [
+                            "offerId",
+                            "version",
+                            "offerTypeCode",
+                            "statusCode",
+                            "expiresOn",
+                            "responseCode",
+                            "respondedAt",
+                            "conditions"
+                          ],
+                          "properties": {
+                            "offerId": {
+                              "type": "string"
+                            },
+                            "version": {
+                              "type": "number"
+                            },
+                            "offerTypeCode": {
+                              "type": "string"
+                            },
+                            "statusCode": {
+                              "type": "string"
+                            },
+                            "expiresOn": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "responseCode": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "respondedAt": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "conditions": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "required": [
+                                  "conditionId",
+                                  "description",
+                                  "requiredValue",
+                                  "statusCode",
+                                  "evidence"
+                                ],
+                                "properties": {
+                                  "conditionId": {
+                                    "type": "string"
+                                  },
+                                  "description": {
+                                    "type": "string"
+                                  },
+                                  "requiredValue": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "statusCode": {
+                                    "type": "string"
+                                  },
+                                  "evidence": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "required": [
+                                        "evidenceId",
+                                        "receivedAt",
+                                        "verified"
+                                      ],
+                                      "properties": {
+                                        "evidenceId": {
+                                          "type": "string"
+                                        },
+                                        "receivedAt": {
+                                          "type": "string"
+                                        },
+                                        "verified": {
+                                          "type": "boolean"
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "confirmation": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": [
+                            "outcomeCode",
+                            "decidedAt"
+                          ],
+                          "properties": {
+                            "outcomeCode": {
+                              "type": "string"
+                            },
+                            "decidedAt": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "cas": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": [
+                            "statusCode",
+                            "casNumber"
+                          ],
+                          "properties": {
+                            "statusCode": {
+                              "type": "string"
+                            },
+                            "casNumber": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "withdrawnAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/students/{personId}/engagement-outcomes": {
       "post": {
         "operationId": "createStudentsByPersonIdEngagementOutcomes",

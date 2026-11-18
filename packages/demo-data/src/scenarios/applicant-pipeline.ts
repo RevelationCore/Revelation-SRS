@@ -1,5 +1,9 @@
 import {
   academicPeriods,
+  admissionsOffers,
+  applicationReceivedPayloads,
+  offerConditions,
+  studentApplications,
   awardingBodies,
   moduleOfferings,
   modules,
@@ -24,6 +28,8 @@ import { STORY_MARKERS } from '../story-markers.js';
 import type { ScenarioManifest } from '../types.js';
 import { batchInsert } from '../utils/batch.js';
 import { deterministicId } from '../generators/ids.js';
+import { personId as personIdForSeq } from '../generators/persons.js';
+import { programmeId } from '../generators/curriculum.js';
 
 export const manifest: ScenarioManifest = {
   slug:             'applicant-pipeline',
@@ -41,7 +47,7 @@ export const manifest: ScenarioManifest = {
     STORY_MARKERS.S1_BOB_APPLICANT,
     STORY_MARKERS.S1_CAROL_APPLICANT,
   ],
-  phases: ['reference-data', 'personas', 'persons', 'admissions'],
+  phases: ['reference-data', 'personas', 'persons', 'admissions', 'applicant-portal'],
 };
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -108,6 +114,7 @@ export async function load(
     case 'personas':        return loadPersonas();
     case 'persons':         return loadPersons(db, tenantId);
     case 'admissions':      return loadAdmissions(db, tenantId);
+    case 'applicant-portal': return loadApplicantPortal(db, tenantId);
     default: return;
   }
 }
@@ -194,4 +201,39 @@ async function loadAdmissions(db: Db, tenantId: string): Promise<void> {
   }
 
   await batchInsert(db, ucasApplications, apps);
+}
+
+// ─── Phase: applicant portal (Phase 5 D-39) ─────────────────────────────────────
+// Two applicants who sign in to the portal: Dee applied directly and holds a
+// conditional offer she can accept, decline or upload evidence for; Uma
+// applied through UCAS, so the portal shows where she stands and sends her to
+// UCAS Hub to reply. Their Keycloak personas carry these person ids.
+
+export const APPLICANT_PORTAL_SEQS = { direct: 14, ucas: 4 } as const;
+
+async function loadApplicantPortal(db: Db, tenantId: string): Promise<void> {
+  const decidedAt = new Date('2025-11-01T10:00:00Z');
+  for (const [channelCode, seq] of [['direct', APPLICANT_PORTAL_SEQS.direct], ['ucas', APPLICANT_PORTAL_SEQS.ucas]] as const) {
+    const sourceReference = `DEMO-PORTAL-${channelCode.toUpperCase()}-${seq}`;
+    const payloadId = deterministicId('applicant-portal-payload', tenantId, String(seq));
+    const applicationId = deterministicId('applicant-portal-application', tenantId, String(seq));
+    const offerId = deterministicId('applicant-portal-offer', tenantId, String(seq));
+    await batchInsert(db, applicationReceivedPayloads, [{
+      id: payloadId, tenantId, channelCode, sourceReference, cycle: '2026',
+      payload: { qualifications: ['A-level'], personalStatement: 'Demo personal statement' }, payloadHash: `demo:${sourceReference}`, receivedBy: ACTOR, receivedAt: VALID_FROM,
+    }]);
+    await batchInsert(db, studentApplications, [{
+      id: applicationId, tenantId, channelCode, sourceReference, cycle: '2026', personId: personIdForSeq(tenantId, seq), identityMatchCode: 'created',
+      programmeId: programmeId(tenantId, 'BSCS'), intakeCode: '2026-09', modeOfStudyCode: 'full-time', latestPayloadId: payloadId,
+      statusCode: 'offered', recommendationCode: 'offer', recommendationReason: 'Meets the published entry criteria', recommendedBy: 'demo-admissions-officer', recommendedAt: decidedAt,
+    }]);
+    await batchInsert(db, admissionsOffers, [{
+      id: offerId, tenantId, applicationId, version: 1, programmeId: programmeId(tenantId, 'BSCS'), intakeCode: '2026-09', modeOfStudyCode: 'full-time',
+      offerTypeCode: 'conditional', statusCode: 'made', expiresOn: '2026-06-30', decidedBy: 'demo-academic-selector', decidedAt,
+    }]);
+    await batchInsert(db, offerConditions, [{
+      id: deterministicId('applicant-portal-condition', tenantId, String(seq)), tenantId, offerId,
+      conditionTypeCode: 'academic', description: 'AAB at A level, including Mathematics', requiredValue: 'AAB',
+    }]);
+  }
 }

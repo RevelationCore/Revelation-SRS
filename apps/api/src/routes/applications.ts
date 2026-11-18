@@ -96,7 +96,11 @@ export function applicationRoutes(fastify: FastifyInstance): void {
 
   action('/admissions-offers/:id/response', 'application:receive', Type.Object({
     responseCode: Type.Union([Type.Literal('accept'), Type.Literal('decline')]), sourceTimestamp: Type.String({ format: 'date-time' }),
-  }), (r, id) => fastify.applicationService.respond(r.tenantId, id, r.body as never), () => ['admissions_offer', 'Applicant response']);
+  }), (r, id) => fastify.applicationService.respond(r.tenantId, id, r.body as never, {
+    respondedBy: r.user.sub,
+    // A response relayed by the UCAS integration is UCAS's; anything else is staff recording it (D-39).
+    channelCode: r.user.roles.includes('integration-service') ? 'ucas' : 'staff-recorded',
+  }), () => ['admissions_offer', 'Applicant response']);
   action('/admissions-offers/:id/change', 'offer:decide', Type.Object({
     reason: Type.String({ minLength: 1, maxLength: 2000 }), programmeId: Type.Optional(Type.String()), modeOfStudyCode: Type.Optional(Type.String()),
     offerTypeCode: Type.Optional(Type.Union([Type.Literal('conditional'), Type.Literal('unconditional')])),

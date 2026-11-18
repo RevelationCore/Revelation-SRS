@@ -208,6 +208,11 @@ export const PERMISSION_ROLES = {
   'clearing:decide':                     ['programme-approver', 'registry-administrator'] as Role[],
   'clearing:review':                     ['programme-approver'] as Role[],
   'registration:confirm:own':            ['student'] as Role[],
+  // Phase 5 D-39: an applicant's own applications (scoped to srs_person_id).
+  'application:read:own':                ['applicant'] as Role[],
+  'offer:respond:own':                   ['applicant'] as Role[],
+  'condition-evidence:submit:own':       ['applicant'] as Role[],
+  'application:withdraw:own':            ['applicant'] as Role[],
   'pgr-case:read':                       ['pgr-administrator', 'pgr-director', 'research-supervisor', 'registry-administrator'] as Role[],
   'pgr-case:read:own':                   ['student'] as Role[],
   'pgr-case:write':                      ['pgr-administrator', 'registry-administrator'] as Role[],

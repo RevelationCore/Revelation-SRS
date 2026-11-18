@@ -2068,6 +2068,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/applicants/{personId}/applications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getApplicantsByPersonIdApplications"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/applicants/{personId}/applications/{applicationId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getApplicantsByPersonIdApplicationsByApplicationId"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/applicants/{personId}/offers/{offerId}/response": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createApplicantsByPersonIdOffersByOfferIdResponse"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/applicants/{personId}/conditions/{conditionId}/evidence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createApplicantsByPersonIdConditionsByConditionIdEvidence"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/applicants/{personId}/applications/{applicationId}/withdrawal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createApplicantsByPersonIdApplicationsByApplicationIdWithdrawal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/students/{personId}/engagement-outcomes": {
         parameters: {
             query?: never;
@@ -15891,6 +15971,450 @@ export interface operations {
                 content: {
                     "application/json": {
                         [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getApplicantsByPersonIdApplications: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        applicationId: string;
+                        channelCode: string;
+                        cycle: string;
+                        programme: {
+                            programmeId: string | null;
+                            code: string | null;
+                            title: string | null;
+                        };
+                        intakeCode: string | null;
+                        modeOfStudyCode: string | null;
+                        /** @description received | under-consideration | offer-made | offer-accepted | offer-declined | conditions-met | unsuccessful | withdrawn | confirmed | confirmed-alternative */
+                        status: string;
+                        /** @description True when the applicant replies through UCAS Hub, not this portal */
+                        respondElsewhere: boolean;
+                        offer: {
+                            offerId: string;
+                            version: number;
+                            offerTypeCode: string;
+                            statusCode: string;
+                            expiresOn: string | null;
+                            responseCode: string | null;
+                            respondedAt: string | null;
+                            conditions: {
+                                conditionId: string;
+                                description: string;
+                                requiredValue: string | null;
+                                statusCode: string;
+                                evidence: {
+                                    evidenceId: string;
+                                    receivedAt: string;
+                                    verified: boolean;
+                                }[];
+                            }[];
+                        } | null;
+                        confirmation: {
+                            outcomeCode: string;
+                            decidedAt: string;
+                        } | null;
+                        cas: {
+                            statusCode: string;
+                            casNumber: string | null;
+                        } | null;
+                        withdrawnAt: string | null;
+                    }[];
+                };
+            };
+        };
+    };
+    getApplicantsByPersonIdApplicationsByApplicationId: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personId: string;
+                applicationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        applicationId: string;
+                        channelCode: string;
+                        cycle: string;
+                        programme: {
+                            programmeId: string | null;
+                            code: string | null;
+                            title: string | null;
+                        };
+                        intakeCode: string | null;
+                        modeOfStudyCode: string | null;
+                        /** @description received | under-consideration | offer-made | offer-accepted | offer-declined | conditions-met | unsuccessful | withdrawn | confirmed | confirmed-alternative */
+                        status: string;
+                        /** @description True when the applicant replies through UCAS Hub, not this portal */
+                        respondElsewhere: boolean;
+                        offer: {
+                            offerId: string;
+                            version: number;
+                            offerTypeCode: string;
+                            statusCode: string;
+                            expiresOn: string | null;
+                            responseCode: string | null;
+                            respondedAt: string | null;
+                            conditions: {
+                                conditionId: string;
+                                description: string;
+                                requiredValue: string | null;
+                                statusCode: string;
+                                evidence: {
+                                    evidenceId: string;
+                                    receivedAt: string;
+                                    verified: boolean;
+                                }[];
+                            }[];
+                        } | null;
+                        confirmation: {
+                            outcomeCode: string;
+                            decidedAt: string;
+                        } | null;
+                        cas: {
+                            statusCode: string;
+                            casNumber: string | null;
+                        } | null;
+                        withdrawnAt: string | null;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createApplicantsByPersonIdOffersByOfferIdResponse: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personId: string;
+                offerId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    responseCode: "accept" | "decline";
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        applicationId: string;
+                        channelCode: string;
+                        cycle: string;
+                        programme: {
+                            programmeId: string | null;
+                            code: string | null;
+                            title: string | null;
+                        };
+                        intakeCode: string | null;
+                        modeOfStudyCode: string | null;
+                        /** @description received | under-consideration | offer-made | offer-accepted | offer-declined | conditions-met | unsuccessful | withdrawn | confirmed | confirmed-alternative */
+                        status: string;
+                        /** @description True when the applicant replies through UCAS Hub, not this portal */
+                        respondElsewhere: boolean;
+                        offer: {
+                            offerId: string;
+                            version: number;
+                            offerTypeCode: string;
+                            statusCode: string;
+                            expiresOn: string | null;
+                            responseCode: string | null;
+                            respondedAt: string | null;
+                            conditions: {
+                                conditionId: string;
+                                description: string;
+                                requiredValue: string | null;
+                                statusCode: string;
+                                evidence: {
+                                    evidenceId: string;
+                                    receivedAt: string;
+                                    verified: boolean;
+                                }[];
+                            }[];
+                        } | null;
+                        confirmation: {
+                            outcomeCode: string;
+                            decidedAt: string;
+                        } | null;
+                        cas: {
+                            statusCode: string;
+                            casNumber: string | null;
+                        } | null;
+                        withdrawnAt: string | null;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createApplicantsByPersonIdConditionsByConditionIdEvidence: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personId: string;
+                conditionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        evidenceId: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createApplicantsByPersonIdApplicationsByApplicationIdWithdrawal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personId: string;
+                applicationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    reasonCode?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        applicationId: string;
+                        channelCode: string;
+                        cycle: string;
+                        programme: {
+                            programmeId: string | null;
+                            code: string | null;
+                            title: string | null;
+                        };
+                        intakeCode: string | null;
+                        modeOfStudyCode: string | null;
+                        /** @description received | under-consideration | offer-made | offer-accepted | offer-declined | conditions-met | unsuccessful | withdrawn | confirmed | confirmed-alternative */
+                        status: string;
+                        /** @description True when the applicant replies through UCAS Hub, not this portal */
+                        respondElsewhere: boolean;
+                        offer: {
+                            offerId: string;
+                            version: number;
+                            offerTypeCode: string;
+                            statusCode: string;
+                            expiresOn: string | null;
+                            responseCode: string | null;
+                            respondedAt: string | null;
+                            conditions: {
+                                conditionId: string;
+                                description: string;
+                                requiredValue: string | null;
+                                statusCode: string;
+                                evidence: {
+                                    evidenceId: string;
+                                    receivedAt: string;
+                                    verified: boolean;
+                                }[];
+                            }[];
+                        } | null;
+                        confirmation: {
+                            outcomeCode: string;
+                            decidedAt: string;
+                        } | null;
+                        cas: {
+                            statusCode: string;
+                            casNumber: string | null;
+                        } | null;
+                        withdrawnAt: string | null;
                     };
                 };
             };

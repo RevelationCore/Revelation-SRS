@@ -37,6 +37,10 @@ export const studentApplications = pgTable('student_application', {
   recommendationReason: text('recommendation_reason'),
   recommendedBy:        text('recommended_by'),
   recommendedAt:        timestamp('recommended_at', { withTimezone: true }),
+  /** An applicant's own withdrawal (Phase 5 D-39). */
+  withdrawnAt:          timestamp('withdrawn_at', { withTimezone: true }),
+  withdrawnBy:          text('withdrawn_by'),
+  withdrawalReasonCode: text('withdrawal_reason_code'),
   createdAt:            timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt:            timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
@@ -77,6 +81,9 @@ export const admissionsOffers = pgTable('admissions_offer', {
   responseCode:       text('response_code'),
   responseSourceAt:   timestamp('response_source_at', { withTimezone: true }),
   respondedAt:        timestamp('responded_at', { withTimezone: true }),
+  /** Who replied, and where (D-39): value set offer-response-channel-code. */
+  respondedBy:        text('responded_by'),
+  responseChannelCode: text('response_channel_code'),
 });
 export type AdmissionsOffer = typeof admissionsOffers.$inferSelect;
 

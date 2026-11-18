@@ -31,6 +31,8 @@ const NotificationsPage = lazy(() => import('./pages/NotificationsPage.js').then
 const DocumentsPage = lazy(() => import('./pages/DocumentsPage.js').then((m) => ({ default: m.DocumentsPage })));
 const RegistrationPage = lazy(() => import('./pages/RegistrationPage.js').then((m) => ({ default: m.RegistrationPage })));
 const GraduationPage = lazy(() => import('./pages/GraduationPage.js').then((m) => ({ default: m.GraduationPage })));
+const ApplicationsPage = lazy(() => import('./pages/ApplicationsPage.js').then((m) => ({ default: m.ApplicationsPage })));
+const ApplicationDetailPage = lazy(() => import('./pages/ApplicationDetailPage.js').then((m) => ({ default: m.ApplicationDetailPage })));
 
 function PageLoading() {
   return <p role="status" className="p-6 text-sm text-neutral-600">Loading…</p>;
@@ -76,6 +78,8 @@ export function App() {
           <Route path="/notifications"         element={<NotificationsPage />} />
           <Route path="/documents"             element={<DocumentsPage />} />
           <Route path="/graduation"            element={<GraduationPage />} />
+          <Route path="/applications"          element={<ApplicationsPage />} />
+          <Route path="/applications/:applicationId" element={<ApplicationDetailPage />} />
         </Route>
 
         {/* Public accessibility statement — no auth required */}

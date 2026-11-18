@@ -27,6 +27,7 @@ const NAV_ITEMS: Array<{ to: string; label: string; icon: ComponentType<{ classN
   { to: '/notifications', label: 'portal.nav.notifications', icon: Bell,            audience: 'student' },
   { to: '/documents',     label: 'portal.nav.documents',     icon: FileText,        audience: 'student' },
   { to: '/graduation',    label: 'portal.nav.graduation',    icon: GraduationCap,   audience: 'student' },
+  { to: '/applications',  label: 'portal.nav.applications',  icon: ClipboardCheck,  audience: 'applicant' },
 ];
 
 function navLinkClass({ isActive }: { isActive: boolean }) {

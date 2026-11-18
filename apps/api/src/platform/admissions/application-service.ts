@@ -77,6 +77,12 @@ export class ApplicationService {
   ) {}
 
   #ucasOutbox: UcasDecisionOutbox | null = null;
+  #accounts: ((tenantId: string, personId: string, changeKey: string) => Promise<void>) | null = null;
+
+  /** A person bound to an application with a certain identity gets an applicant account (D-38, D-39). */
+  useAccountRequests(request: (tenantId: string, personId: string, changeKey: string) => Promise<void>): void {
+    this.#accounts = request;
+  }
 
   /** Decisions on UCAS-channel applications are queued for UCAS in the same transaction (D-15). */
   useUcasOutbox(outbox: UcasDecisionOutbox): void {
@@ -149,6 +155,9 @@ export class ApplicationService {
       statusCode: route.complete ? 'received' : 'incomplete',
       routingReasonCode: !route.complete ? 'incomplete' : identity.matchCode === 'needs-review' ? 'identity' : null,
     }).returning());
+    if (identity.personId && identity.matchCode !== 'needs-review') {
+      await this.#accounts?.(tenantId, identity.personId, `applicant-bound:${row!.id}:${identity.personId}`);
+    }
     return { application: await this.get(tenantId, row!.id), created: true };
   }
 
@@ -162,6 +171,7 @@ export class ApplicationService {
       personId: personId, identityMatchCode: 'matched',
       routingReasonCode: app.routingReasonCode === 'identity' ? null : app.routingReasonCode, updatedAt: clockNow(),
     }).where(eq(studentApplications.id, app.id)));
+    await this.#accounts?.(tenantId, personId, `applicant-bound:${app.id}:${personId}`);
     return this.get(tenantId, applicationId);
   }
 
@@ -284,8 +294,14 @@ export class ApplicationService {
     return { application: await this.get(tenantId, applicationId), offerId };
   }
 
-  /** The applicant's response, with the channel's own timestamp. A response after expiry is refused. */
-  async respond(tenantId: string, offerId: string, input: { responseCode: 'accept' | 'decline'; sourceTimestamp: string }): Promise<AdmissionsOffer> {
+  /**
+   * The applicant's response, with the channel's own timestamp. A response
+   * after expiry is refused. Records who replied and where (D-39).
+   */
+  async respond(
+    tenantId: string, offerId: string, input: { responseCode: 'accept' | 'decline'; sourceTimestamp: string },
+    by: { respondedBy: string; channelCode: 'ucas' | 'applicant-portal' | 'staff-recorded' },
+  ): Promise<AdmissionsOffer> {
     const offer = await this.#offer(tenantId, offerId);
     if (offer.statusCode !== 'made') throw new ConflictError(`This offer is ${offer.statusCode}`);
     const sourceAt = new Date(input.sourceTimestamp);
@@ -295,7 +311,7 @@ export class ApplicationService {
     }
     const [row] = await withTenantContext(this.db, tenantId, (tx) => tx.update(admissionsOffers).set({
       statusCode: input.responseCode === 'accept' ? 'accepted' : 'declined', responseCode: input.responseCode,
-      responseSourceAt: sourceAt, respondedAt: clockNow(),
+      responseSourceAt: sourceAt, respondedAt: clockNow(), respondedBy: by.respondedBy, responseChannelCode: by.channelCode,
     }).where(eq(admissionsOffers.id, offer.id)).returning());
     return row!;
   }
