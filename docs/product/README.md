@@ -16,6 +16,7 @@
 - [Testing and user appraisal accessibility plan](testing-and-appraisal-accessibility-plan.md) — dependency-gated plan for trustworthy test entry points, full-stack evidence and accessible product appraisal.
 - [Testing and appraisal implementation baseline](testing-appraisal-implementation-baseline.md) — Phase 0 evidence map, ownership, first-journey decision and performance budgets.
 - [Testing and appraisal implementation status](testing-appraisal-implementation-status.md) — current exit-gate evidence, verification findings and remaining human/CI acceptance work.
+- [Enterprise readiness audit](enterprise-readiness-audit.md) — end-to-end review against security, availability, performance, scalability, maintainability and extensibility, with a four-phase remediation plan.
 - [Accessibility improvement plan](accessibility-improvement-plan.md) — accessibility findings and their remediation.
 - [Testing and appraisal remediation plan](testing-appraisal-remediation-plan.md) — follow-up work from the testing and appraisal review.
 - [Documentation history](../history.md) — how to inspect superseded plans and review evidence without keeping them in the active tree.
