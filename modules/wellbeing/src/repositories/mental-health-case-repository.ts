@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import { and, desc, eq, isNull } from 'drizzle-orm';
+import { and, asc, desc, eq, isNull, notInArray, sql } from 'drizzle-orm';
 
 import type { WellbeingTx } from '../db/client.js';
 import { wellbeingCases } from '../db/schema/wellbeing-case.js';
@@ -142,6 +142,42 @@ export async function listMentalHealthCasesForPerson(
       ),
     )
     .orderBy(mentalHealthCases.validFrom);
+}
+
+export interface MentalHealthCaseloadFilter {
+  excludeStatuses:    string[];
+  statusCode?:        string;
+  riskLevelCode?:     string;
+  assignedAdvisorId?: string;
+}
+
+/** Current versions of the tenant's open MH cases: highest risk first, then oldest (at most 200). */
+export async function listMentalHealthCaseload(
+  tx:       WellbeingTx,
+  tenantId: string,
+  filter:   MentalHealthCaseloadFilter,
+): Promise<MentalHealthCase[]> {
+  const rows = await tx
+    .select({ mh: mentalHealthCases })
+    .from(mentalHealthCases)
+    .innerJoin(wellbeingCases, eq(mentalHealthCases.wellbeingCaseId, wellbeingCases.id))
+    .where(
+      and(
+        eq(mentalHealthCases.tenantId, tenantId),
+        isNull(mentalHealthCases.recordedUntil),
+        filter.statusCode
+          ? eq(mentalHealthCases.statusCode, filter.statusCode)
+          : notInArray(mentalHealthCases.statusCode, filter.excludeStatuses),
+        ...(filter.riskLevelCode ? [eq(mentalHealthCases.riskLevelCode, filter.riskLevelCode)] : []),
+        ...(filter.assignedAdvisorId ? [eq(wellbeingCases.assignedAdvisorId, filter.assignedAdvisorId)] : []),
+      ),
+    )
+    .orderBy(
+      sql`CASE ${mentalHealthCases.riskLevelCode} WHEN 'crisis' THEN 0 WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END`,
+      asc(mentalHealthCases.validFrom),
+    )
+    .limit(200);
+  return rows.map((r) => r.mh);
 }
 
 // ── Bitemporal helpers ────────────────────────────────────────────────────────

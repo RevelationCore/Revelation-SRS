@@ -13,7 +13,8 @@ export interface AuditEntry {
     | 'ec-claim'
     | 'mental-health-case'
     | 'mh-session-note'
-    | 'intervention-plan';
+    | 'intervention-plan'
+    | 'early-warning-alert';
   resourceId:   string;
   personId:     string;
   context?:     Record<string, unknown>;

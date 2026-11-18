@@ -1,6 +1,6 @@
 import { type ChangeEvent, type FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { RuleVersionsPanel } from '../components/RuleVersionsPanel.js';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import {
   type Adjustment,
@@ -1671,8 +1671,19 @@ function WellbeingTab({
   const label = (members: { code: string; displayLabel: string }[], code: string) =>
     members.find(m => m.code === code)?.displayLabel ?? code;
 
+  const canOpenDisabilityCases = userHasAnyPermission(authRoles, ['disability:read']);
+  const canOpenMhCases = userHasAnyPermission(authRoles, ['mental-health-case:read']);
+
   return (
     <div className="space-y-8">
+
+      {(canOpenDisabilityCases || canOpenMhCases) && (
+        <nav aria-label="Wellbeing service cases" className="flex flex-wrap gap-4 text-sm">
+          <span className="text-neutral-600">Cases held by the wellbeing service:</span>
+          {canOpenDisabilityCases && <Link className="text-primary-600 hover:underline" to={`/wellbeing/disability-cases?personId=${personId}`}>Disability support cases</Link>}
+          {canOpenMhCases && <Link className="text-primary-600 hover:underline" to={`/wellbeing/mental-health-cases?personId=${personId}`}>Mental health cases</Link>}
+        </nav>
+      )}
 
       {/* Disability declarations */}
       <section>

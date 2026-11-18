@@ -2,11 +2,21 @@ import { requirePermission } from '@revelation-srs/auth';
 import type { FastifyInstance } from 'fastify';
 
 import { withWellbeingTenantContext } from '../db/client.js';
+import {
+  CLOSED_MENTAL_HEALTH_STATUSES,
+  INTERVENTION_PLAN_TRANSITIONS,
+  MENTAL_HEALTH_CASE_TRANSITIONS,
+  StatusTransitionError,
+  allowedNext,
+  assertTransition,
+} from '../domain/status-rules.js';
 import { appendAudit } from '../repositories/audit-log-repository.js';
 import {
   createMentalHealthCase,
   findCurrentMentalHealthCase,
   listMentalHealthCasesForPerson,
+  listMentalHealthCaseload,
+  findCurrentInterventionPlan,
   transitionMhStatus,
   updateRiskLevel,
   recordConsent,
@@ -16,6 +26,15 @@ import {
   listInterventionPlansForCase,
   transitionPlanStatus,
 } from '../repositories/mental-health-case-repository.js';
+
+import { sendTransitionProblem } from './disability-cases.js';
+
+const READ   = { preHandler: [requirePermission('mental-health-case:read')] };
+const MANAGE = { preHandler: [requirePermission('mental-health-case:manage')] };
+
+function withPlanActions<T extends { statusCode: string }>(plan: T) {
+  return { ...plan, allowedNextStatuses: allowedNext(INTERVENTION_PLAN_TRANSITIONS, plan.statusCode) };
+}
 
 // ── Route plugin ──────────────────────────────────────────────────────────────
 
@@ -32,7 +51,7 @@ export async function mentalHealthCaseRoutes(fastify: FastifyInstance): Promise<
       assignedAdvisorId?:    string;
       notes?:                string;
     };
-  }>('/api/v1/mental-health-cases', async (request, reply) => {
+  }>('/api/v1/mental-health-cases', MANAGE, async (request, reply) => {
     const { tenantId } = request;
     const actorId      = request.user.sub;
     const body         = request.body;
@@ -70,7 +89,7 @@ export async function mentalHealthCaseRoutes(fastify: FastifyInstance): Promise<
 
   fastify.get<{
     Querystring: { personId?: string };
-  }>('/api/v1/mental-health-cases', async (request, reply) => {
+  }>('/api/v1/mental-health-cases', READ, async (request, reply) => {
     const { tenantId } = request;
     const { personId } = request.query;
 
@@ -88,11 +107,35 @@ export async function mentalHealthCaseRoutes(fastify: FastifyInstance): Promise<
     return reply.send({ items: cases.map(omitSensitiveFields), total: cases.length });
   });
 
+  // ── GET /api/v1/mental-health-cases/caseload ─────────────────────────────
+  //
+  // Open cases across the tenant, highest risk first, for the staff caseload
+  // screen. ?statusCode or ?riskLevelCode narrow it; ?assignedTo=me to the
+  // caller's own cases. Like the per-person list, no clinical content.
+
+  fastify.get<{
+    Querystring: { statusCode?: string; riskLevelCode?: string; assignedTo?: string };
+  }>('/api/v1/mental-health-cases/caseload', READ, async (request, reply) => {
+    const { tenantId } = request;
+    const { statusCode, riskLevelCode, assignedTo } = request.query;
+    const cases = await withWellbeingTenantContext(
+      request.server.wellbeingDb,
+      tenantId,
+      (tx) => listMentalHealthCaseload(tx, tenantId, {
+        excludeStatuses: [...CLOSED_MENTAL_HEALTH_STATUSES],
+        ...(statusCode ? { statusCode } : {}),
+        ...(riskLevelCode ? { riskLevelCode } : {}),
+        ...(assignedTo === 'me' ? { assignedAdvisorId: request.user.sub } : {}),
+      }),
+    );
+    return reply.send({ items: cases.map(omitSensitiveFields), total: cases.length });
+  });
+
   // ── GET /api/v1/mental-health-cases/:caseId ──────────────────────────────
 
   fastify.get<{
     Params: { caseId: string };
-  }>('/api/v1/mental-health-cases/:caseId', async (request, reply) => {
+  }>('/api/v1/mental-health-cases/:caseId', READ, async (request, reply) => {
     const { tenantId } = request;
     const actorId      = request.user.sub;
     const { caseId }   = request.params;
@@ -128,7 +171,7 @@ export async function mentalHealthCaseRoutes(fastify: FastifyInstance): Promise<
     // to ensure every access is explicitly audited and role-gated.
     return reply.send({
       ...omitSensitiveFields(result.c),
-      interventionPlans: result.plans,
+      interventionPlans: result.plans.map(withPlanActions),
     });
   });
 
@@ -137,16 +180,22 @@ export async function mentalHealthCaseRoutes(fastify: FastifyInstance): Promise<
   fastify.patch<{
     Params: { caseId: string };
     Body:   { statusCode: string; riskLevelCode?: string };
-  }>('/api/v1/mental-health-cases/:caseId/status', async (request, reply) => {
+  }>('/api/v1/mental-health-cases/:caseId/status', MANAGE, async (request, reply) => {
     const { tenantId } = request;
     const actorId      = request.user.sub;
     const { caseId }   = request.params;
     const { statusCode, riskLevelCode } = request.body;
 
+    try {
     await withWellbeingTenantContext(
       request.server.wellbeingDb,
       tenantId,
       async (tx) => {
+        const before = await findCurrentMentalHealthCase(tx, tenantId, caseId);
+        if (!before) {
+          throw Object.assign(new Error('Mental health case not found'), { statusCode: 404 });
+        }
+        assertTransition(MENTAL_HEALTH_CASE_TRANSITIONS, 'mental health case', before.statusCode, statusCode);
         await transitionMhStatus(tx, tenantId, caseId, statusCode, actorId, {
           ...(riskLevelCode !== undefined ? { riskLevelCode } : {}),
         });
@@ -165,6 +214,10 @@ export async function mentalHealthCaseRoutes(fastify: FastifyInstance): Promise<
         }
       },
     );
+    } catch (err) {
+      if (err instanceof StatusTransitionError) return sendTransitionProblem(reply, err);
+      throw err;
+    }
 
     return reply.code(204).send();
   });
@@ -174,7 +227,7 @@ export async function mentalHealthCaseRoutes(fastify: FastifyInstance): Promise<
   fastify.patch<{
     Params: { caseId: string };
     Body:   { riskLevelCode: string };
-  }>('/api/v1/mental-health-cases/:caseId/risk', async (request, reply) => {
+  }>('/api/v1/mental-health-cases/:caseId/risk', MANAGE, async (request, reply) => {
     const { tenantId }    = request;
     const actorId         = request.user.sub;
     const { caseId }      = request.params;
@@ -209,7 +262,7 @@ export async function mentalHealthCaseRoutes(fastify: FastifyInstance): Promise<
   fastify.post<{
     Params: { caseId: string };
     Body:   { consentDate: string };
-  }>('/api/v1/mental-health-cases/:caseId/consent', async (request, reply) => {
+  }>('/api/v1/mental-health-cases/:caseId/consent', MANAGE, async (request, reply) => {
     const { tenantId } = request;
     const actorId      = request.user.sub;
     const { caseId }   = request.params;
@@ -252,7 +305,7 @@ export async function mentalHealthCaseRoutes(fastify: FastifyInstance): Promise<
       content:        string;
     };
   }>('/api/v1/mental-health-cases/:caseId/session-notes', {
-    preHandler: [requirePermission('mh-session-note:read')],
+    preHandler: [requirePermission('mh-session-note:write')],
   }, async (request, reply) => {
     const { tenantId } = request;
     const actorId      = request.user.sub;
@@ -357,7 +410,7 @@ export async function mentalHealthCaseRoutes(fastify: FastifyInstance): Promise<
       externalReferral?:        boolean;
       externalReferralDetails?: string;
     };
-  }>('/api/v1/mental-health-cases/:caseId/intervention-plans', async (request, reply) => {
+  }>('/api/v1/mental-health-cases/:caseId/intervention-plans', MANAGE, async (request, reply) => {
     const { tenantId } = request;
     const actorId      = request.user.sub;
     const { caseId }   = request.params;
@@ -406,7 +459,7 @@ export async function mentalHealthCaseRoutes(fastify: FastifyInstance): Promise<
 
   fastify.get<{
     Params: { caseId: string };
-  }>('/api/v1/mental-health-cases/:caseId/intervention-plans', async (request, reply) => {
+  }>('/api/v1/mental-health-cases/:caseId/intervention-plans', READ, async (request, reply) => {
     const { tenantId } = request;
     const actorId      = request.user.sub;
     const { caseId }   = request.params;
@@ -438,7 +491,7 @@ export async function mentalHealthCaseRoutes(fastify: FastifyInstance): Promise<
       return reply.code(404).send({ error: 'Mental health case not found' });
     }
 
-    return reply.send({ items: result, total: result.length });
+    return reply.send({ items: result.map(withPlanActions), total: result.length });
   });
 
   // ── PATCH /api/v1/mental-health-cases/:caseId/intervention-plans/:planId/status
@@ -446,12 +499,13 @@ export async function mentalHealthCaseRoutes(fastify: FastifyInstance): Promise<
   fastify.patch<{
     Params: { caseId: string; planId: string };
     Body:   { statusCode: string };
-  }>('/api/v1/mental-health-cases/:caseId/intervention-plans/:planId/status', async (request, reply) => {
+  }>('/api/v1/mental-health-cases/:caseId/intervention-plans/:planId/status', MANAGE, async (request, reply) => {
     const { tenantId }   = request;
     const actorId        = request.user.sub;
     const { caseId, planId } = request.params;
     const { statusCode } = request.body;
 
+    try {
     await withWellbeingTenantContext(
       request.server.wellbeingDb,
       tenantId,
@@ -461,6 +515,11 @@ export async function mentalHealthCaseRoutes(fastify: FastifyInstance): Promise<
           throw Object.assign(new Error('Mental health case not found'), { statusCode: 404 });
         }
 
+        const plan = await findCurrentInterventionPlan(tx, tenantId, planId);
+        if (!plan || plan.mentalHealthCaseId !== caseId) {
+          throw Object.assign(new Error('Intervention plan not found'), { statusCode: 404 });
+        }
+        assertTransition(INTERVENTION_PLAN_TRANSITIONS, 'intervention plan', plan.statusCode, statusCode);
         await transitionPlanStatus(tx, tenantId, planId, statusCode, actorId);
 
         await appendAudit(tx, {
@@ -474,6 +533,10 @@ export async function mentalHealthCaseRoutes(fastify: FastifyInstance): Promise<
         });
       },
     );
+    } catch (err) {
+      if (err instanceof StatusTransitionError) return sendTransitionProblem(reply, err);
+      throw err;
+    }
 
     return reply.code(204).send();
   });
@@ -489,9 +552,9 @@ export async function mentalHealthCaseRoutes(fastify: FastifyInstance): Promise<
  * may be suppressed for non-clinical readers if role checks are added in a
  * future pass.  For now we strip the versionId (internal PK) from responses.
  */
-function omitSensitiveFields<T extends { versionId: string }>(
+function omitSensitiveFields<T extends { versionId: string; statusCode: string }>(
   row: T,
-): Omit<T, 'versionId'> {
+): Omit<T, 'versionId'> & { allowedNextStatuses: string[] } {
   const { versionId: _v, ...rest } = row;
-  return rest;
+  return { ...rest, allowedNextStatuses: allowedNext(MENTAL_HEALTH_CASE_TRANSITIONS, row.statusCode) };
 }

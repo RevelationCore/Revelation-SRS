@@ -191,7 +191,7 @@ describe('Stage 8 — End-to-End Acceptance Review', () => {
         method:  'PATCH',
         url:     `/api/v1/disability-cases/${disabilityCaseId}/status`,
         headers: { authorization: `Bearer ${advisorJwt}` },
-        payload: { statusCode: 'active_support' },
+        payload: { statusCode: 'active' },
       });
       expect(res.statusCode).toBe(204);
     });

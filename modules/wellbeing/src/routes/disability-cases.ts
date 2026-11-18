@@ -1,12 +1,22 @@
-import type { FastifyInstance } from 'fastify';
+import { requirePermission } from '@revelation-srs/auth';
+import type { FastifyInstance, FastifyReply } from 'fastify';
 
 import { withWellbeingTenantContext } from '../db/client.js';
 import type { EdrmsAdapter } from '../edrms/edrms-adapter.js';
+import {
+  CLOSED_DISABILITY_STATUSES,
+  DISABILITY_CASE_TRANSITIONS,
+  EVIDENCE_TRANSITIONS,
+  StatusTransitionError,
+  allowedNext,
+  assertTransition,
+} from '../domain/status-rules.js';
 import { appendAudit }    from '../repositories/audit-log-repository.js';
 import {
   createDisabilityCase,
   findCurrentCase,
   listCasesForPerson,
+  listCaseload,
   transitionCaseStatus,
   addDsaEntitlement,
   listDsaEntitlements,
@@ -34,8 +44,20 @@ function serializeCase(c: Awaited<ReturnType<typeof findCurrentCase>>) {
     notes:                  c.wellbeingCase.notes,
     validFrom:              c.disabilityCase.validFrom,
     recordedAt:             c.disabilityCase.recordedAt,
+    allowedNextStatuses:    allowedNext(DISABILITY_CASE_TRANSITIONS, c.disabilityCase.statusCode),
   };
 }
+
+/** A refused status change, in the problem shape the admin client reads. */
+export function sendTransitionProblem(reply: FastifyReply, err: StatusTransitionError) {
+  return reply.code(409).send({
+    type: 'about:blank', title: 'Status change not allowed', status: 409,
+    detail: err.message, error: err.message, allowedNextStatuses: err.allowed,
+  });
+}
+
+const READ  = { preHandler: [requirePermission('disability:read')] };
+const WRITE = { preHandler: [requirePermission('disability:write')] };
 
 // ── Route plugin ──────────────────────────────────────────────────────────────
 
@@ -56,7 +78,7 @@ export async function disabilityCaseRoutes(
       notes?:             string;
       assignedAdvisorId?: string;
     };
-  }>('/api/v1/disability-cases', async (request, reply) => {
+  }>('/api/v1/disability-cases', WRITE, async (request, reply) => {
     const { tenantId } = request;
     const actorId      = request.user.sub;
     const body         = request.body;
@@ -97,7 +119,7 @@ export async function disabilityCaseRoutes(
 
   fastify.get<{
     Querystring: { personId?: string; page?: string; limit?: string };
-  }>('/api/v1/disability-cases', async (request, reply) => {
+  }>('/api/v1/disability-cases', READ, async (request, reply) => {
     const { tenantId } = request;
     const { personId } = request.query;
 
@@ -114,11 +136,34 @@ export async function disabilityCaseRoutes(
     return reply.send({ items: cases.map(serializeCase), total: cases.length });
   });
 
+  // ── GET /api/v1/disability-cases/caseload ─────────────────────────────────
+  //
+  // Open cases across the tenant (closed and rejected left out), newest
+  // first, for the staff caseload screen. ?statusCode narrows to one status;
+  // ?assignedTo=me to the caller's own cases.
+
+  fastify.get<{
+    Querystring: { statusCode?: string; assignedTo?: string };
+  }>('/api/v1/disability-cases/caseload', READ, async (request, reply) => {
+    const { tenantId } = request;
+    const { statusCode, assignedTo } = request.query;
+    const cases = await withWellbeingTenantContext(
+      request.server.wellbeingDb,
+      tenantId,
+      (tx) => listCaseload(tx, tenantId, {
+        excludeStatuses: [...CLOSED_DISABILITY_STATUSES],
+        ...(statusCode ? { statusCode } : {}),
+        ...(assignedTo === 'me' ? { assignedAdvisorId: request.user.sub } : {}),
+      }),
+    );
+    return reply.send({ items: cases.map(serializeCase), total: cases.length });
+  });
+
   // ── GET /api/v1/disability-cases/:caseId ──────────────────────────────────
 
   fastify.get<{
     Params: { caseId: string };
-  }>('/api/v1/disability-cases/:caseId', async (request, reply) => {
+  }>('/api/v1/disability-cases/:caseId', READ, async (request, reply) => {
     const { tenantId } = request;
     const actorId      = request.user.sub;
     const { caseId }   = request.params;
@@ -155,7 +200,7 @@ export async function disabilityCaseRoutes(
 
     return reply.send({
       ...serializeCase(result.c),
-      evidence:     result.evidence,
+      evidence:     result.evidence.map((e) => ({ ...e, allowedNextStatuses: allowedNext(EVIDENCE_TRANSITIONS, e.statusCode) })),
       entitlements: result.entitlements,
     });
   });
@@ -165,12 +210,13 @@ export async function disabilityCaseRoutes(
   fastify.patch<{
     Params: { caseId: string };
     Body:   { statusCode: string };
-  }>('/api/v1/disability-cases/:caseId/status', async (request, reply) => {
+  }>('/api/v1/disability-cases/:caseId/status', WRITE, async (request, reply) => {
     const { tenantId } = request;
     const actorId      = request.user.sub;
     const { caseId }   = request.params;
     const { statusCode } = request.body;
 
+    try {
     await withWellbeingTenantContext(
       request.server.wellbeingDb,
       tenantId,
@@ -180,6 +226,7 @@ export async function disabilityCaseRoutes(
           throw Object.assign(new Error('Disability case not found'), { statusCode: 404 });
         }
 
+        assertTransition(DISABILITY_CASE_TRANSITIONS, 'disability case', c.disabilityCase.statusCode, statusCode);
         await transitionCaseStatus(tx, tenantId, caseId, statusCode, actorId);
 
         await appendAudit(tx, {
@@ -193,6 +240,10 @@ export async function disabilityCaseRoutes(
         });
       },
     );
+    } catch (err) {
+      if (err instanceof StatusTransitionError) return sendTransitionProblem(reply, err);
+      throw err;
+    }
 
     return reply.code(204).send();
   });
@@ -206,7 +257,7 @@ export async function disabilityCaseRoutes(
       filename:         string;
       contentType:      string;
     };
-  }>('/api/v1/disability-cases/:caseId/evidence', async (request, reply) => {
+  }>('/api/v1/disability-cases/:caseId/evidence', WRITE, async (request, reply) => {
     const { tenantId } = request;
     const actorId      = request.user.sub;
     const { caseId }   = request.params;
@@ -259,12 +310,13 @@ export async function disabilityCaseRoutes(
   fastify.patch<{
     Params: { evidenceId: string };
     Body:   { statusCode: string };
-  }>('/api/v1/evidence/:evidenceId/status', async (request, reply) => {
+  }>('/api/v1/evidence/:evidenceId/status', WRITE, async (request, reply) => {
     const { tenantId }   = request;
     const actorId        = request.user.sub;
     const { evidenceId } = request.params;
     const { statusCode } = request.body;
 
+    try {
     await withWellbeingTenantContext(
       request.server.wellbeingDb,
       tenantId,
@@ -274,7 +326,12 @@ export async function disabilityCaseRoutes(
           throw Object.assign(new Error('Evidence reference not found'), { statusCode: 404 });
         }
 
+        assertTransition(EVIDENCE_TRANSITIONS, 'evidence reference', ev.statusCode, statusCode);
         await updateEvidenceStatus(tx, tenantId, evidenceId, statusCode);
+        const owner = await findCurrentCase(tx, tenantId, ev.disabilitySupportCaseId);
+        if (!owner) {
+          throw Object.assign(new Error('Disability case not found'), { statusCode: 404 });
+        }
 
         await appendAudit(tx, {
           tenantId,
@@ -282,11 +339,15 @@ export async function disabilityCaseRoutes(
           actionCode:   'write',
           resourceType: 'evidence',
           resourceId:   evidenceId,
-          personId:     ev.disabilitySupportCaseId,
+          personId:     owner.disabilityCase.personId,
           context:      { action: 'status-update', newStatus: statusCode },
         });
       },
     );
+    } catch (err) {
+      if (err instanceof StatusTransitionError) return sendTransitionProblem(reply, err);
+      throw err;
+    }
 
     return reply.code(204).send();
   });
@@ -302,7 +363,7 @@ export async function disabilityCaseRoutes(
       effectiveTo?:        string;
       approvedBy:          string;
     };
-  }>('/api/v1/disability-cases/:caseId/dsa-entitlements', async (request, reply) => {
+  }>('/api/v1/disability-cases/:caseId/dsa-entitlements', WRITE, async (request, reply) => {
     const { tenantId } = request;
     const actorId      = request.user.sub;
     const { caseId }   = request.params;
@@ -348,7 +409,7 @@ export async function disabilityCaseRoutes(
 
   fastify.get<{
     Params: { caseId: string };
-  }>('/api/v1/disability-cases/:caseId/dsa-entitlements', async (request, reply) => {
+  }>('/api/v1/disability-cases/:caseId/dsa-entitlements', READ, async (request, reply) => {
     const { tenantId } = request;
     const actorId      = request.user.sub;
     const { caseId }   = request.params;

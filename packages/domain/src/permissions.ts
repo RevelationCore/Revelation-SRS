@@ -37,7 +37,7 @@ export type Role = (typeof ROLES)[number];
  */
 export const PERMISSION_ROLES = {
   'student:read:own':          ['student'] as Role[],
-  'student:read:all':          ['registry-administrator', 'exam-board-chair', 'wellbeing-advisor', 'dpo', 'external-examiner'] as Role[],
+  'student:read:all':          ['registry-administrator', 'exam-board-chair', 'wellbeing-advisor', 'wellbeing-mental-health-advisor', 'dpo', 'external-examiner'] as Role[],
   'student:write':             ['registry-administrator'] as Role[],
   'student:decide':            ['registry-administrator', 'personal-tutor'] as Role[],
   'enrolment:read:own':        ['student'] as Role[],
@@ -98,6 +98,13 @@ export const PERMISSION_ROLES = {
   'adjustment-case:assess':    ['wellbeing-specialist-assessor', 'wellbeing-advisor'] as Role[],
   'special-category:read':     ['wellbeing-advisor', 'wellbeing-mental-health-advisor', 'wellbeing-panel-chair', 'wellbeing-auditor', 'dpo', 'registry-administrator'] as Role[],
   'mh-session-note:read':      ['wellbeing-mental-health-advisor', 'wellbeing-auditor', 'dpo'] as Role[],
+  // Mental-health cases and early-warning alerts are narrower than special-category:read:
+  // wellbeing practitioners and oversight only, never registry or panel roles.
+  'mh-session-note:write':     ['wellbeing-mental-health-advisor'] as Role[],
+  'mental-health-case:read':   ['wellbeing-advisor', 'wellbeing-mental-health-advisor', 'wellbeing-auditor', 'dpo'] as Role[],
+  'mental-health-case:manage': ['wellbeing-advisor', 'wellbeing-mental-health-advisor'] as Role[],
+  'early-warning:read':        ['wellbeing-advisor', 'wellbeing-mental-health-advisor', 'wellbeing-auditor', 'dpo'] as Role[],
+  'early-warning:triage':      ['wellbeing-advisor', 'wellbeing-mental-health-advisor'] as Role[],
   'panel-decision:write':      ['wellbeing-panel-chair', 'registry-administrator'] as Role[],
   'wellbeing-sar:export':      ['wellbeing-auditor', 'dpo'] as Role[],
   'wellbeing-retention:write': ['wellbeing-auditor', 'registry-administrator'] as Role[],
@@ -158,6 +165,11 @@ export const PERMISSION_ROLES = {
   'globalisation:write':                ['tenant-administrator'] as Role[],
   'communications:read':                ['registry-administrator', 'tenant-administrator'] as Role[],
   'communications:write':               ['registry-administrator', 'tenant-administrator'] as Role[],
+  // Email: the institution's mailbox, the provider's inbound hook, and the fake mail server.
+  'email:read':                         ['registry-administrator', 'tenant-administrator'] as Role[],
+  'email:send':                         ['registry-administrator', 'tenant-administrator'] as Role[],
+  'email:receive':                      ['integration-service'] as Role[],
+  'email-simulator:use':                ['registry-administrator', 'tenant-administrator', 'system-administrator'] as Role[],
   'audit-log:read':                     ['dpo', 'system-administrator', 'registry-administrator', 'wellbeing-auditor'] as Role[],
   'retention:enforce':                  ['dpo', 'system-administrator'] as Role[],
   'notifications:read':                 ['student', 'registry-administrator', 'tenant-administrator', 'system-administrator', 'external-examiner'] as Role[],

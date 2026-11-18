@@ -101,4 +101,11 @@ export const statusTone: Record<string, 'success' | 'warning' | 'danger' | 'neut
   'not-upheld': 'danger', dismissed: 'danger', blocking: 'danger', 'tamper-suspected': 'danger',
   deceased: 'danger',
   alumnus: 'neutral', prospective: 'neutral', inactive: 'neutral', skipped: 'neutral', merged: 'neutral',
+  // Wellbeing case lifecycles and risk levels
+  referral_received: 'warning', assessment_pending: 'warning', evidence_pending: 'warning', on_hold: 'warning',
+  received: 'primary', reviewed: 'primary', assigned: 'primary', verified: 'success', resolved: 'success',
+  discharged: 'neutral', closed: 'neutral', discontinued: 'neutral',
+  'risk-low': 'neutral', 'risk-medium': 'warning', 'risk-high': 'danger', 'risk-crisis': 'danger',
+  // Email
+  sent: 'success', unread: 'primary',
 };

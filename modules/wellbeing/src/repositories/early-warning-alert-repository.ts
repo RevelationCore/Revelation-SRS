@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm';
+import { and, desc, eq, inArray } from 'drizzle-orm';
 
 import type { WellbeingDb, WellbeingTx } from '../db/client.js';
 import { earlyWarningAlerts, type EarlyWarningAlert } from '../db/schema/wellbeing-case.js';
@@ -57,6 +57,44 @@ export async function listPendingAlerts(
       ),
     )
     .orderBy(earlyWarningAlerts.receivedAt);
+}
+
+/** Alerts still being worked — pending, reviewed or assigned — newest first. */
+export async function listOpenAlerts(
+  db:       WellbeingDb | WellbeingTx,
+  tenantId: string,
+): Promise<EarlyWarningAlert[]> {
+  return db
+    .select()
+    .from(earlyWarningAlerts)
+    .where(
+      and(
+        eq(earlyWarningAlerts.tenantId, tenantId),
+        inArray(earlyWarningAlerts.triageStatusCode, ['pending', 'reviewed', 'assigned']),
+      ),
+    )
+    .orderBy(desc(earlyWarningAlerts.receivedAt))
+    .limit(200);
+}
+
+/** Record a concern raised by a member of staff (source 'staff'). */
+export async function raiseStaffAlert(
+  db:       WellbeingDb | WellbeingTx,
+  tenantId: string,
+  input:    { personId: string; alertTypeCode: string; summary: string; raisedBy: string },
+): Promise<string> {
+  const [row] = await db
+    .insert(earlyWarningAlerts)
+    .values({
+      tenantId,
+      personId:        input.personId,
+      alertTypeCode:   input.alertTypeCode,
+      alertSourceCode: 'staff',
+      alertPayload:    { summary: input.summary, raisedBy: input.raisedBy },
+    })
+    .returning({ id: earlyWarningAlerts.id });
+  if (!row) throw new Error('Failed to raise early warning alert');
+  return row.id;
 }
 
 // ── Triage ────────────────────────────────────────────────────────────────────

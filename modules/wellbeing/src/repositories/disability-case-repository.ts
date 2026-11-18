@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import { and, eq, isNull, sql } from 'drizzle-orm';
+import { and, desc, eq, isNull, notInArray, sql } from 'drizzle-orm';
 
 import type { WellbeingTx } from '../db/client.js';
 import { wellbeingCases }       from '../db/schema/wellbeing-case.js';
@@ -148,6 +148,41 @@ export async function listCasesForPerson(
       ),
     )
     .orderBy(disabilitySupportCases.recordedAt);
+
+  return rows.map((r) => ({
+    wellbeingCase:  r.wellbeing_case,
+    disabilityCase: r.disability_support_case,
+  }));
+}
+
+export interface CaseloadFilter {
+  excludeStatuses:    string[];
+  statusCode?:        string;
+  assignedAdvisorId?: string;
+}
+
+/** Current versions of the tenant's open disability cases, newest first (at most 200). */
+export async function listCaseload(
+  tx:       WellbeingTx,
+  tenantId: string,
+  filter:   CaseloadFilter,
+): Promise<CaseWithParent[]> {
+  const rows = await tx
+    .select()
+    .from(disabilitySupportCases)
+    .innerJoin(wellbeingCases, eq(disabilitySupportCases.wellbeingCaseId, wellbeingCases.id))
+    .where(
+      and(
+        eq(disabilitySupportCases.tenantId, tenantId),
+        isNull(disabilitySupportCases.recordedUntil),
+        filter.statusCode
+          ? eq(disabilitySupportCases.statusCode, filter.statusCode)
+          : notInArray(disabilitySupportCases.statusCode, filter.excludeStatuses),
+        ...(filter.assignedAdvisorId ? [eq(wellbeingCases.assignedAdvisorId, filter.assignedAdvisorId)] : []),
+      ),
+    )
+    .orderBy(desc(disabilitySupportCases.recordedAt))
+    .limit(200);
 
   return rows.map((r) => ({
     wellbeingCase:  r.wellbeing_case,

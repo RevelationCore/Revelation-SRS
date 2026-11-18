@@ -1,5 +1,5 @@
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   PageHeader, Card, CardHeader, CardBody, Button, Input, Select, LabelledField, Badge,
   Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, Spinner,
@@ -32,7 +32,14 @@ export function AdjustmentCasesPage() {
   const [cases, setCases]     = useState<AdjustmentCase[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState('');
-  const [showCreate, setShowCreate] = useState(false);
+  // Linked from a disability support case: open the form already filled in.
+  const [params] = useSearchParams();
+  const prefill = {
+    personId:                params.get('personId') ?? '',
+    wellbeingCaseId:         params.get('wellbeingCaseId') ?? '',
+    disabilitySupportCaseId: params.get('disabilitySupportCaseId') ?? '',
+  };
+  const [showCreate, setShowCreate] = useState(Boolean(prefill.disabilitySupportCaseId));
 
   const load = useCallback(async () => {
     setLoading(true); setError('');
@@ -75,7 +82,7 @@ export function AdjustmentCasesPage() {
 
       {showCreate && (
         <div className="mt-4">
-          <CreateCaseForm onCreated={() => { setShowCreate(false); void load(); }} />
+          <CreateCaseForm prefill={prefill} onCreated={() => { setShowCreate(false); void load(); }} />
         </div>
       )}
 
@@ -121,10 +128,13 @@ export function AdjustmentCasesPage() {
   );
 }
 
-function CreateCaseForm({ onCreated }: { onCreated: () => void }) {
-  const [personId, setPersonId] = useState('');
-  const [wellbeingCaseId, setWellbeingCaseId] = useState('');
-  const [disabilitySupportCaseId, setDisabilitySupportCaseId] = useState('');
+function CreateCaseForm({ onCreated, prefill }: {
+  onCreated: () => void;
+  prefill: { personId: string; wellbeingCaseId: string; disabilitySupportCaseId: string };
+}) {
+  const [personId, setPersonId] = useState(prefill.personId);
+  const [wellbeingCaseId, setWellbeingCaseId] = useState(prefill.wellbeingCaseId);
+  const [disabilitySupportCaseId, setDisabilitySupportCaseId] = useState(prefill.disabilitySupportCaseId);
   const [adjustmentTypeCode, setAdjustmentTypeCode] = useState('exam-time');
   const [rationale, setRationale] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -153,7 +163,7 @@ function CreateCaseForm({ onCreated }: { onCreated: () => void }) {
     <Card>
       <CardHeader
         title="New adjustment case"
-        description="Opens a referral against an existing disability support case. Find the wellbeing case ID and disability support case ID on the student's Wellbeing tab."
+        description="Opens a referral against an existing disability support case. Open it from the disability support case (Wellbeing → Disability support) to have these filled in."
       />
       <CardBody>
         {error && <p className="mb-3 text-sm text-danger-600">{error}</p>}
