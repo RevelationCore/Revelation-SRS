@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  PageHeader, Card, CardHeader, Button, Spinner,
-  Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
+  PageHeader, Card, CardHeader, Button, Spinner, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, CodeLabel, useCodes,
 } from '@revelation-srs/ui';
 
 import {
@@ -20,6 +19,7 @@ import { type BindingChange, decideBindingChange, listPendingBindingChanges } fr
  * the full student record; the proposer is told someone else must decide.
  */
 export function PendingApprovalsPage() {
+  const recognitionTypes = useCodes('recognised_credit', 'recognition_type_code');
   const { roles, user } = useAuth();
   const [pending, setPending] = useState<PendingApprovals | null>(null);
   const [error, setError] = useState('');
@@ -85,7 +85,7 @@ export function PendingApprovalsPage() {
                       {pending.credits.map((c) => (
                         <TableRow key={c.recognisedCreditId}>
                           <TableCell>{student(c.subject)}</TableCell>
-                          <TableCell>{c.recognitionTypeCode}{c.fheqLevel ? <div className="text-xs text-neutral-500">Level {c.fheqLevel}</div> : null}</TableCell>
+                          <TableCell>{recognitionTypes.label(c.recognitionTypeCode)}{c.fheqLevel ? <div className="text-xs text-neutral-500">Level {c.fheqLevel}</div> : null}</TableCell>
                           <TableCell className="text-sm">{c.sourceDescription}{c.evidenceRef ? <div className="text-xs text-neutral-500">{c.evidenceRef}</div> : null}</TableCell>
                           <TableCell>{c.creditValue}{c.academicYear ? <div className="text-xs text-neutral-500">{c.academicYear}</div> : null}</TableCell>
                           <TableCell>{proposed(c.createdBy, c.createdAt)}</TableCell>
@@ -115,7 +115,7 @@ export function PendingApprovalsPage() {
                         {bindingChanges.map((c) => (
                           <TableRow key={c.curriculumBindingChangeId}>
                             <TableCell>{c.subject ? student(c.subject) : c.enrolmentId}</TableCell>
-                            <TableCell className="text-sm">{c.changeReasonCode}<div className="text-xs text-neutral-500">{c.reason}</div></TableCell>
+                            <TableCell className="text-sm"><CodeLabel entity="curriculum_binding_change" field="change_reason_code" code={c.changeReasonCode} /><div className="text-xs text-neutral-500">{c.reason}</div></TableCell>
                             <TableCell className="text-sm">{c.effectiveDate}</TableCell>
                             <TableCell>{proposed(c.proposedBy, c.proposedAt)}</TableCell>
                             <TableCell className="text-right">

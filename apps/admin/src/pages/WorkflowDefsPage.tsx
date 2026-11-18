@@ -19,22 +19,10 @@ import { userHasAnyPermission } from '../auth/RequirePermission.js';
 import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
 import {
-  PageHeader, Card, CardBody, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
-  Button, Input, Select, LabelledField, Dialog, DialogClose,
-  Tabs, TabsList, TabsTrigger, TabsContent,
+  PageHeader, Card, CardBody, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, Button, Input, Select, LabelledField, Dialog, DialogClose, Tabs, TabsList, TabsTrigger, TabsContent, CodeBadge, CodeLabel, CodeSelect,
 } from '@revelation-srs/ui';
 
 type Tab = 'definitions' | 'assignments';
-
-const STEP_TYPE_LABELS: Record<string, string> = {
-  start:          'Start',
-  end:            'End',
-  'human-task':   'Human task',
-  decision:       'Decision',
-  integration:    'Integration',
-  notification:   'Notification',
-  parallel:       'Parallel',
-};
 
 // A workflow task shouldn't be assignable to a student or a
 // machine-to-machine service account.
@@ -166,9 +154,7 @@ function DefinitionsTab({ canWrite }: { canWrite: boolean }) {
                       <p className="text-sm font-medium text-neutral-900">{d.displayName}</p>
                       <div className="mt-0.5 flex items-center gap-2">
                         <span className="font-mono text-xs text-neutral-600">{d.definitionCode}</span>
-                        {d.statusCode === 'active'
-                          ? <span className="text-xs text-success-600">active</span>
-                          : <span className="text-xs text-neutral-600">{d.statusCode}</span>}
+                        <span className={`text-xs ${d.statusCode === 'active' ? 'text-success-600' : 'text-neutral-600'}`}><CodeLabel entity="workflow_definition" field="status_code" code={d.statusCode} /></span>
                       </div>
                     </button>
                   </li>
@@ -231,7 +217,7 @@ function DefinitionsTab({ canWrite }: { canWrite: boolean }) {
                     >
                       <div className="flex items-center gap-2 text-xs text-neutral-600 mb-2">
                         <span className="font-medium">v{v.versionNumber}</span>
-                        <Badge value={v.statusCode} />
+                        <CodeBadge entity="workflow_definition_version" field="status_code" code={v.statusCode} />
                         {v.effectiveFrom && (
                           <span className="text-neutral-600">
                             Published {new Date(v.effectiveFrom).toLocaleDateString('en-GB')}
@@ -260,9 +246,9 @@ function DefinitionsTab({ canWrite }: { canWrite: boolean }) {
                                 <div className="flex items-center gap-2">
                                   <span className="w-5 text-right text-neutral-300 flex-shrink-0">{idx + 1}.</span>
                                   <span className="font-medium text-neutral-700 flex-shrink-0">{s.displayName}</span>
-                                  <span className="text-neutral-600 font-mono">{s.stepTypeCode in STEP_TYPE_LABELS ? STEP_TYPE_LABELS[s.stepTypeCode] : s.stepTypeCode}</span>
+                                  <span className="text-neutral-600"><CodeLabel entity="workflow_step" field="step_type_code" code={s.stepTypeCode} /></span>
                                   {s.ownerRoleCode && (
-                                    <span className="text-neutral-600 italic">{s.ownerRoleCode}</span>
+                                    <span className="text-neutral-600 italic"><CodeLabel entity="workflow_step" field="owner_role_code" code={s.ownerRoleCode} /></span>
                                   )}
                                 </div>
                                 {(outcomeOptions?.length || dueAfterHours || escalateToRoleCode) && (
@@ -409,10 +395,7 @@ function StepForm({ onClose, onCreated, workflowDefinitionId }: {
         <Input id="step-desc" name="description" />
       </LabelledField>
       <LabelledField label="Assignee role" htmlFor="step-role" required>
-        <Select id="step-role" name="assigneeRoleCode" defaultValue="">
-          <option value="" disabled>Select a role…</option>
-          {ASSIGNABLE_ROLES.map(role => <option key={role} value={role}>{role}</option>)}
-        </Select>
+        <CodeSelect entity="workflow_step" field="owner_role_code" id="step-role" name="assigneeRoleCode" defaultValue="" emptyLabel="Select a role…" only={ASSIGNABLE_ROLES} />
       </LabelledField>
       <LabelledField label="Decision outcomes" htmlFor="step-preset">
         <Select id="step-preset" value={preset} onChange={(e) => setPreset(e.target.value as keyof typeof OUTCOME_PRESETS)}>
@@ -424,10 +407,7 @@ function StepForm({ onClose, onCreated, workflowDefinitionId }: {
         <Input id="step-due" name="dueAfterHours" type="number" min="1" />
       </LabelledField>
       <LabelledField label="Escalate to role" htmlFor="step-escalate" hint="Optional — reassigned here if the deadline passes unactioned">
-        <Select id="step-escalate" name="escalateToRoleCode" defaultValue="">
-          <option value="">No escalation role</option>
-          {ASSIGNABLE_ROLES.map(role => <option key={role} value={role}>{role}</option>)}
-        </Select>
+        <CodeSelect entity="workflow_step" field="owner_role_code" id="step-escalate" name="escalateToRoleCode" defaultValue="" emptyLabel="No escalation role" only={ASSIGNABLE_ROLES} />
       </LabelledField>
       {error && <p className="text-sm text-danger-600">{error}</p>}
       <div className="flex justify-end gap-3 pt-2">
@@ -531,7 +511,7 @@ function AssignmentsTab({ canWrite }: { canWrite: boolean }) {
                 <TableRow key={r.workflowAssignmentRuleId}>
                   <TableCell className="font-mono text-xs text-neutral-700">{r.definitionCode}</TableCell>
                   <TableCell className="font-mono text-xs text-neutral-700">{r.stepKey}</TableCell>
-                  <TableCell>{r.assigneeRoleCode ?? '—'}</TableCell>
+                  <TableCell><CodeLabel entity="workflow_assignment_rule" field="assignee_role_code" code={r.assigneeRoleCode} /></TableCell>
                   <TableCell>{r.priority}</TableCell>
                   <TableCell>
                     {r.active

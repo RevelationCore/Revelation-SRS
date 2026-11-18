@@ -19,8 +19,7 @@ import { userHasAnyPermission } from '../auth/RequirePermission.js';
 import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
 import {
-  PageHeader, Button, Card, CardHeader, CardBody, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, StatCard,
-  Tabs, TabsList, TabsTrigger, TabsContent,
+  PageHeader, Button, Card, CardHeader, CardBody, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, StatCard, Tabs, TabsList, TabsTrigger, TabsContent, CodeBadge, CodeLabel,
 } from '@revelation-srs/ui';
 
 type Tab = 'cas' | 'compliance' | 'decisions';
@@ -110,8 +109,8 @@ function SponsorDecisionsTab() {
               <CardBody className="flex items-start justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-2">
-                    <Badge value={decision.outcomeCode} />
-                    <Badge value={decision.statusCode} />
+                    <CodeBadge entity="ukvi_sponsor_decision" field="outcome_code" code={decision.outcomeCode} />
+                    <CodeBadge entity="ukvi_sponsor_decision" field="status_code" code={decision.statusCode} />
                   </div>
                   <p className="mt-2 text-sm text-neutral-700">{decision.rationaleCode}</p>
                   <p className="mt-1 text-xs text-neutral-500">
@@ -277,7 +276,7 @@ function ComplianceTab() {
               <CardBody>
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-sm font-medium text-neutral-900 capitalize">{a.alertTypeCode}</p>
+                  <p className="text-sm font-medium text-neutral-900"><CodeLabel entity="ukvi_compliance_alert" field="alert_type_code" code={a.alertTypeCode} /></p>
                   <p className="text-xs text-neutral-500 font-mono mt-0.5">{a.enrolmentId}</p>
                   {a.casReference && (
                     <p className="text-xs text-neutral-500 mt-0.5">CAS: {a.casReference}</p>

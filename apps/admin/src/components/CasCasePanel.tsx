@@ -1,5 +1,7 @@
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
-import { Button, Input, Select, LabelledField, Badge } from '@revelation-srs/ui';
+import {
+  Button, Input, Select, LabelledField, Badge, CodeBadge, CodeLabel,
+} from '@revelation-srs/ui';
 
 import { ApiError } from '../api/client.js';
 import {
@@ -12,10 +14,6 @@ import { useAuth } from '../auth/AuthContext.js';
 import { userHasAnyPermission } from '../auth/RequirePermission.js';
 import { useValueSet } from '../hooks/useValueSet.js';
 
-export const CAS_STATUS_LABELS: Record<string, string> = {
-  opened: 'Opened', 'eligibility-checked': 'Eligibility checked', prepared: 'Waiting for approval', approved: 'Approved, not yet sent',
-  requested: 'Sent to SMS', assigned: 'CAS assigned', withdrawn: 'Withdrawn',
-};
 const when = (iso: string) => new Date(iso).toLocaleDateString('en-GB');
 function message(err: unknown, fallback: string): string {
   return err instanceof ApiError ? (err.detail ?? err.message) : fallback;
@@ -43,7 +41,7 @@ export function CasCasePanel({ item, onChanged }: { item: CasCase; onChanged: ()
   return (
     <div className="flex flex-col gap-3 text-sm">
       <div className="flex flex-wrap items-center gap-2">
-        <Badge value={item.statusCode === 'assigned' ? 'approved' : item.statusCode === 'withdrawn' ? 'rejected' : 'pending'} label={CAS_STATUS_LABELS[item.statusCode] ?? item.statusCode} />
+        <CodeBadge entity="cas_case" field="status_code" code={item.statusCode} />
         {item.casReference && <span className="font-mono">{item.casReference}</span>}
         <span className="text-xs text-neutral-500">opened {when(item.openedAt)}{item.applicationId && !item.enrolmentId ? ' · on the application' : ''}</span>
       </div>
@@ -56,7 +54,7 @@ export function CasCasePanel({ item, onChanged }: { item: CasCase; onChanged: ()
         <p className="font-medium text-neutral-800">Eligibility checks</p>
         {item.eligibilityChecks.length === 0 ? <p className="text-neutral-600">None recorded.</p> : (
           <ul className="mt-1 text-neutral-700">
-            {item.eligibilityChecks.map((c) => <li key={c.checkId}>{c.checkTypeCode}: <strong>{c.resultCode}</strong> · {c.guidanceVersion} · {c.checkedBy}, {when(c.checkedAt)}</li>)}
+            {item.eligibilityChecks.map((c) => <li key={c.checkId}><CodeLabel entity="cas_eligibility_check" field="check_type_code" code={c.checkTypeCode} />: <strong><CodeLabel entity="cas_eligibility_check" field="result_code" code={c.resultCode} /></strong> · {c.guidanceVersion} · {c.checkedBy}, {when(c.checkedAt)}</li>)}
           </ul>
         )}
         {canPrepare && open && <EligibilityForm id={id} onSubmit={(body) => run(() => recordEligibilityCheck(id, body))} />}

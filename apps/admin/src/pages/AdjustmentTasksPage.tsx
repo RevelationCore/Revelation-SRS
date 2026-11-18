@@ -1,8 +1,7 @@
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
-  PageHeader, Card, CardHeader, CardBody, Button, Input, Select, LabelledField, Badge, Spinner,
-  Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
+  PageHeader, Card, CardHeader, CardBody, Button, Input, Select, LabelledField, Badge, Spinner, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, CodeLabel, CodeSelect, useCodes,
 } from '@revelation-srs/ui';
 
 import {
@@ -15,7 +14,7 @@ import { useAuth } from '../auth/AuthContext.js';
 import { userHasAnyPermission } from '../auth/RequirePermission.js';
 import { useValueSet } from '../hooks/useValueSet.js';
 
-const TARGET_LABELS: Record<string, string> = { vle: 'VLE', attendance: 'Attendance', exams: 'Exams' };
+const TARGET_SYSTEMS = ['vle', 'attendance', 'exams'];
 
 /**
  * Reasonable-adjustment instructions for target systems the institution has
@@ -42,7 +41,7 @@ export function AdjustmentTasksPanel() {
   // ?target=attendance — the link in an overdue digest opens the right queue.
   const [searchParams] = useSearchParams();
   const initialTarget = searchParams.get('target') ?? '';
-  const [targetFilter, setTargetFilter] = useState(initialTarget in TARGET_LABELS ? initialTarget : '');
+  const [targetFilter, setTargetFilter] = useState(TARGET_SYSTEMS.includes(initialTarget) ? initialTarget : '');
   const [tasks, setTasks] = useState<AdjustmentTask[] | null>(null);
   const [error, setError] = useState('');
 
@@ -67,10 +66,7 @@ export function AdjustmentTasksPanel() {
         <CardHeader
           title={tasks ? `${tasks.length} open${overdue ? ` · ${overdue} overdue` : ''}` : 'Open tasks'}
           actions={(
-            <Select aria-label="Filter by target" value={targetFilter} onChange={(e) => setTargetFilter(e.target.value)}>
-              <option value="">All targets</option>
-              {Object.entries(TARGET_LABELS).map(([code, label]) => <option key={code} value={code}>{label}</option>)}
-            </Select>
+            <CodeSelect entity="adjustment_target_config" field="target_system" aria-label="Filter by target" value={targetFilter} onChange={setTargetFilter} emptyLabel="All targets" />
           )}
         />
         <CardBody>
@@ -130,7 +126,7 @@ function TaskRow({ task, onDone }: { task: AdjustmentTask; onDone: () => void })
       <TableCell>
         <div className="flex flex-col gap-1">
           <span className="font-medium text-neutral-800">
-            {task.action === 'apply' ? 'Apply' : 'Remove'} in {TARGET_LABELS[task.targetSystem] ?? task.targetSystem}
+            {task.action === 'apply' ? 'Apply' : 'Remove'} in <CodeLabel entity="adjustment_target_config" field="target_system" code={task.targetSystem} />
           </span>
           {task.overdue && <Badge value="overdue" />}
           {task.statusCode === 'failed' && <span className="text-xs text-danger-600">Could not apply: {task.failureReason}</span>}
@@ -142,9 +138,9 @@ function TaskRow({ task, onDone }: { task: AdjustmentTask; onDone: () => void })
         <div className="text-xs text-neutral-500">{task.studentNumber ?? task.personId}</div>
       </TableCell>
       <TableCell>
-        <div>{task.adjustmentTypeCode.replace(/-/g, ' ')}</div>
+        <div><CodeLabel entity="reasonable_adjustment" field="adjustment_type_code" code={task.adjustmentTypeCode} /></div>
         <div className="text-xs text-neutral-500">
-          {task.amount ? `${task.amount.value} ${task.amount.unitCode.replace(/-/g, ' ')} · ` : ''}{task.scopeCode}
+          {task.amount ? <>{task.amount.value} <CodeLabel entity="reasonable_adjustment" field="amount_unit_code" code={task.amount.unitCode} /> · </> : ''}<CodeLabel entity="reasonable_adjustment" field="scope_code" code={task.scopeCode} />
         </div>
       </TableCell>
       <TableCell className="text-sm">
@@ -229,13 +225,14 @@ function TargetSettingRow({
   canConfigure: boolean;
   onSaved: () => void;
 }) {
+  const targets = useCodes('adjustment_target_config', 'target_system');
   const [mode, setMode] = useState(config.fulfilmentModeCode);
   const [owner, setOwner] = useState(config.ownerDescription ?? '');
   const [hours, setHours] = useState(String(config.alertAfterHours));
   const [email, setEmail] = useState(config.notifyEmail ?? '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const label = TARGET_LABELS[config.targetSystem] ?? config.targetSystem;
+  const label = targets.label(config.targetSystem);
   const id = `target-${config.targetSystem}`;
 
   async function save(e: FormEvent) {

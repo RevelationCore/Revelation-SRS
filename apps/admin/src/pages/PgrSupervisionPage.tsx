@@ -1,7 +1,6 @@
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import {
-  Card, CardHeader, CardBody, Button, PageHeader, LabelledField, Input, Select, Badge,
-  Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
+  Card, CardHeader, CardBody, Button, PageHeader, LabelledField, Input, Select, Badge, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, CodeBadge, CodeSelect,
 } from '@revelation-srs/ui';
 import {
   type SupervisionCase,
@@ -138,7 +137,7 @@ function SupervisionCaseWorkspace({
           title={`Case ${supervisionCase.supervisionCaseId.slice(0, 8)}…`}
           actions={
             <div className="flex items-center gap-2">
-              <Badge value={supervisionCase.statusCode} />
+              <CodeBadge entity="business_case" field="status_code" code={supervisionCase.statusCode} />
               <Button variant="ghost" size="sm" onClick={onStartNew}>Start a new case</Button>
             </div>
           }
@@ -219,7 +218,7 @@ function NominationRow({
   return (
     <TableRow>
       <TableCell className="font-mono text-xs">{nomination.personId}</TableCell>
-      <TableCell><Badge value={nomination.roleDetailCode} /></TableCell>
+      <TableCell><CodeBadge entity="pgr_supervisor_nomination" field="role_detail_code" code={nomination.roleDetailCode} /></TableCell>
       <TableCell className="text-xs">
         {nomination.eligibilityCheckedAt
           ? new Date(nomination.eligibilityCheckedAt).toLocaleString('en-GB')
@@ -270,11 +269,7 @@ function NominationForm({ caseId, onNominated }: { caseId: string; onNominated: 
             <Input id="pgr-nom-person" value={personId} onChange={(e) => setPersonId(e.target.value)} />
           </LabelledField>
           <LabelledField label="Role" htmlFor="pgr-nom-role">
-            <Select id="pgr-nom-role" value={roleDetailCode} onChange={(e) => setRoleDetailCode(e.target.value as PgrSupervisorRole)}>
-              <option value="principal">Principal supervisor</option>
-              <option value="additional">Additional supervisor</option>
-              <option value="external">External supervisor</option>
-            </Select>
+            <CodeSelect entity="pgr_supervisor_nomination" field="role_detail_code" id="pgr-nom-role" value={roleDetailCode} onChange={(v) => setRoleDetailCode(v as PgrSupervisorRole)} />
           </LabelledField>
           <LabelledField label="School / department" htmlFor="pgr-nom-org">
             <Input id="pgr-nom-org" value={orgOwner} onChange={(e) => setOrgOwner(e.target.value)} />
@@ -317,11 +312,7 @@ function DecisionForm({ caseId, onDecided }: { caseId: string; onDecided: () => 
         {error && <p className="mb-3 text-sm text-danger-600">{error}</p>}
         <form onSubmit={(e) => void handleSubmit(e)} className="grid grid-cols-2 gap-3 items-end">
           <LabelledField label="Decision" htmlFor="pgr-decision">
-            <Select id="pgr-decision" value={decisionTypeCode} onChange={(e) => setDecisionTypeCode(e.target.value as typeof decisionTypeCode)}>
-              <option value="approve">Approve</option>
-              <option value="return">Return</option>
-              <option value="reject">Reject</option>
-            </Select>
+            <CodeSelect entity="pgr_supervision_case" field="decision_code" id="pgr-decision" value={decisionTypeCode} onChange={(v) => setDecisionTypeCode(v as typeof decisionTypeCode)} />
           </LabelledField>
           <LabelledField label="Reason" htmlFor="pgr-reason" hint="Required for return/reject">
             <Input id="pgr-reason" value={reasonText} onChange={(e) => setReasonText(e.target.value)} />
@@ -410,7 +401,7 @@ function CurrentSupervisionLookup() {
                 {assignments.map((a) => (
                   <TableRow key={a.assignmentId}>
                     <TableCell className="font-mono text-xs">{a.personId}</TableCell>
-                    <TableCell><Badge value={a.roleDetailCode} /></TableCell>
+                    <TableCell><CodeBadge entity="staff_assignment" field="role_detail_code" code={a.roleDetailCode} /></TableCell>
                     <TableCell className="text-xs">{new Date(a.validFrom).toLocaleDateString('en-GB')}</TableCell>
                   </TableRow>
                 ))}

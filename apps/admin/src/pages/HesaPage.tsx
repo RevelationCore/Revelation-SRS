@@ -17,7 +17,9 @@ import { useAuth } from '../auth/AuthContext.js';
 import { userHasAnyPermission } from '../auth/RequirePermission.js';
 import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
-import { PageHeader, Card, CardHeader, CardBody, Button, Input, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell } from '@revelation-srs/ui';
+import {
+  PageHeader, Card, CardHeader, CardBody, Button, Input, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, CodeBadge,
+} from '@revelation-srs/ui';
 
 export function HesaPage() {
   const { token, roles }   = useAuth();
@@ -157,7 +159,7 @@ export function HesaPage() {
                     >
                       <div className="font-medium text-neutral-900">{r.academicYear}</div>
                       <div className="mt-0.5 flex items-center gap-2">
-                        <Badge value={r.statusCode} />
+                        <CodeBadge entity="hesa_student_return" field="status_code" code={r.statusCode} />
                         <span className="text-xs text-neutral-600">{r.recordCount} records</span>
                       </div>
                     </button>
@@ -178,7 +180,7 @@ export function HesaPage() {
                   <h2 className="text-sm font-semibold text-neutral-700">
                     Return {selected.academicYear}
                   </h2>
-                  <Badge value={selected.statusCode} />
+                  <CodeBadge entity="hesa_student_return" field="status_code" code={selected.statusCode} />
                 </div>
                 <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
                   <InfoRow label="Records"   value={String(selected.recordCount)} />

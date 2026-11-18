@@ -1,8 +1,7 @@
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Card, CardHeader, CardBody, Button, Input, Select, LabelledField, Spinner,
-  Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
+  Card, CardHeader, CardBody, Button, Input, Select, LabelledField, Spinner, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, CodeLabel, CodeSelect, useCodes,
 } from '@revelation-srs/ui';
 
 import { ApiError } from '../api/client.js';
@@ -11,7 +10,7 @@ import type { Enrolment } from '../api/enrolments.js';
 import { type OpenStatusCaseInput, type StatusCase, type StatusCaseType, listEnrolmentStatusCases, openStatusCase } from '../api/statusCases.js';
 import { EnrolmentScoped } from '../components/EnrolmentScoped.js';
 import { useValueSet } from '../hooks/useValueSet.js';
-import { CASE_TYPE_LABELS, CaseStatusBadge } from './StatusCasesPage.js';
+import { CaseStatusBadge } from './StatusCasesPage.js';
 
 /** The enrolment's status cases, and opening one on the student's behalf or the institution's (BP-02-006 to 009, 012). */
 export function StatusCasesTab({ personId, canOpen }: { personId: string; canOpen: boolean }) {
@@ -23,6 +22,7 @@ export function StatusCasesTab({ personId, canOpen }: { personId: string; canOpe
 }
 
 function EnrolmentStatusCases({ enrolment, canOpen }: { enrolment: Enrolment; canOpen: boolean }) {
+  const enrolmentStatuses = useCodes('enrolment', 'status_code');
   const [cases, setCases] = useState<StatusCase[] | null>(null);
   const [error, setError] = useState('');
   const [actionError, setActionError] = useState('');
@@ -41,7 +41,7 @@ function EnrolmentStatusCases({ enrolment, canOpen }: { enrolment: Enrolment; ca
     <Card>
       <CardHeader
         title="Status changes"
-        description={`Enrolment status: ${enrolment.statusCode}. Interruptions, suspensions, returns, withdrawals, transfers and leaver closures go through a case; the enrolment changes only when the case is approved.`}
+        description={`Enrolment status: ${enrolmentStatuses.label(enrolment.statusCode)}. Interruptions, suspensions, returns, withdrawals, transfers and leaver closures go through a case; the enrolment changes only when the case is approved.`}
       />
       <CardBody>
         <div className="flex flex-col gap-4">
@@ -54,12 +54,12 @@ function EnrolmentStatusCases({ enrolment, canOpen }: { enrolment: Enrolment; ca
               <TableBody>
                 {cases.map((c) => (
                   <TableRow key={c.statusCaseId}>
-                    <TableCell>{CASE_TYPE_LABELS[c.caseTypeCode] ?? c.caseTypeCode}{c.decisionReason && <div className="text-xs text-neutral-500">{c.decisionReason}</div>}</TableCell>
+                    <TableCell><CodeLabel entity="student_status_case" field="case_type_code" code={c.caseTypeCode} />{c.decisionReason && <div className="text-xs text-neutral-500">{c.decisionReason}</div>}</TableCell>
                     <TableCell className="text-sm">{c.approvedEffectiveDate ?? c.requestedEffectiveDate}{c.approvedReturnDate ? ` – ${c.approvedReturnDate}` : ''}</TableCell>
-                    <TableCell className="text-sm capitalize">{c.initiatedByCode}</TableCell>
+                    <TableCell className="text-sm"><CodeLabel entity="student_status_case" field="initiated_by_code" code={c.initiatedByCode} /></TableCell>
                     <TableCell><CaseStatusBadge status={c.statusCode} /></TableCell>
                     <TableCell className="text-right">
-                      <Link to={`/status-cases/${c.statusCaseId}`} className="text-sm text-primary-600 hover:underline">View<span className="sr-only"> {CASE_TYPE_LABELS[c.caseTypeCode]} case</span></Link>
+                      <Link to={`/status-cases/${c.statusCaseId}`} className="text-sm text-primary-600 hover:underline">View<span className="sr-only"> <CodeLabel entity="student_status_case" field="case_type_code" code={c.caseTypeCode} /> case</span></Link>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -79,6 +79,7 @@ function EnrolmentStatusCases({ enrolment, canOpen }: { enrolment: Enrolment; ca
 }
 
 function OpenCaseForm({ approvedBreaks, onSubmit }: { approvedBreaks: StatusCase[]; onSubmit: (body: OpenStatusCaseInput) => Promise<boolean> }) {
+  const caseTypes = useCodes('student_status_case', 'case_type_code');
   const { members: types } = useValueSet('student_status_case', 'case_type_code');
   const { members: reasons } = useValueSet('student_status_case', 'reason_category_code');
   const { members: modes } = useValueSet('enrolment', 'mode_of_study_code');
@@ -130,10 +131,7 @@ function OpenCaseForm({ approvedBreaks, onSubmit }: { approvedBreaks: StatusCase
       </LabelledField>
       {type !== 'suspension' && (
         <LabelledField label="Requested by" htmlFor="open-case-initiator">
-          <Select id="open-case-initiator" value={initiatedBy} onChange={(e) => setInitiatedBy(e.target.value as 'student' | 'institution')}>
-            <option value="student">The student (recorded on their behalf)</option>
-            <option value="institution">The institution</option>
-          </Select>
+          <CodeSelect entity="student_status_case" field="initiated_by_code" id="open-case-initiator" value={initiatedBy} onChange={(v) => setInitiatedBy(v as 'student' | 'institution')} />
         </LabelledField>
       )}
       <LabelledField label="Reason" htmlFor="open-case-reason">
@@ -173,7 +171,7 @@ function OpenCaseForm({ approvedBreaks, onSubmit }: { approvedBreaks: StatusCase
         <LabelledField label="Returning from" htmlFor="open-case-related" required>
           {approvedBreaks.length > 0 ? (
             <Select id="open-case-related" value={relatedCaseId} onChange={(e) => setRelatedCaseId(e.target.value)}>
-              {approvedBreaks.map((c) => <option key={c.statusCaseId} value={c.statusCaseId}>{CASE_TYPE_LABELS[c.caseTypeCode]} from {c.approvedEffectiveDate}</option>)}
+              {approvedBreaks.map((c) => <option key={c.statusCaseId} value={c.statusCaseId}>{caseTypes.label(c.caseTypeCode)} from {c.approvedEffectiveDate}</option>)}
             </Select>
           ) : <p id="open-case-related" className="text-sm text-neutral-600">No approved interruption or suspension to return from.</p>}
         </LabelledField>

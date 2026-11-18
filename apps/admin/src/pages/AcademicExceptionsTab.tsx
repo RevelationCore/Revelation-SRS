@@ -1,7 +1,6 @@
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import {
-  Card, CardHeader, CardBody, Button, Input, Select, LabelledField, Badge, Spinner, StatusNotice,
-  Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
+  Card, CardHeader, CardBody, Button, Input, Select, LabelledField, Badge, Spinner, StatusNotice, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, CodeBadge, useCodes,
 } from '@revelation-srs/ui';
 
 import { ApiError } from '../api/client.js';
@@ -41,6 +40,7 @@ export function AcademicExceptionsTab({ personId, canPropose, canApprove, canRea
 }
 
 function EnrolmentExceptions({ enrolmentId, canPropose, canApprove }: { enrolmentId: string; canPropose: boolean; canApprove: boolean }) {
+  const recognitionTypes = useCodes('recognised_credit', 'recognition_type_code');
   const { user } = useAuth();
   const [credits, setCredits] = useState<{ credits: RecognisedCredit[]; approvedCreditTotal: number } | null>(null);
   const [exceptions, setExceptions] = useState<RuleException[] | null>(null);
@@ -88,12 +88,12 @@ function EnrolmentExceptions({ enrolmentId, canPropose, canApprove }: { enrolmen
               <TableBody>
                 {credits.credits.map((c) => (
                   <TableRow key={c.recognisedCreditId}>
-                    <TableCell>{c.recognitionTypeCode}{c.fheqLevel ? <div className="text-xs text-neutral-500">Level {c.fheqLevel}</div> : null}</TableCell>
+                    <TableCell>{recognitionTypes.label(c.recognitionTypeCode)}{c.fheqLevel ? <div className="text-xs text-neutral-500">Level {c.fheqLevel}</div> : null}</TableCell>
                     <TableCell className="text-sm">{c.sourceDescription}{c.evidenceRef ? <div className="text-xs text-neutral-500">{c.evidenceRef}</div> : null}</TableCell>
                     <TableCell>{c.creditValue}</TableCell>
                     <TableCell className="text-sm">{c.academicYear ?? '—'}</TableCell>
                     <TableCell>
-                      <Badge value={c.statusCode} />
+                      <CodeBadge entity="recognised_credit" field="status_code" code={c.statusCode} />
                       {c.decisionReason && <div className="text-xs text-neutral-500">{c.decisionReason}</div>}
                     </TableCell>
                     <TableCell className="text-right">
@@ -141,7 +141,7 @@ function EnrolmentExceptions({ enrolmentId, canPropose, canApprove }: { enrolmen
                     <TableCell className="text-sm">{x.validFrom} – {x.validTo ?? 'open'}</TableCell>
                     <TableCell className="text-xs">{x.authorityRef ?? '—'}</TableCell>
                     <TableCell>
-                      <Badge value={x.statusCode} />
+                      <CodeBadge entity="rule_exception" field="status_code" code={x.statusCode} />
                       {x.decisionReason && <div className="text-xs text-neutral-500">{x.decisionReason}</div>}
                     </TableCell>
                     <TableCell className="text-right">
@@ -352,6 +352,7 @@ function ExceptionForm({ onSubmit }: { onSubmit: (body: Parameters<typeof propos
  * on it yet, otherwise proposed for a programme approver.
  */
 function CurriculumBindingNote({ enrolmentId, programmeId, canChange }: { enrolmentId: string; programmeId: string | null; canChange: boolean }) {
+  const authorities = useCodes('enrolment_curriculum_binding', 'decision_authority_code');
   const { members: reasons } = useValueSet('enrolment_curriculum_binding', 'change_reason_code');
   const [binding, setBinding] = useState<CurriculumBinding | null | undefined>(undefined);
   const [ruleSets, setRuleSets] = useState<RuleSet[]>([]);
@@ -388,7 +389,7 @@ function CurriculumBindingNote({ enrolmentId, programmeId, canChange }: { enrolm
     <div className="flex flex-col gap-2 text-sm text-neutral-700">
       <p>
         {binding
-          ? <>Programme rules: rule set <strong>{code(binding.programmeRuleSetId)}</strong> ({binding.decisionAuthorityCode}{binding.decisionReason ? `: ${binding.decisionReason}` : ''}).</>
+          ? <>Programme rules: rule set <strong>{code(binding.programmeRuleSetId)}</strong> ({authorities.label(binding.decisionAuthorityCode)}{binding.decisionReason ? `: ${binding.decisionReason}` : ''}).</>
           : 'Programme rules: not yet bound to a rule set (bound automatically at the first module selection).'}
         {canChange && !pending && !open && <> <button type="button" className="text-primary-600 hover:underline" onClick={() => setOpen(true)}>Change rule set</button></>}
       </p>

@@ -13,8 +13,7 @@ import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
 import { useValueSet } from '../hooks/useValueSet.js';
 import {
-  PageHeader, Card, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
-  Button, Input, Select, LabelledField, Dialog, DialogClose,
+  PageHeader, Card, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, Button, Input, Select, LabelledField, Dialog, DialogClose, CodeBadge,
 } from '@revelation-srs/ui';
 
 export function AcademicRulesPage() {
@@ -124,7 +123,7 @@ export function AcademicRulesPage() {
                     <p className="font-medium text-neutral-900">{r.ruleKey}</p>
                     {r.description && <p className="text-xs text-neutral-600">{r.description}</p>}
                   </TableCell>
-                  <TableCell><Badge value={r.ruleTypeCode} /></TableCell>
+                  <TableCell><CodeBadge entity="academic_rule" field="rule_type_code" code={r.ruleTypeCode} /></TableCell>
                   <TableCell className="text-xs">{r.validFrom ? new Date(r.validFrom).toLocaleDateString('en-GB') : '—'}</TableCell>
                   <TableCell className="text-xs">{r.validTo ? new Date(r.validTo).toLocaleDateString('en-GB') : '—'}</TableCell>
                   <TableCell className="text-xs">{r.recordedAt ? new Date(r.recordedAt).toLocaleDateString('en-GB') : '—'}</TableCell>

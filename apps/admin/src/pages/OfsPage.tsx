@@ -14,8 +14,7 @@ import { userHasAnyPermission } from '../auth/RequirePermission.js';
 import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
 import {
-  PageHeader, Button, Select, Card, CardHeader, CardBody, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
-  Tabs, TabsList, TabsTrigger, TabsContent,
+  PageHeader, Button, Select, Card, CardHeader, CardBody, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, Tabs, TabsList, TabsTrigger, TabsContent, CodeBadge,
 } from '@revelation-srs/ui';
 
 const OFS_ACADEMIC_YEARS = ['2025-26', '2024-25', '2023-24', '2022-23'];
@@ -137,7 +136,7 @@ function B3Tab({
                     <TableCell className="text-xs">{e.recordCount ?? '—'}</TableCell>
                     <TableCell>
                       <span className="flex items-center gap-1.5">
-                        <Badge value={e.statusCode} />
+                        <CodeBadge entity="ofs_extract" field="status_code" code={e.statusCode} />
                         {polling === e.extractId && <Spinner />}
                       </span>
                     </TableCell>

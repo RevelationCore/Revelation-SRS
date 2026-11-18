@@ -6,20 +6,18 @@ import {
 import { ApiError } from '../api/client.js';
 import { Spinner } from '../components/Spinner.js';
 import {
-  PageHeader, Card, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
-  Button, Select,
+  PageHeader, Card, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, Button, Select, CodeLabel, useCodes,
 } from '@revelation-srs/ui';
 
 // 'open' is a client-side view of every status that still needs a decision.
-const STATUS_OPTIONS = ['open', '', 'pending', 'assigned', 'in-progress', 'escalated', 'completed', 'cancelled'];
 const ACTIONABLE_STATUSES = new Set(['pending', 'assigned', 'in-progress', 'escalated']);
-const STATUS_LABELS: Record<string, string> = { open: 'Open', '': 'All' };
 
 /** How long to keep checking a saved decision before telling the user it will finish later. */
 const PENDING_POLL_MS = 2_000;
 const PENDING_POLL_ATTEMPTS = 8;
 
 export function TaskInboxPage() {
+  const taskStatuses = useCodes('workflow_task', 'status_code');
   const [tasks,      setTasks]      = useState<WorkflowTask[]>([]);
   const [loading,    setLoading]    = useState(true);
   const [error,      setError]      = useState('');
@@ -105,9 +103,9 @@ export function TaskInboxPage() {
               onChange={(e) => setStatusFilter(e.target.value)}
               className="w-auto"
             >
-              {STATUS_OPTIONS.map(s => (
-                <option key={s} value={s}>{STATUS_LABELS[s] ?? s}</option>
-              ))}
+              <option value="open">Open</option>
+              <option value="">All</option>
+              {taskStatuses.options.map((m) => <option key={m.code} value={m.code}>{m.displayLabel}</option>)}
             </Select>
             <Button variant="secondary" onClick={() => void load(statusFilter)}>Refresh</Button>
           </div>
@@ -137,15 +135,15 @@ export function TaskInboxPage() {
             <TableBody>
               {tasks.map(task => (
                 <TableRow key={task.workflowTaskId}>
-                  <TableCell className="font-medium text-neutral-900">{task.taskTypeCode}</TableCell>
+                  <TableCell className="font-medium text-neutral-900"><CodeLabel entity="workflow_task" field="task_type_code" code={task.taskTypeCode} /></TableCell>
                   <TableCell className="font-mono text-xs">{task.stepKey}</TableCell>
-                  <TableCell>{task.assigneeRoleCode ?? '—'}</TableCell>
+                  <TableCell><CodeLabel entity="workflow_task" field="assignee_role_code" code={task.assigneeRoleCode} /></TableCell>
                   <TableCell className="text-neutral-500">
                     {task.dueAt ? new Date(task.dueAt).toLocaleDateString('en-GB') : '—'}
                   </TableCell>
                   <TableCell>
                     <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${taskStatusColour(task.statusCode)}`}>
-                      {task.statusCode}
+                      {taskStatuses.label(task.statusCode)}
                     </span>
                     {task.attentionReasonCode && ACTIONABLE_STATUSES.has(task.statusCode) && (
                       <span

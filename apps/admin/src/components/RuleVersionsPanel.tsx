@@ -1,4 +1,6 @@
-import { Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from '@revelation-srs/ui';
+import {
+  Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow, CodeLabel, useCodes,
+} from '@revelation-srs/ui';
 
 /** One rule a calculation used (Phase 5 D-35). */
 export interface RuleVersion {
@@ -15,15 +17,6 @@ export interface RuleVersion {
   planId?: string;
 }
 
-const SOURCE_LABEL: Record<string, string> = {
-  'programme': 'Programme rule',
-  'tenant-default': 'Institution rule',
-  'exception': 'Rule exception for this student',
-  'component-override': 'Assessment component override',
-  'built-in-default': 'Built-in default (no rule configured)',
-  'reassessment-plan': 'Reassessment plan cap',
-};
-
 function show(value: unknown): string {
   if (value === null || value === undefined) return 'Waived';
   if (typeof value !== 'object') return String(value);
@@ -39,6 +32,7 @@ function show(value: unknown): string {
  * configured rule.
  */
 export function RuleVersionsPanel({ ruleVersions, title = 'How this was calculated' }: { ruleVersions: RuleVersion[]; title?: string }) {
+  const ruleTypes = useCodes('academic_rule', 'rule_type_code');
   const defaults = ruleVersions.filter((r) => r.source === 'built-in-default').length;
   return (
     <details className="mt-2">
@@ -59,12 +53,12 @@ export function RuleVersionsPanel({ ruleVersions, title = 'How this was calculat
           <TableBody>
             {ruleVersions.map((r, i) => (
               <TableRow key={`${r.ruleTypeCode}-${r.versionId ?? r.source}-${i}`}>
-                <TableCell className="text-xs">{r.ruleTypeCode}{r.ruleKey && <span className="block text-neutral-500">{r.ruleKey}</span>}</TableCell>
+                <TableCell className="text-xs">{ruleTypes.label(r.ruleTypeCode)}{r.ruleKey && <span className="block text-neutral-500">{r.ruleKey}</span>}</TableCell>
                 <TableCell className="text-xs">{show(r.value)}</TableCell>
                 <TableCell className="font-mono text-xs">{r.versionId ? r.versionId.slice(0, 8) : '—'}</TableCell>
                 <TableCell className="text-xs">{r.validFrom ? new Date(r.validFrom).toLocaleDateString('en-GB') : '—'}</TableCell>
                 <TableCell className="text-xs">
-                  <span className={r.source === 'built-in-default' ? 'text-warning-700' : ''}>{SOURCE_LABEL[r.source] ?? r.source}</span>
+                  <span className={r.source === 'built-in-default' ? 'text-warning-700' : ''}><CodeLabel entity="rule_version_reference" field="source" code={r.source} /></span>
                 </TableCell>
               </TableRow>
             ))}

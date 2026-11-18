@@ -1,7 +1,6 @@
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import {
-  PageHeader, Card, CardHeader, CardBody, Button, Input, Select, Checkbox, LabelledField, Spinner,
-  Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
+  PageHeader, Card, CardHeader, CardBody, Button, Input, Select, Checkbox, LabelledField, Spinner, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, CodeSelect, useCodes,
 } from '@revelation-srs/ui';
 
 import { ApiError } from '../api/client.js';
@@ -16,10 +15,6 @@ import { userHasAnyPermission } from '../auth/RequirePermission.js';
 function message(err: unknown, fallback: string): string {
   return err instanceof ApiError ? (err.detail ?? err.message) : fallback;
 }
-
-const GROUP_TYPES: Array<{ code: DietGroup['groupTypeCode']; label: string }> = [
-  { code: 'compulsory', label: 'Compulsory' }, { code: 'optional-pool', label: 'Optional pool' }, { code: 'elective-pool', label: 'Elective pool' },
-];
 
 /**
  * Programme rules (BP-03-002): each programme's rule sets (by entry year or
@@ -121,6 +116,7 @@ function NewRuleSetForm({ programmeId, onCreated }: { programmeId: string; onCre
 }
 
 function DietGroups({ ruleSetId, modules, canConfigure }: { ruleSetId: string; modules: ModuleSummary[]; canConfigure: boolean }) {
+  const groupTypes = useCodes('module_group', 'group_type_code');
   const [groups, setGroups] = useState<DietGroup[] | null>(null);
   const [error, setError] = useState('');
   const [actionError, setActionError] = useState('');
@@ -149,7 +145,7 @@ function DietGroups({ ruleSetId, modules, canConfigure }: { ruleSetId: string; m
             <div key={g.moduleGroupId} className="rounded border border-neutral-200 p-3">
               <p className="text-sm font-medium">{g.title} <span className="font-mono text-xs text-neutral-500">{g.groupCode}</span></p>
               <p className="text-xs text-neutral-600">
-                {[GROUP_TYPES.find((t) => t.code === g.groupTypeCode)?.label, g.fheqLevel ? `level ${g.fheqLevel}` : null, bounds(g.minModules, g.maxModules, 'modules'), bounds(g.minCredits, g.maxCredits, 'credits')].filter(Boolean).join(' · ')}
+                {[groupTypes.label(g.groupTypeCode), g.fheqLevel ? `level ${g.fheqLevel}` : null, bounds(g.minModules, g.maxModules, 'modules'), bounds(g.minCredits, g.maxCredits, 'credits')].filter(Boolean).join(' · ')}
               </p>
               {g.members.length > 0 && (
                 <Table>
@@ -215,9 +211,7 @@ function NewGroupForm({ onSubmit }: { onSubmit: (body: { groupCode: string; titl
       <LabelledField label="Code" htmlFor="dg-code" required><Input id="dg-code" value={code} onChange={(e) => setCode(e.target.value)} /></LabelledField>
       <LabelledField label="Title" htmlFor="dg-title" required><Input id="dg-title" value={title} onChange={(e) => setTitle(e.target.value)} /></LabelledField>
       <LabelledField label="Type" htmlFor="dg-type">
-        <Select id="dg-type" value={type} onChange={(e) => setType(e.target.value as DietGroup['groupTypeCode'])}>
-          {GROUP_TYPES.map((t) => <option key={t.code} value={t.code}>{t.label}</option>)}
-        </Select>
+        <CodeSelect entity="module_group" field="group_type_code" id="dg-type" value={type} onChange={(v) => setType(v as DietGroup['groupTypeCode'])} />
       </LabelledField>
       <LabelledField label="FHEQ level" htmlFor="dg-level"><Input id="dg-level" type="number" min={3} max={8} value={level} onChange={(e) => setLevel(e.target.value)} /></LabelledField>
       {(['minModules', 'maxModules', 'minCredits', 'maxCredits'] as const).map((k) => (

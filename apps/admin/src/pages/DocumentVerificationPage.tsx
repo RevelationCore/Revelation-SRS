@@ -1,12 +1,10 @@
 import { type FormEvent, useState } from 'react';
-import { PageHeader, Card, CardBody, Button, Input, LabelledField } from '@revelation-srs/ui';
+import {
+  PageHeader, Card, CardBody, Button, Input, LabelledField, CodeLabel, useCodes,
+} from '@revelation-srs/ui';
 
 import { ApiError } from '../api/client.js';
 import { type VerificationResult, lookupDocuments, verifyDocument } from '../api/awards.js';
-
-const SIGNATURE_LABELS: Record<string, string> = {
-  valid: 'Signature valid', invalid: 'Signature does not match: treat as not genuine', 'key-withdrawn': 'Signed with a key the institution has withdrawn', unsigned: 'Issued before documents were signed',
-};
 
 /**
  * Verify an award document (BP-06-004; D-4, D-21). Anyone holding a document
@@ -15,6 +13,7 @@ const SIGNATURE_LABELS: Record<string, string> = {
  * with the holder's recorded consent. Every check is logged.
  */
 export function DocumentVerificationPage() {
+  const classifications = useCodes('award', 'classification_code');
   const [code, setCode] = useState('');
   const [note, setNote] = useState('');
   const [result, setResult] = useState<VerificationResult | null>(null);
@@ -46,12 +45,12 @@ export function DocumentVerificationPage() {
               <p className="font-medium">
                 {result.outcomeCode === 'valid' ? 'Valid document' : result.outcomeCode === 'revoked' ? 'This document has been revoked' : result.outcomeCode === 'superseded' ? 'This document has been replaced by a later issue' : 'No document matches this code'}
               </p>
-              {result.signature && <p className="mt-1 text-neutral-700">{SIGNATURE_LABELS[result.signature.status] ?? result.signature.status}{result.issuer ? ` · issued by ${result.issuer}` : ''}</p>}
+              {result.signature && <p className="mt-1 text-neutral-700"><CodeLabel entity="document_verification" field="signature_status" code={result.signature.status} />{result.issuer ? ` · issued by ${result.issuer}` : ''}</p>}
               {result.document && (
                 <dl className="mt-2 grid grid-cols-2 gap-x-6 gap-y-1">
                   <dt className="text-neutral-500">Holder</dt><dd>{result.document.holderName}</dd>
-                  <dt className="text-neutral-500">Document</dt><dd>{result.document.documentTypeCode}</dd>
-                  <dt className="text-neutral-500">Award</dt><dd>{result.document.qualificationCode}, {result.document.classificationCode}</dd>
+                  <dt className="text-neutral-500">Document</dt><dd><CodeLabel entity="document_issue" field="document_type_code" code={result.document.documentTypeCode} /></dd>
+                  <dt className="text-neutral-500">Award</dt><dd>{result.document.qualificationCode}, {classifications.label(result.document.classificationCode)}</dd>
                   <dt className="text-neutral-500">Awarded</dt><dd>{result.document.awardDate}</dd>
                   <dt className="text-neutral-500">Issued</dt><dd>{new Date(result.document.issuedAt).toLocaleDateString('en-GB')}</dd>
                 </dl>
@@ -92,7 +91,7 @@ function LookupCard() {
           <div className="mt-4 text-sm" role="status">
             {results.length === 0 ? <p>No current document matches.</p> : (
               <ul className="list-disc pl-5">
-                {results.map((r, i) => r.document && <li key={i}>{r.document.holderName}: {r.document.documentTypeCode}, {r.document.qualificationCode} {r.document.classificationCode}, awarded {r.document.awardDate}</li>)}
+                {results.map((r, i) => r.document && <li key={i}>{r.document.holderName}: <CodeLabel entity="document_issue" field="document_type_code" code={r.document.documentTypeCode} />, {r.document.qualificationCode} <CodeLabel entity="award" field="classification_code" code={r.document.classificationCode} />, awarded {r.document.awardDate}</li>)}
               </ul>
             )}
           </div>

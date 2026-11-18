@@ -1,7 +1,6 @@
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import {
-  Card, CardHeader, CardBody, Button, PageHeader, LabelledField, Input, Select, Badge,
-  Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
+  Card, CardHeader, CardBody, Button, PageHeader, LabelledField, Input, Select, Badge, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, CodeBadge, CodeLabel, CodeSelect, useCodes,
 } from '@revelation-srs/ui';
 import {
   type ExaminationCase,
@@ -96,11 +95,7 @@ function SubmitThesisForm({ onSubmitted }: { onSubmitted: (c: ExaminationCase) =
             <Input id="ex-enrolment" value={enrolmentId} onChange={(e) => setEnrolmentId(e.target.value)} />
           </LabelledField>
           <LabelledField label="Format" htmlFor="ex-format">
-            <Select id="ex-format" value={formatCode} onChange={(e) => setFormatCode(e.target.value as PgrThesisFormat)}>
-              <option value="traditional">Traditional thesis</option>
-              <option value="practice-based">Practice-based submission</option>
-              <option value="published-work">Published-work submission</option>
-            </Select>
+            <CodeSelect entity="thesis_submission" field="format_code" id="ex-format" value={formatCode} onChange={(v) => setFormatCode(v as PgrThesisFormat)} />
           </LabelledField>
           <LabelledField label="Storage reference" htmlFor="ex-storage" required>
             <Input id="ex-storage" value={storageRef} onChange={(e) => setStorageRef(e.target.value)} placeholder="repo://thesis/..." />
@@ -174,7 +169,7 @@ function ExaminationWorkspace({
           title={`Examination ${examinationCase.examinationCaseId.slice(0, 8)}…`}
           actions={
             <div className="flex items-center gap-2">
-              <Badge value={status} />
+              <CodeBadge entity="business_case" field="status_code" code={status} />
               <Button variant="ghost" size="sm" onClick={onStartNew}>Start a new examination</Button>
             </div>
           }
@@ -246,7 +241,7 @@ function ExaminationWorkspace({
                   <TableRow key={r.reportId}>
                     <TableCell className="font-mono text-xs">{r.examinerAppointmentId}</TableCell>
                     <TableCell className="text-xs">{r.reportRef}</TableCell>
-                    <TableCell>{r.recommendationCode ? <Badge value={r.recommendationCode} /> : <span className="text-neutral-500 text-xs">—</span>}</TableCell>
+                    <TableCell>{r.recommendationCode ? <CodeBadge entity="examiner_report" field="recommendation_code" code={r.recommendationCode} /> : <span className="text-neutral-500 text-xs">—</span>}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -273,7 +268,7 @@ function ExaminationWorkspace({
 
       {isDecided && outcome && (
         <Card>
-          <CardHeader title="Ratified outcome" actions={<Badge value={outcome.outcomeCode} />} />
+          <CardHeader title="Ratified outcome" actions={<CodeBadge entity="pgr_examination_outcome" field="outcome_code" code={outcome.outcomeCode} />} />
           <CardBody>
             <InfoRow label="Decided by" value={outcome.decidedBy} />
             <InfoRow label="Decided at" value={new Date(outcome.decidedAt).toLocaleString('en-GB')} />
@@ -332,7 +327,7 @@ function ExaminerRow({
   return (
     <TableRow>
       <TableCell className="font-mono text-xs">{appointment.personId}</TableCell>
-      <TableCell><Badge value={appointment.examinerRoleCode} /></TableCell>
+      <TableCell><CodeBadge entity="examiner_appointment" field="examiner_role_code" code={appointment.examinerRoleCode} /></TableCell>
       <TableCell className="text-xs">
         {appointment.independenceCheckedAt
           ? new Date(appointment.independenceCheckedAt).toLocaleDateString('en-GB')
@@ -340,7 +335,7 @@ function ExaminerRow({
       </TableCell>
       <TableCell className="text-xs">
         {appointment.conflictTypeCode
-          ? (appointment.recusedAt ? <span className="text-success-700">Resolved</span> : <span className="text-danger-600">{appointment.conflictTypeCode}</span>)
+          ? (appointment.recusedAt ? <span className="text-success-700">Resolved</span> : <span className="text-danger-600"><CodeLabel entity="examiner_appointment" field="conflict_type_code" code={appointment.conflictTypeCode} /></span>)
           : <span className="text-neutral-500">None</span>}
         {error && <p className="text-danger-600">{error}</p>}
       </TableCell>
@@ -400,10 +395,7 @@ function NominateExaminerForm({ caseId, onNominated }: { caseId: string; onNomin
             <Input id="ex-examiner-person" value={personId} onChange={(e) => setPersonId(e.target.value)} />
           </LabelledField>
           <LabelledField label="Role" htmlFor="ex-examiner-role">
-            <Select id="ex-examiner-role" value={examinerRoleCode} onChange={(e) => setExaminerRoleCode(e.target.value as PgrExaminerRole)}>
-              <option value="internal">Internal examiner</option>
-              <option value="external">External examiner</option>
-            </Select>
+            <CodeSelect entity="examiner_appointment" field="examiner_role_code" id="ex-examiner-role" value={examinerRoleCode} onChange={(v) => setExaminerRoleCode(v as PgrExaminerRole)} />
           </LabelledField>
           <div className="col-span-3">
             <Button type="submit" size="sm" variant="secondary" disabled={submitting}>
@@ -423,6 +415,7 @@ function ReportForm({
   appointments: ExaminerAppointment[];
   onRecorded:   () => void;
 }) {
+  const examinerRoles = useCodes('examiner_appointment', 'examiner_role_code');
   const confirmed = appointments.filter((a) => a.confirmedAt && !a.recusedAt);
   const [examinerAppointmentId, setExaminerAppointmentId] = useState(confirmed[0]?.appointmentId ?? '');
   const [reportRef, setReportRef]     = useState('');
@@ -453,7 +446,7 @@ function ReportForm({
           <LabelledField label="Examiner" htmlFor="ex-report-examiner">
             <Select id="ex-report-examiner" value={examinerAppointmentId} onChange={(e) => setExaminerAppointmentId(e.target.value)}>
               {confirmed.map((a) => (
-                <option key={a.appointmentId} value={a.appointmentId}>{a.personId} ({a.examinerRoleCode})</option>
+                <option key={a.appointmentId} value={a.appointmentId}>{a.personId} ({examinerRoles.label(a.examinerRoleCode)})</option>
               ))}
             </Select>
           </LabelledField>
@@ -541,13 +534,7 @@ function OutcomeForm({ caseId, onRatified }: { caseId: string; onRatified: () =>
         {error && <p className="mb-3 text-sm text-danger-600">{error}</p>}
         <form onSubmit={(e) => void handleSubmit(e)} className="grid grid-cols-2 gap-3 items-end">
           <LabelledField label="Outcome" htmlFor="ex-outcome">
-            <Select id="ex-outcome" value={outcomeCode} onChange={(e) => setOutcomeCode(e.target.value as PgrExaminationOutcome)}>
-              <option value="pass">Pass</option>
-              <option value="pass-minor-corrections">Pass with minor corrections</option>
-              <option value="pass-major-corrections">Pass with major corrections</option>
-              <option value="resubmission">Resubmission</option>
-              <option value="fail">Fail</option>
-            </Select>
+            <CodeSelect entity="pgr_examination_outcome" field="outcome_code" id="ex-outcome" value={outcomeCode} onChange={(v) => setOutcomeCode(v as PgrExaminationOutcome)} />
           </LabelledField>
           {needsDeadline && (
             <LabelledField label="Corrections deadline" htmlFor="ex-corrections-deadline" required>

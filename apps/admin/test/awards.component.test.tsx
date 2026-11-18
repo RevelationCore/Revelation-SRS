@@ -18,17 +18,18 @@ const VALUE_SETS: Record<string, Array<{ code: string; displayLabel: string }>> 
 
 const recommendation = (overrides: Record<string, unknown> = {}) => ({
   recommendationId: 'rec-1', enrolmentId: 'enr-1', personId: 'person-1', examBoardId: 'board-1', awardTypeCode: 'standard',
-  qualificationCode: 'BSc (Hons)', classificationCode: '2:1', calculatedClassificationCode: '2:1', aggregateMark: 64, discretionReason: null,
+  qualificationCode: 'BSc (Hons)', classificationCode: 'upper-second', calculatedClassificationCode: 'upper-second', aggregateMark: 64, discretionReason: null,
   authorityRef: null, statusCode: 'recommended', recommendedBy: 'board-chair', recommendedAt: '2027-06-20T10:00:00Z', withdrawnReason: null, conferment: null,
   ...overrides,
 });
 
 function handlers({ recommendations = [] as unknown[], plans = [] as unknown[], decisions = [] as unknown[] } = {}) {
   return [
-    http.get(`${API}/api/v1/fields/:entity/:field/value-set`, ({ params }) => HttpResponse.json({
+    // Only the fields this test defines; every other field falls through to the real value sets.
+    http.get(`${API}/api/v1/fields/:entity/:field/value-set`, ({ params }) => (VALUE_SETS[String(params['field'])] ? HttpResponse.json({
       setCode: String(params['field']), displayName: 'Set',
-      members: (VALUE_SETS[String(params['field'])] ?? []).map((m, i) => ({ ...m, description: null, sortOrder: i })),
-    })),
+      members: VALUE_SETS[String(params['field'])]!.map((m, i) => ({ ...m, description: null, sortOrder: i })),
+    }) : undefined)),
     http.get(`${API}/api/v1/students/:personId/enrolments`, () => HttpResponse.json([{
       enrolmentId: 'enr-1', personId: 'person-1', programmeId: 'prog-1', programmeCode: 'BSC-CS', programmeName: 'BSc CS',
       statusCode: 'enrolled', modeOfStudyCode: 'full-time', attendanceTypeCode: null, academicYearOfEntry: '2024-25', startDate: null, expectedEndDate: null, actualEndDate: null,
@@ -45,8 +46,8 @@ function handlers({ recommendations = [] as unknown[], plans = [] as unknown[], 
       { examBoardId: 'board-2', boardTypeCode: 'award', academicYear: '2026-27', periodCode: null, ratifiedAt: null },
     ])),
     http.get(`${API}/api/v1/enrolments/enr-1/classification`, () => HttpResponse.json({
-      enrolmentId: 'enr-1', aggregateMark: 64.2, classificationCode: '2:1', algorithm: 'weighted-mean',
-      boundariesApplied: [{ code: 'first', minimumMark: 70 }, { code: '2:1', minimumMark: 60 }],
+      enrolmentId: 'enr-1', aggregateMark: 64.2, classificationCode: 'upper-second', algorithm: 'weighted-mean',
+      boundariesApplied: [{ code: 'first', minimumMark: 70 }, { code: 'upper-second', minimumMark: 60 }],
     })),
   ];
 }
@@ -61,14 +62,14 @@ describe('award recommendation and conferment', () => {
       body = await request.json(); return HttpResponse.json(recommendation(), { status: 201 });
     }));
     const { container } = renderTab();
-    expect(await screen.findByText('2:1', { selector: 'strong' })).toBeVisible();
+    expect(await screen.findByText('Upper second class honours (2:1)')).toBeVisible();
     // Only the ratified board is offered.
-    expect(screen.getAllByRole('option', { name: /award board 2026-27/ })).toHaveLength(1);
+    expect(screen.getAllByRole('option', { name: /Award Board 2026-27/ })).toHaveLength(1);
     await expectNoA11yViolations(container);
 
     await userEvent.selectOptions(screen.getByLabelText(/Recommending exam board/), 'board-1');
     await userEvent.type(screen.getByLabelText(/^Qualification/), 'BSc (Hons)');
-    expect(screen.getByLabelText(/^Classification/)).toHaveValue('2:1');
+    expect(screen.getByLabelText(/^Classification/)).toHaveValue('upper-second');
     expect(screen.queryByLabelText(/Discretion reason/)).toBeNull();
     await userEvent.clear(screen.getByLabelText(/^Classification/));
     await userEvent.type(screen.getByLabelText(/^Classification/), 'first');
@@ -84,7 +85,8 @@ describe('award recommendation and conferment', () => {
   it('an aegrotat award asks for the policy authority', async () => {
     server.use(...handlers());
     renderTab();
-    await userEvent.selectOptions(await screen.findByLabelText(/Award type/), 'aegrotat');
+    await screen.findByRole('option', { name: 'Aegrotat award' });
+    await userEvent.selectOptions(screen.getByLabelText(/Award type/), 'aegrotat');
     expect(screen.getByLabelText(/Policy authority/)).toBeVisible();
   });
 
@@ -155,7 +157,7 @@ describe('reassessment plans', () => {
     }));
     renderTab();
     expect(await screen.findByText('CS201 Algorithms')).toBeVisible();
-    await userEvent.click(screen.getByRole('button', { name: 'Close referral plan' }));
+    await userEvent.click(screen.getByRole('button', { name: /Close referral plan/i }));
     await userEvent.type(screen.getByLabelText(/^Note/), 'Passed at referral');
     await userEvent.click(screen.getByRole('button', { name: 'Close plan' }));
     await screen.findByText('Reassessment plans');

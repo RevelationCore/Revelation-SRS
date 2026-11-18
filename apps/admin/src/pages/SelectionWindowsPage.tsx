@@ -14,14 +14,8 @@ import { useAuth } from '../auth/AuthContext.js';
 import { userHasAnyPermission } from '../auth/RequirePermission.js';
 import { Spinner } from '../components/Spinner.js';
 import {
-  PageHeader, Card, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
-  Button, Input, Select, LabelledField, Dialog, Badge,
+  PageHeader, Card, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, Button, Input, Select, LabelledField, Dialog, Badge, CodeLabel, CodeSelect,
 } from '@revelation-srs/ui';
-
-const MODE_LABEL: Record<AllocationMode, string> = {
-  'ranked': 'Ranked preferences',
-  'first-come': 'First come, first served',
-};
 
 /**
  * Module selection windows (Phase 4 D-29). A window belongs to an academic
@@ -100,7 +94,7 @@ export function SelectionWindowsPage() {
                   <TableCell className="text-xs">{new Date(w.closesAt).toLocaleString('en-GB')}</TableCell>
                   <TableCell className="text-xs">{w.resubmissionClosesAt ? new Date(w.resubmissionClosesAt).toLocaleString('en-GB') : 'With the window'}</TableCell>
                   <TableCell className="text-xs">
-                    {MODE_LABEL[w.allocationModeCode]}
+                    <CodeLabel entity="module_selection_window" field="allocation_mode_code" code={w.allocationModeCode} />
                     {w.allocationSeeded && <span className="ml-2"><Badge value="in-progress" label="Allocation started" /></span>}
                   </TableCell>
                   <TableCell className="text-right space-x-3 whitespace-nowrap">
@@ -222,10 +216,7 @@ function WindowForm({
         <Input id="sw-resub" name="resubmissionClosesAt" type="datetime-local" defaultValue={existing?.resubmissionClosesAt ? toLocalInput(existing.resubmissionClosesAt) : undefined} />
       </LabelledField>
       <LabelledField label="Oversubscribed modules" htmlFor="sw-mode" hint={existing?.allocationSeeded ? 'Fixed once an allocation has been previewed' : undefined}>
-        <Select id="sw-mode" name="allocationModeCode" defaultValue={existing?.allocationModeCode ?? 'ranked'} disabled={existing?.allocationSeeded ?? false}>
-          <option value="ranked">{MODE_LABEL.ranked} (allocated after the window)</option>
-          <option value="first-come">{MODE_LABEL['first-come']}</option>
-        </Select>
+        <CodeSelect entity="module_selection_window" field="allocation_mode_code" id="sw-mode" name="allocationModeCode" defaultValue={existing?.allocationModeCode ?? 'ranked'} disabled={existing?.allocationSeeded ?? false} />
       </LabelledField>
       {error && <p className="text-sm text-danger-600">{error}</p>}
       <div className="flex justify-end gap-3 pt-2">

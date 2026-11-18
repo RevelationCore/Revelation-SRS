@@ -1,7 +1,6 @@
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import {
-  Card, CardHeader, CardBody, Button, Input, Select, LabelledField, Badge, Spinner,
-  Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
+  Card, CardHeader, CardBody, Button, Input, Select, LabelledField, Badge, Spinner, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, CodeBadge, CodeLabel, useCodes,
 } from '@revelation-srs/ui';
 
 import { ApiError } from '../api/client.js';
@@ -45,6 +44,8 @@ export function SupportEmploymentTab({ personId }: { personId: string }) {
 }
 
 function SupportSection({ personId, enrolmentIds, canWrite, canApprove }: { personId: string; enrolmentIds: string[]; canWrite: boolean; canApprove: boolean }) {
+  const paymentTypes = useCodes('support_instalment', 'payment_type_code');
+  const supportAwardTypes = useCodes('support_award', 'award_type_code');
   const [awards, setAwards] = useState<SupportAward[] | null>(null);
   const [error, setError] = useState('');
   const load = useCallback(async () => {
@@ -71,8 +72,8 @@ function SupportSection({ personId, enrolmentIds, canWrite, canApprove }: { pers
               <div key={award.awardId}>
                 <div className="mb-2 flex flex-wrap items-center gap-2">
                   <span className="font-medium text-neutral-800">{award.awardReference}</span>
-                  <span className="text-sm text-neutral-600">{award.awardTypeCode} · {award.funder} · {award.startDate}{award.endDate ? ` to ${award.endDate}` : ''}</span>
-                  <Badge value={award.statusCode} />
+                  <span className="text-sm text-neutral-600">{supportAwardTypes.label(award.awardTypeCode)} · {award.funder} · {award.startDate}{award.endDate ? ` to ${award.endDate}` : ''}</span>
+                  <CodeBadge entity="support_award" field="status_code" code={award.statusCode} />
                   {canApprove && award.statusCode === 'draft' && (
                     <Button size="sm" onClick={() => void act(() => approveSupportAward(award.awardId))}>Approve award</Button>
                   )}
@@ -91,11 +92,11 @@ function SupportSection({ personId, enrolmentIds, canWrite, canApprove }: { pers
                     <TableBody>
                       {award.instalments.map((i) => (
                         <TableRow key={i.instalmentId}>
-                          <TableCell>{i.paymentTypeCode} {pounds(i.amountMinorUnits)}</TableCell>
+                          <TableCell>{paymentTypes.label(i.paymentTypeCode)} {pounds(i.amountMinorUnits)}</TableCell>
                           <TableCell>{i.periodStart} to {i.periodEnd}</TableCell>
                           <TableCell>{i.dueDate}</TableCell>
                           <TableCell>
-                            <Badge value={i.statusCode} />
+                            <CodeBadge entity="support_instalment" field="status_code" code={i.statusCode} />
                             {i.statusCode === 'approved' && <div className="text-xs text-neutral-500">Instructed; awaiting payroll</div>}
                             {i.statusCode === 'paid' && <div className="text-xs text-neutral-500">{i.paymentReference} on {i.paidOn ?? '—'}</div>}
                             {i.statusCode === 'rejected' && <div className="text-xs text-danger-600">{i.rejectionReason}</div>}
@@ -240,7 +241,7 @@ function EmploymentSection({ personId, canWrite, canConfigure }: { personId: str
               {links.map((l) => (
                 <TableRow key={l.linkId}>
                   <TableCell>{l.hrEmploymentReference}</TableCell>
-                  <TableCell>{l.roleTypeCode}</TableCell>
+                  <TableCell><CodeLabel entity="student_employment_link" field="role_type_code" code={l.roleTypeCode} /></TableCell>
                   <TableCell>{l.startDate}{l.endDate ? ` to ${l.endDate}` : ''}</TableCell>
                   <TableCell>{l.weeklyHours}</TableCell>
                   <TableCell>{l.supervisorAgreedAt ? new Date(l.supervisorAgreedAt).toLocaleDateString('en-GB') : '—'}</TableCell>

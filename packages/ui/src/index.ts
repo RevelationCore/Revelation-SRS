@@ -6,6 +6,7 @@ export * from './auth/roles.js';
 export * from './components/Badge.js';
 export * from './components/Button.js';
 export * from './components/Card.js';
+export * from './components/Code.js';
 export * from './components/Dialog.js';
 export * from './components/EmptyState.js';
 export * from './components/ErrorBoundary.js';

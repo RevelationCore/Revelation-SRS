@@ -1,8 +1,7 @@
 import { type FormEvent, type ReactNode, useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
-  PageHeader, Card, CardHeader, CardBody, Button, Input, Select, Textarea, Checkbox, LabelledField, Badge, Spinner, StatusNotice,
-  Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
+  PageHeader, Card, CardHeader, CardBody, Button, Input, Select, Textarea, Checkbox, LabelledField, Badge, Spinner, StatusNotice, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, CodeBadge, CodeLabel, CodeSelect, useCodes,
 } from '@revelation-srs/ui';
 import type { Permission } from '@revelation-srs/domain';
 
@@ -18,10 +17,9 @@ import { useAuth } from '../auth/AuthContext.js';
 import { CasCasePanel } from '../components/CasCasePanel.js';
 import { userHasAnyPermission } from '../auth/RequirePermission.js';
 import { useValueSet } from '../hooks/useValueSet.js';
-import { APPLICATION_STATUS_LABELS, ROUTING_LABELS, programmeLabel, useProgrammeNames } from './ApplicationsPage.js';
+import { programmeLabel, useProgrammeNames } from './ApplicationsPage.js';
 
 const OPEN_OFFER = ['made', 'accepted'];
-const MATCH_LABELS: Record<string, string> = { meets: 'results meet this', below: 'results fall below this', 'needs-review': 'check against the results' };
 
 function message(err: unknown, fallback: string): string {
   return err instanceof ApiError ? (err.detail ?? err.message) : fallback;
@@ -81,7 +79,7 @@ export function ApplicationDetailPage() {
         breadcrumbs={[{ label: 'Applications', to: '/applications' }]}
         title={`${app.channelCode.toUpperCase()} ${app.sourceReference}`}
         description={`Cycle ${app.cycle}`}
-        actions={<Badge value={app.statusCode} label={APPLICATION_STATUS_LABELS[app.statusCode] ?? app.statusCode} />}
+        actions={<CodeBadge entity="student_application" field="status_code" code={app.statusCode} />}
       />
 
       {actionError && <p className="mb-4 text-sm text-danger-600" role="alert">{actionError}</p>}
@@ -93,13 +91,13 @@ export function ApplicationDetailPage() {
             <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm md:grid-cols-3">
               <Fact label="Programme">{programmeLabel(programmes, app.programmeId)}</Fact>
               <Fact label="Intake">{app.intakeCode ?? 'Not yet known'}</Fact>
-              <Fact label="Mode of study">{app.modeOfStudyCode ?? 'Not yet known'}</Fact>
+              <Fact label="Mode of study"><CodeLabel entity="student_application" field="mode_of_study_code" code={app.modeOfStudyCode} empty="Not yet known" /></Fact>
               <Fact label="Applicant">
                 {app.personId
                   ? <Link to={`/students/${app.personId}`} className="text-primary-600 hover:underline">{app.identityMatchCode === 'created' ? 'New person record' : 'Matched person record'}</Link>
                   : 'Identity not confirmed'}
               </Fact>
-              <Fact label="Worklist">{app.routingReasonCode ? (ROUTING_LABELS[app.routingReasonCode] ?? app.routingReasonCode) : 'None'}</Fact>
+              <Fact label="Worklist"><CodeLabel entity="student_application" field="routing_reason_code" code={app.routingReasonCode} empty="None" /></Fact>
               <Fact label="Received">{new Date(app.createdAt).toLocaleString('en-GB')}</Fact>
             </dl>
             {app.statusCode === 'incomplete' && !app.programmeId && (
@@ -132,8 +130,8 @@ export function ApplicationDetailPage() {
                 <TableBody>
                   {app.assessments.map((a) => (
                     <TableRow key={a.id}>
-                      <TableCell>{a.assessmentTypeCode}</TableCell>
-                      <TableCell><Badge value={a.outcomeCode} /></TableCell>
+                      <TableCell><CodeLabel entity="application_assessment" field="assessment_type_code" code={a.assessmentTypeCode} /></TableCell>
+                      <TableCell><CodeBadge entity="application_assessment" field="outcome_code" code={a.outcomeCode} /></TableCell>
                       <TableCell className="text-xs">{a.evidenceRef ? `${a.evidenceRef}${a.evidenceVersion ? ` (v${a.evidenceVersion})` : ''}` : '—'}</TableCell>
                       <TableCell className="text-xs">{a.assessedBy}</TableCell>
                       <TableCell className="text-xs">{new Date(a.assessedAt).toLocaleString('en-GB')}</TableCell>
@@ -246,9 +244,9 @@ function ConversionCard({ applicationId, programmeName }: { applicationId: strin
         {error && <p className="mb-3 text-sm text-danger-600" role="alert">{error}</p>}
         <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm md:grid-cols-3">
           <Fact label="Programme">{programmeName(conversion.programmeId)}{conversion.programmeSource === 'alternative' ? ' (alternative)' : ''}</Fact>
-          <Fact label="Mode of study">{conversion.modeOfStudyCode ?? '—'}</Fact>
+          <Fact label="Mode of study"><CodeLabel entity="admissions_offer" field="mode_of_study_code" code={conversion.modeOfStudyCode} /></Fact>
           <Fact label="Year of entry">{conversion.academicYearOfEntry ?? '—'}</Fact>
-          <Fact label="Fee status basis">{conversion.feeStatusBasisCode ?? 'Not recorded'}</Fact>
+          <Fact label="Fee status basis"><CodeLabel entity="admissions_offer" field="fee_status_basis_code" code={conversion.feeStatusBasisCode} empty="Not recorded" /></Fact>
           <Fact label="Hand-off task">{conversion.handoffTaskStatus ?? 'None'}</Fact>
         </dl>
         {conversion.blockers.length > 0 && (
@@ -303,12 +301,7 @@ function RoutingCard({ current, onRoute }: { current: string | null; onRoute: (r
       <CardBody>
         <form className="flex items-end gap-3" onSubmit={(e) => { e.preventDefault(); void onRoute((reason || null) as 'incomplete' | 'duplicate' | 'restricted' | null); }}>
           <LabelledField label="Hold for" htmlFor="routing-reason">
-            <Select id="routing-reason" value={reason} onChange={(e) => setReason(e.target.value)} className="w-64">
-              <option value="">Nothing (clear the worklist)</option>
-              <option value="incomplete">Incomplete</option>
-              <option value="duplicate">Possible duplicate</option>
-              <option value="restricted">Restricted</option>
-            </Select>
+            <CodeSelect entity="student_application" field="routing_reason_code" id="routing-reason" value={reason} onChange={(v) => setReason(v)} className="w-64" emptyLabel="Nothing (clear the worklist)" only={['incomplete', 'duplicate', 'restricted']} />
           </LabelledField>
           <Button type="submit" variant="secondary">Update worklist</Button>
         </form>
@@ -376,10 +369,7 @@ function RecommendationCard({ onSubmit }: { onSubmit: (body: { recommendationCod
       <CardBody>
         <form className="grid grid-cols-1 gap-3 md:grid-cols-4 items-end" onSubmit={(e) => { e.preventDefault(); void onSubmit({ recommendationCode: code, reason: reason.trim() }); }}>
           <LabelledField label="Recommendation" htmlFor="recommendation-code">
-            <Select id="recommendation-code" value={code} onChange={(e) => setCode(e.target.value as 'offer' | 'reject')}>
-              <option value="offer">Make an offer</option>
-              <option value="reject">Reject</option>
-            </Select>
+            <CodeSelect entity="student_application" field="recommendation_code" id="recommendation-code" value={code} onChange={(v) => setCode(v as 'offer' | 'reject')} />
           </LabelledField>
           <div className="md:col-span-2">
             <LabelledField label="Reason" htmlFor="recommendation-reason" required>
@@ -469,18 +459,12 @@ function DecisionCard({ app, canDecide, isRecommender, onSubmit }: {
           <form className="flex flex-col gap-4" onSubmit={submit}>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-3 items-end">
               <LabelledField label="Decision" htmlFor="decision-code">
-                <Select id="decision-code" value={decision} onChange={(e) => setDecision(e.target.value as 'offer' | 'reject')}>
-                  <option value="offer">Make an offer</option>
-                  <option value="reject">Reject</option>
-                </Select>
+                <CodeSelect entity="student_application" field="recommendation_code" id="decision-code" value={decision} onChange={(v) => setDecision(v as 'offer' | 'reject')} />
               </LabelledField>
               {decision === 'offer' ? (
                 <>
                   <LabelledField label="Offer type" htmlFor="offer-type">
-                    <Select id="offer-type" value={offerType} onChange={(e) => setOfferType(e.target.value as 'conditional' | 'unconditional')}>
-                      <option value="conditional">Conditional</option>
-                      <option value="unconditional">Unconditional</option>
-                    </Select>
+                    <CodeSelect entity="admissions_offer" field="offer_type_code" id="offer-type" value={offerType} onChange={(v) => setOfferType(v as 'conditional' | 'unconditional')} only={['conditional', 'unconditional']} />
                   </LabelledField>
                   <LabelledField label="Expires on" htmlFor="offer-expires">
                     <Input id="offer-expires" type="date" value={expiresOn} onChange={(e) => setExpiresOn(e.target.value)} />
@@ -509,13 +493,16 @@ function OfferCard({ offer, programmeName, canDecide, canReceive, act }: {
   offer: Offer; programmeName: string; canDecide: boolean; canReceive: boolean;
   act: (run: () => Promise<unknown>) => Promise<boolean>;
 }) {
+  const offerModes = useCodes('admissions_offer', 'mode_of_study_code');
+  const offerTypes = useCodes('admissions_offer', 'offer_type_code');
+  const confirmationDecisions = useCodes('offer_confirmation_decision', 'decision_code');
   const open = OPEN_OFFER.includes(offer.statusCode);
   return (
     <Card>
       <CardHeader
         title={`Offer version ${offer.version}`}
-        description={`${offer.offerTypeCode === 'conditional' ? 'Conditional' : 'Unconditional'} · ${programmeName} · ${offer.intakeCode} · ${offer.modeOfStudyCode}${offer.expiresOn ? ` · expires ${offer.expiresOn}` : ''}`}
-        actions={<Badge value={offer.statusCode} />}
+        description={`${offerTypes.label(offer.offerTypeCode)} · ${programmeName} · ${offer.intakeCode} · ${offerModes.label(offer.modeOfStudyCode)}${offer.expiresOn ? ` · expires ${offer.expiresOn}` : ''}`}
+        actions={<CodeBadge entity="admissions_offer" field="status_code" code={offer.statusCode} />}
       />
       <CardBody>
         <div className="flex flex-col gap-4">
@@ -537,7 +524,7 @@ function OfferCard({ offer, programmeName, canDecide, canReceive, act }: {
 
           {offer.confirmation && (
             <div className="rounded border border-neutral-200 p-3 text-sm">
-              <p className="font-medium">Confirmation: {offer.confirmation.decisionCode}</p>
+              <p className="font-medium">Confirmation: {confirmationDecisions.label(offer.confirmation.decisionCode)}</p>
               {offer.confirmation.reason && <p className="text-neutral-600">{offer.confirmation.reason}</p>}
               {offer.confirmation.handoffWorkflowInstanceId && <p className="text-neutral-600">Handed to enrolment (workflow {offer.confirmation.handoffWorkflowInstanceId}).</p>}
             </div>
@@ -566,6 +553,7 @@ function ConditionsTable({ conditions, offerOpen, canDecide, canReceive, act, of
   conditions: OfferCondition[]; offerOpen: boolean; canDecide: boolean; canReceive: boolean; offerVersion: number;
   act: (run: () => Promise<unknown>) => Promise<boolean>;
 }) {
+  const provenances = useCodes('condition_evidence', 'provenance_code');
   return (
     <Table>
       <TableHead>
@@ -578,19 +566,19 @@ function ConditionsTable({ conditions, offerOpen, canDecide, canReceive, act, of
       <TableBody>
         {conditions.map((c) => (
           <TableRow key={c.id}>
-            <TableCell>{c.description}<div className="text-xs text-neutral-500">{c.conditionTypeCode}</div></TableCell>
+            <TableCell>{c.description}<div className="text-xs text-neutral-500"><CodeLabel entity="offer_condition" field="condition_type_code" code={c.conditionTypeCode} /></div></TableCell>
             <TableCell className="text-sm">{c.requiredValue ?? '—'}</TableCell>
             <TableCell className="text-xs">
               {c.evidence.length === 0 ? 'None' : c.evidence.map((e) => (
                 <div key={e.id}>
-                  {e.provenanceCode}: {e.evidenceRef}{e.reportedValue ? ` = ${e.reportedValue}` : ''} {e.verified ? '(verified)' : '(unverified)'}
-                  {e.matchOutcomeCode && <span className="ml-1 font-medium">· {MATCH_LABELS[e.matchOutcomeCode]}</span>}
+                  {provenances.label(e.provenanceCode)}: {e.evidenceRef}{e.reportedValue ? ` = ${e.reportedValue}` : ''} {e.verified ? '(verified)' : '(unverified)'}
+                  {e.matchOutcomeCode && <span className="ml-1 font-medium">· <CodeLabel entity="condition_evidence" field="match_outcome_code" code={e.matchOutcomeCode} /></span>}
                   {e.embargoedUntil && <span className="ml-1 text-warning-700">· embargoed until {e.embargoedUntil}</span>}
                 </div>
               ))}
             </TableCell>
             <TableCell>
-              <Badge value={c.statusCode} />
+              <CodeBadge entity="offer_condition" field="status_code" code={c.statusCode} />
               {c.decisionNote && <div className="text-xs text-neutral-500">{c.decisionNote}</div>}
             </TableCell>
             <TableCell className="text-right">
@@ -664,11 +652,7 @@ function ConditionActions({ condition, canDecide, canReceive, act, idPrefix }: {
         .then((ok) => { if (ok) setMode(''); });
     }}>
       <LabelledField label="Outcome" htmlFor={`${idPrefix}-status`}>
-        <Select id={`${idPrefix}-status`} value={status} onChange={(e) => setStatus(e.target.value as 'met' | 'waived' | 'unmet')}>
-          <option value="met">Met (needs verified evidence)</option>
-          <option value="waived">Waived (needs authority and reason)</option>
-          <option value="unmet">Not met</option>
-        </Select>
+        <CodeSelect entity="offer_condition" field="status_code" id={`${idPrefix}-status`} value={status} onChange={(v) => setStatus(v as 'met' | 'waived' | 'unmet')} only={['met', 'waived', 'unmet']} />
       </LabelledField>
       <LabelledField label="Note" htmlFor={`${idPrefix}-note`}>
         <Input id={`${idPrefix}-note`} value={note} onChange={(e) => setNote(e.target.value)} />
@@ -687,10 +671,7 @@ function ResponseForm({ offerId, onSubmit }: { offerId: string; onSubmit: (body:
   return (
     <form className="flex flex-wrap items-end gap-3" onSubmit={(e) => { e.preventDefault(); void onSubmit({ responseCode: response, sourceTimestamp: new Date(at).toISOString() }); }}>
       <LabelledField label="Applicant response" htmlFor={`response-${offerId}`}>
-        <Select id={`response-${offerId}`} value={response} onChange={(e) => setResponse(e.target.value as 'accept' | 'decline')}>
-          <option value="accept">Accepted</option>
-          <option value="decline">Declined</option>
-        </Select>
+        <CodeSelect entity="admissions_offer" field="response_code" id={`response-${offerId}`} value={response} onChange={(v) => setResponse(v as 'accept' | 'decline')} />
       </LabelledField>
       <LabelledField label="Responded at (from the channel)" htmlFor={`response-at-${offerId}`} required>
         <Input id={`response-at-${offerId}`} type="datetime-local" value={at} onChange={(e) => setAt(e.target.value)} />
@@ -715,11 +696,7 @@ function ConfirmationForm({ offer, onSubmit }: { offer: Offer; onSubmit: (body: 
       {outstanding > 0 && <p className="text-sm text-neutral-600">{outstanding} condition(s) not yet met or waived: the offer can be confirmed only once all are.</p>}
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3 items-end">
         <LabelledField label="Outcome" htmlFor={`confirm-${offer.id}`}>
-          <Select id={`confirm-${offer.id}`} value={decision} onChange={(e) => setDecision(e.target.value as typeof decision)}>
-            <option value="confirmed">Confirmed</option>
-            <option value="confirmed-alternative">Confirmed on an alternative programme</option>
-            <option value="unsuccessful">Unsuccessful</option>
-          </Select>
+          <CodeSelect entity="offer_confirmation_decision" field="decision_code" id={`confirm-${offer.id}`} value={decision} onChange={(v) => setDecision(v as typeof decision)} />
         </LabelledField>
         {decision === 'confirmed-alternative' && (
           <LabelledField label="Alternative programme" htmlFor={`confirm-alt-${offer.id}`} required>
@@ -777,10 +754,7 @@ function ChangeOfferForm({ offer, onChange, onWithdraw }: {
       <p className="text-sm font-medium">Change offer (creates a new version; an acceptance carries over)</p>
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3 items-end">
         <LabelledField label="Offer type" htmlFor={`change-type-${offer.id}`}>
-          <Select id={`change-type-${offer.id}`} value={offerType} onChange={(e) => setOfferType(e.target.value as 'conditional' | 'unconditional')}>
-            <option value="conditional">Conditional</option>
-            <option value="unconditional">Unconditional</option>
-          </Select>
+          <CodeSelect entity="admissions_offer" field="offer_type_code" id={`change-type-${offer.id}`} value={offerType} onChange={(v) => setOfferType(v as 'conditional' | 'unconditional')} only={['conditional', 'unconditional']} />
         </LabelledField>
         <LabelledField label="Expires on" htmlFor={`change-expires-${offer.id}`}>
           <Input id={`change-expires-${offer.id}`} type="date" value={expiresOn} onChange={(e) => setExpiresOn(e.target.value)} />

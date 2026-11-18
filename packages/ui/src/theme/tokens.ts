@@ -108,4 +108,11 @@ export const statusTone: Record<string, 'success' | 'warning' | 'danger' | 'neut
   'risk-low': 'neutral', 'risk-medium': 'warning', 'risk-high': 'danger', 'risk-crisis': 'danger',
   // Email
   sent: 'success', unread: 'primary',
+  // Registration, finance and eligibility
+  confirmed: 'success', arranged: 'success', eligible: 'success', met: 'success', waived: 'primary', conferred: 'success',
+  hold: 'danger', lapsed: 'danger', 'not-eligible': 'danger', unmet: 'danger', revoked: 'danger', unsuccessful: 'danger',
+  'not-required': 'neutral', superseded: 'neutral', expired: 'neutral', cancelled: 'neutral',
+  referred: 'warning', 'recheck-required': 'warning', validated: 'warning', queued: 'warning', made: 'primary', offered: 'primary',
+  accepted: 'success', declined: 'neutral', 'under-assessment': 'warning', recommended: 'primary', incomplete: 'warning',
+  'eligibility-checked': 'primary', prepared: 'warning', requested: 'warning', opened: 'neutral',
 };

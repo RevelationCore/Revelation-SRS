@@ -1,5 +1,7 @@
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
-import { Card, CardHeader, CardBody, Button, Input, Select, LabelledField, Badge, Spinner, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell } from '@revelation-srs/ui';
+import {
+  Card, CardHeader, CardBody, Button, Input, Select, LabelledField, Badge, Spinner, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, CodeBadge, CodeLabel, CodeSelect,
+} from '@revelation-srs/ui';
 
 import { ApiError } from '../api/client.js';
 import {
@@ -13,7 +15,6 @@ import { useValueSet } from '../hooks/useValueSet.js';
 export const FINANCIAL_STATUS_LABELS: Record<FinancialRegistration['financialStatusCode'], string> = {
   pending: 'Not yet arranged', arranged: 'Arranged', hold: 'On hold', 'not-required': 'Not required',
 };
-const badge = (s: FinancialRegistration['financialStatusCode']) => (s === 'arranged' || s === 'not-required' ? 'approved' : s === 'hold' ? 'rejected' : 'pending');
 function message(err: unknown, fallback: string): string {
   return err instanceof ApiError ? (err.detail ?? err.message) : fallback;
 }
@@ -57,9 +58,9 @@ export function FinancialRegistrationSection({ enrolmentId, feeStatusCode }: { e
               {years.map((y) => (
                 <TableRow key={y.liabilityId}>
                   <TableCell>{y.academicYear}</TableCell>
-                  <TableCell><Badge value={badge(y.financialStatusCode)} label={FINANCIAL_STATUS_LABELS[y.financialStatusCode]} />{y.holdReasonCode && <div className="text-xs text-neutral-500">{y.holdReasonCode}</div>}</TableCell>
-                  <TableCell className="text-sm">{y.payerArrangementCode ?? '—'}{y.financeReference ? <div className="text-xs text-neutral-500">{y.financeReference}</div> : null}</TableCell>
-                  <TableCell className="text-xs">{y.statusSourceCode ?? '—'}{y.statusUpdatedAt ? `, ${new Date(y.statusUpdatedAt).toLocaleDateString('en-GB')}` : ''}</TableCell>
+                  <TableCell><CodeBadge entity="fee_liability" field="financial_status_code" code={y.financialStatusCode} />{y.holdReasonCode && <div className="text-xs text-neutral-500"><CodeLabel entity="fee_liability" field="hold_reason_code" code={y.holdReasonCode} /></div>}</TableCell>
+                  <TableCell className="text-sm"><CodeLabel entity="fee_liability" field="payer_arrangement_code" code={y.payerArrangementCode} />{y.financeReference ? <div className="text-xs text-neutral-500">{y.financeReference}</div> : null}</TableCell>
+                  <TableCell className="text-xs"><CodeLabel entity="fee_liability" field="status_source_code" code={y.statusSourceCode} />{y.statusUpdatedAt ? `, ${new Date(y.statusUpdatedAt).toLocaleDateString('en-GB')}` : ''}</TableCell>
                   {canWrite && <TableCell><StatusForm item={y} onSaved={() => void load()} /></TableCell>}
                 </TableRow>
               ))}
@@ -94,9 +95,7 @@ function StatusForm({ item, onSaved }: { item: FinancialRegistration; onSaved: (
     <form className="flex flex-col gap-2" onSubmit={(e) => void submit(e)}>
       {error && <p className="text-xs text-danger-600" role="alert">{error}</p>}
       <LabelledField label="Status" htmlFor={`fin-${id}-status`}>
-        <Select id={`fin-${id}-status`} value={form.financialStatusCode} onChange={(e) => setForm({ financialStatusCode: e.target.value as FinancialStatusInput['financialStatusCode'] })}>
-          {Object.entries(FINANCIAL_STATUS_LABELS).map(([code, l]) => <option key={code} value={code}>{l}</option>)}
-        </Select>
+        <CodeSelect entity="fee_liability" field="financial_status_code" id={`fin-${id}-status`} value={form.financialStatusCode} onChange={(v) => setForm({ financialStatusCode: v as FinancialStatusInput['financialStatusCode'] })} />
       </LabelledField>
       {form.financialStatusCode === 'hold' && (
         <LabelledField label="Hold reason" htmlFor={`fin-${id}-reason`}>

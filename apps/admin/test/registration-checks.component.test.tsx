@@ -9,15 +9,17 @@ import { RightToStudySection } from '../src/pages/RightToStudySection.js';
 import { FinancialRegistrationSection } from '../src/pages/FinancialRegistrationSection.js';
 
 const API = 'http://localhost:3000';
-const valueSets = http.get(`${API}/api/v1/fields/:entity/:field/value-set`, ({ params }) => HttpResponse.json({
-  setCode: 'x', displayName: 'x',
-  members: ({
-    basis_code: [{ code: 'british-irish', displayLabel: 'British or Irish citizen' }],
-    method_code: [{ code: 'identity-passport', displayLabel: 'Passport from the identity check' }],
-    hold_reason_code: [{ code: 'tuition-unpaid', displayLabel: 'Tuition fees unpaid' }],
-    fee_status_code: [{ code: 'home', displayLabel: 'Home' }, { code: 'overseas', displayLabel: 'Overseas' }],
-  } as Record<string, Array<{ code: string; displayLabel: string }>>)[String(params['field'])]?.map((m, i) => ({ ...m, description: null, sortOrder: i })) ?? [],
-}));
+// Only these fields; every other field falls through to the real value sets.
+const OVERRIDES: Record<string, Array<{ code: string; displayLabel: string }>> = {
+  basis_code: [{ code: 'british-irish', displayLabel: 'British or Irish citizen' }],
+  method_code: [{ code: 'identity-passport', displayLabel: 'Passport from the identity check' }],
+  hold_reason_code: [{ code: 'tuition-unpaid', displayLabel: 'Tuition fees unpaid' }],
+  fee_status_code: [{ code: 'home', displayLabel: 'Home' }, { code: 'overseas', displayLabel: 'Overseas' }],
+};
+const valueSets = http.get(`${API}/api/v1/fields/:entity/:field/value-set`, ({ params }) => {
+  const members = OVERRIDES[String(params['field'])];
+  return members ? HttpResponse.json({ setCode: 'x', displayName: 'x', members: members.map((m, i) => ({ ...m, description: null, sortOrder: i })) }) : undefined;
+});
 
 describe('right to study on the student record (D-17)', () => {
   it('records an eligible check with its basis and method', async () => {

@@ -8,16 +8,19 @@ import { useValueSet } from '../hooks/useValueSet.js';
 
 // Shared pieces of the wellbeing case screens.
 
-type Members = Array<{ code: string; displayLabel: string }>;
+/** Selectable values (for pickers), carrying a label lookup that covers every value. */
+type Members = Array<{ code: string; displayLabel: string }> & { label?: (code: string | null | undefined) => string };
 
+/** A code's label, including retired and hidden values; '—' when there is none. */
 export function labelFor(members: Members, code: string | null | undefined): string {
   if (!code) return '—';
-  return members.find((m) => m.code === code)?.displayLabel ?? code;
+  return members.label ? members.label(code) : members.find((m) => m.code === code)?.displayLabel ?? code;
 }
 
 /** Value-set members for a field of one of the wellbeing module's tables. */
 export function useWellbeingCodes(table: string, field: string): Members {
-  return useValueSet(`wellbeing.${table}`, field).members;
+  const vs = useValueSet(`wellbeing.${table}`, field);
+  return Object.assign(vs.members.slice(), { label: vs.label });
 }
 
 export function errorText(err: unknown, fallback: string): string {

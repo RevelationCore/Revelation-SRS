@@ -1,6 +1,8 @@
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { PageHeader, Card, CardHeader, CardBody, Button, Input, Select, Textarea, LabelledField, Badge, Spinner, StatusNotice } from '@revelation-srs/ui';
+import {
+  PageHeader, Card, CardHeader, CardBody, Button, Input, Select, Textarea, LabelledField, Badge, Spinner, StatusNotice, useCodes,
+} from '@revelation-srs/ui';
 
 import { ApiError } from '../api/client.js';
 import {
@@ -17,13 +19,6 @@ function message(err: unknown, fallback: string): string {
   return err instanceof ApiError ? (err.detail ?? err.message) : fallback;
 }
 
-const FLAG_LABELS: Record<NonRegistrationCase['flags'][number], string> = {
-  'results-pending': 'Last year\'s results not ratified',
-  'open-status-request': 'Has an open status request',
-  'approved-interruption': 'Has an approved interruption',
-  sponsored: 'Student visa sponsored',
-};
-const OUTCOME_LABELS: Record<string, string> = { 'registered-late': 'Registered late', referred: 'Referred to the student\'s own request', 'non-registration': 'Non-registration decided' };
 
 /**
  * Students who did not register (BP-02-011; D-9). Each lapsed registration is
@@ -63,6 +58,9 @@ export function NonRegistrationPage() {
 }
 
 function CaseCard({ item, canManage, onChanged }: { item: NonRegistrationCase; canManage: boolean; onChanged: () => void }) {
+  const contactChannels = useCodes('non_registration_case', 'contact_channel_code');
+  const outcomes = useCodes('non_registration_case', 'outcome_code');
+  const flags = useCodes('non_registration_case', 'flag_code');
   const [error, setError] = useState('');
   const name = item.subject?.studentName ?? item.enrolmentId;
   const open = item.statusCode === 'open' || item.statusCode === 'under-review';
@@ -76,7 +74,7 @@ function CaseCard({ item, canManage, onChanged }: { item: NonRegistrationCase; c
       <CardHeader
         title={item.subject?.personId ? <Link to={`/students/${item.subject.personId}`} className="text-primary-600 hover:underline">{name}</Link> : name}
         description={`${[item.subject?.studentNumber, item.subject?.programmeCode].filter(Boolean).join(' · ')} · did not register for ${item.academicYear} (closed ${day(item.periodClosesAt)})`}
-        actions={<Badge value={open ? 'pending' : 'approved'} label={open ? (item.statusCode === 'under-review' ? 'Needs review' : 'Open') : (item.outcome ? OUTCOME_LABELS[item.outcome.outcomeCode] ?? item.outcome.outcomeCode : 'Closed')} />}
+        actions={<Badge value={open ? 'pending' : 'approved'} label={open ? (item.statusCode === 'under-review' ? 'Needs review' : 'Open') : (item.outcome ? outcomes.label(item.outcome.outcomeCode) : 'Closed')} />}
       />
       <CardBody>
         <div className="flex flex-col gap-4">
@@ -84,14 +82,14 @@ function CaseCard({ item, canManage, onChanged }: { item: NonRegistrationCase; c
           {item.ukviReportDueBy && <StatusNotice>Sponsored student: UKVI must be told by {day(item.ukviReportDueBy)} (10 working days after the period ended). A compliance alert has been raised.</StatusNotice>}
           {item.flags.filter((f) => f !== 'sponsored').length > 0 && (
             <ul className="flex flex-wrap gap-2" aria-label={`Review points for ${name}`}>
-              {item.flags.filter((f) => f !== 'sponsored').map((f) => <li key={f}><Badge value="pending" label={FLAG_LABELS[f]} /></li>)}
+              {item.flags.filter((f) => f !== 'sponsored').map((f) => <li key={f}><Badge value="pending" label={flags.label(f)} /></li>)}
             </ul>
           )}
           <div>
             <h3 className="text-sm font-medium text-neutral-800">Contact attempts</h3>
             {item.contactAttempts.length === 0 ? <p className="text-sm text-neutral-600">None yet.</p> : (
               <ul className="mt-1 text-sm text-neutral-700">
-                {item.contactAttempts.map((a) => <li key={a.evidenceId}>{day(a.contactedAt)} · {a.channelCode} · {a.reference.startsWith('notification:') ? 'portal notification sent' : a.reference}</li>)}
+                {item.contactAttempts.map((a) => <li key={a.evidenceId}>{day(a.contactedAt)} · {contactChannels.label(a.channelCode)} · {a.reference.startsWith('notification:') ? 'portal notification sent' : a.reference}</li>)}
               </ul>
             )}
             {item.writtenNonContinuation && <p className="mt-1 text-sm text-neutral-700">The student confirmed in writing they will not continue ({item.writtenNonContinuation.reference}).</p>}
@@ -99,7 +97,7 @@ function CaseCard({ item, canManage, onChanged }: { item: NonRegistrationCase; c
           </div>
           {item.outcome && (
             <p className="text-sm text-neutral-700">
-              {OUTCOME_LABELS[item.outcome.outcomeCode]} on {day(item.outcome.decidedAt)}
+              {outcomes.label(item.outcome.outcomeCode)} on {day(item.outcome.decidedAt)}
               {item.outcome.outcomeCode === 'non-registration' && <> · effective {day(item.outcome.effectiveAt)} · {item.outcome.policyVersion}</>}
               {item.outcome.statusCaseId && <> · <Link to={`/status-cases/${item.outcome.statusCaseId}`} className="text-primary-600 hover:underline">withdrawal case</Link></>}
             </p>
@@ -164,6 +162,7 @@ function ReferenceForm({ id, label, submit, onSubmit }: { id: string; label: str
 }
 
 function ReferForm({ item, onSubmit }: { item: NonRegistrationCase; onSubmit: (statusCaseId: string) => Promise<void> }) {
+  const caseTypes = useCodes('student_status_case', 'case_type_code');
   const [requests, setRequests] = useState<StatusCase[] | null>(null);
   const [chosen, setChosen] = useState('');
   useEffect(() => {
@@ -178,7 +177,7 @@ function ReferForm({ item, onSubmit }: { item: NonRegistrationCase; onSubmit: (s
       <LabelledField label="The student's request" htmlFor={`nr-${item.caseId}-refer`} required>
         <Select id={`nr-${item.caseId}-refer`} value={chosen} onChange={(e) => setChosen(e.target.value)}>
           <option value="">Choose…</option>
-          {requests.map((r) => <option key={r.statusCaseId} value={r.statusCaseId}>{r.caseTypeCode} from {r.requestedEffectiveDate} ({r.statusCode})</option>)}
+          {requests.map((r) => <option key={r.statusCaseId} value={r.statusCaseId}>{caseTypes.label(r.caseTypeCode)} from {r.requestedEffectiveDate} ({r.statusCode})</option>)}
         </Select>
       </LabelledField>
       <Button type="submit" disabled={!chosen}>Refer</Button>

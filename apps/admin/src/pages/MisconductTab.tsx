@@ -1,7 +1,6 @@
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import {
-  Card, CardHeader, CardBody, Button, Input, Select, LabelledField, Spinner, StatusNotice,
-  Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
+  Card, CardHeader, CardBody, Button, Input, Select, LabelledField, Spinner, StatusNotice, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, CodeLabel,
 } from '@revelation-srs/ui';
 
 import { ApiError } from '../api/client.js';
@@ -43,8 +42,8 @@ export function MisconductTab({ personId, canRecord }: { personId: string; canRe
               <TableBody>
                 {outcomes.map((o) => (
                   <TableRow key={o.misconductOutcomeId}>
-                    <TableCell className="font-mono text-xs">{o.caseReference}<div className="font-sans text-neutral-500">{o.caseStatusCode}</div></TableCell>
-                    <TableCell>{o.penaltyCode}</TableCell>
+                    <TableCell className="font-mono text-xs">{o.caseReference}<div className="font-sans text-neutral-500"><CodeLabel entity="misconduct_case_reference" field="case_status_code" code={o.caseStatusCode} /></div></TableCell>
+                    <TableCell><CodeLabel entity="misconduct_outcome" field="penalty_code" code={o.penaltyCode} /></TableCell>
                     <TableCell className="text-sm">{o.effectiveDate}</TableCell>
                     <TableCell className="text-xs">
                       {o.penaltyEffects.length === 0 ? 'None' : o.penaltyEffects.map((e, i) => (

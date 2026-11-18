@@ -1,7 +1,6 @@
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import {
-  Card, CardHeader, CardBody, Button, PageHeader, LabelledField, Input, Select,
-  Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, Badge,
+  Card, CardHeader, CardBody, Button, PageHeader, LabelledField, Input, Select, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, Badge, CodeBadge, CodeSelect,
 } from '@revelation-srs/ui';
 import { type FindingTypeCode, type AuditReviewCase, openReviewCase, addFinding, sealPartition, listCases } from '../api/auditReview.js';
 import { useAuth } from '../auth/AuthContext.js';
@@ -98,7 +97,7 @@ function CasesList() {
                 <TableRow key={c.auditReviewCaseId}>
                   <TableCell className="font-mono text-xs">{c.auditReviewCaseId}</TableCell>
                   <TableCell className="text-xs">{c.ownerId}</TableCell>
-                  <TableCell><Badge value={c.statusCode} /></TableCell>
+                  <TableCell><CodeBadge entity="business_case" field="status_code" code={c.statusCode} /></TableCell>
                   <TableCell className="text-neutral-500">{new Date(c.createdAt).toLocaleDateString('en-GB')}</TableCell>
                 </TableRow>
               ))}
@@ -146,12 +145,7 @@ function FindingStep({ caseId, onError }: { caseId: string; onError: (msg: strin
               <Input id="ar-record" value={auditRecordId} onChange={(e) => setAuditRecordId(e.target.value)} />
             </LabelledField>
             <LabelledField label="Finding type" htmlFor="ar-type">
-              <Select id="ar-type" value={findingTypeCode} onChange={(e) => setFindingTypeCode(e.target.value as FindingTypeCode)}>
-                <option value="no-concern">No concern</option>
-                <option value="policy-breach">Policy breach</option>
-                <option value="tamper-suspected">Tamper suspected</option>
-                <option value="investigation-required">Investigation required</option>
-              </Select>
+              <CodeSelect entity="audit_review_finding" field="finding_type_code" id="ar-type" value={findingTypeCode} onChange={(v) => setFindingTypeCode(v as FindingTypeCode)} />
             </LabelledField>
           </div>
           <LabelledField label="Description" htmlFor="ar-desc" hint="Optional">

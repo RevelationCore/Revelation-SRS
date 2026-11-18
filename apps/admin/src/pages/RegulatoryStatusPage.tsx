@@ -4,7 +4,9 @@ import { listCasCaseWorklist } from '../api/casCases.js';
 import { ApiError } from '../api/client.js';
 import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
-import { PageHeader, Card, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell } from '@revelation-srs/ui';
+import {
+  PageHeader, Card, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, CodeBadge,
+} from '@revelation-srs/ui';
 
 const CURRENT_YEAR = new Date().getFullYear().toString();
 
@@ -122,7 +124,7 @@ export function RegulatoryStatusPage() {
                   {hesa.map(r => (
                     <TableRow key={r.returnId}>
                       <TableCell className="font-medium text-neutral-900">{r.academicYear}</TableCell>
-                      <TableCell><Badge value={r.statusCode} /></TableCell>
+                      <TableCell><CodeBadge entity="hesa_student_return" field="status_code" code={r.statusCode} /></TableCell>
                       <TableCell>
                         {r.submittedAt ? new Date(r.submittedAt).toLocaleDateString('en-GB') : '—'}
                       </TableCell>
@@ -162,7 +164,7 @@ function SummaryCard({
       <p className="text-xs text-neutral-600">{detail}</p>
       <div className="mt-2 flex items-center justify-between">
         <span className="text-xs text-neutral-600">{subtitle}</span>
-        {status && <Badge value={status} />}
+        {status && <CodeBadge entity="hesa_student_return" field="status_code" code={status} />}
       </div>
     </div>
   );

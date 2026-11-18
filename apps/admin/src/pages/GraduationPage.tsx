@@ -1,8 +1,7 @@
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  PageHeader, Card, CardHeader, CardBody, Button, Input, LabelledField, Badge, Spinner,
-  Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
+  PageHeader, Card, CardHeader, CardBody, Button, Input, LabelledField, Badge, Spinner, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, useCodes,
 } from '@revelation-srs/ui';
 
 import { ApiError } from '../api/client.js';
@@ -16,6 +15,7 @@ function message(err: unknown, fallback: string): string {
 
 /** Graduation cycles (BP-06-005; D-4): each invites the graduands whose awards were conferred in its window. */
 export function GraduationPage() {
+  const cycleStatuses = useCodes('graduation_cycle', 'status_code');
   const { roles } = useAuth();
   const [cycles, setCycles] = useState<GraduationCycleSummary[] | null>(null);
   const [error, setError] = useState('');
@@ -48,7 +48,7 @@ export function GraduationPage() {
                         <TableRow key={c.cycleId}>
                           <TableCell>{c.title}<div className="font-mono text-xs text-neutral-500">{c.cycleCode}</div></TableCell>
                           <TableCell className="text-sm">{c.awardsFrom} – {c.awardsTo}</TableCell>
-                          <TableCell><Badge value={c.frozenAt ? 'ratified' : 'pending'} label={c.statusCode} /></TableCell>
+                          <TableCell><Badge value={c.frozenAt ? 'ratified' : 'pending'} label={cycleStatuses.label(c.statusCode)} /></TableCell>
                           <TableCell className="text-right">
                             <Link to={`/graduation/${c.cycleId}`} className="text-sm text-primary-600 hover:underline">View<span className="sr-only"> {c.title}</span></Link>
                           </TableCell>

@@ -144,7 +144,7 @@ function TenantsPanel() {
     setCreating(true);
     setError('');
     try {
-      await createTenant({ slug: slug.trim(), displayName: displayName.trim() });
+      await createTenant({ code: slug.trim(), name: displayName.trim() });
       setSlug(''); setDisplayName(''); setShowCreate(false);
       await load();
     } catch (err) {
@@ -199,9 +199,9 @@ function TenantsPanel() {
           <TableBody>
             {tenants.map(t => (
               <TableRow key={t.tenantId}>
-                <TableCell className="font-mono text-xs text-neutral-700">{t.slug}</TableCell>
-                <TableCell className="text-neutral-900">{t.displayName}</TableCell>
-                <TableCell><Badge value={t.statusCode} /></TableCell>
+                <TableCell className="font-mono text-xs text-neutral-700">{t.code}</TableCell>
+                <TableCell className="text-neutral-900">{t.name}</TableCell>
+                <TableCell><Badge value={t.active ? 'active' : 'inactive'} label={t.active ? 'Active' : 'Inactive'} /></TableCell>
                 <TableCell className="text-xs">{new Date(t.createdAt).toLocaleDateString('en-GB')}</TableCell>
               </TableRow>
             ))}

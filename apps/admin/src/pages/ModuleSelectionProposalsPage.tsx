@@ -7,13 +7,12 @@ import {
 import { ApiError } from '../api/client.js';
 import { Spinner } from '../components/Spinner.js';
 import {
-  PageHeader, Card, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
-  Button, Select,
+  PageHeader, Card, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, Button, Select, CodeLabel, useCodes,
 } from '@revelation-srs/ui';
 
-const STATUS_OPTIONS = ['waitlisted', 'submitted', 'returned', 'confirmed', 'rejected', ''];
 
 export function ModuleSelectionProposalsPage() {
+  const proposalStatuses = useCodes('module_selection_proposal', 'status_code');
   const [proposals, setProposals] = useState<ModuleSelectionProposal[]>([]);
   const [loading,    setLoading]    = useState(true);
   const [error,      setError]      = useState('');
@@ -70,9 +69,8 @@ export function ModuleSelectionProposalsPage() {
               onChange={(e) => setStatusFilter(e.target.value)}
               className="w-auto"
             >
-              {STATUS_OPTIONS.map(s => (
-                <option key={s} value={s}>{s || 'All'}</option>
-              ))}
+              {proposalStatuses.options.filter((m) => ['waitlisted', 'submitted', 'returned', 'confirmed', 'rejected'].includes(m.code)).map((m) => <option key={m.code} value={m.code}>{m.displayLabel}</option>)}
+              <option value="">All</option>
             </Select>
             <Button variant="secondary" onClick={() => void load(statusFilter)}>Refresh</Button>
           </div>
@@ -116,7 +114,7 @@ export function ModuleSelectionProposalsPage() {
                   </TableCell>
                   <TableCell>
                     <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColour(proposal.statusCode)}`}>
-                      {proposal.statusCode}
+                      <CodeLabel entity="module_selection_proposal" field="status_code" code={proposal.statusCode} />
                     </span>
                   </TableCell>
                   <TableCell className="text-neutral-500">

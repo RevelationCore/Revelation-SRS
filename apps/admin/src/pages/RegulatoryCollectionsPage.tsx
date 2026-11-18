@@ -1,7 +1,6 @@
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import {
-  Card, CardHeader, CardBody, Button, PageHeader, LabelledField, Input, Select,
-  Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, Badge,
+  Card, CardHeader, CardBody, Button, PageHeader, LabelledField, Input, Select, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, Badge, CodeBadge, CodeLabel, CodeSelect,
 } from '@revelation-srs/ui';
 import {
   type ValidationIssueSeverity,
@@ -219,10 +218,7 @@ function ValidationStep({ collectionId, onError }: { collectionId: string; onErr
       <CardBody>
         <form onSubmit={(e) => void handleSubmit(e)} className="grid grid-cols-3 gap-3 items-end">
           <LabelledField label="Severity" htmlFor="rc-sev">
-            <Select id="rc-sev" value={severityCode} onChange={(e) => setSeverityCode(e.target.value as ValidationIssueSeverity)}>
-              <option value="warning">Warning</option>
-              <option value="blocking">Blocking</option>
-            </Select>
+            <CodeSelect entity="regulatory_validation_issue" field="severity_code" id="rc-sev" value={severityCode} onChange={(v) => setSeverityCode(v as ValidationIssueSeverity)} />
           </LabelledField>
           <LabelledField label="Field code" htmlFor="rc-field" hint="Optional">
             <Input id="rc-field" value={fieldCode} onChange={(e) => setFieldCode(e.target.value)} />
@@ -361,10 +357,10 @@ function CollectionsList() {
               {collections.map((c) => (
                 <TableRow key={c.regulatoryCollectionId}>
                   <TableCell className="font-mono text-xs">{c.regulatoryCollectionId}</TableCell>
-                  <TableCell>{c.regulatorCode}</TableCell>
+                  <TableCell><CodeLabel entity="regulatory_collection" field="regulator_code" code={c.regulatorCode} /></TableCell>
                   <TableCell className="text-xs">{c.collectionTypeCode}</TableCell>
                   <TableCell>{c.academicYear}</TableCell>
-                  <TableCell><Badge value={c.statusCode} /></TableCell>
+                  <TableCell><CodeBadge entity="regulatory_collection" field="status_code" code={c.statusCode} /></TableCell>
                   <TableCell className="text-neutral-500">{new Date(c.createdAt).toLocaleDateString('en-GB')}</TableCell>
                 </TableRow>
               ))}

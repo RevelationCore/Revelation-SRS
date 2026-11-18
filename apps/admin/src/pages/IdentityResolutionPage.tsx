@@ -1,7 +1,6 @@
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import {
-  Card, CardHeader, CardBody, Button, PageHeader, LabelledField, Input, Select, Tabs, TabsList, TabsTrigger, TabsContent,
-  Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, Badge,
+  Card, CardHeader, CardBody, Button, PageHeader, LabelledField, Input, Select, Tabs, TabsList, TabsTrigger, TabsContent, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, Badge, CodeBadge, CodeSelect,
 } from '@revelation-srs/ui';
 import {
   type IdentityDecisionType,
@@ -169,11 +168,7 @@ function DecisionStep({ caseId, onError }: { caseId: string; onError: (msg: stri
         ) : (
           <form onSubmit={(e) => void handleSubmit(e)} className="grid grid-cols-2 gap-3 items-end">
             <LabelledField label="Decision" htmlFor="ir-decision">
-              <Select id="ir-decision" value={decisionTypeCode} onChange={(e) => setDecisionTypeCode(e.target.value as IdentityDecisionType)}>
-                <option value="link">Link</option>
-                <option value="merge">Merge</option>
-                <option value="reject">Reject</option>
-              </Select>
+              <CodeSelect entity="identity_resolution_decision" field="decision_type_code" id="ir-decision" value={decisionTypeCode} onChange={(v) => setDecisionTypeCode(v as IdentityDecisionType)} />
             </LabelledField>
             <LabelledField label="Survivor person ID" htmlFor="ir-survivor" hint="Required for merge">
               <Input id="ir-survivor" value={survivorPersonId} onChange={(e) => setSurvivorPersonId(e.target.value)} />
@@ -342,7 +337,7 @@ function BrowseCasesPanel() {
                     <TableCell className="font-mono text-xs">{c.identityResolutionCaseId}</TableCell>
                     <TableCell className="font-mono text-xs">{c.subjectPersonId}</TableCell>
                     <TableCell className="text-xs">{c.ownerId}</TableCell>
-                    <TableCell><Badge value={c.statusCode} /></TableCell>
+                    <TableCell><CodeBadge entity="business_case" field="status_code" code={c.statusCode} /></TableCell>
                     <TableCell className="text-neutral-500">{new Date(c.createdAt).toLocaleDateString('en-GB')}</TableCell>
                   </TableRow>
                 ))}
@@ -374,7 +369,7 @@ function BrowseCasesPanel() {
                     <TableCell className="font-mono text-xs">{c.dataCorrectionCaseId}</TableCell>
                     <TableCell className="font-mono text-xs">{c.personId}</TableCell>
                     <TableCell className="text-xs">{c.correctedEntityType} / {c.correctedFieldName}</TableCell>
-                    <TableCell><Badge value={c.statusCode} /></TableCell>
+                    <TableCell><CodeBadge entity="business_case" field="status_code" code={c.statusCode} /></TableCell>
                     <TableCell className="text-neutral-500">{new Date(c.createdAt).toLocaleDateString('en-GB')}</TableCell>
                   </TableRow>
                 ))}

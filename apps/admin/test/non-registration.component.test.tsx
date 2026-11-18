@@ -14,7 +14,7 @@ const base = {
   writtenNonContinuation: null, outcome: null, decisionAllowedFrom: '2027-10-30T00:00:00Z', ukviReportDueBy: '2027-10-29T00:00:00Z',
   subject: { personId: 'p-1', studentNumber: 'S1', studentName: 'Ada Lovelace', programmeCode: 'BSC-CS', programmeTitle: 'BSc CS' },
 };
-const channels = http.get(`${API}/api/v1/fields/:entity/:field/value-set`, () => HttpResponse.json({
+const channels = http.get(`${API}/api/v1/fields/non_registration_case/contact_channel_code/value-set`, () => HttpResponse.json({
   setCode: 'x', displayName: 'x', members: [{ code: 'portal', displayLabel: 'Portal notification', description: null, sortOrder: 1 }, { code: 'email', displayLabel: 'Email', description: null, sortOrder: 2 }],
 }));
 
@@ -28,7 +28,7 @@ describe('students who did not register (BP-02-011)', () => {
     );
     const { container } = renderWithProviders(<NonRegistrationPage />, { roles: ['registry-administrator'] });
     expect(await screen.findByText(/UKVI must be told by 29\/10\/2027/)).toBeVisible();
-    expect(screen.getByText('Last year\'s results not ratified')).toBeVisible();
+    expect(await screen.findByText('Last year\'s results not ratified')).toBeVisible();
     expect(screen.getByText(/Call log 1/)).toBeVisible();
     await expectNoA11yViolations(container);
 

@@ -1,7 +1,6 @@
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import {
-  Card, CardHeader, CardBody, Button, PageHeader, LabelledField, Input, Select,
-  Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, Badge,
+  Card, CardHeader, CardBody, Button, PageHeader, LabelledField, Input, Select, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, Badge, CodeBadge, CodeSelect,
 } from '@revelation-srs/ui';
 import {
   type ModerationOutcomeCode,
@@ -101,7 +100,7 @@ function ReviewsList() {
                   <TableCell className="text-xs">{r.moderatorActorId}</TableCell>
                   <TableCell className="text-xs">{r.ruleVersion}</TableCell>
                   <TableCell className="text-neutral-500">{new Date(r.startedAt).toLocaleDateString('en-GB')}</TableCell>
-                  <TableCell>{r.outcomeCode ? <Badge value={r.outcomeCode} /> : <span className="text-xs text-neutral-400">In progress</span>}</TableCell>
+                  <TableCell>{r.outcomeCode ? <CodeBadge entity="moderation_review" field="outcome_code" code={r.outcomeCode} /> : <span className="text-xs text-neutral-400">In progress</span>}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -271,11 +270,7 @@ function CompleteStep({ reviewId, onError }: { reviewId: string; onError: (msg: 
         ) : (
           <div className="flex items-end gap-3">
             <LabelledField label="Outcome" htmlFor="mod-outcome">
-              <Select id="mod-outcome" value={outcomeCode} onChange={(e) => setOutcomeCode(e.target.value as ModerationOutcomeCode)}>
-                <option value="no-change">No change</option>
-                <option value="adjusted">Adjusted</option>
-                <option value="escalated">Escalated</option>
-              </Select>
+              <CodeSelect entity="moderation_review" field="outcome_code" id="mod-outcome" value={outcomeCode} onChange={(v) => setOutcomeCode(v as ModerationOutcomeCode)} />
             </LabelledField>
             <Button onClick={() => void handleComplete()} disabled={submitting} variant="primary">
               {submitting ? 'Completing…' : 'Complete review'}

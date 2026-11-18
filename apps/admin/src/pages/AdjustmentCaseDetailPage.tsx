@@ -1,9 +1,7 @@
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import {
-  PageHeader, Card, CardHeader, CardBody, Button, Input, Select, LabelledField, Badge,
-  Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, Spinner,
-  Tabs, TabsList, TabsTrigger, TabsContent,
+  PageHeader, Card, CardHeader, CardBody, Button, Input, Select, LabelledField, Badge, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, Spinner, Tabs, TabsList, TabsTrigger, TabsContent, CodeBadge, CodeLabel, CodeSelect,
 } from '@revelation-srs/ui';
 import {
   type AdjustmentCaseDetail,
@@ -15,18 +13,6 @@ import { uploadEvidence, downloadEvidence, ApiError } from '../api/wellbeingModu
 import { useAuth } from '../auth/AuthContext.js';
 import { useValueSet } from '../hooks/useValueSet.js';
 import { userHasAnyPermission } from '../auth/RequirePermission.js';
-
-const STATUS_LABELS: Record<string, string> = {
-  referral_received:  'Referral received',
-  assessment_pending: 'Assessment pending',
-  under_assessment:   'Under assessment',
-  determination_made: 'Determination made',
-  under_review:        'Under review (panel)',
-  approved:            'Approved',
-  rejected:            'Rejected',
-  review_complete:     'Review complete',
-  closed:              'Closed',
-};
 
 type Tab = 'overview' | 'assessments' | 'panel-approval' | 'evidence';
 
@@ -85,11 +71,11 @@ export function AdjustmentCaseDetailPage() {
     <div>
       <PageHeader
         breadcrumbs={[{ label: 'Adjustment cases', to: '/governance/adjustment-cases' }]}
-        title={<span className="capitalize">{c.adjustmentTypeCode.replace(/-/g, ' ')} adjustment</span>}
+        title={<><CodeLabel entity="wellbeing.adjustment_case" field="adjustment_type_code" code={c.adjustmentTypeCode} /> adjustment</>}
         description={<span className="font-mono text-xs">{caseId}</span>}
         actions={
           <div className="flex items-center gap-3">
-            <Badge value={c.statusCode} label={STATUS_LABELS[c.statusCode] ?? c.statusCode} />
+            <CodeBadge entity="wellbeing.adjustment_case" field="status_code" code={c.statusCode} />
             {canClose && (
               <Button size="sm" variant="ghost" disabled={actionBusy} onClick={() => void runAction(() => closeAdjustmentCase(caseId))}>
                 Close case
@@ -164,7 +150,7 @@ export function AdjustmentCaseDetailPage() {
                         <TableRow key={a.id}>
                           <TableCell className="font-mono text-xs">{a.assessorId}</TableCell>
                           <TableCell className="text-xs">{new Date(a.assessedAt).toLocaleDateString('en-GB')}</TableCell>
-                          <TableCell><Badge value={a.outcomeCode} /></TableCell>
+                          <TableCell><CodeBadge entity="wellbeing.adjustment_assessment" field="outcome_code" code={a.outcomeCode} /></TableCell>
                           <TableCell className="text-xs">{a.findings ?? '—'}</TableCell>
                         </TableRow>
                       ))}
@@ -256,12 +242,7 @@ function AssessmentForm({ caseId, onRecorded }: { caseId: string; onRecorded: ()
             <Input id="assess-date" type="date" value={assessedAt} onChange={(e) => setAssessedAt(e.target.value)} />
           </LabelledField>
           <LabelledField label="Outcome" htmlFor="assess-outcome">
-            <Select id="assess-outcome" value={outcomeCode} onChange={(e) => setOutcomeCode(e.target.value)}>
-              <option value="recommended">Recommended</option>
-              <option value="not-recommended">Not recommended</option>
-              <option value="deferred">Deferred</option>
-              <option value="referred-to-panel">Refer to panel</option>
-            </Select>
+            <CodeSelect entity="wellbeing.adjustment_assessment" field="outcome_code" id="assess-outcome" value={outcomeCode} onChange={(v) => setOutcomeCode(v)} />
           </LabelledField>
           <div className="col-span-2">
             <LabelledField label="Findings" htmlFor="assess-findings">
@@ -319,11 +300,7 @@ function PanelDecisionForm({ caseId, onRecorded }: { caseId: string; onRecorded:
             <Input id="panel-date" type="date" value={panelDate} onChange={(e) => setPanelDate(e.target.value)} />
           </LabelledField>
           <LabelledField label="Decision" htmlFor="panel-decision">
-            <Select id="panel-decision" value={decisionCode} onChange={(e) => setDecisionCode(e.target.value)}>
-              <option value="upheld">Upheld</option>
-              <option value="modified">Modified</option>
-              <option value="rejected">Rejected</option>
-            </Select>
+            <CodeSelect entity="wellbeing.adjustment_panel_decision" field="decision_code" id="panel-decision" value={decisionCode} onChange={(v) => setDecisionCode(v)} />
           </LabelledField>
           <div className="col-span-2">
             <LabelledField label="Rationale" htmlFor="panel-rationale">
@@ -548,12 +525,7 @@ function EvidenceSection({
             {error && <p className="mb-3 text-sm text-danger-600">{error}</p>}
             <form onSubmit={(e) => void handleUpload(e)} className="grid grid-cols-2 gap-3 items-end">
               <LabelledField label="Evidence type" htmlFor="evidence-type">
-                <Select id="evidence-type" value={evidenceTypeCode} onChange={(e) => setEvidenceTypeCode(e.target.value)}>
-                  <option value="medical-letter">Medical letter</option>
-                  <option value="assessor-report">Assessor report</option>
-                  <option value="dsa-award-letter">DSA award letter</option>
-                  <option value="other">Other</option>
-                </Select>
+                <CodeSelect entity="wellbeing.adjustment_case_evidence" field="evidence_type_code" id="evidence-type" value={evidenceTypeCode} onChange={(v) => setEvidenceTypeCode(v)} />
               </LabelledField>
               <LabelledField label="File" htmlFor="evidence-file" required>
                 <input
@@ -590,7 +562,7 @@ function EvidenceSection({
               <TableBody>
                 {evidence.map((e) => (
                   <TableRow key={e.id}>
-                    <TableCell><Badge value={e.evidenceTypeCode} /></TableCell>
+                    <TableCell><CodeBadge entity="wellbeing.adjustment_case_evidence" field="evidence_type_code" code={e.evidenceTypeCode} /></TableCell>
                     <TableCell className="font-mono text-xs">{e.uploadedBy}</TableCell>
                     <TableCell className="text-xs">{new Date(e.uploadedAt).toLocaleString('en-GB')}</TableCell>
                     <TableCell className="text-right">

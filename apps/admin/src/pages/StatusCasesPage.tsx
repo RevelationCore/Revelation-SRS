@@ -1,17 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  PageHeader, Card, Button, Select, Badge, Spinner,
-  Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
+  PageHeader, Card, Button, Select, Badge, Spinner, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, CodeLabel, useCodes, CodeSelect,
 } from '@revelation-srs/ui';
 
 import { ApiError } from '../api/client.js';
 import { type StatusCase, listOpenStatusCases } from '../api/statusCases.js';
-
-export const CASE_TYPE_LABELS: Record<string, string> = {
-  interruption: 'Interruption', suspension: 'Required suspension', return: 'Return from interruption',
-  withdrawal: 'Withdrawal', transfer: 'Transfer', 'leaver-closure': 'Leaver closure',
-};
 
 /**
  * Status cases awaiting a decision (BP-02-006 to 009, 012): interruptions,
@@ -19,6 +13,9 @@ export const CASE_TYPE_LABELS: Record<string, string> = {
  * names its student, so assessors without student-record access can act.
  */
 export function StatusCasesPage() {
+  const caseTypes = useCodes('student_status_case', 'case_type_code');
+  const assessorRoles = useCodes('status_case_assessment', 'assessor_role_code');
+  const assessmentOutcomes = useCodes('status_case_assessment', 'outcome_code');
   const [cases, setCases] = useState<StatusCase[] | null>(null);
   const [type, setType] = useState('');
   const [error, setError] = useState('');
@@ -39,10 +36,7 @@ export function StatusCasesPage() {
         actions={
           <div className="flex items-center gap-3">
             <label htmlFor="status-case-type" className="text-sm text-neutral-500">Type:</label>
-            <Select id="status-case-type" value={type} onChange={(e) => setType(e.target.value)} className="w-auto">
-              <option value="">All types</option>
-              {Object.entries(CASE_TYPE_LABELS).map(([code, label]) => <option key={code} value={code}>{label}</option>)}
-            </Select>
+            <CodeSelect entity="student_status_case" field="case_type_code" id="status-case-type" value={type} onChange={setType} className="w-auto" emptyLabel="All types" />
             <Button variant="secondary" size="sm" onClick={() => void load()}>Refresh</Button>
           </div>
         }
@@ -68,14 +62,14 @@ export function StatusCasesPage() {
                             {c.subject?.studentName ?? c.personId}
                             <div className="text-xs text-neutral-500">{[c.subject?.studentNumber, c.subject?.programmeCode].filter(Boolean).join(' · ')}</div>
                           </TableCell>
-                          <TableCell>{CASE_TYPE_LABELS[c.caseTypeCode] ?? c.caseTypeCode}</TableCell>
+                          <TableCell><CodeLabel entity="student_status_case" field="case_type_code" code={c.caseTypeCode} /></TableCell>
                           <TableCell className="text-sm">{c.requestedEffectiveDate}</TableCell>
-                          <TableCell className="text-sm capitalize">{c.initiatedByCode}</TableCell>
-                          <TableCell className="text-sm">{c.assessments.length === 0 ? 'None yet' : c.assessments.map((a) => `${a.assessorRoleCode}: ${a.outcomeCode}`).join(', ')}</TableCell>
+                          <TableCell className="text-sm"><CodeLabel entity="student_status_case" field="initiated_by_code" code={c.initiatedByCode} /></TableCell>
+                          <TableCell className="text-sm">{c.assessments.length === 0 ? 'None yet' : c.assessments.map((a) => `${assessorRoles.label(a.assessorRoleCode)}: ${assessmentOutcomes.label(a.outcomeCode)}`).join(', ')}</TableCell>
                           <TableCell className="text-xs text-neutral-600">{new Date(c.createdAt).toLocaleDateString('en-GB')}</TableCell>
                           <TableCell className="text-right">
                             <Link to={`/status-cases/${c.statusCaseId}`} className="text-sm text-primary-600 hover:underline">
-                              View<span className="sr-only"> {CASE_TYPE_LABELS[c.caseTypeCode]} case for {c.subject?.studentName}</span>
+                              View<span className="sr-only"> {caseTypes.label(c.caseTypeCode)} case for {c.subject?.studentName}</span>
                             </Link>
                           </TableCell>
                         </TableRow>
@@ -90,5 +84,6 @@ export function StatusCasesPage() {
 }
 
 export function CaseStatusBadge({ status }: { status: string }) {
-  return <Badge value={status === 'requested' ? 'pending' : status} label={status === 'requested' ? 'Awaiting decision' : status} />;
+  const caseStatuses = useCodes('student_status_case', 'status_code');
+  return <Badge value={status === 'requested' ? 'pending' : status} label={status === 'requested' ? 'Awaiting decision' : caseStatuses.label(status)} />;
 }

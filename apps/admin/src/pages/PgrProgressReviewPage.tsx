@@ -1,7 +1,6 @@
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import {
-  Card, CardHeader, CardBody, Button, PageHeader, LabelledField, Input, Select, Badge,
-  Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
+  Card, CardHeader, CardBody, Button, PageHeader, LabelledField, Input, Select, Badge, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, CodeBadge, CodeSelect, CodeLabel,
 } from '@revelation-srs/ui';
 import {
   type ProgressReview,
@@ -79,12 +78,7 @@ function OpenReviewForm({ onOpened }: { onOpened: (r: ProgressReview) => void })
             <Input id="pr-enrolment" value={enrolmentId} onChange={(e) => setEnrolmentId(e.target.value)} />
           </LabelledField>
           <LabelledField label="Review type" htmlFor="pr-type">
-            <Select id="pr-type" value={reviewTypeCode} onChange={(e) => setReviewTypeCode(e.target.value as PgrReviewType)}>
-              <option value="initial">Initial</option>
-              <option value="annual">Annual</option>
-              <option value="upgrade">Upgrade / confirmation</option>
-              <option value="return-from-interruption">Return from interruption</option>
-            </Select>
+            <CodeSelect entity="pgr_progress_review" field="review_type_code" id="pr-type" value={reviewTypeCode} onChange={(v) => setReviewTypeCode(v as PgrReviewType)} />
           </LabelledField>
           <div className="col-span-2">
             <Button type="submit" disabled={submitting}>{submitting ? 'Opening…' : 'Open review'}</Button>
@@ -136,7 +130,7 @@ function ReviewWorkspace({
           title={`Review ${review.reviewId.slice(0, 8)}…`}
           actions={
             <div className="flex items-center gap-2">
-              <Badge value={review.statusCode} />
+              <CodeBadge entity="business_case" field="status_code" code={review.statusCode} />
               <Button variant="ghost" size="sm" onClick={onStartNew}>Start a new review</Button>
             </div>
           }
@@ -233,10 +227,10 @@ function MemberRow({ member, onChanged }: { member: ReviewMember; onChanged: () 
   return (
     <TableRow>
       <TableCell className="font-mono text-xs">{member.personId}</TableCell>
-      <TableCell><Badge value={member.roleCode} /></TableCell>
+      <TableCell><CodeBadge entity="pgr_review_member" field="role_code" code={member.roleCode} /></TableCell>
       <TableCell className="text-xs">
         {member.conflictTypeCode
-          ? (member.recusedAt ? <span className="text-success-700">Resolved ({member.conflictTypeCode})</span> : <span className="text-danger-600">{member.conflictTypeCode} — unresolved</span>)
+          ? (member.recusedAt ? <span className="text-success-700">Resolved (<CodeLabel entity="pgr_review_member" field="conflict_type_code" code={member.conflictTypeCode} />)</span> : <span className="text-danger-600"><CodeLabel entity="pgr_review_member" field="conflict_type_code" code={member.conflictTypeCode} /> — unresolved</span>)
           : <span className="text-neutral-500">None declared</span>}
         {error && <p className="text-danger-600">{error}</p>}
       </TableCell>
@@ -294,11 +288,7 @@ function MemberForm({ reviewId, onAdded }: { reviewId: string; onAdded: () => vo
             <Input id="pr-member-person" value={personId} onChange={(e) => setPersonId(e.target.value)} />
           </LabelledField>
           <LabelledField label="Role" htmlFor="pr-member-role">
-            <Select id="pr-member-role" value={roleCode} onChange={(e) => setRoleCode(e.target.value as PgrReviewMemberRole)}>
-              <option value="chair">Chair</option>
-              <option value="independent-reviewer">Independent reviewer</option>
-              <option value="panel-member">Panel member</option>
-            </Select>
+            <CodeSelect entity="pgr_review_member" field="role_code" id="pr-member-role" value={roleCode} onChange={(v) => setRoleCode(v as PgrReviewMemberRole)} />
           </LabelledField>
           <div className="col-span-3">
             <Button type="submit" size="sm" variant="secondary" disabled={submitting}>
@@ -391,13 +381,7 @@ function OutcomeForm({
         {disabled && disabledReason && <p className="mb-3 text-sm text-amber-700">{disabledReason}</p>}
         <form onSubmit={(e) => void handleSubmit(e)} className="grid grid-cols-2 gap-3 items-end">
           <LabelledField label="Outcome" htmlFor="pr-outcome">
-            <Select id="pr-outcome" value={outcomeCode} onChange={(e) => setOutcomeCode(e.target.value as PgrReviewOutcome)}>
-              <option value="satisfactory">Satisfactory progress</option>
-              <option value="conditions">Conditions set</option>
-              <option value="referral">Referral</option>
-              <option value="transfer">Transfer</option>
-              <option value="escalation">Escalation</option>
-            </Select>
+            <CodeSelect entity="pgr_progress_review" field="outcome_code" id="pr-outcome" value={outcomeCode} onChange={(v) => setOutcomeCode(v as PgrReviewOutcome)} />
           </LabelledField>
           <LabelledField label="Reason" htmlFor="pr-outcome-reason">
             <Input id="pr-outcome-reason" value={reasonText} onChange={(e) => setReasonText(e.target.value)} />
@@ -439,12 +423,7 @@ function MilestonePanel({ reviewId }: { reviewId: string }) {
         ) : (
           <form onSubmit={(e) => void handleSubmit(e)} className="grid grid-cols-3 gap-3 items-end">
             <LabelledField label="Milestone" htmlFor="pr-milestone-type">
-              <Select id="pr-milestone-type" value={milestoneTypeCode} onChange={(e) => setMilestoneTypeCode(e.target.value as PgrMilestoneType)}>
-                <option value="confirmation-of-registration">Confirmation of registration</option>
-                <option value="upgrade">Upgrade to PhD</option>
-                <option value="thesis-submission">Thesis submission</option>
-                <option value="viva">Viva voce examination</option>
-              </Select>
+              <CodeSelect entity="research_milestone" field="milestone_type_code" id="pr-milestone-type" value={milestoneTypeCode} onChange={(v) => setMilestoneTypeCode(v as PgrMilestoneType)} />
             </LabelledField>
             <LabelledField label="Achieved date" htmlFor="pr-milestone-date" required>
               <Input id="pr-milestone-date" type="date" value={achievedDate} onChange={(e) => setAchievedDate(e.target.value)} />
@@ -503,7 +482,7 @@ function MilestoneLookup() {
               <TableBody>
                 {milestones.map((m) => (
                   <TableRow key={m.milestoneId}>
-                    <TableCell><Badge value={m.milestoneTypeCode} /></TableCell>
+                    <TableCell><CodeBadge entity="research_milestone" field="milestone_type_code" code={m.milestoneTypeCode} /></TableCell>
                     <TableCell className="text-xs">{new Date(m.achievedDate).toLocaleDateString('en-GB')}</TableCell>
                     <TableCell className="text-xs">
                       {m.publishedAt ? new Date(m.publishedAt).toLocaleDateString('en-GB') : <span className="text-neutral-500">Not published</span>}

@@ -6,9 +6,13 @@ import {
 } from '../api/identityChangeRequests.js';
 import { ApiError } from '../api/client.js';
 import { Spinner } from '../components/Spinner.js';
-import { PageHeader, Card, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, Button } from '@revelation-srs/ui';
+import {
+  PageHeader, Card, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, Button, useCodes,
+} from '@revelation-srs/ui';
 
 export function IdentityChangeRequestsPage() {
+  const nationalities = useCodes('person_identity', 'nationality_code');
+  const genders = useCodes('person_identity', 'gender_code');
   const [requests, setRequests] = useState<IdentityChangeRequest[]>([]);
   const [loading,  setLoading]  = useState(true);
   const [error,    setError]    = useState('');
@@ -70,8 +74,8 @@ export function IdentityChangeRequestsPage() {
                 const patch = (r.context['patch'] ?? {}) as { genderCode?: string; nationalityCode?: string };
                 const reason = String(r.context['reason'] ?? '') || '—';
                 const changes = [
-                  patch.genderCode ? `Gender → ${patch.genderCode}` : null,
-                  patch.nationalityCode ? `Nationality → ${patch.nationalityCode}` : null,
+                  patch.genderCode ? `Gender → ${genders.label(patch.genderCode)}` : null,
+                  patch.nationalityCode ? `Nationality → ${nationalities.label(patch.nationalityCode)}` : null,
                 ].filter(Boolean).join(', ');
                 return (
                   <TableRow key={r.workflowInstanceId}>

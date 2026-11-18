@@ -83,9 +83,7 @@ import { FinancialRegistrationSection } from './FinancialRegistrationSection.js'
 import { RightToStudySection } from './RightToStudySection.js';
 import { EntitlementsSection } from './EntitlementsSection.js';
 import {
-  PageHeader, Card, CardHeader, CardBody, Button, Input, Select, Textarea, LabelledField,
-  Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, Dialog, DialogClose,
-  Tabs, TabsList, TabsTrigger, TabsContent,
+  PageHeader, Card, CardHeader, CardBody, Button, Input, Select, Textarea, LabelledField, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, Dialog, DialogClose, Tabs, TabsList, TabsTrigger, TabsContent, CodeBadge, CodeLabel, useCodes,
 } from '@revelation-srs/ui';
 
 type Tab = 'identity' | 'enrolments' | 'status' | 'misconduct' | 'credit' | 'awards' | 'registrations' | 'assessment' | 'history' | 'wellbeing' | 'corrections' | 'cas' | 'communications' | 'other-systems' | 'support';
@@ -158,7 +156,7 @@ export function StudentDetailPage() {
         breadcrumbs={[{ label: 'Students', to: '/students' }]}
         title={displayName}
         description={<span className="font-mono">{student.studentNumber}</span>}
-        actions={<Badge value={student.personStatusCode} />}
+        actions={<CodeBadge entity="person" field="person_status_code" code={student.personStatusCode} />}
       />
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)}>
@@ -406,7 +404,7 @@ function IdentityTab({
           <CardHeader title="Lifecycle status" />
           <CardBody>
           <div className="flex items-center gap-3 flex-wrap">
-            <Badge value={student.personStatusCode} />
+            <CodeBadge entity="person" field="person_status_code" code={student.personStatusCode} />
             {canWrite && (['prospective','student','alumnus','deceased','merged'] as PersonStatusCode[]).map((s) => (
               s !== student.personStatusCode && (
                 <button
@@ -561,7 +559,7 @@ function EnrolmentCard({
       >
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-neutral-900">
-            {enrolment.academicYearOfEntry} · {enrolment.modeOfStudyCode}
+            {enrolment.academicYearOfEntry} · <CodeLabel entity="enrolment" field="mode_of_study_code" code={enrolment.modeOfStudyCode} />
           </p>
           <p className="text-xs text-neutral-500 mt-0.5 truncate">
             {enrolment.programmeName
@@ -570,7 +568,7 @@ function EnrolmentCard({
             }
           </p>
         </div>
-        <Badge value={enrolment.statusCode} />
+        <CodeBadge entity="enrolment" field="status_code" code={enrolment.statusCode} />
         {expanded
           ? <ChevronUp className="h-4 w-4 text-neutral-500" aria-hidden="true" />
           : <ChevronDown className="h-4 w-4 text-neutral-500" aria-hidden="true" />}
@@ -701,6 +699,7 @@ function InfoRow({ label, value }: { label: string; value?: string | null }) {
 // ── Registrations tab ─────────────────────────────────────────────────────────
 
 function RegistrationsTab({ personId }: { personId: string }) {
+  const enrolmentStatuses = useCodes('enrolment', 'status_code');
   const [enrolments,    setEnrolments]    = useState<Enrolment[]>([]);
   const [registrations, setRegistrations] = useState<ModuleRegistration[]>([]);
   const [loading,       setLoading]       = useState(true);
@@ -759,7 +758,7 @@ function RegistrationsTab({ personId }: { personId: string }) {
           >
             {enrolments.map(e => (
               <option key={e.enrolmentId} value={e.enrolmentId}>
-                {e.academicYearOfEntry} ({e.statusCode})
+                {e.academicYearOfEntry} ({enrolmentStatuses.label(e.statusCode)})
               </option>
             ))}
           </Select>
@@ -790,7 +789,7 @@ function RegistrationsTab({ personId }: { personId: string }) {
                     {r.moduleTitle}
                   </TableCell>
                   <TableCell>{r.periodCode}</TableCell>
-                  <TableCell><Badge value={r.statusCode} /></TableCell>
+                  <TableCell><CodeBadge entity="module_registration" field="status_code" code={r.statusCode} /></TableCell>
                   <TableCell className="text-xs">{r.registrationDate}</TableCell>
                   <TableCell className="text-right">
                     {r.statusCode === 'registered' && (
@@ -854,6 +853,7 @@ interface AssessmentRow {
 }
 
 function AssessmentTab({ personId }: { personId: string }) {
+  const enrolmentStatuses = useCodes('enrolment', 'status_code');
   const [enrolments,          setEnrolments]          = useState<Enrolment[]>([]);
   const [selectedEnrolmentId, setSelectedEnrolmentId] = useState('');
   const [rows,                setRows]                = useState<AssessmentRow[]>([]);
@@ -914,7 +914,7 @@ function AssessmentTab({ personId }: { personId: string }) {
           >
             {enrolments.map(e => (
               <option key={e.enrolmentId} value={e.enrolmentId}>
-                {e.academicYearOfEntry} ({e.statusCode})
+                {e.academicYearOfEntry} ({enrolmentStatuses.label(e.statusCode)})
               </option>
             ))}
           </Select>
@@ -935,8 +935,8 @@ function AssessmentTab({ personId }: { personId: string }) {
                   <span className="text-sm font-medium text-neutral-900">{row.registration.moduleTitle}</span>
                 </div>
                 <span className="text-xs text-neutral-600">{row.registration.periodCode}</span>
-                <Badge value={row.registration.statusCode} />
-                {row.result && <Badge value={row.result.resultCode} />}
+                <CodeBadge entity="module_registration" field="status_code" code={row.registration.statusCode} />
+                {row.result && <CodeBadge entity="module_result" field="result_code" code={row.result.resultCode} />}
                 {row.result && (
                   <span className="text-sm font-semibold text-neutral-800">{row.result.aggregateMark}%</span>
                 )}
@@ -999,6 +999,7 @@ function AssessmentTab({ personId }: { personId: string }) {
 // ── History tab ───────────────────────────────────────────────────────────────
 
 function HistoryTab({ personId }: { personId: string }) {
+  const enrolmentStatuses = useCodes('enrolment', 'status_code');
   const [enrolments,      setEnrolments]      = useState<Enrolment[]>([]);
   const [history,         setHistory]         = useState<Enrolment[]>([]);
   const [selectedEnrolId, setSelectedEnrolId] = useState('');
@@ -1045,7 +1046,7 @@ function HistoryTab({ personId }: { personId: string }) {
           >
             {enrolments.map(e => (
               <option key={e.enrolmentId} value={e.enrolmentId}>
-                {e.academicYearOfEntry} ({e.statusCode})
+                {e.academicYearOfEntry} ({enrolmentStatuses.label(e.statusCode)})
               </option>
             ))}
           </Select>
@@ -1070,10 +1071,10 @@ function HistoryTab({ personId }: { personId: string }) {
             <TableBody>
               {history.map((h, i) => (
                 <TableRow key={i}>
-                  <TableCell><Badge value={h.statusCode} /></TableCell>
+                  <TableCell><CodeBadge entity="enrolment" field="status_code" code={h.statusCode} /></TableCell>
                   <TableCell className="text-xs font-mono">{h.validFrom}</TableCell>
                   <TableCell className="text-xs font-mono">{h.recordedAt}</TableCell>
-                  <TableCell>{h.modeOfStudyCode}</TableCell>
+                  <TableCell><CodeLabel entity="enrolment" field="mode_of_study_code" code={h.modeOfStudyCode} /></TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -1096,6 +1097,7 @@ const CASE_FORWARD_TRANSITIONS: Record<string, string[]> = {
 // ── Corrections tab ───────────────────────────────────────────────────────────
 
 function CorrectionsTab({ personId, canRatify }: { personId: string; canRatify: boolean }) {
+  const enrolmentStatuses = useCodes('enrolment', 'status_code');
   const { members: caseTypes }   = useValueSet('post_ratification_case', 'case_type_code');
   const { members: caseStatuses } = useValueSet('post_ratification_case', 'status_code');
   const { members: errorCategories } = useValueSet('post_ratification_case', 'error_category_code');
@@ -1235,7 +1237,7 @@ function CorrectionsTab({ personId, canRatify }: { personId: string; canRatify: 
           >
             {enrolments.map(e => (
               <option key={e.enrolmentId} value={e.enrolmentId}>
-                {e.academicYearOfEntry} ({e.statusCode})
+                {e.academicYearOfEntry} ({enrolmentStatuses.label(e.statusCode)})
               </option>
             ))}
           </Select>
@@ -1466,6 +1468,7 @@ function PersonFinances({ personId }: { personId: string }) {
 // application; an enrolled student's in-country extension is opened here.
 
 function CasTab({ personId, canWrite }: { personId: string; canWrite: boolean }) {
+  const enrolmentStatuses = useCodes('enrolment', 'status_code');
   const [enrolments, setEnrolments] = useState<Enrolment[]>([]);
   const [cases, setCases] = useState<CasCase[] | null>(null);
   const [selectedEnrolId, setSelectedEnrolId] = useState('');
@@ -1496,7 +1499,7 @@ function CasTab({ personId, canWrite }: { personId: string; canWrite: boolean })
           <form className="flex items-end gap-2" onSubmit={(e) => void handleOpenCase(e)}>
             <LabelledField label="In-country CAS for enrolment" htmlFor="cas-enrol-select">
               <Select id="cas-enrol-select" value={selectedEnrolId} onChange={(e) => setSelectedEnrolId(e.target.value)} className="w-auto">
-                {enrolments.map((en) => <option key={en.enrolmentId} value={en.enrolmentId}>{en.academicYearOfEntry} ({en.statusCode})</option>)}
+                {enrolments.map((en) => <option key={en.enrolmentId} value={en.enrolmentId}>{en.academicYearOfEntry} ({enrolmentStatuses.label(en.statusCode)})</option>)}
               </Select>
             </LabelledField>
             <Button size="sm" type="submit">Open CAS case</Button>
@@ -1646,11 +1649,7 @@ function WellbeingTab({
   const canWriteCircumstances = userHasAnyPermission(authRoles, ['circumstances:write']);
   const [error,        setError]        = useState('');
 
-  const { members: disabilityCategories } = useValueSet('disability_declaration', 'disability_category_code');
-  const { members: declarationStatuses }  = useValueSet('disability_declaration', 'declaration_status_code');
-  const { members: adjustmentTypes }      = useValueSet('reasonable_adjustment',  'adjustment_type_code');
-  const { members: adjustmentScopes }     = useValueSet('reasonable_adjustment',  'scope_code');
-  const { members: amountUnits }          = useValueSet('reasonable_adjustment',  'amount_unit_code');
+  const amountUnits                       = useValueSet('reasonable_adjustment',  'amount_unit_code');
   const { members: ecOutcomes }           = useValueSet('exceptional_circumstances', 'outcome_code');
 
   useEffect(() => {
@@ -1668,8 +1667,6 @@ function WellbeingTab({
   if (loading) return <div className="flex justify-center py-10"><Spinner /></div>;
   if (error)   return <p className="text-danger-600 text-sm">{error}</p>;
 
-  const label = (members: { code: string; displayLabel: string }[], code: string) =>
-    members.find(m => m.code === code)?.displayLabel ?? code;
 
   const canOpenDisabilityCases = userHasAnyPermission(authRoles, ['disability:read']);
   const canOpenMhCases = userHasAnyPermission(authRoles, ['mental-health-case:read']);
@@ -1704,8 +1701,8 @@ function WellbeingTab({
               <TableBody>
                 {declarations?.map(d => (
                   <TableRow key={d.declarationId}>
-                    <TableCell className="text-neutral-800">{label(disabilityCategories, d.disabilityCategoryCode)}</TableCell>
-                    <TableCell><Badge value={d.declarationStatusCode} label={label(declarationStatuses, d.declarationStatusCode)} /></TableCell>
+                    <TableCell className="text-neutral-800"><CodeLabel entity="disability_declaration" field="disability_category_code" code={d.disabilityCategoryCode} /></TableCell>
+                    <TableCell><CodeBadge entity="disability_declaration" field="declaration_status_code" code={d.declarationStatusCode} /></TableCell>
                     <TableCell>{new Date(d.declaredAt).toLocaleDateString('en-GB')}</TableCell>
                     <TableCell className="text-neutral-500">{d.notes ?? '—'}</TableCell>
                   </TableRow>
@@ -1738,9 +1735,9 @@ function WellbeingTab({
               <TableBody>
                 {adjustments?.filter(a => a.recordedUntil === null).map(a => (
                   <TableRow key={a.adjustmentId}>
-                    <TableCell className="text-neutral-800">{label(adjustmentTypes, a.adjustmentTypeCode)}</TableCell>
-                    <TableCell>{label(adjustmentScopes, a.scopeCode)}</TableCell>
-                    <TableCell>{a.amount ? `${a.amount.value} ${label(amountUnits, a.amount.unitCode).toLowerCase()}` : '—'}</TableCell>
+                    <TableCell className="text-neutral-800"><CodeLabel entity="reasonable_adjustment" field="adjustment_type_code" code={a.adjustmentTypeCode} /></TableCell>
+                    <TableCell><CodeLabel entity="reasonable_adjustment" field="scope_code" code={a.scopeCode} /></TableCell>
+                    <TableCell>{a.amount ? `${a.amount.value} ${amountUnits.label(a.amount.unitCode).toLowerCase()}` : '—'}</TableCell>
                     <TableCell>{new Date(a.validFrom).toLocaleDateString('en-GB')}</TableCell>
                     <TableCell>{a.validTo ? new Date(a.validTo).toLocaleDateString('en-GB') : 'Open-ended'}</TableCell>
                     <TableCell className="text-neutral-500">{a.notes ?? '—'}</TableCell>
@@ -1785,7 +1782,7 @@ function WellbeingTab({
                         ? <><span className="font-mono text-xs text-neutral-500 mr-1">{e.moduleCode}</span>{e.moduleTitle}</>
                         : <span className="text-neutral-600">—</span>}
                     </TableCell>
-                    <TableCell><Badge value={e.outcomeCode} label={label(ecOutcomes, e.outcomeCode)} /></TableCell>
+                    <TableCell><CodeBadge entity="exceptional_circumstances" field="outcome_code" code={e.outcomeCode} /></TableCell>
                     <TableCell>{new Date(e.determinationDate).toLocaleDateString('en-GB')}</TableCell>
                     <TableCell className="text-neutral-500">{e.notes ?? '—'}</TableCell>
                     {canWriteCircumstances && <TableCell><ProposeEcOutcome ecId={e.exceptionalCircumstancesId} current={e.outcomeCode} outcomes={ecOutcomes} /></TableCell>}
@@ -1812,7 +1809,7 @@ function ProposeEcOutcome({ ecId, current, outcomes }: { ecId: string; current: 
   const [error, setError] = useState('');
   useEffect(() => { void listEcDeterminations({ ecId, statusCode: 'proposed' }).then((r) => setPending(r[0] ?? null)).catch(() => setPending(null)); }, [ecId]);
   if (pending === undefined) return null;
-  if (pending) return <span className="text-xs text-neutral-600">Proposed: {pending.proposedOutcomeCode}, awaiting a decision</span>;
+  if (pending) return <span className="text-xs text-neutral-600">Proposed: <CodeLabel entity="ec_determination" field="proposed_outcome_code" code={pending.proposedOutcomeCode} />, awaiting a decision</span>;
   return (
     <form className="flex flex-wrap items-center gap-2" onSubmit={(e) => {
       e.preventDefault(); setError('');

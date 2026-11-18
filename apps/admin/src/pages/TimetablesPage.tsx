@@ -1,7 +1,6 @@
 import { type ChangeEvent, useCallback, useEffect, useState } from 'react';
 import {
-  PageHeader, Card, CardHeader, CardBody, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
-  Button, Select, LabelledField, Badge,
+  PageHeader, Card, CardHeader, CardBody, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, Button, Select, LabelledField, Badge, CodeLabel,
 } from '@revelation-srs/ui';
 
 import { type AcademicPeriod, listAcademicPeriods } from '../api/academicPeriods.js';
@@ -12,8 +11,6 @@ import {
 import { useAuth } from '../auth/AuthContext.js';
 import { userHasAnyPermission } from '../auth/RequirePermission.js';
 import { Spinner } from '../components/Spinner.js';
-
-const SOURCE_LABEL: Record<string, string> = { ttb: 'Timetabling system', 'srs-admin': 'Entered by registry', simulator: 'Simulator' };
 
 /**
  * Timetables received from the timetabling system (Phase 4 D-24,
@@ -124,7 +121,7 @@ export function TimetablesPage() {
                   {publications.map((p) => (
                     <TableRow key={p.timetablePublicationId}>
                       <TableCell className="text-xs">{new Date(p.receivedAt).toLocaleString('en-GB')}<span className="block text-neutral-500">{p.receivedBy}</span></TableCell>
-                      <TableCell className="text-xs">{SOURCE_LABEL[p.sourceSystemCode] ?? p.sourceSystemCode}{p.fullPeriod ? ', whole period' : ''}</TableCell>
+                      <TableCell className="text-xs"><CodeLabel entity="timetable_publication" field="source_system_code" code={p.sourceSystemCode} />{p.fullPeriod ? ', whole period' : ''}</TableCell>
                       <TableCell className="font-mono text-xs">{p.sourceVersion}</TableCell>
                       <TableCell>{p.rowCount}</TableCell>
                       <TableCell>

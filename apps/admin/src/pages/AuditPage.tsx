@@ -8,7 +8,7 @@ import { useAuth } from '../auth/AuthContext.js';
 import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
 import {
-  PageHeader, Button, Card, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
+  PageHeader, Button, Card, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, CodeBadge, CodeLabel,
 } from '@revelation-srs/ui';
 
 const AUDIT_ROLES       = ['dpo', 'system-administrator', 'registry-administrator', 'wellbeing-auditor'];
@@ -108,8 +108,8 @@ function IntegrationExchangeAudit() {
                 <TableRow key={ex.exchangeId}>
                   <TableCell className="font-mono text-xs text-neutral-600">{ex.exchangeId.slice(0, 8)}…</TableCell>
                   <TableCell className="font-mono text-xs text-neutral-700">{ex.exchangeTypeCode}</TableCell>
-                  <TableCell className="text-xs capitalize">{ex.directionCode}</TableCell>
-                  <TableCell><Badge value={ex.statusCode} /></TableCell>
+                  <TableCell className="text-xs"><CodeLabel entity="integration_exchange" field="direction_code" code={ex.directionCode} /></TableCell>
+                  <TableCell><CodeBadge entity="integration_exchange" field="status_code" code={ex.statusCode} /></TableCell>
                   <TableCell className="text-xs">
                     {new Date(ex.createdAt).toLocaleString('en-GB')}
                   </TableCell>

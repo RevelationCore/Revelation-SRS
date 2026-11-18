@@ -40,7 +40,7 @@ describe('progression (D-3)', () => {
     );
     const { container } = renderWithProviders(<ProgressionSection enrolmentId="enr-1" canRun />, { roles: ['registry-administrator'] });
     expect(await screen.findByText('120 of 120 required')).toBeVisible();
-    expect(screen.getByText('Credits needed to progress (variation)')).toBeVisible();
+    expect(await screen.findByText('Credits needed to progress (Variation)')).toBeVisible();
     expect(screen.getByText('Ratified, locked')).toBeVisible();
     await userEvent.type(screen.getByLabelText(/Academic year/), '2026-27');
     expect(screen.getByRole('button', { name: 'Run progression' })).toBeDisabled();

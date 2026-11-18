@@ -2,9 +2,9 @@ import { api } from './client.js';
 
 export interface Tenant {
   tenantId:     string;
-  slug:         string;
-  displayName:  string;
-  statusCode:   string;
+  code:         string;
+  name:         string;
+  active:       boolean;
   createdAt:    string;
 }
 
@@ -26,8 +26,8 @@ export function listTenants(): Promise<Tenant[]> {
 }
 
 export function createTenant(body: {
-  slug:        string;
-  displayName: string;
+  code: string;
+  name: string;
 }): Promise<{ tenantId: string }> {
   return api.post('/api/v1/tenants', body);
 }
@@ -36,7 +36,7 @@ export function getTenant(tenantId: string): Promise<Tenant> {
   return api.get<Tenant>(`/api/v1/tenants/${tenantId}`);
 }
 
-export function updateTenant(tenantId: string, body: Partial<Pick<Tenant, 'displayName' | 'statusCode'>>): Promise<void> {
+export function updateTenant(tenantId: string, body: Partial<Pick<Tenant, 'name' | 'active'>>): Promise<void> {
   return api.patch(`/api/v1/tenants/${tenantId}`, body);
 }
 

@@ -10,8 +10,7 @@ import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
 import { useValueSet } from '../hooks/useValueSet.js';
 import {
-  PageHeader, Card, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
-  Button, Input, Select, Dialog, DialogClose, LabelledField,
+  PageHeader, Card, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, Button, Input, Select, Dialog, DialogClose, LabelledField, CodeLabel,
 } from '@revelation-srs/ui';
 
 export function ExamBoardsPage() {
@@ -86,7 +85,7 @@ export function ExamBoardsPage() {
             <TableBody>
               {boards.map(b => (
                 <TableRow key={b.examBoardId}>
-                  <TableCell className="font-medium text-neutral-900 capitalize">{b.boardTypeCode}</TableCell>
+                  <TableCell className="font-medium text-neutral-900"><CodeLabel entity="exam_board" field="board_type_code" code={b.boardTypeCode} /></TableCell>
                   <TableCell>{b.academicYear}</TableCell>
                   <TableCell>
                     {b.meetingDate

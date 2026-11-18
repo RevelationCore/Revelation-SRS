@@ -79,7 +79,7 @@ describe('engagement intervention workflow — case management', () => {
     expect(screen.getByText('Do not enter medical, disability, safeguarding or other restricted narrative.')).toBeVisible();
 
     await userEvent.click(screen.getByRole('button', { name: 'Save contact' }));
-    expect(await screen.findByText('telephone · contacted')).toBeVisible();
+    expect(await screen.findByText((_, el) => el?.tagName === 'P' && el.textContent === 'Telephone · Contacted')).toBeVisible();
   });
 
   it('restricted referral: reviewing the case with a refer decision records a referral to the target service', async () => {
@@ -99,7 +99,7 @@ describe('engagement intervention workflow — case management', () => {
     await userEvent.selectOptions(screen.getByLabelText('Referral target'), 'wellbeing');
     await userEvent.click(screen.getByRole('button', { name: 'Record review' }));
 
-    expect(await screen.findByText('wellbeing · pending')).toBeVisible();
+    expect(await screen.findByText((_, el) => el?.tagName === 'P' && el.textContent === 'Wellbeing service · Pending')).toBeVisible();
     expect(referBody).toMatchObject({ decision: 'refer', referral: { targetServiceCode: 'wellbeing' } });
   });
 

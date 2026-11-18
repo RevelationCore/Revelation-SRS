@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  PageHeader, Card, Button, Select, Badge, Spinner,
-  Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
+  PageHeader, Card, Button, Select, Badge, Spinner, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, CodeBadge, CodeLabel,
 } from '@revelation-srs/ui';
 
 import { ApiError } from '../api/client.js';
@@ -19,15 +18,6 @@ const WORKLISTS: Array<{ value: string; label: string; matches: (a: Application)
   { value: 'under-assessment', label: 'Under assessment', matches: (a) => a.statusCode === 'under-assessment' },
   { value: 'recommended', label: 'Awaiting decision', matches: (a) => a.statusCode === 'recommended' },
 ];
-
-export const ROUTING_LABELS: Record<string, string> = {
-  identity: 'Identity to confirm', incomplete: 'Incomplete', duplicate: 'Possible duplicate', restricted: 'Restricted',
-};
-
-export const APPLICATION_STATUS_LABELS: Record<string, string> = {
-  received: 'Received', incomplete: 'Incomplete', 'under-assessment': 'Under assessment', recommended: 'Recommended',
-  rejected: 'Rejected', offered: 'Offered', withdrawn: 'Withdrawn',
-};
 
 /** Loads programme names where the user may read the catalogue; falls back to IDs otherwise. */
 export function useProgrammeNames(): Map<string, ProgrammeSummary> {
@@ -100,13 +90,13 @@ export function ApplicationsPage() {
                 {shown.map((a) => (
                   <TableRow key={a.id}>
                     <TableCell>
-                      <span className="text-xs uppercase text-neutral-500">{a.channelCode}</span>{' '}
+                      <span className="text-xs uppercase text-neutral-500"><CodeLabel entity="student_application" field="channel_code" code={a.channelCode} /></span>{' '}
                       <span className="font-mono text-xs">{a.sourceReference}</span>
                     </TableCell>
                     <TableCell className="text-sm">{programmeLabel(programmes, a.programmeId)}</TableCell>
                     <TableCell className="text-sm">{a.intakeCode ?? '—'}</TableCell>
-                    <TableCell><Badge value={a.statusCode} label={APPLICATION_STATUS_LABELS[a.statusCode] ?? a.statusCode} /></TableCell>
-                    <TableCell className="text-sm">{a.routingReasonCode ? (ROUTING_LABELS[a.routingReasonCode] ?? a.routingReasonCode) : '—'}</TableCell>
+                    <TableCell><CodeBadge entity="student_application" field="status_code" code={a.statusCode} /></TableCell>
+                    <TableCell className="text-sm"><CodeLabel entity="student_application" field="routing_reason_code" code={a.routingReasonCode} /></TableCell>
                     <TableCell className="text-xs text-neutral-600">{new Date(a.createdAt).toLocaleDateString('en-GB')}</TableCell>
                     <TableCell className="text-right">
                       <Link to={`/applications/${a.id}`} className="text-sm text-primary-600 hover:underline">

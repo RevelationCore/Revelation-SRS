@@ -1,6 +1,6 @@
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import {
-  Card, CardHeader, CardBody, Button, PageHeader, LabelledField, Input, Badge,
+  Card, CardHeader, CardBody, Button, PageHeader, LabelledField, Input, Badge, CodeBadge,
 } from '@revelation-srs/ui';
 import {
   type CompletionCase,
@@ -119,7 +119,7 @@ function CompletionWorkspace({
           title={`Completion ${completionCase.completionCaseId.slice(0, 8)}…`}
           actions={
             <div className="flex items-center gap-2">
-              <Badge value={status} />
+              <CodeBadge entity="business_case" field="status_code" code={status} />
               <Button variant="ghost" size="sm" onClick={onStartNew}>Start a new completion</Button>
             </div>
           }

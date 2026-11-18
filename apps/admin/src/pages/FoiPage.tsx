@@ -12,8 +12,7 @@ import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
 import { useValueSet } from '../hooks/useValueSet.js';
 import {
-  PageHeader, Card, CardHeader, CardBody, Button, Input, Select, Textarea, LabelledField,
-  Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
+  PageHeader, Card, CardHeader, CardBody, Button, Input, Select, Textarea, LabelledField, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, CodeBadge,
 } from '@revelation-srs/ui';
 
 type StatusMember = { code: string; displayLabel: string };
@@ -79,7 +78,7 @@ export function FoiPage() {
                         <span className="text-xs text-neutral-600">
                           {new Date(r.receivedDate).toLocaleDateString('en-GB')}
                         </span>
-                        <Badge value={r.statusCode} />
+                        <CodeBadge entity="foi_request" field="status_code" code={r.statusCode} />
                       </div>
                     </button>
                   </li>
@@ -226,7 +225,7 @@ function RequestDetail({
             <h2 className="text-base font-semibold text-neutral-900">{request.requestReference}</h2>
             <p className="text-xs text-neutral-500">Received {new Date(request.receivedDate).toLocaleDateString('en-GB')}</p>
           </div>
-          <Badge value={request.statusCode} />
+          <CodeBadge entity="foi_request" field="status_code" code={request.statusCode} />
         </div>
         <p className="text-sm text-neutral-700 mb-3">{request.description}</p>
         <div className="text-xs text-neutral-500 space-y-0.5">

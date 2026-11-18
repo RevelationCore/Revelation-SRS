@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
-  PageHeader, Card, CardHeader, CardBody, Button, Select, Badge, Spinner,
-  Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
+  PageHeader, Card, CardHeader, CardBody, Button, Select, Badge, Spinner, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, CodeLabel, useCodes,
 } from '@revelation-srs/ui';
 
 import { ApiError } from '../api/client.js';
@@ -17,16 +16,13 @@ function message(err: unknown, fallback: string): string {
   return err instanceof ApiError ? (err.detail ?? err.message) : fallback;
 }
 
-const RESPONSE_LABELS: Record<string, string> = {
-  invited: 'No reply yet', attending: 'Attending', 'in-absentia': 'In absentia', deferred: 'Deferred', declined: 'Declined',
-};
-
 /**
  * One graduation cycle: invite graduands, allocate those attending to a
  * ceremony (capacity and guest limits are enforced by the API), freeze the
  * presentation list, and record who attended.
  */
 export function GraduationCycleDetailPage() {
+  const cycleStatuses = useCodes('graduation_cycle', 'status_code');
   const { cycleId } = useParams<{ cycleId: string }>();
   const { roles } = useAuth();
   const [cycle, setCycle] = useState<GraduationCycle | null>(null);
@@ -62,7 +58,7 @@ export function GraduationCycleDetailPage() {
         breadcrumbs={[{ label: 'Graduation', to: '/graduation' }]}
         title={cycle.title}
         description={`Awards conferred ${cycle.awardsFrom} – ${cycle.awardsTo}`}
-        actions={<Badge value={frozen ? 'ratified' : 'pending'} label={frozen ? 'Presentation list frozen' : cycle.statusCode} />}
+        actions={<Badge value={frozen ? 'ratified' : 'pending'} label={frozen ? 'Presentation list frozen' : cycleStatuses.label(cycle.statusCode)} />}
       />
       {actionError && <p className="mb-4 text-sm text-danger-600" role="alert">{actionError}</p>}
       {notice && <p className="mb-4 text-sm text-success-700" role="status">{notice}</p>}
@@ -112,11 +108,11 @@ export function GraduationCycleDetailPage() {
                         {canOpenRecord ? <Link to={`/students/${i.personId}`} className="text-primary-600 hover:underline">{i.studentName}</Link> : i.studentName}
                         <div className="text-xs text-neutral-500">{i.studentNumber}{i.accessibilityRequired ? ' · accessibility support requested' : ''}</div>
                       </TableCell>
-                      <TableCell>{RESPONSE_LABELS[i.responseCode] ?? i.responseCode}</TableCell>
+                      <TableCell><CodeLabel entity="graduation_invitation" field="response_code" code={i.responseCode} /></TableCell>
                       <TableCell>{i.guestCount}</TableCell>
                       <TableCell className="text-sm">
                         {i.allocation ? `${ceremonyCode(i.allocation.ceremonyId)}${i.allocation.presentationOrder !== null ? ` (#${i.allocation.presentationOrder})` : ''}` : '—'}
-                        {i.allocation && i.allocation.attendanceCode !== 'allocated' && <div className="text-xs text-neutral-500">{i.allocation.attendanceCode}</div>}
+                        {i.allocation && i.allocation.attendanceCode !== 'allocated' && <div className="text-xs text-neutral-500"><CodeLabel entity="ceremony_allocation" field="attendance_code" code={i.allocation.attendanceCode} /></div>}
                       </TableCell>
                       <TableCell className="text-right">
                         {canManage && !frozen && i.responseCode === 'attending' && !i.allocation && (

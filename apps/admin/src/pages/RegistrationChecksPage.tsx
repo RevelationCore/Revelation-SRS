@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { PageHeader, Card, CardHeader, CardBody, Badge, Spinner, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell } from '@revelation-srs/ui';
+import {
+  PageHeader, Card, CardHeader, CardBody, Badge, Spinner, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, CodeBadge, CodeLabel,
+} from '@revelation-srs/ui';
 
 import { ApiError } from '../api/client.js';
 import {
@@ -10,7 +12,7 @@ import {
 import { useAuth } from '../auth/AuthContext.js';
 import { userHasAnyPermission } from '../auth/RequirePermission.js';
 
-import { FINANCIAL_STATUS_LABELS, FeeStatusDecision } from './FinancialRegistrationSection.js';
+import { FeeStatusDecision } from './FinancialRegistrationSection.js';
 
 const REASON_LABELS: Record<RightToStudyWorkItem['reason'], string> = {
   'share-code-submitted': 'Student shared a code', referred: 'Referred for a decision', 'recheck-required': 'Recheck needed after a visa change',
@@ -76,7 +78,7 @@ export function RegistrationChecksPage() {
               <ul className="flex flex-col gap-4">
                 {fees.map((r) => (
                   <li key={r.caseId} className="rounded-md border border-neutral-200 p-3 text-sm">
-                    <p className="font-medium">{r.subject?.studentName ?? r.enrolmentId}: {r.currentFeeStatusCode ?? 'not recorded'} → {r.proposedFeeStatusCode}</p>
+                    <p className="font-medium">{r.subject?.studentName ?? r.enrolmentId}: <CodeLabel entity="enrolment" field="fee_status_code" code={r.currentFeeStatusCode} empty="not recorded" /> → <CodeLabel entity="enrolment" field="fee_status_code" code={r.proposedFeeStatusCode} /></p>
                     <p className="mb-2 text-neutral-700">{r.reason} (proposed by {r.proposedBy})</p>
                     <FeeStatusDecision item={r} onDone={() => void load()} />
                   </li>
@@ -96,7 +98,7 @@ export function RegistrationChecksPage() {
                     <TableRow key={f.liabilityId}>
                       <TableCell><Link to={`/students/${f.personId}`} className="text-primary-600 hover:underline">{f.subject?.studentName ?? f.personId}</Link><div className="text-xs text-neutral-500">{f.subject?.studentNumber}</div></TableCell>
                       <TableCell>{f.academicYear}</TableCell>
-                      <TableCell><Badge value={f.financialStatusCode === 'hold' ? 'rejected' : 'pending'} label={FINANCIAL_STATUS_LABELS[f.financialStatusCode]} />{f.holdReasonCode && <span className="ml-2 text-xs text-neutral-500">{f.holdReasonCode}</span>}</TableCell>
+                      <TableCell><CodeBadge entity="fee_liability" field="financial_status_code" code={f.financialStatusCode} />{f.holdReasonCode && <span className="ml-2 text-xs text-neutral-500"><CodeLabel entity="fee_liability" field="hold_reason_code" code={f.holdReasonCode} /></span>}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

@@ -72,7 +72,8 @@
     "tutorial:narrate": "node tutorials/scripts/generate-narration.mjs",
     "tutorial:build": "node tutorials/scripts/build-overview-video.mjs",
     "tutorial:check": "node tutorials/scripts/quality-check.mjs",
-    "tutorial:all": "node tutorials/scripts/run-all.mjs"
+    "tutorial:all": "node tutorials/scripts/run-all.mjs",
+    "fixtures:value-sets": "pnpm --filter @revelation-srs/db exec node scripts/export-value-set-fixture.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",

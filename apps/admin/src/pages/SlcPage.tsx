@@ -13,7 +13,7 @@ import { userHasAnyPermission } from '../auth/RequirePermission.js';
 import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
 import {
-  PageHeader, Button, Card, CardBody, CardHeader, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
+  PageHeader, Button, Card, CardBody, CardHeader, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, CodeBadge, CodeLabel,
 } from '@revelation-srs/ui';
 
 type Step = 'idle' | 'previewing' | 'preview' | 'requesting' | 'requested';
@@ -143,8 +143,8 @@ export function SlcPage() {
                   {records.map(r => (
                     <TableRow key={r.triggerId}>
                       <TableCell className="font-mono text-xs text-neutral-700">{r.slcReference}</TableCell>
-                      <TableCell><Badge value={r.confirmationType} /></TableCell>
-                      <TableCell className="text-xs">{r.modeOfStudyCode}</TableCell>
+                      <TableCell><CodeBadge entity="slc_confirmation" field="confirmation_type" code={r.confirmationType} /></TableCell>
+                      <TableCell className="text-xs"><CodeLabel entity="enrolment" field="mode_of_study_code" code={r.modeOfStudyCode} /></TableCell>
                       <TableCell className="text-xs">{r.feeAmount ?? '—'}</TableCell>
                       <TableCell className="text-xs">{r.startDate}</TableCell>
                       <TableCell className="text-xs">{r.expectedEndDate ?? '—'}</TableCell>

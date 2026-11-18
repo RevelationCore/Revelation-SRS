@@ -1,7 +1,6 @@
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import {
-  Card, CardHeader, CardBody, Button, Input, Select, LabelledField, Badge, Spinner, StatusNotice,
-  Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
+  Card, CardHeader, CardBody, Button, Input, Select, LabelledField, Badge, Spinner, StatusNotice, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, CodeBadge, CodeLabel, CodeSelect, useCodes,
 } from '@revelation-srs/ui';
 
 import { api, ApiError } from '../api/client.js';
@@ -66,6 +65,8 @@ export function AwardsTab({ personId, permissions }: { personId: string; permiss
 }
 
 function AwardRecommendations({ enrolmentId, permissions }: { enrolmentId: string; permissions: AwardsTabPermissions }) {
+  const classifications = useCodes('award_recommendation', 'classification_code');
+  const awardTypes = useCodes('award_recommendation', 'award_type_code');
   const { user } = useAuth();
   const [recommendations, setRecommendations] = useState<AwardRecommendation[] | null>(null);
   const [error, setError] = useState('');
@@ -107,18 +108,18 @@ function AwardRecommendations({ enrolmentId, permissions }: { enrolmentId: strin
               <TableBody>
                 {recommendations.map((r) => (
                   <TableRow key={r.recommendationId}>
-                    <TableCell>{r.qualificationCode}<div className="text-xs text-neutral-500">{r.awardTypeCode}</div></TableCell>
+                    <TableCell>{r.qualificationCode}<div className="text-xs text-neutral-500">{awardTypes.label(r.awardTypeCode)}</div></TableCell>
                     <TableCell>
-                      {r.classificationCode}
+                      {classifications.label(r.classificationCode)}
                       {r.calculatedClassificationCode && r.calculatedClassificationCode !== r.classificationCode && (
-                        <div className="text-xs text-neutral-500">Calculated {r.calculatedClassificationCode}; discretion: {r.discretionReason}</div>
+                        <div className="text-xs text-neutral-500">Calculated {classifications.label(r.calculatedClassificationCode)}; discretion: {r.discretionReason}</div>
                       )}
                       {r.aggregateMark !== null && <div className="text-xs text-neutral-500">Aggregate {r.aggregateMark}</div>}
                       {r.calculatedClassificationCode !== null && <RecommendationEvidencePanel recommendationId={r.recommendationId} />}
                     </TableCell>
                     <TableCell className="text-xs">{r.recommendedBy}<div>{new Date(r.recommendedAt).toLocaleDateString('en-GB')}</div></TableCell>
                     <TableCell>
-                      <Badge value={r.statusCode} />
+                      <CodeBadge entity="award_recommendation" field="status_code" code={r.statusCode} />
                       {r.conferment && <div className="text-xs text-neutral-500">Conferred {r.conferment.confermentDate} ({r.conferment.authorityRef})</div>}
                       {r.withdrawnReason && <div className="text-xs text-neutral-500">{r.withdrawnReason}</div>}
                     </TableCell>
@@ -160,6 +161,8 @@ function AwardRecommendations({ enrolmentId, permissions }: { enrolmentId: strin
 function RecommendForm({ enrolmentId, canReadBoards, onSubmit }: {
   enrolmentId: string; canReadBoards: boolean; onSubmit: (body: Parameters<typeof recommendAward>[1]) => Promise<boolean>;
 }) {
+  const boardTypes = useCodes('exam_board', 'board_type_code');
+  const classifications = useCodes('award_recommendation', 'classification_code');
   const { members: awardTypes } = useValueSet('award_recommendation', 'award_type_code');
   const [boards, setBoards] = useState<ExamBoard[]>([]);
   const [classification, setClassification] = useState<Classification | null>(null);
@@ -194,10 +197,10 @@ function RecommendForm({ enrolmentId, canReadBoards, onSubmit }: {
       <p className="text-sm font-medium md:col-span-3">Recommend an award</p>
       {classification && (
         <div className="text-sm text-neutral-600 md:col-span-3">
-          Calculated classification: <strong>{classification.classificationCode}</strong> (aggregate {classification.aggregateMark}).
+          Calculated classification: <strong><CodeLabel entity="award_recommendation" field="calculated_classification_code" code={classification.classificationCode} /></strong> (aggregate {classification.aggregateMark}).
           {classification.inDiscretionZone && classification.discretionZone && (
             <span className="ml-2 rounded bg-warning-100 px-1.5 py-0.5 text-xs text-warning-700">
-              In the discretion zone: within {classification.discretionZone.widthPercent} of {classification.discretionZone.nextBoundaryCode} ({classification.discretionZone.nextBoundaryMark})
+              In the discretion zone: within {classification.discretionZone.widthPercent} of {classifications.label(classification.discretionZone.nextBoundaryCode)} ({classification.discretionZone.nextBoundaryMark})
             </span>
           )}
           {classification.requiredCredits !== null && classification.earnedCredits < classification.requiredCredits && (
@@ -217,7 +220,7 @@ function RecommendForm({ enrolmentId, canReadBoards, onSubmit }: {
             <option value="">Choose…</option>
             {boards.map((b) => (
               <option key={b.examBoardId} value={b.examBoardId}>
-                {b.boardTypeCode} board {b.academicYear}{b.periodCode ? ` ${b.periodCode}` : ''} (ratified {new Date(b.ratifiedAt!).toLocaleDateString('en-GB')})
+                {boardTypes.label(b.boardTypeCode)} {b.academicYear}{b.periodCode ? ` ${b.periodCode}` : ''} (ratified {new Date(b.ratifiedAt!).toLocaleDateString('en-GB')})
               </option>
             ))}
           </Select>
@@ -343,11 +346,11 @@ function ReassessmentPlans({ enrolmentId, canWrite }: { enrolmentId: string; can
               <TableBody>
                 {plans.map((p) => (
                   <TableRow key={p.reassessmentPlanId}>
-                    <TableCell>{p.planTypeCode}</TableCell>
+                    <TableCell><CodeLabel entity="reassessment_plan" field="plan_type_code" code={p.planTypeCode} /></TableCell>
                     <TableCell className="text-sm">{moduleName(p.moduleRegistrationId)}</TableCell>
                     <TableCell>{p.attemptNumber}{p.markCap !== null ? <div className="text-xs text-neutral-500">Capped at {p.markCap}</div> : null}</TableCell>
                     <TableCell className="text-sm">{p.dueDate ?? '—'}</TableCell>
-                    <TableCell><Badge value={p.statusCode} />{p.outcomeNote && <div className="text-xs text-neutral-500">{p.outcomeNote}</div>}</TableCell>
+                    <TableCell><CodeBadge entity="reassessment_plan" field="status_code" code={p.statusCode} />{p.outcomeNote && <div className="text-xs text-neutral-500">{p.outcomeNote}</div>}</TableCell>
                     <TableCell className="text-right">
                       {canWrite && p.statusCode === 'planned' && (
                         <ClosePlan plan={p} onClose={(body) => act(() => closeReassessmentPlan(p.reassessmentPlanId, body))} />
@@ -371,6 +374,7 @@ function PlanForm({ decisions, registrations, onSubmit }: {
   decisions: ProgressionDecision[]; registrations: ModuleRegistration[];
   onSubmit: (decisionId: string, body: Parameters<typeof createReassessmentPlan>[1]) => Promise<boolean>;
 }) {
+  const progressionDecisions = useCodes('progression_decision', 'decision_code');
   const { members: planTypes } = useValueSet('reassessment_plan', 'plan_type_code');
   const [decisionId, setDecisionId] = useState(decisions[0]?.progressionDecisionId ?? '');
   const [planType, setPlanType] = useState('');
@@ -393,7 +397,7 @@ function PlanForm({ decisions, registrations, onSubmit }: {
       <p className="text-sm font-medium md:col-span-3">Add a reassessment plan</p>
       <LabelledField label="Progression decision" htmlFor="plan-decision" required>
         <Select id="plan-decision" value={decisionId} onChange={(e) => setDecisionId(e.target.value)}>
-          {decisions.map((d) => <option key={d.progressionDecisionId} value={d.progressionDecisionId}>{d.academicYear}: {d.decisionCode}</option>)}
+          {decisions.map((d) => <option key={d.progressionDecisionId} value={d.progressionDecisionId}>{d.academicYear}: {progressionDecisions.label(d.decisionCode)}</option>)}
         </Select>
       </LabelledField>
       <LabelledField label="Plan" htmlFor="plan-type" required>
@@ -422,19 +426,16 @@ function PlanForm({ decisions, registrations, onSubmit }: {
 }
 
 function ClosePlan({ plan, onClose }: { plan: ReassessmentPlan; onClose: (body: { statusCode: 'completed' | 'expired' | 'cancelled'; note?: string }) => Promise<boolean> }) {
+  const planTypes = useCodes('reassessment_plan', 'plan_type_code');
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<'completed' | 'expired' | 'cancelled'>('completed');
   const [note, setNote] = useState('');
   const id = `close-${plan.reassessmentPlanId}`;
-  if (!open) return <Button size="sm" variant="secondary" onClick={() => setOpen(true)}>Close<span className="sr-only"> {plan.planTypeCode} plan</span></Button>;
+  if (!open) return <Button size="sm" variant="secondary" onClick={() => setOpen(true)}>Close<span className="sr-only"> {planTypes.label(plan.planTypeCode)} plan</span></Button>;
   return (
     <form className="inline-flex flex-col items-end gap-2" onSubmit={(e) => { e.preventDefault(); void onClose({ statusCode: status, ...(note.trim() ? { note: note.trim() } : {}) }).then((ok) => { if (ok) setOpen(false); }); }}>
       <LabelledField label="Outcome" htmlFor={`${id}-status`}>
-        <Select id={`${id}-status`} value={status} onChange={(e) => setStatus(e.target.value as typeof status)}>
-          <option value="completed">Completed</option>
-          <option value="expired">Expired</option>
-          <option value="cancelled">Cancelled</option>
-        </Select>
+        <CodeSelect entity="reassessment_plan" field="status_code" id={`${id}-status`} value={status} onChange={(v) => setStatus(v as typeof status)} only={['completed', 'expired', 'cancelled']} />
       </LabelledField>
       <LabelledField label="Note" htmlFor={`${id}-note`}>
         <Input id={`${id}-note`} value={note} onChange={(e) => setNote(e.target.value)} />

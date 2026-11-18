@@ -903,3 +903,296 @@ VALUES
   ('feature_flag', 'flag_class_code', 'feature-flag-class', NULL),
   ('feature_flag', 'risk_class_code', 'feature-flag-risk-class', NULL)
 ON CONFLICT DO NOTHING;
+
+-- Logical fields: a value held in a shared column (case_decision.decision_type_code)
+-- whose valid values depend on the kind of case. Screens label them through these.
+INSERT INTO "field_value_set" ("entity_name", "field_name", "value_set_code", "description")
+VALUES
+  ('pgr_progress_review', 'outcome_code', 'pgr-review-outcome-code', 'The progress review decision, held in case_decision.decision_type_code')
+ON CONFLICT DO NOTHING;
+
+-- Wellbeing reasonable-adjustment cases (the wellbeing module's tables) and
+-- PGR supervision decisions.
+INSERT INTO "value_set" ("set_code", "display_name", "source", "source_version", "description", "is_extensible", "allows_tenant_hide")
+VALUES
+  ('wellbeing-adjustment-case-status', 'Adjustment Case Status', 'srs-internal', NULL, 'Where a reasonable-adjustment case is', false, false),
+  ('wellbeing-adjustment-case-type', 'Adjustment Need', 'srs-internal', NULL, 'The kind of adjustment a referral asks for', true, true),
+  ('wellbeing-assessment-outcome', 'Adjustment Assessment Outcome', 'srs-internal', NULL, 'A specialist assessor''s finding', false, false),
+  ('wellbeing-panel-decision', 'Adjustment Panel Decision', 'srs-internal', NULL, 'The panel''s decision on a recommendation', false, false),
+  ('wellbeing-adjustment-evidence-type', 'Adjustment Evidence Type', 'srs-internal', NULL, 'Kind of evidence attached to an adjustment case', true, true),
+  ('pgr-supervision-decision-code', 'Supervision Decision', 'srs-internal', NULL, 'The decision on a supervisory team', false, false)
+ON CONFLICT ("set_code") DO NOTHING;
+
+INSERT INTO "value_set_member" ("value_set_id", "code", "display_label", "sort_order", "active_from", "source_metadata")
+SELECT vs."id", v.code, v.display_label, v.sort_order, NULL, NULL
+FROM "value_set" vs,
+(VALUES
+  ('wellbeing-adjustment-case-status', 'referral_received',  'Referral received',    10),
+  ('wellbeing-adjustment-case-status', 'assessment_pending', 'Assessment pending',   20),
+  ('wellbeing-adjustment-case-status', 'under_assessment',   'Under assessment',     30),
+  ('wellbeing-adjustment-case-status', 'determination_made', 'Determination made',   40),
+  ('wellbeing-adjustment-case-status', 'under_review',       'Under review (panel)', 50),
+  ('wellbeing-adjustment-case-status', 'approved',           'Approved',             60),
+  ('wellbeing-adjustment-case-status', 'rejected',           'Rejected',             70),
+  ('wellbeing-adjustment-case-status', 'review_complete',    'Review complete',      80),
+  ('wellbeing-adjustment-case-status', 'closed',             'Closed',               90),
+  ('wellbeing-adjustment-case-type', 'exam-time',  'Exam time',  10),
+  ('wellbeing-adjustment-case-type', 'venue',      'Venue',      20),
+  ('wellbeing-adjustment-case-type', 'coursework', 'Coursework', 30),
+  ('wellbeing-adjustment-case-type', 'placement',  'Placement',  40),
+  ('wellbeing-adjustment-case-type', 'other',      'Other',      90),
+  ('wellbeing-assessment-outcome', 'recommended',       'Recommended',     10),
+  ('wellbeing-assessment-outcome', 'not-recommended',   'Not recommended', 20),
+  ('wellbeing-assessment-outcome', 'deferred',          'Deferred',        30),
+  ('wellbeing-assessment-outcome', 'referred-to-panel', 'Refer to panel',  40),
+  ('wellbeing-panel-decision', 'upheld',   'Upheld',   10),
+  ('wellbeing-panel-decision', 'modified', 'Modified', 20),
+  ('wellbeing-panel-decision', 'rejected', 'Rejected', 30),
+  ('wellbeing-adjustment-evidence-type', 'medical-letter',   'Medical letter',   10),
+  ('wellbeing-adjustment-evidence-type', 'assessor-report',  'Assessor report',  20),
+  ('wellbeing-adjustment-evidence-type', 'dsa-award-letter', 'DSA award letter', 30),
+  ('wellbeing-adjustment-evidence-type', 'other',            'Other',            90),
+  ('pgr-supervision-decision-code', 'approve', 'Approve', 10),
+  ('pgr-supervision-decision-code', 'return',  'Return',  20),
+  ('pgr-supervision-decision-code', 'reject',  'Reject',  30)
+) AS v(set_code, code, display_label, sort_order)
+WHERE vs."set_code" = v.set_code
+ON CONFLICT DO NOTHING;
+
+INSERT INTO "field_value_set" ("entity_name", "field_name", "value_set_code", "description")
+VALUES
+  ('wellbeing.adjustment_case',          'status_code',          'wellbeing-adjustment-case-status', NULL),
+  ('wellbeing.adjustment_case',          'adjustment_type_code', 'wellbeing-adjustment-case-type', NULL),
+  ('wellbeing.adjustment_assessment',    'outcome_code',         'wellbeing-assessment-outcome', NULL),
+  ('wellbeing.adjustment_panel_decision','decision_code',        'wellbeing-panel-decision', NULL),
+  ('wellbeing.adjustment_case_evidence', 'evidence_type_code',   'wellbeing-adjustment-evidence-type', NULL),
+  ('pgr_supervision_case',               'decision_code',        'pgr-supervision-decision-code', 'The supervision decision, held in case_decision.decision_type_code')
+ON CONFLICT DO NOTHING;
+
+-- Staff and system roles, so workflow steps, tasks and assignment rules show a
+-- role's name. The codes are the platform's roles: relabel only.
+INSERT INTO "value_set" ("set_code", "display_name", "source", "source_version", "description", "is_extensible", "allows_tenant_hide")
+VALUES ('srs-role-code', 'Role', 'srs-internal', NULL, 'A staff, student or system role', false, false)
+ON CONFLICT ("set_code") DO NOTHING;
+
+INSERT INTO "value_set_member" ("value_set_id", "code", "display_label", "sort_order", "active_from", "source_metadata")
+SELECT vs."id", v.code, v.display_label, v.sort_order, NULL, NULL
+FROM "value_set" vs,
+(VALUES
+  ('srs-role-code', 'student', 'Student', 10),
+  ('srs-role-code', 'applicant', 'Applicant', 20),
+  ('srs-role-code', 'module-tutor', 'Module tutor', 30),
+  ('srs-role-code', 'personal-tutor', 'Personal tutor', 40),
+  ('srs-role-code', 'engagement-officer', 'Engagement officer', 50),
+  ('srs-role-code', 'research-supervisor', 'Research supervisor', 60),
+  ('srs-role-code', 'wellbeing-advisor', 'Wellbeing advisor', 70),
+  ('srs-role-code', 'wellbeing-mental-health-advisor', 'Mental health advisor', 80),
+  ('srs-role-code', 'wellbeing-specialist-assessor', 'Specialist assessor', 90),
+  ('srs-role-code', 'wellbeing-panel-chair', 'Wellbeing panel chair', 100),
+  ('srs-role-code', 'wellbeing-auditor', 'Wellbeing auditor', 110),
+  ('srs-role-code', 'exam-board-member', 'Exam board member', 120),
+  ('srs-role-code', 'exam-board-chair', 'Exam board chair', 130),
+  ('srs-role-code', 'external-examiner', 'External examiner', 140),
+  ('srs-role-code', 'integrity-officer', 'Academic integrity officer', 150),
+  ('srs-role-code', 'registry-administrator', 'Registry administrator', 160),
+  ('srs-role-code', 'regulatory-officer', 'Regulatory officer', 170),
+  ('srs-role-code', 'finance-administrator', 'Finance administrator', 180),
+  ('srs-role-code', 'dpo', 'Data protection officer', 190),
+  ('srs-role-code', 'tenant-administrator', 'Tenant administrator', 200),
+  ('srs-role-code', 'system-administrator', 'System administrator', 210),
+  ('srs-role-code', 'integration-service', 'Integration service', 220),
+  ('srs-role-code', 'programme-approver', 'Programme approver', 230),
+  ('srs-role-code', 'pgr-administrator', 'PGR administrator', 240),
+  ('srs-role-code', 'pgr-director', 'PGR director', 250),
+  ('srs-role-code', 'pgr-examiner', 'PGR examiner', 260)
+) AS v(set_code, code, display_label, sort_order)
+WHERE vs."set_code" = v.set_code
+ON CONFLICT DO NOTHING;
+
+INSERT INTO "field_value_set" ("entity_name", "field_name", "value_set_code", "description")
+VALUES
+  ('workflow_step',            'owner_role_code',     'srs-role-code', NULL),
+  ('workflow_task',            'assignee_role_code',  'srs-role-code', NULL),
+  ('workflow_assignment_rule', 'assignee_role_code',  'srs-role-code', NULL),
+  ('workflow_assignment_rule', 'role_code',           'srs-role-code', NULL),
+  ('feature_flag_assignment',  'role_code',           'srs-role-code', NULL)
+ON CONFLICT DO NOTHING;
+
+-- Attendance and engagement (the attendance module's tables). Their mappings
+-- were removed in 0003 when the tables moved to the module; screens label
+-- them through these schema-qualified entities.
+INSERT INTO "value_set" ("set_code", "display_name", "source", "source_version", "description", "is_extensible", "allows_tenant_hide")
+VALUES
+  ('engagement-alert-severity-code', 'Engagement Alert Severity', 'srs-internal', NULL, 'How serious an engagement alert is', false, false),
+  ('engagement-policy-status-code', 'Engagement Policy Status', 'srs-internal', NULL, 'Whether an engagement policy version is approved', false, false)
+ON CONFLICT ("set_code") DO NOTHING;
+
+INSERT INTO "value_set_member" ("value_set_id", "code", "display_label", "sort_order", "active_from", "source_metadata")
+SELECT vs."id", v.code, v.display_label, v.sort_order, NULL, NULL
+FROM "value_set" vs,
+(VALUES
+  ('engagement-alert-severity-code', 'low',    'Low',    10),
+  ('engagement-alert-severity-code', 'medium', 'Medium', 20),
+  ('engagement-alert-severity-code', 'high',   'High',   30),
+  ('engagement-policy-status-code', 'draft',    'Draft',    10),
+  ('engagement-policy-status-code', 'approved', 'Approved', 20)
+) AS v(set_code, code, display_label, sort_order)
+WHERE vs."set_code" = v.set_code
+ON CONFLICT DO NOTHING;
+
+INSERT INTO "field_value_set" ("entity_name", "field_name", "value_set_code", "description")
+VALUES
+  ('attendance.expected_engagement_event',    'activity_type_code',  'engagement-activity-type-code', NULL),
+  ('attendance.expected_engagement_event',    'event_mode_code',     'engagement-event-mode-code', NULL),
+  ('attendance.engagement_observation',       'capture_method_code', 'engagement-capture-method-code', NULL),
+  ('attendance.engagement_observation',       'outcome_code',        'engagement-observation-outcome-code', NULL),
+  ('attendance.engagement_observation',       'data_quality_code',   'engagement-data-quality-code', NULL),
+  ('attendance.engagement_alert',             'status_code',         'engagement-alert-status-code', NULL),
+  ('attendance.engagement_alert',             'severity_code',       'engagement-alert-severity-code', NULL),
+  ('attendance.engagement_intervention_case', 'status_code',         'engagement-case-status-code', NULL),
+  ('attendance.engagement_intervention_case', 'outcome_code',        'engagement-case-outcome-code', NULL),
+  ('attendance.engagement_policy_version',    'status_code',         'engagement-policy-status-code', NULL),
+  ('engagement_outcome',                      'severity_code',       'engagement-alert-severity-code', NULL),
+  ('workflow_task',                           'task_type_code',      'workflow-step-type-code', NULL)
+ON CONFLICT DO NOTHING;
+
+-- Where an approved adjustment is applied.
+INSERT INTO "value_set" ("set_code", "display_name", "source", "source_version", "description", "is_extensible", "allows_tenant_hide")
+VALUES ('adjustment-target-system-code', 'Adjustment Target', 'srs-internal', NULL, 'A system an approved adjustment is applied in', false, false)
+ON CONFLICT ("set_code") DO NOTHING;
+INSERT INTO "value_set_member" ("value_set_id", "code", "display_label", "sort_order", "active_from", "source_metadata")
+SELECT vs."id", v.code, v.display_label, v.sort_order, NULL, NULL
+FROM "value_set" vs,
+(VALUES
+  ('adjustment-target-system-code', 'vle',        'VLE',        10),
+  ('adjustment-target-system-code', 'attendance', 'Attendance', 20),
+  ('adjustment-target-system-code', 'exams',      'Exams',      30)
+) AS v(set_code, code, display_label, sort_order)
+WHERE vs."set_code" = v.set_code
+ON CONFLICT DO NOTHING;
+INSERT INTO "field_value_set" ("entity_name", "field_name", "value_set_code", "description")
+VALUES
+  ('adjustment_target_config', 'target_system',  'adjustment-target-system-code', NULL),
+  ('adjustment_distribution',  'target_system',  'adjustment-target-system-code', NULL)
+ON CONFLICT DO NOTHING;
+
+-- Issued documents share the student-document types; a verification also
+-- reports the signature check, a value the API derives (logical field).
+INSERT INTO "value_set" ("set_code", "display_name", "source", "source_version", "description", "is_extensible", "allows_tenant_hide")
+VALUES ('document-signature-status-code', 'Signature Check', 'srs-internal', NULL, 'What checking a document''s signature found', false, false)
+ON CONFLICT ("set_code") DO NOTHING;
+INSERT INTO "value_set_member" ("value_set_id", "code", "display_label", "description", "sort_order", "active_from", "source_metadata")
+SELECT vs."id", v.code, v.display_label, v.description, v.sort_order, NULL, NULL
+FROM "value_set" vs,
+(VALUES
+  ('document-signature-status-code', 'valid',         'Signature valid',          NULL, 10),
+  ('document-signature-status-code', 'invalid',       'Signature does not match', 'Treat the document as not genuine', 20),
+  ('document-signature-status-code', 'key-withdrawn', 'Signed with a withdrawn key', 'Signed with a key the institution has withdrawn', 30),
+  ('document-signature-status-code', 'unsigned',      'Not signed',               'Issued before documents were signed', 40)
+) AS v(set_code, code, display_label, description, sort_order)
+WHERE vs."set_code" = v.set_code
+ON CONFLICT DO NOTHING;
+INSERT INTO "field_value_set" ("entity_name", "field_name", "value_set_code", "description")
+VALUES
+  ('document_issue',        'document_type_code', 'student-document-type-code', NULL),
+  ('document_verification', 'signature_status',   'document-signature-status-code', 'Derived by the verification service')
+ON CONFLICT DO NOTHING;
+
+-- Values the API derives or holds in shared columns (logical fields).
+INSERT INTO "value_set" ("set_code", "display_name", "source", "source_version", "description", "is_extensible", "allows_tenant_hide")
+VALUES
+  ('slc-confirmation-type-code', 'SLC Confirmation Type', 'srs-internal', NULL, 'What an SLC attendance confirmation reports', false, false),
+  ('non-registration-outcome-code', 'Non-Registration Outcome', 'srs-internal', NULL, 'How a non-registration case was resolved', false, false)
+ON CONFLICT ("set_code") DO NOTHING;
+INSERT INTO "value_set_member" ("value_set_id", "code", "display_label", "sort_order", "active_from", "source_metadata")
+SELECT vs."id", v.code, v.display_label, v.sort_order, NULL, NULL
+FROM "value_set" vs,
+(VALUES
+  ('slc-confirmation-type-code', 'enrolment',    'Enrolment',    10),
+  ('slc-confirmation-type-code', 'withdrawal',   'Withdrawal',   20),
+  ('slc-confirmation-type-code', 'intermission', 'Interruption', 30),
+  ('non-registration-outcome-code', 'registered-late',  'Registered late', 10),
+  ('non-registration-outcome-code', 'referred',         'Referred to the student''s own request', 20),
+  ('non-registration-outcome-code', 'non-registration', 'Non-registration decided', 30)
+) AS v(set_code, code, display_label, sort_order)
+WHERE vs."set_code" = v.set_code
+ON CONFLICT DO NOTHING;
+INSERT INTO "field_value_set" ("entity_name", "field_name", "value_set_code", "description")
+VALUES
+  ('slc_confirmation',      'confirmation_type', 'slc-confirmation-type-code', 'Derived from the enrolment status'),
+  ('non_registration_case', 'outcome_code',      'non-registration-outcome-code', 'Held in case_decision.decision_type_code')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO "value_set" ("set_code", "display_name", "source", "source_version", "description", "is_extensible", "allows_tenant_hide")
+VALUES
+  ('rule-source-code', 'Rule Source', 'srs-internal', NULL, 'Where an applied academic rule came from', false, false),
+  ('non-registration-flag-code', 'Non-Registration Flag', 'srs-internal', NULL, 'Why a non-registration case needs care', false, false)
+ON CONFLICT ("set_code") DO NOTHING;
+INSERT INTO "value_set_member" ("value_set_id", "code", "display_label", "sort_order", "active_from", "source_metadata")
+SELECT vs."id", v.code, v.display_label, v.sort_order, NULL, NULL
+FROM "value_set" vs,
+(VALUES
+  ('rule-source-code', 'programme',          'Programme rule', 10),
+  ('rule-source-code', 'tenant-default',     'Institution rule', 20),
+  ('rule-source-code', 'exception',          'Rule exception for this student', 30),
+  ('rule-source-code', 'component-override', 'Assessment component override', 40),
+  ('rule-source-code', 'reassessment-plan',  'Reassessment plan cap', 50),
+  ('rule-source-code', 'built-in-default',   'Built-in default (no rule configured)', 60),
+  ('non-registration-flag-code', 'results-pending',       'Last year''s results not ratified', 10),
+  ('non-registration-flag-code', 'open-status-request',   'Has an open status request', 20),
+  ('non-registration-flag-code', 'approved-interruption', 'Has an approved interruption', 30),
+  ('non-registration-flag-code', 'sponsored',             'Student visa sponsored', 40)
+) AS v(set_code, code, display_label, sort_order)
+WHERE vs."set_code" = v.set_code
+ON CONFLICT DO NOTHING;
+INSERT INTO "field_value_set" ("entity_name", "field_name", "value_set_code", "description")
+VALUES
+  ('rule_version_reference', 'source',   'rule-source-code', 'Derived when a rule is resolved'),
+  ('non_registration_case',  'flag_code', 'non-registration-flag-code', 'Derived for the worklist')
+ON CONFLICT DO NOTHING;
+
+-- Engagement intervention cases (attendance module): contact attempts,
+-- actions and referrals. Free text in the module until now; institutions
+-- can add their own channels, action types and services.
+INSERT INTO "value_set" ("set_code", "display_name", "source", "source_version", "description", "is_extensible", "allows_tenant_hide")
+VALUES
+  ('engagement-contact-channel-code', 'Contact Channel', 'srs-internal', NULL, 'How a student was contacted about engagement', true, true),
+  ('engagement-contact-outcome-code', 'Contact Outcome', 'srs-internal', NULL, 'What came of a contact attempt', true, true),
+  ('engagement-action-type-code', 'Engagement Action', 'srs-internal', NULL, 'A planned action in an engagement case', true, true),
+  ('engagement-referral-target-code', 'Referral Service', 'srs-internal', NULL, 'The service an engagement case is referred to', true, true),
+  ('engagement-referral-type-code', 'Referral Type', 'srs-internal', NULL, 'The kind of engagement referral', true, true)
+ON CONFLICT ("set_code") DO NOTHING;
+INSERT INTO "value_set_member" ("value_set_id", "code", "display_label", "sort_order", "active_from", "source_metadata")
+SELECT vs."id", v.code, v.display_label, v.sort_order, NULL, NULL
+FROM "value_set" vs,
+(VALUES
+  ('engagement-contact-channel-code', 'portal',    'Portal message', 10),
+  ('engagement-contact-channel-code', 'email',     'Email',          20),
+  ('engagement-contact-channel-code', 'telephone', 'Telephone',      30),
+  ('engagement-contact-channel-code', 'sms',       'Text message',   40),
+  ('engagement-contact-channel-code', 'in-person', 'In person',      50),
+  ('engagement-contact-channel-code', 'letter',    'Letter',         60),
+  ('engagement-contact-outcome-code', 'no-response',           'No response',           10),
+  ('engagement-contact-outcome-code', 'contacted',             'Contacted',             20),
+  ('engagement-contact-outcome-code', 'response-received',     'Response received',     30),
+  ('engagement-contact-outcome-code', 'wrong-contact-details', 'Wrong contact details', 40),
+  ('engagement-action-type-code', 'academic-meeting', 'Academic meeting', 10),
+  ('engagement-referral-target-code', 'wellbeing',                 'Wellbeing service',            10),
+  ('engagement-referral-target-code', 'safeguarding',              'Safeguarding',                 20),
+  ('engagement-referral-target-code', 'academic-status-review',    'Academic-status review',       30),
+  ('engagement-referral-target-code', 'sponsor-compliance-review', 'Sponsor-compliance review',    40),
+  ('engagement-referral-type-code', 'support-request',   'Support request',   10),
+  ('engagement-referral-type-code', 'compliance-review', 'Compliance review', 20)
+) AS v(set_code, code, display_label, sort_order)
+WHERE vs."set_code" = v.set_code
+ON CONFLICT DO NOTHING;
+INSERT INTO "field_value_set" ("entity_name", "field_name", "value_set_code", "description")
+VALUES
+  ('attendance.engagement_contact_attempt', 'channel_code',        'engagement-contact-channel-code', NULL),
+  ('attendance.engagement_contact_attempt', 'outcome_code',        'engagement-contact-outcome-code', NULL),
+  ('attendance.engagement_action',          'action_type_code',    'engagement-action-type-code', NULL),
+  ('attendance.engagement_action',          'owner_role_code',     'srs-role-code', NULL),
+  ('attendance.engagement_referral',        'target_service_code', 'engagement-referral-target-code', NULL),
+  ('attendance.engagement_referral',        'referral_type_code',  'engagement-referral-type-code', NULL),
+  ('attendance.engagement_referral',        'status_code',         'engagement-referral-status-code', NULL)
+ON CONFLICT DO NOTHING;

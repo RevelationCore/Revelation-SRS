@@ -14,9 +14,7 @@ import { Spinner } from '../components/Spinner.js';
 import { useAuth } from '../auth/AuthContext.js';
 import { userHasAnyPermission } from '../auth/RequirePermission.js';
 import {
-  PageHeader, Card, CardBody, Button,
-  Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
-  Tabs, TabsList, TabsTrigger, TabsContent,
+  PageHeader, Card, CardBody, Button, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, Tabs, TabsList, TabsTrigger, TabsContent, CodeBadge, CodeLabel,
 } from '@revelation-srs/ui';
 
 type Tab = 'health' | 'failed';
@@ -120,14 +118,16 @@ function ConnectorHealthTab({ canManage }: { canManage: boolean }) {
                 <div>
                   <p className="text-sm font-medium text-neutral-900">{reg.displayName}</p>
                   <p className="text-xs text-neutral-600 mt-0.5">
-                    {reg.transportCode}
+                    <CodeLabel entity="integration_registration" field="transport_code" code={reg.transportCode} />
                     {reg.endpointUrl && (
                       <span className="font-mono ml-2">{reg.endpointUrl}</span>
                     )}
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Badge value={display.healthStatusCode ?? (display.enabled ? 'enabled' : 'disabled')} />
+                  {display.healthStatusCode
+              ? <CodeBadge entity="integration_registration" field="health_status_code" code={display.healthStatusCode} />
+              : <Badge value={display.enabled ? 'enabled' : 'disabled'} label={display.enabled ? 'Enabled' : 'Disabled'} />}
                   {canManage && <div className="flex items-center gap-1">
                     {(['ok', 'degraded', 'down'] as const).map(s => (
                       <Button
@@ -302,7 +302,7 @@ function FailedExchangesTab() {
                     {new Date(ex.createdAt).toLocaleString('en-GB')}
                   </TableCell>
                   <TableCell>
-                    <Badge value={ex.directionCode} />
+                    <CodeBadge entity="integration_exchange" field="direction_code" code={ex.directionCode} />
                   </TableCell>
                   <TableCell className="font-mono text-xs text-neutral-700">{ex.exchangeTypeCode}</TableCell>
                   <TableCell className="text-xs text-danger-700 max-w-xs truncate">

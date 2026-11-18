@@ -12,9 +12,7 @@ import { ApiError } from '../api/client.js';
 import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
 import {
-  PageHeader, Card, CardHeader, CardBody, Button, Select, LabelledField, Textarea,
-  Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
-  Tabs, TabsList, TabsTrigger, TabsContent,
+  PageHeader, Card, CardHeader, CardBody, Button, Select, LabelledField, Textarea, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, Tabs, TabsList, TabsTrigger, TabsContent, CodeBadge, CodeLabel,
 } from '@revelation-srs/ui';
 
 type Tab = 'runtime' | 'environments' | 'promotions';
@@ -132,7 +130,7 @@ function RuntimeTab() {
               {data.featureFlags.map(f => (
                 <TableRow key={f.flagKey}>
                   <TableCell className="font-mono text-neutral-900">{f.flagKey}</TableCell>
-                  <TableCell><Badge value={f.statusCode} /></TableCell>
+                  <TableCell><CodeBadge entity="feature_flag" field="status_code" code={f.statusCode} /></TableCell>
                   <TableCell className="font-mono">{f.defaultVariantKey}</TableCell>
                 </TableRow>
               ))}
@@ -180,10 +178,10 @@ function EnvironmentsTab() {
               <TableRow key={env.deploymentEnvironmentId}>
                 <TableCell className="font-mono text-neutral-900">{env.environmentCode}</TableCell>
                 <TableCell className="font-medium text-neutral-900">{env.displayName}</TableCell>
-                <TableCell>{env.environmentTypeCode}</TableCell>
-                <TableCell><Badge value={env.productionLike ? 'yes' : 'no'} /></TableCell>
-                <TableCell><Badge value={env.liveIntegrationsAllowed ? 'allowed' : 'disabled'} /></TableCell>
-                <TableCell><Badge value={env.active ? 'active' : 'inactive'} /></TableCell>
+                <TableCell><CodeLabel entity="deployment_environment" field="environment_type_code" code={env.environmentTypeCode} /></TableCell>
+                <TableCell><Badge value={env.productionLike ? 'yes' : 'no'} label={env.productionLike ? 'Yes' : 'No'} /></TableCell>
+                <TableCell><Badge value={env.liveIntegrationsAllowed ? 'allowed' : 'disabled'} label={env.liveIntegrationsAllowed ? 'Allowed' : 'Not allowed'} /></TableCell>
+                <TableCell><Badge value={env.active ? 'active' : 'inactive'} label={env.active ? 'Active' : 'Inactive'} /></TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -256,7 +254,7 @@ function PromotionsTab() {
                       <TableCell>
                         {src?.displayName ?? p.sourceEnvId} → {tgt?.displayName ?? p.targetEnvId}
                       </TableCell>
-                      <TableCell><Badge value={p.statusCode} /></TableCell>
+                      <TableCell><CodeBadge entity="environment_promotion_record" field="status_code" code={p.statusCode} /></TableCell>
                       <TableCell>{p.promotedBy}</TableCell>
                       <TableCell>
                         {new Date(p.promotedAt).toLocaleString('en-GB')}

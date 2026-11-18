@@ -1,7 +1,6 @@
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import {
-  Card, CardHeader, CardBody, Button, Input, Select, LabelledField, Badge, Spinner,
-  Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
+  Card, CardHeader, CardBody, Button, Input, Select, LabelledField, Badge, Spinner, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, CodeSelect,
 } from '@revelation-srs/ui';
 
 import { ApiError } from '../api/client.js';
@@ -103,11 +102,7 @@ function CompleteControl({ check, onComplete }: {
   return (
     <form className="inline-flex flex-col items-end gap-2" onSubmit={(e: FormEvent) => { e.preventDefault(); if (status === 'fraud-flagged') setConfirming(true); else send(); }}>
       <LabelledField label="Result" htmlFor={`${id}-status`}>
-        <Select id={`${id}-status`} value={status} onChange={(e) => setStatus(e.target.value as typeof status)}>
-          <option value="verified">Verified</option>
-          <option value="failed">Failed</option>
-          <option value="fraud-flagged">Fraud flagged</option>
-        </Select>
+        <CodeSelect entity="identity_verification_check" field="status_code" id={`${id}-status`} value={status} onChange={(v) => setStatus(v as typeof status)} only={['verified', 'failed', 'fraud-flagged']} />
       </LabelledField>
       <LabelledField label="Confidence (0–100)" htmlFor={`${id}-confidence`}>
         <Input id={`${id}-confidence`} type="number" min={0} max={100} value={confidence} onChange={(e) => setConfidence(e.target.value)} className="w-28" />

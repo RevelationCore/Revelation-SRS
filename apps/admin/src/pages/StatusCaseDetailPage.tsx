@@ -1,8 +1,7 @@
 import { type FormEvent, type ReactNode, useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
-  PageHeader, Card, CardHeader, CardBody, Button, Input, Select, LabelledField, Badge, Spinner, StatusNotice,
-  Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
+  PageHeader, Card, CardHeader, CardBody, Button, Input, Select, LabelledField, Badge, Spinner, StatusNotice, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, CodeLabel, CodeSelect, useCodes,
 } from '@revelation-srs/ui';
 import type { Permission } from '@revelation-srs/domain';
 
@@ -14,7 +13,7 @@ import {
 import { useAuth } from '../auth/AuthContext.js';
 import { userHasAnyPermission } from '../auth/RequirePermission.js';
 import { useValueSet } from '../hooks/useValueSet.js';
-import { CASE_TYPE_LABELS, CaseStatusBadge } from './StatusCasesPage.js';
+import { CaseStatusBadge } from './StatusCasesPage.js';
 
 function message(err: unknown, fallback: string): string {
   return err instanceof ApiError ? (err.detail ?? err.message) : fallback;
@@ -27,6 +26,8 @@ function message(err: unknown, fallback: string): string {
  * closure cannot be approved while its closure items are open.
  */
 export function StatusCaseDetailPage() {
+  const creditStatuses = useCodes('recognised_credit', 'status_code');
+  const caseTypes = useCodes('student_status_case', 'case_type_code');
   const { statusCaseId } = useParams<{ statusCaseId: string }>();
   const { roles, user } = useAuth();
   const [found, setFound] = useState<StatusCase | null>(null);
@@ -56,7 +57,7 @@ export function StatusCaseDetailPage() {
     <div>
       <PageHeader
         breadcrumbs={[{ label: 'Status cases', to: '/status-cases' }]}
-        title={`${CASE_TYPE_LABELS[found.caseTypeCode] ?? found.caseTypeCode}: ${subject?.studentName ?? found.personId}`}
+        title={`${caseTypes.label(found.caseTypeCode)}: ${subject?.studentName ?? found.personId}`}
         description={[subject?.studentNumber, subject?.programmeCode].filter(Boolean).join(' · ')}
         actions={<CaseStatusBadge status={found.statusCode} />}
       />
@@ -68,11 +69,11 @@ export function StatusCaseDetailPage() {
           <CardBody>
             <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm md:grid-cols-3">
               <Fact label="Requested by">{found.initiatedByCode === 'student' ? 'The student' : 'The institution'}</Fact>
-              <Fact label="Reason">{found.reasonCategoryCode ?? 'Not given'}</Fact>
+              <Fact label="Reason"><CodeLabel entity="student_status_case" field="reason_category_code" code={found.reasonCategoryCode} empty="Not given" /></Fact>
               <Fact label="From">{found.requestedEffectiveDate}</Fact>
               {found.expectedReturnDate && <Fact label="Expected return">{found.expectedReturnDate}</Fact>}
               {found.destinationProgrammeId && <Fact label="Destination programme">{found.destinationProgrammeId}</Fact>}
-              {found.destinationModeOfStudyCode && <Fact label="Destination mode">{found.destinationModeOfStudyCode}</Fact>}
+              {found.destinationModeOfStudyCode && <Fact label="Destination mode"><CodeLabel entity="student_status_case" field="destination_mode_of_study_code" code={found.destinationModeOfStudyCode} /></Fact>}
               {found.destinationStudyIntensityPercent !== null && found.destinationStudyIntensityPercent !== undefined && <Fact label="Destination intensity">{found.destinationStudyIntensityPercent}% of full time</Fact>}
               {found.institutionalOutcomeRef && <Fact label="Authorising outcome">{found.institutionalOutcomeRef}</Fact>}
               <Fact label="Opened">{new Date(found.createdAt).toLocaleString('en-GB')} by {found.createdBy}</Fact>
@@ -88,7 +89,7 @@ export function StatusCaseDetailPage() {
                 <p className="font-medium">Credit mapped by this transfer</p>
                 <ul className="ml-5 list-disc">
                   {found.creditMappings.map((c) => (
-                    <li key={c.recognisedCreditId}>{c.sourceDescription}: {c.creditValue} credits ({c.statusCode})</li>
+                    <li key={c.recognisedCreditId}>{c.sourceDescription}: {c.creditValue} credits ({creditStatuses.label(c.statusCode)})</li>
                   ))}
                 </ul>
                 <p className="text-xs text-neutral-600">A transfer is decided only once every mapping is approved or rejected, by someone other than its proposer.</p>
@@ -112,7 +113,7 @@ export function StatusCaseDetailPage() {
                 <TableBody>
                   {found.assessments.map((a) => (
                     <TableRow key={a.assessmentId}>
-                      <TableCell>{a.assessorRoleCode}</TableCell>
+                      <TableCell><CodeLabel entity="status_case_assessment" field="assessor_role_code" code={a.assessorRoleCode} /></TableCell>
                       <TableCell><Badge value={a.outcomeCode === 'supports' ? 'approved' : a.outcomeCode === 'concerns' ? 'rejected' : 'pending'} label={a.outcomeCode} /></TableCell>
                       <TableCell className="text-sm">{a.note ?? '—'}</TableCell>
                       <TableCell className="text-xs">{a.assessedBy}<div>{new Date(a.assessedAt).toLocaleDateString('en-GB')}</div></TableCell>
@@ -200,7 +201,7 @@ function ConditionsTable({ conditions, canResolve, act }: {
       <TableBody>
         {conditions.map((c) => (
           <TableRow key={c.conditionId}>
-            <TableCell>{c.description}<div className="text-xs text-neutral-500">{c.conditionTypeCode}</div></TableCell>
+            <TableCell>{c.description}<div className="text-xs text-neutral-500"><CodeLabel entity="status_case_condition" field="condition_type_code" code={c.conditionTypeCode} /></div></TableCell>
             <TableCell className="text-sm">{c.dueDate ?? '—'}</TableCell>
             <TableCell>
               <Badge value={c.statusCode === 'open' ? 'pending' : 'approved'} label={c.statusCode} />
@@ -229,10 +230,7 @@ function ResolveControl({ condition, onResolve }: { condition: StatusCaseConditi
       void onResolve({ statusCode: status, ...(note.trim() ? { note: note.trim() } : {}), ...(evidence.trim() ? { evidenceRef: evidence.trim() } : {}) }).then((ok) => { if (ok) setOpenForm(false); });
     }}>
       <LabelledField label="Outcome" htmlFor={`${id}-status`}>
-        <Select id={`${id}-status`} value={status} onChange={(e) => setStatus(e.target.value as 'met' | 'waived')}>
-          <option value="met">Met</option>
-          <option value="waived">Waived (needs a reason)</option>
-        </Select>
+        <CodeSelect entity="status_case_condition" field="status_code" id={`${id}-status`} value={status} onChange={(v) => setStatus(v as 'met' | 'waived')} only={['met', 'waived']} />
       </LabelledField>
       <LabelledField label="Evidence reference" htmlFor={`${id}-evidence`}><Input id={`${id}-evidence`} value={evidence} onChange={(e) => setEvidence(e.target.value)} /></LabelledField>
       <LabelledField label="Note" htmlFor={`${id}-note`}><Input id={`${id}-note`} value={note} onChange={(e) => setNote(e.target.value)} /></LabelledField>
@@ -293,10 +291,7 @@ function DecisionCard({ found, onSubmit }: { found: StatusCase; onSubmit: (body:
           });
         }}>
           <LabelledField label="Decision" htmlFor="case-decision">
-            <Select id="case-decision" value={decision} onChange={(e) => setDecision(e.target.value as 'approved' | 'rejected')}>
-              <option value="approved">Approve</option>
-              <option value="rejected">Reject</option>
-            </Select>
+            <CodeSelect entity="student_status_case" field="status_code" id="case-decision" value={decision} onChange={(v) => setDecision(v as 'approved' | 'rejected')} only={['approved', 'rejected']} />
           </LabelledField>
           {decision === 'approved' && (
             <LabelledField label="Effective from" htmlFor="case-effective">

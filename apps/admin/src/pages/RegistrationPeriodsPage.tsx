@@ -1,8 +1,7 @@
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
-  PageHeader, Card, CardHeader, CardBody, Button, Input, Select, LabelledField, Badge, Spinner, StatusNotice,
-  Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
+  PageHeader, Card, CardHeader, CardBody, Button, Input, Select, LabelledField, Badge, Spinner, StatusNotice, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, CodeBadge, CodeSelect, useCodes,
 } from '@revelation-srs/ui';
 
 import { ApiError } from '../api/client.js';
@@ -121,9 +120,8 @@ function OpenPeriodForm({ onOpened }: { onOpened: () => void }) {
   );
 }
 
-const STATUS_LABELS: Record<string, string> = { pending: 'Not yet registered', confirmed: 'Registered', lapsed: 'Lapsed' };
-
 export function RegistrationPeriodDetailPage() {
+  const assistedReasons = useCodes('reenrolment_confirmation', 'assisted_reason_code');
   const { periodId } = useParams<{ periodId: string }>();
   const { roles } = useAuth();
   const canManage = userHasAnyPermission(roles, ['registration-period:manage']);
@@ -174,12 +172,7 @@ export function RegistrationPeriodDetailPage() {
         <CardHeader title="Students" actions={
           <div className="flex items-center gap-2">
             <label htmlFor="rp-status" className="text-sm text-neutral-500">Show:</label>
-            <Select id="rp-status" value={status} onChange={(e) => setStatus(e.target.value)} className="w-auto">
-              <option value="pending">Not yet registered</option>
-              <option value="confirmed">Registered</option>
-              <option value="lapsed">Lapsed</option>
-              <option value="">Everyone</option>
-            </Select>
+            <CodeSelect entity="reenrolment_confirmation" field="status_code" id="rp-status" value={status} onChange={setStatus} className="w-auto" emptyLabel="Everyone" />
           </div>
         } />
         {rows.length === 0 ? <p className="px-6 pb-6 text-sm text-neutral-600">No students.</p> : (
@@ -192,8 +185,8 @@ export function RegistrationPeriodDetailPage() {
                     {canOpenRecord && r.subject?.personId ? <Link to={`/students/${r.subject.personId}`} className="text-primary-600 hover:underline">{r.subject.studentName}</Link> : r.subject?.studentName ?? r.enrolmentId}
                     <div className="text-xs text-neutral-500">{[r.subject?.studentNumber, r.subject?.programmeCode].filter(Boolean).join(' · ')}</div>
                   </TableCell>
-                  <TableCell><Badge value={r.statusCode === 'confirmed' ? 'approved' : r.statusCode === 'lapsed' ? 'rejected' : 'pending'} label={STATUS_LABELS[r.statusCode] ?? r.statusCode} /></TableCell>
-                  <TableCell className="text-xs">{r.confirmedAt ? `${day(r.confirmedAt)} (${r.channelCode === 'assisted' ? `by registry: ${r.assistedReasonCode ?? ''}` : 'student'})` : '—'}</TableCell>
+                  <TableCell><CodeBadge entity="reenrolment_confirmation" field="status_code" code={r.statusCode} /></TableCell>
+                  <TableCell className="text-xs">{r.confirmedAt ? `${day(r.confirmedAt)} (${r.channelCode === 'assisted' ? `by registry: ${assistedReasons.label(r.assistedReasonCode)}` : 'student'})` : '—'}</TableCell>
                   <TableCell className="text-right">
                     {canAssist && period.termsVersion && r.statusCode !== 'confirmed' && (
                       <AssistControl row={r} lapsed={r.statusCode === 'lapsed'} onConfirm={(reason) => act(async () => { await confirmRegistrationAssisted(r.confirmationId, period.termsVersion!, reason); })} />

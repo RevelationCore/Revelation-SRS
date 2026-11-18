@@ -1,31 +1,13 @@
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
-  PageHeader, Card, CardHeader, CardBody, Button, Input, Select, LabelledField, Badge,
-  Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, Spinner,
+  PageHeader, Card, CardHeader, CardBody, Button, Input, Select, LabelledField, Badge, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, Spinner, CodeBadge, CodeLabel, CodeSelect,
 } from '@revelation-srs/ui';
 import {
   type AdjustmentCase, type AdjustmentCaseStatus,
   listAdjustmentCaseQueue, createAdjustmentCase,
 } from '../api/adjustmentCases.js';
 import { ApiError } from '../api/wellbeingModule.js';
-
-const STATUS_OPTIONS: Array<AdjustmentCaseStatus | ''> = [
-  '', 'referral_received', 'assessment_pending', 'under_assessment', 'determination_made',
-  'under_review', 'approved', 'rejected', 'review_complete', 'closed',
-];
-
-const STATUS_LABELS: Record<string, string> = {
-  referral_received:  'Referral received',
-  assessment_pending: 'Assessment pending',
-  under_assessment:   'Under assessment',
-  determination_made: 'Determination made',
-  under_review:        'Under review (panel)',
-  approved:            'Approved',
-  rejected:            'Rejected',
-  review_complete:     'Review complete',
-  closed:              'Closed',
-};
 
 export function AdjustmentCasesPage() {
   const [statusFilter, setStatusFilter] = useState<AdjustmentCaseStatus | ''>('');
@@ -63,16 +45,14 @@ export function AdjustmentCasesPage() {
         actions={
           <div className="flex items-center gap-3">
             <label htmlFor="adj-case-status-filter" className="text-sm text-neutral-500">Status:</label>
-            <Select
+            <CodeSelect
+              entity="wellbeing.adjustment_case" field="status_code"
               id="adj-case-status-filter"
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as AdjustmentCaseStatus | '')}
+              onChange={(v) => setStatusFilter(v as AdjustmentCaseStatus | '')}
               className="w-auto"
-            >
-              {STATUS_OPTIONS.map((s) => (
-                <option key={s} value={s}>{s ? (STATUS_LABELS[s] ?? s) : 'All statuses'}</option>
-              ))}
-            </Select>
+              emptyLabel="All statuses"
+            />
             <Button size="sm" onClick={() => setShowCreate((v) => !v)}>
               {showCreate ? 'Cancel' : 'New adjustment case'}
             </Button>
@@ -109,8 +89,8 @@ export function AdjustmentCasesPage() {
                 {cases.map((c) => (
                   <TableRow key={c.id}>
                     <TableCell className="font-mono text-xs">{c.personId}</TableCell>
-                    <TableCell className="capitalize">{c.adjustmentTypeCode.replace(/-/g, ' ')}</TableCell>
-                    <TableCell><Badge value={c.statusCode} label={STATUS_LABELS[c.statusCode] ?? c.statusCode} /></TableCell>
+                    <TableCell><CodeLabel entity="wellbeing.adjustment_case" field="adjustment_type_code" code={c.adjustmentTypeCode} /></TableCell>
+                    <TableCell><CodeBadge entity="wellbeing.adjustment_case" field="status_code" code={c.statusCode} /></TableCell>
                     <TableCell className="text-xs text-neutral-600">{new Date(c.validFrom).toLocaleDateString('en-GB')}</TableCell>
                     <TableCell className="text-right">
                       <Link to={`/governance/adjustment-cases/${c.id}`} className="text-sm text-primary-600 hover:underline">
@@ -172,13 +152,7 @@ function CreateCaseForm({ onCreated, prefill }: {
             <Input id="adj-create-person" value={personId} onChange={(e) => setPersonId(e.target.value)} />
           </LabelledField>
           <LabelledField label="Adjustment type" htmlFor="adj-create-type">
-            <Select id="adj-create-type" value={adjustmentTypeCode} onChange={(e) => setAdjustmentTypeCode(e.target.value)}>
-              <option value="exam-time">Exam time</option>
-              <option value="venue">Venue</option>
-              <option value="coursework">Coursework</option>
-              <option value="placement">Placement</option>
-              <option value="other">Other</option>
-            </Select>
+            <CodeSelect entity="wellbeing.adjustment_case" field="adjustment_type_code" id="adj-create-type" value={adjustmentTypeCode} onChange={(v) => setAdjustmentTypeCode(v)} />
           </LabelledField>
           <LabelledField label="Wellbeing case ID" htmlFor="adj-create-wc" required>
             <Input id="adj-create-wc" value={wellbeingCaseId} onChange={(e) => setWellbeingCaseId(e.target.value)} />

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
-  PageHeader, Card, CardHeader, CardBody, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, Button, Badge,
+  PageHeader, Card, CardHeader, CardBody, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, Button, Badge, CodeBadge,
 } from '@revelation-srs/ui';
 
 import { ApiError } from '../api/client.js';
@@ -11,10 +11,6 @@ import {
 import { useAuth } from '../auth/AuthContext.js';
 import { userHasAnyPermission } from '../auth/RequirePermission.js';
 import { Spinner } from '../components/Spinner.js';
-
-const STATUS_LABEL: Record<string, string> = {
-  previewed: 'Preview', submitted: 'Awaiting approval', approved: 'Approved', applied: 'Applied', superseded: 'Superseded', rejected: 'Rejected',
-};
 
 /**
  * Ranked allocation for one selection window (Phase 4 D-30). Registry
@@ -87,7 +83,7 @@ export function AllocationRunsPage() {
                       <TableCell className="text-xs">{new Date(r.createdAt).toLocaleString('en-GB')}<span className="block text-neutral-500">by {r.createdBy}</span></TableCell>
                       <TableCell className="text-xs">{r.kindCode === 'main' ? 'Main' : 'Top-up'}</TableCell>
                       <TableCell className="text-xs">{r.summary.fullyAllocated} of {r.summary.proposals} fully allocated{r.summary.partlyAllocated ? `, ${r.summary.partlyAllocated} returned` : ''}</TableCell>
-                      <TableCell><Badge value={r.statusCode === 'applied' ? 'approved' : r.statusCode === 'rejected' ? 'rejected' : 'pending'} label={STATUS_LABEL[r.statusCode] ?? r.statusCode} /></TableCell>
+                      <TableCell><CodeBadge entity="module_allocation_run" field="status_code" code={r.statusCode} /></TableCell>
                       <TableCell className="text-right space-x-3 whitespace-nowrap">
                         <button className="text-xs text-primary-600 hover:underline" onClick={() => void act(() => getAllocationRun(r.allocationRunId))}>View</button>
                         {r.workflowInstanceId && (

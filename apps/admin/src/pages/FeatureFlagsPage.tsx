@@ -15,7 +15,9 @@ import { ApiError } from '../api/client.js';
 import { useAuth } from '../auth/AuthContext.js';
 import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
-import { PageHeader, Card, Button, Dialog, DialogClose, LabelledField, Input, Select, Tabs, TabsList, TabsTrigger, TabsContent } from '@revelation-srs/ui';
+import {
+  PageHeader, Card, Button, Dialog, DialogClose, LabelledField, Input, Select, Tabs, TabsList, TabsTrigger, TabsContent, CodeBadge,
+} from '@revelation-srs/ui';
 
 type DetailTab = 'assignments' | 'governance' | 'impact';
 
@@ -79,7 +81,7 @@ export function FeatureFlagsPage() {
                     >
                       <p className="text-xs font-mono font-medium text-neutral-900">{f.flagKey}</p>
                       <div className="mt-0.5 flex items-center gap-2">
-                        <Badge value={f.statusCode} />
+                        <CodeBadge entity="feature_flag" field="status_code" code={f.statusCode} />
                         <span className="text-xs text-neutral-500">default: {f.defaultVariantKey}</span>
                       </div>
                     </button>
@@ -306,7 +308,7 @@ function FlagDetail({
                             <td className="py-1 pr-4 text-neutral-600">{variant ? variant.variantKey : '—'}</td>
                             <td className="py-1 pr-4 text-neutral-500">{new Date(a.activeFrom).toLocaleDateString('en-GB')}</td>
                             <td className="py-1 pr-4 text-neutral-500">{a.activeTo ? new Date(a.activeTo).toLocaleDateString('en-GB') : '—'}</td>
-                            <td className="py-1"><Badge value={a.statusCode} /></td>
+                            <td className="py-1"><CodeBadge entity="feature_flag_assignment" field="status_code" code={a.statusCode} /></td>
                           </tr>
                         );
                       })}
@@ -444,8 +446,8 @@ function CreateFlagForm({ onClose, onCreated }: { onClose: () => void; onCreated
       </LabelledField>
       <LabelledField label="Default variant" htmlFor="ff-variant">
         <Select id="ff-variant" name="defaultVariantKey">
-          <option value="off">off</option>
-          <option value="on">on</option>
+          <option value="off">Off</option>
+          <option value="on">On</option>
         </Select>
       </LabelledField>
       {error && <p className="text-sm text-danger-600">{error}</p>}

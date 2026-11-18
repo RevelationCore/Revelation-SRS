@@ -1,5 +1,7 @@
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
-import { Card, CardHeader, CardBody, Button, Input, Select, LabelledField, Badge, Spinner } from '@revelation-srs/ui';
+import {
+  Card, CardHeader, CardBody, Button, Input, Select, LabelledField, Badge, Spinner, CodeBadge, CodeSelect, CodeLabel,
+} from '@revelation-srs/ui';
 
 import { ApiError } from '../api/client.js';
 import { type RightToStudyCheck, type RightToStudyInput, decideRightToStudy, listRightToStudy, recordRightToStudy } from '../api/registrationChecks.js';
@@ -7,10 +9,6 @@ import { useAuth } from '../auth/AuthContext.js';
 import { userHasAnyPermission } from '../auth/RequirePermission.js';
 import { useValueSet } from '../hooks/useValueSet.js';
 
-export const RTS_OUTCOME_LABELS: Record<RightToStudyCheck['outcomeCode'], string> = {
-  pending: 'Waiting for a check', eligible: 'Eligible', 'not-eligible': 'Not eligible', referred: 'Referred to a regulatory officer', 'recheck-required': 'Recheck needed',
-};
-const badge = (o: RightToStudyCheck['outcomeCode']) => (o === 'eligible' ? 'approved' : o === 'not-eligible' ? 'rejected' : 'pending');
 function message(err: unknown, fallback: string): string {
   return err instanceof ApiError ? (err.detail ?? err.message) : fallback;
 }
@@ -29,7 +27,6 @@ export function RightToStudySection({ personId }: { personId: string }) {
   const [recording, setRecording] = useState(false);
   const { members: bases } = useValueSet('right_to_study_check', 'basis_code');
   const { members: methods } = useValueSet('right_to_study_check', 'method_code');
-  const label = (list: Array<{ code: string; displayLabel: string }>, code: string | null) => (code ? list.find((m) => m.code === code)?.displayLabel ?? code : '—');
 
   const load = useCallback(async () => {
     try { setChecks(await listRightToStudy(personId)); } catch (err) { setError(message(err, 'Failed to load the right to study')); }
@@ -49,12 +46,12 @@ export function RightToStudySection({ personId }: { personId: string }) {
         {!checks ? <Spinner /> : !current ? <p className="text-sm text-neutral-600">No right-to-study check recorded.</p> : (
           <div className="flex flex-col gap-2 text-sm">
             <div className="flex items-center gap-2">
-              <Badge value={badge(current.outcomeCode)} label={RTS_OUTCOME_LABELS[current.outcomeCode]} />
+              <CodeBadge entity="right_to_study_check" field="outcome_code" code={current.outcomeCode} />
               {current.shareCodeSubmitted && <span className="text-neutral-600">The student has shared a View and Prove code.</span>}
             </div>
             <dl className="grid grid-cols-2 gap-x-6 gap-y-1 md:grid-cols-3">
-              <div><dt className="text-neutral-500">Basis</dt><dd>{label(bases, current.basisCode)}</dd></div>
-              <div><dt className="text-neutral-500">Method</dt><dd>{label(methods, current.methodCode)}</dd></div>
+              <div><dt className="text-neutral-500">Basis</dt><dd><CodeLabel entity="right_to_study_check" field="basis_code" code={current.basisCode} /></dd></div>
+              <div><dt className="text-neutral-500">Method</dt><dd><CodeLabel entity="right_to_study_check" field="method_code" code={current.methodCode} /></dd></div>
               <div><dt className="text-neutral-500">Permission expires</dt><dd>{current.permissionExpiresOn ?? 'Not time-limited'}</dd></div>
               <div><dt className="text-neutral-500">UK entry date</dt><dd>{current.ukEntryDate ?? '—'}</dd></div>
               <div><dt className="text-neutral-500">Checked</dt><dd>{current.checkedBy}, {new Date(current.checkedAt).toLocaleDateString('en-GB')}</dd></div>
@@ -95,7 +92,7 @@ function RecordForm({ bases, methods, onSubmit }: { bases: Array<{ code: string;
         <Select id="rts-method" value={form.methodCode} onChange={set('methodCode')}><option value="">Choose…</option>{methods.map((m) => <option key={m.code} value={m.code}>{m.displayLabel}</option>)}</Select>
       </LabelledField>
       <LabelledField label="Outcome" htmlFor="rts-outcome" required hint="Not eligible is referred to a regulatory officer">
-        <Select id="rts-outcome" value={form.outcomeCode} onChange={set('outcomeCode')}><option value="eligible">Eligible</option><option value="not-eligible">Not eligible</option></Select>
+        <CodeSelect entity="right_to_study_check" field="outcome_code" id="rts-outcome" value={form.outcomeCode} onChange={(v) => set('outcomeCode')({ target: { value: v } })} only={['eligible', 'not-eligible']} />
       </LabelledField>
       <LabelledField label="Permission expires" htmlFor="rts-expires" hint="Leave blank if not time-limited"><Input id="rts-expires" type="date" value={form.permissionExpiresOn} onChange={set('permissionExpiresOn')} /></LabelledField>
       <LabelledField label="UK entry date" htmlFor="rts-entry" hint="For a sponsored student"><Input id="rts-entry" type="date" value={form.ukEntryDate} onChange={set('ukEntryDate')} /></LabelledField>

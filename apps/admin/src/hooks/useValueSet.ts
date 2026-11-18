@@ -1,31 +1,28 @@
-import { useEffect, useState } from 'react';
-
-import { getFieldValueSet, type FieldValueSet } from '../api/valueSets.js';
-import { ApiError } from '../api/client.js';
+import { useCodes, type CodeMember } from '@revelation-srs/ui';
 
 interface ValueSetState {
-  members:  FieldValueSet['members'];
+  /** What a picker offers: selectable values (active, not hidden), in order. */
+  members:  CodeMember[];
+  /** Every value, retired and hidden too — for labelling records. */
+  all:      CodeMember[];
+  /** A code's label (the institution's wording); the code itself if unknown. */
+  label:    (code: string | null | undefined) => string;
   loading:  boolean;
   error:    string;
 }
 
 /**
- * Fetches the value-set members for a domain entity field.
- * The result is stable after the first successful load.
+ * The value set for a data-model field, loaded once per field and shared
+ * (see CodeSetProvider). Use `members` for pickers and `label` for display,
+ * so a record holding a retired or hidden value still shows its label.
  */
 export function useValueSet(entity: string, field: string): ValueSetState {
-  const [members, setMembers] = useState<FieldValueSet['members']>([]);
-  const [loading, setLoading] = useState(true);
-  const [error,   setError]   = useState('');
-
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    getFieldValueSet(entity, field)
-      .then(vs => { if (!cancelled) { setMembers(vs.members); setLoading(false); } })
-      .catch(e  => { if (!cancelled) { setError(e instanceof ApiError ? e.message : 'Failed to load'); setLoading(false); } });
-    return () => { cancelled = true; };
-  }, [entity, field]);
-
-  return { members, loading, error };
+  const codes = useCodes(entity, field);
+  return {
+    members: codes.options,
+    all:     codes.members,
+    label:   codes.label,
+    loading: codes.loading,
+    error:   codes.missing ? 'Failed to load' : '',
+  };
 }

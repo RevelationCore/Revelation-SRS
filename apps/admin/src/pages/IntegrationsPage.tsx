@@ -20,9 +20,7 @@ import { Spinner } from '../components/Spinner.js';
 import { useAuth } from '../auth/AuthContext.js';
 import { userHasAnyPermission } from '../auth/RequirePermission.js';
 import {
-  PageHeader, Card, CardBody, Button, Input, Select, LabelledField, Dialog, DialogClose,
-  Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
-  Tabs, TabsList, TabsTrigger, TabsContent,
+  PageHeader, Card, CardBody, Button, Input, Select, LabelledField, Dialog, DialogClose, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, Tabs, TabsList, TabsTrigger, TabsContent, CodeBadge, CodeLabel, CodeSelect,
 } from '@revelation-srs/ui';
 
 type Tab = 'contracts' | 'registrations' | 'exchanges';
@@ -120,7 +118,9 @@ function RegistrationsTab({ canManage }: { canManage: boolean }) {
                     <p className="text-sm font-medium text-neutral-900">{reg.displayName}</p>
                     {reg.endpointUrl && <p className="text-xs text-neutral-600 font-mono mt-0.5 truncate max-w-xs">{reg.endpointUrl}</p>}
                     <div className="mt-1 flex items-center gap-2">
-                      <Badge value={reg.healthStatusCode ?? (reg.enabled ? 'enabled' : 'disabled')} />
+                      {reg.healthStatusCode
+                        ? <CodeBadge entity="integration_registration" field="health_status_code" code={reg.healthStatusCode} />
+                        : <Badge value={reg.enabled ? 'enabled' : 'disabled'} label={reg.enabled ? 'Enabled' : 'Disabled'} />}
                       {reg.enabled
                         ? <span className="text-xs text-success-600">enabled</span>
                         : <span className="text-xs text-neutral-600">disabled</span>}
@@ -132,7 +132,7 @@ function RegistrationsTab({ canManage }: { canManage: boolean }) {
                     </div>
                     {health && (
                       <div className="mt-1 text-xs rounded px-2 py-0.5 inline-block bg-success-50 text-success-700">
-                        Health recorded — {health.healthStatusCode ?? '—'}
+                        Health recorded — <CodeLabel entity="integration_registration" field="health_status_code" code={health.healthStatusCode} />
                         {health.lastHealthCheckAt
                           ? ` at ${new Date(health.lastHealthCheckAt).toLocaleTimeString('en-GB')}`
                           : ''}
@@ -341,11 +341,7 @@ function ContractsTab({ canManage }: { canManage: boolean }) {
           <MiniField name="name"         label="Name" />
           <MiniField name="version"      label="Version" />
           <LabelledField label="Direction" htmlFor="ic-direction">
-            <Select id="ic-direction" name="direction">
-              <option value="inbound">Inbound</option>
-              <option value="outbound">Outbound</option>
-              <option value="bidirectional">Bidirectional</option>
-            </Select>
+            <CodeSelect entity="integration_contract" field="direction_code" id="ic-direction" name="direction" only={['inbound', 'outbound', 'bidirectional']} />
           </LabelledField>
           <MiniField name="protocolCode" label="Protocol" />
           <Button type="submit">Save</Button>
@@ -376,7 +372,7 @@ function ContractsTab({ canManage }: { canManage: boolean }) {
                 <TableRow key={c.contractId}>
                   <TableCell className="font-medium text-neutral-900">{c.displayName}</TableCell>
                   <TableCell className="font-mono text-xs">{c.currentContractVersion}</TableCell>
-                  <TableCell><Badge value={c.directionCode} /></TableCell>
+                  <TableCell><CodeBadge entity="integration_contract" field="direction_code" code={c.directionCode} /></TableCell>
                   <TableCell>{c.patternType}</TableCell>
                   <TableCell>
                     {c.deprecatedAt == null
@@ -430,15 +426,8 @@ function ExchangesTab() {
   return (
     <div>
       <form onSubmit={handleFilter} className="flex items-center gap-3 mb-4">
-        <Select aria-label="Filter by status" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="w-auto">
-          <option value="">All statuses</option>
-          {['pending', 'processed', 'failed', 'retried'].map(s => <option key={s} value={s}>{s}</option>)}
-        </Select>
-        <Select aria-label="Filter by direction" value={dirFilter} onChange={(e) => setDirFilter(e.target.value)} className="w-auto">
-          <option value="">All directions</option>
-          <option value="inbound">Inbound</option>
-          <option value="outbound">Outbound</option>
-        </Select>
+        <CodeSelect entity="integration_exchange" field="status_code" aria-label="Filter by status" value={statusFilter} onChange={setStatusFilter} className="w-auto" emptyLabel="All statuses" />
+        <CodeSelect entity="integration_exchange" field="direction_code" aria-label="Filter by direction" value={dirFilter} onChange={(v) => setDirFilter(v)} className="w-auto" emptyLabel="All directions" only={['inbound', 'outbound']} />
         <Button type="submit">Filter</Button>
         {(statusFilter || dirFilter) && (
           <Button type="button" variant="ghost" onClick={() => { setStatusFilter(''); setDirFilter(''); void load(0); }}>Clear</Button>
@@ -467,8 +456,8 @@ function ExchangesTab() {
               {exchanges.map(ex => (
                 <TableRow key={ex.exchangeId}>
                   <TableCell className="font-mono text-xs text-neutral-700">{ex.exchangeTypeCode}</TableCell>
-                  <TableCell className="text-xs capitalize">{ex.directionCode}</TableCell>
-                  <TableCell><Badge value={ex.statusCode} /></TableCell>
+                  <TableCell className="text-xs"><CodeLabel entity="integration_exchange" field="direction_code" code={ex.directionCode} /></TableCell>
+                  <TableCell><CodeBadge entity="integration_exchange" field="status_code" code={ex.statusCode} /></TableCell>
                   <TableCell className="text-xs">{new Date(ex.createdAt).toLocaleString('en-GB')}</TableCell>
                   <TableCell className="text-danger-500 text-xs truncate max-w-xs">{ex.lastError ?? '—'}</TableCell>
                 </TableRow>

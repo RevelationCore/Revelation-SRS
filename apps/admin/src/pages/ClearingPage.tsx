@@ -1,6 +1,8 @@
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { PageHeader, Card, CardHeader, CardBody, Button, Input, Select, Textarea, Checkbox, LabelledField, Badge, Spinner, StatusNotice } from '@revelation-srs/ui';
+import {
+  PageHeader, Card, CardHeader, CardBody, Button, Input, Select, Textarea, Checkbox, LabelledField, Badge, Spinner, StatusNotice, CodeSelect,
+} from '@revelation-srs/ui';
 
 import { ApiError } from '../api/client.js';
 import {
@@ -158,11 +160,8 @@ function CallForm({ status, programmeIds, programmeName, onTaken }: { status: Cl
             {blocked && <p className="text-sm text-danger-700" role="status">This applicant cannot be decided through the Clearing fast path. Record the application and use the standard route.</p>}
           </fieldset>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-            <LabelledField label="Offer" htmlFor="clr-offer" required>
-              <Select id="clr-offer" value={form.offerTypeCode} onChange={(e) => setForm((f) => ({ ...f, offerTypeCode: e.target.value as 'clearing-verbal' | 'unconditional' }))}>
-                <option value="clearing-verbal">Verbal offer (held for {status.verbalOfferHours} hours)</option>
-                <option value="unconditional">Unconditional offer</option>
-              </Select>
+            <LabelledField label="Offer" htmlFor="clr-offer" required hint={`A verbal offer is held for ${status.verbalOfferHours} hours`}>
+              <CodeSelect entity="admissions_offer" field="offer_type_code" id="clr-offer" value={form.offerTypeCode} onChange={(v) => setForm((f) => ({ ...f, offerTypeCode: v as 'clearing-verbal' | 'unconditional' }))} only={['clearing-verbal', 'unconditional']} />
             </LabelledField>
             <div className="md:col-span-2">
               <LabelledField label="Reason" htmlFor="clr-reason" required hint="Which published Clearing criteria the applicant meets">

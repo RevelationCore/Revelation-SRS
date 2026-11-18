@@ -1,7 +1,6 @@
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import {
-  PageHeader, Card, CardHeader, CardBody, Button, Input, Select, LabelledField, Spinner, StatusNotice,
-  Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
+  PageHeader, Card, CardHeader, CardBody, Button, Input, Select, LabelledField, Spinner, StatusNotice, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, CodeLabel,
 } from '@revelation-srs/ui';
 
 import { ApiError } from '../api/client.js';
@@ -127,7 +126,7 @@ function ComponentRow({ component, canWrite, onSave }: {
     return (
       <TableRow>
         <TableCell>{component.title}</TableCell>
-        <TableCell>{component.componentTypeCode}</TableCell>
+        <TableCell><CodeLabel entity="assessment_component" field="component_type_code" code={component.componentTypeCode} /></TableCell>
         <TableCell>{component.weighting}</TableCell>
         <TableCell>{component.passMarkOverride ?? 'Default'}</TableCell>
         <TableCell>{component.durationMinutes ? `${component.durationMinutes} min` : '—'}</TableCell>

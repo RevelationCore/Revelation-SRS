@@ -14,7 +14,7 @@ import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
 import { UcasDecisionsCard } from './UcasDecisionsCard.js';
 import {
-  PageHeader, Button, Select, Card, CardHeader, CardBody, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
+  PageHeader, Button, Select, Card, CardHeader, CardBody, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, CodeBadge,
 } from '@revelation-srs/ui';
 
 export function UcasPage() {
@@ -112,7 +112,7 @@ export function UcasPage() {
                 <TableRow key={a.applicationId}>
                   <TableCell className="font-mono text-xs text-neutral-700">{a.ucasPersonalId}</TableCell>
                   <TableCell>{a.cycle}</TableCell>
-                  <TableCell><Badge value={a.statusCode} /></TableCell>
+                  <TableCell><CodeBadge entity="ucas_application" field="status_code" code={a.statusCode} /></TableCell>
                   <TableCell className="text-xs">
                     {new Date(a.receivedAt).toLocaleDateString('en-GB')}
                   </TableCell>

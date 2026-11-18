@@ -186,7 +186,7 @@ export async function mockApiRoutes(page: Page): Promise<void> {
     // (no `.members` property) crashes with "Cannot read properties of
     // undefined (reading 'find')" the moment a page actually renders a
     // value-set-backed label, rather than just showing an empty list.
-    if (/\/value-set$/.test(url)) {
+    if (/\/value-set(\?|$)/.test(url)) {
       await route.fulfill({ json: { setCode: 'mock', displayName: 'Mock value set', members: [] } });
       return;
     }

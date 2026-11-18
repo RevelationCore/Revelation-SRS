@@ -11,8 +11,7 @@ import { userHasAnyPermission } from '../auth/RequirePermission.js';
 import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
 import {
-  PageHeader, Button, Card, CardBody, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
-  LabelledField, Input, Tabs, TabsList, TabsTrigger, TabsContent,
+  PageHeader, Button, Card, CardBody, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, LabelledField, Input, Tabs, TabsList, TabsTrigger, TabsContent, CodeBadge, CodeLabel,
 } from '@revelation-srs/ui';
 
 type Tab = 'events' | 'alerts' | 'policies';
@@ -94,7 +93,7 @@ function AlertQueue({ alerts, canManage, onOpen }: {
     return <Card key={alert.alertId}><CardBody>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2"><Badge value={alert.statusCode} /><Badge value={alert.severityCode} /></div>
+          <div className="flex items-center gap-2"><CodeBadge entity="attendance.engagement_alert" field="status_code" code={alert.statusCode} /><CodeBadge entity="attendance.engagement_alert" field="severity_code" code={alert.severityCode} /></div>
           <p className="mt-2 text-sm font-medium text-neutral-900">Student {alert.personId.slice(0, 8)}</p>
           <p className="text-xs text-neutral-500">Policy {alert.explanation.policyCode} v{alert.explanation.policyVersion}</p>
         </div>
@@ -123,7 +122,7 @@ function EventWorklist({ events }: { events: EngagementEvent[] }) {
         <TableCell>{new Date(event.scheduledFrom).toLocaleString('en-GB')}</TableCell>
         <TableCell><Link className="text-primary-600" to={`/students/${event.personId}`}>{event.personId.slice(0, 8)}</Link></TableCell>
         <TableCell>{event.activityReference ?? event.activityTypeCode}</TableCell>
-        <TableCell>{event.eventModeCode}</TableCell><TableCell>{event.sourceSystemCode}</TableCell>
+        <TableCell><CodeLabel entity="attendance.expected_engagement_event" field="event_mode_code" code={event.eventModeCode} /></TableCell><TableCell>{event.sourceSystemCode}</TableCell>
       </TableRow>)}</TableBody>
     </Table>
   </Card>;
@@ -161,7 +160,7 @@ function PolicyPanel({ policies, canManage, onCreated }: {
     )}
     <div className="space-y-2">{policies.map((policy) => (
       <Card key={policy.policyVersionId}><CardBody>
-        <div className="flex justify-between"><strong>{policy.displayName}</strong><Badge value={policy.statusCode} /></div>
+        <div className="flex justify-between"><strong>{policy.displayName}</strong><CodeBadge entity="attendance.engagement_policy_version" field="status_code" code={policy.statusCode} /></div>
         <p className="mt-1 text-sm text-neutral-600">{policy.policyCode} · version {policy.versionNumber} · from {new Date(policy.validFrom).toLocaleDateString('en-GB')}</p>
       </CardBody></Card>
     ))}</div>

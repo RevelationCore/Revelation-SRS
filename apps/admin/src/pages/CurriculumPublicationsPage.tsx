@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
-  PageHeader, Card, CardHeader, CardBody, Button, Badge, Spinner, StatusNotice,
-  Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
+  PageHeader, Card, CardHeader, CardBody, Button, Badge, Spinner, StatusNotice, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, CodeBadge, CodeLabel, useCodes,
 } from '@revelation-srs/ui';
 
 import { ApiError } from '../api/client.js';
@@ -14,18 +13,7 @@ function message(err: unknown, fallback: string): string {
   return err instanceof ApiError ? (err.detail ?? err.message) : fallback;
 }
 
-const STATUS: Record<string, { value: string; label: string }> = {
-  validated: { value: 'pending', label: 'Ready to apply' },
-  rejected: { value: 'rejected', label: 'Rejected' },
-  applied: { value: 'approved', label: 'Applied' },
-};
-
 /** Curriculum publications received from the curriculum system (BP-03-001; D-7). */
-const OBJECT_TYPE_LABELS: Record<string, string> = {
-  programme: 'Programme', module: 'Module', route: 'Route', 'rule-set': 'Rule set', 'module-group': 'Module group',
-  'module-group-member': 'Group member', 'learning-outcome': 'Learning outcome', 'module-offering': 'Module offering',
-};
-
 export function CurriculumPublicationsPage() {
   const [publications, setPublications] = useState<Publication[] | null>(null);
   const [error, setError] = useState('');
@@ -51,7 +39,7 @@ export function CurriculumPublicationsPage() {
                           <TableCell>{p.sourcePublicationRef}<div className="text-xs text-neutral-500">{p.sourceSystemCode} v{p.publicationVersion}{p.approvalRef ? ` · ${p.approvalRef}` : ''}</div></TableCell>
                           <TableCell className="text-sm">{p.effectiveFrom}</TableCell>
                           <TableCell className="text-sm">{p.counts.added} added, {p.counts.changed} changed, {p.counts.closed} closed{p.counts.rejected ? `, ${p.counts.rejected} invalid` : ''}</TableCell>
-                          <TableCell><Badge value={STATUS[p.statusCode]?.value ?? p.statusCode} label={STATUS[p.statusCode]?.label ?? p.statusCode} /></TableCell>
+                          <TableCell><CodeBadge entity="curriculum_publication" field="status_code" code={p.statusCode} /></TableCell>
                           <TableCell className="text-right"><Link to={`/curriculum-publications/${p.publicationId}`} className="text-sm text-primary-600 hover:underline">View<span className="sr-only"> {p.sourcePublicationRef}</span></Link></TableCell>
                         </TableRow>
                       ))}
@@ -65,6 +53,7 @@ export function CurriculumPublicationsPage() {
 }
 
 export function CurriculumPublicationDetailPage() {
+  const changeTypes = useCodes('curriculum_publication_item', 'change_type_code');
   const { publicationId } = useParams<{ publicationId: string }>();
   const { roles, user } = useAuth();
   const [publication, setPublication] = useState<Publication | null>(null);
@@ -89,7 +78,7 @@ export function CurriculumPublicationDetailPage() {
         breadcrumbs={[{ label: 'Curriculum publications', to: '/curriculum-publications' }]}
         title={publication.sourcePublicationRef}
         description={`${publication.sourceSystemCode} version ${publication.publicationVersion}, effective ${publication.effectiveFrom}`}
-        actions={<Badge value={STATUS[publication.statusCode]?.value ?? publication.statusCode} label={STATUS[publication.statusCode]?.label ?? publication.statusCode} />}
+        actions={<CodeBadge entity="curriculum_publication" field="status_code" code={publication.statusCode} />}
       />
       {actionError && <p className="mb-4 text-sm text-danger-600" role="alert">{actionError}</p>}
       <div className="flex flex-col gap-6">
@@ -101,8 +90,8 @@ export function CurriculumPublicationDetailPage() {
               {publication.items.map((i) => (
                 <TableRow key={i.itemId}>
                   <TableCell className="font-mono text-xs">{i.objectCode}</TableCell>
-                  <TableCell>{OBJECT_TYPE_LABELS[i.objectTypeCode] ?? i.objectTypeCode}</TableCell>
-                  <TableCell><Badge value={i.changeTypeCode === 'invalid' ? 'rejected' : i.changeTypeCode === 'unchanged' ? 'pending' : 'approved'} label={i.changeTypeCode} /></TableCell>
+                  <TableCell><CodeLabel entity="curriculum_publication_item" field="object_type_code" code={i.objectTypeCode} /></TableCell>
+                  <TableCell><Badge value={i.changeTypeCode === 'invalid' ? 'rejected' : i.changeTypeCode === 'unchanged' ? 'pending' : 'approved'} label={changeTypes.label(i.changeTypeCode)} /></TableCell>
                   <TableCell className="text-sm text-danger-700">{i.issue ?? ''}</TableCell>
                 </TableRow>
               ))}

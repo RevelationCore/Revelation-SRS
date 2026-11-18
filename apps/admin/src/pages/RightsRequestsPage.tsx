@@ -1,7 +1,6 @@
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import {
-  Card, CardHeader, CardBody, Button, PageHeader, LabelledField, Input, Select, Tabs, TabsList, TabsTrigger, TabsContent,
-  Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, Badge,
+  Card, CardHeader, CardBody, Button, PageHeader, LabelledField, Input, Select, Tabs, TabsList, TabsTrigger, TabsContent, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, Badge, CodeBadge, CodeLabel, CodeSelect,
 } from '@revelation-srs/ui';
 import {
   type RightsRequestType,
@@ -27,8 +26,6 @@ import {
 import { useAuth } from '../auth/AuthContext.js';
 import { ApiError } from '../api/client.js';
 import { Spinner } from '../components/Spinner.js';
-
-const REQUEST_TYPES: RightsRequestType[] = ['access', 'rectification', 'erasure', 'restriction', 'portability', 'objection'];
 
 // The write-only flows below (request lifecycle, restriction apply/lift,
 // retention schedule → assignment → hold → disposition) each carry an ID
@@ -96,9 +93,7 @@ function RequestFlow() {
                 <Input id="rr-person" value={personId} onChange={(e) => setPersonId(e.target.value)} />
               </LabelledField>
               <LabelledField label="Request type" htmlFor="rr-type">
-                <Select id="rr-type" value={requestTypeCode} onChange={(e) => setRequestTypeCode(e.target.value as RightsRequestType)}>
-                  {REQUEST_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                </Select>
+                <CodeSelect entity="individual_rights_request" field="request_type_code" id="rr-type" value={requestTypeCode} onChange={(v) => setRequestTypeCode(v as RightsRequestType)} />
               </LabelledField>
               <LabelledField label="Statutory deadline" htmlFor="rr-deadline" hint="Defaults to +30 days">
                 <Input id="rr-deadline" type="date" value={statutoryDeadlineDate} onChange={(e) => setStatutoryDeadlineDate(e.target.value)} />
@@ -234,11 +229,7 @@ function DecisionStep({ requestId, onError }: { requestId: string; onError: (msg
         ) : (
           <form onSubmit={(e) => void handleSubmit(e)} className="grid grid-cols-2 gap-3 items-end">
             <LabelledField label="Decision" htmlFor="rr-decision">
-              <Select id="rr-decision" value={decisionTypeCode} onChange={(e) => setDecisionTypeCode(e.target.value as RightsDecisionType)}>
-                <option value="granted">Granted</option>
-                <option value="partially-granted">Partially granted</option>
-                <option value="refused">Refused</option>
-              </Select>
+              <CodeSelect entity="rights_decision" field="decision_type_code" id="rr-decision" value={decisionTypeCode} onChange={(v) => setDecisionTypeCode(v as RightsDecisionType)} />
             </LabelledField>
             <LabelledField label="Legal basis" htmlFor="rr-basis" hint="Optional">
               <Input id="rr-basis" value={legalBasis} onChange={(e) => setLegalBasis(e.target.value)} />
@@ -503,11 +494,7 @@ function DispositionStep({ assignmentId, onError }: { assignmentId: string; onEr
         ) : (
           <form onSubmit={(e) => void handleSubmit(e)} className="grid grid-cols-2 gap-3 items-end">
             <LabelledField label="Disposition" htmlFor="ret-disp">
-              <Select id="ret-disp" value={dispositionTypeCode} onChange={(e) => setDispositionTypeCode(e.target.value as DispositionType)}>
-                <option value="anonymised">Anonymised</option>
-                <option value="deleted">Deleted</option>
-                <option value="transferred">Transferred</option>
-              </Select>
+              <CodeSelect entity="record_disposition" field="disposition_type_code" id="ret-disp" value={dispositionTypeCode} onChange={(v) => setDispositionTypeCode(v as DispositionType)} />
             </LabelledField>
             <LabelledField label="Evidence reference" htmlFor="ret-evidence" hint="Optional">
               <Input id="ret-evidence" value={evidenceRef} onChange={(e) => setEvidenceRef(e.target.value)} />
@@ -567,8 +554,8 @@ function BrowsePanel() {
                   <TableRow key={r.individualRightsRequestId}>
                     <TableCell className="font-mono text-xs">{r.individualRightsRequestId}</TableCell>
                     <TableCell className="font-mono text-xs">{r.personId}</TableCell>
-                    <TableCell className="text-xs">{r.requestTypeCode}</TableCell>
-                    <TableCell><Badge value={r.statusCode} /></TableCell>
+                    <TableCell className="text-xs"><CodeLabel entity="individual_rights_request" field="request_type_code" code={r.requestTypeCode} /></TableCell>
+                    <TableCell><CodeBadge entity="business_case" field="status_code" code={r.statusCode} /></TableCell>
                     <TableCell className="text-neutral-500">{r.statutoryDeadlineDate}</TableCell>
                   </TableRow>
                 ))}
@@ -597,7 +584,7 @@ function BrowsePanel() {
                     <TableCell className="font-mono text-xs">{s.retentionScheduleId}</TableCell>
                     <TableCell className="text-xs">{s.entityType}</TableCell>
                     <TableCell>{s.retentionPeriodMonths}</TableCell>
-                    <TableCell className="text-xs">{s.triggerEventCode}</TableCell>
+                    <TableCell className="text-xs"><CodeLabel entity="retention_schedule" field="trigger_event_code" code={s.triggerEventCode} /></TableCell>
                   </TableRow>
                 ))}
               </TableBody>

@@ -33,9 +33,7 @@ import { userHasAnyPermission } from '../auth/RequirePermission.js';
 import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
 import {
-  Card, CardHeader, CardBody, Button, LabelledField, Input, Select, PageHeader,
-  Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
-  Tabs, TabsList, TabsTrigger, TabsContent, StatusNotice,
+  Card, CardHeader, CardBody, Button, LabelledField, Input, Select, PageHeader, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, Tabs, TabsList, TabsTrigger, TabsContent, StatusNotice, CodeBadge, CodeLabel, CodeSelect, useCodes,
 } from '@revelation-srs/ui';
 
 type Tab = 'overview' | 'entries' | 'candidates' | 'signoff' | 'authority';
@@ -91,7 +89,7 @@ export function ExamBoardDetailPage() {
     <div>
       <PageHeader
         breadcrumbs={[{ label: 'Exam boards', to: '/exam-boards' }]}
-        title={<span className="capitalize">{board.boardTypeCode} — {board.academicYear}</span>}
+        title={<><CodeLabel entity="exam_board" field="board_type_code" code={board.boardTypeCode} /> — {board.academicYear}</>}
         description={<span className="font-mono text-xs">{boardId}</span>}
       />
 
@@ -251,6 +249,7 @@ const shortHash = (h: string | null) => (h ? `${h.slice(7, 19)}…` : 'not hashe
  * elsewhere in the meantime is refused rather than decided blind.
  */
 function CurrentPackPanel({ boardId, pack }: { boardId: string; pack: ExamBoardDataPack | null }) {
+  const decisionTypes = useCodes('exam_board_decision', 'decision_type_code');
   const [verification, setVerification] = useState<PackVerification | null>(null);
   const [verifying, setVerifying] = useState(false);
   const [error, setError] = useState('');
@@ -286,7 +285,7 @@ function CurrentPackPanel({ boardId, pack }: { boardId: string; pack: ExamBoardD
             </p>
           )}
           {verification.decisions.length > 0 && (
-            <p>Decisions on this pack: {verification.decisions.map((d) => `${d.decisionTypeCode}${d.matches ? '' : ' (different hash)'}`).join(', ')}</p>
+            <p>Decisions on this pack: {verification.decisions.map((d) => `${decisionTypes.label(d.decisionTypeCode)}${d.matches ? '' : ' (different hash)'}`).join(', ')}</p>
           )}
         </div>
       )}
@@ -355,11 +354,7 @@ function DecisionRatificationCard({ boardId, onError }: { boardId: string; onErr
         {!decisionId ? (
           <form onSubmit={(e) => void handleDecide(e)} className="grid grid-cols-3 gap-3 items-end">
             <LabelledField label="Decision" htmlFor="ba-decision">
-              <Select id="ba-decision" value={decisionTypeCode} onChange={(e) => setDecisionTypeCode(e.target.value as BoardDecisionTypeCode)}>
-                <option value="ratify">Ratify</option>
-                <option value="defer">Defer</option>
-                <option value="refer-back">Refer back</option>
-              </Select>
+              <CodeSelect entity="exam_board_decision" field="decision_type_code" id="ba-decision" value={decisionTypeCode} onChange={(v) => setDecisionTypeCode(v as BoardDecisionTypeCode)} />
             </LabelledField>
             <LabelledField label="Rationale" htmlFor="ba-rationale" hint="Optional">
               <Input id="ba-rationale" value={rationale} onChange={(e) => setRationale(e.target.value)} />
@@ -408,6 +403,7 @@ function OverviewTab({
   canReadIntegrations: boolean;
   canManageIntegrations: boolean;
 }) {
+  const boardTypes = useCodes('exam_board', 'board_type_code');
   const [dataPack,       setDataPack]       = useState<ExamBoardDataPack | null>(null);
   const [loadingPack,    setLoadingPack]    = useState(false);
   const [generatingPack, setGeneratingPack] = useState(false);
@@ -457,7 +453,7 @@ function OverviewTab({
         <CardHeader title="Board details" />
         <CardBody>
         <dl className="grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
-          <InfoRow label="Type"           value={board.boardTypeCode} />
+          <InfoRow label="Type"           value={boardTypes.label(board.boardTypeCode)} />
           <InfoRow label="Academic year"  value={board.academicYear} />
           <InfoRow label="Period"         value={board.periodCode ?? board.academicPeriodId} />
           <InfoRow label="Meeting date"   value={board.meetingDate
@@ -579,7 +575,7 @@ function VleGradeSyncPanel({ canManage }: { canManage: boolean }) {
           <div className="flex items-center gap-2">
             <span className={`rounded-full px-2 py-0.5 font-medium ${
               healthResult.healthStatusCode === 'ok' ? 'bg-success-100 text-success-800' : 'bg-warning-100 text-warning-800'
-            }`}>{healthResult.healthStatusCode ?? 'recorded'}</span>
+            }`}>{healthResult.healthStatusCode ? <CodeLabel entity="integration_registration" field="health_status_code" code={healthResult.healthStatusCode} /> : 'Recorded'}</span>
             {healthResult.lastHealthCheckAt && (
               <span className="text-neutral-500">
                 at {new Date(healthResult.lastHealthCheckAt).toLocaleTimeString('en-GB')}
@@ -634,7 +630,7 @@ function EntriesTab({ boardId }: { boardId: string }) {
                   : <span className="text-neutral-600">—</span>}
               </TableCell>
               <TableCell>{e.roomReference ?? <span className="text-neutral-600">—</span>}</TableCell>
-              <TableCell><Badge value={e.statusCode} /></TableCell>
+              <TableCell><CodeBadge entity="exam_entry" field="status_code" code={e.statusCode} /></TableCell>
               <TableCell className="text-xs">
                 {e.accommodations.length > 0 ? e.accommodations.join(', ') : <span className="text-neutral-600">—</span>}
               </TableCell>

@@ -1,7 +1,6 @@
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import {
-  Card, CardHeader, CardBody, Button, Input, Select, LabelledField, Badge, Spinner,
-  Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
+  Card, CardHeader, CardBody, Button, Input, Select, LabelledField, Badge, Spinner, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, CodeLabel, useCodes,
 } from '@revelation-srs/ui';
 
 import { ApiError } from '../api/client.js';
@@ -20,6 +19,9 @@ function message(err: unknown, fallback: string): string {
  * administrator's decision.
  */
 export function AwardDocumentsSection({ awardId, canIssue, canRevoke }: { awardId: string; canIssue: boolean; canRevoke: boolean }) {
+  const documentTypes = useCodes('document_issue', 'document_type_code');
+  const revocationReasons = useCodes('document_revocation', 'reason_code');
+  const issueTypeLabels = useCodes('document_issue', 'issue_type_code');
   const [issues, setIssues] = useState<DocumentIssue[] | null>(null);
   const [error, setError] = useState('');
   const [actionError, setActionError] = useState('');
@@ -63,19 +65,19 @@ export function AwardDocumentsSection({ awardId, canIssue, canRevoke }: { awardI
               <TableBody>
                 {issues.map((d) => (
                   <TableRow key={d.documentIssueId}>
-                    <TableCell>{d.documentTypeCode}<div className="text-xs text-neutral-500">Issued {new Date(d.issuedAt).toLocaleDateString('en-GB')} by {d.issuedBy}</div></TableCell>
-                    <TableCell className="text-sm">#{d.issueNumber} ({d.issueTypeCode})</TableCell>
-                    <TableCell className="text-sm">{d.channelCode}</TableCell>
+                    <TableCell><CodeLabel entity="document_issue" field="document_type_code" code={d.documentTypeCode} /><div className="text-xs text-neutral-500">Issued {new Date(d.issuedAt).toLocaleDateString('en-GB')} by {d.issuedBy}</div></TableCell>
+                    <TableCell className="text-sm">#{d.issueNumber} ({issueTypeLabels.label(d.issueTypeCode)})</TableCell>
+                    <TableCell className="text-sm"><CodeLabel entity="document_issue" field="channel_code" code={d.channelCode} /></TableCell>
                     <TableCell className="font-mono text-xs">{d.verificationCode}</TableCell>
                     <TableCell>
                       <Badge value={d.statusCode === 'issued' ? 'approved' : 'rejected'} label={d.statusCode} />
-                      {d.revocation && <div className="text-xs text-neutral-500">{d.revocation.reasonCode}: {d.revocation.reasonText}</div>}
+                      {d.revocation && <div className="text-xs text-neutral-500">{revocationReasons.label(d.revocation.reasonCode)}: {d.revocation.reasonText}</div>}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex flex-col items-end gap-2">
                         {d.rendered && (
                           <Button size="sm" variant="ghost" onClick={() => void act(() => downloadDocumentPdf(d.documentIssueId, `${d.documentTypeCode}-${d.issueNumber}.pdf`))}>
-                            Download PDF<span className="sr-only"> of {d.documentTypeCode} issue {d.issueNumber}</span>
+                            Download PDF<span className="sr-only"> of {documentTypes.label(d.documentTypeCode)} issue {d.issueNumber}</span>
                           </Button>
                         )}
                         {(() => {
@@ -85,7 +87,7 @@ export function AwardDocumentsSection({ awardId, canIssue, canRevoke }: { awardI
                               ? <p className="text-xs text-neutral-600">Revocation requested; another registry administrator decides it.</p>
                               : (
                                 <div className="flex gap-2">
-                                  <span className="text-xs text-neutral-600">Revoke requested ({pending.reasonCode})</span>
+                                  <span className="text-xs text-neutral-600">Revoke requested ({revocationReasons.label(pending.reasonCode)})</span>
                                   <Button size="sm" variant="danger" onClick={() => void act(() => decideRevocation(pending.caseId, 'approved'))}>Approve revocation</Button>
                                   <Button size="sm" variant="ghost" onClick={() => void act(() => decideRevocation(pending.caseId, 'rejected'))}>Reject</Button>
                                 </div>
@@ -145,16 +147,17 @@ function IssueForm({ hasIssues, onSubmit }: { hasIssues: boolean; onSubmit: (bod
 }
 
 function RevokeControl({ issue, onRevoke }: { issue: DocumentIssue; onRevoke: (body: { reasonCode: string; reasonText: string }) => Promise<boolean> }) {
+  const documentTypes = useCodes('document_issue', 'document_type_code');
   const { members: reasons } = useValueSet('document_revocation', 'reason_code');
   const [stage, setStage] = useState<'closed' | 'form' | 'confirm'>('closed');
   const [reasonCode, setReasonCode] = useState('');
   const [reasonText, setReasonText] = useState('');
   const id = `revoke-doc-${issue.documentIssueId}`;
-  if (stage === 'closed') return <Button size="sm" variant="secondary" onClick={() => setStage('form')}>Revoke<span className="sr-only"> {issue.documentTypeCode} #{issue.issueNumber}</span></Button>;
+  if (stage === 'closed') return <Button size="sm" variant="secondary" onClick={() => setStage('form')}>Revoke<span className="sr-only"> {documentTypes.label(issue.documentTypeCode)} #{issue.issueNumber}</span></Button>;
   if (stage === 'confirm') {
     return (
       <div className="inline-flex flex-col items-end gap-2">
-        <p className="text-sm">Ask to revoke {issue.documentTypeCode} #{issue.issueNumber}? Another registry administrator must approve it; verification will then report it as revoked.</p>
+        <p className="text-sm">Ask to revoke {documentTypes.label(issue.documentTypeCode)} #{issue.issueNumber}? Another registry administrator must approve it; verification will then report it as revoked.</p>
         <div className="flex gap-2">
           <Button size="sm" onClick={() => void onRevoke({ reasonCode, reasonText: reasonText.trim() }).then((ok) => { if (ok) setStage('closed'); })}>Request revocation</Button>
           <Button size="sm" variant="ghost" onClick={() => setStage('form')}>Back</Button>

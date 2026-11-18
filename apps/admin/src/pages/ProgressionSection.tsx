@@ -1,8 +1,7 @@
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import { RuleVersionsPanel } from '../components/RuleVersionsPanel.js';
 import {
-  Card, CardHeader, CardBody, Button, Input, LabelledField, Badge, Spinner,
-  Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
+  Card, CardHeader, CardBody, Button, Input, LabelledField, Badge, Spinner, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, CodeLabel, useCodes,
 } from '@revelation-srs/ui';
 
 import { ApiError } from '../api/client.js';
@@ -21,6 +20,7 @@ const ruleLabel = (code: string) => ENROLMENT_RULES.find((r) => r.code === code)
  * board's behalf; the board ratifies, which locks the decision.
  */
 export function ProgressionSection({ enrolmentId, canRun }: { enrolmentId: string; canRun: boolean }) {
+  const exceptionTypes = useCodes('rule_exception', 'exception_type_code');
   const [decisions, setDecisions] = useState<ProgressionDecision[] | null>(null);
   const [evidence, setEvidence] = useState<Record<string, ProgressionEvidence | null>>({});
   const [error, setError] = useState('');
@@ -76,7 +76,7 @@ export function ProgressionSection({ enrolmentId, canRun }: { enrolmentId: strin
                     {ev.appliedExceptions.length > 0 && (
                       <div className="col-span-2 md:col-span-4">
                         <dt className="text-xs text-neutral-500">Rule exceptions applied</dt>
-                        <dd>{ev.appliedExceptions.map((x) => `${ruleLabel(x.ruleCode)} (${x.exceptionTypeCode})`).join('; ')}</dd>
+                        <dd>{ev.appliedExceptions.map((x) => `${ruleLabel(x.ruleCode)} (${exceptionTypes.label(x.exceptionTypeCode)})`).join('; ')}</dd>
                       </div>
                     )}
                   </dl>
@@ -95,7 +95,7 @@ export function ProgressionSection({ enrolmentId, canRun }: { enrolmentId: strin
                   {decisions.filter((d) => d.recordedUntil !== null).map((d) => (
                     <TableRow key={`${d.progressionDecisionId}-${d.recordedUntil}`}>
                       <TableCell>{d.academicYear}</TableCell>
-                      <TableCell>{d.decisionCode}</TableCell>
+                      <TableCell><CodeLabel entity="progression_decision" field="decision_code" code={d.decisionCode} /></TableCell>
                       <TableCell className="text-xs">{d.recordedUntil ? new Date(d.recordedUntil).toLocaleString('en-GB') : ''}</TableCell>
                     </TableRow>
                   ))}
