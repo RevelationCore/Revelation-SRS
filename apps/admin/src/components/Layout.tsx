@@ -2,7 +2,7 @@ import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   LayoutDashboard, Users, ListChecks, GraduationCap, Activity, Landmark,
-  BarChart3, Settings, Server, Clock, LogOut, ShieldCheck, Inbox,
+  BarChart3, Settings, Server, Clock, LogOut, ShieldCheck, Inbox, HeartHandshake, Mail,
 } from 'lucide-react';
 import type { ComponentType } from 'react';
 import { useAuth } from '../auth/AuthContext.js';
@@ -106,7 +106,7 @@ function Sidebar({ onLogout, displayName, roles }: { onLogout: () => void; displ
     'integration:read',
     'audit-log:read',
   );
-  const canViewOperations = can('environment:read', 'integration:read', 'adjustment:fulfil', 'delivery:fulfil');
+  const canViewOperations = can('environment:read', 'integration:read', 'adjustment:fulfil', 'delivery:fulfil', 'email-simulator:use');
   const canViewModeration = can('mark:write');
   const canViewRegulatoryCollections = can('regulatory:write');
   const canViewIdentityResolution = can('identity:manage');
@@ -114,6 +114,7 @@ function Sidebar({ onLogout, displayName, roles }: { onLogout: () => void; displ
   const canViewAuditReview = can('audit-log:read');
   const canViewPgrSupervision = can('pgr-case:read');
   const canViewAdjustmentCases = can('adjustment-case:read:all');
+  const canViewWellbeing = can('disability:read', 'mental-health-case:read', 'early-warning:read');
   const canViewGovernance = canViewModeration || canViewRegulatoryCollections
     || canViewIdentityResolution || canViewRightsRequests || canViewAuditReview || canViewPgrSupervision
     || canViewAdjustmentCases;
@@ -134,6 +135,7 @@ function Sidebar({ onLogout, displayName, roles }: { onLogout: () => void; displ
         {(can('clearing:decide') || can('clearing:review')) && <NavItem to="/clearing" label="Clearing" icon={Inbox} />}
         {canViewStudents && <NavItem to="/students" label="Students" icon={Users} />}
         {canViewTasks && <NavItem to="/tasks" label="Tasks" end icon={ListChecks} />}
+        {can('email:read') && <NavItem to="/email" label="Email" icon={Mail} />}
         {canViewModuleSelectionProposals && <NavItem to="/module-selection-proposals" label="Module selection" end icon={ListChecks} />}
         {canViewModuleRegistrationRequests && <NavItem to="/module-registration-requests" label="Registration requests" end icon={ListChecks} />}
         {can('registration:read') && <NavItem to="/registration" label="Registration" icon={ListChecks} />}
@@ -159,6 +161,14 @@ function Sidebar({ onLogout, displayName, roles }: { onLogout: () => void; displ
           <SubItem to="/regulatory/slc"  label="SLC" />
           <SubItem to="/regulatory/ukvi" label="UKVI" />
           <SubItem to="/regulatory/ofs"  label="OfS" />
+        </>}
+
+        {canViewWellbeing && <>
+          <Divider />
+          <SectionNavLink to="/wellbeing" icon={HeartHandshake}>Wellbeing</SectionNavLink>
+          {can('disability:read') && <SubItem to="/wellbeing/disability-cases" label="Disability support" />}
+          {can('mental-health-case:read') && <SubItem to="/wellbeing/mental-health-cases" label="Mental health" />}
+          {canViewAdjustmentCases && <SubItem to="/governance/adjustment-cases" label="Adjustment cases" />}
         </>}
 
         {canViewGovernance && <>
@@ -207,6 +217,7 @@ function Sidebar({ onLogout, displayName, roles }: { onLogout: () => void; displ
           {can('environment:read') && <SubItem to="/operations/environment" label="Environment" />}
           {can('integration:read') && <SubItem to="/operations/integrations" label="Integrations" />}
           {can('adjustment:fulfil', 'delivery:fulfil') && <SubItem to="/operations/integration-tasks" label="Integration tasks" />}
+          {can('email-simulator:use') && <SubItem to="/operations/email-simulator" label="Email simulator" />}
         </>}
       </nav>
 

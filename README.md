@@ -101,7 +101,7 @@ Revelation SRS has substantial implemented foundations, services, integrations a
 | Current classification | Position |
 |---|---|
 | Implemented baseline | Tenant/temporal foundations, workflow platform, core identity/profile, and all twelve academic-journey capabilities: admissions, CAS, registration and status, curriculum, module selection, attendance and engagement, adjustments and exceptional circumstances, assessment, exam boards, post-ratification correction, progression and awards, and the PGR lifecycle |
-| Partial | Regulatory exchanges, integration operations (including tracked hand-offs to 15 adjacent systems), individual rights/retention/audit, wellbeing case management (API only, no staff screens), communications and notifications (no outbound email), globalisation, reporting, the portal and administration UI as a whole, and demo/migration tooling |
+| Partial | Regulatory exchanges, integration operations (including tracked hand-offs to 15 adjacent systems), individual rights/retention/audit, wellbeing case management, communications and email (carried by a fake mail server, no real transport), globalisation, reporting, the portal and administration UI as a whole, and demo/migration tooling |
 | Verification | Documentation checks, typecheck, lint, unit, component, integration and mocked UI suites pass in CI; clean-clone bootstrap verified 2026-08-03 |
 
 The [Current Capability Matrix](docs/product/current-capabilities.md) is the authority for project status. Superseded plans and review evidence are available through the preservation references described in [Documentation History](docs/history.md).

@@ -76,6 +76,7 @@ async function dispatch(opts: {
   subjectEntityId:   string;
   payload?:          Record<string, unknown>;
   preferredLocale?:  string;
+  recipientRef?:     string;
 }) {
   return ctx.app.inject({
     method:  'POST',
@@ -298,6 +299,8 @@ describe('CommunicationService dispatch — channel flag gates', () => {
       channelCode:       'email',
       subjectEntityType: 'enrolment',
       subjectEntityId:   '00000000-0000-0000-0000-000000000097',
+      // The email channel now really sends (through the fake mail server), so it needs an address.
+      recipientRef:      'jane.smith@student.example.ac.uk',
       payload:           { studentName: 'Jane Smith', institutionName: 'Test University', academicYear: '2026-27' },
     });
     expect(res.statusCode).toBe(200);

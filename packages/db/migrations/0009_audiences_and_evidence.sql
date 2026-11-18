@@ -281,3 +281,187 @@ ON CONFLICT DO NOTHING;
 INSERT INTO "field_value_set" ("entity_name", "field_name", "value_set_code", "description")
 VALUES ('non_working_day', 'division_code', 'calendar-division-code', NULL)
 ON CONFLICT DO NOTHING;
+
+-- ── Wellbeing case screens: code sets for the wellbeing module's records ────
+-- The wellbeing module is a separate service with its own database; its
+-- coded fields are listed here so the admin screens draw their choices from
+-- the value-set system. Entity names are the module's schema-qualified
+-- tables. Status sets give labels only: the module enforces each lifecycle.
+INSERT INTO "value_set" ("set_code", "display_name", "source", "source_version", "description", "is_extensible")
+VALUES
+  ('wellbeing-disability-support-type', 'Disability Support Type',         'srs-internal', NULL, 'How a disability support case is funded', false),
+  ('wellbeing-disability-case-status',  'Disability Case Status',          'srs-internal', NULL, 'Where a disability support case is in its lifecycle', false),
+  ('wellbeing-support-plan-status',     'Support Plan Status',             'srs-internal', NULL, 'Status of a disability support plan', false),
+  ('wellbeing-dsa-entitlement-type',    'DSA Entitlement Type',            'srs-internal', NULL, 'What a Disabled Students'' Allowance entitlement provides', true),
+  ('wellbeing-evidence-type',           'Wellbeing Evidence Type',         'srs-internal', NULL, 'Kind of supporting evidence held for a disability case', true),
+  ('wellbeing-evidence-status',         'Wellbeing Evidence Status',       'srs-internal', NULL, 'Where a piece of evidence is in its lifecycle', false),
+  ('wellbeing-presenting-concern',      'Presenting Concern',              'srs-internal', NULL, 'Main concern on referral to mental-health support', true),
+  ('wellbeing-mh-case-status',          'Mental Health Case Status',       'srs-internal', NULL, 'Where a mental-health case is in its lifecycle', false),
+  ('wellbeing-risk-level',              'Risk Level',                      'srs-internal', NULL, 'Practitioner-assessed risk for a mental-health case', false),
+  ('wellbeing-intervention-plan-type',  'Intervention Plan Type',          'srs-internal', NULL, 'Kind of support an intervention plan provides', true),
+  ('wellbeing-intervention-plan-status','Intervention Plan Status',        'srs-internal', NULL, 'Where an intervention plan is in its lifecycle', false),
+  ('wellbeing-session-frequency',       'Session Frequency',               'srs-internal', NULL, 'How often planned sessions take place', false),
+  ('wellbeing-session-type',            'Session Type',                    'srs-internal', NULL, 'Kind of mental-health support session', false),
+  ('wellbeing-alert-type',              'Early Warning Alert Type',        'srs-internal', NULL, 'What raised an early-warning alert', false),
+  ('wellbeing-alert-source',            'Early Warning Alert Source',      'srs-internal', NULL, 'Where an early-warning alert came from', false),
+  ('wellbeing-alert-triage-status',     'Early Warning Triage Status',     'srs-internal', NULL, 'Where an early-warning alert is in triage', false)
+ON CONFLICT ("set_code") DO NOTHING;
+
+INSERT INTO "value_set_member" ("value_set_id", "code", "display_label", "sort_order", "active_from", "source_metadata")
+SELECT vs."id", v.code, v.display_label, v.sort_order, NULL, NULL
+FROM "value_set" vs,
+(VALUES
+  ('wellbeing-disability-support-type', 'dsa',            'Disabled Students'' Allowance', 10),
+  ('wellbeing-disability-support-type', 'institutional',  'Institutional support',          20),
+  ('wellbeing-disability-support-type', 'interim',        'Interim support',                30),
+  ('wellbeing-disability-case-status', 'assessment_pending', 'Assessment pending', 10),
+  ('wellbeing-disability-case-status', 'evidence_pending',   'Evidence pending',   20),
+  ('wellbeing-disability-case-status', 'active',             'Active support',     30),
+  ('wellbeing-disability-case-status', 'rejected',           'Not eligible',       40),
+  ('wellbeing-disability-case-status', 'closed',             'Closed',             50),
+  ('wellbeing-support-plan-status', 'none',    'No plan', 10),
+  ('wellbeing-support-plan-status', 'draft',   'Draft',   20),
+  ('wellbeing-support-plan-status', 'active',  'Active',  30),
+  ('wellbeing-support-plan-status', 'expired', 'Expired', 40),
+  ('wellbeing-dsa-entitlement-type', 'equipment',            'Equipment',               10),
+  ('wellbeing-dsa-entitlement-type', 'support-worker',       'Support worker',          20),
+  ('wellbeing-dsa-entitlement-type', 'non-medical-helper',   'Non-medical helper',      30),
+  ('wellbeing-dsa-entitlement-type', 'specialist-mentoring', 'Specialist mentoring',    40),
+  ('wellbeing-dsa-entitlement-type', 'other',                'Other',                   90),
+  ('wellbeing-evidence-type', 'medical',            'Medical evidence',      10),
+  ('wellbeing-evidence-type', 'assessment',         'Needs assessment',      20),
+  ('wellbeing-evidence-type', 'personal-statement', 'Personal statement',    30),
+  ('wellbeing-evidence-type', 'other',              'Other',                 90),
+  ('wellbeing-evidence-status', 'pending',  'Awaited',  10),
+  ('wellbeing-evidence-status', 'received', 'Received', 20),
+  ('wellbeing-evidence-status', 'verified', 'Verified', 30),
+  ('wellbeing-evidence-status', 'rejected', 'Rejected', 40),
+  ('wellbeing-presenting-concern', 'anxiety',    'Anxiety',    10),
+  ('wellbeing-presenting-concern', 'depression', 'Depression', 20),
+  ('wellbeing-presenting-concern', 'crisis',     'Crisis',     30),
+  ('wellbeing-presenting-concern', 'other',      'Other',      90),
+  ('wellbeing-mh-case-status', 'referral_received',  'Referral received',  10),
+  ('wellbeing-mh-case-status', 'assessment_pending', 'Assessment pending', 20),
+  ('wellbeing-mh-case-status', 'active',             'Active',             30),
+  ('wellbeing-mh-case-status', 'on_hold',            'On hold',            40),
+  ('wellbeing-mh-case-status', 'discharged',         'Discharged',         50),
+  ('wellbeing-mh-case-status', 'closed',             'Closed',             60),
+  ('wellbeing-risk-level', 'low',    'Low',    10),
+  ('wellbeing-risk-level', 'medium', 'Medium', 20),
+  ('wellbeing-risk-level', 'high',   'High',   30),
+  ('wellbeing-risk-level', 'crisis', 'Crisis', 40),
+  ('wellbeing-intervention-plan-type', 'counselling',    'Counselling',    10),
+  ('wellbeing-intervention-plan-type', 'crisis-support', 'Crisis support', 20),
+  ('wellbeing-intervention-plan-type', 'signposting',    'Signposting',    30),
+  ('wellbeing-intervention-plan-type', 'peer-support',   'Peer support',   40),
+  ('wellbeing-intervention-plan-status', 'draft',        'Draft',        10),
+  ('wellbeing-intervention-plan-status', 'active',       'Active',       20),
+  ('wellbeing-intervention-plan-status', 'completed',    'Completed',    30),
+  ('wellbeing-intervention-plan-status', 'discontinued', 'Discontinued', 40),
+  ('wellbeing-session-frequency', 'weekly',      'Weekly',      10),
+  ('wellbeing-session-frequency', 'fortnightly', 'Fortnightly', 20),
+  ('wellbeing-session-frequency', 'monthly',     'Monthly',     30),
+  ('wellbeing-session-frequency', 'ad-hoc',      'As needed',   40),
+  ('wellbeing-session-type', 'individual', 'Individual', 10),
+  ('wellbeing-session-type', 'group',      'Group',      20),
+  ('wellbeing-session-type', 'telephone',  'Telephone',  30),
+  ('wellbeing-session-type', 'crisis',     'Crisis',     40),
+  ('wellbeing-session-type', 'assessment', 'Assessment', 50),
+  ('wellbeing-alert-type', 'ukvi-compliance', 'UKVI compliance', 10),
+  ('wellbeing-alert-type', 'tutor-concern',   'Tutor concern',   20),
+  ('wellbeing-alert-type', 'staff-referral',  'Staff referral',  30),
+  ('wellbeing-alert-source', 'ukvi',   'UKVI monitoring', 10),
+  ('wellbeing-alert-source', 'tutor',  'Tutor',           20),
+  ('wellbeing-alert-source', 'staff',  'Staff',           30),
+  ('wellbeing-alert-source', 'system', 'System',          40),
+  ('wellbeing-alert-triage-status', 'pending',   'Awaiting triage', 10),
+  ('wellbeing-alert-triage-status', 'reviewed',  'Reviewed',        20),
+  ('wellbeing-alert-triage-status', 'assigned',  'Assigned to case', 30),
+  ('wellbeing-alert-triage-status', 'resolved',  'Resolved',        40),
+  ('wellbeing-alert-triage-status', 'dismissed', 'Dismissed',       50)
+) AS v(set_code, code, display_label, sort_order)
+WHERE vs."set_code" = v.set_code
+ON CONFLICT DO NOTHING;
+
+INSERT INTO "field_value_set" ("entity_name", "field_name", "value_set_code", "description")
+VALUES
+  ('wellbeing.disability_support_case', 'support_type_code',        'wellbeing-disability-support-type', NULL),
+  ('wellbeing.disability_support_case', 'status_code',              'wellbeing-disability-case-status', NULL),
+  ('wellbeing.disability_support_case', 'support_plan_status_code', 'wellbeing-support-plan-status', NULL),
+  ('wellbeing.dsa_entitlement',         'entitlement_type_code',    'wellbeing-dsa-entitlement-type', NULL),
+  ('wellbeing.evidence_reference',      'evidence_type_code',       'wellbeing-evidence-type', NULL),
+  ('wellbeing.evidence_reference',      'status_code',              'wellbeing-evidence-status', NULL),
+  ('wellbeing.mental_health_case',      'presenting_concern_code',  'wellbeing-presenting-concern', NULL),
+  ('wellbeing.mental_health_case',      'status_code',              'wellbeing-mh-case-status', NULL),
+  ('wellbeing.mental_health_case',      'risk_level_code',          'wellbeing-risk-level', NULL),
+  ('wellbeing.intervention_plan',       'plan_type_code',           'wellbeing-intervention-plan-type', NULL),
+  ('wellbeing.intervention_plan',       'status_code',              'wellbeing-intervention-plan-status', NULL),
+  ('wellbeing.intervention_plan',       'session_frequency_code',   'wellbeing-session-frequency', NULL),
+  ('wellbeing.mh_session_note',         'session_type_code',        'wellbeing-session-type', NULL),
+  ('wellbeing.early_warning_alert',     'alert_type_code',          'wellbeing-alert-type', NULL),
+  ('wellbeing.early_warning_alert',     'alert_source_code',        'wellbeing-alert-source', NULL),
+  ('wellbeing.early_warning_alert',     'triage_status_code',       'wellbeing-alert-triage-status', NULL)
+ON CONFLICT DO NOTHING;
+
+-- ── Email: the institution's mailbox and the fake mail server ───────────────
+-- email_message is the SRS's own record of every email it sent or received.
+-- Outbound mail goes through a transport; the only one shipped is the fake
+-- mail server, whose store is email_simulator_message (what external
+-- mailboxes "received", and what external senders sent in). Inbound mail
+-- arrives through the provider hook, which the simulator also uses.
+CREATE TABLE IF NOT EXISTS "email_message" (
+  "id"                        uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+  "tenant_id"                 uuid        NOT NULL REFERENCES "tenant"("id"),
+  "direction_code"            text        NOT NULL CHECK ("direction_code" IN ('outbound', 'inbound')),
+  "from_address"              text        NOT NULL,
+  "to_address"                text        NOT NULL,
+  "subject"                   text        NOT NULL,
+  "body_text"                 text        NOT NULL,
+  "person_id"                 uuid,
+  "thread_id"                 uuid        NOT NULL,
+  "in_reply_to_id"            uuid        REFERENCES "email_message"("id"),
+  "communication_dispatch_id" uuid,
+  "status_code"               text        NOT NULL CHECK ("status_code" IN ('sent', 'failed', 'received')),
+  "failure_reason"            text,
+  "transport_code"            text        NOT NULL,
+  "transport_message_id"      text,
+  "sent_by"                   text,
+  "read_at"                   timestamptz,
+  "read_by"                   text,
+  "created_at"                timestamptz NOT NULL DEFAULT now(),
+  CHECK (("direction_code" = 'inbound') = ("status_code" = 'received'))
+);
+CREATE INDEX IF NOT EXISTS "email_message_mailbox_idx" ON "email_message" ("tenant_id", "direction_code", "created_at" DESC);
+CREATE INDEX IF NOT EXISTS "email_message_person_idx" ON "email_message" ("tenant_id", "person_id");
+CREATE INDEX IF NOT EXISTS "email_message_thread_idx" ON "email_message" ("tenant_id", "thread_id");
+-- A provider retrying its inbound hook delivers the same Message-ID again.
+CREATE UNIQUE INDEX IF NOT EXISTS "email_message_transport_id" ON "email_message" ("tenant_id", "transport_message_id") WHERE "transport_message_id" IS NOT NULL;
+ALTER TABLE "email_message" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "email_message" FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "email_message";
+CREATE POLICY tenant_isolation ON "email_message"
+  USING ("tenant_id" = current_setting('app.current_tenant_id', true)::uuid)
+  WITH CHECK ("tenant_id" = current_setting('app.current_tenant_id', true)::uuid);
+
+CREATE TABLE IF NOT EXISTS "email_simulator_message" (
+  "id"                     uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+  "tenant_id"              uuid        NOT NULL REFERENCES "tenant"("id"),
+  "direction_code"         text        NOT NULL CHECK ("direction_code" IN ('to-external', 'to-institution')),
+  "message_id"             text        NOT NULL,
+  "from_address"           text        NOT NULL,
+  "to_address"             text        NOT NULL,
+  "subject"                text        NOT NULL,
+  "body_text"              text        NOT NULL,
+  "in_reply_to_message_id" text,
+  "created_by"             text        NOT NULL,
+  "created_at"             timestamptz NOT NULL DEFAULT now(),
+  UNIQUE ("tenant_id", "message_id")
+);
+CREATE INDEX IF NOT EXISTS "email_simulator_message_to_idx" ON "email_simulator_message" ("tenant_id", "to_address");
+CREATE INDEX IF NOT EXISTS "email_simulator_message_from_idx" ON "email_simulator_message" ("tenant_id", "from_address");
+ALTER TABLE "email_simulator_message" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "email_simulator_message" FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "email_simulator_message";
+CREATE POLICY tenant_isolation ON "email_simulator_message"
+  USING ("tenant_id" = current_setting('app.current_tenant_id', true)::uuid)
+  WITH CHECK ("tenant_id" = current_setting('app.current_tenant_id', true)::uuid);

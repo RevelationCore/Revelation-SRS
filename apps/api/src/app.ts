@@ -40,6 +40,8 @@ import { BoardService } from './platform/governance/board-service.js';
 import { BoardAuthorityService } from './platform/governance/board-authority-service.js';
 import { AdmissionsService } from './platform/admissions/admissions-service.js';
 import { CommunicationService } from './platform/communications/communication-service.js';
+import { EmailService } from './platform/email/email-service.js';
+import { FakeEmailTransport } from './platform/integration/simulators/email-simulator.js';
 import { LocaleService } from './platform/globalisation/locale-service.js';
 import { CurrencyService } from './platform/globalisation/currency-service.js';
 import { IntegrationBusPublisher } from './platform/integration-bus/publisher.js';
@@ -162,6 +164,7 @@ import { identityResolutionRoutes } from './routes/identity-resolution.js';
 import { pgrRoutes } from './routes/pgr.js';
 import { researchStaffRoutes } from './routes/research-staff.js';
 import { nonWorkingDayRoutes } from './routes/non-working-days.js';
+import { emailRoutes, emailSimulatorRoutes } from './routes/email.js';
 import { EcDeterminationService } from './platform/circumstances/ec-determination-service.js';
 import { ResearchStaffService } from './platform/pgr/research-staff-service.js';
 import { demoRoutes } from './routes/demo.js';
@@ -215,6 +218,7 @@ function classifyOperation(method: string, url: string): string {
   // Private — internal surfaces not for external consumers
   if (path.includes('/downstream-triggers')) return 'private';
   if (path === '/communications/dispatch') return 'private';
+  if (path.startsWith('/email-simulator')) return 'private';
 
   // System — platform-level, cross-tenant configuration
   if (path.startsWith('/admin/globalisation')) return 'system';
@@ -269,6 +273,7 @@ function classifyOperation(method: string, url: string): string {
   if (path.includes('/delivery-') || path.includes('/inbound') || path.includes('/external-records')) return 'integration';
   if (path.includes('/engagement-outcomes')) return 'integration';
   if (path.includes('/communication-templates') || path.includes('/communication-dispatch-log')) return 'integration';
+  if (path.startsWith('/email/')) return 'integration';
 
   // Public — core student record data
   return 'public';
@@ -442,7 +447,9 @@ export async function buildApp(
   const applications = new ApplicationService(db, valueSets, students, admissions);
   const localeService   = new LocaleService(db, audit);
   const currencyService = new CurrencyService(db, audit);
-  const communications  = new CommunicationService(db, localeService, featureFlags);
+  // Only the fake mail server ships as an email transport (config.emailTransport).
+  const emailService    = new EmailService(db, new FakeEmailTransport(db), config.emailFromAddress ?? 'registry@revelation.example.ac.uk');
+  const communications  = new CommunicationService(db, localeService, featureFlags, emailService);
   const adjustmentTaskNotices = new AdjustmentTaskNoticeService(db, adjustments, adjustmentTargets, communications, config.adminAppUrl, deliveries);
   const ucas = new UcasService(db, valueSets, eventBus, enrolments, regulatoryExchanges, admissions, featureFlags, workflowBridge, reviewExecution, applications);
   // UCAS outbound decisions and results mapped to conditions (Phase 3 D-14, D-15).
@@ -602,6 +609,7 @@ export async function buildApp(
   fastify.decorate('localeService',       localeService);
   fastify.decorate('currencyService',     currencyService);
   fastify.decorate('communicationService', communications);
+  fastify.decorate('emailService',         emailService);
 
   const demo = new DemoService(db);
   fastify.decorate('demoService', demo);
@@ -841,6 +849,7 @@ export async function buildApp(
       ['/tenant/',                   'tenant-admin'],
       ['/globalisation',             'globalisation'],
       ['/communication',             'communications'],
+      ['/email',                     'communications'],
       ['/notifications',             'communications'],
       ['/integration-contracts',     'integration-registry'],
       ['/integration-registrations', 'integration-registry'],
@@ -897,6 +906,10 @@ export async function buildApp(
   await fastify.register(pgrRoutes,                 { prefix: '/api/v1' });
   await fastify.register(researchStaffRoutes,       { prefix: '/api/v1' });
   await fastify.register(nonWorkingDayRoutes,       { prefix: '/api/v1' });
+  await fastify.register(emailRoutes,               { prefix: '/api/v1' });
+  if ((config.emailTransport ?? 'fake') === 'fake') {
+    await fastify.register(emailSimulatorRoutes,    { prefix: '/api/v1' });
+  }
   await fastify.register(regulatoryHesaRoutes,      { prefix: '/api/v1' });
   await fastify.register(regulatorySlcRoutes,       { prefix: '/api/v1' });
   await fastify.register(regulatoryUcasRoutes,      { prefix: '/api/v1' });
@@ -1034,6 +1047,7 @@ declare module 'fastify' {
     localeService:        LocaleService;
     currencyService:      CurrencyService;
     communicationService: CommunicationService;
+    emailService:         EmailService;
     demoService:          DemoService;
     retentionService:     RetentionEnforcementService;
     rightsRequestService: RightsRequestService;

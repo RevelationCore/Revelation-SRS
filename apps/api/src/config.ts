@@ -25,9 +25,22 @@ export interface Config {
   adminAppUrl?:   string | undefined;
   /** The API's public address, printed on issued documents for verification (D-21). */
   publicApiUrl?:  string | undefined;
+  /**
+   * How outbound email leaves the SRS. Only 'fake' ships: the in-repo fake
+   * mail server, whose mailboxes and send-in form are on the admin Email
+   * simulator page. Its routes exist only while this is 'fake'.
+   */
+  emailTransport?: 'fake';
+  /** The institution's sending address; the default for staff email and notices. */
+  emailFromAddress?: string;
   corsOrigins:  string[];
   otelEndpoint: string | undefined;
   otelServiceName: string;
+}
+
+function emailTransport(value: string | undefined): 'fake' {
+  if (value === undefined || value === '' || value === 'fake') return 'fake';
+  throw new Error(`EMAIL_TRANSPORT '${value}' is not supported; the only transport is 'fake'`);
 }
 
 function required(name: string): string {
@@ -67,6 +80,8 @@ export function loadConfig(): Config {
     keycloakJwksUrl: optional('KEYCLOAK_JWKS_URL'),
     adminAppUrl:     optional('ADMIN_APP_URL'),
     publicApiUrl:    optional('PUBLIC_API_URL'),
+    emailTransport:  emailTransport(process.env['EMAIL_TRANSPORT']),
+    emailFromAddress: process.env['EMAIL_FROM_ADDRESS'] ?? 'registry@revelation.example.ac.uk',
     corsOrigins:     (process.env['CORS_ORIGINS'] ?? 'http://localhost:5173').split(','),
     otelEndpoint:    optional('OTEL_EXPORTER_OTLP_ENDPOINT'),
     otelServiceName: process.env['OTEL_SERVICE_NAME'] ?? 'srs-api',

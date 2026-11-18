@@ -69,6 +69,13 @@ const AdjustmentCasesPage = lazy(() => import('./pages/AdjustmentCasesPage.js').
 const AdjustmentCaseDetailPage = lazy(() => import('./pages/AdjustmentCaseDetailPage.js').then((m) => ({ default: m.AdjustmentCaseDetailPage })));
 const ApplicationsPage = lazy(() => import('./pages/ApplicationsPage.js').then((m) => ({ default: m.ApplicationsPage })));
 const ApplicationDetailPage = lazy(() => import('./pages/ApplicationDetailPage.js').then((m) => ({ default: m.ApplicationDetailPage })));
+const EmailPage = lazy(() => import('./pages/EmailPage.js').then((m) => ({ default: m.EmailPage })));
+const EmailSimulatorPage = lazy(() => import('./pages/EmailSimulatorPage.js').then((m) => ({ default: m.EmailSimulatorPage })));
+const WellbeingPage = lazy(() => import('./pages/WellbeingPage.js').then((m) => ({ default: m.WellbeingPage })));
+const DisabilityCasesPage = lazy(() => import('./pages/DisabilityCasesPage.js').then((m) => ({ default: m.DisabilityCasesPage })));
+const DisabilityCaseDetailPage = lazy(() => import('./pages/DisabilityCaseDetailPage.js').then((m) => ({ default: m.DisabilityCaseDetailPage })));
+const MentalHealthCasesPage = lazy(() => import('./pages/MentalHealthCasesPage.js').then((m) => ({ default: m.MentalHealthCasesPage })));
+const MentalHealthCaseDetailPage = lazy(() => import('./pages/MentalHealthCaseDetailPage.js').then((m) => ({ default: m.MentalHealthCaseDetailPage })));
 const NonWorkingDaysPage = lazy(() => import('./pages/NonWorkingDaysPage.js').then((m) => ({ default: m.NonWorkingDaysPage })));
 const EcDeterminationsPage = lazy(() => import('./pages/EcDeterminationsPage.js').then((m) => ({ default: m.EcDeterminationsPage })));
 const PendingApprovalsPage = lazy(() => import('./pages/PendingApprovalsPage.js').then((m) => ({ default: m.PendingApprovalsPage })));
@@ -228,6 +235,16 @@ export function App() {
                 <Route path="governance/audit-review" element={<RequirePermission permissions={['audit-log:read']}><AuditReviewPage /></RequirePermission>} />
                 <Route path="governance/adjustment-cases" element={<RequirePermission permissions={['adjustment-case:read:all']}><AdjustmentCasesPage /></RequirePermission>} />
                 <Route path="governance/adjustment-cases/:caseId" element={<RequirePermission permissions={['adjustment-case:read:all']}><AdjustmentCaseDetailPage /></RequirePermission>} />
+
+                <Route path="email" element={<RequirePermission permissions={['email:read']}><EmailPage /></RequirePermission>} />
+                <Route path="operations/email-simulator" element={<RequirePermission permissions={['email-simulator:use']}><EmailSimulatorPage /></RequirePermission>} />
+
+                {/* Wellbeing (served by the wellbeing module) */}
+                <Route path="wellbeing" element={<RequirePermission permissions={['disability:read', 'mental-health-case:read', 'early-warning:read']}><WellbeingPage /></RequirePermission>} />
+                <Route path="wellbeing/disability-cases" element={<RequirePermission permissions={['disability:read']}><DisabilityCasesPage /></RequirePermission>} />
+                <Route path="wellbeing/disability-cases/:caseId" element={<RequirePermission permissions={['disability:read']}><DisabilityCaseDetailPage /></RequirePermission>} />
+                <Route path="wellbeing/mental-health-cases" element={<RequirePermission permissions={['mental-health-case:read']}><MentalHealthCasesPage /></RequirePermission>} />
+                <Route path="wellbeing/mental-health-cases/:caseId" element={<RequirePermission permissions={['mental-health-case:read']}><MentalHealthCaseDetailPage /></RequirePermission>} />
 
                 {/* Operations */}
                 <Route path="operations" element={<RequirePermission permissions={['environment:read', 'integration:read', 'adjustment:fulfil', 'delivery:fulfil']}><OperationsPage /></RequirePermission>} />

@@ -3625,6 +3625,134 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/email/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getEmailSettings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/email/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getEmailMessages"];
+        put?: never;
+        post: operations["createEmailMessages"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/email/messages/{messageId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getEmailMessagesByMessageId"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/email/messages/{messageId}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createEmailMessagesByMessageIdRead"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/email/inbound": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createEmailInbound"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/email-simulator/mailboxes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getEmailSimulatorMailboxes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/email-simulator/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getEmailSimulatorMessages"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/email-simulator/send-to-institution": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createEmailSimulatorSendToInstitution"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/regulatory/hesa/returns": {
         parameters: {
             query?: never;
@@ -22223,6 +22351,437 @@ export interface operations {
             };
             /** @description Default Response */
             502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getEmailSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        fromAddress: string;
+                        transportCode: string;
+                        unreadCount: number;
+                    };
+                };
+            };
+        };
+    };
+    getEmailMessages: {
+        parameters: {
+            query?: {
+                direction?: "inbound" | "outbound";
+                personId?: string;
+                unread?: boolean;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        directionCode: string;
+                        fromAddress: string;
+                        toAddress: string;
+                        subject: string;
+                        bodyText: string;
+                        personId: string | null;
+                        threadId: string;
+                        inReplyToId: string | null;
+                        communicationDispatchId: string | null;
+                        statusCode: string;
+                        failureReason: string | null;
+                        transportCode: string;
+                        transportMessageId: string | null;
+                        sentBy: string | null;
+                        readAt: string | null;
+                        readBy: string | null;
+                        createdAt: string;
+                    }[];
+                };
+            };
+        };
+    };
+    createEmailMessages: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    to: string;
+                    subject: string;
+                    bodyText: string;
+                    personId?: string;
+                    inReplyToId?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        directionCode: string;
+                        fromAddress: string;
+                        toAddress: string;
+                        subject: string;
+                        bodyText: string;
+                        personId: string | null;
+                        threadId: string;
+                        inReplyToId: string | null;
+                        communicationDispatchId: string | null;
+                        statusCode: string;
+                        failureReason: string | null;
+                        transportCode: string;
+                        transportMessageId: string | null;
+                        sentBy: string | null;
+                        readAt: string | null;
+                        readBy: string | null;
+                        createdAt: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getEmailMessagesByMessageId: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                messageId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: {
+                            id: string;
+                            directionCode: string;
+                            fromAddress: string;
+                            toAddress: string;
+                            subject: string;
+                            bodyText: string;
+                            personId: string | null;
+                            threadId: string;
+                            inReplyToId: string | null;
+                            communicationDispatchId: string | null;
+                            statusCode: string;
+                            failureReason: string | null;
+                            transportCode: string;
+                            transportMessageId: string | null;
+                            sentBy: string | null;
+                            readAt: string | null;
+                            readBy: string | null;
+                            createdAt: string;
+                        };
+                        thread: {
+                            id: string;
+                            directionCode: string;
+                            fromAddress: string;
+                            toAddress: string;
+                            subject: string;
+                            bodyText: string;
+                            personId: string | null;
+                            threadId: string;
+                            inReplyToId: string | null;
+                            communicationDispatchId: string | null;
+                            statusCode: string;
+                            failureReason: string | null;
+                            transportCode: string;
+                            transportMessageId: string | null;
+                            sentBy: string | null;
+                            readAt: string | null;
+                            readBy: string | null;
+                            createdAt: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createEmailMessagesByMessageIdRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                messageId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        directionCode: string;
+                        fromAddress: string;
+                        toAddress: string;
+                        subject: string;
+                        bodyText: string;
+                        personId: string | null;
+                        threadId: string;
+                        inReplyToId: string | null;
+                        communicationDispatchId: string | null;
+                        statusCode: string;
+                        failureReason: string | null;
+                        transportCode: string;
+                        transportMessageId: string | null;
+                        sentBy: string | null;
+                        readAt: string | null;
+                        readBy: string | null;
+                        createdAt: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createEmailInbound: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    messageId: string;
+                    from: string;
+                    to: string;
+                    subject: string;
+                    bodyText: string;
+                    inReplyTo?: string;
+                    provider?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        duplicate: boolean;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getEmailSimulatorMailboxes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        address: string;
+                        received: number;
+                        sent: number;
+                        lastActivity: string;
+                    }[];
+                };
+            };
+        };
+    };
+    getEmailSimulatorMessages: {
+        parameters: {
+            query: {
+                address: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        directionCode: string;
+                        messageId: string;
+                        fromAddress: string;
+                        toAddress: string;
+                        subject: string;
+                        bodyText: string;
+                        inReplyToMessageId: string | null;
+                        createdBy: string;
+                        createdAt: string;
+                    }[];
+                };
+            };
+        };
+    };
+    createEmailSimulatorSendToInstitution: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    from: string;
+                    to?: string;
+                    subject: string;
+                    bodyText: string;
+                    inReplyToMessageId?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        messageId: string;
+                        srsMessageId: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

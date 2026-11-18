@@ -11,6 +11,7 @@ import { NotFoundError, ValidationError } from '@revelation-srs/domain';
 
 import type { FeatureFlagService } from '../platform-controls/feature-flag-service.js';
 import type { LocaleService } from '../globalisation/locale-service.js';
+import { type EmailService, isEmailAddress } from '../email/email-service.js';
 import { clockNow } from '../clock.js';
 
 // ── DTOs ─────────────────────────────────────────────────────────────────────
@@ -96,6 +97,7 @@ export class CommunicationService {
     private readonly db:           Db,
     private readonly localeService: LocaleService,
     private readonly featureFlags?: FeatureFlagService,
+    private readonly email?: EmailService,
   ) {}
 
   // ── Templates ───────────────────────────────────────────────────────────────
@@ -163,12 +165,14 @@ export class CommunicationService {
    *   1. Check channel flag — if off, record as suppressed and return early.
    *   2. Resolve locale: preferredLocale → tenant.defaultLocale → 'en-GB'.
    *   3. Find template: preferred locale → fallback locale → 'en-GB' (tenant then system).
-   *   4. Render body (simple {key} substitution).
-   *   5. Record dispatch log.
-   *   6. Return result.
+   *   4. Render subject and body ({key} substitution from the payload).
+   *   5. Email channel: send through the email service to recipientRef (an
+   *      address) or the subject person's address; failed if there is none
+   *      or the transport refuses it.
+   *   6. Record dispatch log.
+   *   7. Return result.
    *
-   * The SRS does not send email itself — it records what should be sent and
-   * publishes integration events. External consumers handle delivery.
+   * Other channels record what should be sent; external consumers deliver it.
    */
   async dispatch(
     tenantId: string,
@@ -212,19 +216,28 @@ export class CommunicationService {
       fallbackLocale,
     );
 
-    const dispatchId = await this.#recordDispatch(tenantId, {
+    const dispatchId = randomUUID();
+    let failure: string | undefined;
+    if (input.channelCode === 'email' && this.email) {
+      failure = await this.#sendEmail(tenantId, dispatchId, input, template, actorId);
+    }
+
+    await this.#recordDispatch(tenantId, {
       ...input,
+      id:           dispatchId,
       localeCode:   template.localeCode,
-      statusCode:   'dispatched',
+      statusCode:   failure ? 'failed' : 'dispatched',
+      ...(failure ? { suppressionReason: failure } : {}),
       dispatchedBy: actorId,
     });
 
     return {
       dispatchId,
-      statusCode:  'dispatched',
+      statusCode:  failure ? 'failed' : 'dispatched',
       localeCode:  template.localeCode,
       channelCode: input.channelCode,
       templateKey: input.templateKey,
+      ...(failure ? { suppressionReason: failure } : {}),
     };
   }
 
@@ -254,6 +267,34 @@ export class CommunicationService {
   }
 
   // ── Private helpers ─────────────────────────────────────────────────────────
+
+  /** Returns why the email could not be sent, or undefined once it has been. */
+  async #sendEmail(
+    tenantId:   string,
+    dispatchId: string,
+    input:      DispatchCommunicationInput,
+    template:   CommunicationTemplateDto,
+    actorId:    string,
+  ): Promise<string | undefined> {
+    const email = this.email!;
+    let personId: string | undefined;
+    if (input.subjectEntityType === 'person') personId = input.subjectEntityId;
+    else if (input.subjectEntityType === 'enrolment') personId = await email.personForEnrolment(tenantId, input.subjectEntityId);
+
+    const to = input.recipientRef && isEmailAddress(input.recipientRef)
+      ? input.recipientRef
+      : personId ? await email.addressForPerson(tenantId, personId) : undefined;
+    if (!to) return 'No email address: give recipientRef, or a person or enrolment whose student has one';
+
+    const sent = await email.send(tenantId, {
+      to,
+      subject:  renderTemplate(template.subjectTemplate ?? template.templateKey, input.payload),
+      bodyText: renderTemplate(template.bodyTemplate, input.payload),
+      communicationDispatchId: dispatchId,
+      ...(personId ? { personId } : {}),
+    }, actorId);
+    return sent.statusCode === 'failed' ? (sent.failureReason ?? 'The transport refused the message') : undefined;
+  }
 
   async #resolveTemplate(
     tenantId:       string,
@@ -296,13 +337,14 @@ export class CommunicationService {
   async #recordDispatch(
     tenantId: string,
     entry: DispatchCommunicationInput & {
+      id?:               string;
       localeCode:        string;
       statusCode:        DispatchStatusCode;
       suppressionReason?: string;
       dispatchedBy:      string;
     },
   ): Promise<string> {
-    const id = randomUUID();
+    const id = entry.id ?? randomUUID();
     await withTenantContext(this.db, tenantId, async (tx) => {
       await tx.insert(communicationDispatchLog).values({
         id,
@@ -355,6 +397,17 @@ export class CommunicationService {
 }
 
 // ── Mappers ──────────────────────────────────────────────────────────────────
+
+/** {key} placeholders replaced from the payload; unknown keys are left as written. */
+export function renderTemplate(template: string, payload: Record<string, unknown>): string {
+  return template.replace(/\{(\w+)\}/g, (whole, key: string) => {
+    const value = payload[key];
+    if (value === undefined || value === null) return whole;
+    if (typeof value === 'string') return value;
+    if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') return value.toString();
+    return JSON.stringify(value);
+  });
+}
 
 function templateToDto(row: typeof communicationTemplates.$inferSelect): CommunicationTemplateDto {
   return {

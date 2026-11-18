@@ -40198,6 +40198,1370 @@
         }
       }
     },
+    "/api/v1/email/settings": {
+      "get": {
+        "operationId": "getEmailSettings",
+        "tags": [
+          "communications"
+        ],
+        "x-publication-class": "integration",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "fromAddress",
+                    "transportCode",
+                    "unreadCount"
+                  ],
+                  "properties": {
+                    "fromAddress": {
+                      "type": "string"
+                    },
+                    "transportCode": {
+                      "type": "string"
+                    },
+                    "unreadCount": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/email/messages": {
+      "get": {
+        "operationId": "getEmailMessages",
+        "tags": [
+          "communications"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "inbound"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "outbound"
+                  ]
+                }
+              ]
+            },
+            "in": "query",
+            "name": "direction",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "personId",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "boolean"
+            },
+            "in": "query",
+            "name": "unread",
+            "required": false
+          },
+          {
+            "schema": {
+              "minimum": 1,
+              "maximum": 200,
+              "type": "integer"
+            },
+            "in": "query",
+            "name": "limit",
+            "required": false
+          }
+        ],
+        "x-publication-class": "integration",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "id",
+                      "directionCode",
+                      "fromAddress",
+                      "toAddress",
+                      "subject",
+                      "bodyText",
+                      "personId",
+                      "threadId",
+                      "inReplyToId",
+                      "communicationDispatchId",
+                      "statusCode",
+                      "failureReason",
+                      "transportCode",
+                      "transportMessageId",
+                      "sentBy",
+                      "readAt",
+                      "readBy",
+                      "createdAt"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "directionCode": {
+                        "type": "string"
+                      },
+                      "fromAddress": {
+                        "type": "string"
+                      },
+                      "toAddress": {
+                        "type": "string"
+                      },
+                      "subject": {
+                        "type": "string"
+                      },
+                      "bodyText": {
+                        "type": "string"
+                      },
+                      "personId": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "threadId": {
+                        "type": "string"
+                      },
+                      "inReplyToId": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "communicationDispatchId": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "statusCode": {
+                        "type": "string"
+                      },
+                      "failureReason": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "transportCode": {
+                        "type": "string"
+                      },
+                      "transportMessageId": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "sentBy": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "readAt": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "readBy": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "createdAt": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createEmailMessages",
+        "tags": [
+          "communications"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "to",
+                  "subject",
+                  "bodyText"
+                ],
+                "properties": {
+                  "to": {
+                    "minLength": 3,
+                    "maxLength": 320,
+                    "type": "string"
+                  },
+                  "subject": {
+                    "minLength": 1,
+                    "maxLength": 300,
+                    "type": "string"
+                  },
+                  "bodyText": {
+                    "minLength": 1,
+                    "maxLength": 50000,
+                    "type": "string"
+                  },
+                  "personId": {
+                    "type": "string"
+                  },
+                  "inReplyToId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-publication-class": "integration",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "directionCode",
+                    "fromAddress",
+                    "toAddress",
+                    "subject",
+                    "bodyText",
+                    "personId",
+                    "threadId",
+                    "inReplyToId",
+                    "communicationDispatchId",
+                    "statusCode",
+                    "failureReason",
+                    "transportCode",
+                    "transportMessageId",
+                    "sentBy",
+                    "readAt",
+                    "readBy",
+                    "createdAt"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "directionCode": {
+                      "type": "string"
+                    },
+                    "fromAddress": {
+                      "type": "string"
+                    },
+                    "toAddress": {
+                      "type": "string"
+                    },
+                    "subject": {
+                      "type": "string"
+                    },
+                    "bodyText": {
+                      "type": "string"
+                    },
+                    "personId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "threadId": {
+                      "type": "string"
+                    },
+                    "inReplyToId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "communicationDispatchId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "statusCode": {
+                      "type": "string"
+                    },
+                    "failureReason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "transportCode": {
+                      "type": "string"
+                    },
+                    "transportMessageId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "sentBy": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "readAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "readBy": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/email/messages/{messageId}": {
+      "get": {
+        "operationId": "getEmailMessagesByMessageId",
+        "tags": [
+          "communications"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "messageId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "integration",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "message",
+                    "thread"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "directionCode",
+                        "fromAddress",
+                        "toAddress",
+                        "subject",
+                        "bodyText",
+                        "personId",
+                        "threadId",
+                        "inReplyToId",
+                        "communicationDispatchId",
+                        "statusCode",
+                        "failureReason",
+                        "transportCode",
+                        "transportMessageId",
+                        "sentBy",
+                        "readAt",
+                        "readBy",
+                        "createdAt"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "directionCode": {
+                          "type": "string"
+                        },
+                        "fromAddress": {
+                          "type": "string"
+                        },
+                        "toAddress": {
+                          "type": "string"
+                        },
+                        "subject": {
+                          "type": "string"
+                        },
+                        "bodyText": {
+                          "type": "string"
+                        },
+                        "personId": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "threadId": {
+                          "type": "string"
+                        },
+                        "inReplyToId": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "communicationDispatchId": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "statusCode": {
+                          "type": "string"
+                        },
+                        "failureReason": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "transportCode": {
+                          "type": "string"
+                        },
+                        "transportMessageId": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "sentBy": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "readAt": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "readBy": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "thread": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "directionCode",
+                          "fromAddress",
+                          "toAddress",
+                          "subject",
+                          "bodyText",
+                          "personId",
+                          "threadId",
+                          "inReplyToId",
+                          "communicationDispatchId",
+                          "statusCode",
+                          "failureReason",
+                          "transportCode",
+                          "transportMessageId",
+                          "sentBy",
+                          "readAt",
+                          "readBy",
+                          "createdAt"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "directionCode": {
+                            "type": "string"
+                          },
+                          "fromAddress": {
+                            "type": "string"
+                          },
+                          "toAddress": {
+                            "type": "string"
+                          },
+                          "subject": {
+                            "type": "string"
+                          },
+                          "bodyText": {
+                            "type": "string"
+                          },
+                          "personId": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "threadId": {
+                            "type": "string"
+                          },
+                          "inReplyToId": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "communicationDispatchId": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "statusCode": {
+                            "type": "string"
+                          },
+                          "failureReason": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "transportCode": {
+                            "type": "string"
+                          },
+                          "transportMessageId": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "sentBy": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "readAt": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "readBy": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "createdAt": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/email/messages/{messageId}/read": {
+      "post": {
+        "operationId": "createEmailMessagesByMessageIdRead",
+        "tags": [
+          "communications"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "messageId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "integration",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "directionCode",
+                    "fromAddress",
+                    "toAddress",
+                    "subject",
+                    "bodyText",
+                    "personId",
+                    "threadId",
+                    "inReplyToId",
+                    "communicationDispatchId",
+                    "statusCode",
+                    "failureReason",
+                    "transportCode",
+                    "transportMessageId",
+                    "sentBy",
+                    "readAt",
+                    "readBy",
+                    "createdAt"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "directionCode": {
+                      "type": "string"
+                    },
+                    "fromAddress": {
+                      "type": "string"
+                    },
+                    "toAddress": {
+                      "type": "string"
+                    },
+                    "subject": {
+                      "type": "string"
+                    },
+                    "bodyText": {
+                      "type": "string"
+                    },
+                    "personId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "threadId": {
+                      "type": "string"
+                    },
+                    "inReplyToId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "communicationDispatchId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "statusCode": {
+                      "type": "string"
+                    },
+                    "failureReason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "transportCode": {
+                      "type": "string"
+                    },
+                    "transportMessageId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "sentBy": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "readAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "readBy": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/email/inbound": {
+      "post": {
+        "operationId": "createEmailInbound",
+        "tags": [
+          "integration-registry"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "messageId",
+                  "from",
+                  "to",
+                  "subject",
+                  "bodyText"
+                ],
+                "properties": {
+                  "messageId": {
+                    "minLength": 1,
+                    "maxLength": 998,
+                    "type": "string"
+                  },
+                  "from": {
+                    "minLength": 3,
+                    "maxLength": 320,
+                    "type": "string"
+                  },
+                  "to": {
+                    "minLength": 3,
+                    "maxLength": 320,
+                    "type": "string"
+                  },
+                  "subject": {
+                    "maxLength": 998,
+                    "type": "string"
+                  },
+                  "bodyText": {
+                    "maxLength": 200000,
+                    "type": "string"
+                  },
+                  "inReplyTo": {
+                    "maxLength": 998,
+                    "type": "string"
+                  },
+                  "provider": {
+                    "maxLength": 64,
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-publication-class": "integration",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "duplicate"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "duplicate": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/email-simulator/mailboxes": {
+      "get": {
+        "operationId": "getEmailSimulatorMailboxes",
+        "tags": [
+          "communications"
+        ],
+        "x-publication-class": "private",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "address",
+                      "received",
+                      "sent",
+                      "lastActivity"
+                    ],
+                    "properties": {
+                      "address": {
+                        "type": "string"
+                      },
+                      "received": {
+                        "type": "number"
+                      },
+                      "sent": {
+                        "type": "number"
+                      },
+                      "lastActivity": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/email-simulator/messages": {
+      "get": {
+        "operationId": "getEmailSimulatorMessages",
+        "tags": [
+          "communications"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "minLength": 3,
+              "type": "string"
+            },
+            "in": "query",
+            "name": "address",
+            "required": true
+          }
+        ],
+        "x-publication-class": "private",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "id",
+                      "directionCode",
+                      "messageId",
+                      "fromAddress",
+                      "toAddress",
+                      "subject",
+                      "bodyText",
+                      "inReplyToMessageId",
+                      "createdBy",
+                      "createdAt"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "directionCode": {
+                        "type": "string"
+                      },
+                      "messageId": {
+                        "type": "string"
+                      },
+                      "fromAddress": {
+                        "type": "string"
+                      },
+                      "toAddress": {
+                        "type": "string"
+                      },
+                      "subject": {
+                        "type": "string"
+                      },
+                      "bodyText": {
+                        "type": "string"
+                      },
+                      "inReplyToMessageId": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "createdBy": {
+                        "type": "string"
+                      },
+                      "createdAt": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/email-simulator/send-to-institution": {
+      "post": {
+        "operationId": "createEmailSimulatorSendToInstitution",
+        "tags": [
+          "communications"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "from",
+                  "subject",
+                  "bodyText"
+                ],
+                "properties": {
+                  "from": {
+                    "minLength": 3,
+                    "maxLength": 320,
+                    "type": "string"
+                  },
+                  "to": {
+                    "minLength": 3,
+                    "maxLength": 320,
+                    "type": "string"
+                  },
+                  "subject": {
+                    "maxLength": 300,
+                    "type": "string"
+                  },
+                  "bodyText": {
+                    "minLength": 1,
+                    "maxLength": 50000,
+                    "type": "string"
+                  },
+                  "inReplyToMessageId": {
+                    "maxLength": 998,
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-publication-class": "private",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "messageId",
+                    "srsMessageId"
+                  ],
+                  "properties": {
+                    "messageId": {
+                      "type": "string"
+                    },
+                    "srsMessageId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/regulatory/hesa/returns": {
       "post": {
         "operationId": "createRegulatoryHesaReturns",
