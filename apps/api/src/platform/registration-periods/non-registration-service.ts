@@ -17,6 +17,7 @@ import { ConflictError, NotFoundError, ValidationError } from '@revelation-srs/d
 import { and, asc, desc, eq, inArray, isNull, lt } from 'drizzle-orm';
 
 import type { BusinessCaseService } from '../cases/business-case-service.js';
+import { addWorkingDaysFor } from '../calendar/working-days.js';
 import { clockNow } from '../clock.js';
 import { type EnrolmentSubject, subjectsForEnrolments } from '../enrolment/subjects.js';
 import type { NotificationService } from '../notifications/notification-service.js';
@@ -59,18 +60,6 @@ export interface NonRegistrationCaseDto {
 }
 
 export interface NonRegistrationPolicy { minContactAttempts: number; noticeDays: number }
-
-/** Adds working days (Monday to Friday) to a date. Bank holidays are not known to the SRS. */
-export function addWorkingDays(from: Date, days: number): Date {
-  const d = new Date(from);
-  let left = days;
-  while (left > 0) {
-    d.setUTCDate(d.getUTCDate() + 1);
-    const day = d.getUTCDay();
-    if (day !== 0 && day !== 6) left -= 1;
-  }
-  return d;
-}
 
 const DAY_MS = 86_400_000;
 
@@ -336,7 +325,7 @@ export class NonRegistrationService implements RegistrationLapseHandler {
           statusCaseId: await this.#withdrawalFor(tenantId, c.subjectId, decision.id),
         } : null,
         decisionAllowedFrom: first ? new Date(first.contactedAt.getTime() + policy.noticeDays * DAY_MS) : null,
-        ukviReportDueBy: flags.includes('sponsored') || (await this.#hasUkviAlert(tenantId, c.subjectId)) ? addWorkingDays(period.closesAt, 10) : null,
+        ukviReportDueBy: flags.includes('sponsored') || (await this.#hasUkviAlert(tenantId, c.subjectId)) ? await addWorkingDaysFor(this.db, tenantId, period.closesAt, 10) : null,
         subject: data.subjects.get(c.subjectId),
       });
     }

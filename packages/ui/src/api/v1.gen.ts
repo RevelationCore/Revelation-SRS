@@ -3593,6 +3593,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/calendar/non-working-days": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getCalendarNonWorkingDays"];
+        put?: never;
+        post: operations["createCalendarNonWorkingDays"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/calendar/non-working-days/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createCalendarNonWorkingDaysImport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/regulatory/hesa/returns": {
         parameters: {
             query?: never;
@@ -4352,7 +4384,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        get: operations["getRegulatoryCasCasesByCasCaseIdSponsorReportVersions"];
         put?: never;
         post: operations["createRegulatoryCasCasesByCasCaseIdSponsorReportVersions"];
         delete?: never;
@@ -22067,6 +22099,144 @@ export interface operations {
             };
         };
     };
+    getCalendarNonWorkingDays: {
+        parameters: {
+            query?: {
+                from?: string;
+                to?: string;
+                divisionCode?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        date: string;
+                        divisionCode: string;
+                        description: string;
+                        source: string;
+                        createdBy: string;
+                        createdAt: string;
+                    }[];
+                };
+            };
+        };
+    };
+    createCalendarNonWorkingDays: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    date: string;
+                    description: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        date: string;
+                        divisionCode: string;
+                        description: string;
+                        source: string;
+                        createdBy: string;
+                        createdAt: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createCalendarNonWorkingDaysImport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    [key: string]: unknown;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        imported: number;
+                        source: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
     getRegulatoryHesaReturns: {
         parameters: {
             query?: {
@@ -24721,6 +24891,48 @@ export interface operations {
                 content: {
                     "application/json": {
                         [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    getRegulatoryCasCasesByCasCaseIdSponsorReportVersions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                casCaseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        reportId: string;
+                        reportPayloadRef: string;
+                        distributionItemId: string | null;
+                        generatedAt: string;
+                        generatedBy: string;
+                    }[];
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
                     };
                 };
             };

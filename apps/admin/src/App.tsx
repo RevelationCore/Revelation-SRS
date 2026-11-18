@@ -69,6 +69,7 @@ const AdjustmentCasesPage = lazy(() => import('./pages/AdjustmentCasesPage.js').
 const AdjustmentCaseDetailPage = lazy(() => import('./pages/AdjustmentCaseDetailPage.js').then((m) => ({ default: m.AdjustmentCaseDetailPage })));
 const ApplicationsPage = lazy(() => import('./pages/ApplicationsPage.js').then((m) => ({ default: m.ApplicationsPage })));
 const ApplicationDetailPage = lazy(() => import('./pages/ApplicationDetailPage.js').then((m) => ({ default: m.ApplicationDetailPage })));
+const NonWorkingDaysPage = lazy(() => import('./pages/NonWorkingDaysPage.js').then((m) => ({ default: m.NonWorkingDaysPage })));
 const EcDeterminationsPage = lazy(() => import('./pages/EcDeterminationsPage.js').then((m) => ({ default: m.EcDeterminationsPage })));
 const PendingApprovalsPage = lazy(() => import('./pages/PendingApprovalsPage.js').then((m) => ({ default: m.PendingApprovalsPage })));
 const StatusCasesPage = lazy(() => import('./pages/StatusCasesPage.js').then((m) => ({ default: m.StatusCasesPage })));
@@ -177,6 +178,10 @@ export function App() {
                 <Route
                   path="tenant-admin/selection-windows"
                   element={<RequirePermission permissions={['calendar:read']}><SelectionWindowsPage /></RequirePermission>}
+                />
+                <Route
+                  path="tenant-admin/working-days"
+                  element={<RequirePermission permissions={['calendar:read']}><NonWorkingDaysPage /></RequirePermission>}
                 />
                 <Route
                   path="tenant-admin/selection-windows/:windowId/allocation"

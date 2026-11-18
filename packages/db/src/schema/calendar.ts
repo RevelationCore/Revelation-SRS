@@ -75,3 +75,16 @@ export const moduleSelectionWindows = pgTable('module_selection_window', {
 
 export type ModuleSelectionWindow    = typeof moduleSelectionWindows.$inferSelect;
 export type NewModuleSelectionWindow = typeof moduleSelectionWindows.$inferInsert;
+
+/** A day that is not a working day for statutory deadlines (Phase 5 D-42): a bank holiday or an institution closure. */
+export const nonWorkingDays = pgTable('non_working_day', {
+  id:           uuid('id').primaryKey().defaultRandom(),
+  tenantId:     uuid('tenant_id').notNull().references(() => tenants.id),
+  date:         date('date').notNull(),
+  divisionCode: text('division_code').notNull(), // england-and-wales | scotland | northern-ireland | tenant
+  description:  text('description').notNull(),
+  source:       text('source').notNull(),        // gov-uk-json | manual
+  createdBy:    text('created_by').notNull(),
+  createdAt:    timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+export type NonWorkingDay = typeof nonWorkingDays.$inferSelect;

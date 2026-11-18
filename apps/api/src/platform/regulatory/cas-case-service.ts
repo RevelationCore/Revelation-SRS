@@ -324,6 +324,15 @@ export class CasCaseService {
     return row!.id;
   }
 
+  /** The sponsor reports made for a case, newest first (D-43a). */
+  async listSponsorReportVersions(casCaseId: string, tenantId: string): Promise<Array<{ reportId: string; reportPayloadRef: string; distributionItemId: string | null; generatedAt: Date; generatedBy: string }>> {
+    if (!(await this.getCurrentCase(casCaseId, tenantId))) throw new NotFoundError('CasCase', casCaseId);
+    const rows = await withTenantContext(this.db, tenantId, (tx) => tx.select().from(sponsorReportVersions)
+      .where(and(eq(sponsorReportVersions.tenantId, tenantId as Uuid), eq(sponsorReportVersions.casCaseId, casCaseId as Uuid)))
+      .orderBy(desc(sponsorReportVersions.generatedAt)));
+    return rows.map((r) => ({ reportId: r.id, reportPayloadRef: r.reportPayloadRef, distributionItemId: r.distributionItemId, generatedAt: r.generatedAt, generatedBy: r.generatedBy }));
+  }
+
   // ── internals ──────────────────────────────────────────────────────────────
 
   async #open(tenantId: string, casCaseId: string): Promise<CasCaseDto> {

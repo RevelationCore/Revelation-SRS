@@ -14,7 +14,15 @@ export interface CasCase {
   subject: { studentName: string | null; programmeCode: string | null; programmeTitle: string | null };
   eligibilityChecks: Array<{ checkId: string; guidanceVersion: string; checkTypeCode: string; resultCode: string; checkedBy: string; checkedAt: string }>;
   assignmentVersions: Array<{ assignmentVersionId: string; versionNumber: number; assignedPayloadHash: string; casNumber: string | null; approvedBy: string; approvedAt: string; smsRequestSentAt: string | null; smsReceiptRef: string | null }>;
+  /** Set when the applicant withdrew while the case was still in hand (Phase 5 D-39). */
+  attentionReason?: 'application-withdrawn' | null;
 }
+
+/** A sponsor report made to UKVI about this CAS (Phase 5 D-43a). */
+export interface SponsorReportVersion { reportId: string; reportPayloadRef: string; distributionItemId: string | null; generatedAt: string; generatedBy: string }
+export const listSponsorReportVersions = (casCaseId: string) => api.get<SponsorReportVersion[]>(`/api/v1/regulatory/cas-cases/${casCaseId}/sponsor-report-versions`);
+export const recordSponsorReportVersion = (casCaseId: string, body: { reportPayloadRef: string }) =>
+  api.post<{ reportId: string }>(`/api/v1/regulatory/cas-cases/${casCaseId}/sponsor-report-versions`, body);
 
 export interface CasSmsExport { contract: string; generatedAt: string; processedCount: number; casRequests: unknown[] }
 

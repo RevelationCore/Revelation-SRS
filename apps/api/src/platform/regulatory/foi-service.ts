@@ -11,6 +11,7 @@ import {
 import { NotFoundError, ValidationError } from '@revelation-srs/domain';
 
 import type { ValueSetService } from '../value-sets/service.js';
+import { addWorkingDaysFor } from '../calendar/working-days.js';
 import { clockNow } from '../clock.js';
 
 export interface FoiRequestInput {
@@ -71,7 +72,7 @@ export class FoiService {
     if (!input.requestReference.trim()) throw new ValidationError('FOI request reference is required');
     if (!input.description.trim()) throw new ValidationError('FOI request description is required');
     const receivedDate = parseIsoDate(input.receivedDate, 'receivedDate');
-    const statutoryDeadlineDate = addWorkingDays(receivedDate, 20);
+    const statutoryDeadlineDate = await addWorkingDaysFor(this.db, tenantId, receivedDate, 20);
     const requestId = randomUUID();
     const now = clockNow();
 
@@ -360,15 +361,6 @@ function parseIsoDate(value: string, field: string): Date {
   return date;
 }
 
-function addWorkingDays(startDate: Date, workingDays: number): Date {
-  const date = new Date(startDate);
-  let remaining = workingDays;
-  while (remaining > 0) {
-    date.setUTCDate(date.getUTCDate() + 1);
-    if (date.getUTCDay() !== 0 && date.getUTCDay() !== 6) remaining -= 1;
-  }
-  return date;
-}
 
 function addDays(startDate: Date, days: number): Date {
   const date = new Date(startDate);

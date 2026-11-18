@@ -192,6 +192,7 @@ function Sidebar({ onLogout, displayName, roles }: { onLogout: () => void; displ
           {can('globalisation:read') && <SubItem to="/tenant-admin/globalisation" label="Globalisation" />}
           {can('rule:read') && <SubItem to="/tenant-admin/rules" label="Academic rules" />}
           {can('calendar:read') && <SubItem to="/tenant-admin/selection-windows" label="Selection windows" />}
+          {can('calendar:read') && <SubItem to="/tenant-admin/working-days" label="Working-day calendar" />}
           {can('timetable:read') && <SubItem to="/tenant-admin/timetables" label="Timetables" />}
           {can('workflow:read') && <SubItem to="/tenant-admin/workflows" label="Workflows" />}
           {can('workflow:write') && <SubItem to="/tenant-admin/workflows/start" label="Start a workflow" />}

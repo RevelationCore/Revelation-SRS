@@ -242,3 +242,42 @@ ON CONFLICT DO NOTHING;
 INSERT INTO "field_value_set" ("entity_name", "field_name", "value_set_code", "description")
 VALUES ('exceptional_circumstances', 'outcome_code', 'ec-outcome-code', NULL)
 ON CONFLICT DO NOTHING;
+
+-- ── D-42: working-day calendar for statutory deadlines ──────────────────────
+CREATE TABLE IF NOT EXISTS "non_working_day" (
+  "id"            uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+  "tenant_id"     uuid        NOT NULL REFERENCES "tenant"("id"),
+  "date"          date        NOT NULL,
+  "division_code" text        NOT NULL,
+  "description"   text        NOT NULL,
+  "source"        text        NOT NULL,
+  "created_by"    text        NOT NULL,
+  "created_at"    timestamptz NOT NULL DEFAULT now(),
+  UNIQUE ("tenant_id", "date", "division_code")
+);
+ALTER TABLE "non_working_day" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "non_working_day" FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "non_working_day";
+CREATE POLICY tenant_isolation ON "non_working_day"
+  USING ("tenant_id" = current_setting('app.current_tenant_id', true)::uuid)
+  WITH CHECK ("tenant_id" = current_setting('app.current_tenant_id', true)::uuid);
+
+INSERT INTO "value_set" ("set_code", "display_name", "source", "source_version", "description", "is_extensible")
+VALUES ('calendar-division-code', 'Calendar Division', 'srs-internal', NULL, 'Which bank holidays a non-working day belongs to; tenant closures apply everywhere', false)
+ON CONFLICT ("set_code") DO NOTHING;
+
+INSERT INTO "value_set_member" ("value_set_id", "code", "display_label", "sort_order", "active_from", "source_metadata")
+SELECT vs."id", v.code, v.display_label, v.sort_order, '2000-01-01T00:00:00Z', NULL
+FROM "value_set" vs,
+(VALUES
+  ('calendar-division-code', 'england-and-wales', 'England and Wales',  10),
+  ('calendar-division-code', 'scotland',          'Scotland',           20),
+  ('calendar-division-code', 'northern-ireland',  'Northern Ireland',   30),
+  ('calendar-division-code', 'tenant',            'Institution closure', 40)
+) AS v(set_code, code, display_label, sort_order)
+WHERE vs."set_code" = v.set_code
+ON CONFLICT DO NOTHING;
+
+INSERT INTO "field_value_set" ("entity_name", "field_name", "value_set_code", "description")
+VALUES ('non_working_day', 'division_code', 'calendar-division-code', NULL)
+ON CONFLICT DO NOTHING;

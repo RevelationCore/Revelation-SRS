@@ -111,6 +111,23 @@ export function casCasesRoutes(fastify: FastifyInstance): void {
     await reply.send(file);
   });
 
+  fastify.get('/regulatory/cas-cases/:casCaseId/sponsor-report-versions', {
+    schema: {
+      params: CaseId,
+      response: {
+        200: Type.Array(Type.Object({
+          reportId: Type.String(), reportPayloadRef: Type.String(), distributionItemId: Type.Union([Type.String(), Type.Null()]), generatedAt: Type.String(), generatedBy: Type.String(),
+        })),
+        404: ErrorSchema,
+      },
+    },
+    preHandler: [requirePermission('cas:read')],
+  }, async (request, reply) => {
+    const { casCaseId } = request.params as { casCaseId: string };
+    const rows = await svc().listSponsorReportVersions(casCaseId, request.tenantId);
+    await reply.send(rows.map((r) => ({ ...r, generatedAt: r.generatedAt.toISOString() })));
+  });
+
   fastify.post('/regulatory/cas-cases/:casCaseId/sponsor-report-versions', {
     schema: {
       params: CaseId,
@@ -121,6 +138,7 @@ export function casCasesRoutes(fastify: FastifyInstance): void {
   }, async (request, reply) => {
     const { casCaseId } = request.params as { casCaseId: string };
     const reportId = await svc().recordSponsorReportVersion(casCaseId, request.tenantId, request.body as RecordSponsorReportVersionInput, request.user.sub);
+    await audit(fastify, request, casCaseId, 'update', 'Sponsor report version recorded');
     await reply.code(201).send({ reportId });
   });
 }

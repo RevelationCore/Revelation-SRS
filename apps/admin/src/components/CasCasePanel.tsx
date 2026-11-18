@@ -1,9 +1,11 @@
-import { type FormEvent, useState } from 'react';
+import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import { Button, Input, Select, LabelledField, Badge } from '@revelation-srs/ui';
 
 import { ApiError } from '../api/client.js';
 import {
   type CasCase,
+  type SponsorReportVersion,
+  listSponsorReportVersions, recordSponsorReportVersion,
   approveCas, prepareCas, recordCasNumber, recordEligibilityCheck, reopenCasForCorrection, withdrawCas,
 } from '../api/casCases.js';
 import { useAuth } from '../auth/AuthContext.js';
@@ -46,6 +48,9 @@ export function CasCasePanel({ item, onChanged }: { item: CasCase; onChanged: ()
         <span className="text-xs text-neutral-500">opened {when(item.openedAt)}{item.applicationId && !item.enrolmentId ? ' · on the application' : ''}</span>
       </div>
       {error && <p className="text-danger-600" role="alert">{error}</p>}
+      {item.attentionReason === 'application-withdrawn' && (
+        <p className="rounded bg-warning-50 p-2 text-warning-800" role="status">The applicant has withdrawn. Withdraw this CAS, or report the withdrawal to UKVI if it was assigned.</p>
+      )}
 
       <div>
         <p className="font-medium text-neutral-800">Eligibility checks</p>
@@ -72,6 +77,8 @@ export function CasCasePanel({ item, onChanged }: { item: CasCase; onChanged: ()
         </div>
       )}
 
+      <SponsorReports casCaseId={id} canRecord={canPrepare} />
+
       <div className="flex flex-wrap items-end gap-2">
         {canPrepare && ['eligibility-checked', 'prepared'].includes(item.statusCode) && (
           <Button size="sm" variant="secondary" onClick={() => void run(() => prepareCas(id))}>{item.statusCode === 'prepared' ? 'Prepare again' : 'Prepare CAS data'}</Button>
@@ -86,6 +93,39 @@ export function CasCasePanel({ item, onChanged }: { item: CasCase; onChanged: ()
         {canPrepare && item.statusCode === 'assigned' && <Button size="sm" variant="secondary" onClick={() => void run(() => reopenCasForCorrection(id))}>Correct the CAS</Button>}
         {canPrepare && item.statusCode !== 'withdrawn' && <Button size="sm" variant="ghost" onClick={() => void run(() => withdrawCas(id))}>Withdraw case</Button>}
       </div>
+    </div>
+  );
+}
+
+/** The sponsor reports made to UKVI about this CAS, and recording a new one (D-43a). */
+function SponsorReports({ casCaseId, canRecord }: { casCaseId: string; canRecord: boolean }) {
+  const [reports, setReports] = useState<SponsorReportVersion[]>([]);
+  const [ref, setRef] = useState('');
+  const [error, setError] = useState('');
+  const load = useCallback(async () => { setReports(await listSponsorReportVersions(casCaseId).catch(() => [])); }, [casCaseId]);
+  useEffect(() => { void load(); }, [load]);
+  async function submit(e: FormEvent) {
+    e.preventDefault(); setError('');
+    try { await recordSponsorReportVersion(casCaseId, { reportPayloadRef: ref.trim() }); setRef(''); await load(); }
+    catch (err) { setError(message(err, 'Recording the sponsor report failed')); }
+  }
+  return (
+    <div>
+      <p className="font-medium text-neutral-800">Sponsor reports</p>
+      {reports.length === 0 ? <p className="text-neutral-600">None recorded.</p> : (
+        <ul className="mt-1 text-neutral-700">
+          {reports.map((r) => <li key={r.reportId}>{r.reportPayloadRef} · {r.generatedBy}, {when(r.generatedAt)}</li>)}
+        </ul>
+      )}
+      {canRecord && (
+        <form className="mt-2 flex flex-wrap items-end gap-2" onSubmit={(e) => void submit(e)}>
+          <LabelledField label="SMS report reference" htmlFor={`cas-${casCaseId}-report`} hint="The reference SMS gave the report">
+            <Input id={`cas-${casCaseId}-report`} value={ref} onChange={(e) => setRef(e.target.value)} />
+          </LabelledField>
+          <Button size="sm" type="submit" variant="secondary" disabled={!ref.trim()}>Record sponsor report</Button>
+        </form>
+      )}
+      {error && <p className="text-xs text-danger-600" role="alert">{error}</p>}
     </div>
   );
 }

@@ -13,7 +13,7 @@ import {
 import { and, asc, eq, inArray, sql } from 'drizzle-orm';
 
 import { clockNow } from '../clock.js';
-import { addWorkingDays } from '../registration-periods/non-registration-service.js';
+import { addWorkingDaysFor } from '../calendar/working-days.js';
 
 import { RegulatoryExchangeService } from './exchange-service.js';
 
@@ -139,15 +139,16 @@ export class UcasDecisionOutbox {
       inArray(integrationExchanges.statusCode, ['queued', 'sent', 'mismatch', 'reconciled']),
     )).orderBy(asc(integrationExchanges.createdAt)));
     const now = clockNow();
-    const items = rows.map((r: IntegrationExchange): UcasOutboundItem => {
+    const items: UcasOutboundItem[] = [];
+    for (const r of rows as IntegrationExchange[]) items.push(await (async (): Promise<UcasOutboundItem> => {
       const s = r.payloadSummary as Record<string, unknown>;
-      const overdue = r.statusCode === 'sent' && r.sentAt !== null && addWorkingDays(r.sentAt, limit) < now;
+      const overdue = r.statusCode === 'sent' && r.sentAt !== null && (await addWorkingDaysFor(this.db, tenantId, r.sentAt, limit)) < now;
       return {
         exchangeId: r.id, applicationId: String(s['applicationId']), sourceReference: String(s['sourceReference']), outcome: String(s['outcome']),
         ucasCode: crosswalk.get(String(s['outcome']))?.ucasCode ?? null, statusCode: r.statusCode, queuedAt: r.createdAt, sentAt: r.sentAt,
         attention: r.statusCode === 'mismatch' ? 'mismatch' : overdue ? 'not-reconciled' : null,
       };
-    });
+    })());
     return opts.attentionOnly ? items.filter((i) => i.attention) : items;
   }
 

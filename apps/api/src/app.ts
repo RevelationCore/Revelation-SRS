@@ -161,6 +161,7 @@ import { correctionCasesRoutes } from './routes/correction-cases.js';
 import { identityResolutionRoutes } from './routes/identity-resolution.js';
 import { pgrRoutes } from './routes/pgr.js';
 import { researchStaffRoutes } from './routes/research-staff.js';
+import { nonWorkingDayRoutes } from './routes/non-working-days.js';
 import { EcDeterminationService } from './platform/circumstances/ec-determination-service.js';
 import { ResearchStaffService } from './platform/pgr/research-staff-service.js';
 import { demoRoutes } from './routes/demo.js';
@@ -821,6 +822,7 @@ export async function buildApp(
       ['/module-relationships',      'catalogue'],
       ['/learning-outcomes',         'catalogue'],
       ['/academic-periods',          'calendar'],
+      ['/calendar/',                 'calendar'],
       ['/module-selection-windows',  'calendar'],
       ['/allocation-runs',           'module-selection'],
       ['/timetable-publications',    'timetabling'],
@@ -893,6 +895,7 @@ export async function buildApp(
   await fastify.register(identityResolutionRoutes,  { prefix: '/api/v1' });
   await fastify.register(pgrRoutes,                 { prefix: '/api/v1' });
   await fastify.register(researchStaffRoutes,       { prefix: '/api/v1' });
+  await fastify.register(nonWorkingDayRoutes,       { prefix: '/api/v1' });
   await fastify.register(regulatoryHesaRoutes,      { prefix: '/api/v1' });
   await fastify.register(regulatorySlcRoutes,       { prefix: '/api/v1' });
   await fastify.register(regulatoryUcasRoutes,      { prefix: '/api/v1' });
