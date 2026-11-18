@@ -45,3 +45,4 @@ PGR supervision and examination shall be modelled as governed cases rooted on th
 - Requirements: HRP-002–HRP-006
 - Backlog: BPR-D07, D12
 - Processes: BP-03-007, BP-04-003, BP-05-010, BP-06-006
+- Examiner self-service (Phase 5 D-40, ADR-025): examiners submit their own preliminary report in the portal, one per appointment, only once their appointment is confirmed and independence-checked; the thesis is released to them at the same point; supervisors see their own supervisees and never examiner reports.

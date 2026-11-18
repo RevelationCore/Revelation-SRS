@@ -40,6 +40,7 @@
     "check:current-capabilities": "node scripts/check-current-capabilities.mjs",
     "check:process-coverage": "node scripts/check-process-coverage.mjs",
     "check:review-pack": "node scripts/check-review-pack.mjs",
+    "check:capability-baseline": "node scripts/check-capability-baseline.mjs",
     "check:journey-metadata": "node scripts/select-journeys.mjs validate",
     "evidence:generate": "node scripts/generate-evidence-report.mjs",
     "check:doc-links": "node scripts/check-doc-links.mjs",

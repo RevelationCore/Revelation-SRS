@@ -1,6 +1,6 @@
 # Academic Journey Gap-Closure Plan
 
-> Status: Proposed
+> Status: Phases 0 to 5 delivered (2026-11-18); reviews awaiting nomination
 > Date: 2026-11-16
 > Baseline: [current capabilities](current-capabilities.md) and the coverage review of 2026-11-16
 > Scope: the 49 academic-journey processes in business-process areas 01–06
@@ -149,6 +149,17 @@ The timetabling system is reached by manual file or the in-repo simulator (D-14)
 
 ## Phase 5 — Audiences and evidence (medium)
 
+**Status: code exit met; review exit submitted.** Decisions are recorded in [Phase 5 gap-closure decisions](../decisions/phase-5-gap-closure-decisions.md) (D-35 to D-47). Built:
+- every calculation records the rule versions it used (D-35), and repeat results are capped at their reassessment plan cap (D-43b);
+- data packs are hashed under a rule manifest, and decisions and ratification cite the hash of the exact pack (D-36);
+- corrections record the versions they replaced and created, and keep valid time (D-37);
+- the portal serves applicants, supervisors, review panels and examiners, bound by `srs_person_id` (D-38, ADR-025), with an applicant view (D-39) and research-staff views (D-40);
+- EC outcomes change only through a governed determination (D-41);
+- statutory deadlines skip bank holidays and closure days (D-42);
+- CAS sponsor reports are on screen (D-43a).
+
+All twelve journey capabilities are rated Implemented baseline against the D-46 test (`check:capability-baseline`). The independent review of the adjustments workflow (D-44) and the SME change review of Phases 1 to 5 (D-45) are submitted, with reviewers awaiting nomination; approval is the institution's.
+
 | Gap | Work |
 |---|---|
 | Applicants | A portal view: application status, offer, conditions, response |
@@ -157,7 +168,9 @@ The timetabling system is reached by manual file or the in-repo simulator (D-14)
 | Reasonable adjustments | The independent professional review of the case workflow (BP-04-004) |
 | Process review | Subject-matter-expert review of the processes changed in Phases 1–4, recorded in the [SME review register](../business-processes/sme-review-register.md) |
 
-**Exit:** every capability in the journey areas meets the "implemented baseline" definition in current capabilities.
+**Exit (as amended by D-45):** the exit is in two parts.
+- **Code exit:** every capability in the journey areas meets the D-46 test for "implemented baseline". This is now met.
+- **Review exit:** a change review pack is submitted for each batch, and the register rows are marked submitted. This is now done. Approval is tracked in the [SME review register](../business-processes/sme-review-register.md) and is not a condition of the phase.
 
 ## Summary
 
@@ -168,6 +181,6 @@ The timetabling system is reached by manual file or the in-repo simulator (D-14)
 | 2 Missing processes | Large | 44+ of 49, all 49 built | Re-registration and Clearing policy |
 | 3 Integrations and outputs | Large | 49 | UCAS access; signing approach |
 | 4 Rule depth — **done** | Medium | 49 (43 on screen, 6 with a simulated link), with every selection rule enforced | Timetabling source |
-| 5 Audiences and evidence | Medium | 49, at implemented baseline | Independent and SME review |
+| 5 Audiences and evidence — **done** | Medium | 49, with all 12 journey capabilities at implemented baseline | Independent and SME review (submitted, awaiting reviewers) |
 
 Phases 4 and 5 can run alongside Phase 3, which mostly waits on external parties.

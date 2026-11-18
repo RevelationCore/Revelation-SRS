@@ -1,6 +1,6 @@
 # Phase 5 Gap-Closure Decisions
 
-> Status: Adopted (2026-11-17), implementation in progress
+> Status: Implemented (2026-11-18)
 > Date: 2026-11-17
 > Context: [Academic journey gap-closure plan](../product/academic-journey-gap-closure-plan.md), Phase 5 (audiences and evidence)
 > Made by: the project's solutions-architect agent (`.claude/agents/solutions-architect.md`). Numbering continues from [Phase 4](phase-4-gap-closure-decisions.md).
@@ -214,3 +214,59 @@ S1 D-35 · S2 D-36 · S3 D-37 · S4 D-38 · S5 D-39 · S6 D-40 · S7 D-41, D-42,
 4. Board decisions and ratification records have no separation of duties.
 5. Award document hashes sort only top-level keys; new issues should move to JCS under a version tag.
 6. Applicant exposure depends on identity matching; keep `needs-review` strict and log portal reads.
+
+## Implementation notes
+
+Built 2026-11-17 to 2026-11-18 in commits e1fcca0 (D-35, D-43b), 7dfcdb8 (D-36), 391e04f (D-37), 4ad71d8 (D-38), 6029afb (D-39), d0ca934 (D-40), aec92b3 (D-41), a507e52 (D-42, D-43a) and a74e450 (D-44, D-45, browser journeys). The schema is in `0009_audiences_and_evidence`, after a squash of 0008 and 0009 into `0008_registration_integrations_and_rule_depth` (60324af).
+
+Where the build departs from the text above, and why:
+
+- **D-35.**
+  - `mark_calculation_evidence` and `ukvi_compliance_alert` also record `rule_versions`, so the UKVI attendance threshold, a regulatory rule, is covered by the coverage test as well.
+  - `RuleNotConfiguredError` is now a 422 with its message rather than an opaque 500, because with `rules.builtInDefaults` = `refuse` it is a condition staff need to read.
+  - The three evidence tables had no row-level security and now have it.
+  - Conferment compares cited version ids only where the recommendation has evidence; recommendations made before Phase 5 are compared by classification alone.
+- **D-36.**
+  - The pack's canonical form (`examBoardPackCanonical`) lives in `packages/domain`, with SHA-256 in the API, so the demo loader can hash its packs with the same definition.
+  - Candidates are ordered by enrolment and then by their canonical profile, because one enrolment can have more than one profile in a pack.
+  - `exam_board.ratified_data_pack_id` is a logical reference with no foreign key: a key back to the pack would make a cycle, which the demo reset refuses.
+  - Demo packs are hashed but carry no rule manifest.
+- **D-37.**
+  - The version references are written directly in the amendment's transaction; no transaction-aware `BusinessCaseService` method was added.
+  - `caseDecisionId` is null, because post-ratification cases are not business cases.
+  - The same valid-time fix applies to the mark, module-result and progression services' own locked-amendment paths.
+  - `GET /correction-cases/{id}/amendments` was added for the Corrections tab.
+- **D-38.**
+  - The delivery idempotency key stays the change key, and the state hash travels in the payload. Keying by the state hash would drop a state that recurs after a change, for example full to limited and back to full.
+  - Contract v2 is the producer's payload; there was no file contract for v1 to version.
+  - `accountKind` `external` also covers staff supervisors with no enrolment.
+  - An examiner's access starts when the panel is approved, not at nomination.
+- **D-39.**
+  - Applicant uploads use the existing evidence provenance code `applicant` ("Applicant upload") rather than a new `applicant-upload`.
+  - The CAS flag is derived (`attentionReason` `application-withdrawn` on an open or assigned case) rather than stored.
+  - The account request follows the identity update rather than running in the same transaction.
+- **D-40.**
+  - A supervisor's report is case evidence with classification `sensitive-academic` and source `supervisor-report`, not a new classification `supervisor-report`.
+  - The thesis and its download are withheld until the examiner's appointment is confirmed and independence-checked (ADR-023).
+- **D-41.**
+  - EC outcomes were free text; a new `ec-outcome-code` value set backs them.
+  - A staff record made with an outcome records the claim pending and proposes that outcome.
+  - New permission `circumstances:decide` (registry administrator and exam-board chair).
+- **D-42.**
+  - The GOV.UK file is fetched by the import route when `calendar.bankHolidays.source` is `gov-uk` and no file is uploaded, not on a worker schedule.
+  - Tenant administrators can now read the calendar.
+- **D-43a.** A `GET` for sponsor report versions was added; the CAS panel's test is a component test, and the Playwright evidence is the existing UKVI sponsor journey.
+- **D-44.** The pack is `review-pack-bp-04-004.md`, because the business-process checker treats any `bp-NN-NNN-*.md` file as a process page.
+- **D-45.**
+  - The pack is generated from the decision records into six batches: R1 to R4 are Phases 1 to 4; R5 is Phase 5's evidence and governed outcomes; R6 is Phase 5's self-service audiences.
+  - The register rows for areas 07 and 08 are not marked submitted, because the pack does not cover them.
+- **D-46.**
+  - All twelve journey capabilities now meet the test, so the code exit is met.
+  - For curriculum, assessment, correction and progression, the Playwright evidence is the admin route-rendering and accessibility suite (`e2e/admin-authenticated.spec.ts`) rather than a journey written for this phase.
+  - Two judgments are recorded here for review rather than settled by the test. First, module selection's pairwise clash detection can miss a clash that arises only across three or more group choices; the architect judged that a scope bound, not a wrong result. Second, board decisions have no separation of duties (risk 4).
+
+Not built:
+
+- No scheduled job ends applicant or examiner accounts after their grace periods. An account changes only when its state is next recomputed, on any change to the person's applications, enrolments, assignments or appointments.
+- The six risks above remain for later phases.
+
