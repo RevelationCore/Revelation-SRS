@@ -140,6 +140,7 @@ function Sidebar({ onLogout, displayName, roles }: { onLogout: () => void; displ
         {!can('registration:read') && can('financial-registration:read') && <NavItem to="/registration/checks" label="Fees and registration" icon={ListChecks} />}
         {can('status-case:read') && <NavItem to="/status-cases" label="Status cases" icon={ListChecks} />}
         {can('academic-exception:approve') && <NavItem to="/credit-approvals" label="Credit & exception approvals" end icon={ListChecks} />}
+        {can('circumstances:decide') && <NavItem to="/ec-determinations" label="EC determinations" end icon={ListChecks} />}
         {canViewIdentityChangeRequests && <NavItem to="/identity-change-requests" label="Identity change requests" end icon={ListChecks} />}
         {canViewExamBoards && <NavItem to="/exam-boards" label="Exam boards" icon={GraduationCap} />}
         {can('module-selection:configure', 'curriculum-binding:read') && <NavItem to="/programme-rules" label="Programme rules" icon={ListChecks} />}

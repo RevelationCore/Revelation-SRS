@@ -63,20 +63,14 @@ describe('Exceptional circumstances and misconduct', () => {
       },
     });
     expect(create.statusCode).toBe(201);
-    const ecId = create.json<{ exceptionalCircumstancesId: string }>().exceptionalCircumstancesId;
+    const { exceptionalCircumstancesId: ecId, determinationId } = create.json<{ exceptionalCircumstancesId: string; determinationId: string }>();
+    expect(determinationId).toBeTruthy();
 
-    const list = await ctx.app.inject({
-      method: 'GET',
-      url: `/api/v1/students/${fixture.personId}/exceptional-circumstances`,
-      headers: { authorization: `Bearer ${jwt}` },
-    });
-    expect(list.statusCode).toBe(200);
-    expect(list.json<Array<{ exceptionalCircumstancesId: string; moduleOfferingId: string; outcomeCode: string }>>())
-      .toContainEqual(expect.objectContaining({
-        exceptionalCircumstancesId: ecId,
-        moduleOfferingId: fixture.moduleOfferingId,
-        outcomeCode: 'defer',
-      }));
+    // D-41: the claim is recorded pending; the outcome given with it is only a proposal.
+    const outcomeOf = async () => (await ctx.app.inject({
+      method: 'GET', url: `/api/v1/students/${fixture.personId}/exceptional-circumstances`, headers: { authorization: `Bearer ${jwt}` },
+    })).json<Array<{ exceptionalCircumstancesId: string; moduleOfferingId: string; outcomeCode: string }>>().find((e) => e.exceptionalCircumstancesId === ecId);
+    expect(await outcomeOf()).toMatchObject({ moduleOfferingId: fixture.moduleOfferingId, outcomeCode: 'pending' });
 
     const flagged = capturedEvents.find((event) => event.type === 'srs.circumstances.exceptional-circumstances-flagged');
     expect(flagged).toBeDefined();
@@ -86,25 +80,46 @@ describe('Exceptional circumstances and misconduct', () => {
       enrolmentId: fixture.enrolmentId,
       personId: fixture.personId,
       moduleOfferingId: fixture.moduleOfferingId,
-      outcomeCode: 'defer',
+      outcomeCode: 'pending',
     });
 
-    const patch = await ctx.app.inject({
-      method: 'PATCH',
-      url: `/api/v1/exceptional-circumstances/${ecId}`,
-      headers: { authorization: `Bearer ${jwt}` },
-      payload: { outcomeCode: 'condone', notes: 'Board discretion requested' },
+    // The person who recorded and proposed it cannot decide it; someone else can.
+    const decide = (as: string, decisionCode: string, id = determinationId) => ctx.app.inject({
+      method: 'POST', url: `/api/v1/ec-determinations/${id}/decision`, headers: { authorization: `Bearer ${as}` }, payload: { decisionCode },
     });
-    expect(patch.statusCode).toBe(204);
+    expect((await decide(jwt, 'upheld')).statusCode).toBe(403);
+    const decider = await ctx.makeJwt({ sub: 'ec-panel-chair', roles: ['exam-board-chair'] });
+    const upheld = await decide(decider, 'upheld');
+    expect(upheld.statusCode, upheld.body).toBe(200);
+    expect(upheld.json<{ statusCode: string; decidedBy: string }>()).toMatchObject({ statusCode: 'upheld', decidedBy: 'ec-panel-chair' });
+    expect((await outcomeOf())?.outcomeCode).toBe('defer');
 
     const updated = capturedEvents.find((event) => event.type === 'srs.circumstances.exceptional-circumstances-updated');
     expect(updated).toBeDefined();
     expect(updated?.classification).toBe('sensitive');
-    expect(updated?.payload).toMatchObject({
-      exceptionalCircumstancesId: ecId,
-      previousOutcomeCode: 'defer',
-      newOutcomeCode: 'condone',
+    expect(updated?.payload).toMatchObject({ exceptionalCircumstancesId: ecId, previousOutcomeCode: 'pending', newOutcomeCode: 'defer' });
+
+    // The outcome cannot be edited directly; other fields can.
+    const patch = (payload: Record<string, unknown>) => ctx.app.inject({ method: 'PATCH', url: `/api/v1/exceptional-circumstances/${ecId}`, headers: { authorization: `Bearer ${jwt}` }, payload });
+    expect((await patch({ outcomeCode: 'condone' })).statusCode).toBe(422);
+    expect((await patch({ notes: 'Board discretion requested' })).statusCode).toBe(204);
+
+    // A further proposal leaves the outcome unchanged until decided, and a rejection leaves it as it was.
+    const proposer = await ctx.makeJwt({ sub: 'ec-officer-1', roles: ['registry-administrator'] });
+    const second = await ctx.app.inject({
+      method: 'POST', url: `/api/v1/exceptional-circumstances/${ecId}/determination-proposals`, headers: { authorization: `Bearer ${proposer}` },
+      payload: { outcomeCode: 'condone', reason: 'Board discretion' },
     });
+    expect(second.statusCode, second.body).toBe(201);
+    const secondId = second.json<{ id: string }>().id;
+    expect((await outcomeOf())?.outcomeCode).toBe('defer');
+    expect((await ctx.app.inject({ method: 'GET', url: '/api/v1/ec-determinations?statusCode=proposed', headers: { authorization: `Bearer ${decider}` } }))
+      .json<Array<{ id: string }>>().map((d) => d.id)).toContain(secondId);
+    // Neither the proposer nor the original recorder may decide it.
+    expect((await decide(proposer, 'not-upheld', secondId)).statusCode).toBe(403);
+    expect((await decide(jwt, 'not-upheld', secondId)).statusCode).toBe(403);
+    expect((await decide(decider, 'not-upheld', secondId)).json<{ statusCode: string }>().statusCode).toBe('not-upheld');
+    expect((await outcomeOf())?.outcomeCode).toBe('defer');
   });
 
   it('keeps exceptional circumstances permission separate from adjustments', async () => {

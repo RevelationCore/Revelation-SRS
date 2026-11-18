@@ -161,6 +161,7 @@ import { correctionCasesRoutes } from './routes/correction-cases.js';
 import { identityResolutionRoutes } from './routes/identity-resolution.js';
 import { pgrRoutes } from './routes/pgr.js';
 import { researchStaffRoutes } from './routes/research-staff.js';
+import { EcDeterminationService } from './platform/circumstances/ec-determination-service.js';
 import { ResearchStaffService } from './platform/pgr/research-staff-service.js';
 import { demoRoutes } from './routes/demo.js';
 import { integrationRegistryRoutes } from './routes/integration-registry.js';
@@ -555,6 +556,9 @@ export async function buildApp(
   fastify.decorate('identityResolutionService', identityResolution);
   fastify.decorate('engagementOutcomeService', engagementOutcomes);
   fastify.decorate('exceptionalCircumstancesService', exceptionalCircumstances);
+  const ecDeterminations = new EcDeterminationService(db, exceptionalCircumstances, valueSets, workflowBridge, reviewExecution);
+  ecDeterminations.registerWorkflowEffects(reviewActivities);
+  fastify.decorate('ecDeterminationService', ecDeterminations);
   fastify.decorate('misconductService', misconduct);
   fastify.decorate('boardService', boards);
   fastify.decorate('boardAuthorityService', boardAuthority);
@@ -777,6 +781,7 @@ export async function buildApp(
       ['/external-records',          'integration-registry'],
       ['/engagement-outcomes',       'engagement-outcomes'],
       ['/exceptional-circumstances', 'circumstances'],
+      ['/ec-determinations',         'circumstances'],
       ['/misconduct-outcomes',       'circumstances'],
       ['/correction-cases',          'governance'],
       ['/identity-resolution',       'governance'],
@@ -953,6 +958,7 @@ declare module 'fastify' {
     allocationService: AllocationService;
     applicantPortalService: ApplicantPortalService;
     researchStaffService: ResearchStaffService;
+    ecDeterminationService: EcDeterminationService;
     moduleSelectionService: ModuleSelectionService;
     bindingChangeService: BindingChangeService;
     registrationPeriodService: RegistrationPeriodService;

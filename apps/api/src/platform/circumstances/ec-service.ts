@@ -10,7 +10,7 @@ import {
   type Db,
   withTenantContext,
 } from '@revelation-srs/db';
-import { EVENT_TYPES, NotFoundError } from '@revelation-srs/domain';
+import { EVENT_TYPES, NotFoundError, ValidationError } from '@revelation-srs/domain';
 import type {
   CircumstancesEcFlaggedV1Payload,
   CircumstancesEcUpdatedV1Payload,
@@ -27,6 +27,7 @@ export interface RecordExceptionalCircumstancesInput {
   notes?: string;
 }
 
+/** Fields staff may correct directly. The outcome changes only through a determination (D-41). */
 export interface UpdateExceptionalCircumstancesInput {
   moduleOfferingId?: string | null;
   outcomeCode?: string;
@@ -76,7 +77,8 @@ export class ExceptionalCircumstancesService {
         enrolmentId: input.enrolmentId as `${string}-${string}-${string}-${string}-${string}`,
         personId: personId as `${string}-${string}-${string}-${string}-${string}`,
         moduleOfferingId: (input.moduleOfferingId ?? null) as `${string}-${string}-${string}-${string}-${string}` | null,
-        outcomeCode: input.outcomeCode,
+        // An outcome is set only by a governed determination (D-41); a claim starts pending.
+        outcomeCode: 'pending',
         determinationDate: input.determinationDate,
         notes: input.notes ?? null,
         actorId,
@@ -93,7 +95,7 @@ export class ExceptionalCircumstancesService {
         enrolmentId: input.enrolmentId,
         personId,
         ...(input.moduleOfferingId ? { moduleOfferingId: input.moduleOfferingId } : {}),
-        outcomeCode: input.outcomeCode,
+        outcomeCode: 'pending',
         determinationDate: input.determinationDate,
       };
       await this.eventBus.publish(EVENT_TYPES.CIRCUMSTANCES_EC_FLAGGED, '1.0.0', tenantId, actorId, 'sensitive', payload);
@@ -102,6 +104,7 @@ export class ExceptionalCircumstancesService {
     return ecId;
   }
 
+  /** Corrects an EC's non-outcome fields. Changing the outcome needs a determination (D-41). */
   async updateExceptionalCircumstances(
     ecId: string,
     tenantId: string,
@@ -109,15 +112,43 @@ export class ExceptionalCircumstancesService {
     actorId: string,
   ): Promise<void> {
     const current = await this.#getCurrentExceptionalCircumstances(ecId, tenantId);
+    if (input.outcomeCode !== undefined && input.outcomeCode !== current.outcomeCode) {
+      throw new ValidationError('An EC outcome is changed by proposing a determination, which someone else decides',
+        [{ field: 'outcomeCode', message: 'Use POST /exceptional-circumstances/{id}/determination-proposals' }]);
+    }
+    await this.#newVersion(current, tenantId, { ...input, outcomeCode: current.outcomeCode }, actorId);
+  }
+
+  /**
+   * Applies an upheld determination (D-41). Safe to repeat: an EC already
+   * carrying the outcome is left alone.
+   */
+  async applyDeterminedOutcome(ecId: string, tenantId: string, outcomeCode: string, actorId: string): Promise<void> {
+    const current = await this.#getCurrentExceptionalCircumstances(ecId, tenantId);
+    if (current.outcomeCode === outcomeCode) return;
+    await this.#newVersion(current, tenantId, { outcomeCode, determinationDate: clockNow().toISOString().slice(0, 10) }, actorId);
+  }
+
+  async getCurrent(ecId: string, tenantId: string): Promise<ExceptionalCircumstancesDto> {
+    return this.#getCurrentExceptionalCircumstances(ecId, tenantId);
+  }
+
+  /**
+   * A new version. ADR-013: the superseded version leaves the current record
+   * (recorded_until) but keeps its valid time; the new one restates the same
+   * period, so history still shows what was believed, and when.
+   */
+  async #newVersion(current: ExceptionalCircumstancesDto, tenantId: string, input: UpdateExceptionalCircumstancesInput & { outcomeCode: string }, actorId: string): Promise<void> {
+    const ecId = current.exceptionalCircumstancesId;
     const nextModuleOfferingId = input.moduleOfferingId === undefined ? current.moduleOfferingId : input.moduleOfferingId;
     if (nextModuleOfferingId) await this.#ensureModuleOfferingExists(nextModuleOfferingId, tenantId);
 
     const now = clockNow();
-    const nextOutcomeCode = input.outcomeCode ?? current.outcomeCode;
+    const nextOutcomeCode = input.outcomeCode;
     await withTenantContext(this.db, tenantId, async (tx) => {
       await tx
         .update(exceptionalCircumstances)
-        .set({ validTo: now, recordedUntil: now })
+        .set({ recordedUntil: now })
         .where(and(
           eq(exceptionalCircumstances.id, ecId as `${string}-${string}-${string}-${string}-${string}`),
           eq(exceptionalCircumstances.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
@@ -135,14 +166,14 @@ export class ExceptionalCircumstancesService {
         determinationDate: input.determinationDate ?? current.determinationDate,
         notes: input.notes === undefined ? current.notes : input.notes,
         actorId,
-        validFrom: now,
-        validTo: null,
+        validFrom: current.validFrom,
+        validTo: current.validTo,
         recordedAt: now,
         recordedUntil: null,
       });
     });
 
-    if (this.eventBus.isConnected()) {
+    if (this.eventBus.isConnected() && nextOutcomeCode !== current.outcomeCode) {
       const payload: CircumstancesEcUpdatedV1Payload = {
         exceptionalCircumstancesId: ecId,
         previousOutcomeCode: current.outcomeCode,

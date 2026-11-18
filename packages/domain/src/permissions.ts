@@ -125,6 +125,8 @@ export const PERMISSION_ROLES = {
   'circumstances:read:own':             ['student'] as Role[],
   'circumstances:read':                 ['registry-administrator', 'wellbeing-advisor'] as Role[],
   'circumstances:write':                ['registry-administrator'] as Role[],
+  /** Decide a proposed EC outcome (D-41); never the proposer or the person who recorded the claim. */
+  'circumstances:decide':               ['registry-administrator', 'exam-board-chair'] as Role[],
   'progression:read':                   ['registry-administrator', 'exam-board-chair', 'exam-board-member'] as Role[],
   'progression:write':                  ['registry-administrator'] as Role[],
   'regulatory:read':                    ['registry-administrator', 'regulatory-officer', 'dpo', 'tenant-administrator', 'system-administrator'] as Role[],

@@ -159,3 +159,86 @@ ON CONFLICT DO NOTHING;
 INSERT INTO "field_value_set" ("entity_name", "field_name", "value_set_code", "description")
 VALUES ('examiner_report', 'entry_channel_code', 'examiner-report-entry-channel-code', NULL)
 ON CONFLICT DO NOTHING;
+
+-- ── D-41: exceptional-circumstances outcomes through a governed determination ─
+-- A proposed outcome is decided by someone other than its proposer and the
+-- person who recorded the submission; until then the EC keeps its outcome.
+CREATE TABLE IF NOT EXISTS "ec_determination" (
+  "id"                    uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+  "tenant_id"             uuid        NOT NULL REFERENCES "tenant"("id"),
+  "exceptional_circumstances_id" uuid NOT NULL,
+  "proposed_outcome_code" text        NOT NULL,
+  "reason"                text        NOT NULL,
+  "status_code"           text        NOT NULL DEFAULT 'proposed' CHECK ("status_code" IN ('proposed', 'upheld', 'not-upheld')),
+  "proposed_by"           text        NOT NULL,
+  "proposed_at"           timestamptz NOT NULL DEFAULT now(),
+  "recorded_by"           text        NOT NULL,
+  "workflow_instance_id"  uuid,
+  "decided_by"            text,
+  "decided_at"            timestamptz,
+  "decision_reason"       text
+);
+CREATE INDEX IF NOT EXISTS "ec_determination_ec_idx" ON "ec_determination" ("tenant_id", "exceptional_circumstances_id");
+-- One open proposal per EC.
+CREATE UNIQUE INDEX IF NOT EXISTS "ec_determination_one_open" ON "ec_determination" ("tenant_id", "exceptional_circumstances_id") WHERE "status_code" = 'proposed';
+ALTER TABLE "ec_determination" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "ec_determination" FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "ec_determination";
+CREATE POLICY tenant_isolation ON "ec_determination"
+  USING ("tenant_id" = current_setting('app.current_tenant_id', true)::uuid)
+  WITH CHECK ("tenant_id" = current_setting('app.current_tenant_id', true)::uuid);
+
+INSERT INTO "workflow_definition" ("definition_code", "display_name", "owner_module_code", "status_code", "current_version_number", "description", "created_by")
+VALUES ('ec-determination', 'Exceptional circumstances determination', 'circumstances', 'active', 1,
+  'A proposed outcome for an exceptional-circumstances claim, decided by someone other than its proposer and the person who recorded the claim.', 'system')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO "workflow_definition_version" ("workflow_definition_id", "version_number", "status_code", "definition_json", "effective_from", "created_by")
+SELECT wd."id", 1, 'active',
+  jsonb_build_object('source', 'docs/decisions/phase-5-gap-closure-decisions.md', 'decisionStepKey', 'decide-ec-outcome', 'decisionGatewayAuditTable', 'workflow_decision_audit'),
+  '2026-11-18T00:00:00Z'::timestamptz, 'system'
+FROM "workflow_definition" wd WHERE wd."definition_code" = 'ec-determination'
+ON CONFLICT ("workflow_definition_id", "version_number") DO NOTHING;
+
+INSERT INTO "workflow_step" ("workflow_definition_version_id", "step_key", "step_type_code", "display_name", "owner_role_code", "sort_order", "configuration")
+SELECT wdv."id", s."step_key", s."step_type_code", s."display_name", s."owner_role_code", s."sort_order", s."configuration"::jsonb
+FROM "workflow_definition_version" wdv
+JOIN "workflow_definition" wd ON wd."id" = wdv."workflow_definition_id"
+JOIN (VALUES
+  ('outcome-proposed',  'start',      'EC outcome proposed',           null,                     10, '{}'),
+  ('decide-ec-outcome', 'human-task', 'Decide the EC outcome',         'registry-administrator', 20, '{"assignmentRulesRequired": true}'),
+  ('decision-gateway',  'decision',   'EC determination gateway',      'registry-administrator', 30, '{"auditTable": "workflow_decision_audit"}'),
+  ('determination-closed', 'end',     'EC determination closed',       null,                     40, '{}')
+) AS s("step_key", "step_type_code", "display_name", "owner_role_code", "sort_order", "configuration") ON true
+WHERE wd."definition_code" = 'ec-determination' AND wdv."version_number" = 1
+ON CONFLICT ("workflow_definition_version_id", "step_key") DO NOTHING;
+
+INSERT INTO "workflow_decision_gateway" ("workflow_definition_version_id", "gateway_key", "display_name", "decision_type_code", "source_reference", "configuration")
+SELECT wdv."id", 'G01', 'Uphold the proposed EC outcome?', 'exclusive', 'bp-04-005', jsonb_build_object('policySource', 'Institutional exceptional circumstances policy')
+FROM "workflow_definition_version" wdv
+JOIN "workflow_definition" wd ON wd."id" = wdv."workflow_definition_id"
+WHERE wd."definition_code" = 'ec-determination' AND wdv."version_number" = 1
+ON CONFLICT ("workflow_definition_version_id", "gateway_key") DO NOTHING;
+
+-- EC outcomes were free text; a determination validates against this set (D-41).
+INSERT INTO "value_set" ("set_code", "display_name", "source", "source_version", "description", "is_extensible")
+VALUES ('ec-outcome-code', 'Exceptional Circumstances Outcome', 'srs-internal', NULL, 'The determined effect of an exceptional-circumstances claim; institutions add their own', true)
+ON CONFLICT ("set_code") DO NOTHING;
+
+INSERT INTO "value_set_member" ("value_set_id", "code", "display_label", "sort_order", "active_from", "source_metadata")
+SELECT vs."id", v.code, v.display_label, v.sort_order, '2000-01-01T00:00:00Z', NULL
+FROM "value_set" vs,
+(VALUES
+  ('ec-outcome-code', 'pending',   'Awaiting determination',                 10),
+  ('ec-outcome-code', 'defer',     'Deferral (assessment at the next opportunity)', 20),
+  ('ec-outcome-code', 'first-sit', 'Uncapped attempt (treated as a first sit)', 30),
+  ('ec-outcome-code', 'extension', 'Extension granted',                      40),
+  ('ec-outcome-code', 'condone',   'Considered by the board in its discretion', 50),
+  ('ec-outcome-code', 'no-action', 'Not upheld: no change',                  60)
+) AS v(set_code, code, display_label, sort_order)
+WHERE vs."set_code" = v.set_code
+ON CONFLICT DO NOTHING;
+
+INSERT INTO "field_value_set" ("entity_name", "field_name", "value_set_code", "description")
+VALUES ('exceptional_circumstances', 'outcome_code', 'ec-outcome-code', NULL)
+ON CONFLICT DO NOTHING;

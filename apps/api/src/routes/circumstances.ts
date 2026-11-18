@@ -1,5 +1,5 @@
 import { Type } from '@sinclair/typebox';
-import { requirePermission, requireSelfOrPermission } from '@revelation-srs/auth';
+import { requireAnyPermission, requirePermission, requireSelfOrPermission } from '@revelation-srs/auth';
 import type { FastifyInstance } from 'fastify';
 
 import type {
@@ -40,7 +40,7 @@ const EcSchema = Type.Object({
 const EcBody = Type.Object({
   enrolmentId: Type.String(),
   moduleOfferingId: Type.Optional(Type.String()),
-  outcomeCode: Type.String({ minLength: 1 }),
+  outcomeCode: Type.Optional(Type.String({ minLength: 1, description: 'A proposed outcome: the claim is recorded pending and this is proposed for someone else to decide (D-41)' })),
   determinationDate: Type.String({ format: 'date' }),
   notes: Type.Optional(Type.String()),
 });
@@ -171,7 +171,7 @@ export function circumstancesRoutes(fastify: FastifyInstance): void {
       schema: {
         params: Type.Object({ personId: Type.String() }),
         body: EcBody,
-        response: { 201: Type.Object({ exceptionalCircumstancesId: Type.String() }), 404: ErrorSchema },
+        response: { 201: Type.Object({ exceptionalCircumstancesId: Type.String(), determinationId: Type.Optional(Type.String()) }), 404: ErrorSchema, 422: ErrorSchema },
       },
       preHandler: [requirePermission('circumstances:write')],
     },
@@ -181,9 +181,15 @@ export function circumstancesRoutes(fastify: FastifyInstance): void {
       const exceptionalCircumstancesId = await fastify.exceptionalCircumstancesService.recordExceptionalCircumstances(
         request.tenantId,
         personId,
-        body,
+        { ...body, outcomeCode: 'pending' },
         request.user.sub,
       );
+      // An outcome recorded with the claim is a proposal, decided by someone else (D-41).
+      let determinationId: string | undefined;
+      if (body.outcomeCode && body.outcomeCode !== 'pending') {
+        determinationId = (await fastify.ecDeterminationService.propose(request.tenantId, exceptionalCircumstancesId,
+          { outcomeCode: body.outcomeCode, reason: body.notes?.trim() || 'Proposed when the claim was recorded' }, request.user.sub)).id;
+      }
       await fastify.audit.record({
         tenantId: request.tenantId,
         entityType: 'exceptional_circumstances',
@@ -194,7 +200,7 @@ export function circumstancesRoutes(fastify: FastifyInstance): void {
         actorDisplayName: request.user.displayName,
         correlationId: request.id,
       });
-      await reply.code(201).send({ exceptionalCircumstancesId });
+      await reply.code(201).send({ exceptionalCircumstancesId, ...(determinationId ? { determinationId } : {}) });
     },
   );
 
@@ -222,7 +228,7 @@ export function circumstancesRoutes(fastify: FastifyInstance): void {
       schema: {
         params: Type.Object({ ecId: Type.String() }),
         body: EcPatchBody,
-        response: { 204: Type.Null(), 404: ErrorSchema },
+        response: { 204: Type.Null(), 404: ErrorSchema, 422: ErrorSchema },
       },
       preHandler: [requirePermission('circumstances:write')],
     },
@@ -242,6 +248,71 @@ export function circumstancesRoutes(fastify: FastifyInstance): void {
         correlationId: request.id,
       });
       await reply.code(204).send();
+    },
+  );
+
+  // ── EC determinations (D-41) ─────────────────────────────────────────────
+
+  const DeterminationSchema = Type.Object({
+    id: Type.String(), exceptionalCircumstancesId: Type.String(), proposedOutcomeCode: Type.String(), reason: Type.String(),
+    statusCode: Type.String(), proposedBy: Type.String(), proposedAt: Type.String(), recordedBy: Type.String(),
+    workflowInstanceId: Type.Union([Type.String(), Type.Null()]), decidedBy: Type.Union([Type.String(), Type.Null()]),
+    decidedAt: Type.Union([Type.String(), Type.Null()]), decisionReason: Type.Union([Type.String(), Type.Null()]),
+  });
+  const detWire = (d: { proposedAt: Date; decidedAt: Date | null } & Record<string, unknown>) => ({ ...d, proposedAt: d.proposedAt.toISOString(), decidedAt: d.decidedAt?.toISOString() ?? null });
+
+  fastify.post(
+    '/exceptional-circumstances/:ecId/determination-proposals',
+    {
+      schema: {
+        params: Type.Object({ ecId: Type.String() }),
+        body: Type.Object({ outcomeCode: Type.String({ minLength: 1 }), reason: Type.String({ minLength: 1, maxLength: 2000 }) }),
+        response: { 201: DeterminationSchema, 404: ErrorSchema, 409: ErrorSchema, 422: ErrorSchema },
+      },
+      preHandler: [requirePermission('circumstances:write')],
+    },
+    async (request, reply) => {
+      const { ecId } = request.params as { ecId: string };
+      const det = await fastify.ecDeterminationService.propose(request.tenantId, ecId, request.body as { outcomeCode: string; reason: string }, request.user.sub);
+      await fastify.audit.record({
+        tenantId: request.tenantId, entityType: 'ec_determination', entityId: det.id, actionType: 'create', actorType: 'user',
+        actorId: request.user.sub, actorDisplayName: request.user.displayName, correlationId: request.id, reasonText: `Proposed EC outcome ${det.proposedOutcomeCode}`,
+      });
+      await reply.code(201).send(detWire(det));
+    },
+  );
+
+  fastify.get(
+    '/ec-determinations',
+    {
+      schema: { querystring: Type.Object({ statusCode: Type.Optional(Type.String()), ecId: Type.Optional(Type.String()) }), response: { 200: Type.Array(DeterminationSchema) } },
+      preHandler: [requireAnyPermission('circumstances:read', 'circumstances:decide')],
+    },
+    async (request, reply) => {
+      const q = request.query as { statusCode?: string; ecId?: string };
+      await reply.send((await fastify.ecDeterminationService.list(request.tenantId, q)).map(detWire));
+    },
+  );
+
+  fastify.post(
+    '/ec-determinations/:determinationId/decision',
+    {
+      schema: {
+        params: Type.Object({ determinationId: Type.String() }),
+        body: Type.Object({ decisionCode: Type.Union([Type.Literal('upheld'), Type.Literal('not-upheld')]), reason: Type.Optional(Type.String({ maxLength: 2000 })) }),
+        response: { 200: DeterminationSchema, 202: DeterminationSchema, 403: ErrorSchema, 404: ErrorSchema, 409: ErrorSchema },
+      },
+      preHandler: [requirePermission('circumstances:decide')],
+    },
+    async (request, reply) => {
+      const { determinationId } = request.params as { determinationId: string };
+      const { decisionCode, reason } = request.body as { decisionCode: 'upheld' | 'not-upheld'; reason?: string };
+      const { decisionStatus, ...det } = await fastify.ecDeterminationService.decide(request.tenantId, determinationId, decisionCode, request.user.sub, reason);
+      await fastify.audit.record({
+        tenantId: request.tenantId, entityType: 'ec_determination', entityId: determinationId, actionType: 'update', actorType: 'user',
+        actorId: request.user.sub, actorDisplayName: request.user.displayName, correlationId: request.id, reasonText: `EC determination ${decisionCode}`,
+      });
+      await reply.code(decisionStatus === 'pending' ? 202 : 200).send(detWire(det));
     },
   );
 

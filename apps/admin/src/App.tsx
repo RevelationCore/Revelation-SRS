@@ -69,6 +69,7 @@ const AdjustmentCasesPage = lazy(() => import('./pages/AdjustmentCasesPage.js').
 const AdjustmentCaseDetailPage = lazy(() => import('./pages/AdjustmentCaseDetailPage.js').then((m) => ({ default: m.AdjustmentCaseDetailPage })));
 const ApplicationsPage = lazy(() => import('./pages/ApplicationsPage.js').then((m) => ({ default: m.ApplicationsPage })));
 const ApplicationDetailPage = lazy(() => import('./pages/ApplicationDetailPage.js').then((m) => ({ default: m.ApplicationDetailPage })));
+const EcDeterminationsPage = lazy(() => import('./pages/EcDeterminationsPage.js').then((m) => ({ default: m.EcDeterminationsPage })));
 const PendingApprovalsPage = lazy(() => import('./pages/PendingApprovalsPage.js').then((m) => ({ default: m.PendingApprovalsPage })));
 const StatusCasesPage = lazy(() => import('./pages/StatusCasesPage.js').then((m) => ({ default: m.StatusCasesPage })));
 const StatusCaseDetailPage = lazy(() => import('./pages/StatusCaseDetailPage.js').then((m) => ({ default: m.StatusCaseDetailPage })));
@@ -131,6 +132,7 @@ export function App() {
                 <Route path="status-cases" element={<RequirePermission permissions={['status-case:read']}><StatusCasesPage /></RequirePermission>} />
                 <Route path="status-cases/:statusCaseId" element={<RequirePermission permissions={['status-case:read']}><StatusCaseDetailPage /></RequirePermission>} />
                 <Route path="credit-approvals" element={<RequirePermission permissions={['academic-exception:approve']}><PendingApprovalsPage /></RequirePermission>} />
+                <Route path="ec-determinations" element={<RequirePermission permissions={['circumstances:decide']}><EcDeterminationsPage /></RequirePermission>} />
                 <Route path="students" element={<RequirePermission permissions={['student:read:all']}><StudentsPage /></RequirePermission>} />
                 <Route path="students/:personId" element={<RequirePermission permissions={['student:read:all']}><StudentDetailPage /></RequirePermission>} />
                 <Route path="exam-boards" element={<RequirePermission permissions={['exam-board:read']}><ExamBoardsPage /></RequirePermission>} />

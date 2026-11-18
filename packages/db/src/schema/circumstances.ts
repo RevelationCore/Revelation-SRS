@@ -100,3 +100,21 @@ export const misconductPenaltyEffects = pgTable('misconduct_penalty_effect', {
 
 export type MisconductPenaltyEffect    = typeof misconductPenaltyEffects.$inferSelect;
 export type NewMisconductPenaltyEffect = typeof misconductPenaltyEffects.$inferInsert;
+
+/** A proposed EC outcome and its governed decision (Phase 5 D-41). */
+export const ecDeterminations = pgTable('ec_determination', {
+  id:                         uuid('id').primaryKey().defaultRandom(),
+  tenantId:                   uuid('tenant_id').notNull().references(() => tenants.id),
+  exceptionalCircumstancesId: uuid('exceptional_circumstances_id').notNull(),
+  proposedOutcomeCode:        text('proposed_outcome_code').notNull(),
+  reason:                     text('reason').notNull(),
+  statusCode:                 text('status_code').notNull().default('proposed'), // proposed | upheld | not-upheld
+  proposedBy:                 text('proposed_by').notNull(),
+  proposedAt:                 timestamp('proposed_at', { withTimezone: true }).notNull().defaultNow(),
+  recordedBy:                 text('recorded_by').notNull(),
+  workflowInstanceId:         uuid('workflow_instance_id'),
+  decidedBy:                  text('decided_by'),
+  decidedAt:                  timestamp('decided_at', { withTimezone: true }),
+  decisionReason:             text('decision_reason'),
+});
+export type EcDetermination = typeof ecDeterminations.$inferSelect;

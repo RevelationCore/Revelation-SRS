@@ -14,6 +14,9 @@ import {
   listAdjustments,
   listDisabilityDeclarations,
   listExceptionalCircumstances,
+  type EcDetermination,
+  listEcDeterminations,
+  proposeEcDetermination,
   updateStudentIdentity,
   updateHesaId,
   updatePersonStatus,
@@ -1639,6 +1642,8 @@ function WellbeingTab({
   const [adjustments,  setAdjustments]  = useState<Adjustment[] | null>(null);
   const [ecs,          setEcs]          = useState<ExceptionalCircumstances[] | null>(null);
   const [loading,      setLoading]      = useState(true);
+  const { roles: authRoles } = useAuth();
+  const canWriteCircumstances = userHasAnyPermission(authRoles, ['circumstances:write']);
   const [error,        setError]        = useState('');
 
   const { members: disabilityCategories } = useValueSet('disability_declaration', 'disability_category_code');
@@ -1758,6 +1763,7 @@ function WellbeingTab({
                   <TableHeaderCell>Outcome</TableHeaderCell>
                   <TableHeaderCell>Determination Date</TableHeaderCell>
                   <TableHeaderCell>Notes</TableHeaderCell>
+                  {canWriteCircumstances && <TableHeaderCell>Determination</TableHeaderCell>}
                 </tr>
               </TableHead>
               <TableBody>
@@ -1771,6 +1777,7 @@ function WellbeingTab({
                     <TableCell><Badge value={e.outcomeCode} label={label(ecOutcomes, e.outcomeCode)} /></TableCell>
                     <TableCell>{new Date(e.determinationDate).toLocaleDateString('en-GB')}</TableCell>
                     <TableCell className="text-neutral-500">{e.notes ?? '—'}</TableCell>
+                    {canWriteCircumstances && <TableCell><ProposeEcOutcome ecId={e.exceptionalCircumstancesId} current={e.outcomeCode} outcomes={ecOutcomes} /></TableCell>}
                   </TableRow>
                 ))}
               </TableBody>
@@ -1780,6 +1787,35 @@ function WellbeingTab({
       </section>
 
     </div>
+  );
+}
+
+/**
+ * Proposes an EC outcome (D-41): someone else decides it on the EC
+ * determinations page, and the claim keeps its outcome until then.
+ */
+function ProposeEcOutcome({ ecId, current, outcomes }: { ecId: string; current: string; outcomes: Array<{ code: string; displayLabel: string }> }) {
+  const [pending, setPending] = useState<EcDetermination | null | undefined>(undefined);
+  const [outcome, setOutcome] = useState('');
+  const [reason, setReason] = useState('');
+  const [error, setError] = useState('');
+  useEffect(() => { void listEcDeterminations({ ecId, statusCode: 'proposed' }).then((r) => setPending(r[0] ?? null)).catch(() => setPending(null)); }, [ecId]);
+  if (pending === undefined) return null;
+  if (pending) return <span className="text-xs text-neutral-600">Proposed: {pending.proposedOutcomeCode}, awaiting a decision</span>;
+  return (
+    <form className="flex flex-wrap items-center gap-2" onSubmit={(e) => {
+      e.preventDefault(); setError('');
+      void proposeEcDetermination(ecId, { outcomeCode: outcome, reason: reason.trim() }).then(setPending)
+        .catch((err: unknown) => setError(err instanceof ApiError ? (err.detail ?? err.message) : 'The proposal failed'));
+    }}>
+      <Select aria-label="Proposed outcome" value={outcome} onChange={(e) => setOutcome(e.target.value)} className="w-auto">
+        <option value="">Propose an outcome…</option>
+        {outcomes.filter((o) => o.code !== current && o.code !== 'pending').map((o) => <option key={o.code} value={o.code}>{o.displayLabel}</option>)}
+      </Select>
+      <Input aria-label="Reason for the proposal" placeholder="Reason" value={reason} onChange={(e) => setReason(e.target.value)} />
+      <Button size="sm" type="submit" disabled={!outcome || !reason.trim()}>Propose</Button>
+      {error && <span className="text-xs text-danger-600" role="alert">{error}</span>}
+    </form>
   );
 }
 

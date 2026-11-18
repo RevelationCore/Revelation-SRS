@@ -2213,6 +2213,54 @@ export interface paths {
         patch: operations["updateExceptionalCircumstancesByEcId"];
         trace?: never;
     };
+    "/api/v1/exceptional-circumstances/{ecId}/determination-proposals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createExceptionalCircumstancesByEcIdDeterminationProposals"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ec-determinations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getEcDeterminations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ec-determinations/{determinationId}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createEcDeterminationsByDeterminationIdDecision"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/students/{personId}/misconduct-outcomes": {
         parameters: {
             query?: never;
@@ -16872,7 +16920,8 @@ export interface operations {
                 "application/json": {
                     enrolmentId: string;
                     moduleOfferingId?: string;
-                    outcomeCode: string;
+                    /** @description A proposed outcome: the claim is recorded pending and this is proposed for someone else to decide (D-41) */
+                    outcomeCode?: string;
                     /** Format: date */
                     determinationDate: string;
                     notes?: string;
@@ -16888,11 +16937,26 @@ export interface operations {
                 content: {
                     "application/json": {
                         exceptionalCircumstancesId: string;
+                        determinationId?: string;
                     };
                 };
             };
             /** @description Default Response */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -16937,6 +17001,246 @@ export interface operations {
             };
             /** @description Default Response */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createExceptionalCircumstancesByEcIdDeterminationProposals: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ecId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    outcomeCode: string;
+                    reason: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        exceptionalCircumstancesId: string;
+                        proposedOutcomeCode: string;
+                        reason: string;
+                        statusCode: string;
+                        proposedBy: string;
+                        proposedAt: string;
+                        recordedBy: string;
+                        workflowInstanceId: string | null;
+                        decidedBy: string | null;
+                        decidedAt: string | null;
+                        decisionReason: string | null;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getEcDeterminations: {
+        parameters: {
+            query?: {
+                statusCode?: string;
+                ecId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        exceptionalCircumstancesId: string;
+                        proposedOutcomeCode: string;
+                        reason: string;
+                        statusCode: string;
+                        proposedBy: string;
+                        proposedAt: string;
+                        recordedBy: string;
+                        workflowInstanceId: string | null;
+                        decidedBy: string | null;
+                        decidedAt: string | null;
+                        decisionReason: string | null;
+                    }[];
+                };
+            };
+        };
+    };
+    createEcDeterminationsByDeterminationIdDecision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                determinationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    decisionCode: "upheld" | "not-upheld";
+                    reason?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        exceptionalCircumstancesId: string;
+                        proposedOutcomeCode: string;
+                        reason: string;
+                        statusCode: string;
+                        proposedBy: string;
+                        proposedAt: string;
+                        recordedBy: string;
+                        workflowInstanceId: string | null;
+                        decidedBy: string | null;
+                        decidedAt: string | null;
+                        decisionReason: string | null;
+                    };
+                };
+            };
+            /** @description Default Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        exceptionalCircumstancesId: string;
+                        proposedOutcomeCode: string;
+                        reason: string;
+                        statusCode: string;
+                        proposedBy: string;
+                        proposedAt: string;
+                        recordedBy: string;
+                        workflowInstanceId: string | null;
+                        decidedBy: string | null;
+                        decidedAt: string | null;
+                        decisionReason: string | null;
+                    };
+                };
+            };
+            /** @description Default Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

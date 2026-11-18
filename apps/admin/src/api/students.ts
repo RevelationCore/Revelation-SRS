@@ -198,3 +198,19 @@ export interface ExceptionalCircumstances {
 export function listExceptionalCircumstances(personId: string): Promise<ExceptionalCircumstances[]> {
   return api.get<ExceptionalCircumstances[]>(`/api/v1/students/${personId}/exceptional-circumstances`);
 }
+
+// ── EC determinations (Phase 5 D-41) ─────────────────────────────────────────
+
+export interface EcDetermination {
+  id: string; exceptionalCircumstancesId: string; proposedOutcomeCode: string; reason: string; statusCode: string;
+  proposedBy: string; proposedAt: string; recordedBy: string; decidedBy: string | null; decidedAt: string | null; decisionReason: string | null;
+}
+
+export const listEcDeterminations = (params: { statusCode?: string; ecId?: string } = {}) => {
+  const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v) as Array<[string, string]>).toString();
+  return api.get<EcDetermination[]>(`/api/v1/ec-determinations${qs ? `?${qs}` : ''}`);
+};
+export const proposeEcDetermination = (ecId: string, body: { outcomeCode: string; reason: string }) =>
+  api.post<EcDetermination>(`/api/v1/exceptional-circumstances/${ecId}/determination-proposals`, body);
+export const decideEcDetermination = (id: string, body: { decisionCode: 'upheld' | 'not-upheld'; reason?: string }) =>
+  api.post<EcDetermination>(`/api/v1/ec-determinations/${id}/decision`, body);
