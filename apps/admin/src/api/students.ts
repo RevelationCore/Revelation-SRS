@@ -207,7 +207,8 @@ export interface EcDetermination {
 }
 
 export const listEcDeterminations = (params: { statusCode?: string; ecId?: string } = {}) => {
-  const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v) as Array<[string, string]>).toString();
+  const entries: Array<[string, string]> = Object.entries(params).flatMap(([k, v]) => (v ? [[k, v] as [string, string]] : []));
+  const qs = new URLSearchParams(entries).toString();
   return api.get<EcDetermination[]>(`/api/v1/ec-determinations${qs ? `?${qs}` : ''}`);
 };
 export const proposeEcDetermination = (ecId: string, body: { outcomeCode: string; reason: string }) =>

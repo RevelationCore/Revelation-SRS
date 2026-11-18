@@ -10,7 +10,7 @@ import {
   withTenantContext,
 } from '@revelation-srs/db';
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '@revelation-srs/domain';
-import { and, asc, eq, isNull } from 'drizzle-orm';
+import { and, asc, eq } from 'drizzle-orm';
 
 import { clockNow } from '../clock.js';
 import { GovernedReview } from '../platform-controls/governed-review.js';
