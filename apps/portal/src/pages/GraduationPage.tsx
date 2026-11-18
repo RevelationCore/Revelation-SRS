@@ -1,18 +1,13 @@
 import { type FormEvent, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { PageHeader, Card, CardHeader, CardBody, Button, Input, Select, Checkbox, LabelledField, Spinner, Problem, formatDate } from '@revelation-srs/ui';
+import {
+  PageHeader, Card, CardHeader, CardBody, Button, Input, Select, Checkbox, LabelledField, Spinner, Problem, formatDate, useCodes,
+} from '@revelation-srs/ui';
 
 import { ApiError } from '../api/client.js';
 import { type MyGraduationInvitation, listMyGraduationInvitations, respondToGraduationInvitation } from '../api/me.js';
 import { useAuth } from '../auth/AuthContext.js';
 import { useApiData } from '../hooks/useApiData.js';
-
-const RESPONSES: Array<{ code: string; label: string }> = [
-  { code: 'attending', label: 'I will attend' },
-  { code: 'in-absentia', label: 'Graduate without attending (in absentia)' },
-  { code: 'deferred', label: 'Defer to a later ceremony' },
-  { code: 'declined', label: 'I do not want a ceremony' },
-];
 
 /** Graduation invitations and my reply (BP-06-005; D-4). Replies close when the presentation list is frozen. */
 export function GraduationPage() {
@@ -36,6 +31,7 @@ export function GraduationPage() {
 }
 
 function InvitationCard({ invitation, onSaved }: { invitation: MyGraduationInvitation; onSaved: () => void }) {
+  const responses = useCodes('graduation_invitation', 'response_code');
   const [response, setResponse] = useState(invitation.responseCode === 'invited' ? 'attending' : invitation.responseCode);
   const [guests, setGuests] = useState(String(invitation.guestCount));
   const [accessibility, setAccessibility] = useState(invitation.accessibilityRequired);
@@ -60,7 +56,7 @@ function InvitationCard({ invitation, onSaved }: { invitation: MyGraduationInvit
     <Card>
       <CardHeader
         title="Graduation invitation"
-        description={invitation.responseCode === 'invited' ? `Invited ${formatDate(invitation.createdAt)}. Please reply.` : `You replied ${invitation.respondedAt ? formatDate(invitation.respondedAt) : ''}: ${RESPONSES.find((r) => r.code === invitation.responseCode)?.label ?? invitation.responseCode}.`}
+        description={invitation.responseCode === 'invited' ? `Invited ${formatDate(invitation.createdAt)}. Please reply.` : `You replied ${invitation.respondedAt ? formatDate(invitation.respondedAt) : ''}: ${responses.find(invitation.responseCode)?.description ?? responses.label(invitation.responseCode)}.`}
       />
       <CardBody>
         <form className="flex flex-col gap-3" onSubmit={(e) => void submit(e)}>
@@ -68,7 +64,7 @@ function InvitationCard({ invitation, onSaved }: { invitation: MyGraduationInvit
           {saved && <p className="text-sm text-success-700" role="status">Your reply has been saved.</p>}
           <LabelledField label="Your reply" htmlFor={`grad-${id}-response`}>
             <Select id={`grad-${id}-response`} value={response} onChange={(e) => setResponse(e.target.value)}>
-              {RESPONSES.map((r) => <option key={r.code} value={r.code}>{r.label}</option>)}
+              {responses.options.filter((r) => r.code !== 'invited').map((r) => <option key={r.code} value={r.code}>{r.description ?? r.displayLabel}</option>)}
             </Select>
           </LabelledField>
           {response === 'attending' && (

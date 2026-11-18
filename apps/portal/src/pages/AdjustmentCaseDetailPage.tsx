@@ -1,23 +1,13 @@
 import { type FormEvent, useCallback, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { PageHeader, Card, CardHeader, CardBody, Button, Select, Spinner, Problem, Badge } from '@revelation-srs/ui';
+import {
+  PageHeader, Card, CardHeader, CardBody, Button, Select, Spinner, Problem, Badge, CodeBadge, CodeLabel, CodeSelect,
+} from '@revelation-srs/ui';
 import { useAuth } from '../auth/AuthContext.js';
 import { useApiData } from '../hooks/useApiData.js';
 import { getMyAdjustmentCase, deleteMyEvidence } from '../api/adjustmentCases.js';
 import { uploadEvidence, downloadEvidence, ApiError } from '../api/wellbeingModule.js';
-
-const STATUS_LABELS: Record<string, string> = {
-  referral_received:  'Referral received',
-  assessment_pending: 'Assessment pending',
-  under_assessment:   'Being assessed',
-  determination_made: 'Assessment complete',
-  under_review:        'Under panel review',
-  approved:            'Approved',
-  rejected:            'Not approved',
-  review_complete:     'Review complete',
-  closed:              'Closed',
-};
 
 export function AdjustmentCaseDetailPage() {
   const { t } = useTranslation();
@@ -42,8 +32,8 @@ export function AdjustmentCaseDetailPage() {
     <div>
       <PageHeader
         title="Your adjustment request"
-        description={<span className="capitalize">{c.adjustmentTypeCode.replace(/-/g, ' ')}</span>}
-        actions={<Badge value={c.statusCode} label={STATUS_LABELS[c.statusCode] ?? c.statusCode} />}
+        description={<CodeLabel entity="wellbeing.adjustment_case" field="adjustment_type_code" code={c.adjustmentTypeCode} show="description" />}
+        actions={<CodeBadge entity="wellbeing.adjustment_case" field="status_code" code={c.statusCode} />}
       />
 
       {notice && <p className="mb-4 text-sm text-success-700">{notice}</p>}
@@ -147,7 +137,7 @@ function EvidenceSection({
           <ul className="mb-4 divide-y divide-neutral-100">
             {evidence.map((e) => (
               <li key={e.id} className="flex items-center justify-between py-2 text-sm">
-                <span className="capitalize">{e.evidenceTypeCode.replace(/-/g, ' ')}</span>
+                <CodeLabel entity="wellbeing.adjustment_case_evidence" field="evidence_type_code" code={e.evidenceTypeCode} />
                 <div className="flex gap-3">
                   <button type="button" onClick={() => void handleDownload(e.id, e.evidenceTypeCode)} className="text-primary-600 hover:underline">
                     Download
@@ -167,12 +157,7 @@ function EvidenceSection({
           <form onSubmit={(e) => void handleUpload(e)} className="flex flex-wrap items-end gap-3">
             <div className="space-y-1">
               <label htmlFor="portal-evidence-type" className="block text-sm font-medium text-neutral-700">Type</label>
-              <Select id="portal-evidence-type" value={evidenceTypeCode} onChange={(e) => setEvidenceTypeCode(e.target.value)} className="w-auto">
-                <option value="medical-letter">Medical letter</option>
-                <option value="assessor-report">Assessor report</option>
-                <option value="dsa-award-letter">DSA award letter</option>
-                <option value="other">Other</option>
-              </Select>
+              <CodeSelect entity="wellbeing.adjustment_case_evidence" field="evidence_type_code" id="portal-evidence-type" value={evidenceTypeCode} onChange={(v) => setEvidenceTypeCode(v)} className="w-auto" />
             </div>
             <div className="space-y-1">
               <label htmlFor="portal-evidence-file" className="block text-sm font-medium text-neutral-700">File</label>

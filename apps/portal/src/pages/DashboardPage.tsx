@@ -7,8 +7,7 @@ import { type Audience, audiencesFor } from '../auth/audiences.js';
 import { useApiData } from '../hooks/useApiData.js';
 import { getProfile, getEnrolments } from '../api/me.js';
 import {
-  Spinner, Problem, formatDate, getDisplayName,
-  PageHeader, StatCard, Card, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, Badge,
+  Spinner, Problem, formatDate, getDisplayName, PageHeader, StatCard, Card, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, Badge, CodeLabel,
 } from '@revelation-srs/ui';
 
 /** The dashboard: a student's summary, or for other audiences their own entry points (D-38). */
@@ -122,7 +121,7 @@ function StudentDashboard() {
                     <TableCell>
                       <Badge value={e.statusCode} label={t(`portal.enrolment.status.${e.statusCode}`, { defaultValue: e.statusCode })} />
                     </TableCell>
-                    <TableCell>{e.modeOfStudyCode}</TableCell>
+                    <TableCell><CodeLabel entity="enrolment" field="mode_of_study_code" code={e.modeOfStudyCode} /></TableCell>
                     <TableCell>{formatDate(e.startDate)}</TableCell>
                   </TableRow>
                 ))}

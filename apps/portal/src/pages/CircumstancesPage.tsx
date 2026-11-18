@@ -9,8 +9,7 @@ import {
   submitExceptionalCircumstances,
 } from '../api/me.js';
 import {
-  Spinner, Problem, EmptyState, formatDate, PageHeader, Button, Badge,
-  Card, CardBody, LabelledField, Select, Textarea,
+  Spinner, Problem, EmptyState, formatDate, PageHeader, Button, Badge, Card, CardBody, LabelledField, Select, Textarea, CodeBadge,
 } from '@revelation-srs/ui';
 
 export function CircumstancesPage() {
@@ -181,7 +180,7 @@ export function CircumstancesPage() {
                     </span>
                   )}
                 </h2>
-                <Badge value={ec.outcomeCode} />
+                <CodeBadge entity="exceptional_circumstances" field="outcome_code" code={ec.outcomeCode} />
               </div>
 
               <dl className="mt-4 grid gap-3 sm:grid-cols-2 text-sm">

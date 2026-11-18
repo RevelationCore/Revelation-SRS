@@ -12,7 +12,9 @@ import {
   getFieldValueSet,
   type DisabilityDeclaration,
 } from '../api/me.js';
-import { Spinner, Problem, EmptyState, formatDate, PageHeader, Button, Badge, Card, CardBody, LabelledField, Textarea } from '@revelation-srs/ui';
+import {
+  Spinner, Problem, EmptyState, formatDate, PageHeader, Button, Badge, Card, CardBody, LabelledField, Textarea, CodeBadge,
+} from '@revelation-srs/ui';
 
 export function DisabilityPage() {
   const { t }    = useTranslation();
@@ -217,13 +219,12 @@ export function DisabilityPage() {
                   )}
                   <p className="mt-0.5 text-xs text-neutral-400">
                     {t('portal.disability.declaredOn')} {formatDate(d.declaredAt)}
-                    <span className="ml-2 font-mono">({d.disabilityCategoryCode})</span>
-                  </p>
+                                      </p>
                   {d.notes && (
                     <p className="mt-1 text-xs text-neutral-600 italic">{d.notes}</p>
                   )}
                 </div>
-                <Badge value={d.declarationStatusCode} />
+                <CodeBadge entity="disability_declaration" field="declaration_status_code" code={d.declarationStatusCode} />
               </div>
               {personId && d.declarationStatusCode !== 'withdrawn' && (
                 <DeclarationActions

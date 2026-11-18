@@ -1196,3 +1196,34 @@ VALUES
   ('attendance.engagement_referral',        'referral_type_code',  'engagement-referral-type-code', NULL),
   ('attendance.engagement_referral',        'status_code',         'engagement-referral-status-code', NULL)
 ON CONFLICT DO NOTHING;
+
+-- Wording the portal shows students. Labels clear to everyone replace the
+-- staff-only wording; a choice a student makes is described in their words
+-- (the portal's pickers show the description).
+UPDATE "value_set_member" m SET "display_label" = v.label
+FROM "value_set" vs, (VALUES
+  ('wellbeing-adjustment-case-status', 'under_assessment',   'Being assessed'),
+  ('wellbeing-adjustment-case-status', 'determination_made', 'Assessment complete'),
+  ('wellbeing-adjustment-case-status', 'under_review',       'Under panel review'),
+  ('wellbeing-adjustment-case-status', 'rejected',           'Not approved'),
+  ('student-status-case-status-code',  'requested',          'Awaiting a decision'),
+  ('student-status-case-status-code',  'rejected',           'Not approved')
+) AS v(set_code, code, label)
+WHERE vs."set_code" = v.set_code AND m."value_set_id" = vs."id" AND m."code" = v.code AND m."tenant_id" IS NULL;
+
+UPDATE "value_set_member" m SET "description" = v.description
+FROM "value_set" vs, (VALUES
+  ('wellbeing-adjustment-case-type', 'exam-time',  'Extra time in exams'),
+  ('wellbeing-adjustment-case-type', 'venue',      'Alternative venue (e.g. separate room)'),
+  ('wellbeing-adjustment-case-type', 'coursework', 'Coursework deadline extension'),
+  ('wellbeing-adjustment-case-type', 'placement',  'Placement adjustment'),
+  ('student-status-case-type-code', 'interruption', 'Take a break from my studies (interruption)'),
+  ('student-status-case-type-code', 'return',       'Return from my interruption'),
+  ('student-status-case-type-code', 'withdrawal',   'Leave my course (withdrawal)'),
+  ('student-status-case-type-code', 'transfer',     'Change my course or mode of study (transfer)'),
+  ('graduation-response-code', 'attending',   'I will attend'),
+  ('graduation-response-code', 'in-absentia', 'Graduate without attending (in absentia)'),
+  ('graduation-response-code', 'deferred',    'Defer to a later ceremony'),
+  ('graduation-response-code', 'declined',    'I do not want a ceremony')
+) AS v(set_code, code, description)
+WHERE vs."set_code" = v.set_code AND m."value_set_id" = vs."id" AND m."code" = v.code AND m."tenant_id" IS NULL;

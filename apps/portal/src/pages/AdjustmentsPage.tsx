@@ -6,19 +6,9 @@ import { useApiData } from '../hooks/useApiData.js';
 import { getEnrolments, getAdjustments, getFieldValueSet, downloadAdjustmentOutcomeDocument } from '../api/me.js';
 import { ApiError } from '../api/client.js';
 import { listMyAdjustmentCases, type AdjustmentCase } from '../api/adjustmentCases.js';
-import { Spinner, Problem, EmptyState, formatDate, PageHeader, Card, CardBody, Button, Badge } from '@revelation-srs/ui';
-
-const REQUEST_STATUS_LABELS: Record<string, string> = {
-  referral_received:  'Referral received',
-  assessment_pending: 'Assessment pending',
-  under_assessment:   'Being assessed',
-  determination_made: 'Assessment complete',
-  under_review:        'Under panel review',
-  approved:            'Approved',
-  rejected:            'Not approved',
-  review_complete:     'Review complete',
-  closed:              'Closed',
-};
+import {
+  Spinner, Problem, EmptyState, formatDate, PageHeader, Card, CardBody, Button, Badge, CodeBadge, CodeLabel,
+} from '@revelation-srs/ui';
 
 export function AdjustmentsPage() {
   const { t }    = useTranslation();
@@ -84,8 +74,8 @@ export function AdjustmentsPage() {
                 to={`/adjustments/requests/${c.id}`}
                 className="flex items-center justify-between rounded-md border border-neutral-200 bg-white px-4 py-3 hover:bg-neutral-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary-600"
               >
-                <span className="text-sm font-medium capitalize text-neutral-900">{c.adjustmentTypeCode.replace(/-/g, ' ')}</span>
-                <Badge value={c.statusCode} label={REQUEST_STATUS_LABELS[c.statusCode] ?? c.statusCode} />
+                <span className="text-sm font-medium text-neutral-900"><CodeLabel entity="wellbeing.adjustment_case" field="adjustment_type_code" code={c.adjustmentTypeCode} show="description" /></span>
+                <CodeBadge entity="wellbeing.adjustment_case" field="status_code" code={c.statusCode} />
               </Link>
             ))}
           </div>

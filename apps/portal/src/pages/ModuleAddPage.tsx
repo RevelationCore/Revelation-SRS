@@ -13,8 +13,7 @@ import {
 import type { ModuleOffering } from '../api/me.js';
 import { ArrowLeft } from 'lucide-react';
 import {
-  Spinner, Problem, EmptyState, PageHeader, Button,
-  Card, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
+  Spinner, Problem, EmptyState, PageHeader, Button, Card, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, CodeLabel,
 } from '@revelation-srs/ui';
 
 export function ModuleAddPage() {
@@ -134,7 +133,7 @@ export function ModuleAddPage() {
                     <span className="ml-2 text-xs text-neutral-500">{offering.moduleTitle}</span>
                   </TableCell>
                   <TableCell>{offering.periodCode}</TableCell>
-                  <TableCell>{offering.deliveryModeCode ?? '—'}</TableCell>
+                  <TableCell><CodeLabel entity="module_offering" field="delivery_mode_code" code={offering.deliveryModeCode} /></TableCell>
                   <TableCell>{offering.creditValue ?? '—'}</TableCell>
                   <TableCell>{offering.capacity ?? '—'}</TableCell>
                   <TableCell className="text-right">

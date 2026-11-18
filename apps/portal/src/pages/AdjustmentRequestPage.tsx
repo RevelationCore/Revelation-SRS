@@ -1,18 +1,12 @@
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { PageHeader, Card, CardBody, Button, Select, Problem } from '@revelation-srs/ui';
+import {
+  PageHeader, Card, CardBody, Button, Select, Problem, useCodes,
+} from '@revelation-srs/ui';
 import { useAuth } from '../auth/AuthContext.js';
 import { useFormSubmit } from '../hooks/useFormSubmit.js';
 import { requestAdjustment } from '../api/adjustmentCases.js';
-
-const ADJUSTMENT_TYPES = [
-  { code: 'exam-time',  label: 'Extra time in exams' },
-  { code: 'venue',      label: 'Alternative venue (e.g. separate room)' },
-  { code: 'coursework', label: 'Coursework deadline extension' },
-  { code: 'placement',  label: 'Placement adjustment' },
-  { code: 'other',      label: 'Other' },
-];
 
 interface FormValues {
   adjustmentTypeCode: string;
@@ -21,6 +15,7 @@ interface FormValues {
 
 
 export function AdjustmentRequestPage() {
+  const adjustmentTypes = useCodes('wellbeing.adjustment_case', 'adjustment_type_code');
   const { t } = useTranslation();
   const { personId } = useAuth();
   const navigate = useNavigate();
@@ -56,7 +51,7 @@ export function AdjustmentRequestPage() {
                 What kind of adjustment do you need? <span className="text-danger-500" aria-hidden="true">*</span>
               </label>
               <Select id="adj-req-type" aria-required="true" invalid={!!errors.adjustmentTypeCode} {...register('adjustmentTypeCode', { required: 'Select the kind of adjustment you need.' })}>
-                {ADJUSTMENT_TYPES.map((o) => <option key={o.code} value={o.code}>{o.label}</option>)}
+                {adjustmentTypes.options.map((o) => <option key={o.code} value={o.code}>{o.description ?? o.displayLabel}</option>)}
               </Select>
               {errors.adjustmentTypeCode && (
                 <p role="alert" className="text-xs text-danger-600">{errors.adjustmentTypeCode.message}</p>

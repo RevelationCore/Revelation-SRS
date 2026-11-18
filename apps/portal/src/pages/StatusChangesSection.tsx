@@ -1,5 +1,7 @@
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
-import { Card, CardHeader, CardBody, Button, Input, Select, LabelledField, Badge, StatusNotice, formatDate } from '@revelation-srs/ui';
+import {
+  Card, CardHeader, CardBody, Button, Input, Select, LabelledField, Badge, StatusNotice, formatDate, CodeLabel, useCodes,
+} from '@revelation-srs/ui';
 
 import { ApiError } from '../api/client.js';
 import {
@@ -7,18 +9,6 @@ import {
   getFieldValueSet, getStatusCaseOptions, listCatalogueProgrammes, listMyStatusCases, requestStatusCase, withdrawMyStatusCase,
 } from '../api/me.js';
 
-const TYPE_LABELS: Record<string, string> = {
-  interruption: 'Take a break from my studies (interruption)',
-  return: 'Return from my interruption',
-  withdrawal: 'Leave my course (withdrawal)',
-  transfer: 'Change my course or mode of study (transfer)',
-  suspension: 'Suspension',
-  'leaver-closure': 'Leaver closure',
-};
-const SHORT_LABELS: Record<string, string> = {
-  interruption: 'Interruption', return: 'Return', withdrawal: 'Withdrawal', transfer: 'Transfer', suspension: 'Suspension', 'leaver-closure': 'Leaver closure',
-};
-const STATUS_LABELS: Record<string, string> = { requested: 'Awaiting a decision', approved: 'Approved', rejected: 'Not approved', withdrawn: 'Withdrawn' };
 
 function message(err: unknown, fallback: string): string {
   return err instanceof ApiError ? (err.detail ?? err.message) : fallback;
@@ -33,6 +23,8 @@ function message(err: unknown, fallback: string): string {
  * circumstances or adjustments.
  */
 export function StatusChangesSection({ enrolmentId, modeOfStudyCode }: { enrolmentId: string; modeOfStudyCode: string }) {
+  const caseTypes = useCodes('student_status_case', 'case_type_code');
+  const caseStatuses = useCodes('student_status_case', 'status_code');
   const [options, setOptions] = useState<StatusCaseOptions | null>(null);
   const [cases, setCases] = useState<MyStatusCase[]>([]);
   const [error, setError] = useState('');
@@ -60,8 +52,8 @@ export function StatusChangesSection({ enrolmentId, modeOfStudyCode }: { enrolme
               {cases.map((c) => (
                 <li key={c.statusCaseId} className="rounded border border-neutral-200 p-3 text-sm">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-medium">{SHORT_LABELS[c.caseTypeCode] ?? c.caseTypeCode}</span>
-                    <Badge value={c.statusCode === 'requested' ? 'pending' : c.statusCode} label={STATUS_LABELS[c.statusCode] ?? c.statusCode} />
+                    <span className="font-medium"><CodeLabel entity="student_status_case" field="case_type_code" code={c.caseTypeCode} /></span>
+                    <Badge value={c.statusCode === 'requested' ? 'pending' : c.statusCode} label={caseStatuses.label(c.statusCode)} />
                     <span className="text-neutral-600">from {formatDate(c.approvedEffectiveDate ?? c.requestedEffectiveDate)}</span>
                   </div>
                   {c.decisionReason && <p className="mt-1 text-neutral-700">{c.decisionReason}</p>}
@@ -72,7 +64,7 @@ export function StatusChangesSection({ enrolmentId, modeOfStudyCode }: { enrolme
 
           {open ? (
             <div className="flex flex-wrap items-center gap-3">
-              <p className="text-sm">Your {SHORT_LABELS[open.caseTypeCode]?.toLowerCase()} request is waiting for a decision.</p>
+              <p className="text-sm">Your {caseTypes.label(open.caseTypeCode).toLowerCase()} request is waiting for a decision.</p>
               {open.initiatedByCode === 'student' && (
                 <Button size="sm" variant="secondary" onClick={() => void withdrawMyStatusCase(open.statusCaseId).then(load).catch((err: unknown) => setError(message(err, 'We could not withdraw your request.')))}>
                   Withdraw my request
@@ -95,6 +87,7 @@ export function StatusChangesSection({ enrolmentId, modeOfStudyCode }: { enrolme
 function RequestFlow({ options, enrolmentId, modeOfStudyCode, onDone, onCancel }: {
   options: StatusCaseOptions; enrolmentId: string; modeOfStudyCode: string; onDone: () => void; onCancel: () => void;
 }) {
+  const caseTypes = useCodes('student_status_case', 'case_type_code');
   const [type, setType] = useState(options.requestableTypes[0] ?? '');
   const [reason, setReason] = useState('');
   const [effective, setEffective] = useState('');
@@ -169,7 +162,7 @@ function RequestFlow({ options, enrolmentId, modeOfStudyCode, onDone, onCancel }
       {error && <p className="text-sm text-danger-600" role="alert">{error}</p>}
       <LabelledField label="What do you want to request?" htmlFor="sc-type" required>
         <Select id="sc-type" value={type} onChange={(e) => setType(e.target.value)}>
-          {options.requestableTypes.map((t) => <option key={t} value={t}>{TYPE_LABELS[t] ?? t}</option>)}
+          {options.requestableTypes.map((t) => <option key={t} value={t}>{caseTypes.find(t)?.description ?? caseTypes.label(t)}</option>)}
         </Select>
       </LabelledField>
 

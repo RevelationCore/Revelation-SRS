@@ -4,11 +4,11 @@ import { useAuth } from '../auth/AuthContext.js';
 import { useApiData } from '../hooks/useApiData.js';
 import { getEnrolments, getTimetable } from '../api/me.js';
 import {
-  Spinner, Problem, EmptyState, formatDate, PageHeader,
-  Card, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
+  Spinner, Problem, EmptyState, formatDate, PageHeader, Card, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, CodeLabel, useCodes,
 } from '@revelation-srs/ui';
 
 export function TimetablePage() {
+  const activityTypes = useCodes('timetable_activity', 'activity_type_code');
   const { t }    = useTranslation();
   const { personId } = useAuth();
 
@@ -80,13 +80,13 @@ export function TimetablePage() {
                       <TableCell className="text-neutral-900">{e.moduleTitle}</TableCell>
                       <TableCell>{formatDate(e.startDate)}</TableCell>
                       <TableCell>{formatDate(e.endDate)}</TableCell>
-                      <TableCell>{e.deliveryModeCode}</TableCell>
+                      <TableCell><CodeLabel entity="module_offering" field="delivery_mode_code" code={e.deliveryModeCode} /></TableCell>
                       <TableCell className="text-xs">
                         {(e.activities ?? []).length === 0 ? (
                           <span className="text-neutral-500">Not yet published</span>
                         ) : (
                           <ul className="space-y-0.5">
-                            {groupActivities(e.activities ?? []).map((line) => <li key={line}>{line}</li>)}
+                            {groupActivities(e.activities ?? [], activityTypes.label).map((line) => <li key={line}>{line}</li>)}
                           </ul>
                         )}
                       </TableCell>
@@ -105,10 +105,9 @@ export function TimetablePage() {
 const DAYS = ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 /** One line per activity; a group set (the student attends one group) reads "Seminar, one of: …". */
-function groupActivities(activities: NonNullable<import('../api/me.js').TimetableEntry['activities']>): string[] {
+function groupActivities(activities: NonNullable<import('../api/me.js').TimetableEntry['activities']>, label: (code: string) => string): string[] {
   const slotText = (s: { dayOfWeek: number; startTime: string; endTime: string; weekCommencing: string[]; locationRef: string | null }) =>
     `${DAYS[s.dayOfWeek]} ${s.startTime}–${s.endTime}${s.locationRef ? `, ${s.locationRef}` : ''} (${s.weekCommencing.length} week${s.weekCommencing.length === 1 ? '' : 's'})`;
-  const label = (type: string) => type.charAt(0).toUpperCase() + type.slice(1).replace(/-/g, ' ');
   const lines: string[] = [];
   const sets = new Map<string, typeof activities>();
   for (const a of activities) {

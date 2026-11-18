@@ -6878,7 +6878,7 @@
    {
     "code": "attending",
     "displayLabel": "Attending",
-    "description": null,
+    "description": "I will attend",
     "sortOrder": 20,
     "active": true,
     "hidden": false,
@@ -6887,7 +6887,7 @@
    {
     "code": "in-absentia",
     "displayLabel": "In absentia",
-    "description": null,
+    "description": "Graduate without attending (in absentia)",
     "sortOrder": 30,
     "active": true,
     "hidden": false,
@@ -6896,7 +6896,7 @@
    {
     "code": "deferred",
     "displayLabel": "Deferred",
-    "description": null,
+    "description": "Defer to a later ceremony",
     "sortOrder": 40,
     "active": true,
     "hidden": false,
@@ -6905,7 +6905,7 @@
    {
     "code": "declined",
     "displayLabel": "Declined",
-    "description": null,
+    "description": "I do not want a ceremony",
     "sortOrder": 50,
     "active": true,
     "hidden": false,
@@ -12692,7 +12692,7 @@
    {
     "code": "interruption",
     "displayLabel": "Interruption of studies",
-    "description": null,
+    "description": "Take a break from my studies (interruption)",
     "sortOrder": 10,
     "active": true,
     "hidden": false,
@@ -12710,7 +12710,7 @@
    {
     "code": "return",
     "displayLabel": "Return from interruption",
-    "description": null,
+    "description": "Return from my interruption",
     "sortOrder": 30,
     "active": true,
     "hidden": false,
@@ -12719,7 +12719,7 @@
    {
     "code": "withdrawal",
     "displayLabel": "Withdrawal",
-    "description": null,
+    "description": "Leave my course (withdrawal)",
     "sortOrder": 40,
     "active": true,
     "hidden": false,
@@ -12728,7 +12728,7 @@
    {
     "code": "transfer",
     "displayLabel": "Transfer of programme or mode",
-    "description": null,
+    "description": "Change my course or mode of study (transfer)",
     "sortOrder": 50,
     "active": true,
     "hidden": false,
@@ -12948,7 +12948,7 @@
   "members": [
    {
     "code": "requested",
-    "displayLabel": "Requested",
+    "displayLabel": "Awaiting a decision",
     "description": null,
     "sortOrder": 10,
     "active": true,
@@ -12966,7 +12966,7 @@
    },
    {
     "code": "rejected",
-    "displayLabel": "Rejected",
+    "displayLabel": "Not approved",
     "description": null,
     "sortOrder": 30,
     "active": true,
@@ -13742,7 +13742,7 @@
    {
     "code": "exam-time",
     "displayLabel": "Exam time",
-    "description": null,
+    "description": "Extra time in exams",
     "sortOrder": 10,
     "active": true,
     "hidden": false,
@@ -13751,7 +13751,7 @@
    {
     "code": "venue",
     "displayLabel": "Venue",
-    "description": null,
+    "description": "Alternative venue (e.g. separate room)",
     "sortOrder": 20,
     "active": true,
     "hidden": false,
@@ -13760,7 +13760,7 @@
    {
     "code": "coursework",
     "displayLabel": "Coursework",
-    "description": null,
+    "description": "Coursework deadline extension",
     "sortOrder": 30,
     "active": true,
     "hidden": false,
@@ -13769,7 +13769,7 @@
    {
     "code": "placement",
     "displayLabel": "Placement",
-    "description": null,
+    "description": "Placement adjustment",
     "sortOrder": 40,
     "active": true,
     "hidden": false,
@@ -13812,7 +13812,7 @@
    },
    {
     "code": "under_assessment",
-    "displayLabel": "Under assessment",
+    "displayLabel": "Being assessed",
     "description": null,
     "sortOrder": 30,
     "active": true,
@@ -13821,7 +13821,7 @@
    },
    {
     "code": "determination_made",
-    "displayLabel": "Determination made",
+    "displayLabel": "Assessment complete",
     "description": null,
     "sortOrder": 40,
     "active": true,
@@ -13830,7 +13830,7 @@
    },
    {
     "code": "under_review",
-    "displayLabel": "Under review (panel)",
+    "displayLabel": "Under panel review",
     "description": null,
     "sortOrder": 50,
     "active": true,
@@ -13848,7 +13848,7 @@
    },
    {
     "code": "rejected",
-    "displayLabel": "Rejected",
+    "displayLabel": "Not approved",
     "description": null,
     "sortOrder": 70,
     "active": true,

@@ -18,12 +18,17 @@ function common(options: Record<string, unknown>, cases: unknown[] = []) {
       enrolmentStatusCode: 'enrolled', requestableTypes: ['interruption', 'withdrawal', 'transfer'], openCaseId: null, returnFrom: null, sponsored: false, ...options,
     })),
     http.get(`${API}/api/v1/enrolments/enr-1/status-cases`, () => HttpResponse.json(cases)),
-    http.get(`${API}/api/v1/fields/:entity/:field/value-set`, ({ params }) => HttpResponse.json({
-      setCode: 'x', displayName: 'x',
-      members: params['field'] === 'reason_category_code'
-        ? [{ code: 'health', displayLabel: 'Health', description: null, sortOrder: 1 }]
-        : [{ code: 'full-time', displayLabel: 'Full-time', description: null, sortOrder: 1 }, { code: 'part-time', displayLabel: 'Part-time', description: null, sortOrder: 2 }],
-    })),
+    // Only these two fields; every other field falls through to the real value sets.
+    http.get(`${API}/api/v1/fields/:entity/:field/value-set`, ({ params }) => {
+      const field = String(params['field']);
+      if (field !== 'reason_category_code' && field !== 'mode_of_study_code') return undefined;
+      return HttpResponse.json({
+        setCode: 'x', displayName: 'x',
+        members: field === 'reason_category_code'
+          ? [{ code: 'health', displayLabel: 'Health', description: null, sortOrder: 1 }]
+          : [{ code: 'full-time', displayLabel: 'Full-time', description: null, sortOrder: 1 }, { code: 'part-time', displayLabel: 'Part-time', description: null, sortOrder: 2 }],
+      });
+    }),
     http.get(`${API}/api/v1/programmes`, () => HttpResponse.json([{ programmeId: 'prog-2', code: 'BA-HIS', title: 'BA History' }])),
   ];
 }
@@ -38,7 +43,7 @@ describe('requesting a change to my studies', () => {
     }));
     const { container } = render();
     await userEvent.click(await screen.findByRole('button', { name: 'Request a change' }));
-    expect(screen.getAllByRole('option').map((o) => o.textContent)).toContain('Leave my course (withdrawal)');
+    expect(await screen.findByRole('option', { name: 'Leave my course (withdrawal)' })).toBeInTheDocument();
     expect(screen.queryByRole('option', { name: /suspension/i })).toBeNull();
     await expectNoA11yViolations(container);
 

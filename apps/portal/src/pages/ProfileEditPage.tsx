@@ -12,7 +12,9 @@ import {
 } from '../api/me.js';
 import { ApiError } from '../api/client.js';
 import { Plus } from 'lucide-react';
-import { Spinner, Problem, Field, PageHeader, Card, CardHeader, CardBody, Button, Select } from '@revelation-srs/ui';
+import {
+  Spinner, Problem, Field, PageHeader, Card, CardHeader, CardBody, Button, Select, CodeLabel,
+} from '@revelation-srs/ui';
 
 function codeLabel(vs: ValueSetDto | null | undefined, code: string | null | undefined): string {
   if (!code) return '—';
@@ -211,7 +213,7 @@ export function ProfileEditPage() {
                   <div key={addr.id} className="border-t border-neutral-100 pt-4 first:border-0 first:pt-0 flex items-start justify-between gap-4">
                     <div>
                       <p className="mb-1 text-xs font-medium uppercase tracking-wide text-neutral-500">
-                        {addr.addressTypeCode}
+                        <CodeLabel entity="student_address" field="address_type_code" code={addr.addressTypeCode} />
                       </p>
                       <address className="not-italic text-sm text-neutral-800 leading-relaxed">
                         {[addr.line1, addr.line2, addr.city, addr.postcode, addr.countryCode]

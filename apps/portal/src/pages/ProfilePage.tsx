@@ -6,7 +6,9 @@ import { useAuth } from '../auth/AuthContext.js';
 import { useApiData } from '../hooks/useApiData.js';
 import { getProfile, getAddresses, deleteAddress, getFieldValueSet, type ValueSetDto } from '../api/me.js';
 import { ApiError } from '../api/client.js';
-import { Spinner, Problem, StatusNotice, formatDate, PageHeader, Card, CardHeader, CardBody, Button } from '@revelation-srs/ui';
+import {
+  Spinner, Problem, StatusNotice, formatDate, PageHeader, Card, CardHeader, CardBody, Button, CodeLabel,
+} from '@revelation-srs/ui';
 
 function codeLabel(vs: ValueSetDto | null | undefined, code: string | null | undefined): string | null | undefined {
   if (!code) return code;
@@ -125,7 +127,7 @@ export function ProfilePage() {
                   <div key={addr.id} className="border-t border-neutral-100 pt-4 first:border-0 first:pt-0 flex items-start justify-between gap-4">
                     <div>
                       <p className="mb-1 text-xs font-medium uppercase tracking-wide text-neutral-500">
-                        {addr.addressTypeCode}
+                        <CodeLabel entity="student_address" field="address_type_code" code={addr.addressTypeCode} />
                       </p>
                       <address className="not-italic text-sm text-neutral-800 leading-relaxed">
                         {[addr.line1, addr.line2, addr.city, addr.postcode, addr.countryCode]

@@ -2,7 +2,7 @@ import { type FormEvent, useCallback, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
-  Badge, Button, Card, CardBody, CardHeader, EmptyState, PageHeader, Problem, Select, Spinner, StatusNotice,
+  Badge, Button, Card, CardBody, CardHeader, EmptyState, PageHeader, Problem, Select, Spinner, StatusNotice, CodeBadge, CodeLabel, useCodes,
 } from '@revelation-srs/ui';
 
 import { ApiError } from '../api/client.js';
@@ -67,8 +67,8 @@ export function ResearchPage() {
               {data.panels.map((p) => (
                 <li key={p.reviewId} className="flex flex-wrap items-center gap-2 text-sm">
                   <Link to={`/research/reviews/${p.reviewId}`} className="font-medium text-primary-700 hover:underline">{p.studentName ?? p.reviewId}</Link>
-                  <span className="text-xs text-neutral-600">{p.reviewTypeCode}</span>
-                  <Badge value={p.statusCode} />
+                  <span className="text-xs text-neutral-600"><CodeLabel entity="pgr_progress_review" field="review_type_code" code={p.reviewTypeCode} /></span>
+                  <CodeBadge entity="business_case" field="status_code" code={p.statusCode} />
                 </li>
               ))}
             </ul>
@@ -96,6 +96,7 @@ export function ResearchPage() {
 }
 
 export function SuperviseePage() {
+  const reviewOutcomes = useCodes('pgr_progress_review', 'outcome_code');
   const { t } = useTranslation();
   const { enrolmentId = '' } = useParams();
   const { personId, data, loading, error } = useResearch((p) => getSupervisee(p, enrolmentId), [enrolmentId]);
@@ -122,8 +123,8 @@ export function SuperviseePage() {
           {data.progressReviews.map((r) => (
             <div key={r.reviewId} className="rounded border border-neutral-200 p-3 text-sm">
               <div className="flex flex-wrap items-center gap-2">
-                <span>{r.reviewTypeCode}</span><Badge value={r.statusCode} />
-                {r.outcomeCode && <span className="text-xs text-neutral-600">{t('portal.research.outcome', { outcome: r.outcomeCode })}</span>}
+                <span><CodeLabel entity="pgr_progress_review" field="review_type_code" code={r.reviewTypeCode} /></span><CodeBadge entity="business_case" field="status_code" code={r.statusCode} />
+                {r.outcomeCode && <span className="text-xs text-neutral-600">{t('portal.research.outcome', { outcome: reviewOutcomes.label(r.outcomeCode) })}</span>}
               </div>
               {r.statusCode === 'open' && (
                 <FileForm label={t('portal.research.supervisorReport')} onSubmit={async (file) => {
@@ -139,7 +140,7 @@ export function SuperviseePage() {
       {data.milestones.length > 0 && (
         <Card className="mb-4">
           <CardHeader title={t('portal.research.milestones')} />
-          <CardBody><ul className="space-y-1 text-sm">{data.milestones.map((m, i) => <li key={i}>{m.milestoneTypeCode}: {m.achievedDate}</li>)}</ul></CardBody>
+          <CardBody><ul className="space-y-1 text-sm">{data.milestones.map((m, i) => <li key={i}><CodeLabel entity="research_milestone" field="milestone_type_code" code={m.milestoneTypeCode} />: {m.achievedDate}</li>)}</ul></CardBody>
         </Card>
       )}
       {data.examinations.map((e) => (
@@ -156,6 +157,7 @@ export function SuperviseePage() {
 }
 
 export function PanelReviewPage() {
+  const reviewTypes = useCodes('pgr_progress_review', 'review_type_code');
   const { t } = useTranslation();
   const { reviewId = '' } = useParams();
   const { personId, data, loading, error } = useResearch((p) => getPanelReview(p, reviewId), [reviewId]);
@@ -164,7 +166,7 @@ export function PanelReviewPage() {
   if (error || !data || !personId) return <Problem title={t('status.error')} detail={error ?? ''} />;
   return (
     <div>
-      <PageHeader title={data.studentName ?? t('portal.research.student')} description={`${data.reviewTypeCode} · ${data.role}`}
+      <PageHeader title={data.studentName ?? t('portal.research.student')} description={`${reviewTypes.label(data.reviewTypeCode)} · ${data.role}`}
         actions={<Link to="/research" className="text-sm text-primary-600 hover:underline">{t('portal.research.back')}</Link>} />
       {actionError && <p className="my-2 text-sm text-danger-600" role="alert">{actionError}</p>}
       <Card className="mb-4">

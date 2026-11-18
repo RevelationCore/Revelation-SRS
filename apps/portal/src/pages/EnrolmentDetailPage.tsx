@@ -14,7 +14,9 @@ import {
   type ValueSetDto,
 } from '../api/me.js';
 import { StatusChangesSection } from './StatusChangesSection.js';
-import { Spinner, Problem, formatDate, PageHeader, Card, CardHeader, CardBody, Badge, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell } from '@revelation-srs/ui';
+import {
+  Spinner, Problem, formatDate, PageHeader, Card, CardHeader, CardBody, Badge, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, CodeBadge,
+} from '@revelation-srs/ui';
 
 function codeLabel(vs: ValueSetDto | null | undefined, code: string | null | undefined): string | null | undefined {
   if (!code) return code;
@@ -116,7 +118,7 @@ export function EnrolmentDetailPage() {
                     <TableBody>
                       {supervision.map(s => (
                         <TableRow key={s.assignmentId}>
-                          <TableCell><Badge value={s.roleDetailCode} /></TableCell>
+                          <TableCell><CodeBadge entity="staff_assignment" field="role_detail_code" code={s.roleDetailCode} /></TableCell>
                           <TableCell>{formatDate(s.validFrom)}</TableCell>
                         </TableRow>
                       ))}
@@ -137,7 +139,7 @@ export function EnrolmentDetailPage() {
                     <TableBody>
                       {milestones.map(m => (
                         <TableRow key={m.milestoneId}>
-                          <TableCell><Badge value={m.milestoneTypeCode} /></TableCell>
+                          <TableCell><CodeBadge entity="research_milestone" field="milestone_type_code" code={m.milestoneTypeCode} /></TableCell>
                           <TableCell>{formatDate(m.achievedDate)}</TableCell>
                         </TableRow>
                       ))}
@@ -165,8 +167,8 @@ export function EnrolmentDetailPage() {
                 <TableBody>
                   {transitions.map(tr => (
                     <TableRow key={tr.transitionId}>
-                      <TableCell><Badge value={tr.fromStatusCode} /></TableCell>
-                      <TableCell><Badge value={tr.toStatusCode} /></TableCell>
+                      <TableCell><CodeBadge entity="enrolment_status_transition" field="from_status_code" code={tr.fromStatusCode} /></TableCell>
+                      <TableCell><CodeBadge entity="enrolment_status_transition" field="to_status_code" code={tr.toStatusCode} /></TableCell>
                       <TableCell>{formatDate(tr.effectiveAt)}</TableCell>
                       <TableCell className="text-neutral-500">{tr.reasonText ?? tr.reasonCode ?? '—'}</TableCell>
                     </TableRow>
@@ -196,7 +198,7 @@ export function EnrolmentDetailPage() {
                       <TableCell>{f.academicYear}</TableCell>
                       <TableCell>{codeLabel(feeVS, f.feeBandCode) ?? '—'}</TableCell>
                       <TableCell>{codeLabel(fundingVS, f.fundingSourceCode) ?? '—'}</TableCell>
-                      <TableCell><Badge value={f.statusCode} /></TableCell>
+                      <TableCell><CodeBadge entity="fee_liability" field="status_code" code={f.statusCode} /></TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -221,7 +223,7 @@ export function EnrolmentDetailPage() {
                 <TableBody>
                   {history.map((h, i) => (
                     <TableRow key={i}>
-                      <TableCell><Badge value={h.statusCode} /></TableCell>
+                      <TableCell><CodeBadge entity="enrolment" field="status_code" code={h.statusCode} /></TableCell>
                       <TableCell>{formatDate(h.validFrom)}</TableCell>
                       <TableCell>{h.validTo ? formatDate(h.validTo) : 'Current'}</TableCell>
                       <TableCell>{formatDate(h.recordedAt)}</TableCell>

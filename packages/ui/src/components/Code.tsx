@@ -94,14 +94,20 @@ export interface CodeProps {
   code:   string | null | undefined;
   /** Shown when there is no code. */
   empty?: string;
+  /** 'description': show the value's description (e.g. a student's own wording for a choice), falling back to its label. */
+  show?:  'label' | 'description';
+}
+
+function textOf(m: CodeMember, show: 'label' | 'description' = 'label'): string {
+  return show === 'description' ? m.description ?? m.displayLabel : m.displayLabel;
 }
 
 /** A code's label; its description on hover. An unknown code is shown as the code, marked. */
-export function CodeLabel({ entity, field, code, empty = '—' }: CodeProps) {
+export function CodeLabel({ entity, field, code, empty = '—', show }: CodeProps) {
   const codes = useCodes(entity, field);
   if (!code) return <>{empty}</>;
   const m = codes.find(code);
-  if (m) return <span title={m.description ?? undefined}>{m.displayLabel}</span>;
+  if (m) return <span title={show === 'description' ? undefined : m.description ?? undefined}>{textOf(m, show)}</span>;
   if (codes.loading) return <span className="text-neutral-400">{code}</span>;
   return (
     <span className="font-mono text-xs" title={codes.missing ? 'No value set is registered for this field' : 'Not in the value set for this field'}>
@@ -129,6 +135,8 @@ export interface CodeSelectProps extends Omit<SelectHTMLAttributes<HTMLSelectEle
   only?:    readonly string[];
   /** Leave these codes out. */
   exclude?: readonly string[];
+  /** 'description': option text is each value's description, falling back to its label. */
+  show?:    'label' | 'description';
 }
 
 /**
@@ -136,7 +144,7 @@ export interface CodeSelectProps extends Omit<SelectHTMLAttributes<HTMLSelectEle
  * stays available even if it is now retired or hidden, marked as such, so
  * editing a record never silently changes it.
  */
-export function CodeSelect({ entity, field, value, onChange, emptyLabel, only, exclude, ...rest }: CodeSelectProps) {
+export function CodeSelect({ entity, field, value, onChange, emptyLabel, only, exclude, show, ...rest }: CodeSelectProps) {
   const codes = useCodes(entity, field);
   let options = codes.options;
   if (only) options = options.filter((m) => only.includes(m.code));
@@ -146,9 +154,9 @@ export function CodeSelect({ entity, field, value, onChange, emptyLabel, only, e
   return (
     <Select {...control} {...rest}>
       {emptyLabel !== undefined && <option value="">{emptyLabel}</option>}
-      {current && <option value={current.code}>{current.displayLabel} (no longer offered)</option>}
+      {current && <option value={current.code}>{textOf(current, show)} (no longer offered)</option>}
       {value && !current && !options.some((m) => m.code === value) && !codes.loading && <option value={value}>{value}</option>}
-      {options.map((m) => <option key={m.code} value={m.code} title={m.description ?? undefined}>{m.displayLabel}</option>)}
+      {options.map((m) => <option key={m.code} value={m.code} title={show === 'description' ? undefined : m.description ?? undefined}>{textOf(m, show)}</option>)}
     </Select>
   );
 }

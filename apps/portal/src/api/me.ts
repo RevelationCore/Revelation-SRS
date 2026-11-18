@@ -428,8 +428,9 @@ export interface ValueSetDto {
   members:      ValueSetMember[];
 }
 
-export function getFieldValueSet(entity: string, field: string): Promise<ValueSetDto> {
-  return api.get(`/api/v1/fields/${entity}/${field}/value-set`);
+/** A field's value set: selectable values by default, or every value (include 'all') to label any code. */
+export function getFieldValueSet(entity: string, field: string, include?: 'all'): Promise<ValueSetDto> {
+  return api.get(`/api/v1/fields/${entity}/${field}/value-set${include ? '?include=all' : ''}`);
 }
 
 // ── Module selection proposals ─────────────────────────────────────────────────
