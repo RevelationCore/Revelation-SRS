@@ -4,7 +4,7 @@
  * (D-41), and bank holidays are listed on the working-day calendar (D-42).
  */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment */
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
 import { injectAdminAuth } from './helpers/auth.js';
@@ -13,7 +13,7 @@ import { mockApiRoutes } from './helpers/api-mocks.js';
 const ADMIN = 'http://localhost:5173';
 const HASH = `sha256:${'a'.repeat(64)}`;
 
-async function axe(page: import('@playwright/test').Page) {
+async function axe(page: Page) {
   await page.waitForLoadState('networkidle');
   const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze();
   expect(results.violations).toEqual([]);

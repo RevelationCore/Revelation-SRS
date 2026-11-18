@@ -258,7 +258,6 @@ describe('EC and misconduct events', () => {
   let jwt: string;
   let personId: string;
   let enrolmentId: string;
-  let ecId: string;
   let determinationId: string;
 
   beforeAll(async () => {
@@ -280,7 +279,7 @@ describe('EC and misconduct events', () => {
       },
     });
     expect(res.statusCode).toBe(201);
-    ecId = res.json<{ exceptionalCircumstancesId: string }>().exceptionalCircumstancesId;
+    expect(res.json<{ exceptionalCircumstancesId: string }>().exceptionalCircumstancesId).toBeTruthy();
 
     const evt = findEvent('srs.circumstances.exceptional-circumstances-flagged');
     expect(evt).toBeDefined();
