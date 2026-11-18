@@ -34,6 +34,8 @@ Revelation SRS is a fully open source Student Information System designed specif
 | [Core Principles](docs/core-principles.md) | 23 non-negotiable principles governing design, development, and operation |
 | [Current Capabilities](docs/product/current-capabilities.md) | Authoritative implemented, partial and proposed capability status |
 | [Academic Journey Gap-Closure Plan](docs/product/academic-journey-gap-closure-plan.md) | The five delivered phases that brought all 49 academic-journey processes into the app |
+| [Academic Journeys](docs/product/academic-journeys/README.md) | Forty proposed end-to-end stories (AJ-01 to AJ-40) told through shared fictional students and staff, with weekly timelines and acceptance cases |
+| [Academic Journey Narrative Catalogue](docs/product/academic-journey-narrative-catalogue.md) | The catalogue behind the journeys, with reference-model coverage and the interaction-discovery register |
 | [Domain Glossary](docs/domain-glossary.md) | Authoritative definitions of all UK HE domain terms used in the system |
 | **Requirements** | |
 | [Functional Requirements](docs/requirements/functional-requirements.md) | 140+ testable requirements traced to reference model flows |
@@ -99,7 +101,7 @@ Revelation SRS has substantial implemented foundations, services, integrations a
 | Current classification | Position |
 |---|---|
 | Implemented baseline | Tenant/temporal foundations, workflow platform, core identity/profile, and all twelve academic-journey capabilities: admissions, CAS, registration and status, curriculum, module selection, attendance and engagement, adjustments and exceptional circumstances, assessment, exam boards, post-ratification correction, progression and awards, and the PGR lifecycle |
-| Partial | Regulatory exchanges, integration operations, individual rights/retention/audit, the portal and administration UI as a whole, and demo/migration tooling |
+| Partial | Regulatory exchanges, integration operations (including tracked hand-offs to 15 adjacent systems), individual rights/retention/audit, wellbeing case management (API only, no staff screens), communications and notifications (no outbound email), globalisation, reporting, the portal and administration UI as a whole, and demo/migration tooling |
 | Verification | Documentation checks, typecheck, lint, unit, component, integration and mocked UI suites pass in CI; clean-clone bootstrap verified 2026-08-03 |
 
 The [Current Capability Matrix](docs/product/current-capabilities.md) is the authority for project status. Superseded plans and review evidence are available through the preservation references described in [Documentation History](docs/history.md).

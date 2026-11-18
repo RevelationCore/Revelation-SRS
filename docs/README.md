@@ -27,7 +27,7 @@ This index separates maintained product knowledge from superseded delivery evide
 - [P0 functional requirements](requirements/business-process-p0-functional-requirements.md) specify priority controls derived from the process review.
 - [Curriculum management requirements](requirements/curriculum-management-system.md) define the proposed optional internal module: academic definitions, diets, approval/rework, versioning, publication and third-party provider substitution.
 - [Academic journey narrative catalogue](product/academic-journey-narrative-catalogue.md) proposes 40 interlocking stories across student, academic, research and institutional perspectives, with reference-model coverage and an interaction-discovery register.
-- [Expanded academic journeys](product/academic-journeys/README.md) develops twelve connected stories from course creation to graduation, with shared fictional people, course/rule versions, weekly timelines and explicit service hand-offs.
+- [Expanded academic journeys](product/academic-journeys/README.md) develops the forty proposed stories, from course creation to graduation and beyond, with shared fictional people, course/rule versions, weekly timelines and explicit service hand-offs.
 - [P0 traceability](business-processes/p0-requirements-and-adr-traceability.md) connects backlog items, requirements, processes and decisions.
 - [Revelation change backlog](business-processes/revelation-change-backlog.md) records implementation impacts discovered by the review.
 - [Attendance and engagement vertical slice](product/attendance-engagement-vertical-slice.md) specifies the first end-to-end implementation.

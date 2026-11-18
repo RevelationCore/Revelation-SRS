@@ -19,8 +19,8 @@ const errors = [];
 const capabilityRows = [
   ...matrix.matchAll(/^\| `([a-z0-9-]+)` \| ([^|]+) \| \*\*(Implemented baseline|Partial|Approved target|Proposed target|Not assessed)\*\* \|/gm),
 ];
-if (capabilityRows.length !== 20) {
-  errors.push(`Expected 20 current-capability rows, found ${capabilityRows.length}`);
+if (capabilityRows.length !== 24) {
+  errors.push(`Expected 24 current-capability rows, found ${capabilityRows.length}`);
 }
 
 const capabilityIds = capabilityRows.map((row) => row[1]);
