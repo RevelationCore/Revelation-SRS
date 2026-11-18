@@ -1,10 +1,8 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
-import { CodeSetProvider } from '@revelation-srs/ui';
-
 import { AuthProvider } from './auth/AuthContext.js';
-import { loadCodes } from './codes.js';
+import { Codes } from './codes.js';
 import { App } from './App.js';
 import './i18n.js';
 import './index.css';
@@ -16,9 +14,9 @@ createRoot(rootEl).render(
   <StrictMode>
     <BrowserRouter>
       <AuthProvider>
-        <CodeSetProvider load={loadCodes}>
+        <Codes>
           <App />
-        </CodeSetProvider>
+        </Codes>
       </AuthProvider>
     </BrowserRouter>
   </StrictMode>,

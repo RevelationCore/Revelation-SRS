@@ -1,12 +1,9 @@
 import { randomUUID } from 'node:crypto';
 
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import {
   localeResourcePacks,
   tenantLocaleConfigs,
-  valueSetMemberLabels,
-  valueSetMembers,
-  valueSets,
   type Db,
   withTenantContext,
 } from '@revelation-srs/db';
@@ -47,28 +44,8 @@ export interface UpsertTenantLocaleConfigInput {
   firstDayOfWeek?:   number;
 }
 
-export interface ValueSetMemberLabelDto {
-  valueSetMemberLabelId: string;
-  valueSetMemberId:      string;
-  localeCode:            string;
-  displayLabel:          string;
-  description:           string | null;
-  createdAt:             Date;
-}
 
-export interface AddValueSetMemberLabelInput {
-  valueSetMemberId: string;
-  localeCode:       string;
-  displayLabel:     string;
-  description?:     string;
-}
 
-export interface ResolvedLabel {
-  code:         string;
-  displayLabel: string;
-  locale:       string;
-  isFallback:   boolean;
-}
 
 // ── Service ───────────────────────────────────────────────────────────────────
 
@@ -185,163 +162,6 @@ export class LocaleService {
     return toLocaleConfigDto(result);
   }
 
-  /**
-   * Batch-upsert translated labels for all members of a value set.
-   * Silently skips codes that don't exist in the set.
-   */
-  async batchUpsertValueSetLabels(
-    setCode:      string,
-    localeCode:   string,
-    labels:       Record<string, string>,
-    actorId:      string,
-  ): Promise<void> {
-    const sets = await this.db
-      .select({ id: valueSets.id })
-      .from(valueSets)
-      .where(eq(valueSets.setCode, setCode));
-
-    if (!sets[0]) throw new NotFoundError('ValueSet', setCode);
-
-    const members = await this.db
-      .select({ id: valueSetMembers.id, code: valueSetMembers.code })
-      .from(valueSetMembers)
-      .where(eq(valueSetMembers.valueSetId, sets[0].id));
-
-    const memberMap = new Map(members.map((m) => [m.code, m.id]));
-
-    for (const [code, displayLabel] of Object.entries(labels)) {
-      const memberId = memberMap.get(code);
-      if (!memberId) continue;
-      await this.db
-        .insert(valueSetMemberLabels)
-        .values({
-          id:               randomUUID(),
-          valueSetMemberId: memberId,
-          localeCode,
-          displayLabel,
-          description:      null,
-        })
-        .onConflictDoUpdate({
-          target: [valueSetMemberLabels.valueSetMemberId, valueSetMemberLabels.localeCode],
-          set:    { displayLabel },
-        });
-    }
-
-    await this.audit.record({
-      actorId,
-      actorType:  'user',
-      actionType: 'update',
-      entityType: 'value_set_labels',
-      entityId:   sets[0].id,
-      afterValue: { setCode, localeCode, labelCount: Object.keys(labels).length },
-    });
-  }
-
-  /**
-   * Add a translated label for a value set member.
-   * Replaces any existing label for the same (member, locale) pair.
-   */
-  async addValueSetMemberLabel(
-    input: AddValueSetMemberLabelInput,
-    actorId: string,
-  ): Promise<ValueSetMemberLabelDto> {
-    // Verify the member exists
-    const members = await this.db
-      .select({ id: valueSetMembers.id })
-      .from(valueSetMembers)
-      .where(eq(valueSetMembers.id, input.valueSetMemberId as `${string}-${string}-${string}-${string}-${string}`));
-
-    if (!members[0]) throw new NotFoundError('ValueSetMember', input.valueSetMemberId);
-
-    // Upsert the label
-    const inserted = await this.db
-      .insert(valueSetMemberLabels)
-      .values({
-        id:               randomUUID(),
-        valueSetMemberId: input.valueSetMemberId as `${string}-${string}-${string}-${string}-${string}`,
-        localeCode:       input.localeCode,
-        displayLabel:     input.displayLabel,
-        description:      input.description ?? null,
-      })
-      .onConflictDoUpdate({
-        target: [valueSetMemberLabels.valueSetMemberId, valueSetMemberLabels.localeCode],
-        set:    { displayLabel: input.displayLabel, description: input.description ?? null },
-      })
-      .returning();
-
-    await this.audit.record({
-      actorId,
-      actorType:  'user',
-      actionType: 'create',
-      entityType: 'value_set_member_label',
-      entityId:   inserted[0]!.id,
-      afterValue: { ...input },
-    });
-
-    return toLabelDto(inserted[0]!);
-  }
-
-  /**
-   * Get translated labels for all members of a value set, resolved for the
-   * given locale with fallback. Returns one entry per member.
-   *
-   * Resolution order: targetLocale → fallbackLocale → base display_label (en-GB).
-   */
-  async getValueSetLabels(
-    setCode: string,
-    targetLocale: string,
-    fallbackLocale: string,
-  ): Promise<ResolvedLabel[]> {
-    const sets = await this.db
-      .select({ id: valueSets.id })
-      .from(valueSets)
-      .where(eq(valueSets.setCode, setCode));
-
-    if (!sets[0]) throw new NotFoundError('ValueSet', setCode);
-
-    const members = await this.db
-      .select({
-        id:           valueSetMembers.id,
-        code:         valueSetMembers.code,
-        displayLabel: valueSetMembers.displayLabel,
-      })
-      .from(valueSetMembers)
-      .where(eq(valueSetMembers.valueSetId, sets[0].id));
-
-    if (members.length === 0) return [];
-
-    const memberIds = members.map((m) => m.id);
-    const localeCodes = [...new Set([targetLocale, fallbackLocale])].filter(
-      (lc) => lc !== 'en-GB',
-    );
-
-    const translations = localeCodes.length > 0
-      ? await this.db
-          .select()
-          .from(valueSetMemberLabels)
-          .where(and(
-            inArray(valueSetMemberLabels.valueSetMemberId, memberIds),
-            inArray(valueSetMemberLabels.localeCode, localeCodes),
-          ))
-      : [];
-
-    return members.map((member) => {
-      const targetTx = translations.find(
-        (t) => t.valueSetMemberId === member.id && t.localeCode === targetLocale,
-      );
-      if (targetTx) {
-        return { code: member.code, displayLabel: targetTx.displayLabel, locale: targetLocale, isFallback: false };
-      }
-      const fallbackTx = translations.find(
-        (t) => t.valueSetMemberId === member.id && t.localeCode === fallbackLocale,
-      );
-      if (fallbackTx) {
-        return { code: member.code, displayLabel: fallbackTx.displayLabel, locale: fallbackLocale, isFallback: true };
-      }
-      return { code: member.code, displayLabel: member.displayLabel, locale: 'en-GB', isFallback: true };
-    });
-  }
-
   async #assertLocaleExists(localeCode: string): Promise<void> {
     const rows = await this.db
       .select({ id: localeResourcePacks.id })
@@ -383,13 +203,3 @@ function toLocaleConfigDto(r: typeof tenantLocaleConfigs.$inferSelect): TenantLo
   };
 }
 
-function toLabelDto(r: typeof valueSetMemberLabels.$inferSelect): ValueSetMemberLabelDto {
-  return {
-    valueSetMemberLabelId: r.id,
-    valueSetMemberId:      r.valueSetMemberId,
-    localeCode:            r.localeCode,
-    displayLabel:          r.displayLabel,
-    description:           r.description ?? null,
-    createdAt:             r.createdAt,
-  };
-}

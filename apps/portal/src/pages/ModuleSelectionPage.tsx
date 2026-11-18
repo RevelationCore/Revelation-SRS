@@ -22,13 +22,13 @@ import {
   type ProposalValidationPreview,
 } from '../api/me.js';
 import {
-  Spinner, Problem, EmptyState, PageHeader, Button, Badge, Select,
-  Card, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
+  Spinner, Problem, EmptyState, PageHeader, Button, Badge, Select, Card, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, useCodes,
 } from '@revelation-srs/ui';
 
 const EDITABLE_STATUSES = ['draft', 'returned'];
 
 export function ModuleSelectionPage() {
+  const proposalStatuses = useCodes('module_selection_proposal', 'status_code');
   const { t }    = useTranslation();
   const { personId } = useAuth();
 
@@ -207,7 +207,7 @@ export function ModuleSelectionPage() {
                 <p className="text-sm text-neutral-500">{t('portal.moduleSelection.status')}</p>
                 <Badge
                   value={activeProposal.statusCode}
-                  label={t(`portal.moduleSelection.statusLabel.${activeProposal.statusCode}`, { defaultValue: activeProposal.statusCode })}
+                  label={proposalStatuses.label(activeProposal.statusCode)}
                 />
               </div>
               {activeProposal.decisionReason && (

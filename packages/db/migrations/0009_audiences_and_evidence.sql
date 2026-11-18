@@ -1255,3 +1255,107 @@ VALUES
   ('right_to_study_work_item', 'reason',      'right-to-study-work-reason-code', 'Derived for the registration-checks worklist'),
   ('ucas_outbound_decision',   'status_code', 'ucas-decision-send-status-code', 'Derived from the UCAS decision outbox')
 ON CONFLICT DO NOTHING;
+
+-- ── Valid values: one wording table for relabels and translations ───────────
+-- value_set_member_label holds every wording that replaces a value's own
+-- label: for one institution (tenant_id) or the platform (tenant_id NULL),
+-- in one language (locale_code) or any (NULL). A screen shows the most
+-- specific match: institution + reader's language, institution, platform +
+-- reader's language, then the value's own label. Hiding stays a separate,
+-- per-institution setting in value_set_member_override.
+ALTER TABLE "value_set_member_label" ADD COLUMN IF NOT EXISTS "tenant_id" uuid REFERENCES "tenant"("id");
+ALTER TABLE "value_set_member_label" ALTER COLUMN "locale_code" DROP NOT NULL;
+ALTER TABLE "value_set_member_label" ALTER COLUMN "display_label" DROP NOT NULL;
+ALTER TABLE "value_set_member_label" ADD COLUMN IF NOT EXISTS "updated_by" text;
+ALTER TABLE "value_set_member_label" ADD COLUMN IF NOT EXISTS "updated_at" timestamptz NOT NULL DEFAULT now();
+ALTER TABLE "value_set_member_label" DROP CONSTRAINT IF EXISTS "value_set_member_label_unique";
+CREATE UNIQUE INDEX IF NOT EXISTS "value_set_member_label_scope"
+  ON "value_set_member_label" ("value_set_member_id", COALESCE("tenant_id", '00000000-0000-0000-0000-000000000000'::uuid), COALESCE("locale_code", ''));
+ALTER TABLE "value_set_member_label" DROP CONSTRAINT IF EXISTS "value_set_member_label_has_wording";
+ALTER TABLE "value_set_member_label" ADD CONSTRAINT "value_set_member_label_has_wording"
+  CHECK ("display_label" IS NOT NULL OR "description" IS NOT NULL);
+-- The platform's any-language wording is the value's own label.
+ALTER TABLE "value_set_member_label" DROP CONSTRAINT IF EXISTS "value_set_member_label_platform_has_locale";
+ALTER TABLE "value_set_member_label" ADD CONSTRAINT "value_set_member_label_platform_has_locale"
+  CHECK ("tenant_id" IS NOT NULL OR "locale_code" IS NOT NULL);
+ALTER TABLE "value_set_member_label" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "value_set_member_label" FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "value_set_member_label";
+CREATE POLICY tenant_isolation ON "value_set_member_label"
+  USING ("tenant_id" IS NULL OR "tenant_id" = current_setting('app.current_tenant_id', true)::uuid)
+  WITH CHECK ("tenant_id" IS NULL OR "tenant_id" = current_setting('app.current_tenant_id', true)::uuid);
+
+-- An institution's relabels move into the wording table (any language).
+INSERT INTO "value_set_member_label" ("tenant_id", "value_set_member_id", "locale_code", "display_label", "description", "updated_by", "updated_at")
+SELECT o."tenant_id", o."value_set_member_id", NULL, o."display_label", o."description", o."updated_by", o."updated_at"
+FROM "value_set_member_override" o
+WHERE o."display_label" IS NOT NULL OR o."description" IS NOT NULL
+ON CONFLICT DO NOTHING;
+ALTER TABLE "value_set_member_override" DROP CONSTRAINT IF EXISTS "value_set_member_override_display_label_check";
+ALTER TABLE "value_set_member_override" DROP COLUMN IF EXISTS "display_label";
+ALTER TABLE "value_set_member_override" DROP COLUMN IF EXISTS "description";
+DELETE FROM "value_set_member_override" WHERE NOT "hidden";
+
+-- Welsh wording the portal kept in its translation file, now platform wording.
+INSERT INTO "value_set_member_label" ("tenant_id", "value_set_member_id", "locale_code", "display_label", "updated_by")
+SELECT NULL, m."id", 'cy-GB', v.label, 'system'
+FROM "value_set" vs
+JOIN "value_set_member" m ON m."value_set_id" = vs."id" AND m."tenant_id" IS NULL
+JOIN (VALUES
+  ('enrolment-status-code', 'pre-registration', 'Heb gofrestru eto'),
+  ('enrolment-status-code', 'enrolled', 'Wedi cofrestru'),
+  ('enrolment-status-code', 'intermitting', 'Yn seibio'),
+  ('enrolment-status-code', 'suspended', 'Wedi''i ohirio'),
+  ('enrolment-status-code', 'withdrawn', 'Wedi tynnu''n ôl'),
+  ('enrolment-status-code', 'graduated', 'Wedi graddio'),
+  ('admissions-offer-type-code', 'conditional', 'Amodol'),
+  ('admissions-offer-type-code', 'unconditional', 'Diamod'),
+  ('application-channel-code', 'ucas', 'UCAS'),
+  ('application-channel-code', 'direct', 'Uniongyrchol'),
+  ('application-channel-code', 'agent', 'Drwy asiant'),
+  ('application-channel-code', 'international-direct', 'Rhyngwladol'),
+  ('application-channel-code', 'international-agent', 'Rhyngwladol, drwy asiant'),
+  ('application-channel-code', 'clearing', 'Clirio'),
+  ('module-selection-proposal-status-code', 'draft', 'Drafft'),
+  ('module-selection-proposal-status-code', 'submitted', 'Wedi cyflwyno'),
+  ('module-selection-proposal-status-code', 'validated', 'Wedi dilysu'),
+  ('module-selection-proposal-status-code', 'approved', 'Wedi cymeradwyo'),
+  ('module-selection-proposal-status-code', 'returned', 'Wedi''i ddychwelyd — angen newidiadau'),
+  ('module-selection-proposal-status-code', 'waitlisted', 'Ar restr aros'),
+  ('module-selection-proposal-status-code', 'rejected', 'Wedi''i wrthod'),
+  ('module-selection-proposal-status-code', 'confirmed', 'Wedi cadarnhau'),
+  ('module-selection-proposal-status-code', 'awaiting-allocation', 'Yn aros am ddyraniad'),
+  ('result-code', 'pass', 'Pasio'),
+  ('result-code', 'compensated', 'Pasio Cymhwyso'),
+  ('result-code', 'fail', 'Methu'),
+  ('result-code', 'defer', 'Gohiriwyd'),
+  ('result-code', 'distinction', 'Rhagoriaeth'),
+  ('result-code', 'merit', 'Teilyngdod'),
+  ('pgr-examiner-role-code', 'internal', 'Arholwr mewnol'),
+  ('pgr-examiner-role-code', 'external', 'Arholwr allanol'),
+  ('pgr-supervisor-role-code', 'principal', 'Prif oruchwyliwr'),
+  ('pgr-supervisor-role-code', 'additional', 'Goruchwyliwr ychwanegol'),
+  ('pgr-supervisor-role-code', 'external', 'Goruchwyliwr allanol')
+) AS v(set_code, code, label) ON v.set_code = vs."set_code" AND v.code = m."code"
+ON CONFLICT DO NOTHING;
+
+-- The portal's student wording, now the platform labels; the selection
+-- status set gains the 'awaiting-allocation' status proposals can hold.
+INSERT INTO "value_set_member" ("value_set_id", "code", "display_label", "sort_order", "active_from", "source_metadata")
+SELECT vs."id", 'awaiting-allocation', 'Waiting for allocation', 90, NULL, NULL
+FROM "value_set" vs WHERE vs."set_code" = 'module-selection-proposal-status-code'
+ON CONFLICT DO NOTHING;
+INSERT INTO "value_set_member_label" ("tenant_id", "value_set_member_id", "locale_code", "display_label", "updated_by")
+SELECT NULL, m."id", 'cy-GB', 'Yn aros am ddyraniad', 'system'
+FROM "value_set" vs JOIN "value_set_member" m ON m."value_set_id" = vs."id" AND m."tenant_id" IS NULL AND m."code" = 'awaiting-allocation'
+WHERE vs."set_code" = 'module-selection-proposal-status-code'
+ON CONFLICT DO NOTHING;
+UPDATE "value_set_member" m SET "display_label" = v.label
+FROM "value_set" vs, (VALUES
+  ('enrolment-status-code',                  'pre-registration',    'Not yet registered'),
+  ('application-channel-code',               'agent',               'Through an agent'),
+  ('application-channel-code',               'international-direct','International'),
+  ('application-channel-code',               'international-agent', 'International, through an agent'),
+  ('module-selection-proposal-status-code',  'returned',            'Returned — needs changes')
+) AS v(set_code, code, label)
+WHERE vs."set_code" = v.set_code AND m."value_set_id" = vs."id" AND m."code" = v.code AND m."tenant_id" IS NULL;

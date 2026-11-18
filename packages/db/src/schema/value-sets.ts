@@ -72,17 +72,15 @@ export const fieldValueSets = pgTable('field_value_set', {
 // UNIQUE (entity_name, field_name) enforced in migration DDL
 
 /**
- * An institution's wording for, or hiding of, a platform value. The code is
- * untouched: records, returns and integrations see the same code. A hidden
- * value leaves the institution's pickers but still labels the records that
- * hold it and still validates. One row per (tenant, member).
+ * An institution hiding a platform value it does not use. The value leaves
+ * the institution's pickers but still labels the records that hold it and
+ * still validates. (Wording lives in value_set_member_label.) One row per
+ * (tenant, member); only hidden values have a row.
  */
 export const valueSetMemberOverrides = pgTable('value_set_member_override', {
   id:               uuid('id').primaryKey().defaultRandom(),
   tenantId:         uuid('tenant_id').notNull().references(() => tenants.id),
   valueSetMemberId: uuid('value_set_member_id').notNull().references(() => valueSetMembers.id),
-  displayLabel:     text('display_label'),   // null: the platform label
-  description:      text('description'),     // null: the platform description
   hidden:           boolean('hidden').notNull().default(false),
   updatedBy:        text('updated_by').notNull(),
   updatedAt:        timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),

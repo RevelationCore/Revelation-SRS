@@ -1,10 +1,10 @@
 import type { ReactElement } from 'react';
 import { render } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { CodeSetProvider, initI18n } from '@revelation-srs/ui';
+import { initI18n } from '@revelation-srs/ui';
 import { fakeJwt } from '../../../test/fake-jwt.mjs';
 import { AuthProvider } from '../src/auth/AuthContext.js';
-import { loadCodes } from '../src/codes.js';
+import { Codes } from '../src/codes.js';
 
 initI18n('en-GB');
 
@@ -30,7 +30,7 @@ export function renderWithProviders(ui: ReactElement, { roles = [], route = '/',
   }
   return render(
     <MemoryRouter initialEntries={[route]}>
-      <AuthProvider><CodeSetProvider load={loadCodes}>{ui}</CodeSetProvider></AuthProvider>
+      <AuthProvider><Codes>{ui}</Codes></AuthProvider>
     </MemoryRouter>,
   );
 }

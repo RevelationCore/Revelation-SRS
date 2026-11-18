@@ -84,7 +84,7 @@ export interface paths {
         patch: operations["updateValueSetsBySetCodeMembersByMemberCode"];
         trace?: never;
     };
-    "/api/v1/value-sets/{setCode}/members/{memberCode}/override": {
+    "/api/v1/value-sets/{setCode}/members/{memberCode}/wording": {
         parameters: {
             query?: never;
             header?: never;
@@ -92,9 +92,41 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        put: operations["replaceValueSetsBySetCodeMembersByMemberCodeOverride"];
+        put: operations["replaceValueSetsBySetCodeMembersByMemberCodeWording"];
         post?: never;
-        delete: operations["deleteValueSetsBySetCodeMembersByMemberCodeOverride"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/value-sets/{setCode}/members/{memberCode}/hidden": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["replaceValueSetsBySetCodeMembersByMemberCodeHidden"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/value-sets/{setCode}/members/{memberCode}/customisation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["deleteValueSetsBySetCodeMembersByMemberCodeCustomisation"];
         options?: never;
         head?: never;
         patch?: never;
@@ -6812,42 +6844,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/admin/globalisation/value-set-labels": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List all value sets available for label customisation */
-        get: operations["getAdminGlobalisationValueSetLabels"];
-        put?: never;
-        /** Add or update a translated label for a value set member */
-        post: operations["createAdminGlobalisationValueSetLabels"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/admin/globalisation/value-set-labels/{setCode}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get translated labels for all members of a value set */
-        get: operations["getAdminGlobalisationValueSetLabelsBySetCode"];
-        /** Batch-upsert display labels for all members of a value set */
-        put: operations["replaceAdminGlobalisationValueSetLabelsBySetCode"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/admin/globalisation/currencies": {
         parameters: {
             query?: never;
@@ -7381,6 +7377,7 @@ export interface operations {
             query?: {
                 activeAt?: string;
                 include?: "selectable" | "all";
+                locale?: string;
             };
             header?: never;
             path: {
@@ -7441,6 +7438,7 @@ export interface operations {
             query?: {
                 activeAt?: string;
                 include?: "selectable" | "all";
+                locale?: string;
             };
             header?: never;
             path: {
@@ -7532,8 +7530,14 @@ export interface operations {
                         platformLabel: string;
                         platformDescription: string | null;
                         overridden: boolean;
-                        overrideUpdatedBy: string | null;
-                        overrideUpdatedAt: string | null;
+                        wordings: {
+                            scope: "tenant" | "platform";
+                            localeCode: string | null;
+                            displayLabel: string | null;
+                            description: string | null;
+                            updatedBy: string | null;
+                            updatedAt: string;
+                        }[];
                     }[];
                 };
             };
@@ -7629,7 +7633,7 @@ export interface operations {
             };
         };
     };
-    replaceValueSetsBySetCodeMembersByMemberCodeOverride: {
+    replaceValueSetsBySetCodeMembersByMemberCodeWording: {
         parameters: {
             query?: never;
             header?: never;
@@ -7642,9 +7646,10 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
+                    localeCode?: string | null;
                     displayLabel?: string | null;
                     description?: string | null;
-                    hidden?: boolean;
+                    scope?: "tenant" | "platform";
                 };
             };
         };
@@ -7669,8 +7674,28 @@ export interface operations {
                         platformLabel: string;
                         platformDescription: string | null;
                         overridden: boolean;
-                        overrideUpdatedBy: string | null;
-                        overrideUpdatedAt: string | null;
+                        wordings: {
+                            scope: "tenant" | "platform";
+                            localeCode: string | null;
+                            displayLabel: string | null;
+                            description: string | null;
+                            updatedBy: string | null;
+                            updatedAt: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description Default Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
                     };
                 };
             };
@@ -7704,7 +7729,86 @@ export interface operations {
             };
         };
     };
-    deleteValueSetsBySetCodeMembersByMemberCodeOverride: {
+    replaceValueSetsBySetCodeMembersByMemberCodeHidden: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                setCode: string;
+                memberCode: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    hidden: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        code: string;
+                        displayLabel: string;
+                        description: string | null;
+                        sortOrder: number;
+                        activeFrom: string | null;
+                        activeTo: string | null;
+                        active: boolean;
+                        hidden: boolean;
+                        selectable: boolean;
+                        isTenantOwned: boolean;
+                        platformLabel: string;
+                        platformDescription: string | null;
+                        overridden: boolean;
+                        wordings: {
+                            scope: "tenant" | "platform";
+                            localeCode: string | null;
+                            displayLabel: string | null;
+                            description: string | null;
+                            updatedBy: string | null;
+                            updatedAt: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    deleteValueSetsBySetCodeMembersByMemberCodeCustomisation: {
         parameters: {
             query?: never;
             header?: never;
@@ -7736,8 +7840,14 @@ export interface operations {
                         platformLabel: string;
                         platformDescription: string | null;
                         overridden: boolean;
-                        overrideUpdatedBy: string | null;
-                        overrideUpdatedAt: string | null;
+                        wordings: {
+                            scope: "tenant" | "platform";
+                            localeCode: string | null;
+                            displayLabel: string | null;
+                            description: string | null;
+                            updatedBy: string | null;
+                            updatedAt: string;
+                        }[];
                     };
                 };
             };
@@ -35791,292 +35901,6 @@ export interface operations {
             };
             /** @description Default Response */
             403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        type: string;
-                        title: string;
-                        status: number;
-                        detail?: string;
-                    };
-                };
-            };
-        };
-    };
-    getAdminGlobalisationValueSetLabels: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Default Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        setCode: string;
-                    }[];
-                };
-            };
-            /** @description Default Response */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        type: string;
-                        title: string;
-                        status: number;
-                        detail?: string;
-                    };
-                };
-            };
-            /** @description Default Response */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        type: string;
-                        title: string;
-                        status: number;
-                        detail?: string;
-                    };
-                };
-            };
-        };
-    };
-    createAdminGlobalisationValueSetLabels: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /** Format: uuid */
-                    valueSetMemberId: string;
-                    localeCode: string;
-                    displayLabel: string;
-                    description?: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Default Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        valueSetMemberLabelId: string;
-                        valueSetMemberId: string;
-                        localeCode: string;
-                        displayLabel: string;
-                        description: string | null;
-                        createdAt: string;
-                    };
-                };
-            };
-            /** @description Default Response */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        type: string;
-                        title: string;
-                        status: number;
-                        detail?: string;
-                    };
-                };
-            };
-            /** @description Default Response */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        type: string;
-                        title: string;
-                        status: number;
-                        detail?: string;
-                    };
-                };
-            };
-            /** @description Default Response */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        type: string;
-                        title: string;
-                        status: number;
-                        detail?: string;
-                    };
-                };
-            };
-            /** @description Default Response */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        type: string;
-                        title: string;
-                        status: number;
-                        detail?: string;
-                    };
-                };
-            };
-        };
-    };
-    getAdminGlobalisationValueSetLabelsBySetCode: {
-        parameters: {
-            query?: {
-                locale?: string;
-                fallbackLocale?: string;
-            };
-            header?: never;
-            path: {
-                setCode: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Default Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        code: string;
-                        displayLabel: string;
-                        locale: string;
-                        isFallback: boolean;
-                    }[];
-                };
-            };
-            /** @description Default Response */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        type: string;
-                        title: string;
-                        status: number;
-                        detail?: string;
-                    };
-                };
-            };
-            /** @description Default Response */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        type: string;
-                        title: string;
-                        status: number;
-                        detail?: string;
-                    };
-                };
-            };
-            /** @description Default Response */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        type: string;
-                        title: string;
-                        status: number;
-                        detail?: string;
-                    };
-                };
-            };
-        };
-    };
-    replaceAdminGlobalisationValueSetLabelsBySetCode: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                setCode: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    labels: {
-                        [key: string]: string;
-                    };
-                    localeCode?: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Default Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Default Response */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        type: string;
-                        title: string;
-                        status: number;
-                        detail?: string;
-                    };
-                };
-            };
-            /** @description Default Response */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        type: string;
-                        title: string;
-                        status: number;
-                        detail?: string;
-                    };
-                };
-            };
-            /** @description Default Response */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };

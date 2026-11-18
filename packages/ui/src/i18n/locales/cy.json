@@ -90,10 +90,6 @@
         "accept": "Gwnaethoch dderbyn y cynnig hwn.",
         "decline": "Gwnaethoch wrthod y cynnig hwn."
       },
-      "offerType": {
-        "conditional": "amodol",
-        "unconditional": "diamod"
-      },
       "conditionStatus": {
         "pending": "Heb ei fodloni eto",
         "met": "Wedi'i fodloni",
@@ -104,14 +100,6 @@
         "confirmed": "Mae eich lle wedi'i gadarnhau.",
         "confirmed-alternative": "Cynigiwyd lle i chi ar gwrs arall.",
         "unsuccessful": "Nid oedd eich cais yn llwyddiannus."
-      },
-      "channel": {
-        "ucas": "UCAS",
-        "direct": "Uniongyrchol",
-        "agent": "Drwy asiant",
-        "international-direct": "Rhyngwladol",
-        "international-agent": "Rhyngwladol, drwy asiant",
-        "clearing": "Clirio"
       },
       "status": {
         "received": "Wedi'i dderbyn",
@@ -168,16 +156,7 @@
       "conflictIntro": "Rhowch wybod i'r swyddfa PGR os oes gennych berthynas â'r myfyriwr hwn neu ei waith.",
       "conflictType": "Math o wrthdaro",
       "declare": "Datgan",
-      "declared": "Mae eich gwrthdaro wedi'i gofnodi.",
-      "supervisorRole": {
-        "principal": "Prif oruchwyliwr",
-        "additional": "Goruchwyliwr ychwanegol",
-        "external": "Goruchwyliwr allanol"
-      },
-      "examinerRole": {
-        "internal": "Arholwr mewnol",
-        "external": "Arholwr allanol"
-      }
+      "declared": "Mae eich gwrthdaro wedi'i gofnodi."
     },
     "dashboard": {
       "applicationsDesc": "Eich ceisiadau, cynigion ac amodau",
@@ -185,14 +164,6 @@
       "nothingYet":       "Nid oes dim i chi yma eto."
     },
     "enrolment": {
-      "status": {
-        "pre-registration": "Heb gofrestru eto",
-        "enrolled":     "Wedi cofrestru",
-        "intermitting": "Yn seibio",
-        "suspended":    "Wedi'i ohirio",
-        "withdrawn":    "Wedi tynnu'n ôl",
-        "graduated":    "Wedi graddio"
-      }
     },
     "exam": {
       "noExams":             "Dim cofnodion arholiad ar gyfer y cofrestriad hwn.",
@@ -263,17 +234,6 @@
       "choosePeriod":      "Dewiswch gyfnod…",
       "startButton":       "Dechrau dewis modiwlau",
       "status":            "Statws",
-      "statusLabel": {
-        "draft":      "Drafft",
-        "submitted":  "Wedi cyflwyno",
-        "validated":  "Wedi dilysu",
-        "approved":   "Wedi cymeradwyo",
-        "returned":   "Wedi'i ddychwelyd — angen newidiadau",
-        "waitlisted": "Ar restr aros",
-        "rejected":   "Wedi'i wrthod",
-        "confirmed":  "Wedi cadarnhau",
-        "awaiting-allocation": "Yn aros am ddyraniad"
-      },
       "noItems":           "Dim modiwlau wedi'u dewis eto.",
       "sourceCompulsory":  "Gorfodol",
       "sourceChoice":      "Eich dewis",
@@ -299,15 +259,7 @@
       "subheading":    "Canlyniadau cyhoeddedig yn unig. Dangosir canlyniadau unwaith y cânt eu cadarnhau gan eich bwrdd arholi.",
       "noResults":     "Nid oes canlyniadau cyhoeddedig ar gael eto.",
       "aggregateMark": "Marc",
-      "resultCode":    "Canlyniad",
-      "code": {
-        "pass":        "Pasio",
-        "compensated": "Pasio Cymhwyso",
-        "fail":        "Methu",
-        "defer":       "Gohiriwyd",
-        "distinction": "Rhagoriaeth",
-        "merit":       "Teilyngdod"
-      }
+      "resultCode":    "Canlyniad"
     },
     "notifications": {
       "empty": "Nid oes gennych unrhyw hysbysiadau ar hyn o bryd.",

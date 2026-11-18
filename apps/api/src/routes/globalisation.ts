@@ -3,7 +3,6 @@ import { Type } from '@sinclair/typebox';
 import type { FastifyInstance } from 'fastify';
 
 import type {
-  AddValueSetMemberLabelInput,
   UpsertTenantLocaleConfigInput,
 } from '../platform/globalisation/locale-service.js';
 import type { RecordExchangeRateInput, UpsertTenantCurrencyConfigInput } from '../platform/globalisation/currency-service.js';
@@ -47,28 +46,8 @@ const UpsertLocaleConfigBody = Type.Object({
   firstDayOfWeek:   Type.Optional(Type.Integer({ minimum: 1, maximum: 7 })),
 });
 
-const ResolvedLabelSchema = Type.Object({
-  code:         Type.String(),
-  displayLabel: Type.String(),
-  locale:       Type.String(),
-  isFallback:   Type.Boolean(),
-});
 
-const ValueSetMemberLabelBody = Type.Object({
-  valueSetMemberId: Type.String({ format: 'uuid' }),
-  localeCode:       Type.String({ minLength: 2, maxLength: 35 }),
-  displayLabel:     Type.String({ minLength: 1, maxLength: 500 }),
-  description:      Type.Optional(Type.String()),
-});
 
-const ValueSetMemberLabelSchema = Type.Object({
-  valueSetMemberLabelId: Type.String(),
-  valueSetMemberId:      Type.String(),
-  localeCode:            Type.String(),
-  displayLabel:          Type.String(),
-  description:           Type.Union([Type.String(), Type.Null()]),
-  createdAt:             Type.String(),
-});
 
 // ── Currency schemas ──────────────────────────────────────────────────────────
 
@@ -121,7 +100,7 @@ const RecordExchangeRateBody = Type.Object({
 
 // eslint-disable-next-line @typescript-eslint/require-await
 export async function globalisationRoutes(fastify: FastifyInstance): Promise<void> {
-  const { localeService, currencyService, valueSetService } = fastify;
+  const { localeService, currencyService } = fastify;
 
   // ── Locales ─────────────────────────────────────────────────────────────────
 
@@ -160,82 +139,6 @@ export async function globalisationRoutes(fastify: FastifyInstance): Promise<voi
     const body = req.body as UpsertTenantLocaleConfigInput;
     const config = await localeService.upsertTenantLocaleConfig(req.tenantId, body, req.user.sub);
     return { ...config, updatedAt: config.updatedAt.toISOString() };
-  });
-
-  // ── Value set member labels ──────────────────────────────────────────────────
-
-  fastify.get('/admin/globalisation/value-set-labels', {
-    preHandler: [requirePermission('globalisation:read')],
-    schema: {
-      tags:     ['Globalisation'],
-      summary:  'List all value sets available for label customisation',
-      response: {
-        200: Type.Array(Type.Object({ setCode: Type.String() })),
-        401: ErrorSchema,
-        403: ErrorSchema,
-      },
-    },
-  }, async () => {
-    const sets = await valueSetService.listValueSets();
-    return sets.map((s) => ({ setCode: s.setCode }));
-  });
-
-  fastify.put('/admin/globalisation/value-set-labels/:setCode', {
-    preHandler: [requirePermission('globalisation:write')],
-    schema: {
-      tags:     ['Globalisation'],
-      summary:  'Batch-upsert display labels for all members of a value set',
-      params:   Type.Object({ setCode: Type.String() }),
-      body:     Type.Object({
-        labels:     Type.Record(Type.String(), Type.String()),
-        localeCode: Type.Optional(Type.String({ minLength: 2, maxLength: 35 })),
-      }),
-      response: { 204: Type.Null(), 401: ErrorSchema, 403: ErrorSchema, 404: ErrorSchema },
-    },
-  }, async (req, reply) => {
-    const { setCode }                           = req.params as { setCode: string };
-    const { labels, localeCode: bodyLocale }    = req.body as { labels: Record<string, string>; localeCode?: string };
-    const tenantConfig = await localeService.getTenantLocaleConfig(req.tenantId);
-    const localeCode   = bodyLocale ?? tenantConfig.defaultLocale;
-    await localeService.batchUpsertValueSetLabels(setCode, localeCode, labels, req.user.sub);
-    reply.code(204);
-    return null;
-  });
-
-  fastify.post('/admin/globalisation/value-set-labels', {
-    preHandler: [requirePermission('globalisation:write')],
-    schema: {
-      tags:     ['Globalisation'],
-      summary:  'Add or update a translated label for a value set member',
-      body:     ValueSetMemberLabelBody,
-      response: { 201: ValueSetMemberLabelSchema, 400: ErrorSchema, 401: ErrorSchema, 403: ErrorSchema, 404: ErrorSchema },
-    },
-  }, async (req, reply) => {
-    const body = req.body as AddValueSetMemberLabelInput;
-    const label = await localeService.addValueSetMemberLabel(body, req.user.sub);
-    reply.code(201);
-    return { ...label, createdAt: label.createdAt.toISOString() };
-  });
-
-  fastify.get('/admin/globalisation/value-set-labels/:setCode', {
-    preHandler: [requirePermission('globalisation:read')],
-    schema: {
-      tags:     ['Globalisation'],
-      summary:  'Get translated labels for all members of a value set',
-      params:   Type.Object({ setCode: Type.String() }),
-      querystring: Type.Object({
-        locale:         Type.Optional(Type.String()),
-        fallbackLocale: Type.Optional(Type.String()),
-      }),
-      response: { 200: Type.Array(ResolvedLabelSchema), 401: ErrorSchema, 403: ErrorSchema, 404: ErrorSchema },
-    },
-  }, async (req) => {
-    const { setCode } = req.params as { setCode: string };
-    const { locale, fallbackLocale } = req.query as { locale?: string; fallbackLocale?: string };
-    const tenantConfig = await localeService.getTenantLocaleConfig(req.tenantId);
-    const target   = locale         ?? tenantConfig.defaultLocale;
-    const fallback = fallbackLocale ?? tenantConfig.fallbackLocale;
-    return localeService.getValueSetLabels(setCode, target, fallback);
   });
 
   // ── Currencies ───────────────────────────────────────────────────────────────

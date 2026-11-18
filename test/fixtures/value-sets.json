@@ -4847,7 +4847,7 @@
   "members": [
    {
     "code": "pre-registration",
-    "displayLabel": "Pre-registration",
+    "displayLabel": "Not yet registered",
     "description": null,
     "sortOrder": 5,
     "active": true,
@@ -5085,7 +5085,7 @@
   "members": [
    {
     "code": "pre-registration",
-    "displayLabel": "Pre-registration",
+    "displayLabel": "Not yet registered",
     "description": null,
     "sortOrder": 5,
     "active": true,
@@ -5147,7 +5147,7 @@
   "members": [
    {
     "code": "pre-registration",
-    "displayLabel": "Pre-registration",
+    "displayLabel": "Not yet registered",
     "description": null,
     "sortOrder": 5,
     "active": true,
@@ -8260,7 +8260,7 @@
    },
    {
     "code": "returned",
-    "displayLabel": "Returned",
+    "displayLabel": "Returned — needs changes",
     "description": null,
     "sortOrder": 50,
     "active": true,
@@ -8290,6 +8290,15 @@
     "displayLabel": "Confirmed",
     "description": null,
     "sortOrder": 80,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "awaiting-allocation",
+    "displayLabel": "Waiting for allocation",
+    "description": null,
+    "sortOrder": 90,
     "active": true,
     "hidden": false,
     "selectable": true
@@ -12260,7 +12269,7 @@
    },
    {
     "code": "agent",
-    "displayLabel": "Agent",
+    "displayLabel": "Through an agent",
     "description": null,
     "sortOrder": 30,
     "active": true,
@@ -12269,7 +12278,7 @@
    },
    {
     "code": "international-direct",
-    "displayLabel": "International direct",
+    "displayLabel": "International",
     "description": null,
     "sortOrder": 40,
     "active": true,
@@ -12278,7 +12287,7 @@
    },
    {
     "code": "international-agent",
-    "displayLabel": "International agent",
+    "displayLabel": "International, through an agent",
     "description": null,
     "sortOrder": 50,
     "active": true,

@@ -429,8 +429,12 @@ export interface ValueSetDto {
 }
 
 /** A field's value set: selectable values by default, or every value (include 'all') to label any code. */
-export function getFieldValueSet(entity: string, field: string, include?: 'all'): Promise<ValueSetDto> {
-  return api.get(`/api/v1/fields/${entity}/${field}/value-set${include ? '?include=all' : ''}`);
+export function getFieldValueSet(entity: string, field: string, include?: 'all', locale?: string): Promise<ValueSetDto> {
+  const q = new URLSearchParams();
+  if (include) q.set('include', include);
+  if (locale) q.set('locale', locale);
+  const qs = q.toString();
+  return api.get(`/api/v1/fields/${entity}/${field}/value-set${qs ? `?${qs}` : ''}`);
 }
 
 // ── Module selection proposals ─────────────────────────────────────────────────

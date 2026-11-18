@@ -158,6 +158,16 @@
           },
           {
             "schema": {
+              "minLength": 2,
+              "maxLength": 20,
+              "type": "string"
+            },
+            "in": "query",
+            "name": "locale",
+            "required": false
+          },
+          {
+            "schema": {
               "type": "string"
             },
             "in": "path",
@@ -367,6 +377,16 @@
             },
             "in": "query",
             "name": "include",
+            "required": false
+          },
+          {
+            "schema": {
+              "minLength": 2,
+              "maxLength": 20,
+              "type": "string"
+            },
+            "in": "query",
+            "name": "locale",
             "required": false
           },
           {
@@ -616,8 +636,7 @@
                       "platformLabel",
                       "platformDescription",
                       "overridden",
-                      "overrideUpdatedBy",
-                      "overrideUpdatedAt"
+                      "wordings"
                     ],
                     "properties": {
                       "code": {
@@ -687,25 +706,80 @@
                       "overridden": {
                         "type": "boolean"
                       },
-                      "overrideUpdatedBy": {
-                        "anyOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "null"
+                      "wordings": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "required": [
+                            "scope",
+                            "localeCode",
+                            "displayLabel",
+                            "description",
+                            "updatedBy",
+                            "updatedAt"
+                          ],
+                          "properties": {
+                            "scope": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "enum": [
+                                    "tenant"
+                                  ]
+                                },
+                                {
+                                  "type": "string",
+                                  "enum": [
+                                    "platform"
+                                  ]
+                                }
+                              ]
+                            },
+                            "localeCode": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "displayLabel": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "description": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "updatedBy": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "updatedAt": {
+                              "type": "string"
+                            }
                           }
-                        ]
-                      },
-                      "overrideUpdatedAt": {
-                        "anyOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "null"
-                          }
-                        ]
+                        }
                       }
                     }
                   }
@@ -918,9 +992,9 @@
         }
       }
     },
-    "/api/v1/value-sets/{setCode}/members/{memberCode}/override": {
+    "/api/v1/value-sets/{setCode}/members/{memberCode}/wording": {
       "put": {
-        "operationId": "replaceValueSetsBySetCodeMembersByMemberCodeOverride",
+        "operationId": "replaceValueSetsBySetCodeMembersByMemberCodeWording",
         "tags": [
           "value-sets"
         ],
@@ -931,6 +1005,18 @@
               "schema": {
                 "type": "object",
                 "properties": {
+                  "localeCode": {
+                    "anyOf": [
+                      {
+                        "minLength": 2,
+                        "maxLength": 20,
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
                   "displayLabel": {
                     "anyOf": [
                       {
@@ -953,8 +1039,21 @@
                       }
                     ]
                   },
-                  "hidden": {
-                    "type": "boolean"
+                  "scope": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "tenant"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "platform"
+                        ]
+                      }
+                    ]
                   }
                 }
               }
@@ -1001,8 +1100,7 @@
                     "platformLabel",
                     "platformDescription",
                     "overridden",
-                    "overrideUpdatedBy",
-                    "overrideUpdatedAt"
+                    "wordings"
                   ],
                   "properties": {
                     "code": {
@@ -1072,25 +1170,109 @@
                     "overridden": {
                       "type": "boolean"
                     },
-                    "overrideUpdatedBy": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
+                    "wordings": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "scope",
+                          "localeCode",
+                          "displayLabel",
+                          "description",
+                          "updatedBy",
+                          "updatedAt"
+                        ],
+                        "properties": {
+                          "scope": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "tenant"
+                                ]
+                              },
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "platform"
+                                ]
+                              }
+                            ]
+                          },
+                          "localeCode": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "displayLabel": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "description": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "updatedBy": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "updatedAt": {
+                            "type": "string"
+                          }
                         }
-                      ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
                     },
-                    "overrideUpdatedAt": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
                     }
                   }
                 }
@@ -1156,12 +1338,32 @@
             }
           }
         }
-      },
-      "delete": {
-        "operationId": "deleteValueSetsBySetCodeMembersByMemberCodeOverride",
+      }
+    },
+    "/api/v1/value-sets/{setCode}/members/{memberCode}/hidden": {
+      "put": {
+        "operationId": "replaceValueSetsBySetCodeMembersByMemberCodeHidden",
         "tags": [
           "value-sets"
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "hidden"
+                ],
+                "properties": {
+                  "hidden": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
         "parameters": [
           {
             "schema": {
@@ -1202,8 +1404,7 @@
                     "platformLabel",
                     "platformDescription",
                     "overridden",
-                    "overrideUpdatedBy",
-                    "overrideUpdatedAt"
+                    "wordings"
                   ],
                   "properties": {
                     "code": {
@@ -1273,7 +1474,203 @@
                     "overridden": {
                       "type": "boolean"
                     },
-                    "overrideUpdatedBy": {
+                    "wordings": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "scope",
+                          "localeCode",
+                          "displayLabel",
+                          "description",
+                          "updatedBy",
+                          "updatedAt"
+                        ],
+                        "properties": {
+                          "scope": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "tenant"
+                                ]
+                              },
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "platform"
+                                ]
+                              }
+                            ]
+                          },
+                          "localeCode": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "displayLabel": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "description": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "updatedBy": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "updatedAt": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/value-sets/{setCode}/members/{memberCode}/customisation": {
+      "delete": {
+        "operationId": "deleteValueSetsBySetCodeMembersByMemberCodeCustomisation",
+        "tags": [
+          "value-sets"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "setCode",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "memberCode",
+            "required": true
+          }
+        ],
+        "x-publication-class": "admin",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code",
+                    "displayLabel",
+                    "description",
+                    "sortOrder",
+                    "activeFrom",
+                    "activeTo",
+                    "active",
+                    "hidden",
+                    "selectable",
+                    "isTenantOwned",
+                    "platformLabel",
+                    "platformDescription",
+                    "overridden",
+                    "wordings"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "displayLabel": {
+                      "type": "string"
+                    },
+                    "description": {
                       "anyOf": [
                         {
                           "type": "string"
@@ -1283,7 +1680,10 @@
                         }
                       ]
                     },
-                    "overrideUpdatedAt": {
+                    "sortOrder": {
+                      "type": "number"
+                    },
+                    "activeFrom": {
                       "anyOf": [
                         {
                           "type": "string"
@@ -1292,6 +1692,119 @@
                           "type": "null"
                         }
                       ]
+                    },
+                    "activeTo": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "active": {
+                      "type": "boolean"
+                    },
+                    "hidden": {
+                      "type": "boolean"
+                    },
+                    "selectable": {
+                      "type": "boolean"
+                    },
+                    "isTenantOwned": {
+                      "type": "boolean"
+                    },
+                    "platformLabel": {
+                      "type": "string"
+                    },
+                    "platformDescription": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "overridden": {
+                      "type": "boolean"
+                    },
+                    "wordings": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "scope",
+                          "localeCode",
+                          "displayLabel",
+                          "description",
+                          "updatedBy",
+                          "updatedAt"
+                        ],
+                        "properties": {
+                          "scope": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "tenant"
+                                ]
+                              },
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "platform"
+                                ]
+                              }
+                            ]
+                          },
+                          "localeCode": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "displayLabel": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "description": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "updatedBy": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "updatedAt": {
+                            "type": "string"
+                          }
+                        }
+                      }
                     }
                   }
                 }
@@ -75892,596 +76405,6 @@
             }
           },
           "403": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "type",
-                    "title",
-                    "status"
-                  ],
-                  "properties": {
-                    "type": {
-                      "type": "string"
-                    },
-                    "title": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "number"
-                    },
-                    "detail": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/admin/globalisation/value-set-labels": {
-      "get": {
-        "operationId": "getAdminGlobalisationValueSetLabels",
-        "summary": "List all value sets available for label customisation",
-        "tags": [
-          "globalisation"
-        ],
-        "x-publication-class": "system",
-        "responses": {
-          "200": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "required": [
-                      "setCode"
-                    ],
-                    "properties": {
-                      "setCode": {
-                        "type": "string"
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "type",
-                    "title",
-                    "status"
-                  ],
-                  "properties": {
-                    "type": {
-                      "type": "string"
-                    },
-                    "title": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "number"
-                    },
-                    "detail": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "type",
-                    "title",
-                    "status"
-                  ],
-                  "properties": {
-                    "type": {
-                      "type": "string"
-                    },
-                    "title": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "number"
-                    },
-                    "detail": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "operationId": "createAdminGlobalisationValueSetLabels",
-        "summary": "Add or update a translated label for a value set member",
-        "tags": [
-          "globalisation"
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "required": [
-                  "valueSetMemberId",
-                  "localeCode",
-                  "displayLabel"
-                ],
-                "properties": {
-                  "valueSetMemberId": {
-                    "format": "uuid",
-                    "type": "string"
-                  },
-                  "localeCode": {
-                    "minLength": 2,
-                    "maxLength": 35,
-                    "type": "string"
-                  },
-                  "displayLabel": {
-                    "minLength": 1,
-                    "maxLength": 500,
-                    "type": "string"
-                  },
-                  "description": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "x-publication-class": "system",
-        "responses": {
-          "201": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "valueSetMemberLabelId",
-                    "valueSetMemberId",
-                    "localeCode",
-                    "displayLabel",
-                    "description",
-                    "createdAt"
-                  ],
-                  "properties": {
-                    "valueSetMemberLabelId": {
-                      "type": "string"
-                    },
-                    "valueSetMemberId": {
-                      "type": "string"
-                    },
-                    "localeCode": {
-                      "type": "string"
-                    },
-                    "displayLabel": {
-                      "type": "string"
-                    },
-                    "description": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    },
-                    "createdAt": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "type",
-                    "title",
-                    "status"
-                  ],
-                  "properties": {
-                    "type": {
-                      "type": "string"
-                    },
-                    "title": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "number"
-                    },
-                    "detail": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "type",
-                    "title",
-                    "status"
-                  ],
-                  "properties": {
-                    "type": {
-                      "type": "string"
-                    },
-                    "title": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "number"
-                    },
-                    "detail": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "type",
-                    "title",
-                    "status"
-                  ],
-                  "properties": {
-                    "type": {
-                      "type": "string"
-                    },
-                    "title": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "number"
-                    },
-                    "detail": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "type",
-                    "title",
-                    "status"
-                  ],
-                  "properties": {
-                    "type": {
-                      "type": "string"
-                    },
-                    "title": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "number"
-                    },
-                    "detail": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/admin/globalisation/value-set-labels/{setCode}": {
-      "put": {
-        "operationId": "replaceAdminGlobalisationValueSetLabelsBySetCode",
-        "summary": "Batch-upsert display labels for all members of a value set",
-        "tags": [
-          "globalisation"
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "required": [
-                  "labels"
-                ],
-                "properties": {
-                  "labels": {
-                    "type": "object",
-                    "additionalProperties": {
-                      "type": "string"
-                    }
-                  },
-                  "localeCode": {
-                    "minLength": 2,
-                    "maxLength": 35,
-                    "type": "string"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "in": "path",
-            "name": "setCode",
-            "required": true
-          }
-        ],
-        "x-publication-class": "system",
-        "responses": {
-          "204": {
-            "description": "Default Response"
-          },
-          "401": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "type",
-                    "title",
-                    "status"
-                  ],
-                  "properties": {
-                    "type": {
-                      "type": "string"
-                    },
-                    "title": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "number"
-                    },
-                    "detail": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "type",
-                    "title",
-                    "status"
-                  ],
-                  "properties": {
-                    "type": {
-                      "type": "string"
-                    },
-                    "title": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "number"
-                    },
-                    "detail": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "type",
-                    "title",
-                    "status"
-                  ],
-                  "properties": {
-                    "type": {
-                      "type": "string"
-                    },
-                    "title": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "number"
-                    },
-                    "detail": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "get": {
-        "operationId": "getAdminGlobalisationValueSetLabelsBySetCode",
-        "summary": "Get translated labels for all members of a value set",
-        "tags": [
-          "globalisation"
-        ],
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "in": "query",
-            "name": "locale",
-            "required": false
-          },
-          {
-            "schema": {
-              "type": "string"
-            },
-            "in": "query",
-            "name": "fallbackLocale",
-            "required": false
-          },
-          {
-            "schema": {
-              "type": "string"
-            },
-            "in": "path",
-            "name": "setCode",
-            "required": true
-          }
-        ],
-        "x-publication-class": "system",
-        "responses": {
-          "200": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "required": [
-                      "code",
-                      "displayLabel",
-                      "locale",
-                      "isFallback"
-                    ],
-                    "properties": {
-                      "code": {
-                        "type": "string"
-                      },
-                      "displayLabel": {
-                        "type": "string"
-                      },
-                      "locale": {
-                        "type": "string"
-                      },
-                      "isFallback": {
-                        "type": "boolean"
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "type",
-                    "title",
-                    "status"
-                  ],
-                  "properties": {
-                    "type": {
-                      "type": "string"
-                    },
-                    "title": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "number"
-                    },
-                    "detail": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "type",
-                    "title",
-                    "status"
-                  ],
-                  "properties": {
-                    "type": {
-                      "type": "string"
-                    },
-                    "title": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "number"
-                    },
-                    "detail": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "404": {
             "description": "Default Response",
             "content": {
               "application/json": {

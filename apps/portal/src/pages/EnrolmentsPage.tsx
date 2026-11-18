@@ -4,7 +4,9 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../auth/AuthContext.js';
 import { useApiData } from '../hooks/useApiData.js';
 import { getEnrolments, getFieldValueSet, type ValueSetDto } from '../api/me.js';
-import { Spinner, Problem, EmptyState, formatDate, PageHeader, Card, CardBody, Badge } from '@revelation-srs/ui';
+import {
+  Spinner, Problem, EmptyState, formatDate, PageHeader, Card, CardBody, Badge, useCodes,
+} from '@revelation-srs/ui';
 
 function codeLabel(vs: ValueSetDto | null | undefined, code: string | null | undefined): string | null | undefined {
   if (!code) return code;
@@ -13,6 +15,7 @@ function codeLabel(vs: ValueSetDto | null | undefined, code: string | null | und
 }
 
 export function EnrolmentsPage() {
+  const enrolmentStatuses = useCodes('enrolment', 'status_code');
   const { t }    = useTranslation();
   const { personId } = useAuth();
 
@@ -57,7 +60,7 @@ export function EnrolmentsPage() {
                   </h2>
                   <p className="mt-0.5 text-sm text-neutral-500">Academic year {e.academicYearOfEntry}</p>
                 </div>
-                <Badge value={e.statusCode} label={t(`portal.enrolment.status.${e.statusCode}`, { defaultValue: e.statusCode })} />
+                <Badge value={e.statusCode} label={enrolmentStatuses.label(e.statusCode)} />
               </div>
 
               <dl className="mt-4 grid gap-3 sm:grid-cols-3 text-sm">

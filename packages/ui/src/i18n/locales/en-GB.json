@@ -90,10 +90,6 @@
         "accept": "You accepted this offer.",
         "decline": "You declined this offer."
       },
-      "offerType": {
-        "conditional": "Conditional",
-        "unconditional": "Unconditional"
-      },
       "conditionStatus": {
         "pending": "Outstanding",
         "met": "Met",
@@ -104,14 +100,6 @@
         "confirmed": "Your place is confirmed.",
         "confirmed-alternative": "You have been offered a place on another course.",
         "unsuccessful": "Your application was not successful."
-      },
-      "channel": {
-        "ucas": "UCAS",
-        "direct": "Direct",
-        "agent": "Through an agent",
-        "international-direct": "International",
-        "international-agent": "International, through an agent",
-        "clearing": "Clearing"
       },
       "status": {
         "received": "Received",
@@ -168,16 +156,7 @@
       "conflictIntro": "Tell the PGR office if you have a relationship with this student or their work.",
       "conflictType": "Type of conflict",
       "declare": "Declare",
-      "declared": "Your conflict has been recorded.",
-      "supervisorRole": {
-        "principal": "Principal supervisor",
-        "additional": "Additional supervisor",
-        "external": "External supervisor"
-      },
-      "examinerRole": {
-        "internal": "Internal examiner",
-        "external": "External examiner"
-      }
+      "declared": "Your conflict has been recorded."
     },
     "dashboard": {
       "applicationsDesc": "Your applications, offers and conditions",
@@ -185,14 +164,6 @@
       "nothingYet":       "There is nothing for you here yet."
     },
     "enrolment": {
-      "status": {
-        "pre-registration": "Not yet registered",
-        "enrolled":     "Enrolled",
-        "intermitting": "Intermitting",
-        "suspended":    "Suspended",
-        "withdrawn":    "Withdrawn",
-        "graduated":    "Graduated"
-      }
     },
     "exam": {
       "noExams":             "No exam entries found for this registration.",
@@ -263,17 +234,6 @@
       "choosePeriod":      "Choose a period…",
       "startButton":       "Start module selection",
       "status":            "Status",
-      "statusLabel": {
-        "draft":      "Draft",
-        "submitted":  "Submitted",
-        "validated":  "Validated",
-        "approved":   "Approved",
-        "returned":   "Returned — needs changes",
-        "waitlisted": "Waitlisted",
-        "rejected":   "Rejected",
-        "confirmed":  "Confirmed",
-        "awaiting-allocation": "Waiting for allocation"
-      },
       "noItems":           "No modules selected yet.",
       "sourceCompulsory":  "Compulsory",
       "sourceChoice":      "Your choice",
@@ -299,15 +259,7 @@
       "subheading":    "Published results only. Results are shown once ratified by your exam board.",
       "noResults":     "No published results are available yet.",
       "aggregateMark": "Mark",
-      "resultCode":    "Result",
-      "code": {
-        "pass":        "Pass",
-        "compensated": "Compensated Pass",
-        "fail":        "Fail",
-        "defer":       "Deferred",
-        "distinction": "Distinction",
-        "merit":       "Merit"
-      }
+      "resultCode":    "Result"
     },
     "notifications": {
       "empty": "You have no notifications at this time.",

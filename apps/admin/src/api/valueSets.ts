@@ -27,9 +27,20 @@ export interface ValueSetMember {
   /** The platform's own wording, beside an institution's relabel. */
   platformLabel: string;
   platformDescription: string | null;
+  /** This institution has reworded (in any language) or hidden it. */
   overridden:    boolean;
-  overrideUpdatedBy: string | null;
-  overrideUpdatedAt: string | null;
+  /** Every wording for the value this institution can see. */
+  wordings:      ValueSetWording[];
+}
+
+/** A wording that replaces a value's own label: this institution's or the platform's, in a language or any. */
+export interface ValueSetWording {
+  scope:        'tenant' | 'platform';
+  localeCode:   string | null;
+  displayLabel: string | null;
+  description:  string | null;
+  updatedBy:    string | null;
+  updatedAt:    string;
 }
 
 export function listValueSets(): Promise<ValueSet[]> {
@@ -65,15 +76,25 @@ export function updateValueSetMember(setCode: string, memberCode: string, body: 
   return api.patch(`/api/v1/value-sets/${setCode}/members/${encodeURIComponent(memberCode)}`, body);
 }
 
-/** Relabel or hide a platform value for this institution; null restores that part. */
-export function setValueSetOverride(setCode: string, memberCode: string, body: {
-  displayLabel?: string | null; description?: string | null; hidden?: boolean;
+/**
+ * Set one wording for a value (no label and no description removes it):
+ * this institution's, in a language or any; or scope 'platform', every
+ * institution's in a language (platform translators only).
+ */
+export function setValueSetWording(setCode: string, memberCode: string, body: {
+  localeCode?: string | null; displayLabel: string | null; description?: string | null; scope?: 'tenant' | 'platform';
 }): Promise<ValueSetMember> {
-  return api.put(`/api/v1/value-sets/${setCode}/members/${encodeURIComponent(memberCode)}/override`, body);
+  return api.put(`/api/v1/value-sets/${setCode}/members/${encodeURIComponent(memberCode)}/wording`, body);
 }
 
-export function clearValueSetOverride(setCode: string, memberCode: string): Promise<ValueSetMember> {
-  return api.delete(`/api/v1/value-sets/${setCode}/members/${encodeURIComponent(memberCode)}/override`);
+/** Take a platform value out of this institution's pickers, or put it back. */
+export function setValueSetHidden(setCode: string, memberCode: string, hidden: boolean): Promise<ValueSetMember> {
+  return api.put(`/api/v1/value-sets/${setCode}/members/${encodeURIComponent(memberCode)}/hidden`, { hidden });
+}
+
+/** Back to the platform's wording in every language, and shown in pickers again. */
+export function clearValueSetCustomisation(setCode: string, memberCode: string): Promise<ValueSetMember> {
+  return api.delete(`/api/v1/value-sets/${setCode}/members/${encodeURIComponent(memberCode)}/customisation`);
 }
 
 export interface FieldValueSet {
@@ -96,6 +117,10 @@ export interface FieldValueSet {
  * offer; include 'all' for every value (retired and hidden ones too), to
  * label any code a record holds.
  */
-export function getFieldValueSet(entity: string, field: string, include?: 'all'): Promise<FieldValueSet> {
-  return api.get<FieldValueSet>(`/api/v1/fields/${entity}/${field}/value-set${include ? '?include=all' : ''}`);
+export function getFieldValueSet(entity: string, field: string, include?: 'all', locale?: string): Promise<FieldValueSet> {
+  const q = new URLSearchParams();
+  if (include) q.set('include', include);
+  if (locale) q.set('locale', locale);
+  const qs = q.toString();
+  return api.get<FieldValueSet>(`/api/v1/fields/${entity}/${field}/value-set${qs ? `?${qs}` : ''}`);
 }

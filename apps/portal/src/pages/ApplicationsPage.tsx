@@ -1,7 +1,9 @@
 import { useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Badge, Card, CardBody, EmptyState, PageHeader, Problem, Spinner } from '@revelation-srs/ui';
+import {
+  Badge, Card, CardBody, EmptyState, PageHeader, Problem, Spinner, useCodes,
+} from '@revelation-srs/ui';
 
 import { listApplications } from '../api/applications.js';
 import { useAuth } from '../auth/AuthContext.js';
@@ -9,6 +11,8 @@ import { useApiData } from '../hooks/useApiData.js';
 
 /** An applicant's applications (Phase 5 D-39). */
 export function ApplicationsPage() {
+  const modes = useCodes('student_application', 'mode_of_study_code');
+  const channels = useCodes('student_application', 'channel_code');
   const { t } = useTranslation();
   const { personId } = useAuth();
   const fetch = useCallback(() => (personId ? listApplications(personId) : Promise.reject(new Error(''))), [personId]);
@@ -29,7 +33,7 @@ export function ApplicationsPage() {
                   <Link to={`/applications/${a.applicationId}`} className="text-sm font-semibold text-primary-700 hover:underline">
                     {a.programme.title ?? a.programme.code ?? t('portal.applications.programmeTbc')}
                   </Link>
-                  <p className="text-xs text-neutral-600">{[a.intakeCode, a.modeOfStudyCode, t(`portal.applications.channel.${a.channelCode}`, { defaultValue: a.channelCode })].filter(Boolean).join(' · ')}</p>
+                  <p className="text-xs text-neutral-600">{[a.intakeCode, a.modeOfStudyCode ? modes.label(a.modeOfStudyCode) : null, channels.label(a.channelCode)].filter(Boolean).join(' · ')}</p>
                 </div>
                 <Badge value={a.status} label={t(`portal.applications.status.${a.status}`, { defaultValue: a.status })} />
               </div>

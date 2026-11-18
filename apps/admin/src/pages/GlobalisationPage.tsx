@@ -2,14 +2,10 @@ import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import {
   type CurrencyConfig,
   type LocaleConfig,
-  type ValueSetLabels,
   getCurrencyConfig,
   getLocaleConfig,
-  getValueSetLabels,
-  listValueSetLabels,
   updateCurrencyConfig,
   updateLocaleConfig,
-  updateValueSetLabels,
 } from '../api/globalisation.js';
 import { ApiError } from '../api/client.js';
 import { Spinner } from '../components/Spinner.js';
@@ -17,7 +13,7 @@ import { useAuth } from '../auth/AuthContext.js';
 import { userHasAnyPermission } from '../auth/RequirePermission.js';
 import { PageHeader, Card, CardBody, Button, Input, LabelledField, Tabs, TabsList, TabsTrigger, TabsContent } from '@revelation-srs/ui';
 
-type Tab = 'locale' | 'currency' | 'labels';
+type Tab = 'locale' | 'currency';
 
 export function GlobalisationPage() {
   const { roles }  = useAuth();
@@ -26,7 +22,7 @@ export function GlobalisationPage() {
 
   return (
     <div>
-      <PageHeader title="Globalisation" />
+      <PageHeader title="Globalisation" description="Languages, time zone and currency. The wording of coded values, in each language, is on Administration → Value sets." />
 
       {!canWrite && (
         <p className="mb-4 text-xs text-warning-700 bg-warning-50 border border-warning-200 rounded px-3 py-2">
@@ -38,11 +34,9 @@ export function GlobalisationPage() {
         <TabsList className="mb-6">
           <TabsTrigger value="locale">Locale &amp; timezone</TabsTrigger>
           <TabsTrigger value="currency">Currency</TabsTrigger>
-          <TabsTrigger value="labels">Value-set labels</TabsTrigger>
         </TabsList>
         <TabsContent value="locale"><LocaleTab canWrite={canWrite} /></TabsContent>
         <TabsContent value="currency"><CurrencyTab canWrite={canWrite} /></TabsContent>
-        <TabsContent value="labels"><LabelsTab canWrite={canWrite} /></TabsContent>
       </Tabs>
     </div>
   );
@@ -171,119 +165,6 @@ function CurrencyTab({ canWrite }: { canWrite: boolean }) {
       </form>
       </CardBody>
     </Card>
-  );
-}
-
-// ── Value-set labels tab ──────────────────────────────────────────────────────
-
-function LabelsTab({ canWrite }: { canWrite: boolean }) {
-  const [labelSets,  setLabelSets]  = useState<ValueSetLabels[]>([]);
-  const [loading,    setLoading]    = useState(true);
-  const [error,      setError]      = useState('');
-  const [selected,   setSelected]   = useState<string | null>(null);
-  const [editing,    setEditing]    = useState<ValueSetLabels | null>(null);
-  const [saving,     setSaving]     = useState(false);
-  const [success,    setSuccess]    = useState('');
-
-  const load = useCallback(async () => {
-    try {
-      setLabelSets(await listValueSetLabels());
-    } catch (e) {
-      setError(e instanceof ApiError ? e.message : 'Failed to load labels');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => { void load(); }, [load]);
-
-  async function handleSelectSet(setCode: string) {
-    setSelected(setCode);
-    setSuccess('');
-    try {
-      const data = await getValueSetLabels(setCode);
-      setEditing(data);
-    } catch (e) {
-      setError(e instanceof ApiError ? e.message : 'Failed to load label set');
-    }
-  }
-
-  async function handleSave(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    if (!editing || !canWrite) return;
-    const fd = new FormData(e.currentTarget);
-    const labels: Record<string, string> = {};
-    for (const [key, val] of fd.entries()) {
-      labels[key] = String(val).trim();
-    }
-    setSaving(true); setError(''); setSuccess('');
-    try {
-      await updateValueSetLabels(editing.setCode, labels);
-      setSuccess('Labels saved.');
-      setEditing({ ...editing, labels });
-    } catch (err) {
-      setError(err instanceof ApiError ? (err.detail ?? err.message) : 'Save failed');
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  if (loading) return <div className="flex justify-center py-8"><Spinner /></div>;
-
-  return (
-    <div className="grid grid-cols-3 gap-6 items-start">
-      <div className="col-span-1">
-        <Card className="overflow-x-hidden overflow-y-auto max-h-[calc(100vh-16rem)]">
-          <ul className="divide-y divide-neutral-100">
-            {labelSets.map(ls => (
-              <li key={ls.setCode}>
-                <button
-                  onClick={() => void handleSelectSet(ls.setCode)}
-                  className={`w-full text-left px-4 py-3 text-sm hover:bg-neutral-50 ${
-                    selected === ls.setCode ? 'bg-primary-50' : ''
-                  }`}
-                >
-                  <span className="font-mono text-xs text-neutral-700">{ls.setCode}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </Card>
-      </div>
-
-      <div className="col-span-2 overflow-y-auto max-h-[calc(100vh-16rem)]">
-        {error   && <p className="mb-3 text-sm text-danger-600">{error}</p>}
-        {success && <p className="mb-3 text-sm text-success-600">{success}</p>}
-
-        {editing ? (
-          <Card>
-            <CardBody>
-            <h2 className="text-sm font-semibold text-neutral-700 mb-4 font-mono">{editing.setCode}</h2>
-            <form onSubmit={(e) => void handleSave(e)} className="space-y-3">
-              {Object.entries(editing.labels).map(([code, label]) => (
-                <div key={code} className="flex items-center gap-3">
-                  <span className="text-xs font-mono text-neutral-500 w-32 flex-shrink-0">{code}</span>
-                  <Input
-                    name={code}
-                    defaultValue={label}
-                    disabled={!canWrite}
-                    className="flex-1"
-                  />
-                </div>
-              ))}
-              {canWrite && (
-                <div className="flex justify-end pt-2">
-                  <Button type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save labels'}</Button>
-                </div>
-              )}
-            </form>
-            </CardBody>
-          </Card>
-        ) : (
-          <p className="text-sm text-neutral-600 py-8 text-center">Select a value set to edit its labels.</p>
-        )}
-      </div>
-    </div>
   );
 }
 

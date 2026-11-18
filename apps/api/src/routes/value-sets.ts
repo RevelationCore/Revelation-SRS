@@ -1,9 +1,11 @@
 import { Type } from '@sinclair/typebox';
 import { requirePermission } from '@revelation-srs/auth';
+import { ForbiddenError, hasPermission } from '@revelation-srs/domain';
 import type { FastifyInstance } from 'fastify';
 
 import type { MemberInclusion } from '../platform/value-sets/service.js';
 
+const ProblemSchema = Type.Object({ type: Type.String(), title: Type.String(), status: Type.Number(), detail: Type.Optional(Type.String()) });
 const Nullable = <T extends ReturnType<typeof Type.String>>(t: T) => Type.Union([t, Type.Null()]);
 
 const MemberSchema = Type.Object({
@@ -44,8 +46,14 @@ const ManagedMemberSchema = Type.Object({
   platformLabel: Type.String(),
   platformDescription: Nullable(Type.String()),
   overridden:    Type.Boolean(),
-  overrideUpdatedBy: Nullable(Type.String()),
-  overrideUpdatedAt: Nullable(Type.String()),
+  wordings:      Type.Array(Type.Object({
+    scope:        Type.Union([Type.Literal('tenant'), Type.Literal('platform')]),
+    localeCode:   Nullable(Type.String()),
+    displayLabel: Nullable(Type.String()),
+    description:  Nullable(Type.String()),
+    updatedBy:    Nullable(Type.String()),
+    updatedAt:    Type.String(),
+  })),
 });
 
 /**
@@ -54,6 +62,8 @@ const ManagedMemberSchema = Type.Object({
  * any code a record holds.
  */
 const IncludeQuery = Type.Optional(Type.Union([Type.Literal('selectable'), Type.Literal('all')]));
+/** The reader's language (e.g. 'cy-GB'): wording in that language wins where there is any. */
+const LocaleQuery = Type.Optional(Type.String({ minLength: 2, maxLength: 20 }));
 
 /**
  * Value set REST endpoints.
@@ -62,8 +72,9 @@ const IncludeQuery = Type.Optional(Type.Union([Type.Literal('selectable'), Type.
  * GET  /api/v1/value-sets/:setCode               - get set with active members
  * GET  /api/v1/fields/:entity/:field/value-set   - get set for a data-model field
  * POST /api/v1/value-sets/:setCode/members       - add tenant extension (tenant-admin)
- * PUT  /api/v1/value-sets/:setCode/members/:code/override - relabel or hide a platform value
- * DELETE /api/v1/value-sets/:setCode/members/:code/override - back to the platform wording
+ * PUT  /api/v1/value-sets/:setCode/members/:code/wording       - relabel or translate a value
+ * PUT  /api/v1/value-sets/:setCode/members/:code/hidden        - hide or show a platform value
+ * DELETE /api/v1/value-sets/:setCode/members/:code/customisation - back to the platform wording
  *
  * All GET endpoints are accessible to any authenticated role - the UI
  * needs value sets before rendering forms.  POST requires tenant-administrator.
@@ -111,6 +122,7 @@ export function valueSetsRoutes(fastify: FastifyInstance): void {
         querystring: Type.Object({
           activeAt: Type.Optional(Type.String({ format: 'date-time' })),
           include:  IncludeQuery,
+          locale:   LocaleQuery,
         }),
         response: {
           200: SetSchema,
@@ -120,12 +132,12 @@ export function valueSetsRoutes(fastify: FastifyInstance): void {
     },
     async (request, reply) => {
       const { setCode }  = request.params as { setCode: string };
-      const { activeAt, include } = request.query as { activeAt?: string; include?: MemberInclusion };
+      const { activeAt, include, locale } = request.query as { activeAt?: string; include?: MemberInclusion; locale?: string };
 
       const result = await fastify.valueSetService.getValueSet(
         setCode,
         request.tenantId,
-        { ...(activeAt ? { activeAt: new Date(activeAt) } : {}), ...(include ? { include } : {}) },
+        { ...(activeAt ? { activeAt: new Date(activeAt) } : {}), ...(include ? { include } : {}), ...(locale ? { locale } : {}) },
       );
 
       if (!result) {
@@ -153,6 +165,7 @@ export function valueSetsRoutes(fastify: FastifyInstance): void {
         querystring: Type.Object({
           activeAt: Type.Optional(Type.String({ format: 'date-time' })),
           include:  IncludeQuery,
+          locale:   LocaleQuery,
         }),
         response: {
           200: Type.Intersect([SetSchema, Type.Object({ entityName: Type.String(), fieldName: Type.String() })]),
@@ -162,7 +175,7 @@ export function valueSetsRoutes(fastify: FastifyInstance): void {
     },
     async (request, reply) => {
       const { entity, field } = request.params as { entity: string; field: string };
-      const { activeAt, include } = request.query as { activeAt?: string; include?: MemberInclusion };
+      const { activeAt, include, locale } = request.query as { activeAt?: string; include?: MemberInclusion; locale?: string };
 
       const setCode = await fastify.valueSetService.getValueSetForField(entity, field);
       if (!setCode) {
@@ -177,7 +190,7 @@ export function valueSetsRoutes(fastify: FastifyInstance): void {
       const result = await fastify.valueSetService.getValueSet(
         setCode,
         request.tenantId,
-        { ...(activeAt ? { activeAt: new Date(activeAt) } : {}), ...(include ? { include } : {}) },
+        { ...(activeAt ? { activeAt: new Date(activeAt) } : {}), ...(include ? { include } : {}), ...(locale ? { locale } : {}) },
       );
 
       await reply.send({ ...result, entityName: entity, fieldName: field });
@@ -282,56 +295,77 @@ export function valueSetsRoutes(fastify: FastifyInstance): void {
     },
   );
 
-  // - Relabel or hide a platform value for this institution -
+  // - Relabel or translate a value -
   fastify.put(
-    '/value-sets/:setCode/members/:memberCode/override',
+    '/value-sets/:setCode/members/:memberCode/wording',
     {
       schema: {
         params: Type.Object({ setCode: Type.String(), memberCode: Type.String() }),
         body: Type.Object({
+          localeCode:   Type.Optional(Type.Union([Type.String({ minLength: 2, maxLength: 20 }), Type.Null()])),
           displayLabel: Type.Optional(Type.Union([Type.String({ maxLength: 200 }), Type.Null()])),
           description:  Type.Optional(Type.Union([Type.String({ maxLength: 500 }), Type.Null()])),
-          hidden:       Type.Optional(Type.Boolean()),
+          scope:        Type.Optional(Type.Union([Type.Literal('tenant'), Type.Literal('platform')])),
         }),
-        response: {
-          200: ManagedMemberSchema,
-          404: Type.Object({ type: Type.String(), title: Type.String(), status: Type.Number(), detail: Type.Optional(Type.String()) }),
-          422: Type.Object({ type: Type.String(), title: Type.String(), status: Type.Number(), detail: Type.Optional(Type.String()) }),
-        },
+        response: { 200: ManagedMemberSchema, 403: ProblemSchema, 404: ProblemSchema, 422: ProblemSchema },
       },
-      preHandler: [requirePermission('config:write')],
     },
     async (request, reply) => {
       const { setCode, memberCode } = request.params as { setCode: string; memberCode: string };
-      const body = request.body as { displayLabel?: string | null; description?: string | null; hidden?: boolean };
-      const member = await fastify.valueSetService.setOverride(setCode, request.tenantId, memberCode, body, request.user.sub);
+      const body = request.body as { localeCode?: string | null; displayLabel?: string | null; description?: string | null; scope?: 'tenant' | 'platform' };
+      const scope = body.scope ?? 'tenant';
+      // An institution words its own values; only the platform's translators word everyone's.
+      const needed = scope === 'platform' ? 'value-set:translate-platform' : 'config:write';
+      if (!hasPermission(request.user.roles, needed)) throw new ForbiddenError(`Requires ${needed}`);
+      const member = await fastify.valueSetService.setWording(setCode, request.tenantId, memberCode, { ...body, scope }, request.user.sub);
       await fastify.audit.record({
-        tenantId: request.tenantId, entityType: 'value_set_member_override', entityId: request.tenantId, actionType: 'update', actorType: 'user',
+        tenantId: request.tenantId, entityType: 'value_set_member_label', entityId: request.tenantId, actionType: 'update', actorType: 'user',
         actorId: request.user.sub, actorDisplayName: request.user.displayName, correlationId: request.id,
-        reasonText: `${setCode}/${memberCode}: ${member.overridden ? `label '${member.displayLabel}'${member.hidden ? ', hidden' : ''}` : 'platform wording restored'}`,
+        reasonText: `${setCode}/${memberCode}: ${scope} wording${body.localeCode ? ` (${body.localeCode})` : ''} ${body.displayLabel || body.description ? 'set' : 'removed'}`,
       });
       await reply.send(member);
     },
   );
 
-  // - Back to the platform wording, shown in pickers again -
-  fastify.delete(
-    '/value-sets/:setCode/members/:memberCode/override',
+  // - Hide a platform value from this institution's pickers, or show it -
+  fastify.put(
+    '/value-sets/:setCode/members/:memberCode/hidden',
     {
       schema: {
         params: Type.Object({ setCode: Type.String(), memberCode: Type.String() }),
-        response: {
-          200: ManagedMemberSchema,
-          404: Type.Object({ type: Type.String(), title: Type.String(), status: Type.Number(), detail: Type.Optional(Type.String()) }),
-        },
+        body: Type.Object({ hidden: Type.Boolean() }),
+        response: { 200: ManagedMemberSchema, 404: ProblemSchema, 422: ProblemSchema },
       },
       preHandler: [requirePermission('config:write')],
     },
     async (request, reply) => {
       const { setCode, memberCode } = request.params as { setCode: string; memberCode: string };
-      const member = await fastify.valueSetService.clearOverride(setCode, request.tenantId, memberCode, request.user.sub);
+      const { hidden } = request.body as { hidden: boolean };
+      const member = await fastify.valueSetService.setHidden(setCode, request.tenantId, memberCode, hidden, request.user.sub);
       await fastify.audit.record({
         tenantId: request.tenantId, entityType: 'value_set_member_override', entityId: request.tenantId, actionType: 'update', actorType: 'user',
+        actorId: request.user.sub, actorDisplayName: request.user.displayName, correlationId: request.id,
+        reasonText: `${setCode}/${memberCode}: ${hidden ? 'hidden' : 'shown'}`,
+      });
+      await reply.send(member);
+    },
+  );
+
+  // - Back to the platform wording in every language, shown in pickers again -
+  fastify.delete(
+    '/value-sets/:setCode/members/:memberCode/customisation',
+    {
+      schema: {
+        params: Type.Object({ setCode: Type.String(), memberCode: Type.String() }),
+        response: { 200: ManagedMemberSchema, 404: ProblemSchema },
+      },
+      preHandler: [requirePermission('config:write')],
+    },
+    async (request, reply) => {
+      const { setCode, memberCode } = request.params as { setCode: string; memberCode: string };
+      const member = await fastify.valueSetService.clearCustomisation(setCode, request.tenantId, memberCode);
+      await fastify.audit.record({
+        tenantId: request.tenantId, entityType: 'value_set_member_label', entityId: request.tenantId, actionType: 'update', actorType: 'user',
         actorId: request.user.sub, actorDisplayName: request.user.displayName, correlationId: request.id,
         reasonText: `${setCode}/${memberCode}: platform wording restored`,
       });

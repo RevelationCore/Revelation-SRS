@@ -15,7 +15,7 @@ import {
 } from '../api/me.js';
 import { StatusChangesSection } from './StatusChangesSection.js';
 import {
-  Spinner, Problem, formatDate, PageHeader, Card, CardHeader, CardBody, Badge, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, CodeBadge,
+  Spinner, Problem, formatDate, PageHeader, Card, CardHeader, CardBody, Badge, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, CodeBadge, useCodes,
 } from '@revelation-srs/ui';
 
 function codeLabel(vs: ValueSetDto | null | undefined, code: string | null | undefined): string | null | undefined {
@@ -25,6 +25,7 @@ function codeLabel(vs: ValueSetDto | null | undefined, code: string | null | und
 }
 
 export function EnrolmentDetailPage() {
+  const enrolmentStatuses = useCodes('enrolment', 'status_code');
   const { t }    = useTranslation();
   const { personId } = useAuth();
   const { enrolmentId } = useParams<{ enrolmentId: string }>();
@@ -80,7 +81,7 @@ export function EnrolmentDetailPage() {
       <PageHeader
         title={enrolment.programmeName ?? enrolment.programmeCode ?? 'Enrolment'}
         description={`Academic year ${enrolment.academicYearOfEntry}`}
-        actions={<Badge value={enrolment.statusCode} label={t(`portal.enrolment.status.${enrolment.statusCode}`, { defaultValue: enrolment.statusCode })} />}
+        actions={<Badge value={enrolment.statusCode} label={enrolmentStatuses.label(enrolment.statusCode)} />}
       />
 
       <div className="space-y-6">

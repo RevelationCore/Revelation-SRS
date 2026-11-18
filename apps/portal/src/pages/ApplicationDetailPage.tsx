@@ -1,7 +1,9 @@
 import { type FormEvent, useCallback, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Badge, Button, Card, CardBody, CardHeader, PageHeader, Problem, Spinner, StatusNotice } from '@revelation-srs/ui';
+import {
+  Badge, Button, Card, CardBody, CardHeader, PageHeader, Problem, Spinner, StatusNotice, useCodes,
+} from '@revelation-srs/ui';
 
 import { type ApplicantApplication, getApplication, respondToOffer, uploadConditionEvidence, withdrawApplication } from '../api/applications.js';
 import { ApiError } from '../api/client.js';
@@ -13,6 +15,7 @@ import { useApiData } from '../hooks/useApiData.js';
  * applicant may do. UCAS applicants reply and withdraw in UCAS Hub.
  */
 export function ApplicationDetailPage() {
+  const offerTypes = useCodes('admissions_offer', 'offer_type_code');
   const { t } = useTranslation();
   const { personId } = useAuth();
   const { applicationId = '' } = useParams();
@@ -58,7 +61,7 @@ export function ApplicationDetailPage() {
 
       {offer && (
         <Card className="mt-4">
-          <CardHeader title={t('portal.applications.offerTitle', { type: t(`portal.applications.offerType.${offer.offerTypeCode}`, { defaultValue: offer.offerTypeCode }) })}
+          <CardHeader title={t('portal.applications.offerTitle', { type: offerTypes.label(offer.offerTypeCode) })}
             description={offer.expiresOn ? t('portal.applications.expires', { date: offer.expiresOn }) : undefined} />
           <CardBody className="space-y-4">
             {offer.statusCode === 'made' && canAct && (

@@ -24,17 +24,34 @@ export interface CodeMember {
   hidden?:       boolean;
 }
 
-export type CodeLoader = (entity: string, field: string) => Promise<{ members: CodeMember[] }>;
+/** Loads a field's whole value set, in the reader's language when one is given (e.g. 'cy-GB'). */
+export type CodeLoader = (entity: string, field: string, locale?: string) => Promise<{ members: CodeMember[] }>;
+
+/** The value-set locale for an app language: i18n's 'cy' is the 'cy-GB' locale pack. */
+export function localeForLanguage(language: string | undefined): string | undefined {
+  if (!language) return undefined;
+  return language === 'cy' ? 'cy-GB' : language;
+}
 
 interface CodeContextValue {
-  load:  CodeLoader;
-  cache: Map<string, Promise<CodeMember[]>>;
+  load:    CodeLoader;
+  locale?: string;
+  cache:   Map<string, Promise<CodeMember[]>>;
 }
 
 const CodeContext = createContext<CodeContextValue | null>(null);
 
-export function CodeSetProvider({ load, children }: { load: CodeLoader; children: ReactNode }) {
-  const [value] = useState<CodeContextValue>(() => ({ load, cache: new Map() }));
+/**
+ * Supplies value sets to the code components. `locale` is the reader's
+ * language: each value shows its wording in that language where there is any
+ * (an institution's, then the platform's), else the institution's wording.
+ */
+export function CodeSetProvider({ load, locale, children }: { load: CodeLoader; locale?: string; children: ReactNode }) {
+  const [cache] = useState(() => new Map<string, Promise<CodeMember[]>>());
+  const [value, setValue] = useState<CodeContextValue>(() => ({ load, ...(locale ? { locale } : {}), cache }));
+  useEffect(() => {
+    if (value.locale !== locale) setValue({ load, ...(locale ? { locale } : {}), cache });
+  }, [locale]); // eslint-disable-line react-hooks/exhaustive-deps
   return <CodeContext.Provider value={value}>{children}</CodeContext.Provider>;
 }
 
@@ -58,7 +75,7 @@ export interface CodeSet {
 
 export function useCodes(entity: string, field: string): CodeSet {
   const ctx = useContext(CodeContext);
-  const key = `${entity}/${field}`;
+  const key = `${ctx?.locale ?? ''}|${entity}/${field}`;
   const [state, setState] = useState<{ members: CodeMember[]; loading: boolean; missing: boolean }>({ members: [], loading: true, missing: false });
 
   useEffect(() => {
@@ -66,7 +83,7 @@ export function useCodes(entity: string, field: string): CodeSet {
     let cancelled = false;
     let pending = ctx.cache.get(key);
     if (!pending) {
-      pending = ctx.load(entity, field).then((r) => [...r.members].sort((a, b) => a.sortOrder - b.sortOrder));
+      pending = ctx.load(entity, field, ctx.locale).then((r) => [...r.members].sort((a, b) => a.sortOrder - b.sortOrder));
       // A failed load is not cached, so a later render can retry.
       void pending.catch(() => ctx.cache.delete(key));
       ctx.cache.set(key, pending);

@@ -5,8 +5,7 @@ import { useApiData } from '../hooks/useApiData.js';
 import { getEnrolments, getModuleRegistrations, getModuleResult } from '../api/me.js';
 import type { ModuleResult } from '../api/me.js';
 import {
-  Spinner, Problem, EmptyState, ApiError, PageHeader,
-  Card, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
+  Spinner, Problem, EmptyState, ApiError, PageHeader, Card, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, useCodes,
 } from '@revelation-srs/ui';
 
 interface ResultWithModule {
@@ -17,6 +16,7 @@ interface ResultWithModule {
 }
 
 export function ResultsPage() {
+  const resultCodes = useCodes('module_result', 'result_code');
   const { t }    = useTranslation();
   const { personId } = useAuth();
 
@@ -100,7 +100,7 @@ export function ResultsPage() {
                   <TableCell className="text-neutral-900 tabular-nums">{result.aggregateMark}</TableCell>
                   <TableCell>
                     <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${resultColour(result.resultCode)}`}>
-                      {t(`portal.results.code.${result.resultCode}`, { defaultValue: result.resultCode })}
+                      {resultCodes.label(result.resultCode)}
                     </span>
                   </TableCell>
                 </TableRow>

@@ -61,21 +61,28 @@ export type NewTenantLocaleConfig = typeof tenantLocaleConfigs.$inferInsert;
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Translated display labels for value set members.
+ * Wording for a value set member that replaces its own label: an
+ * institution's relabel, a translation, or both.
  *
- * Keyed by (value_set_member_id, locale_code). The application resolves
- * labels by requesting the target locale then falling back to the tenant's
- * fallback locale and finally to the platform default (en-GB).
+ *   tenant_id   NULL = the platform's wording; set = one institution's
+ *   locale_code NULL = any language; set = that language (e.g. 'cy-GB')
  *
- * The en-GB label is the value_set_member.display_label column on the member
- * itself; entries here are supplementary translations.
+ * The platform's any-language wording is the member's own display_label, so
+ * a row is always for an institution, a language, or both. A screen shows
+ * the most specific match: institution + reader's language, institution,
+ * platform + reader's language, then the member's label. display_label or
+ * description may be null (only the other is reworded). One row per
+ * (member, tenant, locale). Institutions write only their own rows.
  */
 export const valueSetMemberLabels = pgTable('value_set_member_label', {
   id:               uuid('id').primaryKey().defaultRandom(),
+  tenantId:         uuid('tenant_id'),
   valueSetMemberId: uuid('value_set_member_id').notNull().references(() => valueSetMembers.id),
-  localeCode:       text('locale_code').notNull(),
-  displayLabel:     text('display_label').notNull(),
+  localeCode:       text('locale_code'),
+  displayLabel:     text('display_label'),
   description:      text('description'),
+  updatedBy:        text('updated_by'),
+  updatedAt:        timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   createdAt:        timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 

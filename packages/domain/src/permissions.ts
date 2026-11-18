@@ -110,6 +110,8 @@ export const PERMISSION_ROLES = {
   'wellbeing-retention:write': ['wellbeing-auditor', 'registry-administrator'] as Role[],
   'config:read':               ['registry-administrator', 'tenant-administrator', 'system-administrator'] as Role[],
   'config:write':              ['tenant-administrator'] as Role[],
+  /** Platform-wide wording for a value (a translation every institution sees). */
+  'value-set:translate-platform': ['system-administrator'] as Role[],
   'integration:read':          ['registry-administrator', 'tenant-administrator', 'system-administrator', 'integration-service'] as Role[],
   'integration:manage':        ['tenant-administrator', 'integration-service'] as Role[],
   'audit:read':                ['dpo', 'system-administrator', 'wellbeing-auditor'] as Role[],

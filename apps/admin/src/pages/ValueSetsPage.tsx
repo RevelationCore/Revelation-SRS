@@ -1,4 +1,4 @@
-import { type FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import { type FormEvent, Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import {
   PageHeader, Card, Button, Input, Select, LabelledField, Checkbox, Badge,
@@ -9,13 +9,15 @@ import {
   type ValueSet,
   type ValueSetMember,
   addValueSetMember,
-  clearValueSetOverride,
+  clearValueSetCustomisation,
   listValueSetMembers,
   listValueSets,
-  setValueSetOverride,
+  setValueSetHidden,
+  setValueSetWording,
   updateValueSetMember,
 } from '../api/valueSets.js';
 import { ApiError } from '../api/client.js';
+import { type Locale, listLocales } from '../api/globalisation.js';
 import { Spinner } from '../components/Spinner.js';
 import { useAuth } from '../auth/AuthContext.js';
 import { userHasAnyPermission } from '../auth/RequirePermission.js';
@@ -49,12 +51,19 @@ function errText(e: unknown, fallback: string): string {
 export function ValueSetsPage() {
   const { roles }               = useAuth();
   const canWrite                = userHasAnyPermission(roles, ['config:write']);
+  const canTranslatePlatform    = userHasAnyPermission(roles, ['value-set:translate-platform']);
+  const [locales,  setLocales]  = useState<Locale[]>([]);
   const [sets,     setSets]     = useState<ValueSet[]>([]);
   const [loading,  setLoading]  = useState(true);
   const [error,    setError]    = useState('');
   const [expanded, setExpanded] = useState<string | null>(null);
   const [query,    setQuery]    = useState('');
   const [source,   setSource]   = useState('');
+
+  useEffect(() => {
+    // Languages a value can be worded in, besides the platform default.
+    listLocales().then((l) => setLocales(l.filter((x) => x.active && !x.isPlatformDefault))).catch(() => setLocales([]));
+  }, []);
 
   useEffect(() => {
     listValueSets()
@@ -129,7 +138,7 @@ export function ValueSetsPage() {
                 </div>
               </button>
 
-              {expanded === s.setCode && <SetMembersPanel set={s} canWrite={canWrite} />}
+              {expanded === s.setCode && <SetMembersPanel set={s} canWrite={canWrite} canTranslatePlatform={canTranslatePlatform} locales={locales} />}
             </Card>
           ))}
         </div>
@@ -140,7 +149,10 @@ export function ValueSetsPage() {
 
 // ── Member panel ──────────────────────────────────────────────────────────────
 
-function SetMembersPanel({ set, canWrite }: { set: ValueSet; canWrite: boolean }) {
+function SetMembersPanel({ set, canWrite, canTranslatePlatform, locales }: {
+  set: ValueSet; canWrite: boolean; canTranslatePlatform: boolean; locales: Locale[];
+}) {
+  const [langCode,    setLangCode]    = useState<string | null>(null);
   const [members,     setMembers]     = useState<ValueSetMember[]>([]);
   const [loading,     setLoading]     = useState(true);
   const [error,       setError]       = useState('');
@@ -199,8 +211,15 @@ function SetMembersPanel({ set, canWrite }: { set: ValueSet; canWrite: boolean }
                       <EditMemberRow key={m.code} setCode={set.setCode} member={m}
                         onSaved={() => { setEditCode(null); void load(); }} onCancel={() => setEditCode(null)} onError={setError} />
                     ) : (
-                      <MemberRow key={m.code} member={m} set={set} canWrite={canWrite}
-                        onEdit={() => setEditCode(m.code)} onChanged={() => void load()} onError={setError} />
+                      <Fragment key={m.code}>
+                        <MemberRow member={m} set={set} canWrite={canWrite}
+                          languagesOpen={langCode === m.code} onLanguages={() => setLangCode((c) => (c === m.code ? null : m.code))}
+                          onEdit={() => setEditCode(m.code)} onChanged={() => void load()} onError={setError} />
+                        {langCode === m.code && (
+                          <LanguagesRow member={m} set={set} locales={locales} canWrite={canWrite} canTranslatePlatform={canTranslatePlatform}
+                            onChanged={() => void load()} onError={setError} />
+                        )}
+                      </Fragment>
                     ),
                   )}
                 </TableBody>
@@ -227,11 +246,13 @@ function SetMembersPanel({ set, canWrite }: { set: ValueSet; canWrite: boolean }
 // ── Read-only / action row ────────────────────────────────────────────────────
 
 function MemberRow({
-  member, set, canWrite, onEdit, onChanged, onError,
+  member, set, canWrite, languagesOpen, onLanguages, onEdit, onChanged, onError,
 }: {
   member:    ValueSetMember;
   set:       ValueSet;
   canWrite:  boolean;
+  languagesOpen: boolean;
+  onLanguages: () => void;
   onEdit:    () => void;
   onChanged: () => void;
   onError:   (msg: string) => void;
@@ -254,6 +275,7 @@ function MemberRow({
   const relabelled = member.overridden && member.displayLabel !== member.platformLabel;
   const actionClass = 'font-medium text-primary-600 hover:text-primary-800 disabled:opacity-50';
   const name = `${member.displayLabel} (${member.code})`;
+  const translations = member.wordings.filter((w) => w.localeCode !== null).length;
 
   return (
     <TableRow className={status === 'retired' ? 'opacity-60' : ''}>
@@ -271,6 +293,10 @@ function MemberRow({
       </TableCell>
       <TableCell><Badge value={STATUS_TONE[status]} label={STATUS_TEXT[status]} /></TableCell>
       <TableCell className="text-right whitespace-nowrap">
+        <button type="button" onClick={onLanguages} aria-expanded={languagesOpen} className="mr-3 font-medium text-primary-600 hover:text-primary-800"
+          aria-label={`Languages for ${name}`}>
+          Languages{translations > 0 ? ` (${translations})` : ''}
+        </button>
         {!canWrite ? null : member.isTenantOwned ? (
           <span className="inline-flex items-center gap-3">
             <button type="button" onClick={onEdit} className={actionClass} aria-label={`Edit ${name}`}>Edit</button>
@@ -288,14 +314,14 @@ function MemberRow({
             {set.allowsTenantHide && status !== 'retired' && (
               <button type="button" disabled={busy} className={actionClass}
                 aria-label={`${member.hidden ? 'Show' : 'Hide'} ${name}`}
-                onClick={() => void act(() => setValueSetOverride(set.setCode, member.code, { hidden: !member.hidden }), 'The change was not saved')}>
+                onClick={() => void act(() => setValueSetHidden(set.setCode, member.code, !member.hidden), 'The change was not saved')}>
                 {member.hidden ? 'Show' : 'Hide'}
               </button>
             )}
             {member.overridden && (
               <button type="button" disabled={busy} className="font-medium text-neutral-600 hover:text-neutral-800 disabled:opacity-50"
                 aria-label={`Restore the platform wording for ${member.code}`}
-                onClick={() => void act(() => clearValueSetOverride(set.setCode, member.code), 'Restore failed')}>
+                onClick={() => void act(() => clearValueSetCustomisation(set.setCode, member.code), 'Restore failed')}>
                 Restore
               </button>
             )}
@@ -303,6 +329,105 @@ function MemberRow({
         )}
       </TableCell>
     </TableRow>
+  );
+}
+
+// ── Languages: every wording of a value, by language ──────────────────────────
+
+function LanguagesRow({ member, set, locales, canWrite, canTranslatePlatform, onChanged, onError }: {
+  member: ValueSetMember; set: ValueSet; locales: Locale[]; canWrite: boolean; canTranslatePlatform: boolean;
+  onChanged: () => void; onError: (msg: string) => void;
+}) {
+  const scopes: Array<'tenant' | 'platform'> = [
+    ...(canWrite ? ['tenant' as const] : []),
+    ...(canTranslatePlatform && !member.isTenantOwned ? ['platform' as const] : []),
+  ];
+  const [localeCode, setLocaleCode] = useState(locales[0]?.localeCode ?? '');
+  const [scope, setScope] = useState<'tenant' | 'platform'>(scopes[0] ?? 'tenant');
+  const [displayLabel, setDisplayLabel] = useState('');
+  const [description, setDescription] = useState('');
+  const [busy, setBusy] = useState(false);
+  useEffect(() => { if (!localeCode && locales[0]) setLocaleCode(locales[0].localeCode); }, [locales, localeCode]);
+
+  const languageName = (code: string | null) => (code === null ? 'Any language' : locales.find((l) => l.localeCode === code)?.displayName ?? code);
+  const translations = member.wordings.filter((w) => w.localeCode !== null);
+  const formId = `vs-lang-${set.setCode}-${member.code}`;
+
+  async function save(body: Parameters<typeof setValueSetWording>[2], after?: () => void) {
+    setBusy(true);
+    try {
+      await setValueSetWording(set.setCode, member.code, body);
+      after?.();
+      onChanged();
+    } catch (e) {
+      onError(errText(e, 'The wording was not saved'));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <tr className="bg-neutral-50">
+      <td colSpan={7} className="px-4 py-3">
+        <p className="mb-2 text-xs text-neutral-600">
+          Wording in each language. A reader sees your institution&apos;s wording in their language first, then your wording in any language,
+          then the platform&apos;s translation, then the value&apos;s own label.
+        </p>
+        {translations.length === 0 ? <p className="mb-2 text-xs text-neutral-600">No translations yet.</p> : (
+          <table className="mb-3 w-full text-xs" aria-label={`Translations of ${member.code}`}>
+            <thead><tr className="text-left text-neutral-500"><th className="py-1 pr-3 font-medium">Language</th><th className="py-1 pr-3 font-medium">Whose</th><th className="py-1 pr-3 font-medium">Label</th><th className="py-1 pr-3 font-medium">Description</th><th className="py-1"><span className="sr-only">Actions</span></th></tr></thead>
+            <tbody>
+              {translations.map((w) => {
+                const canEdit = w.scope === 'tenant' ? canWrite : canTranslatePlatform;
+                return (
+                  <tr key={`${w.scope}-${w.localeCode}`} className="border-t border-neutral-200">
+                    <td className="py-1 pr-3">{languageName(w.localeCode)}</td>
+                    <td className="py-1 pr-3">{w.scope === 'tenant' ? 'Your institution' : 'All institutions'}</td>
+                    <td className="py-1 pr-3">{w.displayLabel ?? '—'}</td>
+                    <td className="py-1 pr-3">{w.description ?? '—'}</td>
+                    <td className="py-1 text-right">
+                      {canEdit && (
+                        <button type="button" disabled={busy} className="font-medium text-danger-600 hover:text-danger-800 disabled:opacity-50"
+                          aria-label={`Remove the ${languageName(w.localeCode)} wording (${w.scope === 'tenant' ? 'your institution' : 'all institutions'})`}
+                          onClick={() => void save({ localeCode: w.localeCode, displayLabel: null, description: null, scope: w.scope })}>
+                          Remove
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
+        {scopes.length > 0 && locales.length > 0 && (
+          <form id={formId} className="flex flex-wrap items-end gap-3"
+            onSubmit={(e) => { e.preventDefault(); void save({ localeCode, displayLabel: displayLabel.trim() || null, description: description.trim() || null, scope }, () => { setDisplayLabel(''); setDescription(''); }); }}>
+            <LabelledField label="Language" htmlFor={`${formId}-locale`}>
+              <Select id={`${formId}-locale`} value={localeCode} onChange={(e) => setLocaleCode(e.target.value)} className="w-auto">
+                {locales.map((l) => <option key={l.localeCode} value={l.localeCode}>{l.displayName}</option>)}
+              </Select>
+            </LabelledField>
+            {scopes.length > 1 && (
+              <LabelledField label="For" htmlFor={`${formId}-scope`}>
+                <Select id={`${formId}-scope`} value={scope} onChange={(e) => setScope(e.target.value as 'tenant' | 'platform')} className="w-auto">
+                  {/* coded-values: not a code — who the wording is for */}
+                  <option value="tenant">Your institution</option>
+                  <option value="platform">All institutions</option>
+                </Select>
+              </LabelledField>
+            )}
+            <LabelledField label="Label" htmlFor={`${formId}-label`}>
+              <Input id={`${formId}-label`} value={displayLabel} onChange={(e) => setDisplayLabel(e.target.value)} />
+            </LabelledField>
+            <LabelledField label="Description" htmlFor={`${formId}-desc`} hint="Optional">
+              <Input id={`${formId}-desc`} value={description} onChange={(e) => setDescription(e.target.value)} />
+            </LabelledField>
+            <Button type="submit" size="sm" disabled={busy || (!displayLabel.trim() && !description.trim())}>Save translation</Button>
+          </form>
+        )}
+      </td>
+    </tr>
   );
 }
 
@@ -332,7 +457,8 @@ function EditMemberRow({
     try {
       if (platform) {
         // The platform's own wording is stored as no override.
-        await setValueSetOverride(setCode, member.code, {
+        await setValueSetWording(setCode, member.code, {
+          localeCode:   null,
           displayLabel: displayLabel.trim() === member.platformLabel ? null : displayLabel.trim(),
           description:  description.trim() === (member.platformDescription ?? '') ? null : description.trim() || null,
         });

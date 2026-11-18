@@ -35,6 +35,8 @@ function useResearch<T>(load: (personId: string) => Promise<T>, deps: unknown[])
 const message = (err: unknown, fallback: string) => (err instanceof ApiError ? (err.detail ?? err.message) : fallback);
 
 export function ResearchPage() {
+  const examinerRoles = useCodes('examiner_appointment', 'examiner_role_code');
+  const supervisorRoles = useCodes('staff_assignment', 'role_detail_code');
   const { t } = useTranslation();
   const { data, loading, error } = useResearch(getAssignments, []);
   if (loading && !data) return <Loading />;
@@ -52,7 +54,7 @@ export function ResearchPage() {
               {data.supervisees.map((s) => (
                 <li key={s.enrolmentId} className="text-sm">
                   <Link to={`/research/students/${s.enrolmentId}`} className="font-medium text-primary-700 hover:underline">{s.studentName ?? s.enrolmentId}</Link>
-                  <span className="ml-2 text-xs text-neutral-600">{[s.programme, t(`portal.research.supervisorRole.${s.role}`, { defaultValue: s.role })].filter(Boolean).join(' · ')}</span>
+                  <span className="ml-2 text-xs text-neutral-600">{[s.programme, supervisorRoles.label(s.role)].filter(Boolean).join(' · ')}</span>
                 </li>
               ))}
             </ul>
@@ -83,7 +85,7 @@ export function ResearchPage() {
               {data.examinations.map((e) => (
                 <li key={e.examinationCaseId} className="flex flex-wrap items-center gap-2 text-sm">
                   <Link to={`/research/examinations/${e.examinationCaseId}`} className="font-medium text-primary-700 hover:underline">{e.studentName ?? e.examinationCaseId}</Link>
-                  <span className="text-xs text-neutral-600">{t(`portal.research.examinerRole.${e.examinerRoleCode}`, { defaultValue: e.examinerRoleCode })}</span>
+                  <span className="text-xs text-neutral-600">{examinerRoles.label(e.examinerRoleCode)}</span>
                   <Badge value={e.reportSubmitted ? 'approved' : 'pending'} label={t(e.reportSubmitted ? 'portal.research.reportIn' : 'portal.research.reportDue')} />
                 </li>
               ))}
@@ -96,6 +98,8 @@ export function ResearchPage() {
 }
 
 export function SuperviseePage() {
+  const examinerRoles = useCodes('examiner_appointment', 'examiner_role_code');
+  const supervisorRoles = useCodes('staff_assignment', 'role_detail_code');
   const reviewOutcomes = useCodes('pgr_progress_review', 'outcome_code');
   const { t } = useTranslation();
   const { enrolmentId = '' } = useParams();
@@ -113,7 +117,7 @@ export function SuperviseePage() {
       <Card className="mb-4">
         <CardHeader title={t('portal.research.team')} />
         <CardBody>
-          <ul className="space-y-1 text-sm">{data.team.map((m, i) => <li key={i}>{m.name} <span className="text-xs text-neutral-600">({t(`portal.research.supervisorRole.${m.roleDetailCode}`, { defaultValue: m.roleDetailCode })})</span></li>)}</ul>
+          <ul className="space-y-1 text-sm">{data.team.map((m, i) => <li key={i}>{m.name} <span className="text-xs text-neutral-600">({supervisorRoles.label(m.roleDetailCode)})</span></li>)}</ul>
         </CardBody>
       </Card>
       <Card className="mb-4">
@@ -147,7 +151,7 @@ export function SuperviseePage() {
         <Card key={e.examinationCaseId} className="mb-4">
           <CardHeader title={t('portal.research.examination')} description={e.ratifiedOutcomeCode ? t('portal.research.outcome', { outcome: e.ratifiedOutcomeCode }) : undefined} />
           <CardBody className="text-sm">
-            <p>{t('portal.research.examiners')}: {e.examiners.map((x) => `${x.name ?? '?'} (${t(`portal.research.examinerRole.${x.examinerRoleCode}`, { defaultValue: x.examinerRoleCode })})`).join(', ') || '—'}</p>
+            <p>{t('portal.research.examiners')}: {e.examiners.map((x) => `${x.name ?? '?'} (${examinerRoles.label(x.examinerRoleCode)})`).join(', ') || '—'}</p>
             {e.correctionDeadlines.map((c, i) => <p key={i} className="text-xs text-neutral-600">{t(c.completed ? 'portal.research.correctionsDone' : 'portal.research.correctionsDue', { date: c.deadlineDate })}</p>)}
           </CardBody>
         </Card>
@@ -194,6 +198,7 @@ export function PanelReviewPage() {
 }
 
 export function ExaminationPage() {
+  const examinerRoles = useCodes('examiner_appointment', 'examiner_role_code');
   const { t } = useTranslation();
   const { caseId = '' } = useParams();
   const [version, setVersion] = useState(0);
@@ -207,7 +212,7 @@ export function ExaminationPage() {
   return (
     <div>
       <PageHeader title={data.studentName ?? t('portal.research.student')}
-        description={t(`portal.research.examinerRole.${data.appointment.examinerRoleCode}`, { defaultValue: data.appointment.examinerRoleCode })}
+        description={examinerRoles.label(data.appointment.examinerRoleCode)}
         actions={<Link to="/research" className="text-sm text-primary-600 hover:underline">{t('portal.research.back')}</Link>} />
       {actionError && <p className="my-2 text-sm text-danger-600" role="alert">{actionError}</p>}
       {!data.appointment.confirmed && <StatusNotice>{t('portal.research.notConfirmed')}</StatusNotice>}

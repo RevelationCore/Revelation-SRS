@@ -11,15 +11,13 @@ export interface CurrencyConfig {
   acceptedCurrencies:  string[];
 }
 
-export interface ValueSetLabels {
-  setCode: string;
-  labels:  Record<string, string>;
-}
-
 export interface Locale {
-  localeCode:  string;
-  displayName: string;
-  isEnabled:   boolean;
+  localeCode:        string;
+  displayName:       string;
+  nativeDisplayName: string;
+  isRtl:             boolean;
+  isPlatformDefault: boolean;
+  active:            boolean;
 }
 
 export function getLocaleConfig(): Promise<LocaleConfig> {
@@ -42,23 +40,3 @@ export function updateCurrencyConfig(body: Partial<CurrencyConfig>): Promise<voi
   return api.put('/api/v1/admin/globalisation/currency-config', body);
 }
 
-export function listValueSetLabels(): Promise<ValueSetLabels[]> {
-  return api
-    .get<{ setCode: string }[]>('/api/v1/admin/globalisation/value-set-labels')
-    .then((sets) => sets.map((s) => ({ setCode: s.setCode, labels: {} })));
-}
-
-export function getValueSetLabels(setCode: string): Promise<ValueSetLabels> {
-  return api
-    .get<{ code: string; displayLabel: string }[]>(
-      `/api/v1/admin/globalisation/value-set-labels/${setCode}`,
-    )
-    .then((members) => ({
-      setCode,
-      labels: Object.fromEntries(members.map((m) => [m.code, m.displayLabel])),
-    }));
-}
-
-export function updateValueSetLabels(setCode: string, labels: Record<string, string>): Promise<void> {
-  return api.put(`/api/v1/admin/globalisation/value-set-labels/${setCode}`, { labels });
-}
