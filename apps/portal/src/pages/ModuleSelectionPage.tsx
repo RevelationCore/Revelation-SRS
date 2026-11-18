@@ -304,6 +304,7 @@ export function ModuleSelectionPage() {
                     <div className="w-56">
                       <label htmlFor="add-as" className="block text-xs text-neutral-500 mb-1">{t('portal.moduleSelection.addAs')}</label>
                       <Select id="add-as" value={addAs} onChange={(e) => setAddAs(e.target.value)}>
+                        {/* coded-values: not a code — how to add a module */}
                         <option value="fixed">{t('portal.moduleSelection.addFixed')}</option>
                         <option value="new">{t('portal.moduleSelection.addNewChoice')}</option>
                         {existingSlots.map(slot => (

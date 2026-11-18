@@ -12,9 +12,6 @@ import { useAuth } from '../auth/AuthContext.js';
 import { userHasAnyPermission } from '../auth/RequirePermission.js';
 import { useValueSet } from '../hooks/useValueSet.js';
 
-export const FINANCIAL_STATUS_LABELS: Record<FinancialRegistration['financialStatusCode'], string> = {
-  pending: 'Not yet arranged', arranged: 'Arranged', hold: 'On hold', 'not-required': 'Not required',
-};
 function message(err: unknown, fallback: string): string {
   return err instanceof ApiError ? (err.detail ?? err.message) : fallback;
 }

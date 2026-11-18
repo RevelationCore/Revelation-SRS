@@ -85,6 +85,7 @@ export function WellbeingPage() {
               <div className="flex items-center gap-2">
                 <label htmlFor="alert-queue" className="text-sm text-neutral-500">Show:</label>
                 <Select id="alert-queue" value={queue} onChange={(e) => setQueue(e.target.value as 'pending' | 'open')} className="w-auto">
+                  {/* coded-values: not a code — a queue view */}
                   <option value="pending">Awaiting triage</option>
                   <option value="open">All open</option>
                 </Select>

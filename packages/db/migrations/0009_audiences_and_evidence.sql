@@ -1227,3 +1227,31 @@ FROM "value_set" vs, (VALUES
   ('graduation-response-code', 'declined',    'I do not want a ceremony')
 ) AS v(set_code, code, description)
 WHERE vs."set_code" = v.set_code AND m."value_set_id" = vs."id" AND m."code" = v.code AND m."tenant_id" IS NULL;
+
+-- Worklist reasons and outbox states the API derives (logical fields).
+INSERT INTO "value_set" ("set_code", "display_name", "source", "source_version", "description", "is_extensible", "allows_tenant_hide")
+VALUES
+  ('right-to-study-work-reason-code', 'Right-to-Study Worklist Reason', 'srs-internal', NULL, 'Why a right-to-study check is on the worklist', false, false),
+  ('ucas-decision-send-status-code', 'UCAS Decision Sending', 'srs-internal', NULL, 'Where an admissions decision for UCAS is', false, false)
+ON CONFLICT ("set_code") DO NOTHING;
+INSERT INTO "value_set_member" ("value_set_id", "code", "display_label", "sort_order", "active_from", "source_metadata")
+SELECT vs."id", v.code, v.display_label, v.sort_order, NULL, NULL
+FROM "value_set" vs,
+(VALUES
+  ('right-to-study-work-reason-code', 'share-code-submitted', 'Student shared a code', 10),
+  ('right-to-study-work-reason-code', 'referred',             'Referred for a decision', 20),
+  ('right-to-study-work-reason-code', 'recheck-required',     'Recheck needed after a visa change', 30),
+  ('right-to-study-work-reason-code', 'expiring',             'Permission expiring soon', 40),
+  ('right-to-study-work-reason-code', 'expired',              'Permission expired', 50),
+  ('ucas-decision-send-status-code', 'queued',     'Waiting to send', 10),
+  ('ucas-decision-send-status-code', 'sent',       'Sent, not yet confirmed', 20),
+  ('ucas-decision-send-status-code', 'reconciled', 'Confirmed by UCAS', 30),
+  ('ucas-decision-send-status-code', 'mismatch',   'UCAS reports something else', 40)
+) AS v(set_code, code, display_label, sort_order)
+WHERE vs."set_code" = v.set_code
+ON CONFLICT DO NOTHING;
+INSERT INTO "field_value_set" ("entity_name", "field_name", "value_set_code", "description")
+VALUES
+  ('right_to_study_work_item', 'reason',      'right-to-study-work-reason-code', 'Derived for the registration-checks worklist'),
+  ('ucas_outbound_decision',   'status_code', 'ucas-decision-send-status-code', 'Derived from the UCAS decision outbox')
+ON CONFLICT DO NOTHING;

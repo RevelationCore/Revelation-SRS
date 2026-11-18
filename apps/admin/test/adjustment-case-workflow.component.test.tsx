@@ -87,7 +87,7 @@ describe('adjustment case workflow', () => {
     await screen.findByRole('button', { name: 'Start assessment' });
     await userEvent.click(screen.getByRole('button', { name: 'Start assessment' }));
 
-    await screen.findByText('Under assessment');
+    await screen.findByText('Being assessed');
     expect(startAssessmentCalled).toBe(true);
   });
 

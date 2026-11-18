@@ -11592,6 +11592,59 @@
    }
   ]
  },
+ "right_to_study_work_item/reason": {
+  "setCode": "right-to-study-work-reason-code",
+  "displayName": "Right-to-Study Worklist Reason",
+  "entityName": "right_to_study_work_item",
+  "fieldName": "reason",
+  "members": [
+   {
+    "code": "share-code-submitted",
+    "displayLabel": "Student shared a code",
+    "description": null,
+    "sortOrder": 10,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "referred",
+    "displayLabel": "Referred for a decision",
+    "description": null,
+    "sortOrder": 20,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "recheck-required",
+    "displayLabel": "Recheck needed after a visa change",
+    "description": null,
+    "sortOrder": 30,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "expiring",
+    "displayLabel": "Permission expiring soon",
+    "description": null,
+    "sortOrder": 40,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "expired",
+    "displayLabel": "Permission expired",
+    "description": null,
+    "sortOrder": 50,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   }
+  ]
+ },
  "rights_decision/decision_type_code": {
   "setCode": "rights-decision-type-code",
   "displayName": "Rights Decision Type",
@@ -13437,6 +13490,50 @@
     "displayLabel": "Clearing",
     "description": null,
     "sortOrder": 80,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   }
+  ]
+ },
+ "ucas_outbound_decision/status_code": {
+  "setCode": "ucas-decision-send-status-code",
+  "displayName": "UCAS Decision Sending",
+  "entityName": "ucas_outbound_decision",
+  "fieldName": "status_code",
+  "members": [
+   {
+    "code": "queued",
+    "displayLabel": "Waiting to send",
+    "description": null,
+    "sortOrder": 10,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "sent",
+    "displayLabel": "Sent, not yet confirmed",
+    "description": null,
+    "sortOrder": 20,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "reconciled",
+    "displayLabel": "Confirmed by UCAS",
+    "description": null,
+    "sortOrder": 30,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "mismatch",
+    "displayLabel": "UCAS reports something else",
+    "description": null,
+    "sortOrder": 40,
     "active": true,
     "hidden": false,
     "selectable": true

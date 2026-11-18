@@ -399,6 +399,7 @@ function StepForm({ onClose, onCreated, workflowDefinitionId }: {
       </LabelledField>
       <LabelledField label="Decision outcomes" htmlFor="step-preset">
         <Select id="step-preset" value={preset} onChange={(e) => setPreset(e.target.value as keyof typeof OUTCOME_PRESETS)}>
+          {/* coded-values: not a code — a step preset */}
           <option value="approve-reject">Approve / Reject</option>
           <option value="mark-complete">Single "Mark complete" outcome</option>
         </Select>

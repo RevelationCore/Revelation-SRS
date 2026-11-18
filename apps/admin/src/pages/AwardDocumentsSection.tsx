@@ -138,7 +138,7 @@ function IssueForm({ hasIssues, onSubmit }: { hasIssues: boolean; onSubmit: (bod
       </LabelledField>
       <LabelledField label="Issue" htmlFor="doc-issue-type" hint={hasIssues ? 'A replacement or correction supersedes the earlier issue' : undefined}>
         <Select id="doc-issue-type" value={issueType} onChange={(e) => setIssueType(e.target.value)}>
-          {issueTypes.length === 0 ? <option value="original">Original</option> : issueTypes.map((m) => <option key={m.code} value={m.code}>{m.displayLabel}</option>)}
+          {issueTypes.map((m) => <option key={m.code} value={m.code}>{m.displayLabel}</option>)}
         </Select>
       </LabelledField>
       <Button type="submit" disabled={!type || !channel}>Issue document</Button>

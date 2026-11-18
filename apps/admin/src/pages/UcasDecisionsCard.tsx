@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Card, CardHeader, CardBody, Button, Badge, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell } from '@revelation-srs/ui';
+import {
+  Card, CardHeader, CardBody, Button, Badge, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, useCodes,
+} from '@revelation-srs/ui';
 
 import { ApiError } from '../api/client.js';
 import { type UcasOutboundDecision, dispatchUcasDecisions, listUcasDecisions } from '../api/regulatory.js';
 
-const STATUS_LABELS: Record<string, string> = { queued: 'Waiting to send', sent: 'Sent, not yet confirmed', reconciled: 'Confirmed by UCAS', mismatch: 'UCAS reports something else' };
 
 /**
  * Admissions decisions for UCAS (Phase 3 D-15). Decisions queue as they are
@@ -14,6 +15,7 @@ const STATUS_LABELS: Record<string, string> = { queued: 'Waiting to send', sent:
  * contradiction, or no confirmation within two working days, needs attention.
  */
 export function UcasDecisionsCard({ canSend }: { canSend: boolean }) {
+  const sendStatuses = useCodes('ucas_outbound_decision', 'status_code');
   const [items, setItems] = useState<UcasOutboundDecision[] | null>(null);
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
@@ -57,7 +59,7 @@ export function UcasDecisionsCard({ canSend }: { canSend: boolean }) {
                   <TableCell><Link to={`/applications/${i.applicationId}`} className="text-primary-600 hover:underline">{i.sourceReference}</Link></TableCell>
                   <TableCell className="text-sm">{i.outcome}{i.ucasCode ? ` (${i.ucasCode})` : ''}</TableCell>
                   <TableCell>
-                    <Badge value={i.attention ? 'rejected' : i.statusCode === 'queued' ? 'pending' : 'approved'} label={i.attention === 'not-reconciled' ? 'Not confirmed in time' : STATUS_LABELS[i.statusCode] ?? i.statusCode} />
+                    <Badge value={i.attention ? 'rejected' : i.statusCode === 'queued' ? 'pending' : 'approved'} label={i.attention === 'not-reconciled' ? 'Not confirmed in time' : sendStatuses.label(i.statusCode)} />
                   </TableCell>
                 </TableRow>
               ))}

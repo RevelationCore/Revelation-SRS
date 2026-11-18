@@ -73,7 +73,8 @@
     "tutorial:build": "node tutorials/scripts/build-overview-video.mjs",
     "tutorial:check": "node tutorials/scripts/quality-check.mjs",
     "tutorial:all": "node tutorials/scripts/run-all.mjs",
-    "fixtures:value-sets": "pnpm --filter @revelation-srs/db exec node scripts/export-value-set-fixture.mjs"
+    "fixtures:value-sets": "pnpm --filter @revelation-srs/db exec node scripts/export-value-set-fixture.mjs",
+    "check:coded-values": "node scripts/check-coded-values.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  PageHeader, Card, CardHeader, CardBody, Badge, Spinner, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, CodeBadge, CodeLabel,
+  PageHeader, Card, CardHeader, CardBody, Badge, Spinner, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell, CodeBadge, CodeLabel, useCodes,
 } from '@revelation-srs/ui';
 
 import { ApiError } from '../api/client.js';
@@ -14,10 +14,6 @@ import { userHasAnyPermission } from '../auth/RequirePermission.js';
 
 import { FeeStatusDecision } from './FinancialRegistrationSection.js';
 
-const REASON_LABELS: Record<RightToStudyWorkItem['reason'], string> = {
-  'share-code-submitted': 'Student shared a code', referred: 'Referred for a decision', 'recheck-required': 'Recheck needed after a visa change',
-  expiring: 'Permission expiring soon', expired: 'Permission expired',
-};
 
 /**
  * The checks around registration (Phase 3 D-17, D-18): right-to-study checks
@@ -25,6 +21,7 @@ const REASON_LABELS: Record<RightToStudyWorkItem['reason'], string> = {
  * fee-status reassessments to decide.
  */
 export function RegistrationChecksPage() {
+  const workReasons = useCodes('right_to_study_work_item', 'reason');
   const { roles } = useAuth();
   const canRts = userHasAnyPermission(roles, ['right-to-study:read']);
   const canFin = userHasAnyPermission(roles, ['financial-registration:read']);
@@ -62,7 +59,7 @@ export function RegistrationChecksPage() {
                   {rts.map((w) => (
                     <TableRow key={w.check.checkId}>
                       <TableCell><Link to={`/students/${w.check.personId}`} className="text-primary-600 hover:underline">Open student record<span className="sr-only"> for {w.check.personId}</span></Link></TableCell>
-                      <TableCell><Badge value={w.reason === 'expired' ? 'rejected' : 'pending'} label={REASON_LABELS[w.reason]} /></TableCell>
+                      <TableCell><Badge value={w.reason === 'expired' ? 'rejected' : 'pending'} label={workReasons.label(w.reason)} /></TableCell>
                       <TableCell>{w.check.permissionExpiresOn ?? '—'}</TableCell>
                     </TableRow>
                   ))}

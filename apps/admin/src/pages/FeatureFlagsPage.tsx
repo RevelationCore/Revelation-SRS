@@ -446,6 +446,7 @@ function CreateFlagForm({ onClose, onCreated }: { onClose: () => void; onCreated
       </LabelledField>
       <LabelledField label="Default variant" htmlFor="ff-variant">
         <Select id="ff-variant" name="defaultVariantKey">
+          {/* coded-values: not a code — a flag variant key */}
           <option value="off">Off</option>
           <option value="on">On</option>
         </Select>

@@ -103,6 +103,7 @@ export function TaskInboxPage() {
               onChange={(e) => setStatusFilter(e.target.value)}
               className="w-auto"
             >
+              {/* coded-values: not a code — a view, not a task status */}
               <option value="open">Open</option>
               <option value="">All</option>
               {taskStatuses.options.map((m) => <option key={m.code} value={m.code}>{m.displayLabel}</option>)}

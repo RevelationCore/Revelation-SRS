@@ -185,6 +185,8 @@ See [CONTRIBUTING.md](../CONTRIBUTING.md) for the full contribution guide and si
 | `pnpm migrate` | Apply all pending database migrations |
 | `pnpm --filter @revelation-srs/api generate:openapi` | Regenerate `apps/api/openapi/v1.json` |
 | `pnpm demo:list` | List the available demo scenarios |
+| `pnpm check:coded-values` | Fail on a screen that shows a bare code or hard-codes a list of codes |
+| `DATABASE_URL=… pnpm fixtures:value-sets` | Regenerate `test/fixtures/value-sets.json` (the value sets component tests serve) after changing value sets in a migration |
 | `pnpm demo:reset <slug>` | Load a named demo scenario |
 | `pnpm demo:validate <slug>` | Validate a named demo scenario |
 | `pnpm demo:status` | Show which scenario is currently loaded |
