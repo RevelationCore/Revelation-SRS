@@ -52,7 +52,9 @@
                       "source",
                       "sourceVersion",
                       "description",
-                      "isExtensible"
+                      "isExtensible",
+                      "allowsTenantHide",
+                      "usedBy"
                     ],
                     "properties": {
                       "setCode": {
@@ -86,6 +88,27 @@
                       },
                       "isExtensible": {
                         "type": "boolean"
+                      },
+                      "allowsTenantHide": {
+                        "type": "boolean"
+                      },
+                      "usedBy": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "required": [
+                            "entityName",
+                            "fieldName"
+                          ],
+                          "properties": {
+                            "entityName": {
+                              "type": "string"
+                            },
+                            "fieldName": {
+                              "type": "string"
+                            }
+                          }
+                        }
                       }
                     }
                   }
@@ -114,6 +137,27 @@
           },
           {
             "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "selectable"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "all"
+                  ]
+                }
+              ]
+            },
+            "in": "query",
+            "name": "include",
+            "required": false
+          },
+          {
+            "schema": {
               "type": "string"
             },
             "in": "path",
@@ -136,6 +180,7 @@
                     "sourceVersion",
                     "description",
                     "isExtensible",
+                    "allowsTenantHide",
                     "members"
                   ],
                   "properties": {
@@ -171,6 +216,9 @@
                     "isExtensible": {
                       "type": "boolean"
                     },
+                    "allowsTenantHide": {
+                      "type": "boolean"
+                    },
                     "members": {
                       "type": "array",
                       "items": {
@@ -182,7 +230,10 @@
                           "sortOrder",
                           "activeFrom",
                           "activeTo",
-                          "sourceMetadata"
+                          "sourceMetadata",
+                          "active",
+                          "hidden",
+                          "selectable"
                         ],
                         "properties": {
                           "code": {
@@ -234,6 +285,15 @@
                                 "type": "null"
                               }
                             ]
+                          },
+                          "active": {
+                            "type": "boolean"
+                          },
+                          "hidden": {
+                            "type": "boolean"
+                          },
+                          "selectable": {
+                            "type": "boolean"
                           }
                         }
                       }
@@ -290,6 +350,27 @@
           },
           {
             "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "selectable"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "all"
+                  ]
+                }
+              ]
+            },
+            "in": "query",
+            "name": "include",
+            "required": false
+          },
+          {
+            "schema": {
               "type": "string"
             },
             "in": "path",
@@ -308,7 +389,189 @@
         "x-publication-class": "admin",
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "allOf": [
+                    {
+                      "type": "object",
+                      "required": [
+                        "setCode",
+                        "displayName",
+                        "source",
+                        "sourceVersion",
+                        "description",
+                        "isExtensible",
+                        "allowsTenantHide",
+                        "members"
+                      ],
+                      "properties": {
+                        "setCode": {
+                          "type": "string"
+                        },
+                        "displayName": {
+                          "type": "string"
+                        },
+                        "source": {
+                          "type": "string"
+                        },
+                        "sourceVersion": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "description": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "isExtensible": {
+                          "type": "boolean"
+                        },
+                        "allowsTenantHide": {
+                          "type": "boolean"
+                        },
+                        "members": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "code",
+                              "displayLabel",
+                              "description",
+                              "sortOrder",
+                              "activeFrom",
+                              "activeTo",
+                              "sourceMetadata",
+                              "active",
+                              "hidden",
+                              "selectable"
+                            ],
+                            "properties": {
+                              "code": {
+                                "type": "string"
+                              },
+                              "displayLabel": {
+                                "type": "string"
+                              },
+                              "description": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "sortOrder": {
+                                "type": "number"
+                              },
+                              "activeFrom": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "activeTo": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "sourceMetadata": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": {}
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "active": {
+                                "type": "boolean"
+                              },
+                              "hidden": {
+                                "type": "boolean"
+                              },
+                              "selectable": {
+                                "type": "boolean"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "entityName",
+                        "fieldName"
+                      ],
+                      "properties": {
+                        "entityName": {
+                          "type": "string"
+                        },
+                        "fieldName": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -346,7 +609,15 @@
                       "sortOrder",
                       "activeFrom",
                       "activeTo",
-                      "isTenantOwned"
+                      "active",
+                      "hidden",
+                      "selectable",
+                      "isTenantOwned",
+                      "platformLabel",
+                      "platformDescription",
+                      "overridden",
+                      "overrideUpdatedBy",
+                      "overrideUpdatedAt"
                     ],
                     "properties": {
                       "code": {
@@ -388,8 +659,53 @@
                           }
                         ]
                       },
+                      "active": {
+                        "type": "boolean"
+                      },
+                      "hidden": {
+                        "type": "boolean"
+                      },
+                      "selectable": {
+                        "type": "boolean"
+                      },
                       "isTenantOwned": {
                         "type": "boolean"
+                      },
+                      "platformLabel": {
+                        "type": "string"
+                      },
+                      "platformDescription": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "overridden": {
+                        "type": "boolean"
+                      },
+                      "overrideUpdatedBy": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "overrideUpdatedAt": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
                       }
                     }
                   }
@@ -593,6 +909,418 @@
                     },
                     "status": {
                       "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/value-sets/{setCode}/members/{memberCode}/override": {
+      "put": {
+        "operationId": "replaceValueSetsBySetCodeMembersByMemberCodeOverride",
+        "tags": [
+          "value-sets"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "displayLabel": {
+                    "anyOf": [
+                      {
+                        "maxLength": 200,
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "description": {
+                    "anyOf": [
+                      {
+                        "maxLength": 500,
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "hidden": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "setCode",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "memberCode",
+            "required": true
+          }
+        ],
+        "x-publication-class": "admin",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code",
+                    "displayLabel",
+                    "description",
+                    "sortOrder",
+                    "activeFrom",
+                    "activeTo",
+                    "active",
+                    "hidden",
+                    "selectable",
+                    "isTenantOwned",
+                    "platformLabel",
+                    "platformDescription",
+                    "overridden",
+                    "overrideUpdatedBy",
+                    "overrideUpdatedAt"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "displayLabel": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "sortOrder": {
+                      "type": "number"
+                    },
+                    "activeFrom": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "activeTo": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "active": {
+                      "type": "boolean"
+                    },
+                    "hidden": {
+                      "type": "boolean"
+                    },
+                    "selectable": {
+                      "type": "boolean"
+                    },
+                    "isTenantOwned": {
+                      "type": "boolean"
+                    },
+                    "platformLabel": {
+                      "type": "string"
+                    },
+                    "platformDescription": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "overridden": {
+                      "type": "boolean"
+                    },
+                    "overrideUpdatedBy": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "overrideUpdatedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteValueSetsBySetCodeMembersByMemberCodeOverride",
+        "tags": [
+          "value-sets"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "setCode",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "memberCode",
+            "required": true
+          }
+        ],
+        "x-publication-class": "admin",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code",
+                    "displayLabel",
+                    "description",
+                    "sortOrder",
+                    "activeFrom",
+                    "activeTo",
+                    "active",
+                    "hidden",
+                    "selectable",
+                    "isTenantOwned",
+                    "platformLabel",
+                    "platformDescription",
+                    "overridden",
+                    "overrideUpdatedBy",
+                    "overrideUpdatedAt"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "displayLabel": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "sortOrder": {
+                      "type": "number"
+                    },
+                    "activeFrom": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "activeTo": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "active": {
+                      "type": "boolean"
+                    },
+                    "hidden": {
+                      "type": "boolean"
+                    },
+                    "selectable": {
+                      "type": "boolean"
+                    },
+                    "isTenantOwned": {
+                      "type": "boolean"
+                    },
+                    "platformLabel": {
+                      "type": "string"
+                    },
+                    "platformDescription": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "overridden": {
+                      "type": "boolean"
+                    },
+                    "overrideUpdatedBy": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "overrideUpdatedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
                     }
                   }
                 }

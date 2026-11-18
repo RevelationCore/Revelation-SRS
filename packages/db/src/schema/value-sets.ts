@@ -19,6 +19,8 @@ export const valueSets = pgTable('value_set', {
   sourceVersion: text('source_version'),            // e.g. '2024-25' for HESA annual sets
   description:   text('description'),
   isExtensible:  boolean('is_extensible').notNull().default(false),
+  /** False for sets the system writes itself (lifecycle statuses): relabel only, never hide. */
+  allowsTenantHide: boolean('allows_tenant_hide').notNull().default(true),
   createdAt:     timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -69,6 +71,24 @@ export const fieldValueSets = pgTable('field_value_set', {
 });
 // UNIQUE (entity_name, field_name) enforced in migration DDL
 
+/**
+ * An institution's wording for, or hiding of, a platform value. The code is
+ * untouched: records, returns and integrations see the same code. A hidden
+ * value leaves the institution's pickers but still labels the records that
+ * hold it and still validates. One row per (tenant, member).
+ */
+export const valueSetMemberOverrides = pgTable('value_set_member_override', {
+  id:               uuid('id').primaryKey().defaultRandom(),
+  tenantId:         uuid('tenant_id').notNull().references(() => tenants.id),
+  valueSetMemberId: uuid('value_set_member_id').notNull().references(() => valueSetMembers.id),
+  displayLabel:     text('display_label'),   // null: the platform label
+  description:      text('description'),     // null: the platform description
+  hidden:           boolean('hidden').notNull().default(false),
+  updatedBy:        text('updated_by').notNull(),
+  updatedAt:        timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type ValueSetMemberOverride = typeof valueSetMemberOverrides.$inferSelect;
 export type ValueSet       = typeof valueSets.$inferSelect;
 export type ValueSetMember = typeof valueSetMembers.$inferSelect;
 export type FieldValueSet  = typeof fieldValueSets.$inferSelect;

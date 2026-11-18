@@ -1,93 +1,125 @@
-import { type FormEvent, useCallback, useEffect, useState } from 'react';
+import { type FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
+import {
+  PageHeader, Card, Button, Input, Select, LabelledField, Checkbox, Badge,
+  Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
+} from '@revelation-srs/ui';
+
 import {
   type ValueSet,
   type ValueSetMember,
   addValueSetMember,
+  clearValueSetOverride,
   listValueSetMembers,
   listValueSets,
+  setValueSetOverride,
   updateValueSetMember,
 } from '../api/valueSets.js';
 import { ApiError } from '../api/client.js';
-import { Badge } from '../components/Badge.js';
 import { Spinner } from '../components/Spinner.js';
 import { useAuth } from '../auth/AuthContext.js';
 import { userHasAnyPermission } from '../auth/RequirePermission.js';
-import { ChevronDown, ChevronUp, X } from 'lucide-react';
-import {
-  PageHeader, Card, Button, Input, LabelledField,
-  Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell,
-} from '@revelation-srs/ui';
 
-function memberStatus(m: ValueSetMember): 'active' | 'retired' | 'scheduled' {
+// Valid values for every coded field. Platform values keep their codes, so
+// records, returns and integrations are unaffected; an institution can
+// relabel them, and hide those it does not use (except lifecycle statuses the
+// system writes). Its own values, in extensible sets, it adds, edits and retires.
+
+type MemberStatus = 'active' | 'retired' | 'scheduled' | 'hidden';
+
+function memberStatus(m: ValueSetMember): MemberStatus {
   const now = new Date();
   if (m.activeTo && new Date(m.activeTo) <= now) return 'retired';
   if (m.activeFrom && new Date(m.activeFrom) > now) return 'scheduled';
+  if (m.hidden) return 'hidden';
   return 'active';
 }
 
-function StatusBadge({ member }: { member: ValueSetMember }) {
-  const status = memberStatus(member);
-  const cls =
-    status === 'active'    ? 'bg-success-100 text-success-700' :
-    status === 'retired'   ? 'bg-warning-100 text-warning-700' :
-                             'bg-primary-100 text-primary-700';
-  return (
-    <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium ${cls}`}>
-      {status}
-    </span>
-  );
+const STATUS_TEXT: Record<MemberStatus, string> = {
+  active: 'In use', retired: 'Retired', scheduled: 'Scheduled', hidden: 'Hidden from pickers',
+};
+const STATUS_TONE: Record<MemberStatus, string> = {
+  active: 'active', retired: 'closed', scheduled: 'pending', hidden: 'draft',
+};
+
+function errText(e: unknown, fallback: string): string {
+  return e instanceof ApiError ? (e.detail ?? e.message) : fallback;
 }
 
 export function ValueSetsPage() {
-  const { roles }              = useAuth();
-  const canWrite               = userHasAnyPermission(roles, ['config:write']);
-  const [sets,     setSets]    = useState<ValueSet[]>([]);
-  const [loading,  setLoading] = useState(true);
-  const [error,    setError]   = useState('');
+  const { roles }               = useAuth();
+  const canWrite                = userHasAnyPermission(roles, ['config:write']);
+  const [sets,     setSets]     = useState<ValueSet[]>([]);
+  const [loading,  setLoading]  = useState(true);
+  const [error,    setError]    = useState('');
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [query,    setQuery]    = useState('');
+  const [source,   setSource]   = useState('');
 
   useEffect(() => {
     listValueSets()
       .then(setSets)
-      .catch((e: unknown) => setError(e instanceof ApiError ? e.message : 'Failed to load value sets'))
+      .catch((e: unknown) => setError(errText(e, 'Failed to load value sets')))
       .finally(() => setLoading(false));
   }, []);
 
-  function toggle(setCode: string) {
-    setExpanded(prev => prev === setCode ? null : setCode);
-  }
+  const sources = useMemo(() => [...new Set(sets.map((s) => s.source))].sort(), [sets]);
+  const shown = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return sets.filter((s) => (!source || s.source === source) && (!q
+      || s.displayName.toLowerCase().includes(q)
+      || s.setCode.toLowerCase().includes(q)
+      || (s.description ?? '').toLowerCase().includes(q)
+      || s.usedBy.some((f) => `${f.entityName}.${f.fieldName}`.toLowerCase().includes(q))));
+  }, [sets, query, source]);
 
   return (
     <div>
-      <PageHeader title="Value sets" description="Manage the valid values that appear in picklists. Platform-managed codes are read-only; tenant extensions can be added, edited, or retired." />
+      <PageHeader
+        title="Value sets"
+        description="The valid values behind every coded field and picklist. Relabel platform values in your institution's own words, hide those you do not use, and add your own values where a set allows it. Codes never change, so records, returns and integrations are unaffected."
+      />
+
+      <div className="mb-4 flex flex-wrap items-end gap-4">
+        <LabelledField label="Search" htmlFor="vs-search" hint="Name, code, description or field, e.g. enrolment.status_code">
+          <Input id="vs-search" type="search" value={query} onChange={(e) => setQuery(e.target.value)} className="w-80" />
+        </LabelledField>
+        <LabelledField label="Source" htmlFor="vs-source">
+          <Select id="vs-source" value={source} onChange={(e) => setSource(e.target.value)} className="w-auto">
+            <option value="">All sources</option>
+            {sources.map((s) => <option key={s} value={s}>{s}</option>)}
+          </Select>
+        </LabelledField>
+        {!loading && <p className="pb-2 text-sm text-neutral-600" aria-live="polite">{shown.length} of {sets.length} sets</p>}
+      </div>
 
       {error && <p className="mb-4 text-sm text-danger-600">{error}</p>}
 
       {loading ? (
         <div className="flex justify-center py-16"><Spinner /></div>
-      ) : sets.length === 0 ? (
-        <p className="text-sm text-neutral-600">No value sets found.</p>
+      ) : shown.length === 0 ? (
+        <p className="text-sm text-neutral-600">No value sets match.</p>
       ) : (
         <div className="space-y-2">
-          {sets.map(s => (
+          {shown.map((s) => (
             <Card key={s.setCode}>
               <button
-                onClick={() => toggle(s.setCode)}
+                type="button"
+                onClick={() => setExpanded((prev) => (prev === s.setCode ? null : s.setCode))}
+                aria-expanded={expanded === s.setCode}
                 className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-neutral-50"
               >
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-medium text-sm text-neutral-900">{s.displayName}</span>
                     <span className="font-mono text-xs text-neutral-600">{s.setCode}</span>
-                    {s.isExtensible && (
-                      <span className="rounded bg-primary-100 text-primary-700 px-1.5 py-0.5 text-xs font-medium">
-                        extensible
-                      </span>
-                    )}
+                    {s.isExtensible && <span className="rounded bg-primary-100 text-primary-700 px-1.5 py-0.5 text-xs font-medium">You can add values</span>}
+                    {!s.allowsTenantHide && <span className="rounded bg-neutral-100 text-neutral-700 px-1.5 py-0.5 text-xs font-medium">Relabel only</span>}
                   </div>
-                  {s.description && (
-                    <p className="text-xs text-neutral-500 mt-0.5">{s.description}</p>
-                  )}
+                  {s.description && <p className="text-xs text-neutral-500 mt-0.5">{s.description}</p>}
+                  <p className="text-xs text-neutral-500 mt-0.5">
+                    {s.usedBy.length === 0 ? 'Not linked to a field' : `Used by ${s.usedBy.map((f) => `${f.entityName}.${f.fieldName}`).join(', ')}`}
+                  </p>
                 </div>
                 <div className="flex items-center gap-3 ml-4 flex-shrink-0">
                   <span className="text-xs text-neutral-600">{s.source}</span>
@@ -97,9 +129,7 @@ export function ValueSetsPage() {
                 </div>
               </button>
 
-              {expanded === s.setCode && (
-                <SetMembersPanel setCode={s.setCode} isExtensible={s.isExtensible} canWrite={canWrite} />
-              )}
+              {expanded === s.setCode && <SetMembersPanel set={s} canWrite={canWrite} />}
             </Card>
           ))}
         </div>
@@ -110,40 +140,46 @@ export function ValueSetsPage() {
 
 // ── Member panel ──────────────────────────────────────────────────────────────
 
-function SetMembersPanel({ setCode, isExtensible, canWrite }: { setCode: string; isExtensible: boolean; canWrite: boolean }) {
-  const [members,   setMembers]   = useState<ValueSetMember[]>([]);
-  const [loading,   setLoading]   = useState(true);
-  const [error,     setError]     = useState('');
-  const [showAdd,   setShowAdd]   = useState(false);
-  const [editCode,  setEditCode]  = useState<string | null>(null);
+function SetMembersPanel({ set, canWrite }: { set: ValueSet; canWrite: boolean }) {
+  const [members,     setMembers]     = useState<ValueSetMember[]>([]);
+  const [loading,     setLoading]     = useState(true);
+  const [error,       setError]       = useState('');
+  const [showAdd,     setShowAdd]     = useState(false);
+  const [editCode,    setEditCode]    = useState<string | null>(null);
+  const [showRetired, setShowRetired] = useState(false);
 
+  // The spinner shows on the first load only, so a change does not blank the table.
   const load = useCallback(async () => {
-    setLoading(true);
     try {
-      setMembers(await listValueSetMembers(setCode));
+      setMembers(await listValueSetMembers(set.setCode));
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : 'Failed to load members');
+      setError(errText(e, 'Failed to load values'));
     } finally {
       setLoading(false);
     }
-  }, [setCode]);
+  }, [set.setCode]);
 
   useEffect(() => { void load(); }, [load]);
 
-  function handleEdited() {
-    setEditCode(null);
-    void load();
-  }
+  const retiredCount = members.filter((m) => memberStatus(m) === 'retired').length;
+  const visible = members.filter((m) => showRetired || memberStatus(m) !== 'retired');
+  const retiredId = `vs-retired-${set.setCode}`;
 
   return (
     <div className="border-t border-neutral-100 px-4 py-4">
-      {error && <p className="mb-2 text-sm text-danger-600">{error}</p>}
+      {error && <p role="alert" className="mb-2 text-sm text-danger-600">{error}</p>}
 
       {loading ? (
         <div className="flex justify-center py-4"><Spinner /></div>
       ) : (
         <>
-          {members.length > 0 ? (
+          {retiredCount > 0 && (
+            <label htmlFor={retiredId} className="mb-3 flex items-center gap-2 text-xs text-neutral-700">
+              <Checkbox id={retiredId} checked={showRetired} onChange={(e) => setShowRetired(e.target.checked)} />
+              Show {retiredCount} retired {retiredCount === 1 ? 'value' : 'values'} (still shown on the records that hold them)
+            </label>
+          )}
+          {visible.length > 0 ? (
             <div className="mb-4">
               <Table className="text-xs">
                 <TableHead>
@@ -151,53 +187,35 @@ function SetMembersPanel({ setCode, isExtensible, canWrite }: { setCode: string;
                     <TableHeaderCell>Code</TableHeaderCell>
                     <TableHeaderCell>Label</TableHeaderCell>
                     <TableHeaderCell>Description</TableHeaderCell>
-                    <TableHeaderCell>Sort</TableHeaderCell>
-                    <TableHeaderCell>Active from</TableHeaderCell>
-                    <TableHeaderCell>Active to</TableHeaderCell>
+                    <TableHeaderCell>Owner</TableHeaderCell>
+                    <TableHeaderCell>Active</TableHeaderCell>
                     <TableHeaderCell>Status</TableHeaderCell>
                     <TableHeaderCell><span className="sr-only">Actions</span></TableHeaderCell>
                   </tr>
                 </TableHead>
                 <TableBody>
-                  {members.map(m =>
+                  {visible.map((m) =>
                     canWrite && editCode === m.code ? (
-                      <EditMemberRow
-                        key={m.code}
-                        setCode={setCode}
-                        member={m}
-                        onSaved={handleEdited}
-                        onCancel={() => setEditCode(null)}
-                        onError={setError}
-                      />
+                      <EditMemberRow key={m.code} setCode={set.setCode} member={m}
+                        onSaved={() => { setEditCode(null); void load(); }} onCancel={() => setEditCode(null)} onError={setError} />
                     ) : (
-                      <MemberRow
-                        key={m.code}
-                        member={m}
-                        canWrite={canWrite}
-                        onEdit={() => setEditCode(m.code)}
-                        onRetired={() => void load()}
-                        onError={setError}
-                        setCode={setCode}
-                      />
-                    )
+                      <MemberRow key={m.code} member={m} set={set} canWrite={canWrite}
+                        onEdit={() => setEditCode(m.code)} onChanged={() => void load()} onError={setError} />
+                    ),
                   )}
                 </TableBody>
               </Table>
             </div>
           ) : (
-            <p className="text-xs text-neutral-600 mb-4">No members yet.</p>
+            <p className="text-xs text-neutral-600 mb-4">No values yet.</p>
           )}
 
-          {isExtensible && canWrite && (
+          {set.isExtensible && canWrite && (
             showAdd ? (
-              <AddMemberForm
-                setCode={setCode}
-                onAdded={() => { setShowAdd(false); void load(); }}
-                onCancel={() => setShowAdd(false)}
-                onError={setError}
-              />
+              <AddMemberForm setCode={set.setCode}
+                onAdded={() => { setShowAdd(false); void load(); }} onCancel={() => setShowAdd(false)} onError={setError} />
             ) : (
-              <Button variant="ghost" size="sm" onClick={() => setShowAdd(true)}>+ Add member</Button>
+              <Button variant="ghost" size="sm" onClick={() => setShowAdd(true)}>+ Add a value</Button>
             )
           )}
         </>
@@ -209,78 +227,86 @@ function SetMembersPanel({ setCode, isExtensible, canWrite }: { setCode: string;
 // ── Read-only / action row ────────────────────────────────────────────────────
 
 function MemberRow({
-  member, setCode, canWrite, onEdit, onRetired, onError,
+  member, set, canWrite, onEdit, onChanged, onError,
 }: {
   member:    ValueSetMember;
-  setCode:   string;
+  set:       ValueSet;
   canWrite:  boolean;
   onEdit:    () => void;
-  onRetired: () => void;
+  onChanged: () => void;
   onError:   (msg: string) => void;
 }) {
-  const [retiring, setRetiring] = useState(false);
-  const [confirm,  setConfirm]  = useState(false);
+  const [busy, setBusy] = useState(false);
   const status = memberStatus(member);
 
-  async function handleRetire() {
-    setRetiring(true);
-    const today = new Date().toISOString().slice(0, 10);
+  async function act(action: () => Promise<unknown>, fallback: string) {
+    setBusy(true);
     try {
-      await updateValueSetMember(setCode, member.code, { activeTo: today });
-      onRetired();
+      await action();
+      onChanged();
     } catch (e) {
-      onError(e instanceof ApiError ? (e.detail ?? e.message) : 'Retire failed');
+      onError(errText(e, fallback));
     } finally {
-      setRetiring(false);
-      setConfirm(false);
+      setBusy(false);
     }
   }
+
+  const relabelled = member.overridden && member.displayLabel !== member.platformLabel;
+  const actionClass = 'font-medium text-primary-600 hover:text-primary-800 disabled:opacity-50';
+  const name = `${member.displayLabel} (${member.code})`;
 
   return (
     <TableRow className={status === 'retired' ? 'opacity-60' : ''}>
       <TableCell className="font-mono">{member.code}</TableCell>
-      <TableCell className="text-neutral-900">{member.displayLabel}</TableCell>
-      <TableCell className="max-w-xs truncate">{member.description ?? '—'}</TableCell>
-      <TableCell>{member.sortOrder}</TableCell>
-      <TableCell>{member.activeFrom ? member.activeFrom.slice(0, 10) : '—'}</TableCell>
-      <TableCell>{member.activeTo ? member.activeTo.slice(0, 10) : '—'}</TableCell>
-      <TableCell><StatusBadge member={member} /></TableCell>
+      <TableCell className="text-neutral-900">
+        {member.displayLabel}
+        {relabelled && <span className="block text-neutral-500">Platform: {member.platformLabel}</span>}
+      </TableCell>
+      <TableCell className="max-w-xs">{member.description ?? '—'}</TableCell>
+      <TableCell>{member.isTenantOwned ? 'Your institution' : 'Platform'}</TableCell>
+      <TableCell className="whitespace-nowrap">
+        {member.activeFrom || member.activeTo
+          ? `${member.activeFrom ? member.activeFrom.slice(0, 10) : 'always'} – ${member.activeTo ? member.activeTo.slice(0, 10) : 'open'}`
+          : 'Always'}
+      </TableCell>
+      <TableCell><Badge value={STATUS_TONE[status]} label={STATUS_TEXT[status]} /></TableCell>
       <TableCell className="text-right whitespace-nowrap">
-        {member.isTenantOwned && canWrite ? (
+        {!canWrite ? null : member.isTenantOwned ? (
           <span className="inline-flex items-center gap-3">
-            <button onClick={onEdit} className="text-primary-600 hover:text-primary-800 font-medium">
-              Edit
-            </button>
+            <button type="button" onClick={onEdit} className={actionClass} aria-label={`Edit ${name}`}>Edit</button>
             {status !== 'retired' && (
-              confirm ? (
-                <span className="inline-flex items-center gap-1.5">
-                  <button
-                    onClick={() => void handleRetire()}
-                    disabled={retiring}
-                    className="text-danger-600 hover:text-danger-800 font-medium disabled:opacity-50"
-                  >
-                    {retiring ? 'Retiring…' : 'Confirm'}
-                  </button>
-                  <button onClick={() => setConfirm(false)} className="text-neutral-600" aria-label="Cancel">
-                    <X className="h-3 w-3" />
-                  </button>
-                </span>
-              ) : (
-                <button onClick={() => setConfirm(true)} className="text-warning-600 hover:text-warning-800">
-                  Retire
-                </button>
-              )
+              <button type="button" disabled={busy} className="font-medium text-warning-700 hover:text-warning-800 disabled:opacity-50"
+                aria-label={`Retire ${name}`}
+                onClick={() => void act(() => updateValueSetMember(set.setCode, member.code, { activeTo: new Date().toISOString().slice(0, 10) }), 'Retire failed')}>
+                Retire
+              </button>
             )}
           </span>
         ) : (
-          <span className="text-neutral-300 text-xs">Platform</span>
+          <span className="inline-flex items-center gap-3">
+            <button type="button" onClick={onEdit} className={actionClass} aria-label={`Relabel ${name}`}>Relabel</button>
+            {set.allowsTenantHide && status !== 'retired' && (
+              <button type="button" disabled={busy} className={actionClass}
+                aria-label={`${member.hidden ? 'Show' : 'Hide'} ${name}`}
+                onClick={() => void act(() => setValueSetOverride(set.setCode, member.code, { hidden: !member.hidden }), 'The change was not saved')}>
+                {member.hidden ? 'Show' : 'Hide'}
+              </button>
+            )}
+            {member.overridden && (
+              <button type="button" disabled={busy} className="font-medium text-neutral-600 hover:text-neutral-800 disabled:opacity-50"
+                aria-label={`Restore the platform wording for ${member.code}`}
+                onClick={() => void act(() => clearValueSetOverride(set.setCode, member.code), 'Restore failed')}>
+                Restore
+              </button>
+            )}
+          </span>
         )}
       </TableCell>
     </TableRow>
   );
 }
 
-// ── Inline edit row ───────────────────────────────────────────────────────────
+// ── Inline edit row: an institution value's details, or a platform value's wording ──
 
 function EditMemberRow({
   setCode, member, onSaved, onCancel, onError,
@@ -291,108 +317,87 @@ function EditMemberRow({
   onCancel: () => void;
   onError:  (msg: string) => void;
 }) {
+  const platform = !member.isTenantOwned;
   const [displayLabel, setDisplayLabel] = useState(member.displayLabel);
   const [description,  setDescription]  = useState(member.description ?? '');
-  const [sortOrder,    setSortOrder]     = useState(String(member.sortOrder));
-  const [activeFrom,   setActiveFrom]    = useState(member.activeFrom ? member.activeFrom.slice(0, 10) : '');
-  const [activeTo,     setActiveTo]      = useState(member.activeTo ? member.activeTo.slice(0, 10) : '');
-  const [saving,       setSaving]        = useState(false);
+  const [sortOrder,    setSortOrder]    = useState(String(member.sortOrder));
+  const [activeFrom,   setActiveFrom]   = useState(member.activeFrom ? member.activeFrom.slice(0, 10) : '');
+  const [activeTo,     setActiveTo]     = useState(member.activeTo ? member.activeTo.slice(0, 10) : '');
+  const [saving,       setSaving]       = useState(false);
 
   async function handleSave(e: FormEvent) {
     e.preventDefault();
     if (!displayLabel.trim()) return;
     setSaving(true);
     try {
-      await updateValueSetMember(setCode, member.code, {
-        displayLabel: displayLabel.trim(),
-        ...(description.trim() ? { description: description.trim() } : { description: null }),
-        sortOrder: Number(sortOrder) || 0,
-        activeFrom: activeFrom || null,
-        activeTo: activeTo || null,
-      });
+      if (platform) {
+        // The platform's own wording is stored as no override.
+        await setValueSetOverride(setCode, member.code, {
+          displayLabel: displayLabel.trim() === member.platformLabel ? null : displayLabel.trim(),
+          description:  description.trim() === (member.platformDescription ?? '') ? null : description.trim() || null,
+        });
+      } else {
+        await updateValueSetMember(setCode, member.code, {
+          displayLabel: displayLabel.trim(),
+          description:  description.trim() || null,
+          sortOrder:    Number(sortOrder) || 0,
+          activeFrom:   activeFrom || null,
+          activeTo:     activeTo || null,
+        });
+      }
       onSaved();
     } catch (err) {
-      onError(err instanceof ApiError ? (err.detail ?? err.message) : 'Save failed');
+      onError(errText(err, 'Save failed'));
       setSaving(false);
     }
   }
 
   const inputCls = 'rounded border border-neutral-300 px-2 py-0.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary-500 w-full';
+  const formId = `vs-edit-${member.code}`;
 
   return (
     <tr className="bg-primary-50">
       <td className="py-2 pr-4 font-mono text-neutral-600">{member.code}</td>
       <td className="py-2 pr-4">
-        {/* This row only exists because the user just activated "Edit" on
-            it; moving focus into the newly-revealed field is the
-            WAI-ARIA-recommended behaviour for edit-in-place, not a
-            page-load autofocus. */}
-        <input
-          value={displayLabel}
-          onChange={e => setDisplayLabel(e.target.value)}
-          className={inputCls}
+        {/* Focus moves into the field the user just asked to edit (WAI-ARIA edit-in-place). */}
+        <input form={formId} aria-label={`Label for ${member.code}`} value={displayLabel}
+          onChange={(e) => setDisplayLabel(e.target.value)} className={inputCls}
           // eslint-disable-next-line jsx-a11y/no-autofocus
-          autoFocus
-        />
+          autoFocus />
+        {platform && <span className="block text-neutral-500">Platform: {member.platformLabel}</span>}
       </td>
       <td className="py-2 pr-4">
-        <input
-          value={description}
-          onChange={e => setDescription(e.target.value)}
-          placeholder="Optional"
-          className={inputCls}
-        />
+        <input form={formId} aria-label={`Description for ${member.code}`} value={description}
+          onChange={(e) => setDescription(e.target.value)} placeholder="Optional" className={inputCls} />
       </td>
       <td className="py-2 pr-4">
-        <input
-          type="number"
-          value={sortOrder}
-          onChange={e => setSortOrder(e.target.value)}
-          className={`${inputCls} w-16`}
-          min={0}
-        />
+        {platform ? 'Platform' : (
+          <input form={formId} aria-label={`Sort order for ${member.code}`} type="number" min={0} value={sortOrder}
+            onChange={(e) => setSortOrder(e.target.value)} className={`${inputCls} w-16`} />
+        )}
       </td>
       <td className="py-2 pr-4">
-        <input
-          type="date"
-          value={activeFrom}
-          onChange={e => setActiveFrom(e.target.value)}
-          className={inputCls}
-        />
-      </td>
-      <td className="py-2 pr-4">
-        <input
-          type="date"
-          value={activeTo}
-          onChange={e => setActiveTo(e.target.value)}
-          className={inputCls}
-          placeholder="Leave blank = never expires"
-        />
+        {platform ? '—' : (
+          <span className="flex gap-1">
+            <input form={formId} aria-label={`Active from for ${member.code}`} type="date" value={activeFrom} onChange={(e) => setActiveFrom(e.target.value)} className={inputCls} />
+            <input form={formId} aria-label={`Active to for ${member.code}`} type="date" value={activeTo} onChange={(e) => setActiveTo(e.target.value)} className={inputCls} />
+          </span>
+        )}
       </td>
       <td className="py-2 pr-4" />
       <td className="py-2 text-right whitespace-nowrap">
-        <form onSubmit={(e) => void handleSave(e)} className="inline-flex items-center gap-2">
-          <button
-            type="submit"
-            disabled={saving}
-            className="rounded bg-primary-600 px-2.5 py-1 text-xs font-medium text-white disabled:opacity-50"
-          >
+        <form id={formId} onSubmit={(e) => void handleSave(e)} className="inline-flex items-center gap-2">
+          <button type="submit" disabled={saving} className="rounded bg-primary-600 px-2.5 py-1 text-xs font-medium text-white disabled:opacity-50">
             {saving ? 'Saving…' : 'Save'}
           </button>
-          <button
-            type="button"
-            onClick={onCancel}
-            className="text-xs text-neutral-500 hover:text-neutral-700"
-          >
-            Cancel
-          </button>
+          <button type="button" onClick={onCancel} className="text-xs text-neutral-500 hover:text-neutral-700">Cancel</button>
         </form>
       </td>
     </tr>
   );
 }
 
-// ── Add member form ───────────────────────────────────────────────────────────
+// ── Add value form ────────────────────────────────────────────────────────────
 
 function AddMemberForm({
   setCode, onAdded, onCancel, onError,
@@ -406,8 +411,8 @@ function AddMemberForm({
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const fd          = new FormData(e.currentTarget);
-    const code        = String(fd.get('code')        ?? '').trim();
+    const fd           = new FormData(e.currentTarget);
+    const code         = String(fd.get('code')         ?? '').trim();
     const displayLabel = String(fd.get('displayLabel') ?? '').trim();
     const description  = String(fd.get('description')  ?? '').trim();
     const sortOrder    = Number(fd.get('sortOrder') ?? 0) || 0;
@@ -428,20 +433,20 @@ function AddMemberForm({
       });
       onAdded();
     } catch (err) {
-      onError(err instanceof ApiError ? (err.detail ?? err.message) : 'Add failed');
+      onError(errText(err, 'Add failed'));
       setAdding(false);
     }
   }
 
   return (
     <form onSubmit={(e) => void handleSubmit(e)} className="mt-3 rounded-lg border border-primary-200 bg-primary-50 p-4">
-      <h3 className="text-xs font-semibold text-neutral-700 mb-3">Add member</h3>
+      <h3 className="text-xs font-semibold text-neutral-700 mb-3">Add a value</h3>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <LabelledField label="Code" htmlFor="vs-add-code" required>
-          <Input id="vs-add-code" name="code" required placeholder="e.g. custom-status" />
+        <LabelledField label="Code" htmlFor="vs-add-code" required hint="Cannot be changed later">
+          <Input id="vs-add-code" name="code" required placeholder="e.g. evening-study" />
         </LabelledField>
         <LabelledField label="Label" htmlFor="vs-add-label" required>
-          <Input id="vs-add-label" name="displayLabel" required placeholder="Display label" />
+          <Input id="vs-add-label" name="displayLabel" required />
         </LabelledField>
         <LabelledField label="Description" htmlFor="vs-add-desc" hint="Optional">
           <Input id="vs-add-desc" name="description" />
@@ -457,7 +462,7 @@ function AddMemberForm({
         </LabelledField>
       </div>
       <div className="mt-3 flex items-center gap-3">
-        <Button type="submit" size="sm" disabled={adding}>{adding ? 'Adding…' : 'Add member'}</Button>
+        <Button type="submit" size="sm" disabled={adding}>{adding ? 'Adding…' : 'Add value'}</Button>
         <Button type="button" variant="ghost" size="sm" onClick={onCancel}>Cancel</Button>
       </div>
     </form>

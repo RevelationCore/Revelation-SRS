@@ -1,11 +1,14 @@
-import { and, eq, gt, isNull, lte, or } from 'drizzle-orm';
+import { and, eq, gt, inArray, isNull, lte, or } from 'drizzle-orm';
 import {
   fieldValueSets,
+  valueSetMemberOverrides,
   valueSetMembers,
   valueSets,
   withTenantContext,
   type Db,
+  type ValueSetMember,
 } from '@revelation-srs/db';
+import { NotFoundError, ValidationError } from '@revelation-srs/domain';
 
 import { clockNow } from '../clock.js';
 
@@ -17,6 +20,37 @@ export interface ValueSetMemberDto {
   activeFrom:    string | null; // null = valid from beginning of time
   activeTo:      string | null; // null = valid forever
   sourceMetadata: Record<string, unknown> | null;
+  /** Within its active window at the time asked about. */
+  active:        boolean;
+  /** This institution has taken it out of its pickers. */
+  hidden:        boolean;
+  /** Offered for new entries: active and not hidden. */
+  selectable:    boolean;
+}
+
+/**
+ * Which members a lookup returns:
+ *   selectable — what a picker offers (active, not hidden); the default
+ *   active     — what validates (active, hidden or not)
+ *   all        — every member, retired and scheduled ones too, to label old records
+ */
+export type MemberInclusion = 'selectable' | 'active' | 'all';
+
+export interface ManagedMemberDto extends ValueSetMemberDto {
+  isTenantOwned:       boolean;
+  /** The platform's own wording, shown beside an institution's relabel. */
+  platformLabel:       string;
+  platformDescription: string | null;
+  overridden:          boolean;
+  overrideUpdatedBy:   string | null;
+  overrideUpdatedAt:   string | null;
+}
+
+export interface OverrideInput {
+  /** null: back to the platform label. */
+  displayLabel?: string | null;
+  description?:  string | null;
+  hidden?:       boolean;
 }
 
 export interface ValueSetDto {
@@ -26,7 +60,13 @@ export interface ValueSetDto {
   sourceVersion: string | null;
   description:   string | null;
   isExtensible:  boolean;
+  allowsTenantHide: boolean;
   members:       ValueSetMemberDto[];
+}
+
+export interface ValueSetSummaryDto extends Omit<ValueSetDto, 'members'> {
+  /** The data-model fields this set governs. */
+  usedBy: Array<{ entityName: string; fieldName: string }>;
 }
 
 /**
@@ -39,6 +79,29 @@ export interface ValueSetDto {
  * Results are cached in memory per-tenant with a configurable TTL
  * (default 10 minutes) since value sets change infrequently.
  */
+type Uuid = `${string}-${string}-${string}-${string}-${string}`;
+
+function memberToDto(
+  m: ValueSetMember,
+  override: { displayLabel: string | null; description: string | null; hidden: boolean } | undefined,
+  at: Date,
+): ValueSetMemberDto {
+  const active = (!m.activeFrom || m.activeFrom <= at) && (!m.activeTo || m.activeTo > at);
+  const hidden = override?.hidden ?? false;
+  return {
+    code:           m.code,
+    displayLabel:   override?.displayLabel ?? m.displayLabel,
+    description:    override?.description ?? m.description ?? null,
+    sortOrder:      m.sortOrder ?? 0,
+    activeFrom:     m.activeFrom?.toISOString() ?? null,
+    activeTo:       m.activeTo?.toISOString() ?? null,
+    sourceMetadata: m.sourceMetadata as Record<string, unknown> | null ?? null,
+    active,
+    hidden,
+    selectable:     active && !hidden,
+  };
+}
+
 export class ValueSetService {
   private cache = new Map<string, { data: ValueSetDto; expiresAt: number }>();
   private readonly ttlMs: number;
@@ -54,8 +117,15 @@ export class ValueSetService {
    * Fetch all value sets (without members) for a tenant - list view.
    * Platform sets are always included; extensible sets also show tenant state.
    */
-  async listValueSets(): Promise<Omit<ValueSetDto, 'members'>[]> {
-    const rows = await this.db.select().from(valueSets).orderBy(valueSets.displayName);
+  async listValueSets(): Promise<ValueSetSummaryDto[]> {
+    const [rows, fields] = await Promise.all([
+      this.db.select().from(valueSets).orderBy(valueSets.displayName),
+      this.db.select().from(fieldValueSets).orderBy(fieldValueSets.entityName, fieldValueSets.fieldName),
+    ]);
+    const usedBy = new Map<string, Array<{ entityName: string; fieldName: string }>>();
+    for (const f of fields) {
+      usedBy.set(f.valueSetCode, [...(usedBy.get(f.valueSetCode) ?? []), { entityName: f.entityName, fieldName: f.fieldName }]);
+    }
     return rows.map((r) => ({
       setCode:       r.setCode,
       displayName:   r.displayName,
@@ -63,6 +133,8 @@ export class ValueSetService {
       sourceVersion: r.sourceVersion ?? null,
       description:   r.description ?? null,
       isExtensible:  r.isExtensible,
+      allowsTenantHide: r.allowsTenantHide,
+      usedBy:        usedBy.get(r.setCode) ?? [],
     }));
   }
 
@@ -77,39 +149,35 @@ export class ValueSetService {
   async getValueSet(
     setCode:  string,
     tenantId: string,
-    options:  { activeAt?: Date; force?: boolean } = {},
+    options:  { activeAt?: Date; force?: boolean; include?: MemberInclusion } = {},
   ): Promise<ValueSetDto | null> {
+    const include = options.include ?? 'selectable';
     const activeAtKey = options.activeAt?.toISOString() ?? 'now';
-    const cacheKey = `${setCode}:${tenantId}:${activeAtKey}`;
+    const cacheKey = `${setCode}:${tenantId}:${activeAtKey}:${include}`;
 
     if (!options.force) {
       const cached = this.cache.get(cacheKey);
       if (cached && cached.expiresAt > Date.now()) return cached.data;  // clock:allow
     }
 
-    const setRows = await this.db
-      .select()
-      .from(valueSets)
-      .where(eq(valueSets.setCode, setCode))
-      .limit(1);
-
-    if (setRows.length === 0) return null;
-    const set = setRows[0]!;
+    const set = await this.#set(setCode);
+    if (!set) return null;
     const activeAt = options.activeAt ?? clockNow();
 
     // Members visible to this tenant: platform (tenant_id IS NULL)
-    // plus this tenant's own extensions
-    const members = await withTenantContext(this.db, tenantId, async (tx) =>
-      tx
+    // plus this tenant's own extensions; 'all' keeps retired and scheduled ones.
+    const { members, overrides } = await withTenantContext(this.db, tenantId, async (tx) => {
+      const rows = await tx
         .select()
         .from(valueSetMembers)
         .where(
           and(
             eq(valueSetMembers.valueSetId, set.id),
-            // Active at the requested point in time.
-            // NULL activeFrom = valid from beginning of time; NULL activeTo = valid forever.
-            or(isNull(valueSetMembers.activeFrom), lte(valueSetMembers.activeFrom, activeAt)),
-            or(isNull(valueSetMembers.activeTo),   gt(valueSetMembers.activeTo, activeAt)),
+            ...(include === 'all' ? [] : [
+              // NULL activeFrom = valid from beginning of time; NULL activeTo = valid forever.
+              or(isNull(valueSetMembers.activeFrom), lte(valueSetMembers.activeFrom, activeAt)),
+              or(isNull(valueSetMembers.activeTo),   gt(valueSetMembers.activeTo, activeAt)),
+            ]),
             // Tenant visibility (mirrors RLS policy)
             or(
               isNull(valueSetMembers.tenantId),
@@ -117,8 +185,13 @@ export class ValueSetService {
             ),
           ),
         )
-        .orderBy(valueSetMembers.sortOrder, valueSetMembers.code),
-    );
+        .orderBy(valueSetMembers.sortOrder, valueSetMembers.code);
+      return { members: rows, overrides: await this.#overrides(tx, tenantId, rows) };
+    });
+
+    const dtos = members
+      .map((m) => memberToDto(m, overrides.get(m.id), activeAt))
+      .filter((m) => include !== 'selectable' || m.selectable);
 
     const dto: ValueSetDto = {
       setCode:       set.setCode,
@@ -127,15 +200,8 @@ export class ValueSetService {
       sourceVersion: set.sourceVersion ?? null,
       description:   set.description ?? null,
       isExtensible:  set.isExtensible,
-      members: members.map((m) => ({
-        code:           m.code,
-        displayLabel:   m.displayLabel,
-        description:    m.description ?? null,
-        sortOrder:      m.sortOrder ?? 0,
-        activeFrom:     m.activeFrom?.toISOString() ?? null,
-        activeTo:       m.activeTo?.toISOString() ?? null,
-        sourceMetadata: m.sourceMetadata as Record<string, unknown> | null ?? null,
-      })),
+      allowsTenantHide: set.allowsTenantHide,
+      members:       dtos,
     };
 
     this.cache.set(cacheKey, { data: dto, expiresAt: Date.now() + this.ttlMs });  // clock:allow
@@ -179,10 +245,12 @@ export class ValueSetService {
     const setCode = await this.getValueSetForField(entityName, fieldName);
     if (!setCode) return null;
 
+    // A value the institution has hidden still validates: hiding only
+    // takes it out of pickers, and the system may still write it.
     const valueSet = await this.getValueSet(
       setCode,
       tenantId,
-      asAt ? { activeAt: asAt } : {},
+      { include: 'active', ...(asAt ? { activeAt: asAt } : {}) },
     );
     if (!valueSet) return false;
 
@@ -199,18 +267,13 @@ export class ValueSetService {
   async listAllMembers(
     setCode:  string,
     tenantId: string,
-  ): Promise<(ValueSetMemberDto & { isTenantOwned: boolean })[]> {
-    const setRows = await this.db
-      .select()
-      .from(valueSets)
-      .where(eq(valueSets.setCode, setCode))
-      .limit(1);
+  ): Promise<ManagedMemberDto[]> {
+    const set = await this.#set(setCode);
+    if (!set) return [];
+    const now = clockNow();
 
-    if (setRows.length === 0) return [];
-    const set = setRows[0]!;
-
-    const members = await withTenantContext(this.db, tenantId, async (tx) =>
-      tx
+    const { members, overrides } = await withTenantContext(this.db, tenantId, async (tx) => {
+      const rows = await tx
         .select()
         .from(valueSetMembers)
         .where(
@@ -222,19 +285,101 @@ export class ValueSetService {
             ),
           ),
         )
-        .orderBy(valueSetMembers.sortOrder, valueSetMembers.code),
-    );
+        .orderBy(valueSetMembers.sortOrder, valueSetMembers.code);
+      return { members: rows, overrides: await this.#overrides(tx, tenantId, rows) };
+    });
 
-    return members.map((m) => ({
-      code:           m.code,
-      displayLabel:   m.displayLabel,
-      description:    m.description ?? null,
-      sortOrder:      m.sortOrder ?? 0,
-      activeFrom:     m.activeFrom?.toISOString() ?? null,
-      activeTo:       m.activeTo?.toISOString() ?? null,
-      sourceMetadata: m.sourceMetadata as Record<string, unknown> | null ?? null,
-      isTenantOwned:  m.tenantId !== null,
-    }));
+    return members.map((m) => {
+      const o = overrides.get(m.id);
+      return {
+        ...memberToDto(m, o, now),
+        isTenantOwned:       m.tenantId !== null,
+        platformLabel:       m.displayLabel,
+        platformDescription: m.description ?? null,
+        overridden:          o !== undefined,
+        overrideUpdatedBy:   o?.updatedBy ?? null,
+        overrideUpdatedAt:   o?.updatedAt.toISOString() ?? null,
+      };
+    });
+  }
+
+  /**
+   * Relabel or hide a platform value for one institution. Clearing every
+   * part of an override (no label, no description, not hidden) removes it.
+   * The institution's own values are edited directly, not overridden.
+   */
+  async setOverride(
+    setCode:    string,
+    tenantId:   string,
+    memberCode: string,
+    input:      OverrideInput,
+    actorId:    string,
+  ): Promise<ManagedMemberDto> {
+    const set = await this.#set(setCode);
+    if (!set) throw new NotFoundError('ValueSet', setCode);
+    const [member] = await this.db.select().from(valueSetMembers)
+      .where(and(eq(valueSetMembers.valueSetId, set.id), eq(valueSetMembers.code, memberCode), isNull(valueSetMembers.tenantId)))
+      .limit(1);
+    if (!member) throw new NotFoundError('ValueSetMember', `${setCode}/${memberCode}`);
+    if (input.hidden === true && !set.allowsTenantHide) {
+      throw new ValidationError(
+        `'${set.displayName}' values are written by the system, so they can be relabelled but not hidden`,
+        [{ field: 'hidden', message: 'This value set does not allow hiding' }],
+      );
+    }
+    const label = input.displayLabel === undefined ? undefined : (input.displayLabel?.trim() || null);
+    const description = input.description === undefined ? undefined : (input.description?.trim() || null);
+
+    await withTenantContext(this.db, tenantId, async (tx) => {
+      const [existing] = await tx.select().from(valueSetMemberOverrides)
+        .where(and(eq(valueSetMemberOverrides.tenantId, tenantId as Uuid), eq(valueSetMemberOverrides.valueSetMemberId, member.id)))
+        .limit(1);
+      const next = {
+        displayLabel: label === undefined ? (existing?.displayLabel ?? null) : label,
+        description:  description === undefined ? (existing?.description ?? null) : description,
+        hidden:       input.hidden ?? existing?.hidden ?? false,
+      };
+      if (next.displayLabel === null && next.description === null && !next.hidden) {
+        if (existing) await tx.delete(valueSetMemberOverrides).where(eq(valueSetMemberOverrides.id, existing.id));
+        return;
+      }
+      if (existing) {
+        await tx.update(valueSetMemberOverrides).set({ ...next, updatedBy: actorId, updatedAt: clockNow() })
+          .where(eq(valueSetMemberOverrides.id, existing.id));
+      } else {
+        await tx.insert(valueSetMemberOverrides).values({
+          tenantId: tenantId as Uuid, valueSetMemberId: member.id, ...next, updatedBy: actorId, updatedAt: clockNow(),
+        });
+      }
+    });
+
+    this.#invalidate(setCode, tenantId);
+    const managed = (await this.listAllMembers(setCode, tenantId)).find((m) => m.code === memberCode && !m.isTenantOwned);
+    return managed!;
+  }
+
+  /** Back to the platform's wording, shown again in pickers. */
+  async clearOverride(setCode: string, tenantId: string, memberCode: string, actorId: string): Promise<ManagedMemberDto> {
+    return this.setOverride(setCode, tenantId, memberCode, { displayLabel: null, description: null, hidden: false }, actorId);
+  }
+
+  async #set(setCode: string) {
+    const [row] = await this.db.select().from(valueSets).where(eq(valueSets.setCode, setCode)).limit(1);
+    return row ?? null;
+  }
+
+  async #overrides(tx: Parameters<Parameters<typeof withTenantContext>[2]>[0], tenantId: string, members: ValueSetMember[]) {
+    const platformIds = members.filter((m) => m.tenantId === null).map((m) => m.id);
+    if (platformIds.length === 0) return new Map<string, typeof valueSetMemberOverrides.$inferSelect>();
+    const rows = await tx.select().from(valueSetMemberOverrides)
+      .where(and(eq(valueSetMemberOverrides.tenantId, tenantId as Uuid), inArray(valueSetMemberOverrides.valueSetMemberId, platformIds)));
+    return new Map(rows.map((r) => [r.valueSetMemberId, r]));
+  }
+
+  #invalidate(setCode: string, tenantId: string): void {
+    for (const key of this.cache.keys()) {
+      if (key.startsWith(`${setCode}:${tenantId}:`)) this.cache.delete(key);
+    }
   }
 
   /**
@@ -346,6 +491,11 @@ export class ValueSetService {
       activeFrom:     input.activeFrom ?? null,
       activeTo:       input.activeTo   ?? null,
       sourceMetadata: null,
+      ...(() => {
+        const now = clockNow();
+        const active = (!input.activeFrom || new Date(input.activeFrom) <= now) && (!input.activeTo || new Date(input.activeTo) > now);
+        return { active, hidden: false, selectable: active };
+      })(),
     };
   }
 

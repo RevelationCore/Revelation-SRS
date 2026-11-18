@@ -198,7 +198,7 @@ export class ProgressReviewService {
       throw new ValidationError(`Review '${reviewId}' has already been decided`);
     }
 
-    const outcomeSet = await this.valueSets.getValueSet('pgr-review-outcome-code', tenantId);
+    const outcomeSet = await this.valueSets.getValueSet('pgr-review-outcome-code', tenantId, { include: 'active' });
     if (!outcomeSet || !outcomeSet.members.some((m) => m.code === input.outcomeCode)) {
       throw new ValidationError(`Invalid PGR review outcome '${input.outcomeCode}'`);
     }

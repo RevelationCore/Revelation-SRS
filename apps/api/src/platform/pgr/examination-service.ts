@@ -412,7 +412,7 @@ export class ExaminationService {
       throw new ValidationError('An outcome can only be ratified once the viva has been held');
     }
 
-    const outcomeSet = await this.valueSets.getValueSet('pgr-examination-outcome-code', tenantId);
+    const outcomeSet = await this.valueSets.getValueSet('pgr-examination-outcome-code', tenantId, { include: 'active' });
     if (!outcomeSet || !outcomeSet.members.some((m) => m.code === input.outcomeCode)) {
       throw new ValidationError(`Invalid PGR examination outcome '${input.outcomeCode}'`);
     }

@@ -465,3 +465,33 @@ DROP POLICY IF EXISTS tenant_isolation ON "email_simulator_message";
 CREATE POLICY tenant_isolation ON "email_simulator_message"
   USING ("tenant_id" = current_setting('app.current_tenant_id', true)::uuid)
   WITH CHECK ("tenant_id" = current_setting('app.current_tenant_id', true)::uuid);
+
+-- ── Valid values: institutions relabel and hide platform values ─────────────
+-- A platform value's code never changes, so records, returns and
+-- integrations are unaffected; an override changes only the wording one
+-- institution sees, or takes the value out of its pickers. A hidden value
+-- still labels the records that hold it and still validates. Sets whose
+-- values the system writes itself (lifecycle statuses) can be relabelled
+-- but not hidden: allows_tenant_hide = false.
+ALTER TABLE "value_set" ADD COLUMN IF NOT EXISTS "allows_tenant_hide" boolean NOT NULL DEFAULT true;
+UPDATE "value_set" SET "allows_tenant_hide" = false WHERE "set_code" LIKE '%status%';
+
+CREATE TABLE IF NOT EXISTS "value_set_member_override" (
+  "id"                  uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+  "tenant_id"           uuid        NOT NULL REFERENCES "tenant"("id"),
+  "value_set_member_id" uuid        NOT NULL REFERENCES "value_set_member"("id"),
+  "display_label"       text,
+  "description"         text,
+  "hidden"              boolean     NOT NULL DEFAULT false,
+  "updated_by"          text        NOT NULL,
+  "updated_at"          timestamptz NOT NULL DEFAULT now(),
+  UNIQUE ("tenant_id", "value_set_member_id"),
+  CHECK ("display_label" IS NULL OR length(trim("display_label")) > 0)
+);
+ALTER TABLE "value_set_member_override" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "value_set_member_override" FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "value_set_member_override";
+CREATE POLICY tenant_isolation ON "value_set_member_override"
+  USING ("tenant_id" = current_setting('app.current_tenant_id', true)::uuid)
+  WITH CHECK ("tenant_id" = current_setting('app.current_tenant_id', true)::uuid);
+

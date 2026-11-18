@@ -84,6 +84,22 @@ export interface paths {
         patch: operations["updateValueSetsBySetCodeMembersByMemberCode"];
         trace?: never;
     };
+    "/api/v1/value-sets/{setCode}/members/{memberCode}/override": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["replaceValueSetsBySetCodeMembersByMemberCodeOverride"];
+        post?: never;
+        delete: operations["deleteValueSetsBySetCodeMembersByMemberCodeOverride"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/students/{personId}/adjustments": {
         parameters: {
             query?: never;
@@ -7350,6 +7366,11 @@ export interface operations {
                         sourceVersion: string | null;
                         description: string | null;
                         isExtensible: boolean;
+                        allowsTenantHide: boolean;
+                        usedBy: {
+                            entityName: string;
+                            fieldName: string;
+                        }[];
                     }[];
                 };
             };
@@ -7359,6 +7380,7 @@ export interface operations {
         parameters: {
             query?: {
                 activeAt?: string;
+                include?: "selectable" | "all";
             };
             header?: never;
             path: {
@@ -7381,6 +7403,7 @@ export interface operations {
                         sourceVersion: string | null;
                         description: string | null;
                         isExtensible: boolean;
+                        allowsTenantHide: boolean;
                         members: {
                             code: string;
                             displayLabel: string;
@@ -7391,6 +7414,9 @@ export interface operations {
                             sourceMetadata: {
                                 [key: string]: unknown;
                             } | null;
+                            active: boolean;
+                            hidden: boolean;
+                            selectable: boolean;
                         }[];
                     };
                 };
@@ -7414,6 +7440,7 @@ export interface operations {
         parameters: {
             query?: {
                 activeAt?: string;
+                include?: "selectable" | "all";
             };
             header?: never;
             path: {
@@ -7429,7 +7456,48 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        setCode: string;
+                        displayName: string;
+                        source: string;
+                        sourceVersion: string | null;
+                        description: string | null;
+                        isExtensible: boolean;
+                        allowsTenantHide: boolean;
+                        members: {
+                            code: string;
+                            displayLabel: string;
+                            description: string | null;
+                            sortOrder: number;
+                            activeFrom: string | null;
+                            activeTo: string | null;
+                            sourceMetadata: {
+                                [key: string]: unknown;
+                            } | null;
+                            active: boolean;
+                            hidden: boolean;
+                            selectable: boolean;
+                        }[];
+                    } & {
+                        entityName: string;
+                        fieldName: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
             };
         };
     };
@@ -7457,7 +7525,15 @@ export interface operations {
                         sortOrder: number;
                         activeFrom: string | null;
                         activeTo: string | null;
+                        active: boolean;
+                        hidden: boolean;
+                        selectable: boolean;
                         isTenantOwned: boolean;
+                        platformLabel: string;
+                        platformDescription: string | null;
+                        overridden: boolean;
+                        overrideUpdatedBy: string | null;
+                        overrideUpdatedAt: string | null;
                     }[];
                 };
             };
@@ -7548,6 +7624,134 @@ export interface operations {
                         type: string;
                         title: string;
                         status: number;
+                    };
+                };
+            };
+        };
+    };
+    replaceValueSetsBySetCodeMembersByMemberCodeOverride: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                setCode: string;
+                memberCode: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    displayLabel?: string | null;
+                    description?: string | null;
+                    hidden?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        code: string;
+                        displayLabel: string;
+                        description: string | null;
+                        sortOrder: number;
+                        activeFrom: string | null;
+                        activeTo: string | null;
+                        active: boolean;
+                        hidden: boolean;
+                        selectable: boolean;
+                        isTenantOwned: boolean;
+                        platformLabel: string;
+                        platformDescription: string | null;
+                        overridden: boolean;
+                        overrideUpdatedBy: string | null;
+                        overrideUpdatedAt: string | null;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    deleteValueSetsBySetCodeMembersByMemberCodeOverride: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                setCode: string;
+                memberCode: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        code: string;
+                        displayLabel: string;
+                        description: string | null;
+                        sortOrder: number;
+                        activeFrom: string | null;
+                        activeTo: string | null;
+                        active: boolean;
+                        hidden: boolean;
+                        selectable: boolean;
+                        isTenantOwned: boolean;
+                        platformLabel: string;
+                        platformDescription: string | null;
+                        overridden: boolean;
+                        overrideUpdatedBy: string | null;
+                        overrideUpdatedAt: string | null;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
                     };
                 };
             };
