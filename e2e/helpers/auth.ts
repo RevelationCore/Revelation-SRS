@@ -77,3 +77,21 @@ export async function injectPortalAuth(page: Page): Promise<void> {
     { token: STUDENT_TOKEN },
   );
 }
+
+/** A portal token for any audience (Phase 5 D-38): an applicant, a supervisor or an examiner. */
+export function makePortalToken(roles: string[], personId: string): string {
+  return makeJwt({
+    sub: `test-${roles[0]}-001`, preferred_username: `${roles[0]}.user`, given_name: 'Test', family_name: roles[0],
+    email: `${roles[0]}@test.ac.uk`, srs_person_id: personId, realm_access: { roles }, tenant_id: 'test-tenant-001', exp: EXP, iat: IAT,
+  });
+}
+
+export async function injectPortalAuthAs(page: Page, roles: string[], personId: string): Promise<void> {
+  await page.addInitScript(
+    ({ token }: { token: string }) => {
+      localStorage.setItem('srs_portal_token',         token);
+      localStorage.setItem('srs_portal_refresh_token', token);
+    },
+    { token: makePortalToken(roles, personId) },
+  );
+}

@@ -56355,6 +56355,9 @@
     "/api/v1/module-results/{moduleResultId}/evidence": {
       "get": {
         "operationId": "getModuleResultsByModuleResultIdEvidence",
+        "tags": [
+          "assessment"
+        ],
         "parameters": [
           {
             "schema": {

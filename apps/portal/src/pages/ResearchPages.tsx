@@ -249,6 +249,7 @@ export function ExaminationPage() {
 }
 
 function FileForm({ label, onSubmit }: { label: string; onSubmit: (file: File) => Promise<void> }) {
+  const { t } = useTranslation();
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const id = `file-${label.replace(/\W+/g, '-').toLowerCase()}`;
@@ -260,7 +261,7 @@ function FileForm({ label, onSubmit }: { label: string; onSubmit: (file: File) =
   }
   return (
     <form className="mt-2 flex flex-wrap items-center gap-2" onSubmit={(e) => void submit(e)}>
-      <label htmlFor={id} className="text-xs text-neutral-700">{label}</label>
+      <label htmlFor={id} className="text-xs text-neutral-700">{t('portal.research.chooseFile')}</label>
       <input id={id} type="file" className="text-xs" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
       <Button size="sm" type="submit" disabled={!file || busy}>{label}</Button>
     </form>

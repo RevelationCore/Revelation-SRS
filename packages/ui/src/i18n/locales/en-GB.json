@@ -65,6 +65,7 @@
       "research":      "Research"
     },
     "applications": {
+      "chooseFile": "Evidence file",
       "title": "My applications",
       "intro": "Your applications, offers and the conditions you still need to meet.",
       "none": "No applications",
@@ -126,6 +127,7 @@
       }
     },
     "research": {
+      "chooseFile": "File to upload",
       "title": "Research",
       "intro": "Your research students, the progress reviews you sit on and the theses you examine.",
       "none": "Nothing assigned to you",

@@ -65,6 +65,7 @@
       "research":      "Ymchwil"
     },
     "applications": {
+      "chooseFile": "Ffeil dystiolaeth",
       "title": "Fy ngheisiadau",
       "intro": "Eich ceisiadau, cynigion a'r amodau y mae angen i chi eu bodloni o hyd.",
       "none": "Dim ceisiadau",
@@ -126,6 +127,7 @@
       }
     },
     "research": {
+      "chooseFile": "Ffeil i'w llwytho",
       "title": "Ymchwil",
       "intro": "Eich myfyrwyr ymchwil, yr adolygiadau cynnydd rydych yn eistedd arnynt a'r traethodau rydych yn eu harholi.",
       "none": "Dim wedi'i neilltuo i chi",

@@ -205,6 +205,7 @@ sequenceDiagram
 | Research/documentation | Codex implementation role | 2026-07-26 | Drafted |
 | Implementation | Claude (production-hardening pass) | 2026-08-15 | Case workflow, document evidence, and core-SRS linkage built and tested; doc updated to match |
 | Required reviews | Process, national, data and integration SMEs (TBC) | — | Pending |
+| Independent professional review | Awaiting nomination: a disability-service practitioner and a DPO | Submitted 2026-11-18 | Pending; pack: [BP-04-004 review pack](review-pack-bp-04-004.md) (Phase 5 D-44) |
 
 ## Change history
 

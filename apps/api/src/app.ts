@@ -811,6 +811,7 @@ export async function buildApp(
       ['/marks',                     'assessment'],
       ['/moderation',                'assessment'],
       ['/result',                    'assessment'],
+      ['/module-results',            'assessment'],
       ['/module-registration-requests', 'module-registrations'],
       ['/module-registrations',      'module-registrations'],
       ['/module-selection-proposals', 'module-selection'],

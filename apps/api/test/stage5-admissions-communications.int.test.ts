@@ -51,7 +51,10 @@ async function enableFlag(flagKey: string, variantKey: string): Promise<void> {
 
   await ctx.db.execute(sql`
     UPDATE feature_flag_assignment
-    SET active_to = now() - interval '1 millisecond'
+    -- Also retire it: active_to is the database clock, which can run a few
+    -- milliseconds ahead of the API's clock, so ending it alone could leave it
+    -- briefly "active" when the API evaluates the flag.
+    SET active_to = GREATEST(now() - interval '1 millisecond', active_from + interval '1 millisecond'), status_code = 'retired'
     WHERE flag_id = ${flag.featureFlagId}::uuid
       AND tenant_id = ${ctx.tenantId}::uuid
       AND (active_to IS NULL OR active_to > now())

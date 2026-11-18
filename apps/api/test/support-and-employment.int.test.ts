@@ -174,8 +174,11 @@ describe('Employment links and work limits', () => {
     await link(a, 'HR-SHARED', 4);
     expect((await put(`/api/v1/students/${b.personId}/employment-links/HR-SHARED`, { roleTypeCode: 'gta', startDate: '2026-09-21', weeklyHours: 4 }, recorder)).statusCode).toBe(422);
 
+    // Supervisors read their own supervisees through the research-staff routes, not here (Phase 5 D-40).
     const supervisor = await ctx.makeJwt({ roles: ['research-supervisor'] });
-    expect((await get(`/api/v1/students/${a.personId}/employment-links`, supervisor)).statusCode).toBe(200);
+    expect((await get(`/api/v1/students/${a.personId}/employment-links`, supervisor)).statusCode).toBe(403);
+    const pgrDirector = await ctx.makeJwt({ roles: ['pgr-director'] });
+    expect((await get(`/api/v1/students/${a.personId}/employment-links`, pgrDirector)).statusCode).toBe(200);
     const student = await ctx.makeJwt({ roles: ['student'], srsPersonId: a.personId });
     expect((await get(`/api/v1/students/${a.personId}/employment-links`, student)).statusCode).toBe(403);
     expect((await get(`/api/v1/students/${a.personId}/support-awards`, student)).statusCode).toBe(403);

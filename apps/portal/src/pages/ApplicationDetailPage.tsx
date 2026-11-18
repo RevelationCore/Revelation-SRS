@@ -106,12 +106,13 @@ export function ApplicationDetailPage() {
 }
 
 function EvidenceUpload({ label, busy, onUpload }: { label: string; busy: boolean; onUpload: (file: File) => void }) {
+  const { t } = useTranslation();
   const [file, setFile] = useState<File | null>(null);
   const id = `evidence-${Math.random().toString(36).slice(2, 8)}`;
   function submit(e: FormEvent) { e.preventDefault(); if (file) onUpload(file); }
   return (
     <form className="mt-2 flex flex-wrap items-center gap-2" onSubmit={submit}>
-      <label htmlFor={id} className="text-xs text-neutral-700">{label}</label>
+      <label htmlFor={id} className="text-xs text-neutral-700">{t('portal.applications.chooseFile')}</label>
       <input id={id} type="file" className="text-xs" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
       <Button size="sm" type="submit" disabled={!file || busy}>{label}</Button>
     </form>

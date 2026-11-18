@@ -541,6 +541,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm check:current-capabilities
       - run: pnpm check:process-coverage
+      - run: pnpm check:review-pack
       - run: pnpm check:doc-links
 
   evidence-summary:

@@ -150,7 +150,7 @@ These findings, checked on `main` at bf3d3e2, changed the plan's assumptions:
 
 ## D-44: The independent professional review of the adjustments workflow (BP-04-004)
 
-**Decision.** Software cannot provide the review. The project writes a review pack (`bp-04-004-review-pack.md`: what is built and where, the tests that evidence each control, a demo walkthrough, the decisions for the reviewer, the Northern Ireland variant, EC free text in core) and adds a "Submitted for review" row to BP-04-004's review record. The reviewer is "Awaiting nomination" and the outcome Pending; nobody is named and nothing is marked Approved.
+**Decision.** Software cannot provide the review. The project writes a review pack (`review-pack-bp-04-004.md`: what is built and where, the tests that evidence each control, a demo walkthrough, the decisions for the reviewer, the Northern Ireland variant, EC free text in core) and adds a "Submitted for review" row to BP-04-004's review record. The reviewer is "Awaiting nomination" and the outcome Pending; nobody is named and nothing is marked Approved.
 
 **Institution must confirm.** A named disability-service practitioner and a DPO as reviewers, and their outcome.
 

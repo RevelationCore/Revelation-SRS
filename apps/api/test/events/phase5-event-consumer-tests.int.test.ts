@@ -259,6 +259,7 @@ describe('EC and misconduct events', () => {
   let personId: string;
   let enrolmentId: string;
   let ecId: string;
+  let determinationId: string;
 
   beforeAll(async () => {
     jwt = await ctx.makeJwt();
@@ -288,26 +289,29 @@ describe('EC and misconduct events', () => {
     expect(isUuid(p['exceptionalCircumstancesId'])).toBe(true);
     expect(isUuid(p['enrolmentId'])).toBe(true);
     expect(isUuid(p['personId'])).toBe(true);
-    expect(p['outcomeCode']).toBe('defer');
+    // A claim is recorded pending; 'defer' is proposed for someone else to decide (Phase 5 D-41).
+    expect(p['outcomeCode']).toBe('pending');
     expect(typeof p['determinationDate']).toBe('string');
+    determinationId = res.json<{ determinationId: string }>().determinationId;
   });
 
-  it('updating EC publishes srs.circumstances.exceptional-circumstances-updated (sensitive)', async () => {
+  it('deciding an EC outcome publishes srs.circumstances.exceptional-circumstances-updated (sensitive)', async () => {
+    const decider = await ctx.makeJwt({ sub: 'evt-ec-decider', roles: ['exam-board-chair'] });
     const res = await ctx.app.inject({
-      method: 'PATCH',
-      url:    `/api/v1/exceptional-circumstances/${ecId}`,
-      headers: { authorization: `Bearer ${jwt}` },
-      payload: { outcomeCode: 'condone', determinationDate: '2026-01-15' },
+      method: 'POST',
+      url:    `/api/v1/ec-determinations/${determinationId}/decision`,
+      headers: { authorization: `Bearer ${decider}` },
+      payload: { decisionCode: 'upheld' },
     });
-    expect(res.statusCode).toBe(204);
+    expect(res.statusCode).toBe(200);
 
     const evt = findEvent('srs.circumstances.exceptional-circumstances-updated');
     expect(evt).toBeDefined();
     expect(evt!.classification).toBe('sensitive');
     const p = evt!.payload as Record<string, unknown>;
     expect(isUuid(p['exceptionalCircumstancesId'])).toBe(true);
-    expect(p['previousOutcomeCode']).toBe('defer');
-    expect(p['newOutcomeCode']).toBe('condone');
+    expect(p['previousOutcomeCode']).toBe('pending');
+    expect(p['newOutcomeCode']).toBe('defer');
   });
 
   it('recording misconduct publishes srs.circumstances.misconduct-outcome-recorded (sensitive)', async () => {
