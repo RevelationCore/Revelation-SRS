@@ -27,7 +27,6 @@ import type {
   NominateExaminerInput,
   ExaminationOutcomeDto,
   RatifyOutcomeInput,
-  RecordExaminerReportInput,
   RecordVivaInput,
   SubmitThesisInput,
   ThesisSubmissionDto,
@@ -787,15 +786,18 @@ export function pgrRoutes(fastify: FastifyInstance): void {
           examinerAppointmentId: Type.String(),
           reportRef:             Type.String(),
           recommendationCode:    Type.Optional(Type.String()),
+          onBehalfReason:        Type.String({ minLength: 1, maxLength: 1000, description: 'Why staff are entering the report for the examiner (D-40); examiners submit their own in the portal' }),
         }),
-        response: { 201: Type.Object({ reportId: Type.String() }), 404: ErrorSchema, 422: ErrorSchema },
+        response: { 201: Type.Object({ reportId: Type.String() }), 404: ErrorSchema, 409: ErrorSchema, 422: ErrorSchema },
       },
       preHandler: [requirePermission('pgr-case:write')],
     },
     async (request, reply) => {
       const { caseId } = request.params as { caseId: string };
-      const body = request.body as RecordExaminerReportInput;
-      const reportId = await fastify.examinationService.recordExaminerReport(request.tenantId, caseId, body);
+      const body = request.body as { examinerAppointmentId: string; reportRef: string; recommendationCode?: string; onBehalfReason: string };
+      const reportId = await fastify.examinationService.recordExaminerReport(request.tenantId, caseId, {
+        ...body, submittedBy: request.user.sub, entryChannelCode: 'staff-on-behalf',
+      });
       await reply.code(201).send({ reportId });
     },
   );

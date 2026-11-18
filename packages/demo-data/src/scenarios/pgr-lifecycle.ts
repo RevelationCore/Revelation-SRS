@@ -361,13 +361,13 @@ async function loadPgr(db: Db, tenantId: string): Promise<void> {
           id: deterministicId('pgr-examiner-report', tenantId, String(student.seq), 'internal'),
           tenantId, examinationCaseId: caseId, examinerAppointmentId: internalAppointmentId,
           reportRef: `workspace://demo-report/${student.seq}/internal`, recommendationCode: 'pass',
-          submittedAt: now,
+          submittedAt: now, submittedBy: ACTOR, entryChannelCode: 'examiner-portal',
         },
         {
           id: deterministicId('pgr-examiner-report', tenantId, String(student.seq), 'external'),
           tenantId, examinationCaseId: caseId, examinerAppointmentId: externalAppointmentId,
           reportRef: `workspace://demo-report/${student.seq}/external`, recommendationCode: 'pass',
-          submittedAt: now,
+          submittedAt: now, submittedBy: ACTOR, entryChannelCode: 'examiner-portal',
         },
       );
     } else {
@@ -376,7 +376,7 @@ async function loadPgr(db: Db, tenantId: string): Promise<void> {
         id: deterministicId('pgr-examiner-report', tenantId, String(student.seq), 'internal'),
         tenantId, examinationCaseId: caseId, examinerAppointmentId: internalAppointmentId,
         reportRef: `workspace://demo-report/${student.seq}/internal`, recommendationCode: null,
-        submittedAt: now,
+        submittedAt: now, submittedBy: ACTOR, entryChannelCode: 'examiner-portal',
       });
     }
 

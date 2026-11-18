@@ -76,7 +76,7 @@ async function ratifyExamination(enrolmentId: string, outcomeCode: string, corre
     method: 'POST',
     url: `/api/v1/pgr/examinations/${examinationCaseId}/examiner-reports`,
     headers: { authorization: `Bearer ${jwt}` },
-    payload: { examinerAppointmentId: appointmentId, reportRef: 'workspace://report/1' },
+    payload: { examinerAppointmentId: appointmentId, reportRef: 'workspace://report/1', onBehalfReason: 'Report received by email from the examiner' },
   });
   await ctx.app.inject({
     method: 'POST',

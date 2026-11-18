@@ -32,6 +32,10 @@ const DocumentsPage = lazy(() => import('./pages/DocumentsPage.js').then((m) => 
 const RegistrationPage = lazy(() => import('./pages/RegistrationPage.js').then((m) => ({ default: m.RegistrationPage })));
 const GraduationPage = lazy(() => import('./pages/GraduationPage.js').then((m) => ({ default: m.GraduationPage })));
 const ApplicationsPage = lazy(() => import('./pages/ApplicationsPage.js').then((m) => ({ default: m.ApplicationsPage })));
+const ResearchPage = lazy(() => import('./pages/ResearchPages.js').then((m) => ({ default: m.ResearchPage })));
+const SuperviseePage = lazy(() => import('./pages/ResearchPages.js').then((m) => ({ default: m.SuperviseePage })));
+const PanelReviewPage = lazy(() => import('./pages/ResearchPages.js').then((m) => ({ default: m.PanelReviewPage })));
+const ExaminationPage = lazy(() => import('./pages/ResearchPages.js').then((m) => ({ default: m.ExaminationPage })));
 const ApplicationDetailPage = lazy(() => import('./pages/ApplicationDetailPage.js').then((m) => ({ default: m.ApplicationDetailPage })));
 
 function PageLoading() {
@@ -80,6 +84,10 @@ export function App() {
           <Route path="/graduation"            element={<GraduationPage />} />
           <Route path="/applications"          element={<ApplicationsPage />} />
           <Route path="/applications/:applicationId" element={<ApplicationDetailPage />} />
+          <Route path="/research"              element={<ResearchPage />} />
+          <Route path="/research/students/:enrolmentId" element={<SuperviseePage />} />
+          <Route path="/research/reviews/:reviewId" element={<PanelReviewPage />} />
+          <Route path="/research/examinations/:caseId" element={<ExaminationPage />} />
         </Route>
 
         {/* Public accessibility statement — no auth required */}

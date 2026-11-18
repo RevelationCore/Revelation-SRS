@@ -131,3 +131,31 @@ VALUES
   ('admissions_offer',    'response_channel_code',  'offer-response-channel-code', NULL),
   ('student_application', 'withdrawal_reason_code', 'application-withdrawal-reason-code', NULL)
 ON CONFLICT DO NOTHING;
+
+-- ── D-40: examiner reports entered by examiners themselves ──────────────────
+ALTER TABLE "examiner_report" ADD COLUMN IF NOT EXISTS "submitted_by" text;
+ALTER TABLE "examiner_report" ADD COLUMN IF NOT EXISTS "entry_channel_code" text;
+ALTER TABLE "examiner_report" ADD COLUMN IF NOT EXISTS "on_behalf_reason" text;
+-- One independent preliminary report per appointment.
+CREATE UNIQUE INDEX IF NOT EXISTS "examiner_report_one_per_appointment" ON "examiner_report" ("examiner_appointment_id");
+ALTER TABLE "examiner_report" DROP CONSTRAINT IF EXISTS "examiner_report_on_behalf_reason_check";
+ALTER TABLE "examiner_report" ADD CONSTRAINT "examiner_report_on_behalf_reason_check"
+  CHECK ("entry_channel_code" IS DISTINCT FROM 'staff-on-behalf' OR "on_behalf_reason" IS NOT NULL);
+
+INSERT INTO "value_set" ("set_code", "display_name", "source", "source_version", "description", "is_extensible")
+VALUES ('examiner-report-entry-channel-code', 'Examiner Report Entry Channel', 'srs-internal', NULL, 'Who entered an examiner''s preliminary report', false)
+ON CONFLICT ("set_code") DO NOTHING;
+
+INSERT INTO "value_set_member" ("value_set_id", "code", "display_label", "sort_order", "active_from", "source_metadata")
+SELECT vs."id", v.code, v.display_label, v.sort_order, '2000-01-01T00:00:00Z', NULL
+FROM "value_set" vs,
+(VALUES
+  ('examiner-report-entry-channel-code', 'examiner-portal', 'Submitted by the examiner', 10),
+  ('examiner-report-entry-channel-code', 'staff-on-behalf', 'Entered by staff for the examiner', 20)
+) AS v(set_code, code, display_label, sort_order)
+WHERE vs."set_code" = v.set_code
+ON CONFLICT DO NOTHING;
+
+INSERT INTO "field_value_set" ("entity_name", "field_name", "value_set_code", "description")
+VALUES ('examiner_report', 'entry_channel_code', 'examiner-report-entry-channel-code', NULL)
+ON CONFLICT DO NOTHING;

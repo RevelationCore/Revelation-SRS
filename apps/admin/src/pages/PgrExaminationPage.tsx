@@ -426,6 +426,7 @@ function ReportForm({
   const confirmed = appointments.filter((a) => a.confirmedAt && !a.recusedAt);
   const [examinerAppointmentId, setExaminerAppointmentId] = useState(confirmed[0]?.appointmentId ?? '');
   const [reportRef, setReportRef]     = useState('');
+  const [reason, setReason]           = useState('');
   const [submitting, setSubmitting]   = useState(false);
   const [error, setError]             = useState('');
 
@@ -433,8 +434,8 @@ function ReportForm({
     e.preventDefault();
     setSubmitting(true); setError('');
     try {
-      await recordExaminerReport(caseId, { examinerAppointmentId, reportRef: reportRef.trim() });
-      setReportRef('');
+      await recordExaminerReport(caseId, { examinerAppointmentId, reportRef: reportRef.trim(), onBehalfReason: reason.trim() });
+      setReportRef(''); setReason('');
       onRecorded();
     } catch (err) {
       setError(err instanceof ApiError ? (err.detail ?? err.message) : 'Failed to record report');
@@ -445,7 +446,7 @@ function ReportForm({
 
   return (
     <Card>
-      <CardHeader title="Record an examiner report" />
+      <CardHeader title="Record an examiner report for the examiner" description="Examiners submit their own reports in the portal. Record one here only when they cannot, and say why." />
       <CardBody>
         {error && <p className="mb-3 text-sm text-danger-600">{error}</p>}
         <form onSubmit={(e) => void handleSubmit(e)} className="grid grid-cols-3 gap-3 items-end">
@@ -459,8 +460,11 @@ function ReportForm({
           <LabelledField label="Report reference" htmlFor="ex-report-ref" required>
             <Input id="ex-report-ref" value={reportRef} onChange={(e) => setReportRef(e.target.value)} placeholder="workspace://report/..." />
           </LabelledField>
+          <LabelledField label="Why staff are entering it" htmlFor="ex-report-reason" required>
+            <Input id="ex-report-reason" value={reason} onChange={(e) => setReason(e.target.value)} />
+          </LabelledField>
           <div className="col-span-3">
-            <Button type="submit" size="sm" variant="secondary" disabled={submitting}>
+            <Button type="submit" size="sm" variant="secondary" disabled={submitting || !reason.trim()}>
               {submitting ? 'Recording…' : 'Record report'}
             </Button>
           </div>

@@ -15,6 +15,8 @@ export const PERSONA_IDS = {
   // Applicants and research staff (self-service portal, Phase 5 D-38 to D-40)
   APPLICANT_DIRECT:     'persona-04-0000-4000-8000-000000000001', // dee.applicant@demo.srs
   APPLICANT_UCAS:       'persona-04-0000-4000-8000-000000000002', // uma.applicant@demo.srs
+  STAFF_SUPERVISOR:     'persona-04-0000-4000-8000-000000000003', // helena.cross@demo.srs
+  EXTERNAL_PGR_EXAMINER: 'persona-04-0000-4000-8000-000000000004', // david.okonkwo@demo.srs
   // Tenant/system admin
   ADMIN_SRS:            'persona-03-0000-4000-8000-000000000001', // sysadmin@demo.srs
 } as const;

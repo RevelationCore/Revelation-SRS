@@ -67,7 +67,8 @@ export const PERMISSION_ROLES = {
   'support:write':             ['registry-administrator', 'finance-administrator', 'pgr-administrator'] as Role[],
   'support:approve':           ['finance-administrator', 'pgr-director'] as Role[],
   // Student employment links (not appointments: HR owns those) and work limits.
-  'employment-link:read':      ['registry-administrator', 'pgr-administrator', 'pgr-director', 'research-supervisor'] as Role[],
+  // research-supervisor reads only their own supervisees, through the assigned routes (D-40).
+  'employment-link:read':      ['registry-administrator', 'pgr-administrator', 'pgr-director'] as Role[],
   'employment-link:write':     ['registry-administrator', 'pgr-administrator'] as Role[],
   // Student status cases (BPR-D04): interruption, suspension, return,
   // withdrawal, transfer and leaver closure. Reviewers advise; only the
@@ -213,7 +214,11 @@ export const PERMISSION_ROLES = {
   'offer:respond:own':                   ['applicant'] as Role[],
   'condition-evidence:submit:own':       ['applicant'] as Role[],
   'application:withdraw:own':            ['applicant'] as Role[],
-  'pgr-case:read':                       ['pgr-administrator', 'pgr-director', 'research-supervisor', 'registry-administrator'] as Role[],
+  'pgr-case:read':                       ['pgr-administrator', 'pgr-director', 'registry-administrator'] as Role[],
+  // Phase 5 D-40: research staff see only the cases they are assigned to (scoped to srs_person_id).
+  'pgr-case:read:assigned':              ['research-supervisor', 'pgr-examiner'] as Role[],
+  'pgr-review:contribute:assigned':      ['research-supervisor'] as Role[],
+  'pgr-report:submit:own':               ['pgr-examiner'] as Role[],
   'pgr-case:read:own':                   ['student'] as Role[],
   'pgr-case:write':                      ['pgr-administrator', 'registry-administrator'] as Role[],
   'pgr-case:decide':                     ['pgr-director', 'registry-administrator'] as Role[],

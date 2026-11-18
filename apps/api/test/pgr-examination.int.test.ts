@@ -87,7 +87,7 @@ async function recordReport(caseId: string, appointmentId: string): Promise<void
     method: 'POST',
     url: `/api/v1/pgr/examinations/${caseId}/examiner-reports`,
     headers: { authorization: `Bearer ${jwt}` },
-    payload: { examinerAppointmentId: appointmentId, reportRef: 'workspace://report/1', recommendationCode: 'pass' },
+    payload: { examinerAppointmentId: appointmentId, reportRef: 'workspace://report/1', recommendationCode: 'pass', onBehalfReason: 'Report received by email from the examiner' },
   });
   expect(res.statusCode).toBe(201);
 }

@@ -13,6 +13,7 @@ import { NotFoundError, ValidationError } from '@revelation-srs/domain';
 import type { BusinessCaseService } from '../cases/business-case-service.js';
 import { clockNow } from '../clock.js';
 import type { DeliveryService } from '../delivery/delivery-service.js';
+import { requestAccountAccess } from '../delivery/producers/access.js';
 import { requestResearchPortalSnapshot } from '../delivery/producers/research-flows.js';
 import type { RegulatoryExchangeService } from '../regulatory/exchange-service.js';
 
@@ -240,6 +241,7 @@ export class SupervisionService {
 
     const now = clockNow();
     const nominations = await this.listNominations(tenantId, supervisionCaseId);
+    const previous = (await this.listCurrentAssignments(tenantId, supervisionCase.enrolmentId)).map((a) => a.personId);
     await withTenantContext(this.db, tenantId, async (tx) => {
       await tx.update(staffAssignments)
         .set({ recordedUntil: now })
@@ -274,6 +276,10 @@ export class SupervisionService {
     if (this.delivery) {
       await requestResearchPortalSnapshot(this.delivery, this.db, tenantId, supervisionCase.enrolmentId,
         `supervision-approved:${supervisionCaseId}`);
+      // Supervisors' portal access follows their current assignments (D-38, D-40).
+      for (const personId of new Set([...previous, ...nominations.map((n) => n.personId)])) {
+        await requestAccountAccess(this.delivery, this.db, tenantId, { personId, changeKey: `supervision-approved:${supervisionCaseId}:${personId}` });
+      }
     }
   }
 
@@ -309,6 +315,7 @@ export class SupervisionService {
    */
   async closeCurrentAssignments(tenantId: string, enrolmentId: string): Promise<void> {
     const now = clockNow();
+    const closing = (await this.listCurrentAssignments(tenantId, enrolmentId)).map((a) => a.personId);
     await withTenantContext(this.db, tenantId, async (tx) => {
       await tx.update(staffAssignments)
         .set({ recordedUntil: now })
@@ -321,6 +328,9 @@ export class SupervisionService {
     if (this.delivery) {
       await requestResearchPortalSnapshot(this.delivery, this.db, tenantId, enrolmentId,
         `supervision-closed:${enrolmentId}:${now.toISOString()}`);
+      for (const personId of new Set(closing)) {
+        await requestAccountAccess(this.delivery, this.db, tenantId, { personId, changeKey: `supervision-closed:${enrolmentId}:${personId}:${now.toISOString()}` });
+      }
     }
   }
 

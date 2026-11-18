@@ -160,6 +160,8 @@ import { communicationRoutes } from './routes/communications.js';
 import { correctionCasesRoutes } from './routes/correction-cases.js';
 import { identityResolutionRoutes } from './routes/identity-resolution.js';
 import { pgrRoutes } from './routes/pgr.js';
+import { researchStaffRoutes } from './routes/research-staff.js';
+import { ResearchStaffService } from './platform/pgr/research-staff-service.js';
 import { demoRoutes } from './routes/demo.js';
 import { integrationRegistryRoutes } from './routes/integration-registry.js';
 import { platformControlRoutes } from './routes/platform-controls.js';
@@ -589,6 +591,8 @@ export async function buildApp(
   fastify.decorate('supervisionService', pgrSupervision);
   fastify.decorate('progressReviewService', pgrProgressReview);
   fastify.decorate('examinationService', pgrExamination);
+  pgrExamination.useAccountRequests((tenantId, personId, changeKey) => requestAccountAccess(deliveries, db, tenantId, { personId, changeKey }));
+  fastify.decorate('researchStaffService', new ResearchStaffService(db, pgrProgressReview, pgrExamination));
   fastify.decorate('completionService', pgrCompletion);
   fastify.decorate('localeService',       localeService);
   fastify.decorate('currencyService',     currencyService);
@@ -794,6 +798,7 @@ export async function buildApp(
       ['/regulatory',                'regulatory'],
       ['/identity-change-requests',  'students'],
       ['/students',                  'students'],
+      ['/research-staff/',           'pgr'],  // supervisor and examiner self-service (D-40)
       ['/pgr',                       'pgr'],
       ['/supervision',               'pgr'],
       ['/enrolments',                'enrolments'],
@@ -882,6 +887,7 @@ export async function buildApp(
   await fastify.register(correctionCasesRoutes,     { prefix: '/api/v1' });
   await fastify.register(identityResolutionRoutes,  { prefix: '/api/v1' });
   await fastify.register(pgrRoutes,                 { prefix: '/api/v1' });
+  await fastify.register(researchStaffRoutes,       { prefix: '/api/v1' });
   await fastify.register(regulatoryHesaRoutes,      { prefix: '/api/v1' });
   await fastify.register(regulatorySlcRoutes,       { prefix: '/api/v1' });
   await fastify.register(regulatoryUcasRoutes,      { prefix: '/api/v1' });
@@ -946,6 +952,7 @@ declare module 'fastify' {
     timetableService: TimetableService;
     allocationService: AllocationService;
     applicantPortalService: ApplicantPortalService;
+    researchStaffService: ResearchStaffService;
     moduleSelectionService: ModuleSelectionService;
     bindingChangeService: BindingChangeService;
     registrationPeriodService: RegistrationPeriodService;

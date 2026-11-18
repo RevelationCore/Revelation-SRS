@@ -37,6 +37,9 @@ export const DEMO_PERSONAS: readonly PersonaSpec[] = [
   // Phase 5 D-39: applicants who sign in to the portal (applicant-pipeline seqs 14 and 4, default demo tenant).
   { email: 'dee.applicant@demo.srs', username: 'dee.applicant', firstName: 'DEMO Dee', lastName: 'Applicant', roles: ['applicant'], personaId: PERSONA_IDS.APPLICANT_DIRECT, srsPersonId: 'c0ccdfac-ddcf-5f7a-952f-52b81b3ead8f' },
   { email: 'uma.applicant@demo.srs', username: 'uma.applicant', firstName: 'DEMO Uma', lastName: 'Applicant', roles: ['applicant'], personaId: PERSONA_IDS.APPLICANT_UCAS,   srsPersonId: '158e84e8-2282-5b60-80bc-00df330b0409' },
+  // Phase 5 D-40: a PGR supervisor and an external examiner (pgr-lifecycle seqs 101 and 104, default demo tenant).
+  { email: 'helena.cross@demo.srs',  username: 'helena.cross',  firstName: 'DEMO Helena', lastName: 'Cross',   roles: ['research-supervisor'], personaId: PERSONA_IDS.STAFF_SUPERVISOR,      srsPersonId: 'ae233dfb-cf7f-5c3b-bcc3-9a59d9b92538' },
+  { email: 'david.okonkwo@demo.srs', username: 'david.okonkwo', firstName: 'DEMO David',  lastName: 'Okonkwo', roles: ['pgr-examiner'],        personaId: PERSONA_IDS.EXTERNAL_PGR_EXAMINER, srsPersonId: '34a4d051-6b8b-5cd7-a332-de0565b9ed1a' },
   { email: 'ops@demo.srs',        username: 'ops',        firstName: 'DEMO Ops',       lastName: 'Operator',      roles: ['registry-administrator', 'tenant-administrator'], personaId: PERSONA_IDS.STAFF_OPS            },
 ];
 

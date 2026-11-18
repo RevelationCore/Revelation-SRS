@@ -71,7 +71,7 @@ export async function computeAccountState(db: Db, tenantId: string, personId: st
       SELECT bc.status_code, bc.recorded_at AS updated_at FROM examiner_appointment ea
       JOIN pgr_examination_case ec ON ec.id = ea.examination_case_id
       LEFT JOIN business_case bc ON bc.id = ec.business_case_id AND bc.recorded_until IS NULL
-      WHERE ea.tenant_id = ${tenantId}::uuid AND ea.person_id = ${personId}::uuid AND ea.recused_at IS NULL`) as unknown as Array<{ status_code: string | null; updated_at: Date | null }>,
+      WHERE ea.tenant_id = ${tenantId}::uuid AND ea.person_id = ${personId}::uuid AND ea.recused_at IS NULL AND ea.confirmed_at IS NOT NULL`) as unknown as Array<{ status_code: string | null; updated_at: Date | null }>,
   }));
   const within = (at: Date | null, days: number) => at !== null && new Date(at).getTime() + days * 86_400_000 > now.getTime();
   const roles = new Set<string>();

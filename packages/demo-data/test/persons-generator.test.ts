@@ -279,8 +279,8 @@ describe('flattenBundles', () => {
 // ─── Keycloak persona catalogue ───────────────────────────────────────────────
 
 describe('DEMO_PERSONAS', () => {
-  it('has exactly 12 personas', () => {
-    expect(DEMO_PERSONAS).toHaveLength(12);
+  it('has exactly 14 personas', () => {
+    expect(DEMO_PERSONAS).toHaveLength(14);
   });
 
   it('all emails end with @demo.srs', () => {
@@ -291,7 +291,7 @@ describe('DEMO_PERSONAS', () => {
 
   it('all persona IDs are unique', () => {
     const ids = DEMO_PERSONAS.map(p => p.personaId);
-    expect(new Set(ids).size).toBe(12);
+    expect(new Set(ids).size).toBe(14);
   });
 
   it('all persona IDs reference known PERSONA_IDS values', () => {
@@ -317,8 +317,8 @@ describe('DEMO_PERSONAS', () => {
 // ─── PERSONA_IDS completeness ─────────────────────────────────────────────────
 
 describe('PERSONA_IDS', () => {
-  it('has exactly 12 entries', () => {
-    expect(Object.keys(PERSONA_IDS)).toHaveLength(12);
+  it('has exactly 14 entries', () => {
+    expect(Object.keys(PERSONA_IDS)).toHaveLength(14);
   });
 
   it('all values are unique', () => {

@@ -202,6 +202,10 @@ export const examinerReports = pgTable('examiner_report', {
   reportRef:              text('report_ref').notNull(), // opaque pointer — content held in the examiner workspace
   recommendationCode:     text('recommendation_code'), // value set: pgr-examination-outcome-code (reused — preliminary, non-binding)
   submittedAt:            timestamp('submitted_at', { withTimezone: true }).notNull().defaultNow(),
+  /** Who submitted it, and whether the examiner did or staff did on their behalf (Phase 5 D-40). */
+  submittedBy:            text('submitted_by'),
+  entryChannelCode:       text('entry_channel_code'), // examiner-portal | staff-on-behalf
+  onBehalfReason:         text('on_behalf_reason'),
 });
 
 export type ExaminerReport    = typeof examinerReports.$inferSelect;

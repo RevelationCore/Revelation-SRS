@@ -89,11 +89,13 @@ describe('support and employment tab', () => {
     expect(screen.queryByRole('button', { name: 'Approve and instruct payroll' })).not.toBeInTheDocument();
   });
 
-  it('a supervisor sees employment but not support', async () => {
+  it('a supervisor no longer reads support or employment in the admin app (Phase 5 D-40)', async () => {
     server.use(...handlers({ awards: [] }));
     renderWithProviders(<SupportEmploymentTab personId="p1" />, { roles: ['research-supervisor'] });
 
-    expect(await screen.findByText('HR-1')).toBeInTheDocument();
+    // Supervisors see their own supervisees through the portal's Research pages instead.
+    await new Promise((r) => setTimeout(r, 50));
+    expect(screen.queryByText('HR-1')).not.toBeInTheDocument();
     expect(screen.queryByText('Student support')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument();
   });

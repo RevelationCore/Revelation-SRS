@@ -308,6 +308,8 @@ export function recordExaminerReport(caseId: string, body: {
   examinerAppointmentId: string;
   reportRef:             string;
   recommendationCode?:   string;
+  /** Why staff are entering it; examiners submit their own reports in the portal (D-40). */
+  onBehalfReason:        string;
 }): Promise<{ reportId: string }> {
   return api.post(`/api/v1/pgr/examinations/${caseId}/examiner-reports`, body);
 }

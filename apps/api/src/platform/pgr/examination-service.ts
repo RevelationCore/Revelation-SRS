@@ -12,7 +12,7 @@ import {
   type Db,
   withTenantContext,
 } from '@revelation-srs/db';
-import { NotFoundError, ValidationError } from '@revelation-srs/domain';
+import { ConflictError, NotFoundError, ValidationError } from '@revelation-srs/domain';
 
 import type { BusinessCaseService } from '../cases/business-case-service.js';
 import { clockNow } from '../clock.js';
@@ -53,6 +53,11 @@ export interface RecordExaminerReportInput {
   examinerAppointmentId: string;
   reportRef:              string;
   recommendationCode?:    string;
+  /** Who submitted it (D-40). */
+  submittedBy:            string;
+  /** The examiner through the portal, or staff entering it for them (with a reason). */
+  entryChannelCode:       'examiner-portal' | 'staff-on-behalf';
+  onBehalfReason?:        string;
 }
 
 export interface RecordVivaInput {
@@ -105,6 +110,8 @@ export interface ExaminerReportDto {
   reportRef:             string;
   recommendationCode:    string | null;
   submittedAt:           Date;
+  submittedBy:           string | null;
+  entryChannelCode:      string | null;
 }
 
 export interface VivaEventDto {
@@ -132,6 +139,13 @@ export interface CorrectionRequirementDto {
 }
 
 export class ExaminationService {
+  #accounts: ((tenantId: string, personId: string, changeKey: string) => Promise<void>) | null = null;
+
+  /** An examiner's portal access follows their appointments (D-38, D-40). */
+  useAccountRequests(request: (tenantId: string, personId: string, changeKey: string) => Promise<void>): void {
+    this.#accounts = request;
+  }
+
   constructor(
     private readonly db: Db,
     private readonly businessCases: BusinessCaseService,
@@ -250,9 +264,10 @@ export class ExaminationService {
           eq(examinerAppointments.id, appointmentId as Uuid),
           eq(examinerAppointments.tenantId, tenantId as Uuid),
         ))
-        .returning({ id: examinerAppointments.id });
+        .returning({ id: examinerAppointments.id, personId: examinerAppointments.personId });
       if (!updated[0]) throw new NotFoundError('ExaminerAppointment', appointmentId);
-    });
+      return updated[0];
+    }).then(async (row) => { await this.#accounts?.(tenantId, row.personId, `examiner-recused:${appointmentId}`); });
   }
 
   /**
@@ -296,12 +311,28 @@ export class ExaminationService {
       effectiveAt:      now,
     });
     await this.businessCases.advanceCaseStatus(examinationCase.businessCaseId, tenantId, 'examiners-confirmed', actorId);
+    for (const a of await this.listExaminerAppointments(tenantId, examinationCaseId)) {
+      if (a.confirmedAt && !a.recusedAt) await this.#accounts?.(tenantId, a.personId, `examiners-confirmed:${examinationCaseId}:${a.personId}`);
+    }
   }
 
+  /**
+   * Records an examiner's independent preliminary report (D-40). Only for
+   * a confirmed panel, an appointment on this case that is confirmed,
+   * independence-checked and not recused, and only one per appointment.
+   * Staff entering a report for an examiner must say why.
+   */
   async recordExaminerReport(tenantId: string, examinationCaseId: string, input: RecordExaminerReportInput): Promise<string> {
     const examinationCase = await this.#getCase(tenantId, examinationCaseId);
     if (examinationCase.statusCode !== 'examiners-confirmed') {
-      throw new ValidationError('Examiner reports can only be recorded once the panel is confirmed');
+      throw new ConflictError('Examiner reports can only be recorded once the panel is confirmed');
+    }
+    const appointment = (await this.listExaminerAppointments(tenantId, examinationCaseId)).find((a) => a.appointmentId === input.examinerAppointmentId);
+    if (!appointment) throw new ConflictError('This examiner is not appointed to this examination');
+    if (!appointment.confirmedAt || !appointment.independenceCheckedAt) throw new ConflictError('This examiner\'s appointment is not yet confirmed and independence-checked');
+    if (appointment.recusedAt) throw new ConflictError('This examiner has been recused');
+    if (input.entryChannelCode === 'staff-on-behalf' && !input.onBehalfReason?.trim()) {
+      throw new ValidationError('Say why the report is being entered for the examiner');
     }
     if (input.recommendationCode) {
       const isValidRecommendation = await this.valueSets.validateFieldValue('examiner_report', 'recommendation_code', input.recommendationCode, tenantId);
@@ -311,17 +342,27 @@ export class ExaminationService {
     }
 
     const reportId = randomUUID();
-    await withTenantContext(this.db, tenantId, async (tx) => {
-      await tx.insert(examinerReports).values({
-        id:                     reportId,
-        tenantId:               tenantId as Uuid,
-        examinationCaseId:      examinationCaseId as Uuid,
-        examinerAppointmentId:  input.examinerAppointmentId as Uuid,
-        reportRef:              input.reportRef,
-        recommendationCode:     input.recommendationCode ?? null,
-        submittedAt:            clockNow(),
+    try {
+      await withTenantContext(this.db, tenantId, async (tx) => {
+        await tx.insert(examinerReports).values({
+          id:                     reportId,
+          tenantId:               tenantId as Uuid,
+          examinationCaseId:      examinationCaseId as Uuid,
+          examinerAppointmentId:  input.examinerAppointmentId as Uuid,
+          reportRef:              input.reportRef,
+          recommendationCode:     input.recommendationCode ?? null,
+          submittedAt:            clockNow(),
+          submittedBy:            input.submittedBy,
+          entryChannelCode:       input.entryChannelCode,
+          onBehalfReason:         input.onBehalfReason?.trim() ?? null,
+        });
       });
-    });
+    } catch (err) {
+      if (isUniqueViolation(err)) {
+        throw new ConflictError('This examiner has already submitted their report');
+      }
+      throw err;
+    }
     return reportId;
   }
 
@@ -554,6 +595,8 @@ function reportToDto(row: typeof examinerReports.$inferSelect): ExaminerReportDt
     reportRef:             row.reportRef,
     recommendationCode:    row.recommendationCode,
     submittedAt:           row.submittedAt,
+    submittedBy:           row.submittedBy,
+    entryChannelCode:      row.entryChannelCode,
   };
 }
 
@@ -585,4 +628,13 @@ function requirementToDto(row: typeof thesisCorrectionRequirements.$inferSelect)
     completedAt:   row.completedAt,
     completedBy:   row.completedBy,
   };
+}
+
+function isUniqueViolation(error: unknown): boolean {
+  let current: unknown = error;
+  while (current && typeof current === 'object') {
+    if ((current as { code?: string }).code === '23505') return true;
+    current = (current as { cause?: unknown }).cause;
+  }
+  return false;
 }
