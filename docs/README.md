@@ -2,7 +2,7 @@
 
 > Status: Current collaborator-facing documentation index
 >
-> Last reviewed: 2026-07-27
+> Last reviewed: 2026-11-18
 
 This index separates maintained product knowledge from superseded delivery evidence. Start with the current capability matrix before relying on a document's implementation claims.
 
@@ -16,6 +16,8 @@ This index separates maintained product knowledge from superseded delivery evide
 | Browse business processes | [UK HE business process library](business-processes/README.md) |
 | Set up a development environment | [Developer setup](developer-setup.md) |
 | Try and appraise the product | [Appraisal pack](appraisal/README.md) |
+| See what was built, phase by phase | [Academic journey gap-closure plan](product/academic-journey-gap-closure-plan.md) |
+| Use the app for a business area | [User guides](user-guides/) |
 | Contribute a change | [Contributor guide](../CONTRIBUTING.md) |
 
 ## Product analysis
@@ -35,12 +37,13 @@ This index separates maintained product knowledge from superseded delivery evide
 
 - [Requirements](requirements/) contains functional, non-functional, actor, workflow and data-subject catalogues.
 - [Architecture](architecture/README.md) explains the current and target technical design.
-- [Architecture decisions](decisions/) records accepted and proposed design choices.
+- [Architecture decisions](decisions/) records accepted and proposed design choices: ADR-001 to ADR-025, and the decision records for each gap-closure phase ([Phase 1](decisions/phase-1-gap-closure-decisions.md) to [Phase 5](decisions/phase-5-gap-closure-decisions.md)).
+- [SME review register](business-processes/sme-review-register.md) records which processes have been submitted for subject-matter-expert review; the [Phases 1 to 5 change review](business-processes/sme-change-review-phases-1-5.md) is the pack awaiting reviewers.
 - [Reference model](reference/revelation-student-records-reference-model.md) describes the wider UK HE systems landscape.
 
 ## Build, integrate and operate
 
-- [Integration guides](integrations/developer-guide.md) cover REST, events, file contracts and worked examples.
+- [Integration guides](integrations/developer-guide.md) cover REST, events, file contracts and worked examples; [outbound delivery](integrations/outbound-delivery.md) explains the delivery ledger used for systems with no live link.
 - [Demo scenarios](demo-scenarios/README.md) provide repeatable application walkthroughs and datasets.
 - [Migration runbook](migration-runbook.md) covers legacy data import.
 - [Operational runbooks](runbooks/README.md) cover service operation and incident response.

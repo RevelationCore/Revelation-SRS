@@ -1,7 +1,7 @@
 # Domain Event Taxonomy
 
 > Status: Reconciled with implementation — Phase 7 Stage 2
-> Last updated: 2026-06-15
+> Last updated: 2026-11-18 (engagement, delivery and module-selection events added; checked against `schemas/events/registry.json`, 68 published events)
 > Authoritative source of truth: `packages/domain/src/events/index.ts` (`EVENT_TYPES`) and `schemas/events/registry.json`.
 >
 > The Phase 2 draft of this document described planned events. Phases 4–6 implementation introduced domain namespace restructuring and additions. This document reflects the **as-built** state. Planned events that are not yet implemented are listed in the [Backlog](#backlog--not-yet-implemented) section.
@@ -76,8 +76,35 @@ interface DomainEventEnvelope<T> {
 | `srs.enrolment.module-registered` | standard | `enrolmentId` | vle-adapter, timetabling-adapter, finance-adapter |
 | `srs.enrolment.module-registration-withdrawn` | standard | `enrolmentId` | vle-adapter, timetabling-adapter |
 | `srs.enrolment.module-registration-completed` | standard | `enrolmentId` | vle-adapter, transcript-service |
+| `srs.enrolment.module-selection-proposal-submitted` | standard | `enrolmentId` | registry-workflow |
+| `srs.enrolment.module-selection-proposal-decided` | standard | `enrolmentId` | vle-adapter, timetabling-adapter |
 
 > `srs.enrolment.downstream-trigger-created` exists but is **internal-only** — see [Internal Events](#internal-events).
+
+### Engagement (`srs.engagement.*`)
+
+Published by the attendance and engagement module (`modules/attendance`) and the core engagement-outcome hand-off.
+
+| Subject | Data Class | Partition Key | Consumers |
+|---|---|---|---|
+| `srs.engagement.expected-event.created` | personal | `personId` | attendance-adapter, engagement-service |
+| `srs.engagement.observation.recorded` | sensitive | `personId` | engagement-service |
+| `srs.engagement.observation.corrected` | sensitive | `observationId` | engagement-service, integration-operations |
+| `srs.engagement.alert.raised` | sensitive | `personId` | engagement-service, personal-tutor-portal |
+| `srs.engagement.alert.suspended` | sensitive | `personId` | engagement-service, integration-operations |
+| `srs.engagement.intervention.opened` | sensitive | `personId` | engagement-service, personal-tutor-portal |
+| `srs.engagement.intervention.reviewed` | sensitive | `personId` | engagement-service |
+| `srs.engagement.intervention.closed` | sensitive | `personId` | engagement-service, bi-adapter |
+| `srs.engagement.referral.created` | sensitive | `personId` | wellbeing-module, sponsor-compliance-service |
+| `srs.engagement.outcome-recorded` | sensitive | `personId` | bi-adapter |
+
+### Delivery (`srs.delivery.*`)
+
+| Subject | Data Class | Partition Key | Consumers |
+|---|---|---|---|
+| `srs.delivery.requested` | personal | `deliveryItemId` | delivery-connector |
+
+`srs.delivery.requested` is the outbox event for a connected target on the platform delivery ledger ([outbound delivery](../integrations/outbound-delivery.md)); manual and file targets are worked from the admin Integration tasks queue instead.
 
 ### Catalogue (`srs.catalogue.*`)
 

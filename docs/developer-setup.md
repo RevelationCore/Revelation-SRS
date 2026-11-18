@@ -13,7 +13,7 @@
 | Docker | 24 | [docs.docker.com](https://docs.docker.com/get-docker/) |
 | Git | 2.40 | system package manager |
 
-On macOS, [OrbStack](https://orbstack.dev) is a faster Docker-compatible runtime that works without any configuration changes.
+On macOS, [OrbStack](https://orbstack.dev) is a faster Docker-compatible runtime that works as a drop-in replacement. Testcontainers needs to find its socket, so set `export DOCKER_HOST=unix://$HOME/.orbstack/run/docker.sock` before running integration tests.
 
 ---
 
@@ -88,7 +88,7 @@ Integration tests use [Testcontainers](https://node.testcontainers.org/) and man
 |---|---|---|
 | SRS API | `http://localhost:3000` | — |
 | API health | `http://localhost:3000/health` | — |
-| Swagger UI | `http://localhost:3000/documentation` | — |
+| Swagger UI | `http://localhost:3000/api/v1/docs` | — |
 | Temporal UI | `http://localhost:8233` | — |
 | Keycloak admin | `http://localhost:8081` | admin / admin |
 | Grafana | `http://localhost:3001` | admin / admin |
@@ -117,7 +117,7 @@ pnpm demo:validate ci-golden
 
 `ci-golden` has four students, one per enrolment status. It also carries an award path and a resit path: the graduated student has a ratified 2023-24 result covered by the ratified exam board, so an award can be recommended and conferred on the student record's Awards tab; the enrolled student has a failed module and a ratified resit decision, so a reassessment plan can be added.
 
-Available scenarios: `ci-golden`, `applicant-pipeline`, `enrolment-induction`, `module-selection`, `assessment-marks`, `graduation-ceremony`, `institution-year`.
+Available scenarios: `ci-golden`, `curriculum-baseline`, `applicant-pipeline`, `enrolment-induction`, `module-selection`, `assessment-marks`, `exam-board`, `pgr-lifecycle`, `institution-year`. Run `pnpm demo:list` for the current list.
 
 ---
 
@@ -127,25 +127,34 @@ Available scenarios: `ci-golden`, `applicant-pipeline`, `enrolment-induction`, `
 apps/
   api/          Fastify REST API — core SRS platform
   admin/        React admin UI
-  portal/       React student portal
+  portal/       React self-service portal (students, applicants, researchers)
 modules/
-  wellbeing/    First-party wellbeing module (separate Fastify service)
+  wellbeing/    Wellbeing and reasonable-adjustments module (separate Fastify service)
+  attendance/   Attendance and engagement module (separate Fastify service)
 adapters/
   vle/          VLE integration adapter (separate Fastify service)
 packages/
+  db/           Drizzle schema, migrations and database helpers
   domain/       Shared domain types, permissions, value sets
-  ui/           Shared React component library
+  auth/         Keycloak/JWT authentication helpers
+  workflow/     GovernedReview and Temporal workflow platform
+  documents/    Document storage and evidence library
+  demo-data/    Demo scenario loader, validation and rotation
   migration-tools/  Data migration tooling
+  testing/      Shared test helpers
+  ui/           Shared React component library
 infra/
   compose/      Docker Compose configuration
   docker/       Multi-stage Dockerfiles for production images
   k8s/          Kustomize manifests (base + overlays)
   k6/           Load testing suites
   prometheus/   Alert rules
+  zap/          OWASP ZAP baseline scan configuration
 schemas/
-  events/       NATS JetStream event schemas
-docs/           Architecture, requirements, runbooks, and release evidence
-e2e/            Playwright end-to-end tests
+  events/       NATS JetStream event schemas and registry
+  file-contracts/  File-exchange contracts for systems without a live link
+docs/           Architecture, requirements, business processes, guides and runbooks
+e2e/            Playwright browser tests (mocked UI, journeys, UAT)
 ```
 
 ---
@@ -154,7 +163,7 @@ e2e/            Playwright end-to-end tests
 
 1. Fork the repository and create a feature branch from `main`.
 2. Make your change with tests.
-3. Run `pnpm typecheck && pnpm lint && pnpm test && pnpm test:int`.
+3. Run `pnpm test:quick`, then `pnpm test:service` if you changed API, database or module code.
 4. Commit with `-s` to sign off: `git commit -s -m "feat: ..."`.
 5. Open a PR using the PR template.
 
@@ -174,7 +183,8 @@ See [CONTRIBUTING.md](../CONTRIBUTING.md) for the full contribution guide and si
 | `pnpm typecheck` | TypeScript type check across all packages |
 | `pnpm lint` | ESLint across all packages |
 | `pnpm migrate` | Apply all pending database migrations |
-| `pnpm generate:openapi` | Regenerate `apps/api/openapi/v1.json` |
+| `pnpm --filter @revelation-srs/api generate:openapi` | Regenerate `apps/api/openapi/v1.json` |
+| `pnpm demo:list` | List the available demo scenarios |
 | `pnpm demo:reset <slug>` | Load a named demo scenario |
 | `pnpm demo:validate <slug>` | Validate a named demo scenario |
 | `pnpm demo:status` | Show which scenario is currently loaded |

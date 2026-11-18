@@ -11,7 +11,7 @@ An open source Student Records System for UK Higher Education.
 
 ## What is Revelation SRS?
 
-Revelation SRS is a fully open source Student Information System designed specifically for the UK HE sector. It provides institutions with a standards-aligned, adaptable alternative to proprietary SRS platforms, built from the ground up on the [Revelation Student Records Enterprise Reference Model](docs/reference/revelation-student-records-reference-model.md) — a published reference architecture covering 33 systems, actors, and 70 integration flows across the UK HE enterprise.
+Revelation SRS is a fully open source Student Information System designed specifically for the UK HE sector. It provides institutions with a standards-aligned, adaptable alternative to proprietary SRS platforms, built from the ground up on the [Revelation Student Records Enterprise Reference Model](docs/reference/revelation-student-records-reference-model.md) — a published reference architecture covering 33 systems and actors and 69 integration flows across the UK HE enterprise.
 
 ### Key characteristics
 
@@ -31,8 +31,9 @@ Revelation SRS is a fully open source Student Information System designed specif
 | Document | Description |
 |---|---|
 | [Documentation Home](docs/README.md) | Collaborator-oriented guide to the current documentation set |
-| [Core Principles](docs/core-principles.md) | 21 non-negotiable principles governing design, development, and operation |
+| [Core Principles](docs/core-principles.md) | 23 non-negotiable principles governing design, development, and operation |
 | [Current Capabilities](docs/product/current-capabilities.md) | Authoritative implemented, partial and proposed capability status |
+| [Academic Journey Gap-Closure Plan](docs/product/academic-journey-gap-closure-plan.md) | The five delivered phases that brought all 49 academic-journey processes into the app |
 | [Domain Glossary](docs/domain-glossary.md) | Authoritative definitions of all UK HE domain terms used in the system |
 | **Requirements** | |
 | [Functional Requirements](docs/requirements/functional-requirements.md) | 140+ testable requirements traced to reference model flows |
@@ -47,9 +48,9 @@ Revelation SRS is a fully open source Student Information System designed specif
 | [Data Model](docs/architecture/data-model.md) | Entity model, bitemporal schema pattern, multi-tenancy via RLS |
 | [Business Process Data-Model Delta](docs/architecture/business-process-data-model-delta.md) | BPR-D01–D19 assessment against logical and implemented schemas |
 | [Business Process Target Data Model](docs/architecture/business-process-target-data-model.md) | Proposed aggregates and ER relationships |
-| [Business Process Data Migration Plan](docs/architecture/business-process-data-migration-plan.md) | Staged expand/backfill/cutover plan from migration 0033 |
+| [Business Process Data Migration Plan](docs/architecture/business-process-data-migration-plan.md) | Historical migration plan, now the procedure for re-squashing the core migrations |
 | [Integration Layer](docs/architecture/integration-layer.md) | Event bus topology, REST API gateway, file exchange framework, plugin registry |
-| [Domain Events](docs/architecture/domain-events.md) | Complete event taxonomy (~95 events) with payload schemas and consumers |
+| [Domain Events](docs/architecture/domain-events.md) | Event taxonomy: the 68 published events, internal events and the backlog |
 | [Integration Contract Catalogue](docs/architecture/integration-contract-catalogue.md) | Named contracts for all 69 reference model flows with failure handling and replay |
 | [Event Coverage Matrix](docs/architecture/event-coverage-matrix.md) | Every entity/operation mapped to its domain event or no-event rationale |
 | [Workflow Traceability Matrix](docs/architecture/workflow-traceability-matrix.md) | W001–W012 mapped to entities, events, contracts, and audit obligations |
@@ -61,11 +62,12 @@ Revelation SRS is a fully open source Student Information System designed specif
 | [Workflow Engine Integration](docs/architecture/workflow-engine-integration.md) | Temporal integration: workflow patterns, human tasks, audit bridge |
 | [Deployment Architecture](docs/architecture/deployment-architecture.md) | Docker Compose (local + single institution), Kubernetes (multi-institution) |
 | **Reference Model** | |
-| [Reference Model Article](docs/reference/revelation-student-records-reference-model.md) | The Revelation Student Records Enterprise Reference Model (v2.1) |
+| [Reference Model Article](docs/reference/revelation-student-records-reference-model.md) | The Revelation Student Records Enterprise Reference Model (v3.0) |
 | [Reference Model JSON](docs/reference/revelation-student-records-enterprise-reference-model-3.0.json) | Full model JSON (33 systems, 69 flows) |
 | **Decisions** | |
 | [Technology Stack](docs/decisions/technology-stack.md) | Complete stack summary with licence and ADR references |
 | [ADR Index](#architecture-decision-records) | All architecture decision records |
+| [Gap-closure decisions](docs/decisions/phase-5-gap-closure-decisions.md) | Decision records for each delivery phase ([1](docs/decisions/phase-1-gap-closure-decisions.md), [2](docs/decisions/phase-2-gap-closure-decisions.md), [3](docs/decisions/phase-3-gap-closure-decisions.md), [4](docs/decisions/phase-4-gap-closure-decisions.md), [5](docs/decisions/phase-5-gap-closure-decisions.md)) |
 
 ---
 
@@ -92,14 +94,13 @@ Full rationale: [docs/decisions/technology-stack.md](docs/decisions/technology-s
 
 ## Project Status
 
-Revelation SRS has substantial implemented foundations, services, integrations and user interfaces, but it is not currently represented as production-complete. The UK-wide process review identified material gaps in business authority, process decomposition, data modelling and cross-system reconciliation.
+Revelation SRS has substantial implemented foundations, services, integrations and user interfaces, but it is not represented as production-complete. All 49 academic-journey processes, from application to graduation, can be carried out in the app; six of them reach their external party (UCAS, SMS, Finance, IAM, timetabling) by manual file or an in-repo simulator until live links are agreed. Subject-matter-expert and independent reviews of the processes have been submitted and await reviewer nomination, so no process page is yet approved.
 
 | Current classification | Position |
 |---|---|
-| Implemented baseline | Tenant/temporal foundations, workflow platform and core identity/profile |
-| Partial | Admissions, CAS, registration, curriculum/modules, support, assessment/boards, awards, regulatory exchange, integrations and governance |
-| Proposed target | Attendance/engagement, PGR lifecycle and the newly reviewed P0 architecture |
-| Verification | Documentation checks, repository-wide typecheck and unit tests pass; clean-clone application bootstrap is not yet verified |
+| Implemented baseline | Tenant/temporal foundations, workflow platform, core identity/profile, and all twelve academic-journey capabilities: admissions, CAS, registration and status, curriculum, module selection, attendance and engagement, adjustments and exceptional circumstances, assessment, exam boards, post-ratification correction, progression and awards, and the PGR lifecycle |
+| Partial | Regulatory exchanges, integration operations, individual rights/retention/audit, the portal and administration UI as a whole, and demo/migration tooling |
+| Verification | Documentation checks, typecheck, lint, unit, component, integration and mocked UI suites pass in CI; clean-clone bootstrap verified 2026-08-03 |
 
 The [Current Capability Matrix](docs/product/current-capabilities.md) is the authority for project status. Superseded plans and review evidence are available through the preservation references described in [Documentation History](docs/history.md).
 
@@ -169,14 +170,16 @@ Pre-seeded datasets that represent realistic points in the academic year:
 | Scenario | Slug | Students | Load time | Walkthroughs |
 |---|---|---|---|---|
 | CI Golden | `ci-golden` | 4 | ~5 sec | Tests only |
-| S1 — Applicant Pipeline | `applicant-pipeline` | ~200 | ~20 sec | [s1-applicant-pipeline.md](docs/demo-scenarios/s1-applicant-pipeline.md) |
+| Curriculum Baseline | `curriculum-baseline` | 0 (programmes, modules and rules only) | ~5 sec | — |
+| S1 — Applicant Pipeline | `applicant-pipeline` | 600 applicants | ~20 sec | [s1-applicant-pipeline.md](docs/demo-scenarios/s1-applicant-pipeline.md) |
 | S2 — Enrolment and Induction | `enrolment-induction` | 1,000 | ~30 sec | [s2-enrolment-induction.md](docs/demo-scenarios/s2-enrolment-induction.md) |
 | S3 — Module Selection Peak | `module-selection` | 1,000 | ~30 sec | [s3-module-selection.md](docs/demo-scenarios/s3-module-selection.md) |
 | S4 — Assessment Marks | `assessment-marks` | 1,000 | ~45 sec | [s4-assessment-marks.md](docs/demo-scenarios/s4-assessment-marks.md) |
 | S5 — Exam Board and Ratification | `exam-board` | 1,000 | ~45 sec | [s5-exam-board.md](docs/demo-scenarios/s5-exam-board.md) |
 | S6 — Full-Institution Year | `institution-year` | 50,000 | ~10 min | [s6-institution-year.md](docs/demo-scenarios/s6-institution-year.md) |
+| PGR Lifecycle | `pgr-lifecycle` | 6 research students | ~5 sec | [PGR personas](docs/demo-scenarios/README.md#self-service-portal-personas) |
 
-Each S1–S6 walkthrough document describes the user personas, demo accounts, and step-by-step stories for that scenario. See [docs/demo-scenarios/README.md](docs/demo-scenarios/README.md) for instructions on how to run through them.
+`pnpm demo:list` lists every scenario slug. Each S1–S6 walkthrough document describes the user personas, demo accounts, and step-by-step stories for that scenario. See [docs/demo-scenarios/README.md](docs/demo-scenarios/README.md) for instructions on how to run through them.
 
 ```bash
 # Load a scenario (replace the slug with your choice above)
@@ -224,17 +227,17 @@ Supported source systems: `sits`, `banner`. See [docs/migration-runbook.md](docs
 pnpm dev
 ```
 
-This starts the API, admin console, student portal, wellbeing module, and VLE adapter in watch mode. File changes restart the affected service automatically.
+This starts the API, admin console, student portal, wellbeing module, attendance module and VLE adapter in watch mode. File changes restart the affected service automatically.
 
 ### Service endpoints
 
 | Service | URL | Credentials |
 |---|---|---|
-| Admin console | http://localhost:5173 | Keycloak demo accounts |
-| Student portal | http://localhost:5174 | Keycloak demo accounts |
+| Admin console | http://localhost:5173 | Keycloak demo accounts (password `Demo-2026!`) |
+| Self-service portal (students, applicants, research staff) | http://localhost:5174 | Keycloak demo accounts (password `Demo-2026!`) |
 | SRS API | http://localhost:3000 | — |
 | API health | http://localhost:3000/health | — |
-| Swagger UI | http://localhost:3000/documentation | — |
+| Swagger UI | http://localhost:3000/api/v1/docs | — |
 | Keycloak admin | http://localhost:8081 | admin / admin |
 | Temporal UI | http://localhost:8233 | — |
 | Grafana | http://localhost:3001 | admin / admin |
@@ -247,7 +250,8 @@ This starts the API, admin console, student portal, wellbeing module, and VLE ad
 # Unit tests — no Docker required (~2 min)
 pnpm test
 
-# Integration tests — Docker required, Testcontainers manages its own DB (~5 min)
+# Integration tests — Docker required, Testcontainers manages its own DB (~10 min)
+# On OrbStack, Testcontainers needs: export DOCKER_HOST=unix://$HOME/.orbstack/run/docker.sock
 pnpm test:int
 
 # Type check
@@ -287,12 +291,15 @@ Full developer setup guide, including troubleshooting and monorepo commands: [do
 | [ADR-020](docs/decisions/ADR-020-staged-assessment-authority-and-ratification-lock.md) | Staged assessment authority and ratification lock |
 | [ADR-021](docs/decisions/ADR-021-governed-identity-rights-retention-and-audit.md) | Governed identity, rights, retention and audit |
 | [ADR-022](docs/decisions/ADR-022-cas-and-sponsor-compliance-evidence-boundary.md) | CAS and sponsor-compliance evidence boundary |
+| [ADR-023](docs/decisions/ADR-023-pgr-supervision-and-examination-authority.md) | PGR supervision and examination governed as business cases |
+| [ADR-024](docs/decisions/ADR-024-live-temporal-execution.md) | Live Temporal execution behind a rollout flag |
+| [ADR-025](docs/decisions/ADR-025-self-service-audiences-and-identity-binding.md) | Self-service audiences and identity binding |
 
 ---
 
 ## Reference Model
 
-Revelation SRS is built on the **Revelation Student Records Enterprise Reference Model v2.1** — a published reference architecture for UK HE student records ecosystems.
+Revelation SRS is built on the **Revelation Student Records Enterprise Reference Model v3.0** — a published reference architecture for UK HE student records ecosystems.
 
 - [Reference model article](https://revelationcore.com/blogs/the-revelation-student-records-reference-model.html)
 - [Local copy — article](docs/reference/revelation-student-records-reference-model.md)

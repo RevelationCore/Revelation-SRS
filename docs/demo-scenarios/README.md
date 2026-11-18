@@ -44,6 +44,11 @@ All demo accounts use the password **`Demo-2026!`**.
 | `dpo` | Admin | Data Protection Officer |
 | `examiner` | Admin | External Examiner (read-only) |
 | `ops` | Admin | Platform Operator |
+| `sysadmin` | Admin | System and Tenant Administrator |
+| `dee.applicant` | Portal | Applicant, direct channel (see [self-service portal personas](#self-service-portal-personas)) |
+| `uma.applicant` | Portal | Applicant, UCAS channel |
+| `helena.cross` | Portal | PGR supervisor |
+| `david.okonkwo` | Portal | External PGR examiner |
 
 **4. Follow the steps in the story**
 
@@ -61,3 +66,20 @@ Each story is self-contained. Steps describe what to do and what to expect. Plac
 | S4 — Assessment Marks | `assessment-marks` | [s4-assessment-marks.md](s4-assessment-marks.md) |
 | S5 — Exam Board and Ratification | `exam-board` | [s5-exam-board.md](s5-exam-board.md) |
 | S6 — Full-Institution Year | `institution-year` | [s6-institution-year.md](s6-institution-year.md) |
+| Curriculum Baseline | `curriculum-baseline` | — (programmes, modules, offerings and rules only) |
+| PGR Lifecycle | `pgr-lifecycle` | [Self-service portal personas](#self-service-portal-personas) |
+
+`pnpm demo:list` lists every scenario.
+
+---
+
+## Self-service portal personas
+
+The portal serves applicants and research staff as well as students (Phase 5, [ADR-025](../decisions/ADR-025-self-service-audiences-and-identity-binding.md)). Each persona is bound to its person record in the default demo tenant, so load the scenario that holds that record first. The Keycloak accounts themselves are created for every persona by any scenario with a personas phase (for example `applicant-pipeline`) or by `pnpm setup:keycloak`; `pgr-lifecycle` does not create them, so run `pnpm setup:keycloak` once if it is the only scenario you load.
+
+| Username | Load | What to try |
+|---|---|---|
+| `dee.applicant` | `applicant-pipeline` | Applications: open the BSc Computer Science application, accept or decline the conditional offer, upload evidence for the AAB condition, or withdraw. In the admin app, the evidence appears on the application unverified. |
+| `uma.applicant` | `applicant-pipeline` | Applications: the same offer, with a notice that UCAS applicants reply and withdraw in UCAS Hub; no reply or withdraw controls. |
+| `helena.cross` | `pgr-lifecycle` | Research: her research students, their supervisory team, milestones, progress reviews and examination stage; a supervisor report can be added to an open review. Examiner reports are never shown. |
+| `david.okonkwo` | `pgr-lifecycle` | Research: Taylor's examination, where he has not yet reported. Download the thesis, submit a preliminary report with a recommendation, and see the internal examiner's report only once both are in. |

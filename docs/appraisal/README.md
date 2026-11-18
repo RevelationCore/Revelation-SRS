@@ -33,7 +33,7 @@ Start the environment using [TRY.md](../../TRY.md). Confirm that both applicatio
 
 Do not use a click-by-click script. Begin at the dashboard and complete the goal using the navigation and language available to you.
 
-Known limitations: timetable-clash and ranked-allocation rules are incomplete; some changes require staff approval; a request is not the same as an effective registration. Consult the capability matrix if the product boundary is unclear.
+Known limitations: timetabling is reached by file or simulator, and clash checking is pairwise, so a clash arising only across three or more group choices can be missed; in a ranked selection window a submitted choice waits for allocation; some changes require staff approval; a request is not the same as an effective registration. Consult the capability matrix if the product boundary is unclear.
 
 Feedback prompts:
 
@@ -80,7 +80,7 @@ pnpm evaluate --scenario exam-board
 | Goal | Review a board, establish quorum/conflict/decision status and determine whether its outcomes are safe to ratify or publish |
 | Completion condition | You can explain the current governance state, evidence used, available authority and next permitted action |
 
-Known limitations: pack hashes and rule-manifest references are not yet populated by pack generation. Treat this as a material appraisal limitation, not a hidden implementation detail.
+Known limitations: the board's decision and its ratification record can be made by the same person; rule drift in a pack is a warning unless the institution sets it to block. Each pack carries a content hash and rule manifest, and the authority tab can verify it.
 
 Feedback prompts:
 
