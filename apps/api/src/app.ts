@@ -895,7 +895,10 @@ export async function buildApp(
   await fastify.register(applicationRoutes,         { prefix: '/api/v1' });
   await fastify.register(applicantPortalRoutes,     { prefix: '/api/v1' });
   await fastify.register(engagementOutcomeRoutes,   { prefix: '/api/v1' });
-  await fastify.register(engagementProxyRoutes,     { prefix: '/api/v1' });
+  await fastify.register(engagementProxyRoutes,     {
+    prefix: '/api/v1',
+    ...(config.engagementProxyTimeoutMs !== undefined ? { timeoutMs: config.engagementProxyTimeoutMs } : {}),
+  });
   await fastify.register(circumstancesRoutes,       { prefix: '/api/v1' });
   await fastify.register(examBoardRoutes,           { prefix: '/api/v1' });
   await fastify.register(boardAuthorityRoutes,      { prefix: '/api/v1' });

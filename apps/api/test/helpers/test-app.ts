@@ -34,6 +34,8 @@ async function applyCoreMigrations(db: Db): Promise<void> {
 }
 
 export interface StartTestAppOptions {
+  /** Where the engagement proxy forwards to, and how long it waits. */
+  attendance?: { url: string; timeoutMs?: number };
   /** Validate RS256 tokens against this JWKS, issuer and audience instead of the HS256 test secret. */
   auth?: Pick<Config, 'keycloakJwksUrl' | 'keycloakIssuer' | 'keycloakAudience' | 'jwtClockToleranceSeconds'>;
   /** Inject a spy or stub event bus instead of the default disconnected NATS publisher. */
@@ -102,6 +104,8 @@ export async function startTestApp(opts: StartTestAppOptions = {}): Promise<Test
     jwtSecret:        JWT_SECRET,
     keycloakJwksUrl:  undefined,
     ...opts.auth,
+    attendanceApiUrl: opts.attendance?.url ?? 'http://127.0.0.1:9',
+    ...(opts.attendance?.timeoutMs !== undefined ? { engagementProxyTimeoutMs: opts.attendance.timeoutMs } : {}),
     corsOrigins:      ['http://localhost:5173'],
     otelEndpoint:     undefined,
     otelServiceName:  'srs-api-test',

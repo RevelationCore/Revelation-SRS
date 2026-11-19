@@ -8,6 +8,8 @@ export interface Config {
   databaseUrl:  string;
   natsUrl:      string;
   attendanceApiUrl: string;
+  /** How long the engagement proxy waits for the attendance module (default 15 s). */
+  engagementProxyTimeoutMs?: number | undefined;
   temporalAddress: string;
   /** Live Temporal execution. Off unless TEMPORAL_EXECUTION_ENABLED=true. */
   temporalExecutionEnabled?: boolean;
@@ -74,6 +76,7 @@ export function loadConfig(): Config {
     databaseUrl:     required('DATABASE_URL'),
     natsUrl:         process.env['NATS_URL'] ?? 'nats://localhost:4222',
     attendanceApiUrl: process.env['ATTENDANCE_API_URL'] ?? 'http://localhost:3004',
+    engagementProxyTimeoutMs: optionalInt('ENGAGEMENT_PROXY_TIMEOUT_MS', 15_000),
     temporalAddress: process.env['TEMPORAL_ADDRESS'] ?? 'localhost:7233',
     temporalExecutionEnabled: process.env['TEMPORAL_EXECUTION_ENABLED'] === 'true',
     temporalNamespace: process.env['TEMPORAL_NAMESPACE'] ?? 'srs-local',
