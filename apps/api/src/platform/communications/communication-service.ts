@@ -130,7 +130,7 @@ export class CommunicationService {
   }
 
   async listTemplates(tenantId: string): Promise<CommunicationTemplateDto[]> {
-    const rows = await this.db
+    const rows = await withTenantContext(this.db, tenantId, (tx) => tx
       .select()
       .from(communicationTemplates)
       .where(and(
@@ -140,17 +140,24 @@ export class CommunicationService {
         ),
         eq(communicationTemplates.active, true),
       ))
-      .orderBy(communicationTemplates.templateKey, communicationTemplates.localeCode);
+      .orderBy(communicationTemplates.templateKey, communicationTemplates.localeCode));
 
     return rows.map(templateToDto);
   }
 
-  async getTemplate(templateId: string): Promise<CommunicationTemplateDto> {
-    const rows = await this.db
+  /** A platform template or one of this tenant's own; another tenant's is not found. */
+  async getTemplate(templateId: string, tenantId: string): Promise<CommunicationTemplateDto> {
+    const rows = await withTenantContext(this.db, tenantId, (tx) => tx
       .select()
       .from(communicationTemplates)
-      .where(eq(communicationTemplates.id, templateId as `${string}-${string}-${string}-${string}-${string}`))
-      .limit(1);
+      .where(and(
+        eq(communicationTemplates.id, templateId as `${string}-${string}-${string}-${string}-${string}`),
+        or(
+          isNull(communicationTemplates.tenantId),
+          eq(communicationTemplates.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
+        ),
+      ))
+      .limit(1));
 
     if (!rows[0]) throw new NotFoundError('CommunicationTemplate', templateId);
     return templateToDto(rows[0]);
@@ -304,7 +311,7 @@ export class CommunicationService {
     fallbackLocale:  string,
   ): Promise<CommunicationTemplateDto> {
     const tenantUuid = tenantId as `${string}-${string}-${string}-${string}-${string}`;
-    const candidates = await this.db
+    const candidates = await withTenantContext(this.db, tenantId, (tx) => tx
       .select()
       .from(communicationTemplates)
       .where(and(
@@ -315,7 +322,7 @@ export class CommunicationService {
           isNull(communicationTemplates.tenantId),
           eq(communicationTemplates.tenantId, tenantUuid),
         ),
-      ));
+      )));
 
     // Priority: tenant-specific beats system; preferred locale beats fallback beats en-GB
     const localeOrder = [...new Set([preferredLocale, fallbackLocale, 'en-GB'])];

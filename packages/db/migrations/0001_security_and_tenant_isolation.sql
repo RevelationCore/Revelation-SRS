@@ -68,3 +68,49 @@ BEGIN
   END LOOP;
 END
 $$;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- 3. Row-level security on the remaining tenant tables (item 1.3).
+--
+-- Every table with a tenant_id now has RLS enabled and forced, with at least
+-- one policy. apps/api/test/rls-coverage.int.test.ts fails on any that
+-- does not.
+
+-- Plain tenant data.
+DO $$
+DECLARE t text;
+BEGIN
+  FOREACH t IN ARRAY ARRAY['notification', 'communication_dispatch_log', 'demo_status', 'demo_load_checkpoint'] LOOP
+    EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
+    EXECUTE format('ALTER TABLE %I FORCE ROW LEVEL SECURITY', t);
+    EXECUTE format('DROP POLICY IF EXISTS tenant_isolation ON %I', t);
+    EXECUTE format($p$CREATE POLICY tenant_isolation ON %I
+      USING (tenant_id = (NULLIF(current_setting('app.current_tenant_id', true), ''))::uuid)$p$, t);
+  END LOOP;
+END
+$$;
+
+-- Templates: platform templates (tenant_id NULL) are readable by every
+-- tenant; a tenant writes only its own.
+ALTER TABLE "communication_template" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "communication_template" FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_or_platform_visibility ON "communication_template";
+CREATE POLICY tenant_or_platform_visibility ON "communication_template"
+  USING (tenant_id IS NULL OR tenant_id = (NULLIF(current_setting('app.current_tenant_id', true), ''))::uuid)
+  WITH CHECK (tenant_id = (NULLIF(current_setting('app.current_tenant_id', true), ''))::uuid);
+
+-- The audit trail: a tenant's rows only in that tenant's context, and the
+-- platform (NULL-tenant) chain only outside any tenant context, so no
+-- tenant reads platform activity and platform work never lands in a tenant.
+ALTER TABLE "audit_record" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "audit_record" FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "audit_record";
+CREATE POLICY tenant_isolation ON "audit_record"
+  USING (tenant_id = (NULLIF(current_setting('app.current_tenant_id', true), ''))::uuid);
+DROP POLICY IF EXISTS platform_chain ON "audit_record";
+CREATE POLICY platform_chain ON "audit_record"
+  USING (tenant_id IS NULL AND NULLIF(current_setting('app.current_tenant_id', true), '') IS NULL);
+
+-- These had RLS enabled but not forced.
+ALTER TABLE "ukvi_engagement_evidence_snapshot" FORCE ROW LEVEL SECURITY;
+ALTER TABLE "ukvi_sponsor_decision" FORCE ROW LEVEL SECURITY;

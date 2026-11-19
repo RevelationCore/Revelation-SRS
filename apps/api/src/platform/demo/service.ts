@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm';
-import { demoStatus, tenants, type Db } from '@revelation-srs/db';
+import { demoStatus, tenants, withTenantContext, type Db } from '@revelation-srs/db';
 
 import { clockNow } from '../clock.js';
 
@@ -15,28 +15,26 @@ export interface DemoStatusResponse {
   nextResetAt:   string | null;
 }
 
+type DemoStatusRow = {
+  tenantId: string; scenarioSlug: string; scenarioName: string; schemaVersion: string;
+  referenceDate: string; clockOffsetMs: number; loadedAt: Date; nextResetAt: Date | null;
+};
+
 export class DemoService {
   constructor(private readonly db: Db) {}
 
   async getStatus(): Promise<DemoStatusResponse> {
     // Find the first tenant with demo_mode = true that has a loaded scenario.
-    const rows = await this.db
-      .select({
-        tenantId:      demoStatus.tenantId,
-        scenarioSlug:  demoStatus.scenarioSlug,
-        scenarioName:  demoStatus.scenarioName,
-        schemaVersion: demoStatus.schemaVersion,
-        referenceDate: demoStatus.referenceDate,
-        clockOffsetMs: demoStatus.clockOffsetMs,
-        loadedAt:      demoStatus.loadedAt,
-        nextResetAt:   demoStatus.nextResetAt,
-      })
-      .from(demoStatus)
-      .innerJoin(tenants, eq(demoStatus.tenantId, tenants.id))
-      .where(eq(tenants.demoMode, true))
-      .limit(1);
+    // demo_status is tenant-isolated, so each demo tenant is read in its own
+    // context (the tenant table itself is not tenant data).
+    const demoTenants = await this.db.select({ id: tenants.id }).from(tenants)
+      .where(eq(tenants.demoMode, true)).orderBy(tenants.code);
+    let row: DemoStatusRow | undefined;
+    for (const { id } of demoTenants) {
+      row = await this.#statusFor(id);
+      if (row) break;
+    }
 
-    const row = rows[0];
     if (!row) {
       return {
         active:        false,
@@ -66,5 +64,23 @@ export class DemoService {
       loadedAt:      row.loadedAt.toISOString(),
       nextResetAt:   row.nextResetAt?.toISOString() ?? null,
     };
+  }
+
+  async #statusFor(tenantId: string): Promise<DemoStatusRow | undefined> {
+    const rows = await withTenantContext(this.db, tenantId, (tx) => tx
+      .select({
+        tenantId:      demoStatus.tenantId,
+        scenarioSlug:  demoStatus.scenarioSlug,
+        scenarioName:  demoStatus.scenarioName,
+        schemaVersion: demoStatus.schemaVersion,
+        referenceDate: demoStatus.referenceDate,
+        clockOffsetMs: demoStatus.clockOffsetMs,
+        loadedAt:      demoStatus.loadedAt,
+        nextResetAt:   demoStatus.nextResetAt,
+      })
+      .from(demoStatus)
+      .where(eq(demoStatus.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`))
+      .limit(1));
+    return rows[0];
   }
 }

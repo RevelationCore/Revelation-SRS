@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
 import { and, desc, eq, isNull } from 'drizzle-orm';
-import { notifications, type Db } from '@revelation-srs/db';
+import { notifications, withTenantContext, type Db } from '@revelation-srs/db';
 
 import { clockNow } from '../clock.js';
 
@@ -51,7 +51,7 @@ export class NotificationService {
     const id = randomUUID();
     const now = clockNow();
 
-    await this.db.insert(notifications).values({
+    await withTenantContext(this.db, tenantId, (tx) => tx.insert(notifications).values({
       id,
       tenantId,
       personId:  payload.personId,
@@ -60,7 +60,7 @@ export class NotificationService {
       body:      payload.body,
       linkUrl:   payload.linkUrl ?? null,
       createdAt: now,
-    });
+    }));
 
     const row: NotificationRow = {
       id,
@@ -88,18 +88,18 @@ export class NotificationService {
     ];
     if (unreadOnly) conditions.push(isNull(notifications.readAt));
 
-    const rows = await this.db
+    const rows = await withTenantContext(this.db, tenantId, (tx) => tx
       .select()
       .from(notifications)
       .where(and(...conditions))
       .orderBy(desc(notifications.createdAt))
-      .limit(limit);
+      .limit(limit));
 
     return rows.map(toRow);
   }
 
   async markRead(tenantId: string, personId: string, notificationId: string): Promise<boolean> {
-    const result = await this.db
+    const result = await withTenantContext(this.db, tenantId, (tx) => tx
       .update(notifications)
       .set({ readAt: clockNow() })
       .where(and(
@@ -108,7 +108,7 @@ export class NotificationService {
         eq(notifications.personId, personId),
         isNull(notifications.readAt),
       ))
-      .returning({ id: notifications.id });
+      .returning({ id: notifications.id }));
 
     return result.length > 0;
   }
