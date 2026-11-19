@@ -136,6 +136,9 @@ export const PERMISSION_ROLES = {
   'circumstances:write':                ['registry-administrator'] as Role[],
   /** Decide a proposed EC outcome (D-41); never the proposer or the person who recorded the claim. */
   'circumstances:decide':               ['registry-administrator', 'exam-board-chair'] as Role[],
+  /** Wellbeing EC claims (modules/wellbeing): the advisers who run the claim workflow. Needs institutional sign-off. */
+  'ec-claim:read':                      ['wellbeing-advisor', 'registry-administrator'] as Role[],
+  'ec-claim:manage':                    ['wellbeing-advisor', 'registry-administrator'] as Role[],
   'progression:read':                   ['registry-administrator', 'exam-board-chair', 'exam-board-member'] as Role[],
   'progression:write':                  ['registry-administrator'] as Role[],
   'regulatory:read':                    ['registry-administrator', 'regulatory-officer', 'dpo', 'tenant-administrator', 'system-administrator'] as Role[],

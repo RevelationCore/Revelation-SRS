@@ -1,4 +1,5 @@
 import { Type } from '@sinclair/typebox';
+import { requirePermission } from '@revelation-srs/auth';
 import type { FastifyInstance } from 'fastify';
 
 import { sendProblem } from '../http/problem.js';
@@ -55,7 +56,7 @@ export async function ecClaimRoutes(
       evidenceDeadline?:       string;
       assignedAdvisorId?:      string;
     };
-  }>('/api/v1/ec-claims', { schema: { tags: ['ec-claims'], summary: 'Record an EC claim', body: Type.Object({ personId: Uuid, enrolmentId: Uuid, assessmentPeriodRef: Text, affectedModuleCodes: Type.Array(Text), circumstancesNarrative: Type.Optional(Type.String()), evidenceDeadline: Type.Optional(Type.String()), assignedAdvisorId: Type.Optional(Type.String()) }) } }, async (request, reply) => {
+  }>('/api/v1/ec-claims', { preHandler: [requirePermission('ec-claim:manage')], schema: { tags: ['ec-claims'], summary: 'Record an EC claim', body: Type.Object({ personId: Uuid, enrolmentId: Uuid, assessmentPeriodRef: Text, affectedModuleCodes: Type.Array(Text), circumstancesNarrative: Type.Optional(Type.String()), evidenceDeadline: Type.Optional(Type.String()), assignedAdvisorId: Type.Optional(Type.String()) }) } }, async (request, reply) => {
     const { tenantId } = request;
     const actorId      = request.user.sub;
     const body         = request.body;
@@ -106,7 +107,7 @@ export async function ecClaimRoutes(
 
   fastify.get<{
     Querystring: { personId?: string };
-  }>('/api/v1/ec-claims', { schema: { tags: ['ec-claims'], summary: 'List a person\'s EC claims', querystring: Type.Object({ personId: Type.Optional(Uuid) }) } }, async (request, reply) => {
+  }>('/api/v1/ec-claims', { preHandler: [requirePermission('ec-claim:read')], schema: { tags: ['ec-claims'], summary: 'List a person\'s EC claims', querystring: Type.Object({ personId: Type.Optional(Uuid) }) } }, async (request, reply) => {
     const { tenantId } = request;
     const { personId } = request.query;
 
@@ -127,7 +128,7 @@ export async function ecClaimRoutes(
 
   fastify.get<{
     Params: { claimId: string };
-  }>('/api/v1/ec-claims/:claimId', { schema: { tags: ['ec-claims'], summary: 'Get an EC claim', params: idParams('claimId') } }, async (request, reply) => {
+  }>('/api/v1/ec-claims/:claimId', { preHandler: [requirePermission('ec-claim:read')], schema: { tags: ['ec-claims'], summary: 'Get an EC claim', params: idParams('claimId') } }, async (request, reply) => {
     const { tenantId } = request;
     const actorId      = request.user.sub;
     const { claimId }  = request.params;
@@ -177,7 +178,7 @@ export async function ecClaimRoutes(
   fastify.patch<{
     Params: { claimId: string };
     Body:   { statusCode: string; circumstancesNarrative?: string; evidenceDeadline?: string };
-  }>('/api/v1/ec-claims/:claimId/status', { schema: { tags: ['ec-claims'], summary: 'Change the claim status', params: idParams('claimId'), body: Type.Object({ statusCode: Text, circumstancesNarrative: Type.Optional(Type.String()), evidenceDeadline: Type.Optional(Type.String()) }) } }, async (request, reply) => {
+  }>('/api/v1/ec-claims/:claimId/status', { preHandler: [requirePermission('ec-claim:manage')], schema: { tags: ['ec-claims'], summary: 'Change the claim status', params: idParams('claimId'), body: Type.Object({ statusCode: Text, circumstancesNarrative: Type.Optional(Type.String()), evidenceDeadline: Type.Optional(Type.String()) }) } }, async (request, reply) => {
     const { tenantId } = request;
     const actorId      = request.user.sub;
     const { claimId }  = request.params;
@@ -207,7 +208,7 @@ export async function ecClaimRoutes(
       evidenceStatusCode: string;
       reviewNotes?:       string;
     };
-  }>('/api/v1/ec-claims/:claimId/evidence-reviews', { schema: { tags: ['ec-claims'], summary: 'Record an evidence review', params: idParams('claimId'), body: Type.Object({ reviewerId: Text, reviewedAt: DateText, evidenceStatusCode: Text, reviewNotes: Type.Optional(Type.String()) }) } }, async (request, reply) => {
+  }>('/api/v1/ec-claims/:claimId/evidence-reviews', { preHandler: [requirePermission('ec-claim:manage')], schema: { tags: ['ec-claims'], summary: 'Record an evidence review', params: idParams('claimId'), body: Type.Object({ reviewerId: Text, reviewedAt: DateText, evidenceStatusCode: Text, reviewNotes: Type.Optional(Type.String()) }) } }, async (request, reply) => {
     const { tenantId } = request;
     const actorId      = request.user.sub;
     const { claimId }  = request.params;
@@ -269,7 +270,7 @@ export async function ecClaimRoutes(
       moduleOutcomes:          Array<{ moduleCode: string; outcome: string }>;
       determinedAt:            string;
     };
-  }>('/api/v1/ec-claims/:claimId/determine', { schema: { tags: ['ec-claims'], summary: 'Determine the claim', params: idParams('claimId'), body: Type.Object({ authorisedById: Text, determinationCode: Text, determinationRationale: Type.Optional(Type.String()), moduleOutcomes: Type.Array(Type.Object({ moduleCode: Text, outcome: Text })), determinedAt: DateText }) } }, async (request, reply) => {
+  }>('/api/v1/ec-claims/:claimId/determine', { preHandler: [requirePermission('ec-claim:manage')], schema: { tags: ['ec-claims'], summary: 'Determine the claim', params: idParams('claimId'), body: Type.Object({ authorisedById: Text, determinationCode: Text, determinationRationale: Type.Optional(Type.String()), moduleOutcomes: Type.Array(Type.Object({ moduleCode: Text, outcome: Text })), determinedAt: DateText }) } }, async (request, reply) => {
     const { tenantId } = request;
     const actorId      = request.user.sub;
     const { claimId }  = request.params;
@@ -408,7 +409,7 @@ export async function ecClaimRoutes(
   fastify.post<{
     Params: { claimId: string };
     Body:   { reason?: string };
-  }>('/api/v1/ec-claims/:claimId/withdraw', { schema: { tags: ['ec-claims'], summary: 'Withdraw the claim', params: idParams('claimId'), body: Type.Optional(Type.Object({ reason: Type.Optional(Type.String()) })) } }, async (request, reply) => {
+  }>('/api/v1/ec-claims/:claimId/withdraw', { preHandler: [requirePermission('ec-claim:manage')], schema: { tags: ['ec-claims'], summary: 'Withdraw the claim', params: idParams('claimId'), body: Type.Optional(Type.Object({ reason: Type.Optional(Type.String()) })) } }, async (request, reply) => {
     const { tenantId } = request;
     const actorId      = request.user.sub;
     const { claimId }  = request.params;
