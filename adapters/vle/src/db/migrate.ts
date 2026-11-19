@@ -9,8 +9,10 @@ import { createVleDb } from './client.js';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 async function main(): Promise<void> {
-  const databaseUrl = process.env['DATABASE_URL'];
-  if (!databaseUrl) throw new Error('DATABASE_URL is not set');
+  // Migrations run as the schema owner (MIGRATION_DATABASE_URL); the adapter
+  // itself connects as a login role that inherits srs_app.
+  const databaseUrl = process.env['MIGRATION_DATABASE_URL'] ?? process.env['DATABASE_URL'];
+  if (!databaseUrl) throw new Error('MIGRATION_DATABASE_URL (or DATABASE_URL) is not set');
   const db = createVleDb(databaseUrl);
 
   const migrationsDir = join(__dirname, '../../migrations');

@@ -64,7 +64,8 @@ jobs:
             sleep 2
           done
         env:
-          DATABASE_URL:     postgresql://srs:srs@localhost:5432/srs
+          # The API connects as the application role (row-level security applies).
+          DATABASE_URL:     postgresql://srs_api:srs_api@localhost:5432/srs
           NATS_URL:         nats://localhost:4222
           JWT_SECRET:       zap-dast-secret
           NODE_ENV:         production

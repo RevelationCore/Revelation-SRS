@@ -8,6 +8,13 @@
       "when": 1785000048000,
       "tag": "0000_baseline",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1785000049000,
+      "tag": "0001_security_and_tenant_isolation",
+      "breakpoints": true
     }
   ]
 }

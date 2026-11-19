@@ -75,7 +75,7 @@ export function loadConfig(): Config {
     deploymentEnvironmentCode: process.env['SRS_ENVIRONMENT_CODE'] ?? process.env['NODE_ENV'] ?? 'local',
     releaseVersion: process.env['SRS_RELEASE_VERSION'] ?? process.env['npm_package_version'] ?? '0.0.0',
     imageDigest: optional('SRS_IMAGE_DIGEST'),
-    migrationVersion: process.env['SRS_MIGRATION_VERSION'] ?? '0004_business_process_foundations',
+    migrationVersion: process.env['SRS_MIGRATION_VERSION'] ?? '0001_security_and_tenant_isolation',
     jwtSecret:       process.env['JWT_SECRET'] ?? 'dev-secret-replace-in-production',
     keycloakJwksUrl: optional('KEYCLOAK_JWKS_URL'),
     adminAppUrl:     optional('ADMIN_APP_URL'),
