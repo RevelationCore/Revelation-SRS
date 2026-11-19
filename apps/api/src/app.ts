@@ -5,7 +5,7 @@ import rateLimiter from '@fastify/rate-limit';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
 import { trace } from '@opentelemetry/api';
-import { jwtPlugin, tenantContextPlugin } from '@revelation-srs/auth';
+import { jwtPlugin, jwtPluginOptions, tenantContextPlugin } from '@revelation-srs/auth';
 import { createDb } from '@revelation-srs/db';
 import type { DomainError } from '@revelation-srs/domain';
 import Fastify from 'fastify';
@@ -654,10 +654,7 @@ export async function buildApp(
     keyGenerator: (req) => req.tenantId ?? req.ip,
   });
 
-  await fastify.register(jwtPlugin, {
-    secret:  config.jwtSecret,
-    ...(config.keycloakJwksUrl ? { jwksUrl: config.keycloakJwksUrl } : {}),
-  });
+  await fastify.register(jwtPlugin, jwtPluginOptions(config, 'srs-api'));
   await fastify.register(tenantContextPlugin);
 
   // - Global error handler -

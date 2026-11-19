@@ -1,3 +1,5 @@
+import { tokenEnv } from '@revelation-srs/auth';
+
 /** Typed environment configuration - read once at startup. */
 export interface Config {
   port:         number;
@@ -21,6 +23,12 @@ export interface Config {
   migrationVersion: string;
   jwtSecret:    string;
   keycloakJwksUrl: string | undefined;
+  /** Expected token issuer; defaults to the realm the JWKS URL sits under. */
+  keycloakIssuer?: string | undefined;
+  /** Expected token audience; defaults to 'srs-api'. */
+  keycloakAudience?: string[] | undefined;
+  /** Allowed clock skew for token expiry, in seconds (default 30). */
+  jwtClockToleranceSeconds?: number | undefined;
   /** Public URL of the admin app, for links in staff notices (e.g. the adjustment task queue). */
   adminAppUrl?:   string | undefined;
   /** The API's public address, printed on issued documents for verification (D-21). */
@@ -78,6 +86,7 @@ export function loadConfig(): Config {
     migrationVersion: process.env['SRS_MIGRATION_VERSION'] ?? '0001_security_and_tenant_isolation',
     jwtSecret:       process.env['JWT_SECRET'] ?? 'dev-secret-replace-in-production',
     keycloakJwksUrl: optional('KEYCLOAK_JWKS_URL'),
+    ...tokenEnv(),
     adminAppUrl:     optional('ADMIN_APP_URL'),
     publicApiUrl:    optional('PUBLIC_API_URL'),
     emailTransport:  emailTransport(process.env['EMAIL_TRANSPORT']),

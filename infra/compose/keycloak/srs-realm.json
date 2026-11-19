@@ -77,6 +77,39 @@
       },
       "protocolMappers": [
         {
+          "name": "audience-srs-api",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.custom.audience": "srs-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        },
+        {
+          "name": "audience-srs-wellbeing",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.custom.audience": "srs-wellbeing",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        },
+        {
+          "name": "audience-srs-attendance",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.custom.audience": "srs-attendance",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        },
+        {
           "name":             "realm-roles",
           "protocol":         "openid-connect",
           "protocolMapper":   "oidc-usermodel-realm-role-mapper",
@@ -143,6 +176,39 @@
         "pkce.code.challenge.method": "S256"
       },
       "protocolMappers": [
+        {
+          "name": "audience-srs-api",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.custom.audience": "srs-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        },
+        {
+          "name": "audience-srs-wellbeing",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.custom.audience": "srs-wellbeing",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        },
+        {
+          "name": "audience-srs-attendance",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.custom.audience": "srs-attendance",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        },
         {
           "name":             "realm-roles",
           "protocol":         "openid-connect",

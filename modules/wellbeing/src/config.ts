@@ -1,3 +1,5 @@
+import { tokenEnv } from '@revelation-srs/auth';
+
 export interface Config {
   port:            number;
   logLevel:        string;
@@ -7,6 +9,12 @@ export interface Config {
   natsUrl:         string;
   jwtSecret:       string;
   keycloakJwksUrl: string | undefined;
+  /** Expected token issuer; defaults to the realm the JWKS URL sits under. */
+  keycloakIssuer?: string | undefined;
+  /** Expected token audience; defaults to 'srs-wellbeing'. */
+  keycloakAudience?: string[] | undefined;
+  /** Allowed clock skew for token expiry, in seconds (default 30). */
+  jwtClockToleranceSeconds?: number | undefined;
   corsOrigins:     string[];
 }
 
@@ -31,6 +39,7 @@ export function loadConfig(): Config {
     natsUrl:         process.env['NATS_URL'] ?? 'nats://localhost:4222',
     jwtSecret:       process.env['JWT_SECRET'] ?? 'dev-secret-replace-in-production',
     keycloakJwksUrl: process.env['KEYCLOAK_JWKS_URL'],
+    ...tokenEnv(),
     corsOrigins:     (process.env['CORS_ORIGINS'] ?? 'http://localhost:5173').split(','),
   };
 }

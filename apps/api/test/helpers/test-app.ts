@@ -34,6 +34,8 @@ async function applyCoreMigrations(db: Db): Promise<void> {
 }
 
 export interface StartTestAppOptions {
+  /** Validate RS256 tokens against this JWKS, issuer and audience instead of the HS256 test secret. */
+  auth?: Pick<Config, 'keycloakJwksUrl' | 'keycloakIssuer' | 'keycloakAudience' | 'jwtClockToleranceSeconds'>;
   /** Inject a spy or stub event bus instead of the default disconnected NATS publisher. */
   eventBus?: IntegrationBusPublisher;
   /** Enable live Temporal execution against this server (the rollout flag still applies). */
@@ -99,6 +101,7 @@ export async function startTestApp(opts: StartTestAppOptions = {}): Promise<Test
     migrationVersion: '0001_security_and_tenant_isolation',
     jwtSecret:        JWT_SECRET,
     keycloakJwksUrl:  undefined,
+    ...opts.auth,
     corsOrigins:      ['http://localhost:5173'],
     otelEndpoint:     undefined,
     otelServiceName:  'srs-api-test',

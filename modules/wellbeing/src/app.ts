@@ -1,7 +1,7 @@
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import multipart from '@fastify/multipart';
-import { jwtPlugin, tenantContextPlugin } from '@revelation-srs/auth';
+import { jwtPlugin, jwtPluginOptions, tenantContextPlugin } from '@revelation-srs/auth';
 import Fastify from 'fastify';
 import type { FastifyInstance } from 'fastify';
 
@@ -71,10 +71,7 @@ export async function buildApp(config: Config, appOpts: AppOptions = {}): Promis
   await fastify.register(multipart, { limits: { fileSize: 20 * 1024 * 1024 } });
 
   // JWT authentication (RS256 in prod, HS256 in dev/test)
-  const jwtOpts = config.keycloakJwksUrl
-    ? { jwksUrl: config.keycloakJwksUrl }
-    : { secret:  config.jwtSecret };
-  await fastify.register(jwtPlugin, jwtOpts);
+  await fastify.register(jwtPlugin, jwtPluginOptions(config, 'srs-wellbeing'));
 
   // Extracts tenantId from JWT and makes it available as request.tenantId
   await fastify.register(tenantContextPlugin);
