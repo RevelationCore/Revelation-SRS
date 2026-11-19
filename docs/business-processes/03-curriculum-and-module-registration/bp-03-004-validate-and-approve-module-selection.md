@@ -23,7 +23,7 @@
 
 | Type | References |
 |---|---|
-| Revelation workflows | `module-selection-approval` (workflow_definition, seeded in migration `0005_curriculum_regulatory_and_pgr` (section `0005_module_selection_rules`)) — started only for the exception path (A5/A5b); the fully-valid automatic path (A4) never creates a workflow instance |
+| Revelation workflows | `module-selection-approval` (workflow_definition, seeded in migration `0000_baseline` (section `0005_curriculum_regulatory_and_pgr` / `0005_module_selection_rules`)) — started only for the exception path (A5/A5b); the fully-valid automatic path (A4) never creates a workflow instance |
 | Reference-model flows | F-EWP-SIS-01; enables F-SIS-TTB-01/F-SIS-AM-01/F-SIS-VLE-01 |
 | Functional requirements | REG-001–REG-003 |
 | Data entities | `module_registration`, `module_offering`, `module_relationship`, `programme_rule_set`, `academic_rule`, `module_group`, `module_group_member`, `module_selection_proposal`, `module_selection_proposal_item`, `workflow_instance`, `workflow_task` |

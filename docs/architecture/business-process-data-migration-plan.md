@@ -21,6 +21,7 @@ Until there are production tenants, the core set stays small by re-squashing. `n
 | 2026-11-17 | `0008`–`0009` (that file and the Phase 2 registration migration) became `0008_rules_admissions_and_phase2` |
 | 2026-11-17 | `0008`–`0009` (that file and the Phase 3 integrations migration) became `0008_admissions_registration_and_integrations` |
 | 2026-11-17 | `0008`–`0009` (that file and the Phase 4 rule-depth migration) became `0008_registration_integrations_and_rule_depth` |
+| 2026-11-19 | The whole core set, `0000`–`0009`, became one baseline, `0000_baseline` (enterprise readiness plan item 4.1). From here on each feature adds its own migration, and an applied migration is never edited |
 
 To squash:
 

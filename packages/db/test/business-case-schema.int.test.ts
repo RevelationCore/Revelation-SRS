@@ -14,9 +14,12 @@ let db: Db;
 let tenantA: string;
 let tenantB: string;
 
-async function applyMigration(fileName: string): Promise<void> {
-  const migration = await readFile(new URL(`../migrations/${fileName}`, import.meta.url), 'utf8');
-  await db.execute(sql.raw(migration));
+async function applyCoreMigrations(): Promise<void> {
+  const journal = JSON.parse(await readFile(new URL('../migrations/meta/_journal.json', import.meta.url), 'utf8')) as { entries: Array<{ tag: string }> };
+  for (const { tag } of journal.entries) {
+    const migration = await readFile(new URL(`../migrations/${tag}.sql`, import.meta.url), 'utf8');
+    await db.execute(sql.raw(migration));
+  }
 }
 
 beforeAll(async () => {
@@ -25,15 +28,8 @@ beforeAll(async () => {
     .start();
   db = createDb(container.getConnectionUri());
 
-  // Apply the full clean-build sequence: 0004's post-ratification value-set
-  // repoint (originally migration 0049) depends on a value set seeded in
-  // 0002 (originally migration 0027), so a minimal 0000+0004 subset is no
-  // longer sufficient once those were squashed into separate files.
-  await applyMigration('0000_platform_foundations.sql');
-  await applyMigration('0001_platform_hardening_and_refinements.sql');
-  await applyMigration('0002_demo_performance_and_seed_data.sql');
-  await applyMigration('0003_engagement_and_attendance.sql');
-  await applyMigration('0004_business_process_foundations.sql');
+  // Apply every core migration in journal order.
+  await applyCoreMigrations();
 
   tenantA = randomUUID();
   tenantB = randomUUID();

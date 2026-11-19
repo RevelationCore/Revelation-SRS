@@ -10,9 +10,12 @@ import { createDb, type Db } from '../src/pool.js';
 let container: StartedPostgreSqlContainer;
 let db: Db;
 
-async function applyMigration(fileName: string): Promise<void> {
-  const migration = await readFile(new URL(`../migrations/${fileName}`, import.meta.url), 'utf8');
-  await db.execute(sql.raw(migration));
+async function applyCoreMigrations(): Promise<void> {
+  const journal = JSON.parse(await readFile(new URL('../migrations/meta/_journal.json', import.meta.url), 'utf8')) as { entries: Array<{ tag: string }> };
+  for (const { tag } of journal.entries) {
+    const migration = await readFile(new URL(`../migrations/${tag}.sql`, import.meta.url), 'utf8');
+    await db.execute(sql.raw(migration));
+  }
 }
 
 beforeAll(async () => {
@@ -22,8 +25,7 @@ beforeAll(async () => {
 
   db = createDb(container.getConnectionUri());
 
-  await applyMigration('0000_platform_foundations.sql');
-  await applyMigration('0001_platform_hardening_and_refinements.sql');
+  await applyCoreMigrations();
 });
 
 afterAll(async () => {
@@ -411,10 +413,12 @@ describe('Phase 5 migrations', () => {
       field_name: 'result_code',
       value_set_code: 'result-code',
     });
+    // Later in the baseline (originally 0004) the mapping is repointed at the
+    // set whose members match what CorrectionService writes.
     expect(mappings).toContainEqual({
       entity_name: 'post_ratification_case',
       field_name: 'status_code',
-      value_set_code: 'post-ratification-case-status-code',
+      value_set_code: 'correction-case-status-code',
     });
   });
 });

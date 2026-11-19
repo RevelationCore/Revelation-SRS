@@ -5,71 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1785000000000,
-      "tag": "0000_platform_foundations",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1785000001000,
-      "tag": "0001_platform_hardening_and_refinements",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1785000002000,
-      "tag": "0002_demo_performance_and_seed_data",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1785000003000,
-      "tag": "0003_engagement_and_attendance",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1785000004000,
-      "tag": "0004_business_process_foundations",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1785000018000,
-      "tag": "0005_curriculum_regulatory_and_pgr",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1785000032000,
-      "tag": "0006_adjustments_integration_and_support",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "7",
-      "when": 1785000037000,
-      "tag": "0007_business_process_completion",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "7",
-      "when": 1785000047000,
-      "tag": "0008_registration_integrations_and_rule_depth",
-      "breakpoints": true
-    },
-    {
-      "idx": 9,
-      "version": "7",
       "when": 1785000048000,
-      "tag": "0009_audiences_and_evidence",
+      "tag": "0000_baseline",
       "breakpoints": true
     }
   ]

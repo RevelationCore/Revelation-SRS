@@ -38,10 +38,11 @@ export async function startTestApp(appOpts: AppOptions = {}): Promise<TestWellbe
   const connectionString = container.getConnectionUri();
   const db = createWellbeingDb(connectionString);
 
-  // Apply the core platform migration first (creates the tenant table which
+  // Apply the core platform migrations first, in journal order (creates the tenant table which
   // wellbeing tables reference via FOREIGN KEY).
   const coreMigrationsDir = join(__dirname, '../../../../packages/db/migrations');
-  await applySql(db, join(coreMigrationsDir, '0000_platform_foundations.sql'));
+  const journal = JSON.parse(await readFile(join(coreMigrationsDir, 'meta/_journal.json'), 'utf8')) as { entries: Array<{ tag: string }> };
+  for (const { tag } of journal.entries) await applySql(db, join(coreMigrationsDir, `${tag}.sql`));
 
   // Apply wellbeing module migrations
   const wellbeingMigrationsDir = join(__dirname, '../../migrations');

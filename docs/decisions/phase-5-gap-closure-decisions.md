@@ -5,7 +5,7 @@
 > Context: [Academic journey gap-closure plan](../product/academic-journey-gap-closure-plan.md), Phase 5 (audiences and evidence)
 > Made by: the project's solutions-architect agent (`.claude/agents/solutions-architect.md`). Numbering continues from [Phase 4](phase-4-gap-closure-decisions.md).
 
-Each decision lists what an institution must confirm before go-live. All Phase 5 schema goes into one core migration, `0009_audiences_and_evidence.sql` (D-47).
+Each decision lists what an institution must confirm before go-live. All Phase 5 schema goes into one core migration, `0000_baseline.sql` (section `0009_audiences_and_evidence`) (D-47).
 
 ## What the review of the code found
 
@@ -198,7 +198,7 @@ Scope bounds, variants, institution policy, deployment transport, production har
 
 ## D-47: Migration
 
-**Decision.** One core migration, `0009_audiences_and_evidence.sql`, journal idx 9, `when` 1785000048000, holding every Phase 5 schema change. The core set is then at 10 of 10; the next phase squashes first.
+**Decision.** One core migration, `0000_baseline.sql` (section `0009_audiences_and_evidence`), journal idx 9, `when` 1785000048000, holding every Phase 5 schema change. The core set is then at 10 of 10; the next phase squashes first.
 
 ## Build order and deferrals
 
@@ -217,7 +217,7 @@ S1 D-35 · S2 D-36 · S3 D-37 · S4 D-38 · S5 D-39 · S6 D-40 · S7 D-41, D-42,
 
 ## Implementation notes
 
-Built 2026-11-17 to 2026-11-18 in commits e1fcca0 (D-35, D-43b), 7dfcdb8 (D-36), 391e04f (D-37), 4ad71d8 (D-38), 6029afb (D-39), d0ca934 (D-40), aec92b3 (D-41), a507e52 (D-42, D-43a) and a74e450 (D-44, D-45, browser journeys). The schema is in `0009_audiences_and_evidence`, after a squash of 0008 and 0009 into `0008_registration_integrations_and_rule_depth` (60324af).
+Built 2026-11-17 to 2026-11-18 in commits e1fcca0 (D-35, D-43b), 7dfcdb8 (D-36), 391e04f (D-37), 4ad71d8 (D-38), 6029afb (D-39), d0ca934 (D-40), aec92b3 (D-41), a507e52 (D-42, D-43a) and a74e450 (D-44, D-45, browser journeys). The schema is in `0000_baseline` (section `0009_audiences_and_evidence`), after a squash of 0008 and 0009 into `0000_baseline` (section `0008_registration_integrations_and_rule_depth`) (60324af).
 
 Where the build departs from the text above, and why:
 

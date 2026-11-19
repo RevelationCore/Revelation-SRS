@@ -5,7 +5,7 @@ import { persons } from './identity.js';
 import { tenants } from './tenant.js';
 
 /**
- * Identity resolution & correction case (BPR-D17, Stage 7, migration 0004_business_process_foundations).
+ * Identity resolution & correction case (BPR-D17, Stage 7, migration 0000_baseline (section 0004_business_process_foundations)).
  *
  * These aggregates extend the shared `business_case` primitive
  * (packages/db/src/schema/business-case.ts) via `businessCaseId` rather than

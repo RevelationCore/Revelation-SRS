@@ -75,7 +75,7 @@ export const postRatificationCases = pgTable('post_ratification_case', {
   statusCode:     text('status_code').notNull().default('submitted'), // submitted | under-review | upheld | dismissed | not-eligible
   reference:      text('reference'),                   // optional external reference
   actorId:        text('actor_id').notNull(),
-  // BPR-D13 (Stage 5, migration 0004_business_process_foundations): additive columns explaining why a
+  // BPR-D13 (Stage 5, migration 0000_baseline (section 0004_business_process_foundations)): additive columns explaining why a
   // correction was needed and under what authority, independent of the
   // generic case-status workflow above.
   supersededVersionId: uuid('superseded_version_id'), // the exact version this case is correcting, if known up front
