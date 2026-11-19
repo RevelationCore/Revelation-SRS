@@ -20,7 +20,7 @@ const OUTPUT_PATH = join(OUTPUT_DIR, 'v1.json');
 const config: Config = {
   port:                      3000,
   logLevel:                  'silent',
-  nodeEnv:                   'production',
+  nodeEnv:                   'test',  // generation only: no tokens are validated
   databaseUrl:               'postgres://unused/openapi-generation',
   natsUrl:                   'nats://unused:4222',
   temporalAddress:           'unused:7233',

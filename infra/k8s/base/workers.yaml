@@ -76,6 +76,10 @@ spec:
               value: nats://srs-nats:4222
             - name: WORKER_HEALTH_PORT
               value: "9466"
+            # The worker builds the API app, which refuses HS256 outside
+            # development and test (it validates no tokens itself).
+            - name: KEYCLOAK_JWKS_URL
+              value: http://keycloak:8080/realms/srs/protocol/openid-connect/certs
             - name: RECONCILE_INTERVAL_MS
               value: "15000"
             - name: OTEL_SERVICE_NAME
