@@ -37,6 +37,7 @@
     "check:business-process-docs": "node scripts/check-business-process-docs.mjs",
     "check:p0-business-process-requirements": "node scripts/check-p0-business-process-requirements.mjs",
     "check:business-process-data-model": "node scripts/check-business-process-data-model.mjs",
+    "check:wellbeing-route-schemas": "node scripts/check-wellbeing-route-schemas.mjs",
     "check:current-capabilities": "node scripts/check-current-capabilities.mjs",
     "check:process-coverage": "node scripts/check-process-coverage.mjs",
     "check:review-pack": "node scripts/check-review-pack.mjs",

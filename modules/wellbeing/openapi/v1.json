@@ -1,0 +1,2056 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Revelation SRS Wellbeing API",
+    "description": "Wellbeing module: disability support, adjustments, EC claims, mental health and early warning",
+    "version": "1.0.0",
+    "license": {
+      "name": "AGPL-3.0",
+      "url": "https://www.gnu.org/licenses/agpl-3.0.html"
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {}
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Liveness",
+        "tags": [
+          "health"
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/ready": {
+      "get": {
+        "summary": "Readiness",
+        "tags": [
+          "health"
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/metrics": {
+      "get": {
+        "summary": "Prometheus metrics",
+        "tags": [
+          "health"
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/v1/disability-cases": {
+      "post": {
+        "summary": "Open a disability support case",
+        "tags": [
+          "disability-cases"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "personId",
+                  "supportTypeCode"
+                ],
+                "properties": {
+                  "personId": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "supportTypeCode": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "dsaAwardRef": {
+                    "type": "string"
+                  },
+                  "notes": {
+                    "type": "string"
+                  },
+                  "assignedAdvisorId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      },
+      "get": {
+        "summary": "List a person's disability cases",
+        "tags": [
+          "disability-cases"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "query",
+            "name": "personId",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "page",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "limit",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/v1/disability-cases/caseload": {
+      "get": {
+        "summary": "Open disability caseload",
+        "tags": [
+          "disability-cases"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "statusCode",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "assignedTo",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/v1/disability-cases/{caseId}": {
+      "get": {
+        "summary": "Get a disability case",
+        "tags": [
+          "disability-cases"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "caseId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/v1/disability-cases/{caseId}/status": {
+      "patch": {
+        "summary": "Change the case status",
+        "tags": [
+          "disability-cases"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "statusCode"
+                ],
+                "properties": {
+                  "statusCode": {
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "caseId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/v1/disability-cases/{caseId}/evidence": {
+      "post": {
+        "summary": "Record an evidence reference",
+        "tags": [
+          "disability-cases"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "evidenceTypeCode"
+                ],
+                "properties": {
+                  "evidenceTypeCode": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "filename": {
+                    "type": "string"
+                  },
+                  "contentType": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "caseId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/v1/evidence/{evidenceId}/status": {
+      "patch": {
+        "summary": "Change an evidence status",
+        "tags": [
+          "disability-cases"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "statusCode"
+                ],
+                "properties": {
+                  "statusCode": {
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "evidenceId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/v1/disability-cases/{caseId}/dsa-entitlements": {
+      "post": {
+        "summary": "Record a DSA entitlement",
+        "tags": [
+          "disability-cases"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "entitlementTypeCode",
+                  "effectiveFrom",
+                  "approvedBy"
+                ],
+                "properties": {
+                  "entitlementTypeCode": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "providerRef": {
+                    "type": "string"
+                  },
+                  "effectiveFrom": {
+                    "minLength": 1,
+                    "description": "ISO 8601 date or date-time",
+                    "type": "string"
+                  },
+                  "effectiveTo": {
+                    "type": "string"
+                  },
+                  "approvedBy": {
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "caseId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      },
+      "get": {
+        "summary": "List DSA entitlements",
+        "tags": [
+          "disability-cases"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "caseId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/v1/adjustment-cases": {
+      "post": {
+        "summary": "Open an adjustment case",
+        "tags": [
+          "adjustment-cases"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "personId",
+                  "adjustmentTypeCode"
+                ],
+                "properties": {
+                  "wellbeingCaseId": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "disabilitySupportCaseId": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "personId": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "adjustmentTypeCode": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "rationale": {
+                    "type": "string"
+                  },
+                  "dsaEntitlementId": {
+                    "format": "uuid",
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      },
+      "get": {
+        "summary": "List adjustment cases",
+        "tags": [
+          "adjustment-cases"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "query",
+            "name": "personId",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "statusCode",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/v1/adjustment-cases/{caseId}": {
+      "get": {
+        "summary": "Get an adjustment case",
+        "tags": [
+          "adjustment-cases"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "caseId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/v1/adjustment-cases/{caseId}/start-assessment": {
+      "post": {
+        "summary": "Start the assessment",
+        "tags": [
+          "adjustment-cases"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "caseId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/v1/adjustment-cases/{caseId}/request-review": {
+      "post": {
+        "summary": "Request a review",
+        "tags": [
+          "adjustment-cases"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "caseId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/v1/adjustment-cases/{caseId}/close": {
+      "post": {
+        "summary": "Close the case",
+        "tags": [
+          "adjustment-cases"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "caseId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/v1/adjustment-cases/{caseId}/status-correction": {
+      "patch": {
+        "summary": "Correct the status",
+        "tags": [
+          "adjustment-cases"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "statusCode",
+                  "reason"
+                ],
+                "properties": {
+                  "statusCode": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "reason": {
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "caseId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/v1/adjustment-cases/{caseId}/assessments": {
+      "post": {
+        "summary": "Record an assessment",
+        "tags": [
+          "adjustment-cases"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "assessorId",
+                  "assessedAt",
+                  "outcomeCode"
+                ],
+                "properties": {
+                  "assessorId": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "assessedAt": {
+                    "minLength": 1,
+                    "description": "ISO 8601 date or date-time",
+                    "type": "string"
+                  },
+                  "outcomeCode": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "findings": {
+                    "type": "string"
+                  },
+                  "recommendedAction": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "caseId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/v1/adjustment-cases/{caseId}/panel-decisions": {
+      "post": {
+        "summary": "Record a panel decision",
+        "tags": [
+          "adjustment-cases"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "panelChairId",
+                  "panelDate",
+                  "decisionCode"
+                ],
+                "properties": {
+                  "panelChairId": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "panelDate": {
+                    "minLength": 1,
+                    "description": "ISO 8601 date or date-time",
+                    "type": "string"
+                  },
+                  "decisionCode": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "decisionRationale": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "caseId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/v1/adjustment-cases/{caseId}/approve": {
+      "post": {
+        "summary": "Approve and hand off to the SRS",
+        "tags": [
+          "adjustment-cases"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "enrolmentId",
+                  "scopeCode",
+                  "recommendedAdjustment",
+                  "validFrom"
+                ],
+                "properties": {
+                  "enrolmentId": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "adjustmentTypeCode": {
+                    "type": "string"
+                  },
+                  "scopeCode": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "recommendedAdjustment": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "validFrom": {
+                    "minLength": 1,
+                    "description": "ISO 8601 date or date-time",
+                    "type": "string"
+                  },
+                  "validTo": {
+                    "type": "string"
+                  },
+                  "notes": {
+                    "type": "string"
+                  },
+                  "amount": {
+                    "type": "object",
+                    "required": [
+                      "value",
+                      "unitCode"
+                    ],
+                    "properties": {
+                      "value": {
+                        "type": "number"
+                      },
+                      "unitCode": {
+                        "minLength": 1,
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "forceApprove": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "caseId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/v1/adjustment-cases/{caseId}/reject": {
+      "post": {
+        "summary": "Reject the case",
+        "tags": [
+          "adjustment-cases"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "rationale"
+                ],
+                "properties": {
+                  "rationale": {
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "caseId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/v1/adjustment-cases/{caseId}/evidence": {
+      "post": {
+        "summary": "Upload evidence (multipart: file, evidenceTypeCode)",
+        "tags": [
+          "adjustment-cases"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "caseId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/v1/adjustment-cases/{caseId}/evidence/{evidenceId}": {
+      "get": {
+        "summary": "Download evidence",
+        "tags": [
+          "adjustment-cases"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "caseId",
+            "required": true
+          },
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "evidenceId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Withdraw evidence",
+        "tags": [
+          "adjustment-cases"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "caseId",
+            "required": true
+          },
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "evidenceId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/v1/ec-claims": {
+      "post": {
+        "summary": "Record an EC claim",
+        "tags": [
+          "ec-claims"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "personId",
+                  "enrolmentId",
+                  "assessmentPeriodRef",
+                  "affectedModuleCodes"
+                ],
+                "properties": {
+                  "personId": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "enrolmentId": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "assessmentPeriodRef": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "affectedModuleCodes": {
+                    "type": "array",
+                    "items": {
+                      "minLength": 1,
+                      "type": "string"
+                    }
+                  },
+                  "circumstancesNarrative": {
+                    "type": "string"
+                  },
+                  "evidenceDeadline": {
+                    "type": "string"
+                  },
+                  "assignedAdvisorId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      },
+      "get": {
+        "summary": "List a person's EC claims",
+        "tags": [
+          "ec-claims"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "query",
+            "name": "personId",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/v1/ec-claims/{claimId}": {
+      "get": {
+        "summary": "Get an EC claim",
+        "tags": [
+          "ec-claims"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "claimId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/v1/ec-claims/{claimId}/status": {
+      "patch": {
+        "summary": "Change the claim status",
+        "tags": [
+          "ec-claims"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "statusCode"
+                ],
+                "properties": {
+                  "statusCode": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "circumstancesNarrative": {
+                    "type": "string"
+                  },
+                  "evidenceDeadline": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "claimId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/v1/ec-claims/{claimId}/evidence-reviews": {
+      "post": {
+        "summary": "Record an evidence review",
+        "tags": [
+          "ec-claims"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "reviewerId",
+                  "reviewedAt",
+                  "evidenceStatusCode"
+                ],
+                "properties": {
+                  "reviewerId": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "reviewedAt": {
+                    "minLength": 1,
+                    "description": "ISO 8601 date or date-time",
+                    "type": "string"
+                  },
+                  "evidenceStatusCode": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "reviewNotes": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "claimId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/v1/ec-claims/{claimId}/determine": {
+      "post": {
+        "summary": "Determine the claim",
+        "tags": [
+          "ec-claims"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "authorisedById",
+                  "determinationCode",
+                  "moduleOutcomes",
+                  "determinedAt"
+                ],
+                "properties": {
+                  "authorisedById": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "determinationCode": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "determinationRationale": {
+                    "type": "string"
+                  },
+                  "moduleOutcomes": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "moduleCode",
+                        "outcome"
+                      ],
+                      "properties": {
+                        "moduleCode": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "outcome": {
+                          "minLength": 1,
+                          "type": "string"
+                        }
+                      }
+                    }
+                  },
+                  "determinedAt": {
+                    "minLength": 1,
+                    "description": "ISO 8601 date or date-time",
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "claimId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/v1/ec-claims/{claimId}/withdraw": {
+      "post": {
+        "summary": "Withdraw the claim",
+        "tags": [
+          "ec-claims"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "claimId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/v1/mental-health-cases": {
+      "post": {
+        "summary": "Open a mental health case",
+        "tags": [
+          "mental-health-cases"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "personId",
+                  "presentingConcernCode"
+                ],
+                "properties": {
+                  "personId": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "presentingConcernCode": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "riskLevelCode": {
+                    "type": "string"
+                  },
+                  "assignedAdvisorId": {
+                    "type": "string"
+                  },
+                  "notes": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      },
+      "get": {
+        "summary": "List a person's mental health cases",
+        "tags": [
+          "mental-health-cases"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "query",
+            "name": "personId",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/v1/mental-health-cases/caseload": {
+      "get": {
+        "summary": "Open mental health caseload",
+        "tags": [
+          "mental-health-cases"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "statusCode",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "riskLevelCode",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "assignedTo",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/v1/mental-health-cases/{caseId}": {
+      "get": {
+        "summary": "Get a mental health case",
+        "tags": [
+          "mental-health-cases"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "caseId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/v1/mental-health-cases/{caseId}/status": {
+      "patch": {
+        "summary": "Change the case status",
+        "tags": [
+          "mental-health-cases"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "statusCode"
+                ],
+                "properties": {
+                  "statusCode": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "riskLevelCode": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "caseId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/v1/mental-health-cases/{caseId}/risk": {
+      "patch": {
+        "summary": "Change the risk level",
+        "tags": [
+          "mental-health-cases"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "riskLevelCode"
+                ],
+                "properties": {
+                  "riskLevelCode": {
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "caseId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/v1/mental-health-cases/{caseId}/consent": {
+      "post": {
+        "summary": "Record consent",
+        "tags": [
+          "mental-health-cases"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "consentDate"
+                ],
+                "properties": {
+                  "consentDate": {
+                    "minLength": 1,
+                    "description": "ISO 8601 date or date-time",
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "caseId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/v1/mental-health-cases/{caseId}/session-notes": {
+      "post": {
+        "summary": "Record a session note",
+        "tags": [
+          "mental-health-cases"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "practitionerId",
+                  "sessionDate",
+                  "sessionTypeCode",
+                  "content"
+                ],
+                "properties": {
+                  "practitionerId": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "sessionDate": {
+                    "minLength": 1,
+                    "description": "ISO 8601 date or date-time",
+                    "type": "string"
+                  },
+                  "sessionTypeCode": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "content": {
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "caseId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      },
+      "get": {
+        "summary": "List session notes",
+        "tags": [
+          "mental-health-cases"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "caseId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/v1/mental-health-cases/{caseId}/intervention-plans": {
+      "post": {
+        "summary": "Create an intervention plan",
+        "tags": [
+          "mental-health-cases"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "planTypeCode",
+                  "practitionerId"
+                ],
+                "properties": {
+                  "planTypeCode": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "practitionerId": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "sessionFrequencyCode": {
+                    "type": "string"
+                  },
+                  "plannedSessionCount": {
+                    "type": "string"
+                  },
+                  "goals": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "goal"
+                      ],
+                      "properties": {
+                        "goal": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "targetDate": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  },
+                  "reviewDate": {
+                    "type": "string"
+                  },
+                  "externalReferral": {
+                    "type": "boolean"
+                  },
+                  "externalReferralDetails": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "caseId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      },
+      "get": {
+        "summary": "List intervention plans",
+        "tags": [
+          "mental-health-cases"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "caseId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/v1/mental-health-cases/{caseId}/intervention-plans/{planId}/status": {
+      "patch": {
+        "summary": "Change a plan status",
+        "tags": [
+          "mental-health-cases"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "statusCode"
+                ],
+                "properties": {
+                  "statusCode": {
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "caseId",
+            "required": true
+          },
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "planId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/v1/early-warning-alerts": {
+      "get": {
+        "summary": "List early-warning alerts",
+        "tags": [
+          "early-warning"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "query",
+            "name": "personId",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "triageStatus",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      },
+      "post": {
+        "summary": "Raise an early-warning alert",
+        "tags": [
+          "early-warning"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "personId",
+                  "alertTypeCode",
+                  "summary"
+                ],
+                "properties": {
+                  "personId": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "alertTypeCode": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "summary": {
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/v1/early-warning-alerts/{alertId}": {
+      "get": {
+        "summary": "Get an alert",
+        "tags": [
+          "early-warning"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "alertId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/v1/early-warning-alerts/{alertId}/triage": {
+      "patch": {
+        "summary": "Triage an alert",
+        "tags": [
+          "early-warning"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "triageStatusCode"
+                ],
+                "properties": {
+                  "triageStatusCode": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "assignedCaseId": {
+                    "format": "uuid",
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "alertId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/v1/reports/wellbeing-summary": {
+      "get": {
+        "summary": "Wellbeing summary report",
+        "tags": [
+          "early-warning"
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/v1/sar/export/{personId}": {
+      "get": {
+        "summary": "Export a person's wellbeing data (subject access request)",
+        "tags": [
+          "sar"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "personId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/retention/wellbeing-cases/{caseId}": {
+      "patch": {
+        "summary": "Set a case retention date",
+        "tags": [
+          "retention"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "retentionDueDate"
+                ],
+                "properties": {
+                  "retentionDueDate": {
+                    "minLength": 1,
+                    "description": "ISO 8601 date or date-time",
+                    "type": "string"
+                  },
+                  "lawfulBasisCode": {
+                    "type": "string"
+                  },
+                  "dataClassificationCode": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "caseId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/retention/apply": {
+      "post": {
+        "summary": "Apply retention to cases past their date",
+        "tags": [
+          "retention"
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ]
+}

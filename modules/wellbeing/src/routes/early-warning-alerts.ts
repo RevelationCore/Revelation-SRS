@@ -1,7 +1,10 @@
+import { Type } from '@sinclair/typebox';
 import { requirePermission } from '@revelation-srs/auth';
 import { and, eq, isNull, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 
+import { Uuid, Text, idParams } from '../http/schemas.js';
+import { sendProblem } from '../http/problem.js';
 import { withWellbeingTenantContext } from '../db/client.js';
 import { mentalHealthCases, interventionPlans } from '../db/schema/mental-health.js';
 import { earlyWarningAlerts, type EarlyWarningAlert } from '../db/schema/wellbeing-case.js';
@@ -48,14 +51,12 @@ export async function earlyWarningAlertRoutes(fastify: FastifyInstance): Promise
 
   fastify.get<{
     Querystring: { personId?: string; triageStatus?: string };
-  }>('/api/v1/early-warning-alerts', READ, async (request, reply) => {
+  }>('/api/v1/early-warning-alerts', { ...READ, schema: { tags: ['early-warning'], summary: 'List early-warning alerts', querystring: Type.Object({ personId: Type.Optional(Uuid), triageStatus: Type.Optional(Type.String()) }) } }, async (request, reply) => {
     const { tenantId }               = request;
     const { personId, triageStatus } = request.query;
 
     if (!personId && !triageStatus) {
-      return reply.code(400).send({
-        error: 'Provide personId or triageStatus query parameter',
-      });
+      return sendProblem(reply, 400, 'Provide personId or triageStatus query parameter');
     }
 
     const alerts = await withWellbeingTenantContext(
@@ -78,16 +79,14 @@ export async function earlyWarningAlertRoutes(fastify: FastifyInstance): Promise
 
   fastify.post<{
     Body: { personId: string; alertTypeCode: string; summary: string };
-  }>('/api/v1/early-warning-alerts', TRIAGE, async (request, reply) => {
+  }>('/api/v1/early-warning-alerts', { ...TRIAGE, schema: { tags: ['early-warning'], summary: 'Raise an early-warning alert', body: Type.Object({ personId: Uuid, alertTypeCode: Text, summary: Text }) } }, async (request, reply) => {
     const { tenantId } = request;
     const actorId      = request.user.sub;
     const { personId, alertTypeCode, summary } = request.body ?? {} as never;
 
     if (!personId || !summary?.trim() || !(STAFF_ALERT_TYPES as readonly string[]).includes(alertTypeCode)) {
-      return reply.code(422).send({
-        type: 'about:blank', title: 'Invalid concern', status: 422,
-        detail: `personId, summary and an alertTypeCode of ${STAFF_ALERT_TYPES.join(' or ')} are required`,
-        error: 'Invalid concern',
+      return sendProblem(reply, 422, `personId, summary and an alertTypeCode of ${STAFF_ALERT_TYPES.join(' or ')} are required`, {
+        title: 'Invalid concern', error: 'Invalid concern',
       });
     }
 
@@ -118,7 +117,7 @@ export async function earlyWarningAlertRoutes(fastify: FastifyInstance): Promise
 
   fastify.get<{
     Params: { alertId: string };
-  }>('/api/v1/early-warning-alerts/:alertId', READ, async (request, reply) => {
+  }>('/api/v1/early-warning-alerts/:alertId', { ...READ, schema: { tags: ['early-warning'], summary: 'Get an alert', params: idParams('alertId') } }, async (request, reply) => {
     const { tenantId } = request;
     const { alertId }  = request.params;
 
@@ -129,7 +128,7 @@ export async function earlyWarningAlertRoutes(fastify: FastifyInstance): Promise
     );
 
     if (!alert) {
-      return reply.code(404).send({ error: 'Early warning alert not found' });
+      return sendProblem(reply, 404, 'Early warning alert not found');
     }
 
     return reply.send(withActions(alert));
@@ -146,7 +145,7 @@ export async function earlyWarningAlertRoutes(fastify: FastifyInstance): Promise
       triageStatusCode: string;
       assignedCaseId?:  string;
     };
-  }>('/api/v1/early-warning-alerts/:alertId/triage', TRIAGE, async (request, reply) => {
+  }>('/api/v1/early-warning-alerts/:alertId/triage', { ...TRIAGE, schema: { tags: ['early-warning'], summary: 'Triage an alert', params: idParams('alertId'), body: Type.Object({ triageStatusCode: Text, assignedCaseId: Type.Optional(Uuid) }) } }, async (request, reply) => {
     const { tenantId }   = request;
     const actorId        = request.user.sub;
     const { alertId }    = request.params;
@@ -205,7 +204,7 @@ export async function earlyWarningAlertRoutes(fastify: FastifyInstance): Promise
   // PRIVACY CONTRACT: returns counts only — no person identifiers, no case
   // notes, no clinical detail.
 
-  fastify.get('/api/v1/reports/wellbeing-summary', READ, async (request, reply) => {
+  fastify.get('/api/v1/reports/wellbeing-summary', { ...READ, schema: { tags: ['early-warning'], summary: 'Wellbeing summary report' } }, async (request, reply) => {
     const { tenantId } = request;
 
     const summary = await withWellbeingTenantContext(

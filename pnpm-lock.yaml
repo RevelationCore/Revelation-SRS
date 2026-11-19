@@ -513,6 +513,9 @@ importers:
       '@fastify/multipart':
         specifier: ^9.4.0
         version: 9.4.0
+      '@fastify/swagger':
+        specifier: ^9.9.4
+        version: 9.9.4
       '@opentelemetry/api':
         specifier: ~1.9.1
         version: 1.9.1
@@ -546,6 +549,9 @@ importers:
       '@revelation-srs/domain':
         specifier: workspace:*
         version: link:../../packages/domain
+      '@sinclair/typebox':
+        specifier: ^0.34.52
+        version: 0.34.52
       drizzle-orm:
         specifier: ^0.45.4
         version: 0.45.4(@opentelemetry/api@1.9.1)(@types/pg@8.15.6)(postgres@3.4.9)

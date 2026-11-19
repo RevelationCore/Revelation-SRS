@@ -1,6 +1,9 @@
+import { Type } from '@sinclair/typebox';
 import { requirePermission } from '@revelation-srs/auth';
 import type { FastifyInstance, FastifyReply } from 'fastify';
 
+import { Uuid, Text, DateText, idParams } from '../http/schemas.js';
+import { sendProblem } from '../http/problem.js';
 import { withWellbeingTenantContext } from '../db/client.js';
 import type { EdrmsAdapter } from '../edrms/edrms-adapter.js';
 import {
@@ -50,10 +53,7 @@ function serializeCase(c: Awaited<ReturnType<typeof findCurrentCase>>) {
 
 /** A refused status change, in the problem shape the admin client reads. */
 export function sendTransitionProblem(reply: FastifyReply, err: StatusTransitionError) {
-  return reply.code(409).send({
-    type: 'about:blank', title: 'Status change not allowed', status: 409,
-    detail: err.message, error: err.message, allowedNextStatuses: err.allowed,
-  });
+  return sendProblem(reply, 409, err.message, { title: 'Status change not allowed', allowedNextStatuses: err.allowed });
 }
 
 const READ  = { preHandler: [requirePermission('disability:read')] };
@@ -78,7 +78,7 @@ export async function disabilityCaseRoutes(
       notes?:             string;
       assignedAdvisorId?: string;
     };
-  }>('/api/v1/disability-cases', WRITE, async (request, reply) => {
+  }>('/api/v1/disability-cases', { ...WRITE, schema: { tags: ['disability-cases'], summary: 'Open a disability support case', body: Type.Object({ personId: Uuid, supportTypeCode: Text, dsaAwardRef: Type.Optional(Type.String()), notes: Type.Optional(Type.String()), assignedAdvisorId: Type.Optional(Type.String()) }) } }, async (request, reply) => {
     const { tenantId } = request;
     const actorId      = request.user.sub;
     const body         = request.body;
@@ -119,12 +119,12 @@ export async function disabilityCaseRoutes(
 
   fastify.get<{
     Querystring: { personId?: string; page?: string; limit?: string };
-  }>('/api/v1/disability-cases', READ, async (request, reply) => {
+  }>('/api/v1/disability-cases', { ...READ, schema: { tags: ['disability-cases'], summary: 'List a person\'s disability cases', querystring: Type.Object({ personId: Type.Optional(Uuid), page: Type.Optional(Type.String()), limit: Type.Optional(Type.String()) }) } }, async (request, reply) => {
     const { tenantId } = request;
     const { personId } = request.query;
 
     if (!personId) {
-      return reply.code(400).send({ error: 'personId query parameter is required' });
+      return sendProblem(reply, 400, 'personId query parameter is required');
     }
 
     const cases = await withWellbeingTenantContext(
@@ -144,7 +144,7 @@ export async function disabilityCaseRoutes(
 
   fastify.get<{
     Querystring: { statusCode?: string; assignedTo?: string };
-  }>('/api/v1/disability-cases/caseload', READ, async (request, reply) => {
+  }>('/api/v1/disability-cases/caseload', { ...READ, schema: { tags: ['disability-cases'], summary: 'Open disability caseload', querystring: Type.Object({ statusCode: Type.Optional(Type.String()), assignedTo: Type.Optional(Type.String()) }) } }, async (request, reply) => {
     const { tenantId } = request;
     const { statusCode, assignedTo } = request.query;
     const cases = await withWellbeingTenantContext(
@@ -163,7 +163,7 @@ export async function disabilityCaseRoutes(
 
   fastify.get<{
     Params: { caseId: string };
-  }>('/api/v1/disability-cases/:caseId', READ, async (request, reply) => {
+  }>('/api/v1/disability-cases/:caseId', { ...READ, schema: { tags: ['disability-cases'], summary: 'Get a disability case', params: idParams('caseId') } }, async (request, reply) => {
     const { tenantId } = request;
     const actorId      = request.user.sub;
     const { caseId }   = request.params;
@@ -195,7 +195,7 @@ export async function disabilityCaseRoutes(
     );
 
     if (!result) {
-      return reply.code(404).send({ error: 'Disability case not found' });
+      return sendProblem(reply, 404, 'Disability case not found');
     }
 
     return reply.send({
@@ -210,7 +210,7 @@ export async function disabilityCaseRoutes(
   fastify.patch<{
     Params: { caseId: string };
     Body:   { statusCode: string };
-  }>('/api/v1/disability-cases/:caseId/status', WRITE, async (request, reply) => {
+  }>('/api/v1/disability-cases/:caseId/status', { ...WRITE, schema: { tags: ['disability-cases'], summary: 'Change the case status', params: idParams('caseId'), body: Type.Object({ statusCode: Text }) } }, async (request, reply) => {
     const { tenantId } = request;
     const actorId      = request.user.sub;
     const { caseId }   = request.params;
@@ -257,7 +257,7 @@ export async function disabilityCaseRoutes(
       filename:         string;
       contentType:      string;
     };
-  }>('/api/v1/disability-cases/:caseId/evidence', WRITE, async (request, reply) => {
+  }>('/api/v1/disability-cases/:caseId/evidence', { ...WRITE, schema: { tags: ['disability-cases'], summary: 'Record an evidence reference', params: idParams('caseId'), body: Type.Object({ evidenceTypeCode: Text, filename: Type.Optional(Type.String()), contentType: Type.Optional(Type.String()) }) } }, async (request, reply) => {
     const { tenantId } = request;
     const actorId      = request.user.sub;
     const { caseId }   = request.params;
@@ -310,7 +310,7 @@ export async function disabilityCaseRoutes(
   fastify.patch<{
     Params: { evidenceId: string };
     Body:   { statusCode: string };
-  }>('/api/v1/evidence/:evidenceId/status', WRITE, async (request, reply) => {
+  }>('/api/v1/evidence/:evidenceId/status', { ...WRITE, schema: { tags: ['disability-cases'], summary: 'Change an evidence status', params: idParams('evidenceId'), body: Type.Object({ statusCode: Text }) } }, async (request, reply) => {
     const { tenantId }   = request;
     const actorId        = request.user.sub;
     const { evidenceId } = request.params;
@@ -363,7 +363,7 @@ export async function disabilityCaseRoutes(
       effectiveTo?:        string;
       approvedBy:          string;
     };
-  }>('/api/v1/disability-cases/:caseId/dsa-entitlements', WRITE, async (request, reply) => {
+  }>('/api/v1/disability-cases/:caseId/dsa-entitlements', { ...WRITE, schema: { tags: ['disability-cases'], summary: 'Record a DSA entitlement', params: idParams('caseId'), body: Type.Object({ entitlementTypeCode: Text, providerRef: Type.Optional(Type.String()), effectiveFrom: DateText, effectiveTo: Type.Optional(Type.String()), approvedBy: Text }) } }, async (request, reply) => {
     const { tenantId } = request;
     const actorId      = request.user.sub;
     const { caseId }   = request.params;
@@ -409,7 +409,7 @@ export async function disabilityCaseRoutes(
 
   fastify.get<{
     Params: { caseId: string };
-  }>('/api/v1/disability-cases/:caseId/dsa-entitlements', READ, async (request, reply) => {
+  }>('/api/v1/disability-cases/:caseId/dsa-entitlements', { ...READ, schema: { tags: ['disability-cases'], summary: 'List DSA entitlements', params: idParams('caseId') } }, async (request, reply) => {
     const { tenantId } = request;
     const actorId      = request.user.sub;
     const { caseId }   = request.params;
@@ -435,7 +435,7 @@ export async function disabilityCaseRoutes(
     );
 
     if (!entitlements) {
-      return reply.code(404).send({ error: 'Disability case not found' });
+      return sendProblem(reply, 404, 'Disability case not found');
     }
 
     return reply.send({ items: entitlements, total: entitlements.length });

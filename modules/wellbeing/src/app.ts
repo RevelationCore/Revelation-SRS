@@ -1,11 +1,13 @@
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import multipart from '@fastify/multipart';
+import swagger from '@fastify/swagger';
 import { assertSecureAuthConfig, jwtPlugin, jwtPluginOptions, tenantContextPlugin } from '@revelation-srs/auth';
 import Fastify from 'fastify';
 import type { FastifyInstance } from 'fastify';
 
 import type { Config } from './config.js';
+import { registerProblemHandlers } from './http/problem.js';
 import { createWellbeingDb } from './db/client.js';
 import type { WellbeingDb } from './db/client.js';
 import { EdrmsSimulator } from './edrms/edrms-adapter.js';
@@ -71,6 +73,24 @@ export async function buildApp(config: Config, appOpts: AppOptions = {}): Promis
   // adapter's DocumentTooLargeError (not a raw multipart abort) is what
   // the caller actually sees.
   await fastify.register(multipart, { limits: { fileSize: 20 * 1024 * 1024 } });
+
+  // Every error leaves as problem+json (item 1.7).
+  registerProblemHandlers(fastify);
+
+  // OpenAPI, generated from the route schemas (openapi/v1.json).
+  await fastify.register(swagger, {
+    openapi: {
+      openapi: '3.1.0',
+      info: {
+        title:       'Revelation SRS Wellbeing API',
+        description: 'Wellbeing module: disability support, adjustments, EC claims, mental health and early warning',
+        version:     '1.0.0',
+        license:     { name: 'AGPL-3.0', url: 'https://www.gnu.org/licenses/agpl-3.0.html' },
+      },
+      components: { securitySchemes: { bearerAuth: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' } } },
+      security: [{ bearerAuth: [] }],
+    },
+  });
 
   // JWT authentication (RS256 in prod, HS256 in dev/test)
   await fastify.register(jwtPlugin, jwtPluginOptions(config, 'srs-wellbeing'));

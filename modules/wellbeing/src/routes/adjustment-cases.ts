@@ -1,3 +1,4 @@
+import { Type } from '@sinclair/typebox';
 import { requirePermission } from '@revelation-srs/auth';
 import {
   createPostgresDocumentAdapter,
@@ -9,6 +10,8 @@ import {
 import { hasPermission, type Permission } from '@revelation-srs/domain';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 
+import { Uuid, Text, DateText, idParams } from '../http/schemas.js';
+import { problem, sendProblem } from '../http/problem.js';
 import { withWellbeingTenantContext } from '../db/client.js';
 import { SrsHandoffRejectedError, type SrsAdjustmentClient } from '../srs/srs-adjustment-client.js';
 import {
@@ -111,7 +114,7 @@ export async function adjustmentCaseRoutes(
       rationale?:              string;
       dsaEntitlementId?:       string;
     };
-  }>('/api/v1/adjustment-cases', async (request, reply) => {
+  }>('/api/v1/adjustment-cases', { schema: { tags: ['adjustment-cases'], summary: 'Open an adjustment case', body: Type.Object({ wellbeingCaseId: Type.Optional(Uuid), disabilitySupportCaseId: Type.Optional(Uuid), personId: Uuid, adjustmentTypeCode: Text, rationale: Type.Optional(Type.String()), dsaEntitlementId: Type.Optional(Uuid) }) } }, async (request, reply) => {
     const { tenantId } = request;
     const actorId      = request.user.sub;
     const body         = request.body;
@@ -171,13 +174,13 @@ export async function adjustmentCaseRoutes(
 
   fastify.get<{
     Querystring: { personId?: string; statusCode?: string };
-  }>('/api/v1/adjustment-cases', async (request, reply) => {
+  }>('/api/v1/adjustment-cases', { schema: { tags: ['adjustment-cases'], summary: 'List adjustment cases', querystring: Type.Object({ personId: Type.Optional(Uuid), statusCode: Type.Optional(Type.String()) }) } }, async (request, reply) => {
     const { tenantId } = request;
     const { personId, statusCode } = request.query;
 
     if (!personId) {
       if (!hasPermission(request.user.roles, 'adjustment-case:read:all')) {
-        return reply.code(400).send({ error: 'personId query parameter is required' });
+        return sendProblem(reply, 400, 'personId query parameter is required');
       }
       const cases = await withWellbeingTenantContext(
         request.server.wellbeingDb,
@@ -202,7 +205,7 @@ export async function adjustmentCaseRoutes(
 
   fastify.get<{
     Params: { caseId: string };
-  }>('/api/v1/adjustment-cases/:caseId', async (request, reply) => {
+  }>('/api/v1/adjustment-cases/:caseId', { schema: { tags: ['adjustment-cases'], summary: 'Get an adjustment case', params: idParams('caseId') } }, async (request, reply) => {
     const { tenantId } = request;
     const actorId      = request.user.sub;
     const { caseId }   = request.params;
@@ -238,7 +241,7 @@ export async function adjustmentCaseRoutes(
     );
 
     if (!result) {
-      return reply.code(404).send({ error: 'Adjustment case not found' });
+      return sendProblem(reply, 404, 'Adjustment case not found');
     }
 
     return reply.send({
@@ -258,6 +261,7 @@ export async function adjustmentCaseRoutes(
   fastify.post<{
     Params: { caseId: string };
   }>('/api/v1/adjustment-cases/:caseId/start-assessment', {
+    schema: { tags: ['adjustment-cases'], summary: 'Start the assessment', params: idParams('caseId') },
     preHandler: [requirePermission('adjustment-case:assess')],
   }, async (request, reply) => {
     const { tenantId } = request;
@@ -280,6 +284,7 @@ export async function adjustmentCaseRoutes(
   fastify.post<{
     Params: { caseId: string };
   }>('/api/v1/adjustment-cases/:caseId/request-review', {
+    schema: { tags: ['adjustment-cases'], summary: 'Request a review', params: idParams('caseId') },
     preHandler: [requirePermission('adjustment-case:manage')],
   }, async (request, reply) => {
     const { tenantId } = request;
@@ -300,6 +305,7 @@ export async function adjustmentCaseRoutes(
   fastify.post<{
     Params: { caseId: string };
   }>('/api/v1/adjustment-cases/:caseId/close', {
+    schema: { tags: ['adjustment-cases'], summary: 'Close the case', params: idParams('caseId') },
     preHandler: [requirePermission('adjustment-case:manage')],
   }, async (request, reply) => {
     const { tenantId } = request;
@@ -326,6 +332,7 @@ export async function adjustmentCaseRoutes(
     Params: { caseId: string };
     Body:   { statusCode: string; reason: string };
   }>('/api/v1/adjustment-cases/:caseId/status-correction', {
+    schema: { tags: ['adjustment-cases'], summary: 'Correct the status', params: idParams('caseId'), body: Type.Object({ statusCode: Text, reason: Text }) },
     preHandler: [requirePermission('adjustment-case:manage')],
   }, async (request, reply) => {
     const { tenantId } = request;
@@ -375,6 +382,7 @@ export async function adjustmentCaseRoutes(
       recommendedAction?: string;
     };
   }>('/api/v1/adjustment-cases/:caseId/assessments', {
+    schema: { tags: ['adjustment-cases'], summary: 'Record an assessment', params: idParams('caseId'), body: Type.Object({ assessorId: Text, assessedAt: DateText, outcomeCode: Text, findings: Type.Optional(Type.String()), recommendedAction: Type.Optional(Type.String()) }) },
     preHandler: [requirePermission('adjustment-case:assess')],
   }, async (request, reply) => {
     const { tenantId } = request;
@@ -434,6 +442,7 @@ export async function adjustmentCaseRoutes(
       decisionRationale?: string;
     };
   }>('/api/v1/adjustment-cases/:caseId/panel-decisions', {
+    schema: { tags: ['adjustment-cases'], summary: 'Record a panel decision', params: idParams('caseId'), body: Type.Object({ panelChairId: Text, panelDate: DateText, decisionCode: Text, decisionRationale: Type.Optional(Type.String()) }) },
     preHandler: [requirePermission('panel-decision:write')],
   }, async (request, reply) => {
     const { tenantId } = request;
@@ -515,6 +524,7 @@ export async function adjustmentCaseRoutes(
       forceApprove?:         boolean;
     };
   }>('/api/v1/adjustment-cases/:caseId/approve', {
+    schema: { tags: ['adjustment-cases'], summary: 'Approve and hand off to the SRS', params: idParams('caseId'), body: Type.Object({ enrolmentId: Uuid, adjustmentTypeCode: Type.Optional(Type.String()), scopeCode: Text, recommendedAdjustment: Text, validFrom: DateText, validTo: Type.Optional(Type.String()), notes: Type.Optional(Type.String()), amount: Type.Optional(Type.Object({ value: Type.Number(), unitCode: Text })), forceApprove: Type.Optional(Type.Boolean()) }) },
     preHandler: [requirePermission('panel-decision:write')],
   }, async (request, reply) => {
     const { tenantId } = request;
@@ -630,9 +640,7 @@ export async function adjustmentCaseRoutes(
     const adjustmentTypeCode = body.adjustmentTypeCode?.trim()
       || (typeof storedType === 'string' ? storedType : '');
     if (!adjustmentTypeCode) {
-      return reply.code(422).send({
-        error: 'adjustmentTypeCode is required: the SRS adjustment type being approved (e.g. extra-time), not the case type',
-      });
+      return sendProblem(reply, 422, 'adjustmentTypeCode is required: the SRS adjustment type being approved (e.g. extra-time), not the case type');
     }
 
     try {
@@ -668,13 +676,14 @@ export async function adjustmentCaseRoutes(
       // sets, or an amount the type does not take). Retrying the same body
       // cannot succeed, so say so: correct it and approve again.
       if (err instanceof SrsHandoffRejectedError) {
-        return reply.code(422).send({
-          error:  'The SRS rejected this adjustment — correct it and approve again',
-          detail: err.detail,
+        // detail carries the SRS's own explanation; error the summary.
+        return reply.code(422).type('application/problem+json').send({
+          ...problem(422, err.detail, request.url),
+          error:     'The SRS rejected this adjustment — correct it and approve again',
           srsStatus: err.status,
         });
       }
-      return reply.code(502).send({ error: 'SRS handoff failed — will be retried', detail: msg });
+      return sendProblem(reply, 502, 'SRS handoff failed — will be retried', { cause: msg });
     }
   });
 
@@ -684,6 +693,7 @@ export async function adjustmentCaseRoutes(
     Params: { caseId: string };
     Body:   { rationale: string };
   }>('/api/v1/adjustment-cases/:caseId/reject', {
+    schema: { tags: ['adjustment-cases'], summary: 'Reject the case', params: idParams('caseId'), body: Type.Object({ rationale: Text }) },
     preHandler: [requirePermission('panel-decision:write')],
   }, async (request, reply) => {
     const { tenantId } = request;
@@ -721,13 +731,13 @@ export async function adjustmentCaseRoutes(
 
   fastify.post(
     '/api/v1/adjustment-cases/:caseId/evidence',
-    async (request: FastifyRequest<{ Params: { caseId: string } }>, reply: FastifyReply) => {
+    { schema: { tags: ['adjustment-cases'], summary: 'Upload evidence (multipart: file, evidenceTypeCode)', consumes: ['multipart/form-data'], params: idParams('caseId') } }, async (request: FastifyRequest<{ Params: { caseId: string } }>, reply: FastifyReply) => {
       const { tenantId } = request;
       const actorId      = request.user.sub;
       const { caseId }   = request.params;
 
       const file = await request.file();
-      if (!file) return reply.code(400).send({ error: 'multipart file field is required' });
+      if (!file) return sendProblem(reply, 400, 'multipart file field is required');
       const evidenceTypeCode = (file.fields['evidenceTypeCode'] as { value?: string } | undefined)?.value ?? 'other';
       const content = await file.toBuffer();
 
@@ -770,7 +780,7 @@ export async function adjustmentCaseRoutes(
         return reply.code(201).send(evidenceId);
       } catch (err) {
         if (err instanceof DocumentTooLargeError || err instanceof DocumentTypeNotAllowedError) {
-          return reply.code(422).send({ error: err.message });
+          return sendProblem(reply, 422, err.message);
         }
         throw err;
       }
@@ -779,7 +789,7 @@ export async function adjustmentCaseRoutes(
 
   fastify.get<{
     Params: { caseId: string; evidenceId: string };
-  }>('/api/v1/adjustment-cases/:caseId/evidence/:evidenceId', async (request, reply) => {
+  }>('/api/v1/adjustment-cases/:caseId/evidence/:evidenceId', { schema: { tags: ['adjustment-cases'], summary: 'Download evidence', params: idParams('caseId', 'evidenceId') } }, async (request, reply) => {
     const { tenantId } = request;
     const actorId      = request.user.sub;
     const { caseId, evidenceId } = request.params;
@@ -801,7 +811,7 @@ export async function adjustmentCaseRoutes(
         },
       );
     } catch (err) {
-      if (err instanceof DocumentNotFoundError) return reply.code(404).send({ error: 'Document not found' });
+      if (err instanceof DocumentNotFoundError) return sendProblem(reply, 404, 'Document not found');
       throw err;
     }
 
@@ -814,6 +824,7 @@ export async function adjustmentCaseRoutes(
   fastify.delete<{
     Params: { caseId: string; evidenceId: string };
   }>('/api/v1/adjustment-cases/:caseId/evidence/:evidenceId', {
+    schema: { tags: ['adjustment-cases'], summary: 'Withdraw evidence', params: idParams('caseId', 'evidenceId') },
     preHandler: [requirePermission('adjustment-case:manage')],
   }, async (request, reply) => {
     const { tenantId } = request;

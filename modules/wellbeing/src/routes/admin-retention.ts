@@ -1,7 +1,9 @@
+import { Type } from '@sinclair/typebox';
 import { requirePermission } from '@revelation-srs/auth';
 import { and, eq, isNotNull, lt, isNull } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 
+import { DateText, idParams } from '../http/schemas.js';
 import { withWellbeingTenantContext } from '../db/client.js';
 import { wellbeingCases } from '../db/schema/wellbeing-case.js';
 
@@ -20,6 +22,7 @@ export async function adminRetentionRoutes(fastify: FastifyInstance): Promise<vo
     Params: { caseId: string };
     Body: { retentionDueDate: string; lawfulBasisCode?: string; dataClassificationCode?: string };
   }>('/api/v1/admin/retention/wellbeing-cases/:caseId', {
+    schema: { tags: ['retention'], summary: 'Set a case retention date', params: idParams('caseId'), body: Type.Object({ retentionDueDate: DateText, lawfulBasisCode: Type.Optional(Type.String()), dataClassificationCode: Type.Optional(Type.String()) }) },
     preHandler: [requirePermission('wellbeing-retention:write')],
   }, async (request, reply) => {
     const { tenantId } = request;
@@ -61,6 +64,7 @@ export async function adminRetentionRoutes(fastify: FastifyInstance): Promise<vo
   // Returns the count of cases closed.
 
   fastify.post('/api/v1/admin/retention/apply', {
+    schema: { tags: ['retention'], summary: 'Apply retention to cases past their date' },
     preHandler: [requirePermission('wellbeing-retention:write')],
   }, async (request, reply) => {
     const { tenantId } = request;

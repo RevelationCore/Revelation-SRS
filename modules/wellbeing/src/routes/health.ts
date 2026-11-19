@@ -4,7 +4,7 @@ import type { FastifyInstance } from 'fastify';
 export function healthRoutes(fastify: FastifyInstance): void {
   fastify.get(
     '/health',
-    { config: { skipAuth: true } },
+    { config: { skipAuth: true }, schema: { tags: ['health'], summary: 'Liveness' } },
     async (_req, reply) => {
       await reply.code(200).send({
         status:  'ok',
@@ -17,7 +17,7 @@ export function healthRoutes(fastify: FastifyInstance): void {
 
   fastify.get(
     '/ready',
-    { config: { skipAuth: true } },
+    { config: { skipAuth: true }, schema: { tags: ['health'], summary: 'Readiness' } },
     async (_req, reply) => {
       const checks: Record<string, { status: string; latencyMs?: number; error?: string }> = {};
 
@@ -43,7 +43,7 @@ export function healthRoutes(fastify: FastifyInstance): void {
 
   fastify.get(
     '/metrics',
-    { config: { skipAuth: true } },
+    { config: { skipAuth: true }, schema: { tags: ['health'], summary: 'Prometheus metrics' } },
     async (_req, reply) => {
       const uptime = process.uptime();
       const memory = process.memoryUsage();

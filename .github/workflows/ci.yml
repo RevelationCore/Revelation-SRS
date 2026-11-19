@@ -272,6 +272,12 @@ jobs:
       - name: Generate OpenAPI spec
         run: pnpm --filter @revelation-srs/api generate:openapi
 
+      - name: Wellbeing OpenAPI is current, and every route has a schema
+        run: |
+          pnpm --filter @revelation-srs/wellbeing generate:openapi
+          git diff --exit-code modules/wellbeing/openapi/v1.json
+          pnpm check:wellbeing-route-schemas
+
       - name: Generate compatibility report
         run: pnpm --filter @revelation-srs/api generate:compat-report
 
