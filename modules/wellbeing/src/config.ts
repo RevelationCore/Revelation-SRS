@@ -1,4 +1,4 @@
-import { tokenEnv } from '@revelation-srs/auth';
+import { DEFAULT_DEV_JWT_SECRET, tokenEnv } from '@revelation-srs/auth';
 
 export interface Config {
   port:            number;
@@ -37,7 +37,7 @@ export function loadConfig(): Config {
     databaseUrl:     required('DATABASE_URL'),
     srsApiUrl:       process.env['SRS_API_URL'] ?? 'http://localhost:3000',
     natsUrl:         process.env['NATS_URL'] ?? 'nats://localhost:4222',
-    jwtSecret:       process.env['JWT_SECRET'] ?? 'dev-secret-replace-in-production',
+    jwtSecret:       process.env['JWT_SECRET'] ?? DEFAULT_DEV_JWT_SECRET,  // development and test only (assertSecureAuthConfig)
     keycloakJwksUrl: process.env['KEYCLOAK_JWKS_URL'],
     ...tokenEnv(),
     corsOrigins:     (process.env['CORS_ORIGINS'] ?? 'http://localhost:5173').split(','),

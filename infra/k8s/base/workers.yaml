@@ -317,6 +317,15 @@ spec:
               value: "3002"
             - name: NATS_URL
               value: nats://srs-nats:4222
+            # Tokens: Keycloak RS256 only (HS256 refuses to start outside
+            # development and test). The issuer is Keycloak's public URL.
+            - name: KEYCLOAK_JWKS_URL
+              value: http://keycloak:8080/realms/srs/protocol/openid-connect/certs
+            - name: KEYCLOAK_ISSUER
+              valueFrom:
+                configMapKeyRef:
+                  name: srs-api-config
+                  key: KEYCLOAK_ISSUER
           command:
             - /bin/sh
             - -c
@@ -441,6 +450,15 @@ spec:
               value: "3004"
             - name: NATS_URL
               value: nats://srs-nats:4222
+            # Tokens: Keycloak RS256 only (HS256 refuses to start outside
+            # development and test). The issuer is Keycloak's public URL.
+            - name: KEYCLOAK_JWKS_URL
+              value: http://keycloak:8080/realms/srs/protocol/openid-connect/certs
+            - name: KEYCLOAK_ISSUER
+              valueFrom:
+                configMapKeyRef:
+                  name: srs-api-config
+                  key: KEYCLOAK_ISSUER
             - name: SRS_API_URL
               value: http://srs-api:3000
           command:

@@ -1,4 +1,4 @@
-import { tokenEnv } from '@revelation-srs/auth';
+import { DEFAULT_DEV_JWT_SECRET, tokenEnv } from '@revelation-srs/auth';
 
 /** Typed environment configuration - read once at startup. */
 export interface Config {
@@ -84,7 +84,7 @@ export function loadConfig(): Config {
     releaseVersion: process.env['SRS_RELEASE_VERSION'] ?? process.env['npm_package_version'] ?? '0.0.0',
     imageDigest: optional('SRS_IMAGE_DIGEST'),
     migrationVersion: process.env['SRS_MIGRATION_VERSION'] ?? '0001_security_and_tenant_isolation',
-    jwtSecret:       process.env['JWT_SECRET'] ?? 'dev-secret-replace-in-production',
+    jwtSecret:       process.env['JWT_SECRET'] ?? DEFAULT_DEV_JWT_SECRET,  // development and test only (assertSecureAuthConfig)
     keycloakJwksUrl: optional('KEYCLOAK_JWKS_URL'),
     ...tokenEnv(),
     adminAppUrl:     optional('ADMIN_APP_URL'),

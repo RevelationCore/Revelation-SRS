@@ -88,6 +88,15 @@ spec:
               value: srs
             - name: KEYCLOAK_CLIENT_ID
               value: srs-api
+            # Tokens: Keycloak RS256 only (HS256 refuses to start outside
+            # development and test). The issuer is Keycloak's public URL.
+            - name: KEYCLOAK_JWKS_URL
+              value: http://keycloak:8080/realms/srs/protocol/openid-connect/certs
+            - name: KEYCLOAK_ISSUER
+              valueFrom:
+                configMapKeyRef:
+                  name: srs-api-config
+                  key: KEYCLOAK_ISSUER
             - name: NATS_URL
               value: nats://srs-nats:4222
             - name: TEMPORAL_ADDRESS
@@ -174,6 +183,8 @@ metadata:
   namespace: revelation-srs
 data:
   ALLOWED_ORIGINS: "https://portal.example.com,https://admin.example.com"
+  # Keycloak's public realm URL: the `iss` of every token the services accept.
+  KEYCLOAK_ISSUER: "https://auth.example.com/realms/srs"
 
 ---
 # ── Service ──────────────────────────────────────────────────────────────────

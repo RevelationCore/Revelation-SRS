@@ -1,6 +1,6 @@
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
-import { jwtPlugin, jwtPluginOptions, tenantContextPlugin } from '@revelation-srs/auth';
+import { assertSecureAuthConfig, jwtPlugin, jwtPluginOptions, tenantContextPlugin } from '@revelation-srs/auth';
 import Fastify from 'fastify';
 import type { FastifyInstance } from 'fastify';
 
@@ -26,6 +26,8 @@ export interface AppOptions {
 }
 
 export async function buildApp(config: Config, appOpts: AppOptions = {}): Promise<FastifyInstance> {
+  assertSecureAuthConfig('srs-attendance', config.nodeEnv, config);
+
   const fastify = Fastify({
     logger: config.nodeEnv === 'development'
       ? {

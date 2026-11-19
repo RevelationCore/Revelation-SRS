@@ -49,3 +49,23 @@ export function jwtPluginOptions(settings: AuthSettings, serviceAudience: string
     ...(settings.keycloakAudience ? { audience: settings.keycloakAudience } : {}),
   };
 }
+
+/** The secret the configs fall back to. Published in this repository, so never secret. */
+export const DEFAULT_DEV_JWT_SECRET = 'dev-secret-replace-in-production';
+
+/**
+ * Refuses an insecure token configuration outside development and test
+ * (enterprise readiness plan, item 1.6). Anywhere else a service must
+ * validate Keycloak's RS256 tokens: HS256 with a shared JWT_SECRET (the
+ * published default, a short one, or any other) is for development and test
+ * only, because anyone holding the secret can mint a token for any tenant.
+ */
+export function assertSecureAuthConfig(service: string, nodeEnv: string, settings: AuthSettings): void {
+  if (nodeEnv === 'development' || nodeEnv === 'test') return;
+  if (!settings.keycloakJwksUrl) {
+    throw new Error(
+      `${service} refuses to start: NODE_ENV=${nodeEnv} needs KEYCLOAK_JWKS_URL. ` +
+      'HS256 tokens signed with JWT_SECRET are accepted in development and test only.',
+    );
+  }
+}

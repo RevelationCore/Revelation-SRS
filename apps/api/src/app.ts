@@ -5,7 +5,7 @@ import rateLimiter from '@fastify/rate-limit';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
 import { trace } from '@opentelemetry/api';
-import { jwtPlugin, jwtPluginOptions, tenantContextPlugin } from '@revelation-srs/auth';
+import { assertSecureAuthConfig, jwtPlugin, jwtPluginOptions, tenantContextPlugin } from '@revelation-srs/auth';
 import { createDb } from '@revelation-srs/db';
 import type { DomainError } from '@revelation-srs/domain';
 import Fastify from 'fastify';
@@ -289,6 +289,8 @@ export async function buildApp(
   config: Config,
   overrides: { eventBus?: IntegrationBusPublisher; temporalGateway?: TemporalGateway } = {},
 ): Promise<FastifyInstance> {
+  assertSecureAuthConfig('srs-api', config.nodeEnv, config);
+
   const serializers = {
     req(req: { method: string; url: string; headers: Record<string, string | string[] | undefined> }) {
       return {

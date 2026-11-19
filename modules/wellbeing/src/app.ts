@@ -1,7 +1,7 @@
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import multipart from '@fastify/multipart';
-import { jwtPlugin, jwtPluginOptions, tenantContextPlugin } from '@revelation-srs/auth';
+import { assertSecureAuthConfig, jwtPlugin, jwtPluginOptions, tenantContextPlugin } from '@revelation-srs/auth';
 import Fastify from 'fastify';
 import type { FastifyInstance } from 'fastify';
 
@@ -41,6 +41,8 @@ const REDACTED_PATHS = [
 ];
 
 export async function buildApp(config: Config, appOpts: AppOptions = {}): Promise<FastifyInstance> {
+  assertSecureAuthConfig('srs-wellbeing', config.nodeEnv, config);
+
   const fastify = Fastify({
     logger: config.nodeEnv === 'development'
       ? {
