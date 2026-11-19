@@ -1127,7 +1127,7 @@ export function platformControlRoutes(fastify: FastifyInstance): void {
     preHandler: [requirePermission('feature-flag:read')],
   }, async (request, reply) => {
     const { featureFlagId } = request.params as { featureFlagId: string };
-    const impact = await fastify.featureFlagService.getImpact(featureFlagId);
+    const impact = await fastify.featureFlagService.getImpact(featureFlagId, request.tenantId);
     await reply.send(impact);
   });
 

@@ -94,11 +94,11 @@ export class WorkflowDefinitionService {
       ).orderBy(asc(workflowDefinitionVersions.versionNumber)),
     );
     if (rows.length === 0) return [];
-    const stepRows = await this.db
+    const stepRows = await withTenantContext(this.db, tenantId, async (tx) => tx
       .select()
       .from(workflowSteps)
       .where(inArray(workflowSteps.workflowDefinitionVersionId, rows.map((r) => r.id)))
-      .orderBy(asc(workflowSteps.sortOrder));
+      .orderBy(asc(workflowSteps.sortOrder)));
     return rows.map((r) => versionToDto(r, stepRows.filter((s) => s.workflowDefinitionVersionId === r.id)));
   }
 
@@ -115,11 +115,11 @@ export class WorkflowDefinitionService {
         .limit(1),
     );
     if (!rows[0]) throw new NotFoundError('WorkflowDefinitionVersion', workflowDefinitionVersionId);
-    const stepRows = await this.db
+    const stepRows = await withTenantContext(this.db, tenantId, async (tx) => tx
       .select()
       .from(workflowSteps)
       .where(eq(workflowSteps.workflowDefinitionVersionId, workflowDefinitionVersionId as `${string}-${string}-${string}-${string}-${string}`))
-      .orderBy(asc(workflowSteps.sortOrder));
+      .orderBy(asc(workflowSteps.sortOrder)));
     return versionToDto(rows[0].version, stepRows);
   }
 

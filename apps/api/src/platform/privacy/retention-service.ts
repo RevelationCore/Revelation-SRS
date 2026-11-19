@@ -21,6 +21,7 @@ import {
   personIdentities,
   persons,
   studentAddresses,
+  withTenantContext,
   type Db,
 } from '@revelation-srs/db';
 
@@ -65,7 +66,7 @@ export class RetentionEnforcementService {
     // actual_end_date (or valid_from of the terminal status row) is before the cutoff.
     // Persons with an award record are flagged for DPO review instead of auto-anonymised
     // (award/transcript data is permanently retained per the data subject register).
-    const eligibleRows = await this.db.execute<{ person_id: string; has_award: boolean }>(sql`
+    const eligibleRows = await withTenantContext(this.db, tenantId, (tx) => tx.execute<{ person_id: string; has_award: boolean }>(sql`
       SELECT
         e.person_id::text,
         EXISTS (
@@ -94,7 +95,7 @@ export class RetentionEnforcementService {
             AND p2.retention_anonymised_at IS NOT NULL
         )
       GROUP BY e.person_id, e.tenant_id
-    `) as unknown as Array<{ person_id: string; has_award: boolean }>;
+    `)) as unknown as Array<{ person_id: string; has_award: boolean }>;
 
     const details: RetentionSweepResult['details'] = [];
     let anonymised = 0;
@@ -138,7 +139,7 @@ export class RetentionEnforcementService {
       // Identity/contact fields are replaced with anonymised tokens.
       const anonToken = `ANON-${personId.slice(0, 8).toUpperCase()}`;
 
-      await this.db.transaction(async (tx) => {
+      await withTenantContext(this.db, tenantId, async (tx) => {
         // Anonymise all person_identity versions for this person
         await tx
           .update(personIdentities)

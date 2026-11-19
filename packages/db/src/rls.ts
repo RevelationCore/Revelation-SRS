@@ -9,7 +9,9 @@ export type TenantScopedDb = Parameters<Parameters<Db['transaction']>[0]>[0];
  * isolation policy.  Call once per table during migration.
  *
  * Policy: only rows whose tenant_id matches the current session setting
- * app.current_tenant_id are visible.
+ * app.current_tenant_id are visible. NULLIF matters: once SET LOCAL ends, a
+ * pooled connection reads the setting as '' rather than unset, and casting
+ * '' to uuid raises. Without a tenant context the policy matches no rows.
  *
  * The system-administrator PostgreSQL role is granted BYPASSRLS and uses
  * this only for platform-level operations (all audited separately).
@@ -22,7 +24,7 @@ export function rlsPolicySql(tableName: string): string {
     DROP POLICY IF EXISTS tenant_isolation ON "${tableName}";
     CREATE POLICY tenant_isolation ON "${tableName}"
       USING (
-        tenant_id = current_setting('app.current_tenant_id', true)::uuid
+        tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid
       );
   `;
 }

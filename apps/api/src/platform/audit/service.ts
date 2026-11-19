@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto';
 
 import { and, desc, eq, gt, isNull } from 'drizzle-orm';
-import { auditRecords, auditPartitionSeals } from '@revelation-srs/db';
+import { auditRecords, auditPartitionSeals, withTenantContext } from '@revelation-srs/db';
 import type { AuditActionType, AuditActorType, Db, TenantScopedDb } from '@revelation-srs/db';
 
 import { clockNow } from '../clock.js';
@@ -164,30 +164,32 @@ export class AuditService {
    * seal simply marks the range as historical/legacy in that case.
    */
   async sealPartition(tenantId: string, rangeStart: Date, rangeEnd: Date, sealedBy: string): Promise<string> {
-    const lastRow = await this.db.select({ recordHash: auditRecords.recordHash })
-      .from(auditRecords)
-      .where(and(
-        eq(auditRecords.tenantId, tenantId as Uuid),
-        gt(auditRecords.occurredAt, rangeStart),
-      ))
-      .orderBy(desc(auditRecords.occurredAt))
-      .limit(1);
+    return withTenantContext(this.db, tenantId, async (tx) => {
+      const lastRow = await tx.select({ recordHash: auditRecords.recordHash })
+        .from(auditRecords)
+        .where(and(
+          eq(auditRecords.tenantId, tenantId as Uuid),
+          gt(auditRecords.occurredAt, rangeStart),
+        ))
+        .orderBy(desc(auditRecords.occurredAt))
+        .limit(1);
 
-    const sealHash = createHash('sha256').update(JSON.stringify({
-      tenantId, rangeStart: rangeStart.toISOString(), rangeEnd: rangeEnd.toISOString(),
-      lastRecordHash: lastRow[0]?.recordHash ?? 'legacy-unsealed',
-    })).digest('hex');
+      const sealHash = createHash('sha256').update(JSON.stringify({
+        tenantId, rangeStart: rangeStart.toISOString(), rangeEnd: rangeEnd.toISOString(),
+        lastRecordHash: lastRow[0]?.recordHash ?? 'legacy-unsealed',
+      })).digest('hex');
 
-    const id = randomUUID();
-    await this.db.insert(auditPartitionSeals).values({
-      id,
-      tenantId: tenantId as Uuid,
-      rangeStart,
-      rangeEnd,
-      sealHash,
-      sealedAt: clockNow(),
-      sealedBy,
+      const id = randomUUID();
+      await tx.insert(auditPartitionSeals).values({
+        id,
+        tenantId: tenantId as Uuid,
+        rangeStart,
+        rangeEnd,
+        sealHash,
+        sealedAt: clockNow(),
+        sealedBy,
+      });
+      return id;
     });
-    return id;
   }
 }

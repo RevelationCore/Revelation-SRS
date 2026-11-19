@@ -15,6 +15,7 @@ const JWT_SECRET = 'test-secret-for-phase4-int-tests';
 export interface TestApp {
   app:         Awaited<ReturnType<typeof buildApp>>;
   container:   StartedPostgreSqlContainer;
+  /** Superuser connection for seeding and assertions; the app itself runs as srs_app. */
   db:          Db;
   tenantId:    string;
   secondTenantId: string;
@@ -66,11 +67,23 @@ export async function startTestApp(opts: StartTestAppOptions = {}): Promise<Test
     VALUES (${secondTenantId}, 'TEST2', 'Second Test University', true)
   `);
 
+  // The app connects as a login role that inherits srs_app, as it does in
+  // every deployment: not the owner, not a superuser, no BYPASSRLS, so
+  // row-level security applies to every query it makes. The test's own `db`
+  // stays the superuser connection, for seeding and for asserting on rows.
+  await db.execute(sql.raw(`
+    CREATE ROLE srs_api_test LOGIN PASSWORD 'srs_api_test' NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS INHERIT;
+    GRANT srs_app TO srs_api_test;
+  `));
+  const appUrl = new URL(connectionString);
+  appUrl.username = 'srs_api_test';
+  appUrl.password = 'srs_api_test';
+
   const config: Config = {
     port:             3001,
-    logLevel:         'silent',
+    logLevel:         process.env['TEST_LOG_LEVEL'] ?? 'silent',  // TEST_LOG_LEVEL=error shows server errors
     nodeEnv:          'test',
-    databaseUrl:      connectionString,
+    databaseUrl:      appUrl.toString(),
     natsUrl:          'nats://localhost:4222',  // NATS not needed for these tests
     temporalAddress:  opts.temporal?.address ?? 'localhost:7233',
     ...(opts.temporal ? {
