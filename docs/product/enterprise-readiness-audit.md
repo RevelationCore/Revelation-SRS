@@ -131,6 +131,14 @@ Four phases. Each item has an owner area, a size (S under 1 day, M 1 to 3 days, 
 | 1.8 Fix the engagement proxy | SEC-5 | S | Authenticate in core before forwarding; forward an allow-list of headers only; stream the body unchanged; 15 s timeout; body limit | Proxy tests: unauthenticated gets 401; multipart passes through; timeout gets 504 |
 | 1.9 Content-Security-Policy and tokens | SEC-7 | M | Set CSP, HSTS and frame headers in the SPA nginx config (not only the ingress); keep tokens in memory, with refresh handled by a short-lived refresh flow (or a backend-for-frontend cookie, *decide*) | Lighthouse and header checks in CI; no token in `localStorage` |
 
+**Status (2026-11-19).** Items 1.1 to 1.8 are delivered, and 1.9 except moving tokens out of `localStorage` (deferred by decision), on branch `phase-1-security-isolation`, after squashing migrations 0000–0009 into `0000_baseline` (item 4.1, done first). Phase 1's database changes are one migration, `0001_security_and_tenant_isolation`. Where the delivery differs from the table:
+
+- 1.2 needed no cross-tenant system context: the cross-tenant jobs already list tenants (`tenant` has no RLS) and work per tenant. Running under RLS found a real defect in every policy: a cleared tenant setting reads as `''`, which the `::uuid` cast rejected. All 208 policies now use `NULLIF`.
+- 1.5 and 1.6: outside development and test, HS256 is refused whatever the secret, so "default or short secret" is covered by "no HS256". The Kubernetes manifests had no JWKS URL at all; they now set one.
+- 1.7: status codes are checked by the domain's transition rules (409 with the allowed next statuses), not schema enums, and lengths are not capped. Response schemas are not declared yet.
+- Found on the way and fixed: the wellbeing EC claim routes checked no permission (new `ec-claim:read` and `ec-claim:manage`, role mapping for sign-off); `getTemplate` returned another tenant's template by id; feature-flag impact listed other tenants.
+- Found on the way, not fixed (later phases): the rate limiter runs before authentication, so it keys every caller by IP, never by tenant; Kubernetes sets `ALLOWED_ORIGINS` but the API reads `CORS_ORIGINS`; the wellbeing and attendance suites still connect as the superuser, so RLS is not yet proven there the way item 1.2 proves it for the API, and `wellbeing.srs_handoff_outbox` and `wellbeing.srs_ec_handoff_outbox` have a `tenant_id` but no RLS (the coverage check covers the core schemas only).
+
 ### Phase 2 — Availability and consistency (about 2 weeks)
 
 | Item | Fixes | Size | What to do | Done when |
