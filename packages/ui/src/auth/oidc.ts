@@ -1,5 +1,7 @@
 /** PKCE Authorization Code Flow helpers — no external OIDC library required. */
 
+import { isTokenExpired, secondsUntilExpiry } from './jwt.js';
+
 export interface OidcConfig {
   keycloakUrl: string;
   realm:       string;
@@ -48,7 +50,9 @@ export async function startLogin(cfg: OidcConfig): Promise<void> {
     response_type:         'code',
     client_id:             cfg.clientId,
     redirect_uri:          cfg.redirectUri,
-    scope:                 'openid profile email offline_access',
+    // No offline_access: a browser app's refresh token ends with the
+    // Keycloak session (ADR-026).
+    scope:                 'openid profile email',
     code_challenge:        challenge,
     code_challenge_method: 'S256',
     state,
@@ -92,6 +96,55 @@ export async function refreshTokens(cfg: OidcConfig, refreshToken: string): Prom
     client_id:     cfg.clientId,
     refresh_token: refreshToken,
   });
+}
+
+export interface TokenStorageKeys {
+  access:  string;
+  refresh: string;
+}
+
+/** The part of the Web Locks API this module needs (navigator.locks). */
+export interface RefreshLocks {
+  request<T>(name: string, callback: () => Promise<T>): Promise<T>;
+}
+
+/**
+ * Refreshes with the refresh token in storage, one tab at a time.
+ *
+ * The realm rotates refresh tokens (ADR-026), and Keycloak treats a used
+ * refresh token as theft: presenting one again also revokes its
+ * replacement, ending the session for every tab. Each open tab refreshes on
+ * its own timer from the same stored tokens, so tabs must never refresh
+ * concurrently. A Web Lock serialises them; the winner stores the new pair
+ * before releasing it, and a tab that then gets the lock finds a fresh
+ * access token and uses it instead of refreshing again.
+ *
+ * Browsers without Web Locks (none current) refresh unserialised.
+ */
+export async function refreshFromStorage(
+  cfg:  OidcConfig,
+  keys: TokenStorageKeys,
+  opts: { locks?: RefreshLocks | undefined; freshForSeconds?: number } = {},
+): Promise<TokenSet> {
+  const locks = 'locks' in opts ? opts.locks : (globalThis.navigator as { locks?: RefreshLocks } | undefined)?.locks;
+  // A tab refreshes when its token has at most 60 s left, so a token with
+  // more than this left was just issued to another tab.
+  const freshFor = opts.freshForSeconds ?? 90;
+
+  const run = async (): Promise<TokenSet> => {
+    const access  = localStorage.getItem(keys.access);
+    const refresh = localStorage.getItem(keys.refresh);
+    if (!refresh) throw new Error('No refresh token stored');
+    if (access && !isTokenExpired(access) && secondsUntilExpiry(access) > freshFor) {
+      return { accessToken: access, refreshToken: refresh, expiresIn: secondsUntilExpiry(access) };
+    }
+    const ts = await refreshTokens(cfg, refresh);
+    localStorage.setItem(keys.access,  ts.accessToken);
+    localStorage.setItem(keys.refresh, ts.refreshToken);
+    return ts;
+  };
+
+  return locks ? locks.request(`srs-token-refresh:${keys.refresh}`, run) : run();
 }
 
 export function logout(cfg: OidcConfig): void {
