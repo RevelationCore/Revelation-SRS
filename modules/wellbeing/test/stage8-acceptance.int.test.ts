@@ -352,7 +352,6 @@ describe('Stage 8 — End-to-End Acceptance Review', () => {
         url:     `/api/v1/ec-claims/${ecClaimId}/evidence-reviews`,
         headers: { authorization: `Bearer ${advisorJwt}` },
         payload: {
-          reviewerId:         'reviewer-001',
           reviewedAt:         '2026-05-20T14:00:00Z',
           evidenceStatusCode: 'sufficient',
         },
@@ -368,7 +367,6 @@ describe('Stage 8 — End-to-End Acceptance Review', () => {
         url:     `/api/v1/ec-claims/${ecClaimId}/determine`,
         headers: { authorization: `Bearer ${advisorJwt}` },
         payload: {
-          authorisedById:    'panel-chair-001',
           determinationCode: 'upheld',
           determinedAt:      '2026-05-25T14:00:00Z',
           moduleOutcomes:    [{ moduleCode: 'CS101', outcome: 'defer' }],
@@ -423,7 +421,6 @@ describe('Stage 8 — End-to-End Acceptance Review', () => {
         url:     `/api/v1/ec-claims/${newId}/determine`,
         headers: { authorization: `Bearer ${advisorJwt}` },
         payload: {
-          authorisedById:    'chair-001',
           determinationCode: 'not_upheld',
           determinedAt:      '2026-05-26T14:00:00Z',
           moduleOutcomes:    [{ moduleCode: 'MA201', outcome: 'no-action' }],

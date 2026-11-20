@@ -190,7 +190,6 @@ describe('Stage 5 — Exceptional Circumstances Workflow', () => {
         url:     `/api/v1/ec-claims/${claimId}/evidence-reviews`,
         headers: { authorization: `Bearer ${jwt}` },
         payload: {
-          reviewerId:         'reviewer-001',
           reviewedAt:         '2025-10-15T14:00:00Z',
           evidenceStatusCode: 'pending',
           reviewNotes:        'Awaiting GP letter.',
@@ -219,7 +218,6 @@ describe('Stage 5 — Exceptional Circumstances Workflow', () => {
         url:     `/api/v1/ec-claims/${claimId}/evidence-reviews`,
         headers: { authorization: `Bearer ${jwt}` },
         payload: {
-          reviewerId:         'reviewer-001',
           reviewedAt:         '2025-10-20T09:00:00Z',
           evidenceStatusCode: 'sufficient',
         },
@@ -248,7 +246,6 @@ describe('Stage 5 — Exceptional Circumstances Workflow', () => {
         url:     `/api/v1/ec-claims/${claimId}/determine`,
         headers: { authorization: `Bearer ${jwt}` },
         payload: {
-          authorisedById:    'panel-chair-001',
           determinationCode: 'upheld',
           determinedAt:      '2025-11-01T10:00:00Z',
           moduleOutcomes: [{ moduleCode: 'MOD601', outcome: 'defer_assessment' }],
@@ -288,7 +285,6 @@ describe('Stage 5 — Exceptional Circumstances Workflow', () => {
       });
 
       const payload = {
-        authorisedById:    'panel-chair-001',
         determinationCode: 'upheld',
         determinedAt:      '2025-11-05T10:00:00Z',
         moduleOutcomes: [{ moduleCode: 'MOD701', outcome: 'defer_assessment' }],
@@ -330,7 +326,6 @@ describe('Stage 5 — Exceptional Circumstances Workflow', () => {
         url:     `/api/v1/ec-claims/${claimId}/determine`,
         headers: { authorization: `Bearer ${jwt}` },
         payload: {
-          authorisedById:    'panel-chair-001',
           determinationCode: 'not_upheld',
           determinedAt:      '2025-11-10T10:00:00Z',
           moduleOutcomes: [{ moduleCode: 'MOD801', outcome: 'no_action' }],

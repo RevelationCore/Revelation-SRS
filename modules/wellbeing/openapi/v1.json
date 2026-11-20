@@ -1132,7 +1132,7 @@
     },
     "/api/v1/ec-claims/{claimId}/evidence-reviews": {
       "post": {
-        "summary": "Record an evidence review",
+        "summary": "Record an evidence review (the reviewer is the signed-in user)",
         "tags": [
           "ec-claims"
         ],
@@ -1143,15 +1143,10 @@
               "schema": {
                 "type": "object",
                 "required": [
-                  "reviewerId",
                   "reviewedAt",
                   "evidenceStatusCode"
                 ],
                 "properties": {
-                  "reviewerId": {
-                    "minLength": 1,
-                    "type": "string"
-                  },
                   "reviewedAt": {
                     "minLength": 1,
                     "description": "ISO 8601 date or date-time",
@@ -1189,7 +1184,7 @@
     },
     "/api/v1/ec-claims/{claimId}/determine": {
       "post": {
-        "summary": "Determine the claim",
+        "summary": "Determine the claim (the authoriser is the signed-in user)",
         "tags": [
           "ec-claims"
         ],
@@ -1200,16 +1195,11 @@
               "schema": {
                 "type": "object",
                 "required": [
-                  "authorisedById",
                   "determinationCode",
                   "moduleOutcomes",
                   "determinedAt"
                 ],
                 "properties": {
-                  "authorisedById": {
-                    "minLength": 1,
-                    "type": "string"
-                  },
                   "determinationCode": {
                     "minLength": 1,
                     "type": "string"

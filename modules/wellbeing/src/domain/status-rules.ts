@@ -48,6 +48,20 @@ export const ALERT_TRIAGE_TRANSITIONS: Readonly<Record<string, readonly string[]
   dismissed: [],
 };
 
+/**
+ * Exceptional-circumstances claims (ADR-028). `upheld` and `not_upheld` are
+ * set only by a determination, never by a status change, so neither appears
+ * as a target here; withdrawal is a move to `closed` through its own route.
+ */
+export const EC_CLAIM_TRANSITIONS: Readonly<Record<string, readonly string[]>> = {
+  submitted:        ['evidence_pending', 'under_review', 'closed'],
+  evidence_pending: ['under_review', 'closed'],
+  under_review:     ['evidence_pending', 'closed'],
+  upheld:           ['closed'],
+  not_upheld:       ['closed'],
+  closed:           [],
+};
+
 /** Disability and mental-health cases in these statuses are left out of a caseload. */
 export const CLOSED_DISABILITY_STATUSES = ['closed', 'rejected'] as const;
 export const CLOSED_MENTAL_HEALTH_STATUSES = ['closed'] as const;

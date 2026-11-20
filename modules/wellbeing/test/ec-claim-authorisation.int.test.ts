@@ -39,7 +39,7 @@ describe('EC claim authorisation', () => {
       expect((await call(roles, 'PATCH', `/api/v1/ec-claims/${CLAIM}/status`, { statusCode: 'under-review' })).statusCode).toBe(403);
       expect((await call(roles, 'POST', `/api/v1/ec-claims/${CLAIM}/withdraw`, {})).statusCode).toBe(403);
       expect((await call(roles, 'POST', `/api/v1/ec-claims/${CLAIM}/determine`, {
-        authorisedById: 'x', determinationCode: 'accepted', moduleOutcomes: [], determinedAt: '2026-11-19',
+        determinationCode: 'accepted', moduleOutcomes: [], determinedAt: '2026-11-19',
       })).statusCode).toBe(403);
     },
   );
