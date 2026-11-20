@@ -76,6 +76,11 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          # Always fetch the current base image, and never take the runtime
+          # stage from cache, so its package upgrades (apk upgrade) are current:
+          # a cached layer kept a vulnerable nginx after the fix was published.
+          pull: true
+          no-cache-filters: runtime
           provenance: true
           sbom: true
 
