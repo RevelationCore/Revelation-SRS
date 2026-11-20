@@ -406,7 +406,7 @@ export async function ecClaimRoutes(
     }
 
     if (alreadySent) {
-      const outbox = await findEcHandoffForClaim(request.server.wellbeingDb, claimId);
+      const outbox = await withWellbeingTenantContext(request.server.wellbeingDb, tenantId, (tx) => findEcHandoffForClaim(tx, claimId));
       return reply.code(200).send({
         status: 'already_sent',
         exceptionalCircumstancesId:
@@ -433,11 +433,11 @@ export async function ecClaimRoutes(
         ...(body.determinationRationale !== undefined ? { notes: body.determinationRationale } : {}),
       });
 
-      await markEcHandoffSent(
-        request.server.wellbeingDb,
+      await withWellbeingTenantContext(request.server.wellbeingDb, tenantId, (tx) => markEcHandoffSent(
+        tx,
         outboxId,
         { exceptionalCircumstancesId: result.exceptionalCircumstancesId },
-      );
+      ));
 
       return reply.code(202).send({
         status: 'submitted',
@@ -445,7 +445,7 @@ export async function ecClaimRoutes(
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      await markEcHandoffFailed(request.server.wellbeingDb, outboxId, msg);
+      await withWellbeingTenantContext(request.server.wellbeingDb, tenantId, (tx) => markEcHandoffFailed(tx, outboxId, msg));
       return sendProblem(reply, 502, 'SRS EC handoff failed — will be retried', { cause: msg });
     }
   });

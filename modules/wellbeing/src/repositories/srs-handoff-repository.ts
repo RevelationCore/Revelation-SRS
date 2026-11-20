@@ -1,6 +1,6 @@
 import { eq, sql } from 'drizzle-orm';
 
-import type { WellbeingDb, WellbeingTx } from '../db/client.js';
+import type { WellbeingTx } from '../db/client.js';
 import { srsHandoffOutbox } from '../db/schema/srs-handoff.js';
 
 // ── Outbox management ─────────────────────────────────────────────────────────
@@ -36,7 +36,7 @@ export async function enqueueHandoff(
 
 /** Fetch the outbox record for an adjustment case (null if not yet enqueued). */
 export async function findHandoffForCase(
-  db:               WellbeingDb | WellbeingTx,
+  db:               WellbeingTx,  // tenant context only: the outbox has RLS (BL-035)
   adjustmentCaseId: string,
 ) {
   const rows = await db
@@ -49,7 +49,7 @@ export async function findHandoffForCase(
 
 /** Mark a handoff record as successfully sent. */
 export async function markHandoffSent(
-  db:          WellbeingDb | WellbeingTx,
+  db:          WellbeingTx,  // tenant context only: the outbox has RLS (BL-035)
   outboxId:    string,
   srsResponse: Record<string, unknown>,
 ): Promise<void> {
@@ -66,7 +66,7 @@ export async function markHandoffSent(
 
 /** Mark a handoff record as failed and record the error. */
 export async function markHandoffFailed(
-  db:          WellbeingDb | WellbeingTx,
+  db:          WellbeingTx,  // tenant context only: the outbox has RLS (BL-035)
   outboxId:    string,
   errorDetail: string,
 ): Promise<void> {

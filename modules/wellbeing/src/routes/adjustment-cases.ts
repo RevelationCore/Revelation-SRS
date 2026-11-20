@@ -622,7 +622,7 @@ export async function adjustmentCaseRoutes(
 
     if (alreadySent) {
       // Already delivered to SRS — return cached result
-      const outbox = await findHandoffForCase(request.server.wellbeingDb, caseId);
+      const outbox = await withWellbeingTenantContext(request.server.wellbeingDb, tenantId, (tx) => findHandoffForCase(tx, caseId));
       return reply.code(200).send({
         status:       'already_sent',
         adjustmentId: (outbox?.srsResponse as { adjustmentId?: string } | null)?.adjustmentId ?? null,
@@ -635,7 +635,7 @@ export async function adjustmentCaseRoutes(
     // Even if this process crashes here, a retry will find the pending outbox
     // record and re-attempt delivery without creating a duplicate.
 
-    const outboxRow = await findHandoffForCase(request.server.wellbeingDb, caseId);
+    const outboxRow = await withWellbeingTenantContext(request.server.wellbeingDb, tenantId, (tx) => findHandoffForCase(tx, caseId));
     const storedType = outboxRow?.payload['adjustmentTypeCode'];
     const adjustmentTypeCode = body.adjustmentTypeCode?.trim()
       || (typeof storedType === 'string' ? storedType : '');
@@ -657,7 +657,7 @@ export async function adjustmentCaseRoutes(
         ...(body.amount  !== undefined ? { amount:  body.amount }  : {}),
       });
 
-      await markHandoffSent(request.server.wellbeingDb, outboxId, { adjustmentId: result.adjustmentId });
+      await withWellbeingTenantContext(request.server.wellbeingDb, tenantId, (tx) => markHandoffSent(tx, outboxId, { adjustmentId: result.adjustmentId }));
 
       // Record SRS ref on case (new bitemporal version)
       await withWellbeingTenantContext(
@@ -671,7 +671,7 @@ export async function adjustmentCaseRoutes(
       return reply.code(202).send({ status: 'submitted', adjustmentId: result.adjustmentId });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      await markHandoffFailed(request.server.wellbeingDb, outboxId, msg);
+      await withWellbeingTenantContext(request.server.wellbeingDb, tenantId, (tx) => markHandoffFailed(tx, outboxId, msg));
       // The SRS refused the request itself (e.g. a code outside its value
       // sets, or an amount the type does not take). Retrying the same body
       // cannot succeed, so say so: correct it and approve again.

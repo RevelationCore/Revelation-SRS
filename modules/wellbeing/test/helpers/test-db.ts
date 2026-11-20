@@ -44,10 +44,22 @@ export async function startTestApp(appOpts: AppOptions = {}): Promise<TestWellbe
   const journal = JSON.parse(await readFile(join(coreMigrationsDir, 'meta/_journal.json'), 'utf8')) as { entries: Array<{ tag: string }> };
   for (const { tag } of journal.entries) await applySql(db, join(coreMigrationsDir, `${tag}.sql`));
 
-  // Apply wellbeing module migrations
+  // Apply wellbeing module migrations, in journal order, as the owner.
   const wellbeingMigrationsDir = join(__dirname, '../../migrations');
-  await applySql(db, join(wellbeingMigrationsDir, '0000_wellbeing_foundations.sql'));
-  await applySql(db, join(wellbeingMigrationsDir, '0001_adjustment_production_hardening.sql'));
+  const wellbeingJournal = JSON.parse(await readFile(join(wellbeingMigrationsDir, 'meta/_journal.json'), 'utf8')) as { entries: Array<{ tag: string }> };
+  for (const { tag } of wellbeingJournal.entries) await applySql(db, join(wellbeingMigrationsDir, `${tag}.sql`));
+
+  // The service connects as production does: a login role inheriting srs_app
+  // (no superuser, no BYPASSRLS, not the owner), so row-level security
+  // applies to every query it makes. `db` stays the owner connection, for
+  // fixtures and assertions (BL-034).
+  await db.execute(sql`
+    CREATE ROLE wellbeing_api_test LOGIN PASSWORD 'wellbeing_api_test' NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS INHERIT;
+    GRANT srs_app TO wellbeing_api_test;
+  `);
+  const appUrl = new URL(connectionString);
+  appUrl.username = 'wellbeing_api_test';
+  appUrl.password = 'wellbeing_api_test';
 
   // Seed test tenants
   const tenantId       = '00000000-0000-0000-0000-000000000001';
@@ -64,7 +76,7 @@ export async function startTestApp(appOpts: AppOptions = {}): Promise<TestWellbe
     port:            3001,
     logLevel:        'silent',
     nodeEnv:         'test',
-    databaseUrl:     connectionString,
+    databaseUrl:     appUrl.toString(),
     srsApiUrl:       'http://localhost:3000',
     natsUrl:         'nats://localhost:4222',  // NATS not running in tests
     jwtSecret:       JWT_SECRET,
