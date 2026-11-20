@@ -314,6 +314,9 @@ export async function buildApp(
         },
     genReqId: () => crypto.randomUUID(),
     disableRequestLogging: false,
+    // Behind the ingress, req.ip is otherwise the ingress pod, and every
+    // per-IP limit becomes one budget shared by all callers (BL-168).
+    trustProxy: config.trustProxy ?? false,
   });
 
   // Inject OTel traceId into every Fastify log line for log-trace correlation.

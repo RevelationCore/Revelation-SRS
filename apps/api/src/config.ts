@@ -10,6 +10,14 @@ export interface Config {
   attendanceApiUrl: string;
   /** How long the engagement proxy waits for the attendance module (default 15 s). */
   engagementProxyTimeoutMs?: number | undefined;
+  /**
+   * Which proxies' X-Forwarded-For to believe when working out the client IP
+   * (Fastify `trustProxy`; see trustProxySetting). Off by default: with
+   * nothing in front of the API, the header is whatever the client sent.
+   * Behind the ingress, name the ingress's addresses so per-IP rate limits
+   * see callers, not the ingress pod.
+   */
+  trustProxy?: false | string | undefined;
   temporalAddress: string;
   /** Live Temporal execution. Off unless TEMPORAL_EXECUTION_ENABLED=true. */
   temporalExecutionEnabled?: boolean;
@@ -53,6 +61,24 @@ function emailTransport(value: string | undefined): 'fake' {
   throw new Error(`EMAIL_TRANSPORT '${value}' is not supported; the only transport is 'fake'`);
 }
 
+/**
+ * TRUST_PROXY names the proxies whose X-Forwarded-For is believed: a
+ * comma-separated list of addresses, CIDRs or proxy-addr's named ranges
+ * (`loopback`, `linklocal`, `uniquelocal`). Unset or 'false' trusts none.
+ *
+ * Two values are refused rather than accepted silently:
+ * - 'true' would let any client choose its own IP address;
+ * - a hop count, because Fastify 5 deliberately ignores one (it cannot
+ *   check the immediate peer), so the setting would do nothing.
+ */
+export function trustProxySetting(value: string | undefined): false | string {
+  const v = value?.trim();
+  if (!v || v === 'false') return false;
+  if (v === 'true') throw new Error("TRUST_PROXY 'true' would let any client choose its IP address; name the proxies (addresses, CIDRs or 'uniquelocal')");
+  if (/^\d+$/.test(v)) throw new Error(`TRUST_PROXY '${v}' is a hop count, which Fastify ignores; name the proxies instead (addresses, CIDRs or 'uniquelocal')`);
+  return v;
+}
+
 function required(name: string): string {
   const v = process.env[name];
   if (!v) throw new Error(`Required environment variable ${name} is not set`);
@@ -77,6 +103,7 @@ export function loadConfig(): Config {
     natsUrl:         process.env['NATS_URL'] ?? 'nats://localhost:4222',
     attendanceApiUrl: process.env['ATTENDANCE_API_URL'] ?? 'http://localhost:3004',
     engagementProxyTimeoutMs: optionalInt('ENGAGEMENT_PROXY_TIMEOUT_MS', 15_000),
+    trustProxy:      trustProxySetting(process.env['TRUST_PROXY']),
     temporalAddress: process.env['TEMPORAL_ADDRESS'] ?? 'localhost:7233',
     temporalExecutionEnabled: process.env['TEMPORAL_EXECUTION_ENABLED'] === 'true',
     temporalNamespace: process.env['TEMPORAL_NAMESPACE'] ?? 'srs-local',
