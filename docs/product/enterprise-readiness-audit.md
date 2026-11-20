@@ -184,8 +184,8 @@ Every item in this plan has a row in the [backlog](backlog.md) (Source ref `Read
 
 ### Decisions needed
 
-1. **Token storage (1.9):** keep tokens in memory with silent refresh, or put a backend-for-frontend in front of the SPAs with HTTP-only cookies. The second is stronger but adds a component. Recommendation: in memory now, backend-for-frontend if a penetration test asks for it.
-2. **Shared cache and rate-limit store (3.5, 3.7):** add Redis or Valkey, or use Postgres (`LISTEN/NOTIFY`, a counter table). Recommendation: Postgres first; it is already highly available and avoids a new component at this scale.
+1. **Token storage (1.9):** keep tokens in memory with silent refresh, or put a backend-for-frontend in front of the SPAs with HTTP-only cookies. The second is stronger but adds a component. Recommendation: in memory now, backend-for-frontend if a penetration test asks for it. **Decided 2026-11-20 ([ADR-026](../decisions/ADR-026-browser-sessions-through-a-backend-for-frontend.md)): a backend-for-frontend now.** RFC 10017 (BCP 212) strongly recommends one for apps handling personal data, because tokens in memory do not stop injected script from running a fresh sign-in.
+2. **Shared cache and rate-limit store (3.5, 3.7):** add Redis or Valkey, or use Postgres (`LISTEN/NOTIFY`, a counter table). Recommendation: Postgres first; it is already highly available and avoids a new component at this scale. **Decided 2026-11-20 ([ADR-027](../decisions/ADR-027-shared-runtime-state-in-postgresql.md)): PostgreSQL for all four uses**, with a measured threshold for moving rate limits to Valkey.
 3. **Migration squash timing (4.1):** squash before phase 1's migrations (one clean baseline for the role and RLS changes), or after. Recommendation: before.
 
 ### Verification across the plan

@@ -130,6 +130,8 @@ These findings, checked on `main` at bf3d3e2, changed the plan's assumptions:
 
 **Reversibility.** Cheap.
 
+**Amended by [ADR-028](ADR-028-exceptional-circumstances-decision-authority.md) (2026-11-20).** The mechanism stands. Deciding is now held only by a dedicated `ec-decision-maker` role, so `exam-board-chair` and `registry-administrator` no longer decide EC. The panel-or-officer question becomes the tenant setting `ec.decisionAuthority`, which defaults to `delegated-officer`.
+
 ## D-42: Working-day calendar for statutory deadlines
 
 **Decision.** `non_working_day(tenant_id, date, division_code, description, source)` with RLS; division value set (`england-and-wales`, `scotland`, `northern-ireland`, plus tenant closures); import of the GOV.UK bank holidays JSON by upload (or worker fetch when `calendar.bankHolidays.source = gov-uk`); one `addWorkingDays(tenantId, from, n)` replaces the weekday-only arithmetic in non-registration, FOI, UCAS reconciliation and Clearing.
