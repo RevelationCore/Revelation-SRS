@@ -203,7 +203,7 @@ These events are published to the `SRS_EVENTS` stream but are **not part of the 
 
 ## Backlog — Not Yet Implemented
 
-These events were planned in Phase 2 but not implemented in Phases 4–6. They remain on the product roadmap but have no `EVENT_TYPES` entries and no schemas.
+These events were planned in Phase 2 but not implemented in Phases 4–6. They remain on the product roadmap but have no `EVENT_TYPES` entries and no schemas. Each group below is a row in the [backlog](../product/backlog.md) (BL-091 to BL-099).
 
 > **Not covered by this backlog**: CRM, Library, Accommodation, Estates, Online ID Verification, Student Evaluation of Teaching Software, Payroll, Research Proposals, Content Management Systems and IT Service Management are deliberately absent from the list below — they are not "planned but unbuilt". Their contracts are seeded (migration `0000_baseline` (section `0006_adjustments_integration_and_support` / `0019_partner_systems_contracts`)); there is no simulator for them yet (Phase 3 D-14) — see `docs/architecture/integration-contract-catalogue.md`.
 

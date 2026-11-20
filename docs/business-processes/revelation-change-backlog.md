@@ -6,6 +6,8 @@
 
 [Completion review](completion-review.md) · [Traceability matrix](traceability-matrix.md) · [Process inventory](process-inventory.md)
 
+> **Tracking (2026-11-19).** This page records the BPR requirements derived from the process library and their acceptance evidence; it is not where outstanding work is tracked. Delivery against each is rated in the [capability matrix](../product/current-capabilities.md), and what is left is in the single [backlog](../product/backlog.md).
+
 All P0 items have been converted into proposed [detailed functional requirements](../requirements/business-process-p0-functional-requirements.md) and [ADR traceability](p0-requirements-and-adr-traceability.md).
 
 BPR-D01–BPR-D19 have also been classified against the logical and physical schemas in the [data-model delta assessment](../architecture/business-process-data-model-delta.md), with a proposed [target ER model](../architecture/business-process-target-data-model.md) and [migration plan](../architecture/business-process-data-migration-plan.md).

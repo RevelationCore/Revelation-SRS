@@ -4,6 +4,7 @@
 > Last reviewed: 2026-11-18
 
 - [Current capabilities](current-capabilities.md) — authoritative implemented/partial/proposed status.
+- [Backlog](backlog.md) — the one list of outstanding work ([`backlog.csv`](backlog.csv), filterable in Excel), kept in step with the readiness plan and the process pages' open questions by `pnpm check:backlog`.
 - [UK HE business processes](../business-processes/README.md) — researched target processes.
 - [Academic journey gap-closure plan](academic-journey-gap-closure-plan.md) — the five phases, now delivered, that brought all 49 academic-journey processes into the app, with links to each phase's decisions.
 - [Academic journey narrative catalogue](academic-journey-narrative-catalogue.md) — proposed high-level stories, interlocking outcomes, coverage of all reference-model systems/interactions and candidate gaps to investigate.
@@ -21,4 +22,4 @@
 - [Testing and appraisal remediation plan](testing-appraisal-remediation-plan.md) — follow-up work from the testing and appraisal review.
 - [Documentation history](../history.md) — how to inspect superseded plans and review evidence without keeping them in the active tree.
 
-When documents disagree about implementation status, the current-capability matrix takes precedence until the inconsistency is resolved.
+When documents disagree about implementation status, the current-capability matrix takes precedence until the inconsistency is resolved. Outstanding work, wherever a document describes it, is tracked in the [backlog](backlog.md).
