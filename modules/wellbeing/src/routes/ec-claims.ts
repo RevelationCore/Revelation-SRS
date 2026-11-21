@@ -1,7 +1,8 @@
 import { Type } from '@sinclair/typebox';
 import { requirePermission } from '@revelation-srs/auth';
-import type { FastifyInstance, FastifyReply } from 'fastify';
+import type { FastifyInstance } from 'fastify';
 
+import { actorFieldSent, refuseActorField } from '../http/actor.js';
 import { sendProblem } from '../http/problem.js';
 import { Uuid, Text, DateText, idParams } from '../http/schemas.js';
 import { withWellbeingTenantContext } from '../db/client.js';
@@ -39,21 +40,8 @@ function generateCaseRef(): string {
   return `EC-${year}-${suffix}`;
 }
 
-/**
- * The acting user comes from the token, never the request (ADR-028). A
- * client that still names its own reviewer or authoriser is refused rather
- * than silently ignored, so old callers fail loudly.
- */
-function actorFieldSent(body: unknown, field: string): boolean {
-  return typeof body === 'object' && body !== null && field in body;
-}
-
 class SeparationOfDutiesError extends Error {
   constructor() { super('You recorded, changed or assessed this claim, so someone else must decide it'); }
-}
-
-function refuseActorField(reply: FastifyReply, field: string) {
-  return sendProblem(reply, 400, `${field} is not accepted: the signed-in user is recorded as the actor`, { title: 'Actor taken from the token' });
 }
 
 // ── Route plugin ──────────────────────────────────────────────────────────────

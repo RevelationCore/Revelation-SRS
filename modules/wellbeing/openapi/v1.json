@@ -643,7 +643,7 @@
     },
     "/api/v1/adjustment-cases/{caseId}/assessments": {
       "post": {
-        "summary": "Record an assessment",
+        "summary": "Record an assessment (the assessor is the signed-in user)",
         "tags": [
           "adjustment-cases"
         ],
@@ -654,15 +654,10 @@
               "schema": {
                 "type": "object",
                 "required": [
-                  "assessorId",
                   "assessedAt",
                   "outcomeCode"
                 ],
                 "properties": {
-                  "assessorId": {
-                    "minLength": 1,
-                    "type": "string"
-                  },
                   "assessedAt": {
                     "minLength": 1,
                     "description": "ISO 8601 date or date-time",
@@ -703,7 +698,7 @@
     },
     "/api/v1/adjustment-cases/{caseId}/panel-decisions": {
       "post": {
-        "summary": "Record a panel decision",
+        "summary": "Record a panel decision (the chair is the signed-in user)",
         "tags": [
           "adjustment-cases"
         ],
@@ -714,15 +709,10 @@
               "schema": {
                 "type": "object",
                 "required": [
-                  "panelChairId",
                   "panelDate",
                   "decisionCode"
                 ],
                 "properties": {
-                  "panelChairId": {
-                    "minLength": 1,
-                    "type": "string"
-                  },
                   "panelDate": {
                     "minLength": 1,
                     "description": "ISO 8601 date or date-time",

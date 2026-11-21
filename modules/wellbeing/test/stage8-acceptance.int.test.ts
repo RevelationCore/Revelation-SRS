@@ -229,7 +229,6 @@ describe('Stage 8 — End-to-End Acceptance Review', () => {
         url:     `/api/v1/adjustment-cases/${adjustmentCaseId}/assessments`,
         headers: { authorization: `Bearer ${advisorJwt}` },
         payload: {
-          assessorId:        'disability-advisor-001',
           assessedAt:        '2026-06-15T10:00:00Z',
           outcomeCode:       'recommended',
           findings:          'Student meets DSA criteria for additional time.',
@@ -245,7 +244,6 @@ describe('Stage 8 — End-to-End Acceptance Review', () => {
         url:     `/api/v1/adjustment-cases/${adjustmentCaseId}/panel-decisions`,
         headers: { authorization: `Bearer ${panelJwt}` },
         payload: {
-          panelChairId: 'chair-001',
           panelDate:    '2026-06-20T14:00:00Z',
           decisionCode: 'upheld',
           decisionRationale: 'Evidence is sufficient.',
@@ -678,7 +676,7 @@ describe('Stage 8 — End-to-End Acceptance Review', () => {
       await ctx.app.inject({
         method: 'POST', url: `/api/v1/adjustment-cases/${adjCaseId}/assessments`,
         headers: { authorization: `Bearer ${advisorJwt}` },
-        payload: { assessorId: 'disability-advisor-001', assessedAt: '2026-06-15T10:00:00Z', outcomeCode: 'recommended' },
+        payload: { assessedAt: '2026-06-15T10:00:00Z', outcomeCode: 'recommended' },
       });
     });
 
@@ -774,7 +772,7 @@ describe('Stage 8 — End-to-End Acceptance Review', () => {
       await ctx.app.inject({
         method: 'POST', url: `/api/v1/adjustment-cases/${adjCaseId}/assessments`,
         headers: { authorization: `Bearer ${advisorJwt}` },
-        payload: { assessorId: 'disability-advisor-001', assessedAt: '2026-06-15T10:00:00Z', outcomeCode: 'recommended' },
+        payload: { assessedAt: '2026-06-15T10:00:00Z', outcomeCode: 'recommended' },
       });
     });
 
@@ -876,7 +874,7 @@ describe('Stage 8 — End-to-End Acceptance Review', () => {
       await ctx.app.inject({
         method: 'POST', url: `/api/v1/adjustment-cases/${adjId}/assessments`,
         headers: { authorization: `Bearer ${advisorJwt}` },
-        payload: { assessorId: 'disability-advisor-001', assessedAt: '2026-06-15T10:00:00Z', outcomeCode: 'recommended' },
+        payload: { assessedAt: '2026-06-15T10:00:00Z', outcomeCode: 'recommended' },
       });
 
       await ctx.app.inject({

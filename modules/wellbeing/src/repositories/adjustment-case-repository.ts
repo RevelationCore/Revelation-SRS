@@ -374,24 +374,33 @@ export async function getCurrentPanelDecision(
 /**
  * Approval precondition: a case may only be approved on the strength of
  * either a recommending needs assessment or an upheld/modified panel
- * decision — never on referral information alone. Checks the most recent
- * record of each kind.
+ * decision, never on referral information alone.
+ *
+ * The most recently recorded determination of either kind governs, ordered
+ * by when it was recorded, not by a date the client supplies (BL-235): a
+ * panel that rejects a case after a recommending assessment stops its
+ * approval, and a new recommending assessment after a panel decision is
+ * what a reconsideration looks like.
  */
 export async function hasApprovableDetermination(
   tx:       WellbeingTx,
   tenantId: string,
   caseId:   string,
 ): Promise<boolean> {
-  const [latestAssessment] = await tx
-    .select({ outcomeCode: adjustmentAssessments.outcomeCode })
-    .from(adjustmentAssessments)
-    .where(and(eq(adjustmentAssessments.tenantId, tenantId), eq(adjustmentAssessments.adjustmentCaseId, caseId)))
-    .orderBy(desc(adjustmentAssessments.assessedAt))
-    .limit(1);
-  if (latestAssessment?.outcomeCode === 'recommended') return true;
-
-  const panelDecision = await getCurrentPanelDecision(tx, tenantId, caseId);
-  return panelDecision !== null && ['upheld', 'modified'].includes(panelDecision.decisionCode);
+  const [[assessment], [panel]] = await Promise.all([
+    tx.select({ code: adjustmentAssessments.outcomeCode, at: adjustmentAssessments.createdAt })
+      .from(adjustmentAssessments)
+      .where(and(eq(adjustmentAssessments.tenantId, tenantId), eq(adjustmentAssessments.adjustmentCaseId, caseId)))
+      .orderBy(desc(adjustmentAssessments.createdAt))
+      .limit(1),
+    tx.select({ code: adjustmentPanelDecisions.decisionCode, at: adjustmentPanelDecisions.createdAt })
+      .from(adjustmentPanelDecisions)
+      .where(and(eq(adjustmentPanelDecisions.tenantId, tenantId), eq(adjustmentPanelDecisions.adjustmentCaseId, caseId)))
+      .orderBy(desc(adjustmentPanelDecisions.createdAt))
+      .limit(1),
+  ]);
+  if (panel && (!assessment || panel.at >= assessment.at)) return ['upheld', 'modified'].includes(panel.code);
+  return assessment?.code === 'recommended';
 }
 
 export async function markPanelDecisionDistributed(

@@ -246,7 +246,6 @@ describe('Stage 4 — POST /api/v1/adjustment-cases/:caseId/assessments', () => 
       url:     `/api/v1/adjustment-cases/${adjustmentCaseId}/assessments`,
       headers: { authorization: `Bearer ${ctx.makeJwt()}` },
       payload: {
-        assessorId:        'disability-advisor-001',
         assessedAt:        '2026-06-15T10:00:00Z',
         outcomeCode:       'recommended',
         findings:          'Student meets DSA criteria for additional time.',
@@ -284,7 +283,7 @@ describe('Stage 4 — POST /api/v1/adjustment-cases/:caseId/assessments', () => 
       method:  'POST',
       url:     '/api/v1/adjustment-cases/00000000-dead-dead-dead-000000000000/assessments',
       headers: { authorization: `Bearer ${ctx.makeJwt()}` },
-      payload: { assessorId: 'x', assessedAt: '2026-06-15T10:00:00Z', outcomeCode: 'recommended' },
+      payload: { assessedAt: '2026-06-15T10:00:00Z', outcomeCode: 'recommended' },
     });
     expect(res.statusCode).toBe(404);
   });
@@ -317,7 +316,6 @@ describe('Stage 4 — POST /api/v1/adjustment-cases/:caseId/panel-decisions', ()
       url:     `/api/v1/adjustment-cases/${secondAdjustmentCaseId}/panel-decisions`,
       headers: { authorization: `Bearer ${panelJwt}` },
       payload: {
-        panelChairId:      'panel-chair-001',
         panelDate:         '2026-06-20T14:00:00Z',
         decisionCode:      'upheld',
         decisionRationale: 'Panel agrees DSA entitlement supports this adjustment.',
@@ -493,7 +491,7 @@ describe('Stage 4 — approve requires a determination (precondition)', () => {
     await ctx.app.inject({
       method: 'POST', url: `/api/v1/adjustment-cases/${freshCaseId}/assessments`,
       headers: { authorization: `Bearer ${ctx.makeJwt()}` },
-      payload: { assessorId: 'x', assessedAt: '2026-06-15T10:00:00Z', outcomeCode: 'not-recommended' },
+      payload: { assessedAt: '2026-06-15T10:00:00Z', outcomeCode: 'not-recommended' },
     });
 
     const res = await ctx.app.inject({
@@ -526,7 +524,7 @@ describe('Stage 4 — approve sends the SRS adjustment type, not the case type',
     await ctx.app.inject({
       method: 'POST', url: `/api/v1/adjustment-cases/${id}/assessments`,
       headers: { authorization: `Bearer ${ctx.makeJwt()}` },
-      payload: { assessorId: 'x', assessedAt: '2026-06-15T10:00:00Z', outcomeCode: 'recommended' },
+      payload: { assessedAt: '2026-06-15T10:00:00Z', outcomeCode: 'recommended' },
     });
     return id;
   }
@@ -630,7 +628,7 @@ describe('Stage 4 — approve validates active module registrations', () => {
     await ctx.app.inject({
       method: 'POST', url: `/api/v1/adjustment-cases/${emptyProjCaseId}/assessments`,
       headers: { authorization: `Bearer ${ctx.makeJwt()}` },
-      payload: { assessorId: 'x', assessedAt: '2026-06-15T10:00:00Z', outcomeCode: 'recommended' },
+      payload: { assessedAt: '2026-06-15T10:00:00Z', outcomeCode: 'recommended' },
     });
   });
 

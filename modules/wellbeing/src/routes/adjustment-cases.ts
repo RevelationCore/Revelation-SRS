@@ -11,6 +11,7 @@ import { hasPermission, type Permission } from '@revelation-srs/domain';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 
 import { Uuid, Text, DateText, idParams } from '../http/schemas.js';
+import { actorFieldSent, refuseActorField } from '../http/actor.js';
 import { problem, sendProblem } from '../http/problem.js';
 import { withWellbeingTenantContext } from '../db/client.js';
 import { SrsHandoffRejectedError, type SrsAdjustmentClient } from '../srs/srs-adjustment-client.js';
@@ -375,20 +376,21 @@ export async function adjustmentCaseRoutes(
   fastify.post<{
     Params: { caseId: string };
     Body: {
-      assessorId:        string;
       assessedAt:        string;
       outcomeCode:       string;
       findings?:         string;
       recommendedAction?: string;
     };
   }>('/api/v1/adjustment-cases/:caseId/assessments', {
-    schema: { tags: ['adjustment-cases'], summary: 'Record an assessment', params: idParams('caseId'), body: Type.Object({ assessorId: Text, assessedAt: DateText, outcomeCode: Text, findings: Type.Optional(Type.String()), recommendedAction: Type.Optional(Type.String()) }) },
+    schema: { tags: ['adjustment-cases'], summary: 'Record an assessment (the assessor is the signed-in user)', params: idParams('caseId'), body: Type.Object({ assessedAt: DateText, outcomeCode: Text, findings: Type.Optional(Type.String()), recommendedAction: Type.Optional(Type.String()) }) },
     preHandler: [requirePermission('adjustment-case:assess')],
   }, async (request, reply) => {
     const { tenantId } = request;
     const actorId      = request.user.sub;
     const { caseId }   = request.params;
     const body         = request.body;
+
+    if (actorFieldSent(body, 'assessorId')) return refuseActorField(reply, 'assessorId');
 
     const assessmentId = await withWellbeingTenantContext(
       request.server.wellbeingDb,
@@ -401,7 +403,7 @@ export async function adjustmentCaseRoutes(
 
         const id = await recordAssessment(tx, tenantId, {
           adjustmentCaseId:  caseId,
-          assessorId:        body.assessorId,
+          assessorId:        actorId,
           assessedAt:        new Date(body.assessedAt),
           outcomeCode:       body.outcomeCode,
           ...(body.findings          !== undefined ? { findings:          body.findings }          : {}),
@@ -436,19 +438,20 @@ export async function adjustmentCaseRoutes(
   fastify.post<{
     Params: { caseId: string };
     Body: {
-      panelChairId:      string;
       panelDate:         string;
       decisionCode:      string;
       decisionRationale?: string;
     };
   }>('/api/v1/adjustment-cases/:caseId/panel-decisions', {
-    schema: { tags: ['adjustment-cases'], summary: 'Record a panel decision', params: idParams('caseId'), body: Type.Object({ panelChairId: Text, panelDate: DateText, decisionCode: Text, decisionRationale: Type.Optional(Type.String()) }) },
+    schema: { tags: ['adjustment-cases'], summary: 'Record a panel decision (the chair is the signed-in user)', params: idParams('caseId'), body: Type.Object({ panelDate: DateText, decisionCode: Text, decisionRationale: Type.Optional(Type.String()) }) },
     preHandler: [requirePermission('panel-decision:write')],
   }, async (request, reply) => {
     const { tenantId } = request;
     const actorId      = request.user.sub;
     const { caseId }   = request.params;
     const body         = request.body;
+
+    if (actorFieldSent(body, 'panelChairId')) return refuseActorField(reply, 'panelChairId');
 
     const decisionId = await withWellbeingTenantContext(
       request.server.wellbeingDb,
@@ -461,7 +464,7 @@ export async function adjustmentCaseRoutes(
 
         const id = await recordPanelDecision(tx, tenantId, {
           adjustmentCaseId:  caseId,
-          panelChairId:      body.panelChairId,
+          panelChairId:      actorId,
           panelDate:         new Date(body.panelDate),
           decisionCode:      body.decisionCode,
           ...(body.decisionRationale !== undefined ? { decisionRationale: body.decisionRationale } : {}),
