@@ -27,6 +27,9 @@ export const ROLES = [
   // Phase 5 D-38: self-service audiences outside the back office.
   'applicant',
   'pgr-examiner',
+  // ADR-028: exceptional-circumstances claims, named after the BP-04-005 actors.
+  'ec-case-officer',
+  'ec-decision-maker',
 ] as const;
 
 export type Role = (typeof ROLES)[number];
@@ -132,13 +135,16 @@ export const PERMISSION_ROLES = {
   'disability:write':                   ['wellbeing-advisor', 'wellbeing-mental-health-advisor', 'registry-administrator'] as Role[],
   'exam-board:write':                   ['registry-administrator'] as Role[],
   'circumstances:read:own':             ['student'] as Role[],
-  'circumstances:read':                 ['registry-administrator', 'wellbeing-advisor'] as Role[],
-  'circumstances:write':                ['registry-administrator'] as Role[],
+  'circumstances:read':                 ['registry-administrator', 'wellbeing-advisor', 'ec-case-officer'] as Role[],
+  'circumstances:write':                ['registry-administrator', 'ec-case-officer'] as Role[],
   /** Decide a proposed EC outcome (D-41); never the proposer or the person who recorded the claim. */
-  'circumstances:decide':               ['registry-administrator', 'exam-board-chair'] as Role[],
+  // ADR-028: deciding is held only by the decision maker (amends Phase 5 D-41).
+  'circumstances:decide':               ['ec-decision-maker'] as Role[],
   /** Wellbeing EC claims (modules/wellbeing): the advisers who run the claim workflow. Needs institutional sign-off. */
-  'ec-claim:read':                      ['wellbeing-advisor', 'registry-administrator'] as Role[],
-  'ec-claim:manage':                    ['wellbeing-advisor', 'registry-administrator'] as Role[],
+  // ADR-028: registry receives the decided outcome in core (ADR-017), not the claim.
+  'ec-claim:read':                      ['ec-case-officer', 'ec-decision-maker', 'wellbeing-advisor', 'wellbeing-auditor'] as Role[],
+  'ec-claim:manage':                    ['ec-case-officer', 'wellbeing-advisor'] as Role[],
+  'ec-claim:determine':                 ['ec-decision-maker'] as Role[],
   'progression:read':                   ['registry-administrator', 'exam-board-chair', 'exam-board-member'] as Role[],
   'progression:write':                  ['registry-administrator'] as Role[],
   'regulatory:read':                    ['registry-administrator', 'regulatory-officer', 'dpo', 'tenant-administrator', 'system-administrator'] as Role[],

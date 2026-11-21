@@ -53,11 +53,14 @@ describe('Stage 5 — Exceptional Circumstances Workflow', () => {
   let ctx:    TestWellbeingApp;
   let ecStub: SrsEcStubClient;
   let jwt:    string;
+  // ADR-028: a different person, holding ec-decision-maker, decides the claim.
+  let deciderJwt: string;
 
   beforeAll(async () => {
     ecStub = new SrsEcStubClient();
     ctx    = await startTestApp({ srsEcClient: ecStub });
     jwt    = ctx.makeJwt();
+    deciderJwt = ctx.makeJwt({ sub: 'ec-decider-001', roles: ['ec-decision-maker'] });
   });
 
   afterAll(() => ctx.teardown());
@@ -244,7 +247,7 @@ describe('Stage 5 — Exceptional Circumstances Workflow', () => {
       const res = await ctx.app.inject({
         method:  'POST',
         url:     `/api/v1/ec-claims/${claimId}/determine`,
-        headers: { authorization: `Bearer ${jwt}` },
+        headers: { authorization: `Bearer ${deciderJwt}` },
         payload: {
           determinationCode: 'upheld',
           determinedAt:      '2025-11-01T10:00:00Z',
@@ -293,7 +296,7 @@ describe('Stage 5 — Exceptional Circumstances Workflow', () => {
       const first = await ctx.app.inject({
         method:  'POST',
         url:     `/api/v1/ec-claims/${claimId}/determine`,
-        headers: { authorization: `Bearer ${jwt}` },
+        headers: { authorization: `Bearer ${deciderJwt}` },
         payload,
       });
       expect(first.statusCode).toBe(202);
@@ -303,7 +306,7 @@ describe('Stage 5 — Exceptional Circumstances Workflow', () => {
       const second = await ctx.app.inject({
         method:  'POST',
         url:     `/api/v1/ec-claims/${claimId}/determine`,
-        headers: { authorization: `Bearer ${jwt}` },
+        headers: { authorization: `Bearer ${deciderJwt}` },
         payload,
       });
       expect(second.statusCode).toBe(200);
@@ -324,7 +327,7 @@ describe('Stage 5 — Exceptional Circumstances Workflow', () => {
       const res = await ctx.app.inject({
         method:  'POST',
         url:     `/api/v1/ec-claims/${claimId}/determine`,
-        headers: { authorization: `Bearer ${jwt}` },
+        headers: { authorization: `Bearer ${deciderJwt}` },
         payload: {
           determinationCode: 'not_upheld',
           determinedAt:      '2025-11-10T10:00:00Z',

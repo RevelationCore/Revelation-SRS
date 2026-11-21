@@ -16,6 +16,7 @@ import {
   listEvidenceReviews,
   recordDetermination,
   findLatestDetermination,
+  listEcClaimPreparers,
   isBoardVisible,
 } from '../repositories/ec-claim-repository.js';
 import {
@@ -45,6 +46,10 @@ function generateCaseRef(): string {
  */
 function actorFieldSent(body: unknown, field: string): boolean {
   return typeof body === 'object' && body !== null && field in body;
+}
+
+class SeparationOfDutiesError extends Error {
+  constructor() { super('You recorded, changed or assessed this claim, so someone else must decide it'); }
 }
 
 function refuseActorField(reply: FastifyReply, field: string) {
@@ -306,7 +311,7 @@ export async function ecClaimRoutes(
       moduleOutcomes:          Array<{ moduleCode: string; outcome: string }>;
       determinedAt:            string;
     };
-  }>('/api/v1/ec-claims/:claimId/determine', { preHandler: [requirePermission('ec-claim:manage')], schema: { tags: ['ec-claims'], summary: 'Determine the claim (the authoriser is the signed-in user)', params: idParams('claimId'), body: Type.Object({ determinationCode: Text, determinationRationale: Type.Optional(Type.String()), moduleOutcomes: Type.Array(Type.Object({ moduleCode: Text, outcome: Text })), determinedAt: DateText }) } }, async (request, reply) => {
+  }>('/api/v1/ec-claims/:claimId/determine', { preHandler: [requirePermission('ec-claim:determine')], schema: { tags: ['ec-claims'], summary: 'Determine the claim (the authoriser is the signed-in user)', params: idParams('claimId'), body: Type.Object({ determinationCode: Text, determinationRationale: Type.Optional(Type.String()), moduleOutcomes: Type.Array(Type.Object({ moduleCode: Text, outcome: Text })), determinedAt: DateText }) } }, async (request, reply) => {
     const { tenantId } = request;
     const actorId      = request.user.sub;
     const { claimId }  = request.params;
@@ -348,7 +353,13 @@ export async function ecClaimRoutes(
             throw new StatusTransitionError('EC claim', c.statusCode, 'determined', []);
           }
 
-          // Record the determination; the authoriser is the signed-in user (ADR-028).
+          // Separation of duties (ADR-028): nobody who recorded, changed or
+        // assessed the claim may decide it.
+        if ((await listEcClaimPreparers(tx, tenantId, claimId)).has(actorId)) {
+          throw new SeparationOfDutiesError();
+        }
+
+        // Record the determination; the authoriser is the signed-in user (ADR-028).
           await recordDetermination(tx, tenantId, {
             ecClaimId:         claimId,
             authorisedById:    actorId,
@@ -396,6 +407,9 @@ export async function ecClaimRoutes(
       );
     } catch (err) {
       if (err instanceof StatusTransitionError) return sendTransitionProblem(reply, err);
+      if (err instanceof SeparationOfDutiesError) {
+        return sendProblem(reply, 403, err.message, { type: 'https://srs.example.com/errors/separation-of-duties', title: 'Separation of duties' });
+      }
       throw err;
     }
 

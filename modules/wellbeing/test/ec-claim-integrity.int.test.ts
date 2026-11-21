@@ -19,14 +19,16 @@ import { startTestApp, type TestWellbeingApp } from './helpers/test-db.js';
 const PERSON_ID    = '10000000-0000-0000-0000-000000000071';
 const ENROLMENT_ID = '22000000-0000-0000-0000-000000000071';
 const OFFICER      = 'ec-officer-071';
+const DECIDER      = 'ec-decider-071';
 
 let ctx:    TestWellbeingApp;
 let ecStub: SrsEcStubClient;
 let jwt:    string;
+let decider: string;
 let period = 0;
 
-async function call(app: FastifyInstance, method: 'GET' | 'POST' | 'PATCH', url: string, payload?: unknown) {
-  return app.inject({ method, url, headers: { authorization: `Bearer ${jwt}` }, ...(payload !== undefined ? { payload: payload as object } : {}) });
+async function call(app: FastifyInstance, method: 'GET' | 'POST' | 'PATCH', url: string, payload?: unknown, token = jwt) {
+  return app.inject({ method, url, headers: { authorization: `Bearer ${token}` }, ...(payload !== undefined ? { payload: payload as object } : {}) });
 }
 
 async function newClaim(): Promise<string> {
@@ -37,14 +39,15 @@ async function newClaim(): Promise<string> {
   return res.json<{ id: string }>().id;
 }
 
-const determine = (claimId: string, extra: Record<string, unknown> = {}) => call(ctx.app, 'POST', `/api/v1/ec-claims/${claimId}/determine`, {
+const determine = (claimId: string, extra: Record<string, unknown> = {}, token = decider) => call(ctx.app, 'POST', `/api/v1/ec-claims/${claimId}/determine`, {
   determinationCode: 'upheld', determinedAt: '2026-11-20T10:00:00Z', moduleOutcomes: [{ moduleCode: 'MOD071', outcome: 'defer_assessment' }], ...extra,
-});
+}, token);
 
 beforeAll(async () => {
   ecStub = new SrsEcStubClient();
   ctx    = await startTestApp({ srsEcClient: ecStub });
-  jwt    = ctx.makeJwt({ sub: OFFICER });
+  jwt    = ctx.makeJwt({ sub: OFFICER, roles: ['ec-case-officer'] });
+  decider = ctx.makeJwt({ sub: DECIDER, roles: ['ec-decision-maker'] });
 }, 120_000);
 
 afterAll(() => ctx.teardown());
@@ -112,7 +115,7 @@ describe('the acting user comes from the token', () => {
 
     expect((await determine(claimId)).statusCode).toBe(202);
     const detail = await call(ctx.app, 'GET', `/api/v1/ec-claims/${claimId}`);
-    expect(detail.json<{ determination: { authorisedById: string } }>().determination.authorisedById).toBe(OFFICER);
+    expect(detail.json<{ determination: { authorisedById: string } }>().determination.authorisedById).toBe(DECIDER);
   });
 });
 
@@ -144,5 +147,34 @@ describe('EC audit rows', () => {
     expect(entries.map((e) => e.action)).toEqual(['create-ec-claim', 'status-transition', 'withdraw']);
     expect(new Set(entries.map((e) => e.resource_type))).toEqual(new Set(['ec-claim']));
     expect(entries.at(-1)?.reason).toBe('Student asked');
+  });
+});
+
+describe('separation of duties (ADR-028)', () => {
+  it('refuses a decision maker who recorded the claim', async () => {
+    // Someone holding both roles records the claim, then tries to decide it.
+    const both = ctx.makeJwt({ sub: 'ec-both-071', roles: ['ec-case-officer', 'ec-decision-maker'] });
+    const created = await call(ctx.app, 'POST', '/api/v1/ec-claims', {
+      personId: PERSON_ID, enrolmentId: ENROLMENT_ID, assessmentPeriodRef: `integrity-${++period}`, affectedModuleCodes: ['MOD071'],
+    }, both);
+    expect(created.statusCode).toBe(201);
+    const claimId = created.json<{ id: string }>().id;
+
+    const res = await determine(claimId, {}, both);
+    expect(res.statusCode).toBe(403);
+    expect(res.json<{ type: string }>().type).toMatch(/separation-of-duties$/);
+    expect(ecStub.submissions).toHaveLength(0);
+    expect((await determine(claimId)).statusCode).toBe(202);
+  });
+
+  it('refuses a decision maker who assessed the evidence', async () => {
+    const reviewer = ctx.makeJwt({ sub: 'ec-reviewer-071', roles: ['ec-case-officer', 'ec-decision-maker'] });
+    const claimId = await newClaim();
+    expect((await call(ctx.app, 'POST', `/api/v1/ec-claims/${claimId}/evidence-reviews`, {
+      reviewedAt: '2026-11-21T09:00:00Z', evidenceStatusCode: 'sufficient',
+    }, reviewer)).statusCode).toBe(201);
+
+    expect((await determine(claimId, {}, reviewer)).statusCode).toBe(403);
+    expect((await determine(claimId)).statusCode).toBe(202);
   });
 });

@@ -49,4 +49,25 @@ describe('EC claim authorisation', () => {
     expect(created.statusCode).toBe(201);
     expect((await call(['wellbeing-advisor'], 'GET', `/api/v1/ec-claims?personId=${PERSON}`)).statusCode).toBe(200);
   });
+
+  // ADR-028: deciding is its own permission, held only by ec-decision-maker.
+  const determineBody = { determinationCode: 'upheld', moduleOutcomes: [], determinedAt: '2026-11-21' };
+
+  it.each([['a wellbeing adviser', ['wellbeing-advisor']], ['an EC case officer', ['ec-case-officer']], ['a wellbeing auditor', ['wellbeing-auditor']]])(
+    'refuses %s the decision', async (_who, roles) => {
+      expect((await call(roles, 'POST', `/api/v1/ec-claims/${CLAIM}/determine`, determineBody)).statusCode).toBe(403);
+    },
+  );
+
+  it('lets an EC case officer run claims and a decision maker read them', async () => {
+    expect((await call(['ec-case-officer'], 'POST', '/api/v1/ec-claims', claim)).statusCode).toBe(201);
+    expect((await call(['ec-decision-maker'], 'GET', `/api/v1/ec-claims?personId=${PERSON}`)).statusCode).toBe(200);
+    expect((await call(['wellbeing-auditor'], 'GET', `/api/v1/ec-claims?personId=${PERSON}`)).statusCode).toBe(200);
+    expect((await call(['ec-decision-maker'], 'POST', '/api/v1/ec-claims', claim)).statusCode).toBe(403);
+  });
+
+  it('no longer gives registry administrators the wellbeing claim (they get the decided outcome in core)', async () => {
+    expect((await call(['registry-administrator'], 'GET', `/api/v1/ec-claims?personId=${PERSON}`)).statusCode).toBe(403);
+    expect((await call(['registry-administrator'], 'POST', '/api/v1/ec-claims', claim)).statusCode).toBe(403);
+  });
 });

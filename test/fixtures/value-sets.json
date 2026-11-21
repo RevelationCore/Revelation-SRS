@@ -1228,6 +1228,24 @@
     "active": true,
     "hidden": false,
     "selectable": true
+   },
+   {
+    "code": "ec-case-officer",
+    "displayLabel": "EC case officer",
+    "description": null,
+    "sortOrder": 270,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "ec-decision-maker",
+    "displayLabel": "EC decision maker",
+    "description": null,
+    "sortOrder": 280,
+    "active": true,
+    "hidden": false,
+    "selectable": true
    }
   ]
  },
@@ -6370,6 +6388,24 @@
     "displayLabel": "PGR examiner",
     "description": null,
     "sortOrder": 260,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "ec-case-officer",
+    "displayLabel": "EC case officer",
+    "description": null,
+    "sortOrder": 270,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "ec-decision-maker",
+    "displayLabel": "EC decision maker",
+    "description": null,
+    "sortOrder": 280,
     "active": true,
     "hidden": false,
     "selectable": true
@@ -15039,6 +15075,24 @@
     "active": true,
     "hidden": false,
     "selectable": true
+   },
+   {
+    "code": "ec-case-officer",
+    "displayLabel": "EC case officer",
+    "description": null,
+    "sortOrder": 270,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "ec-decision-maker",
+    "displayLabel": "EC decision maker",
+    "description": null,
+    "sortOrder": 280,
+    "active": true,
+    "hidden": false,
+    "selectable": true
    }
   ]
  },
@@ -15278,6 +15332,24 @@
     "displayLabel": "PGR examiner",
     "description": null,
     "sortOrder": 260,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "ec-case-officer",
+    "displayLabel": "EC case officer",
+    "description": null,
+    "sortOrder": 270,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "ec-decision-maker",
+    "displayLabel": "EC decision maker",
+    "description": null,
+    "sortOrder": 280,
     "active": true,
     "hidden": false,
     "selectable": true
@@ -15699,6 +15771,24 @@
     "active": true,
     "hidden": false,
     "selectable": true
+   },
+   {
+    "code": "ec-case-officer",
+    "displayLabel": "EC case officer",
+    "description": null,
+    "sortOrder": 270,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "ec-decision-maker",
+    "displayLabel": "EC decision maker",
+    "description": null,
+    "sortOrder": 280,
+    "active": true,
+    "hidden": false,
+    "selectable": true
    }
   ]
  },
@@ -16000,6 +16090,24 @@
     "displayLabel": "PGR examiner",
     "description": null,
     "sortOrder": 260,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "ec-case-officer",
+    "displayLabel": "EC case officer",
+    "description": null,
+    "sortOrder": 270,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "ec-decision-maker",
+    "displayLabel": "EC decision maker",
+    "description": null,
+    "sortOrder": 280,
     "active": true,
     "hidden": false,
     "selectable": true

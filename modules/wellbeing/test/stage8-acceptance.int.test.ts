@@ -70,6 +70,8 @@ class ControllableSrsEcClient implements SrsEcClient {
 describe('Stage 8 — End-to-End Acceptance Review', () => {
   let ctx:        TestWellbeingApp;
   let advisorJwt: string;
+  // ADR-028: a different person, holding ec-decision-maker, decides the claim.
+  let deciderJwt: string;
   let mhJwt:      string;
   let panelJwt:   string;
   let auditorJwt: string;
@@ -86,6 +88,7 @@ describe('Stage 8 — End-to-End Acceptance Review', () => {
     });
 
     advisorJwt = ctx.makeJwt({ roles: ['wellbeing-advisor'] });
+    deciderJwt = ctx.makeJwt({ sub: 'ec-decider-001', roles: ['ec-decision-maker'] });
     mhJwt      = ctx.makeJwt({ roles: ['wellbeing-mental-health-advisor'] });
     panelJwt   = ctx.makeJwt({ roles: ['wellbeing-panel-chair'] });
     auditorJwt = ctx.makeJwt({ roles: ['wellbeing-auditor'] });
@@ -365,7 +368,7 @@ describe('Stage 8 — End-to-End Acceptance Review', () => {
       const res = await ctx.app.inject({
         method:  'POST',
         url:     `/api/v1/ec-claims/${ecClaimId}/determine`,
-        headers: { authorization: `Bearer ${advisorJwt}` },
+        headers: { authorization: `Bearer ${deciderJwt}` },
         payload: {
           determinationCode: 'upheld',
           determinedAt:      '2026-05-25T14:00:00Z',
@@ -419,7 +422,7 @@ describe('Stage 8 — End-to-End Acceptance Review', () => {
       await ctx.app.inject({
         method:  'POST',
         url:     `/api/v1/ec-claims/${newId}/determine`,
-        headers: { authorization: `Bearer ${advisorJwt}` },
+        headers: { authorization: `Bearer ${deciderJwt}` },
         payload: {
           determinationCode: 'not_upheld',
           determinedAt:      '2026-05-26T14:00:00Z',

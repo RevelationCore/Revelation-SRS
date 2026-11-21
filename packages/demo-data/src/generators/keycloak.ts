@@ -27,7 +27,7 @@ export interface KeycloakConfig {
 export const DEMO_PERSONAS: readonly PersonaSpec[] = [
   { email: 'registry@demo.srs',   username: 'registry',   firstName: 'DEMO Registry',  lastName: 'Administrator', roles: ['registry-administrator'],                         personaId: PERSONA_IDS.STAFF_REGISTRY       },
   { email: 'sysadmin@demo.srs',   username: 'sysadmin',   firstName: 'DEMO System',    lastName: 'Administrator', roles: ['system-administrator', 'tenant-administrator'],   personaId: PERSONA_IDS.ADMIN_SRS            },
-  { email: 'chair@demo.srs',      username: 'chair',      firstName: 'DEMO Board',     lastName: 'Chair',         roles: ['exam-board-chair', 'registry-administrator'],     personaId: PERSONA_IDS.STAFF_EXAMBOARD      },
+  { email: 'chair@demo.srs',      username: 'chair',      firstName: 'DEMO Board',     lastName: 'Chair',         roles: ['exam-board-chair', 'registry-administrator', 'ec-decision-maker'], personaId: PERSONA_IDS.STAFF_EXAMBOARD      },
   { email: 'wellbeing@demo.srs',  username: 'wellbeing',  firstName: 'DEMO Wellbeing', lastName: 'Advisor',       roles: ['wellbeing-advisor'],                              personaId: PERSONA_IDS.STAFF_WELLBEING      },
   { email: 'dpo@demo.srs',        username: 'dpo',        firstName: 'DEMO DPO',       lastName: 'Auditor',       roles: ['dpo', 'wellbeing-auditor'],                       personaId: PERSONA_IDS.STAFF_DPO            },
   { email: 'alice.demo@demo.srs', username: 'alice.demo', firstName: 'DEMO Alice',     lastName: 'Demo',          roles: ['student'],                                        personaId: PERSONA_IDS.STUDENT_STANDARD,     srsPersonId: 'd4450eea-cee5-5bd3-a0ec-7024d0eb06da' },

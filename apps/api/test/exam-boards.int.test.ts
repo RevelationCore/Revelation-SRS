@@ -488,7 +488,7 @@ async function createExceptionalCircumstances(fixture: BoardFixture): Promise<vo
   });
   expect(ec.statusCode).toBe(201);
   // The proposed outcome is decided by someone else (D-41) before the board sees it.
-  const decider = await ctx.makeJwt({ sub: 'ec-decider', roles: ['exam-board-chair'] });
+  const decider = await ctx.makeJwt({ sub: 'ec-decider', roles: ['ec-decision-maker'] });
   const decided = await ctx.app.inject({
     method: 'POST', url: `/api/v1/ec-determinations/${ec.json<{ determinationId: string }>().determinationId}/decision`,
     headers: { authorization: `Bearer ${decider}` }, payload: { decisionCode: 'upheld' },

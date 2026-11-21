@@ -50,7 +50,9 @@
       { "name": "pgr-administrator",       "composite": false },
       { "name": "pgr-director",            "composite": false },
       { "name": "applicant",               "composite": false },
-      { "name": "pgr-examiner",            "composite": false }
+      { "name": "pgr-examiner",            "composite": false },
+      { "name": "ec-case-officer",         "composite": false },
+      { "name": "ec-decision-maker",       "composite": false }
     ]
   },
 
