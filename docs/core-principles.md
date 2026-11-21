@@ -109,6 +109,7 @@ All access to the system — human and machine — is authenticated and authoris
 - **Least privilege**: every user and integration receives the minimum permissions required to perform its function.
 - **Separation of duties**: permission to decide a governed outcome is separate from permission to prepare it, and the service refuses a decision by anyone who recorded or assessed the case. The acting user is always taken from the authenticated token, never from the request body (ADR-028).
 - **Browser sessions**: browser applications never hold OAuth tokens; they use a same-origin backend-for-frontend with an HTTP-only session cookie (ADR-026).
+- **Service identity**: a service calling another service authenticates as itself with client credentials, through a client the identity provider binds to one tenant. The tenant always comes from the verified token, never from the caller, and a service role is honoured only from its own client (ADR-029).
 - **API security**: all API endpoints are protected. No unauthenticated endpoints exist outside of publicly documented health and readiness probes.
 - **Secrets management**: credentials, certificates, and API keys are managed through a dedicated secrets store; they are never baked into container images or committed to source control.
 

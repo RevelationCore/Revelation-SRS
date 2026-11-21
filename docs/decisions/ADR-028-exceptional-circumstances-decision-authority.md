@@ -1,6 +1,6 @@
 # ADR-028: Exceptional-Circumstances Decision Authority and Separation of Duties
 
-**Status**: Accepted for generic product implementation
+**Status**: Accepted for generic product implementation; item 8 amended by [ADR-029](ADR-029-tenant-bound-service-identity-for-wellbeing-hand-offs.md) (2026-11-21)
 **Date**: 2026-11-20
 **Follows**: [ADR-017](ADR-017-minimum-necessary-outcomes-and-restricted-evidence.md) (minimum-necessary outcomes, restricted evidence); [Phase 5 gap-closure decisions](phase-5-gap-closure-decisions.md), D-41
 **Backlog**: BL-036; process [BP-04-005 Manage exceptional circumstances](../business-processes/04-learning-engagement-and-support/bp-04-005-manage-exceptional-circumstances.md)
