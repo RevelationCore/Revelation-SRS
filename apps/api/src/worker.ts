@@ -62,10 +62,13 @@ const reconcile = async (): Promise<void> => {
     // Adjustment instructions left unpublished (bus down, or the API stopped
     // between commit and publish) — see AdjustmentDistributionDispatcher.
     const adjustmentInstructions = await app.adjustmentDispatcher.drain();
-    // The SRS is the 'exams' target; apply any withdrawals still outstanding.
+    // The SRS is the 'exams' target; apply any withdrawals still outstanding,
+    // and add approved adjustments to entries generated before them (BL-058).
     let examWithdrawals = 0;
+    let examAdditions = 0;
     for (const tenantId of await app.adjustmentDispatcher.tenantIds()) {
       examWithdrawals += await app.examEntryService.applyExamWithdrawals(tenantId);
+      examAdditions += await app.examEntryService.applyExamAdditions(tenantId);
     }
     // Daily overdue digests for manual adjustment task queues.
     const overdueNotices = (await app.adjustmentTaskNoticeService.sendAll()).length;
@@ -77,7 +80,7 @@ const reconcile = async (): Promise<void> => {
       const r = await app.rightToStudyService.scanExpiry(tenantId);
       rightToStudy = { warned: rightToStudy.warned + r.warned, alerts: rightToStudy.alerts + r.alerts };
     }
-    const result = { ...workflows, adjustmentInstructions, examWithdrawals, overdueNotices, deliveryItems, rightToStudy };
+    const result = { ...workflows, adjustmentInstructions, examWithdrawals, examAdditions, overdueNotices, deliveryItems, rightToStudy };
     lastReconcile = { at: clockNow().toISOString(), ok: true, result };
   } catch (err) {
     lastReconcile = { at: clockNow().toISOString(), ok: false, error: err instanceof Error ? err.message : String(err) };

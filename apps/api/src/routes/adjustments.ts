@@ -203,6 +203,15 @@ export function adjustmentRoutes(fastify: FastifyInstance): void {
         return;
       }
 
+      // The SRS is itself the 'exams' target: add the arrangement to entries
+      // already generated for exams not yet sat (BL-058). The worker's
+      // reconcile loop retries if this fails.
+      try {
+        await fastify.examEntryService.applyExamAdditions(request.tenantId);
+      } catch (err) {
+        request.log.warn({ err, adjustmentId }, 'Exam entry refresh deferred to the reconcile loop');
+      }
+
       await fastify.audit.record({
         tenantId: request.tenantId,
         entityType: 'reasonable_adjustment',
