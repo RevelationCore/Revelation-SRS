@@ -15,7 +15,7 @@ import {
   type Db,
   withTenantContext,
 } from '@revelation-srs/db';
-import { ConflictError, NotFoundError, ValidationError } from '@revelation-srs/domain';
+import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '@revelation-srs/domain';
 
 import { canonicalHash } from '../canonical-hash.js';
 import { clockNow } from '../clock.js';
@@ -171,6 +171,10 @@ export class BoardAuthorityService {
     );
     const decision = decisionRows[0];
     if (!decision) throw new NotFoundError('ExamBoardDecision', examBoardDecisionId);
+    // Separation of duties (BL-065): whoever recorded the board's decision cannot also ratify it.
+    if (decision.decidedBy === ratifiedBy) {
+      throw new ForbiddenError('You recorded the board\'s decision, so someone else must ratify it');
+    }
     if (decision.decisionTypeCode !== 'ratify') {
       throw new ValidationError(`Only a 'ratify' decision can produce a ratification record; decision is '${decision.decisionTypeCode}'`);
     }

@@ -27,7 +27,7 @@ import {
   type Db,
   withTenantContext,
 } from '@revelation-srs/db';
-import { ConflictError, EVENT_TYPES, NotFoundError, RuleNotConfiguredError, ValidationError } from '@revelation-srs/domain';
+import { ConflictError, EVENT_TYPES, ForbiddenError, NotFoundError, RuleNotConfiguredError, ValidationError } from '@revelation-srs/domain';
 import type {
   AssessmentModuleResultRatifiedV1Payload,
   GovernanceExamBoardDataPackReadyV1Payload,
@@ -484,6 +484,10 @@ export class BoardService {
     }
     if (latest.decisionTypeCode !== 'ratify') {
       throw new ConflictError(`The board's latest decision on this pack is '${latest.decisionTypeCode}', not 'ratify'`);
+    }
+    // Separation of duties (BL-065): whoever recorded the board's decision cannot also ratify it.
+    if (latest.decidedBy === actorId) {
+      throw new ForbiddenError('You recorded the board\'s decision, so someone else must ratify it');
     }
     if (board.ratifiedAt) {
       throw new ValidationError('Exam board has already been ratified', [

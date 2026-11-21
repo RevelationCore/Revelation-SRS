@@ -146,11 +146,23 @@ describe('Decisions and ratification cite the exact pack (D-36)', () => {
     expect(verification.decisions.at(-1)).toMatchObject({ decisionTypeCode: 'ratify', matches: true });
   });
 
+  it('is ratified by someone other than the person who recorded the decision (BL-065)', async () => {
+    const { examBoardId } = await boardWithCandidate();
+    const pack = await generate(examBoardId);
+    expect((await decide(examBoardId, pack)).statusCode).toBe(201); // recorded by `chair`
+
+    const own = await raw('POST', `/api/v1/exam-boards/${examBoardId}/ratification`, { packHash: pack.packHash }, chair);
+    expect(own.statusCode).toBe(403);
+    const other = await ctx.makeJwt({ sub: 'evidence-second-chair', roles: ['exam-board-chair'] });
+    expect((await raw('POST', `/api/v1/exam-boards/${examBoardId}/ratification`, { packHash: pack.packHash }, other)).statusCode).toBe(204);
+  });
+
   it('a ratification record cannot be made from a decision on a superseded pack', async () => {
     const { examBoardId } = await boardWithCandidate();
     const pack = await generate(examBoardId);
     const { decisionId } = (await decide(examBoardId, pack)).json<{ decisionId: string }>();
     await generate(examBoardId);
-    expect((await raw('POST', `/api/v1/board-decisions/${decisionId}/ratification`, undefined, chair)).statusCode).toBe(409);
+    const ratifier = await ctx.makeJwt({ sub: 'evidence-ratifier', roles: ['exam-board-chair'] });
+    expect((await raw('POST', `/api/v1/board-decisions/${decisionId}/ratification`, undefined, ratifier)).statusCode).toBe(409);
   });
 });
