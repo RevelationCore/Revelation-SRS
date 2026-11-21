@@ -7,7 +7,10 @@
 // For each Deployment in infra/k8s, the variables come from the container's
 // `env` entries (base and overlay patches). The variables a service reads
 // come from its source: process.env['X'], process.env.X, and the config
-// helpers optional('X'), required('X'), optionalInt('X', …).
+// helpers optional('X'), required('X'), optionalInt('X', …). Variables the
+// start command exports (secrets read from files) count as set. And every
+// variable a service require()s must be set (BL-333), apart from the
+// KNOWN_GAPS below.
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -44,7 +47,7 @@ const READ_PATTERNS = [
   /process\.env\.([A-Z][A-Z0-9_]*)/g,
   // Helpers handed an env object, such as tokenEnv(env = process.env).
   /\benv\[['"]([A-Z][A-Z0-9_]*)['"]\]/g,
-  /\b(?:optional|required|optionalInt|optionalBool|requiredInt)\(\s*['"]([A-Z][A-Z0-9_]*)['"]/g,
+  /\b(?:optional|required|optionalInt|optionalBool|requiredInt|requiredUuid)\(\s*['"]([A-Z][A-Z0-9_]*)['"]/g,
 ];
 function readsOf(dirs) {
   const names = new Set();
@@ -69,11 +72,15 @@ for (const file of manifests('infra/k8s')) {
       if (!node || typeof node !== 'object') return;
       if (node.kind === 'Deployment' && node.metadata?.name) {
         for (const c of node.spec?.template?.spec?.containers ?? []) {
-          for (const e of c.env ?? []) {
-            const list = setBy.get(node.metadata.name) ?? [];
-            list.push({ name: e.name, file: file.replace(root, '') });
-            setBy.set(node.metadata.name, list);
+          const list = setBy.get(node.metadata.name) ?? [];
+          for (const e of c.env ?? []) list.push({ name: e.name, file: file.replace(root, '') });
+          // Secrets injected as files are exported by the start command:
+          //   export DATABASE_URL="$(cat /vault/secrets/db)"
+          for (const line of [...(c.command ?? []), ...(c.args ?? [])].join('\n').split('\n')) {
+            const m = /^\s*export\s+([A-Z][A-Z0-9_]*)=/.exec(line);
+            if (m) list.push({ name: m[1], file: file.replace(root, '') });
           }
+          setBy.set(node.metadata.name, list);
         }
       }
       for (const v of Object.values(node)) if (typeof v === 'object') visit(v);
@@ -86,7 +93,23 @@ for (const file of manifests('infra/k8s')) {
   }
 }
 
+// Variables a service cannot start without: required('X') in its own source.
+function requiredOf(dirs) {
+  const names = new Set();
+  for (const dir of dirs) for (const file of files(join(root, dir))) {
+    for (const m of readFileSync(file, 'utf8').matchAll(/\brequired(?:Int|Uuid)?\(\s*['"]([A-Z][A-Z0-9_]*)['"]/g)) names.add(m[1]);
+  }
+  return names;
+}
+// Required variables a deployment knowingly does not set yet, each with the
+// backlog row that removes it. The check fails if a listed gap is closed, so
+// the list cannot go stale.
+const KNOWN_GAPS = {
+  'srs-vle-adapter': { SERVICE_ACCOUNT_TOKEN: 'BL-333 (replace the static token with a tenant-bound service identity)' },
+};
+
 const errors = [];
+const gaps = [];
 let checked = 0;
 for (const [deployment, envs] of setBy) {
   const dirs = SERVICES[deployment];
@@ -96,6 +119,14 @@ for (const [deployment, envs] of setBy) {
     checked++;
     if (!RUNTIME.has(name) && !reads.has(name)) errors.push(`${file}: ${deployment} sets ${name}, which its source never reads`);
   }
+  const set = new Set(envs.map((e) => e.name));
+  const known = KNOWN_GAPS[deployment] ?? {};
+  for (const name of requiredOf(dirs)) {
+    if (set.has(name)) {
+      if (known[name]) errors.push(`${deployment} now sets ${name}: remove it from KNOWN_GAPS (${known[name]})`);
+    } else if (known[name]) gaps.push(`${deployment} does not set required ${name}: ${known[name]}`);
+    else errors.push(`${deployment} does not set ${name}, which its source requires to start`);
+  }
 }
 
 if (errors.length) {
@@ -103,4 +134,5 @@ if (errors.length) {
   for (const e of [...new Set(errors)]) console.error(`  - ${e}`);
   process.exit(1);
 }
-console.log(`check:deployment-env ok: ${checked} variables across ${[...setBy.keys()].filter((d) => SERVICES[d]).length} service deployments are all read`);
+for (const g of gaps) console.warn(`  known gap: ${g}`);
+console.log(`check:deployment-env ok: ${checked} variables across ${[...setBy.keys()].filter((d) => SERVICES[d]).length} service deployments are all read, and every required variable is set${gaps.length ? ` (${gaps.length} known gap)` : ''}`);

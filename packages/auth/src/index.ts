@@ -9,3 +9,4 @@ export type { JwtPluginOptions } from './plugins/jwt.js';
 export { DEFAULT_OUTBOUND_TIMEOUT_MS, fetchWithTimeout } from './http.js';
 export { bindServiceRoles, SERVICE_ROLE_CLIENTS, WELLBEING_SERVICE_ROLE, wellbeingServiceClientId, type ServiceRoleContext } from './service-identity.js';
 export { createClientAssertion, DEFAULT_DEV_WELLBEING_CLIENT_SECRET, keycloakKeyId, type ClientAssertionInput } from './client-assertion.js';
+export { assertNatsCredentials, natsConnectOptions } from './nats.js';

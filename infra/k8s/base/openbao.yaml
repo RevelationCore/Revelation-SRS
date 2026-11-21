@@ -49,9 +49,6 @@ data:
     path "database/creds/srs-api" {
       capabilities = ["read"]
     }
-    path "kv/data/srs/keycloak" {
-      capabilities = ["read"]
-    }
     path "kv/data/srs/nats" {
       capabilities = ["read"]
     }

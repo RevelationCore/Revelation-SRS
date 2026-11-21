@@ -616,6 +616,9 @@ importers:
       jose:
         specifier: ^5.10.0
         version: 5.10.0
+      nats:
+        specifier: ^2.29.3
+        version: 2.29.3
     devDependencies:
       '@revelation-srs/domain':
         specifier: workspace:*

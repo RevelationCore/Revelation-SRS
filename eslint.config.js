@@ -82,6 +82,12 @@ export default [
     files: ['apps/api/src/**/*.ts', 'modules/*/src/**/*.ts', 'adapters/*/src/**/*.ts', 'packages/auth/src/**/*.ts', 'packages/db/src/**/*.ts', 'packages/documents/src/**/*.ts', 'packages/workflow/src/**/*.ts'],
     rules: {
       'no-restricted-globals': ['error', { name: 'fetch', message: 'Use fetchWithTimeout (@revelation-srs/auth) so the call has a timeout.' }],
+      // The deployed NATS requires nkey auth (BL-337): connect through
+      // natsConnectOptions, never with an options literal that has no credentials.
+      'no-restricted-syntax': ['error', {
+        selector: 'CallExpression[callee.name="connect"] > ObjectExpression:first-child',
+        message: 'Use connect(natsConnectOptions(url)) so the connection carries the NATS credentials.',
+      }],
     },
   },
 ];

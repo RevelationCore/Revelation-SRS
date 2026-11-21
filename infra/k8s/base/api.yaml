@@ -38,12 +38,6 @@ spec:
           {{- with secret "database/creds/srs-api" -}}
           postgresql://{{ .Data.username }}:{{ .Data.password }}@postgres:5432/srs
           {{- end }}
-        # Injects Keycloak client secret
-        vault.hashicorp.com/agent-inject-secret-keycloak: "kv/data/srs/keycloak"
-        vault.hashicorp.com/agent-inject-template-keycloak: |
-          {{- with secret "kv/data/srs/keycloak" -}}
-          {{ .Data.data.client_secret }}
-          {{- end }}
         # Injects NATS NKey credentials
         vault.hashicorp.com/agent-inject-secret-nats: "kv/data/srs/nats"
         vault.hashicorp.com/agent-inject-template-nats: |
@@ -117,14 +111,12 @@ spec:
                   key: CORS_ORIGINS
             # Secrets are read from OpenBao-injected files at startup
             # DATABASE_URL is sourced from /vault/secrets/db
-            # KEYCLOAK_CLIENT_SECRET is sourced from /vault/secrets/keycloak
             # NATS_NKEY_SEED is sourced from /vault/secrets/nats
           command:
             - /bin/sh
             - -c
             - |
               export DATABASE_URL="$(cat /vault/secrets/db)"
-              export KEYCLOAK_CLIENT_SECRET="$(cat /vault/secrets/keycloak)"
               export NATS_NKEY_SEED="$(cat /vault/secrets/nats)"
               exec node dist/main.js
           resources:

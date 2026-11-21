@@ -1,6 +1,7 @@
 // OTel must be bootstrapped before any other import.
 import './telemetry.js';
 
+import { assertNatsCredentials } from '@revelation-srs/auth';
 import pino from 'pino';
 
 import { loadConfig } from './config.js';
@@ -13,6 +14,7 @@ const config  = loadConfig();
 const log     = pino({ level: config.logLevel });
 // Refuse to start on stubs or without verifiable credentials (ADR-029); static, no token fetched.
 assertSrsHandoffConfig(config.nodeEnv, config.srsHandoff ?? loadSrsHandoffConfig(config.nodeEnv));
+assertNatsCredentials('srs-wellbeing', config.nodeEnv);
 const fastify = await buildApp(config);
 const db      = createWellbeingDb(config.databaseUrl, { statementTimeoutMs: 30_000, idleInTransactionTimeoutMs: 60_000 });
 const consumer = new WellbeingEventConsumer(config.natsUrl, db, log);

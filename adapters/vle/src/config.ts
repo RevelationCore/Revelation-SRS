@@ -30,6 +30,13 @@ function required(name: string): string {
   return v;
 }
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function requiredUuid(name: string): string {
+  const v = required(name);
+  if (!UUID.test(v)) throw new Error(`Environment variable ${name} must be a UUID, not '${v}'`);
+  return v;
+}
+
 function optionalInt(name: string, defaultValue: number): number {
   const v = process.env[name];
   return v ? parseInt(v, 10) : defaultValue;
@@ -63,8 +70,8 @@ export function loadConfig(): Config {
     databaseUrl:             required('DATABASE_URL'),
     srsApiUrl:               process.env['SRS_API_URL'] ?? 'http://localhost:3000',
     natsUrl:                 process.env['NATS_URL'] ?? 'nats://localhost:4222',
-    tenantId:                  required('TENANT_ID'),
-    integrationRegistrationId: required('INTEGRATION_REGISTRATION_ID'),
+    tenantId:                  requiredUuid('TENANT_ID'),
+    integrationRegistrationId: requiredUuid('INTEGRATION_REGISTRATION_ID'),
     serviceAccountToken:       required('SERVICE_ACCOUNT_TOKEN'),
     vleEndpointUrl:            process.env['VLE_ENDPOINT_URL'] ?? 'http://localhost:3003',
     endpointSafetyClass:     safetyClass,

@@ -6,11 +6,13 @@ import { pino } from 'pino';
 import { buildApp } from './app.js';
 import { loadConfig } from './config.js';
 import { VleEventConsumer } from './consumers/vle-event-consumer.js';
+import { assertNatsCredentials } from './nats-auth.js';
 import { ReconciliationService } from './reliability/reconciliation-service.js';
 import { HttpSrsAcknowledgementClient } from './srs-client/acknowledgement-client.js';
 
 async function main(): Promise<void> {
   const config = loadConfig();
+  assertNatsCredentials('srs-vle-adapter', config.nodeEnv);
   const app    = await buildApp(config);
 
   await app.listen({ port: config.port, host: '0.0.0.0' });

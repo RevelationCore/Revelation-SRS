@@ -26,6 +26,7 @@ import {
 import type { Logger } from 'pino';
 
 import type { VleDb } from '../db/client.js';
+import { natsConnectOptions } from '../nats-auth.js';
 import type { SrsAcknowledgementClient } from '../srs-client/acknowledgement-client.js';
 import type { VleClient } from '../vle-client/client.js';
 import type { VlePlatformDriver } from '../vle-platforms/driver.js';
@@ -73,7 +74,7 @@ export class VleEventConsumer {
   // ── Lifecycle ──────────────────────────────────────────────────────────────
 
   async connect(): Promise<void> {
-    this.nc = await connect({ servers: this.natsUrl });
+    this.nc = await connect(natsConnectOptions(this.natsUrl));
     this.log.info({ natsUrl: this.natsUrl }, 'VLE connector NATS consumer connected');
     await this.ensureConsumer(this.nc);
   }

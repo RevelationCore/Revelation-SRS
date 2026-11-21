@@ -14,6 +14,7 @@ import type { DomainEventEnvelope } from '@revelation-srs/domain';
 import { EVENT_TYPES } from '@revelation-srs/domain';
 import type { ConsumerMessages, JetStreamClient, JetStreamManager, NatsConnection } from 'nats';
 import { AckPolicy, connect, DeliverPolicy, JSONCodec, ReplayPolicy } from 'nats';
+import { natsConnectOptions } from '@revelation-srs/auth';
 import type { Logger } from 'pino';
 
 import type { AttendanceDb, AttendanceTx } from '../db/client.js';
@@ -51,7 +52,7 @@ export class AttendanceEventConsumer {
   ) {}
 
   async connect(): Promise<void> {
-    this.nc = await connect({ servers: this.natsUrl });
+    this.nc = await connect(natsConnectOptions(this.natsUrl));
     this.log.info({ natsUrl: this.natsUrl }, 'Attendance NATS consumer connected');
     await this.ensureConsumer(this.nc);
   }

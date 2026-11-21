@@ -150,6 +150,18 @@ metadata:
   annotations:
     openbao.org/role: "srs-vle-adapter"
 ---
+# ── VLE Adapter — ConfigMap ───────────────────────────────────────────────────
+# Per deployment: the overlay (or the operator) replaces both values. The
+# placeholders are not UUIDs, so an unconfigured connector refuses to start.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: srs-vle-adapter-config
+  namespace: revelation-srs
+data:
+  TENANT_ID: "set-per-deployment"
+  INTEGRATION_REGISTRATION_ID: "set-per-deployment"
+---
 # ── VLE Adapter — Deployment ──────────────────────────────────────────────────
 apiVersion: apps/v1
 kind: Deployment
@@ -211,13 +223,25 @@ spec:
               value: "3003"
             - name: NATS_URL
               value: nats://srs-nats:4222
+            # The tenant and integration registration this connector serves:
+            # set per deployment in srs-vle-adapter-config (checked as UUIDs at start).
+            - name: TENANT_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: srs-vle-adapter-config
+                  key: TENANT_ID
+            - name: INTEGRATION_REGISTRATION_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: srs-vle-adapter-config
+                  key: INTEGRATION_REGISTRATION_ID
           command:
             - /bin/sh
             - -c
             - |
               export DATABASE_URL="$(cat /vault/secrets/db)"
               export NATS_NKEY_SEED="$(cat /vault/secrets/nats)"
-              export VLE_API_KEY="$(cat /vault/secrets/vle)"
+              export VLE_API_TOKEN="$(cat /vault/secrets/vle)"
               exec node dist/main.js
           resources:
             requests:
