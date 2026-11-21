@@ -83,9 +83,14 @@ export function healthRoutes(fastify: FastifyInstance): void {
         checks['database'] = { status: 'error', error: String(err) };
       }
 
-      checks['nats'] = fastify.eventBus.isConnected()
-        ? { status: 'ok' }
-        : { status: 'error', error: 'not connected' };
+      // Readiness depends on the database only (ADR-027, readiness 2.2). NATS
+      // and Keycloak are reported but do not take the pod out of service: a
+      // broker outage must not stop the API serving records (events are
+      // published when it returns), and token keys are cached.
+      checks['nats'] = {
+        ...(fastify.eventBus.isConnected() ? { status: 'ok' as const } : { status: 'error' as const, error: 'not connected' }),
+        required: false,
+      };
 
       // Temporal is reported but does not gate readiness (ADR-024): during a
       // workflow outage the API must keep serving records and saving
@@ -98,7 +103,7 @@ export function healthRoutes(fastify: FastifyInstance): void {
       };
 
       if (fastify.config.keycloakJwksUrl) {
-        checks['keycloakJwks'] = await jwksCheck(fastify.config.keycloakJwksUrl);
+        checks['keycloakJwks'] = { ...(await jwksCheck(fastify.config.keycloakJwksUrl)), required: false };
       }
 
       const allOk = Object.values(checks).every((c) => c.required === false || c.status === 'ok');
