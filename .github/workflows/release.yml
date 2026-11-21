@@ -31,15 +31,17 @@ jobs:
           - service: admin
             context: .
             dockerfile: infra/docker/admin/Dockerfile
-          - service: worker
-            context: .
-            dockerfile: infra/docker/worker/Dockerfile
+          # The worker runs the API image with a different command (workers.yaml),
+          # so it has no image of its own (BL-176).
           - service: wellbeing
             context: .
             dockerfile: infra/docker/wellbeing/Dockerfile
           - service: vle-adapter
             context: .
             dockerfile: infra/docker/vle-adapter/Dockerfile
+          - service: attendance
+            context: .
+            dockerfile: infra/docker/attendance/Dockerfile
 
     steps:
       - name: Checkout

@@ -229,6 +229,82 @@ jobs:
           severity:      CRITICAL,HIGH
           ignore-unfixed: true
 
+      # BL-176: the service images Kubernetes deploys were never built.
+      - name: Build Wellbeing image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file:    infra/docker/wellbeing/Dockerfile
+          load:    true   # into the local daemon, so the Trivy step can scan it
+          push:    false
+          tags:    revelation-srs/wellbeing:${{ github.sha }}
+          cache-from: type=gha
+          cache-to:   type=gha,mode=max
+          # Always fetch the current base image, and never take the runtime
+          # stage from cache, so its package upgrades (apk upgrade) are current:
+          # a cached layer kept a vulnerable nginx after the fix was published.
+          pull: true
+          no-cache-filters: runtime
+
+      - name: Trivy scan — Wellbeing
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref:     revelation-srs/wellbeing:${{ github.sha }}
+          format:        table
+          exit-code:     "1"
+          severity:      CRITICAL,HIGH
+          ignore-unfixed: true
+
+      - name: Build Attendance image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file:    infra/docker/attendance/Dockerfile
+          load:    true   # into the local daemon, so the Trivy step can scan it
+          push:    false
+          tags:    revelation-srs/attendance:${{ github.sha }}
+          cache-from: type=gha
+          cache-to:   type=gha,mode=max
+          # Always fetch the current base image, and never take the runtime
+          # stage from cache, so its package upgrades (apk upgrade) are current:
+          # a cached layer kept a vulnerable nginx after the fix was published.
+          pull: true
+          no-cache-filters: runtime
+
+      - name: Trivy scan — Attendance
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref:     revelation-srs/attendance:${{ github.sha }}
+          format:        table
+          exit-code:     "1"
+          severity:      CRITICAL,HIGH
+          ignore-unfixed: true
+
+      - name: Build VLE adapter image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file:    infra/docker/vle-adapter/Dockerfile
+          load:    true   # into the local daemon, so the Trivy step can scan it
+          push:    false
+          tags:    revelation-srs/vle-adapter:${{ github.sha }}
+          cache-from: type=gha
+          cache-to:   type=gha,mode=max
+          # Always fetch the current base image, and never take the runtime
+          # stage from cache, so its package upgrades (apk upgrade) are current:
+          # a cached layer kept a vulnerable nginx after the fix was published.
+          pull: true
+          no-cache-filters: runtime
+
+      - name: Trivy scan — VLE adapter
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref:     revelation-srs/vle-adapter:${{ github.sha }}
+          format:        table
+          exit-code:     "1"
+          severity:      CRITICAL,HIGH
+          ignore-unfixed: true
+
       # ── SBOM generation (syft / SPDX 2.3) ──────────────────────────────────
       - name: Install syft
         uses: anchore/sbom-action/download-syft@v0
