@@ -64,6 +64,9 @@ spec:
           env:
             - name: NODE_ENV
               value: production
+            # Background jobs may run longer than a request (BL-011): 5 minutes.
+            - name: DB_STATEMENT_TIMEOUT_MS
+              value: "300000"
             - name: TEMPORAL_ADDRESS
               value: srs-temporal:7233
             - name: TEMPORAL_EXECUTION_ENABLED

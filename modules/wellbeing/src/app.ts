@@ -99,7 +99,7 @@ export async function buildApp(config: Config, appOpts: AppOptions = {}): Promis
   await fastify.register(tenantContextPlugin);
 
   // Database
-  const db = createWellbeingDb(config.databaseUrl);
+  const db = createWellbeingDb(config.databaseUrl, { statementTimeoutMs: 30_000, idleInTransactionTimeoutMs: 60_000 });
   fastify.decorate('wellbeingDb', db);
   fastify.decorate('config',      config);
 

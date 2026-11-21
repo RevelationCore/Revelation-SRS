@@ -345,7 +345,10 @@ export async function buildApp(
 
   // - Platform infrastructure -
 
-  const db         = createDb(config.databaseUrl);
+  const db         = createDb(config.databaseUrl, {
+    statementTimeoutMs:         config.dbStatementTimeoutMs ?? 30_000,
+    idleInTransactionTimeoutMs: config.dbIdleInTransactionTimeoutMs ?? 60_000,
+  });
   const audit      = new AuditService(db);
   const rules      = new RulesEngine(db);
   const valueSets  = new ValueSetService(db);

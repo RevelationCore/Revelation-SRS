@@ -1,6 +1,7 @@
 import { Readable, Transform } from 'node:stream';
 import type { ReadableStream as WebReadableStream } from 'node:stream/web';
 
+import { fetchWithTimeout } from '@revelation-srs/auth';
 import type { FastifyInstance, FastifyReply } from 'fastify';
 
 /**
@@ -86,12 +87,11 @@ export function engagementProxyRoutes(
 
     let res: Response;
     try {
-      res = await fetch(targetUrl, {
+      res = await fetchWithTimeout(targetUrl, {
         method: request.method,
         headers,
-        signal: AbortSignal.timeout(timeoutMs),
         ...(limited ? { body: Readable.toWeb(limited), duplex: 'half' } : {}),
-      } as RequestInit);
+      } as RequestInit, timeoutMs);
     } catch (err) {
       if (tooLarge) return problem(reply, 413, 'Payload Too Large', `Request body exceeds ${bodyLimit} bytes`);
       if ((err as Error).name === 'TimeoutError') {

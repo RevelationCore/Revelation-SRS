@@ -10,6 +10,8 @@
  * transaction.
  */
 
+import { fetchWithTimeout } from '../http/fetch-with-timeout.js';
+
 export interface VleUpsertCourseParams {
   moduleId:    string;
   code:        string;
@@ -61,7 +63,7 @@ export class HttpVleClient implements VleClient {
 
   async upsertCourse(params: VleUpsertCourseParams): Promise<{ vleCourseId: string }> {
     const url = `${this.baseUrl}/stub/courses`;
-    const res = await fetch(url, {
+    const res = await fetchWithTimeout(url, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({
@@ -82,7 +84,7 @@ export class HttpVleClient implements VleClient {
 
   async upsertEnrolment(params: VleUpsertEnrolmentParams): Promise<{ vleEnrolmentId: string }> {
     const url = `${this.baseUrl}/stub/courses/${params.moduleId}/enrolments`;
-    const res = await fetch(url, {
+    const res = await fetchWithTimeout(url, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({
@@ -103,7 +105,7 @@ export class HttpVleClient implements VleClient {
 
   async updateEnrolmentStatus(params: VleUpdateEnrolmentStatusParams): Promise<void> {
     const url = `${this.baseUrl}/stub/courses/${params.moduleId}/enrolments/${params.moduleRegistrationId}`;
-    const res = await fetch(url, {
+    const res = await fetchWithTimeout(url, {
       method:  'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({ statusCode: params.statusCode }),
@@ -116,7 +118,7 @@ export class HttpVleClient implements VleClient {
 
   async setRatifiedResult(params: VleSetRatifiedResultParams): Promise<void> {
     const url = `${this.baseUrl}/stub/enrolments/${encodeURIComponent(params.moduleRegistrationId)}/result`;
-    const res = await fetch(url, {
+    const res = await fetchWithTimeout(url, {
       method:  'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({

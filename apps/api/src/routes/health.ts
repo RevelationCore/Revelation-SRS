@@ -1,5 +1,6 @@
 import net from 'node:net';
 
+import { fetchWithTimeout } from '@revelation-srs/auth';
 import { sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 
@@ -34,7 +35,7 @@ async function tcpCheck(address: string, defaultPort: number): Promise<CheckResu
 async function jwksCheck(jwksUrl: string): Promise<CheckResult> {
   const t0 = Date.now();  // clock:allow — latency timing
   try {
-    const res = await fetch(jwksUrl, { signal: AbortSignal.timeout(1_500) });
+    const res = await fetchWithTimeout(jwksUrl, {}, 1_500);
     return res.ok
       ? { status: 'ok', latencyMs: Date.now() - t0 }  // clock:allow
       : { status: 'error', error: `HTTP ${res.status}` };

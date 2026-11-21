@@ -6,3 +6,4 @@ export { requireSelfOrPermission } from './middleware/require-self-or-permission
 export { requireAnyPermission } from './middleware/require-any-permission.js';
 export { type AuthSettings, assertSecureAuthConfig, DEFAULT_DEV_JWT_SECRET, tokenEnv, issuerFromJwksUrl, jwtPluginOptions } from './settings.js';
 export type { JwtPluginOptions } from './plugins/jwt.js';
+export { DEFAULT_OUTBOUND_TIMEOUT_MS, fetchWithTimeout } from './http.js';

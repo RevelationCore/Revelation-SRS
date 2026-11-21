@@ -11,7 +11,7 @@ import { createAttendanceDb } from './db/client.js';
 const config  = loadConfig();
 const log     = pino({ level: config.logLevel });
 const fastify = await buildApp(config);
-const db      = createAttendanceDb(config.databaseUrl);
+const db      = createAttendanceDb(config.databaseUrl, { statementTimeoutMs: 30_000, idleInTransactionTimeoutMs: 60_000 });
 const consumer = new AttendanceEventConsumer(config.natsUrl, db, log);
 
 const shutdown = async (signal: string): Promise<void> => {

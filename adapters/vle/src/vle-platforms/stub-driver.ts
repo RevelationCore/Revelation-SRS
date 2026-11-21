@@ -1,3 +1,5 @@
+import { fetchWithTimeout } from '../http/fetch-with-timeout.js';
+
 import { VlePlatformError, type AccommodationResult, type FetchLike, type PersonInCourse, type VlePlatformDriver } from './driver.js';
 
 /** Driver for the in-process stub VLE (src/stub-vle). */
@@ -6,7 +8,7 @@ export class StubVleDriver implements VlePlatformDriver {
 
   constructor(
     private readonly baseUrl: string,
-    private readonly fetchImpl: FetchLike = fetch,
+    private readonly fetchImpl: FetchLike = fetchWithTimeout,
   ) {}
 
   async setTimeAccommodation(target: PersonInCourse, extraTimePercent: number): Promise<AccommodationResult> {

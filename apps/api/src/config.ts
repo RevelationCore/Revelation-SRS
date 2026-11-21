@@ -18,6 +18,10 @@ export interface Config {
    * see callers, not the ingress pod.
    */
   trustProxy?: false | string | undefined;
+  /** Postgres statement_timeout for the API pool (default 30 s; the worker sets 5 minutes). */
+  dbStatementTimeoutMs?: number;
+  /** Postgres idle_in_transaction_session_timeout (default 60 s). */
+  dbIdleInTransactionTimeoutMs?: number;
   temporalAddress: string;
   /** Live Temporal execution. Off unless TEMPORAL_EXECUTION_ENABLED=true. */
   temporalExecutionEnabled?: boolean;
@@ -104,6 +108,8 @@ export function loadConfig(): Config {
     attendanceApiUrl: process.env['ATTENDANCE_API_URL'] ?? 'http://localhost:3004',
     engagementProxyTimeoutMs: optionalInt('ENGAGEMENT_PROXY_TIMEOUT_MS', 15_000),
     trustProxy:      trustProxySetting(process.env['TRUST_PROXY']),
+    dbStatementTimeoutMs:         optionalInt('DB_STATEMENT_TIMEOUT_MS', 30_000),
+    dbIdleInTransactionTimeoutMs: optionalInt('DB_IDLE_IN_TRANSACTION_TIMEOUT_MS', 60_000),
     temporalAddress: process.env['TEMPORAL_ADDRESS'] ?? 'localhost:7233',
     temporalExecutionEnabled: process.env['TEMPORAL_EXECUTION_ENABLED'] === 'true',
     temporalNamespace: process.env['TEMPORAL_NAMESPACE'] ?? 'srs-local',

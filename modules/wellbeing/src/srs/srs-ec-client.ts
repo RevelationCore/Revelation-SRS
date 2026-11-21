@@ -11,6 +11,8 @@
  * attempt so retry loops cannot create duplicate SRS EC records.
  */
 
+import { fetchWithTimeout } from '@revelation-srs/auth';
+
 export interface SubmitEcInput {
   idempotencyKey:    string;
   personId:          string;
@@ -47,7 +49,7 @@ export class SrsEcHttpClient implements SrsEcClient {
     if (input.moduleOfferingId !== undefined) body['moduleOfferingId'] = input.moduleOfferingId;
     if (input.notes            !== undefined) body['notes']            = input.notes;
 
-    const res = await fetch(url, {
+    const res = await fetchWithTimeout(url, {
       method:  'POST',
       headers: {
         'content-type':      'application/json',

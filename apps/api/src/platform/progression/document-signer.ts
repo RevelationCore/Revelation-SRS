@@ -1,5 +1,7 @@
 import { createHash, createPrivateKey, createPublicKey, generateKeyPairSync, sign as cryptoSign, verify as cryptoVerify, type KeyObject } from 'node:crypto';
 
+import { fetchWithTimeout } from '@revelation-srs/auth';
+
 /**
  * Signing issued award documents (Phase 3 D-20). A detached ES256 JWS over
  * the facts a document states, so it can be checked offline against the
@@ -92,7 +94,7 @@ export class OpenBaoTransitSigner implements DocumentSigner {
   constructor(private readonly address: string, private readonly token: string, private readonly mount = 'transit') {}
 
   async activeKey(tenantId: string): Promise<{ keyId: string; publicKeyPem: string }> {
-    const res = await fetch(`${this.address}/v1/${this.mount}/keys/${keyName(tenantId)}`, { headers: { 'X-Vault-Token': this.token } });
+    const res = await fetchWithTimeout(`${this.address}/v1/${this.mount}/keys/${keyName(tenantId)}`, { headers: { 'X-Vault-Token': this.token } });
     if (!res.ok) throw new Error(`OpenBao key lookup failed (${res.status})`);
     const body = await res.json() as { data: { latest_version: number; keys: Record<string, { public_key: string }> } };
     const pem = body.data.keys[String(body.data.latest_version)]!.public_key;
@@ -103,7 +105,7 @@ export class OpenBaoTransitSigner implements DocumentSigner {
     const { keyId } = await this.activeKey(tenantId);
     const header = { alg: 'ES256', kid: keyId, typ: 'srs-document+jws', b64: true };
     const { protectedHeader, data } = signingInput(header, payload);
-    const res = await fetch(`${this.address}/v1/${this.mount}/sign/${keyName(tenantId)}/sha2-256`, {
+    const res = await fetchWithTimeout(`${this.address}/v1/${this.mount}/sign/${keyName(tenantId)}/sha2-256`, {
       method: 'POST', headers: { 'X-Vault-Token': this.token, 'content-type': 'application/json' },
       body: JSON.stringify({ input: data.toString('base64'), marshaling_algorithm: 'jws' }),
     });

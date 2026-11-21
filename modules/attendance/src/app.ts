@@ -73,7 +73,7 @@ export async function buildApp(config: Config, appOpts: AppOptions = {}): Promis
   });
 
   // Database
-  const db = createAttendanceDb(config.databaseUrl);
+  const db = createAttendanceDb(config.databaseUrl, { statementTimeoutMs: 30_000, idleInTransactionTimeoutMs: 60_000 });
   fastify.decorate('attendanceDb', db);
   fastify.decorate('config', config);
 

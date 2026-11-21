@@ -55,7 +55,7 @@ export async function buildApp(
   await fastify.register(helmet, { global: true });
   await fastify.register(cors, { origin: false });
 
-  const db = createVleDb(config.databaseUrl);
+  const db = createVleDb(config.databaseUrl, { statementTimeoutMs: 30_000, idleInTransactionTimeoutMs: 60_000 });
   fastify.decorate('vleDb', db);
   fastify.decorate('config', config);
 

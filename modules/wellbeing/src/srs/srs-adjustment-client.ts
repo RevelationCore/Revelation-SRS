@@ -11,6 +11,8 @@
  * repeated during retry, SRS will return the same adjustmentId.
  */
 
+import { fetchWithTimeout } from '@revelation-srs/auth';
+
 export interface SubmitAdjustmentInput {
   idempotencyKey:     string;
   personId:           string;
@@ -72,7 +74,7 @@ export class SrsAdjustmentHttpClient implements SrsAdjustmentClient {
       ...(input.sourceCaseId !== undefined ? { sourceCaseId: input.sourceCaseId } : {}),
     };
 
-    const res = await fetch(url, {
+    const res = await fetchWithTimeout(url, {
       method:  'POST',
       headers: {
         'content-type':      'application/json',
