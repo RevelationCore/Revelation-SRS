@@ -71,6 +71,10 @@ data:
     path "kv/data/srs/nats" {
       capabilities = ["read"]
     }
+    # ADR-029: the key for the hand-offs' client assertions.
+    path "kv/data/srs/wellbeing/service-client" {
+      capabilities = ["read"]
+    }
 
   policy-attendance.hcl: |
     path "database/creds/srs-attendance" {

@@ -220,3 +220,12 @@ What the code shows:
 | Network policy: admit `srs-wellbeing` to `srs-api:3000`; check the issuer matches on the internal token endpoint | Defect | Platform | P0 | S |
 | Guards: service-role binding unit test, hand-off role matrix, realm test, manifest test | Test | Auth & access | P0 | S |
 | Note "Amended by ADR-029 (item 8)" on ADR-028 | Docs | Documentation | P2 | S |
+
+## Implementation notes (2026-11-21)
+
+- **The assertion's `kid` is derived, not configured.** Testing against Keycloak 26.0.7 showed that for a `client-jwt` client with a registered certificate, Keycloak looks the assertion's `kid` up by the id it gives the certificate's public key: base64url of SHA-256 over the DER SubjectPublicKeyInfo (its `KeyUtils.createKeyId`). A configured label such as `key_id`, and an RFC 7638 thumbprint, are both refused (`client_credentials_setup_required`). `createClientAssertion` therefore uses `keycloakKeyId(privateKey)` by default. `WELLBEING_SRS_CLIENT_KEY_ID` becomes an optional override, no longer required at start-up, and the OpenBao secret needs only `private_key_pem`.
+- **The provisioning script is `infra/scripts/provision-wellbeing-service-client.mjs`**, plain Node with no build step, rather than `.ts`. It registers the deployment's X.509 certificate, made with `openssl req -batch -new -x509 -key private_key.pem -subj /CN=srs-wellbeing-service -days 400`.
+- **Verified live:**
+  - The development realm's demo-tenant client issues a token with `azp`, `tenant_id`, only `wellbeing-service`, audience `srs-api` and a 300 s lifetime.
+  - Core validates that token with RS256 and records a hand-off (`apps/api/test/cross-component/wellbeing-service-identity-live.int.test.ts`, run with `KEYCLOAK_LIVE_URL`).
+  - A tenant provisioned by the script obtains a `private_key_jwt` token, and an unprovisioned tenant is refused.

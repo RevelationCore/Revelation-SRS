@@ -642,6 +642,7 @@ jobs:
       - run: pnpm check:backlog
       - run: pnpm check:deployment-env
       - run: pnpm check:k8s   # kubectl is on the GitHub-hosted runner
+      - run: pnpm check:realm
       - run: pnpm check:capability-baseline
       - run: pnpm check:doc-links
       - run: pnpm check:coded-values

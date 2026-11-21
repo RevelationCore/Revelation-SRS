@@ -54,7 +54,6 @@ export function assertSrsHandoffConfig(nodeEnv: string, cfg: SrsHandoffConfig): 
   if (!cfg.srsApiUrlSet) problems.push('SRS_API_URL is not set');
   if (!cfg.tokenUrl) problems.push('no token endpoint: set KEYCLOAK_JWKS_URL or WELLBEING_SRS_TOKEN_URL');
   if (cfg.clientAuth !== 'private_key_jwt') problems.push('WELLBEING_SRS_CLIENT_AUTH must be private_key_jwt');
-  if (!cfg.clientKeyId) problems.push('WELLBEING_SRS_CLIENT_KEY_ID is not set');
   if (!cfg.clientKeyFile) problems.push('WELLBEING_SRS_CLIENT_KEY_FILE is not set');
   else {
     try {
@@ -77,7 +76,7 @@ export function createSrsHandoffClients(nodeEnv: string, cfg: SrsHandoffConfig):
   }
   if (!cfg.tokenUrl) throw new Error('No token endpoint for the SRS hand-offs: set KEYCLOAK_JWKS_URL or WELLBEING_SRS_TOKEN_URL, or WELLBEING_SRS_CLIENTS=stub in development');
   const auth: ClientAuth = cfg.clientAuth === 'private_key_jwt'
-    ? { method: 'private_key_jwt', keyFile: cfg.clientKeyFile ?? '', keyId: cfg.clientKeyId ?? '' }
+    ? { method: 'private_key_jwt', keyFile: cfg.clientKeyFile ?? '', ...(cfg.clientKeyId ? { keyId: cfg.clientKeyId } : {}) }
     : { method: 'client_secret_basic', secret: cfg.clientSecret };
   const tokens = new ServiceTokenProvider({ tokenUrl: cfg.tokenUrl, auth });
   return { adjustment: new SrsAdjustmentHttpClient(cfg.srsApiUrl, tokens), ec: new SrsEcHttpClient(cfg.srsApiUrl, tokens) };

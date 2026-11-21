@@ -324,6 +324,14 @@ spec:
           {{- with secret "kv/data/srs/nats" -}}
           {{ .Data.data.nkey_seed }}
           {{- end }}
+        # ADR-029: the private key the wellbeing service signs its client
+        # assertions with, as a file (re-read when OpenBao re-renders it).
+        vault.hashicorp.com/agent-inject-secret-srs-client-key: "kv/data/srs/wellbeing/service-client"
+        vault.hashicorp.com/agent-inject-file-srs-client-key: "srs-client-key"
+        vault.hashicorp.com/agent-inject-template-srs-client-key: |
+          {{- with secret "kv/data/srs/wellbeing/service-client" -}}
+          {{ .Data.data.private_key_pem }}
+          {{- end }}
     spec:
       serviceAccountName: srs-wellbeing
       securityContext:
@@ -352,6 +360,16 @@ spec:
             # development and test). The issuer is Keycloak's public URL.
             - name: KEYCLOAK_JWKS_URL
               value: http://keycloak:8080/realms/srs/protocol/openid-connect/certs
+            # Hand-offs to core as the wellbeing service (ADR-029): real clients,
+            # a signed client assertion per tenant, the key from OpenBao.
+            - name: SRS_API_URL
+              value: http://srs-api:3000
+            - name: WELLBEING_SRS_CLIENTS
+              value: http
+            - name: WELLBEING_SRS_CLIENT_AUTH
+              value: private_key_jwt
+            - name: WELLBEING_SRS_CLIENT_KEY_FILE
+              value: /vault/secrets/srs-client-key
             - name: KEYCLOAK_ISSUER
               valueFrom:
                 configMapKeyRef:

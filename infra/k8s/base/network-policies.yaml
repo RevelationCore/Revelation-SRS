@@ -32,6 +32,17 @@ spec:
               app.kubernetes.io/name: ingress-nginx
       ports:
         - port: 3000
+    # From the services that call core: the wellbeing hand-offs (ADR-029),
+    # attendance's engagement outcomes and value sets, and the VLE adapter's
+    # registry, marks and acknowledgements (BL-331).
+    - from:
+        - podSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values: [srs-wellbeing, srs-attendance, srs-vle-adapter]
+      ports:
+        - port: 3000
     # From Prometheus scraping
     - from:
         - namespaceSelector:
@@ -257,6 +268,28 @@ spec:
               app.kubernetes.io/name: srs-api
       ports:
         - port: 3004
+
+---
+# ── Wellbeing: accept ingress from the API only (BL-331) ──────────────────────
+# default-deny-ingress otherwise blocks everything. The admin app will reach
+# the wellbeing service through its backend-for-frontend (ADR-026, BL-163).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-to-wellbeing
+  namespace: revelation-srs
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: srs-wellbeing
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: srs-api
+      ports:
+        - port: 3002
 
 ---
 # ── Temporal: accept ingress from API and Worker ──────────────────────────────

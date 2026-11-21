@@ -6,13 +6,13 @@
  */
 import type { createPublicKey} from 'node:crypto';
 import { generateKeyPairSync, verify } from 'node:crypto';
-import { mkdtempSync, writeFileSync, utimesSync } from 'node:fs';
+import { mkdtempSync, readFileSync, writeFileSync, utimesSync } from 'node:fs';
 import { createServer, type IncomingMessage, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { wellbeingServiceClientId } from '@revelation-srs/auth';
+import { keycloakKeyId, wellbeingServiceClientId } from '@revelation-srs/auth';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { buildApp } from '../src/app.js';
@@ -78,7 +78,6 @@ describe('assertSrsHandoffConfig', () => {
     ['a client secret', { clientAuth: 'client_secret_basic' as const }, /must be private_key_jwt/],
     ['no key file', { clientKeyFile: undefined }, /KEY_FILE is not set/],
     ['a missing key file', { clientKeyFile: join(dir, 'nope.pem') }, /missing, unreadable or not a private key/],
-    ['no key id', { clientKeyId: undefined }, /KEY_ID is not set/],
     ['no token endpoint', { tokenUrl: undefined }, /no token endpoint/],
   ])('refuses %s outside development and test', (_label, overrides, message) => {
     expect(() => assertSrsHandoffConfig('production', production(overrides))).toThrow(message);
@@ -126,7 +125,7 @@ describe('ServiceTokenProvider', () => {
 
   it('signs a short-lived client assertion with the service key, and re-reads the key file after rotation', async () => {
     const key = rsaKeyFile('rotating.pem');
-    const tokens = new ServiceTokenProvider({ tokenUrl, auth: { method: 'private_key_jwt', keyFile: key.file, keyId: 'k1' } });
+    const tokens = new ServiceTokenProvider({ tokenUrl, auth: { method: 'private_key_jwt', keyFile: key.file } });
     await tokens.getToken(TENANT_A);
     const verifyWith = (assertion: string, publicKey: ReturnType<typeof createPublicKey>) => {
       const [h, p, s] = assertion.split('.');
@@ -139,7 +138,8 @@ describe('ServiceTokenProvider', () => {
     expect(verifyWith(assertion, key.publicKey)).toBe(true);
     const header = JSON.parse(Buffer.from(assertion.split('.')[0]!, 'base64url').toString()) as { alg: string; kid: string };
     const claims = JSON.parse(Buffer.from(assertion.split('.')[1]!, 'base64url').toString()) as Record<string, unknown>;
-    expect(header).toMatchObject({ alg: 'RS256', kid: 'k1' });
+    // kid is the id Keycloak gives the registered certificate's key.
+    expect(header).toMatchObject({ alg: 'RS256', kid: keycloakKeyId(readFileSync(key.file, 'utf8')) });
     expect(claims).toMatchObject({ iss: wellbeingServiceClientId(TENANT_A), sub: wellbeingServiceClientId(TENANT_A), aud: tokenUrl.replace('/protocol/openid-connect/token', '') });
     expect(Number(claims['exp']) - Number(claims['iat'])).toBe(60);
 

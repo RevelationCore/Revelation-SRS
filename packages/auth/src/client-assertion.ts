@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, createPublicKey, randomUUID } from 'node:crypto';
 
 import { importPKCS8, SignJWT } from 'jose';
 
@@ -18,14 +18,30 @@ export interface ClientAssertionInput {
   audience: string;
   /** PKCS#8 PEM of the RSA private key. */
   privateKeyPem: string;
-  keyId: string;
+  /**
+   * Optional override for the assertion's kid. By default it is the key id
+   * Keycloak gives a registered certificate's public key (keycloakKeyId), so
+   * the two always agree.
+   */
+  keyId?: string | undefined;
+}
+
+/**
+ * The key id Keycloak gives the public key of a certificate registered on a
+ * client-jwt client: base64url(SHA-256(DER SubjectPublicKeyInfo)), as its
+ * KeyUtils.createKeyId does. Keycloak looks the assertion's kid up by it,
+ * so a configured label (or an RFC 7638 thumbprint) is refused.
+ */
+export function keycloakKeyId(privateKeyPem: string): string {
+  const spki = createPublicKey(privateKeyPem).export({ type: 'spki', format: 'der' });
+  return createHash('sha256').update(spki).digest('base64url');
 }
 
 /** A signed client assertion: iss = sub = client ID, aud = the realm, a random jti, valid for 60 s. */
 export async function createClientAssertion(input: ClientAssertionInput): Promise<string> {
   const key = await importPKCS8(input.privateKeyPem, 'RS256');
   return new SignJWT({})
-    .setProtectedHeader({ alg: 'RS256', kid: input.keyId })
+    .setProtectedHeader({ alg: 'RS256', kid: input.keyId ?? keycloakKeyId(input.privateKeyPem) })
     .setIssuer(input.clientId)
     .setSubject(input.clientId)
     .setAudience(input.audience)

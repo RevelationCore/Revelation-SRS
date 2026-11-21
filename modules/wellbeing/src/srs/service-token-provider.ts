@@ -14,7 +14,9 @@ import { createClientAssertion, fetchWithTimeout, wellbeingServiceClientId } fro
 
 export type ClientAuth =
   | { method: 'client_secret_basic'; secret: string }
-  | { method: 'private_key_jwt'; keyFile: string; keyId: string };
+  // keyId overrides the assertion's kid; by default it is the id Keycloak
+  // gives the registered certificate's key (keycloakKeyId).
+  | { method: 'private_key_jwt'; keyFile: string; keyId?: string | undefined };
 
 export interface ServiceTokenProviderOptions {
   /** The realm's /protocol/openid-connect/token endpoint. */

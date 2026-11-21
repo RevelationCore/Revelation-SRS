@@ -52,7 +52,8 @@
       { "name": "applicant",               "composite": false },
       { "name": "pgr-examiner",            "composite": false },
       { "name": "ec-case-officer",         "composite": false },
-      { "name": "ec-decision-maker",       "composite": false }
+      { "name": "ec-decision-maker",       "composite": false },
+      { "name": "wellbeing-service",       "composite": false }
     ]
   },
 
@@ -256,6 +257,64 @@
           }
         }
       ]
+    },
+    {
+      "clientId": "srs-wellbeing-svc-00000000-0000-0000-0000-000000000001",
+      "name": "Wellbeing service (demo tenant)",
+      "description": "ADR-029: the wellbeing service's client-credentials client for one tenant. Development only uses a client secret; staging and production use private_key_jwt.",
+      "enabled": true,
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "dev-wellbeing-service-secret",
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "fullScopeAllowed": false,
+      "attributes": {
+        "access.token.lifespan": "300",
+        "client_credentials.use_refresh_token": "false"
+      },
+      "defaultClientScopes": [],
+      "optionalClientScopes": [],
+      "protocolMappers": [
+        {
+          "name": "audience-srs-api",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.custom.audience": "srs-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        },
+        {
+          "name": "realm-roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "config": {
+            "multivalued": "true",
+            "userinfo.token.claim": "false",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "claim.name": "realm_roles",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "tenant-id",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-hardcoded-claim-mapper",
+          "config": {
+            "claim.name": "tenant_id",
+            "claim.value": "00000000-0000-0000-0000-000000000001",
+            "jsonType.label": "String",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "false"
+          }
+        }
+      ]
     }
   ],
 
@@ -380,6 +439,18 @@
       "credentials": [{ "type": "password", "value": "Demo-2026!", "temporary": false }],
       "attributes":  { "tenant_id": ["00000000-0000-0000-0000-000000000001"], "personaId": ["persona-02-0000-4000-8000-000000000006"] },
       "realmRoles":  ["registry-administrator", "tenant-administrator"]
+    },
+    {
+      "username": "service-account-srs-wellbeing-svc-00000000-0000-0000-0000-000000000001",
+      "enabled": true,
+      "serviceAccountClientId": "srs-wellbeing-svc-00000000-0000-0000-0000-000000000001",
+      "realmRoles": [
+        "wellbeing-service"
+      ]
     }
+  ],
+
+  "scopeMappings": [
+    { "client": "srs-wellbeing-svc-00000000-0000-0000-0000-000000000001", "roles": ["wellbeing-service"] }
   ]
 }
