@@ -89,8 +89,8 @@ export function closeAdjustmentCase(caseId: string): Promise<void> {
   return wellbeingApi.post(`/api/v1/adjustment-cases/${caseId}/close`);
 }
 
+// The assessor is the signed-in user (BL-236); the service takes it from the token.
 export function recordAssessment(caseId: string, input: {
-  assessorId: string;
   assessedAt: string;
   outcomeCode: string;
   findings?: string;
@@ -99,8 +99,8 @@ export function recordAssessment(caseId: string, input: {
   return wellbeingApi.post(`/api/v1/adjustment-cases/${caseId}/assessments`, input);
 }
 
+// The panel chair is the signed-in user (BL-236).
 export function recordPanelDecision(caseId: string, input: {
-  panelChairId: string;
   panelDate: string;
   decisionCode: string;
   decisionRationale?: string;

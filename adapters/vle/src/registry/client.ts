@@ -4,6 +4,7 @@
 // so the connector's safety vocabulary is consistent across config and registry.
 
 export type EndpointSafetyClass = 'simulator' | 'external-test' | 'live';
+import { fetchWithTimeout } from '../http/fetch-with-timeout.js';
 
 export interface RegistrationInfo {
   registrationId:      string;
@@ -38,7 +39,7 @@ export class HttpSrsRegistryClient implements SrsRegistryClient {
   ) {}
 
   async getRegistration(id: string): Promise<RegistrationInfo> {
-    const res = await fetch(
+    const res = await fetchWithTimeout(
       `${this.baseUrl}/api/v1/integration-registrations/${encodeURIComponent(id)}`,
       { headers: { Authorization: `Bearer ${this.bearerToken}` } },
     );
@@ -55,7 +56,7 @@ export class HttpSrsRegistryClient implements SrsRegistryClient {
   }
 
   async reportHealth(id: string, statusCode: string): Promise<void> {
-    const res = await fetch(
+    const res = await fetchWithTimeout(
       `${this.baseUrl}/api/v1/integration-registrations/${encodeURIComponent(id)}/health-check`,
       {
         method:  'POST',

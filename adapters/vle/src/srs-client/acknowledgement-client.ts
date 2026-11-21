@@ -7,6 +7,9 @@
  *
  * All three are idempotent on the SRS side.
  */
+
+import { fetchWithTimeout } from '../http/fetch-with-timeout.js';
+
 export interface SrsAcknowledgementClient {
   acknowledgeDistribution(adjustmentId: string, distributionId: string): Promise<void>;
   reportFailure(adjustmentId: string, distributionId: string, reason: string): Promise<void>;
@@ -55,7 +58,7 @@ export class HttpSrsAcknowledgementClient implements SrsAcknowledgementClient {
     tolerated:      number[],
   ): Promise<void> {
     const url = `${this.srsBaseUrl}/api/v1/adjustments/${encodeURIComponent(adjustmentId)}/distributions/${encodeURIComponent(distributionId)}/${action}`;
-    const res = await fetch(url, {
+    const res = await fetchWithTimeout(url, {
       method:  'POST',
       headers: {
         'Authorization': `Bearer ${this.bearerToken}`,

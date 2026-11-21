@@ -53,7 +53,7 @@ export const examBoardDataPacks = pgTable('exam_board_data_pack', {
   candidateCount:        integer('candidate_count').notNull().default(0),
   generatedAt:           timestamp('generated_at', { withTimezone: true }).notNull().defaultNow(),
   generatedBy:           text('generated_by').notNull(),
-  // BPR-D11 (Stage 4, migration 0004_business_process_foundations): additive columns proving exactly which
+  // BPR-D11 (Stage 4, migration 0000_baseline (section 0004_business_process_foundations)): additive columns proving exactly which
   // pack content and rule set a board decision was based on.
   packHash:              text('pack_hash'),
   ruleManifestRef:       text('rule_manifest_ref'),
@@ -119,7 +119,7 @@ export type ExternalExaminerSignoff    = typeof externalExaminerSignoffs.$inferS
 export type NewExternalExaminerSignoff = typeof externalExaminerSignoffs.$inferInsert;
 
 // ─────────────────────────────────────────────────────────────────────────────
-// BPR-D11 — board authority & ratification (Stage 4, migration 0004_business_process_foundations).
+// BPR-D11 — board authority & ratification (Stage 4, migration 0000_baseline (section 0004_business_process_foundations)).
 //
 // exam_board keeps its raw quorum_count/quorum_recorded_at pair for compat;
 // board_quorum_decision is the real decision row. exam_board_decision and

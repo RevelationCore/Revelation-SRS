@@ -131,6 +131,22 @@ Four phases. Each item has an owner area, a size (S under 1 day, M 1 to 3 days, 
 | 1.8 Fix the engagement proxy | SEC-5 | S | Authenticate in core before forwarding; forward an allow-list of headers only; stream the body unchanged; 15 s timeout; body limit | Proxy tests: unauthenticated gets 401; multipart passes through; timeout gets 504 |
 | 1.9 Content-Security-Policy and tokens | SEC-7 | M | Set CSP, HSTS and frame headers in the SPA nginx config (not only the ingress); keep tokens in memory, with refresh handled by a short-lived refresh flow (or a backend-for-frontend cookie, *decide*) | Lighthouse and header checks in CI; no token in `localStorage` |
 
+**Status (2026-11-19).** Items 1.1 to 1.8 are delivered, and 1.9 except moving tokens out of `localStorage` (deferred by decision), on branch `phase-1-security-isolation`, after squashing migrations 0000–0009 into `0000_baseline` (item 4.1, done first). Phase 1's database changes are one migration, `0001_security_and_tenant_isolation`. Where the delivery differs from the table:
+
+- 1.2 needed no cross-tenant system context: the cross-tenant jobs already list tenants (`tenant` has no RLS) and work per tenant. Running under RLS found a real defect in every policy: a cleared tenant setting reads as `''`, which the `::uuid` cast rejected. All 208 policies now use `NULLIF`.
+- 1.5 and 1.6: outside development and test, HS256 is refused whatever the secret, so "default or short secret" is covered by "no HS256". The Kubernetes manifests had no JWKS URL at all; they now set one.
+- 1.7: status codes are checked by the domain's transition rules (409 with the allowed next statuses), not schema enums, and lengths are not capped. Response schemas are not declared yet.
+- Found on the way and fixed: the wellbeing EC claim routes checked no permission (new `ec-claim:read` and `ec-claim:manage`, role mapping for sign-off); `getTemplate` returned another tenant's template by id; feature-flag impact listed other tenants.
+- Found on the way, not fixed, now in the [backlog](backlog.md):
+  - the rate limiter runs before authentication, so it keys every caller by IP, never by tenant (BL-020, item 3.7);
+  - Kubernetes sets `ALLOWED_ORIGINS` but the API reads `CORS_ORIGINS` (BL-033);
+  - the wellbeing and attendance suites still connect as the superuser, so RLS is not yet proven there the way item 1.2 proves it for the API (BL-034);
+  - `wellbeing.srs_handoff_outbox` and `wellbeing.srs_ec_handoff_outbox` have a `tenant_id` but no RLS, and the coverage check covers the core schemas only (BL-035);
+  - the EC claim role mapping needs sign-off (BL-036);
+  - token storage, the rest of 1.9, is BL-030, waiting on decision 1 (BL-031).
+
+Every item in this plan has a row in the [backlog](backlog.md) (Source ref `Readiness N.M`), where its status is tracked; `pnpm check:backlog` fails if one is missing.
+
 ### Phase 2 — Availability and consistency (about 2 weeks)
 
 | Item | Fixes | Size | What to do | Done when |
@@ -168,8 +184,8 @@ Four phases. Each item has an owner area, a size (S under 1 day, M 1 to 3 days, 
 
 ### Decisions needed
 
-1. **Token storage (1.9):** keep tokens in memory with silent refresh, or put a backend-for-frontend in front of the SPAs with HTTP-only cookies. The second is stronger but adds a component. Recommendation: in memory now, backend-for-frontend if a penetration test asks for it.
-2. **Shared cache and rate-limit store (3.5, 3.7):** add Redis or Valkey, or use Postgres (`LISTEN/NOTIFY`, a counter table). Recommendation: Postgres first; it is already highly available and avoids a new component at this scale.
+1. **Token storage (1.9):** keep tokens in memory with silent refresh, or put a backend-for-frontend in front of the SPAs with HTTP-only cookies. The second is stronger but adds a component. Recommendation: in memory now, backend-for-frontend if a penetration test asks for it. **Decided 2026-11-20 ([ADR-026](../decisions/ADR-026-browser-sessions-through-a-backend-for-frontend.md)): a backend-for-frontend now.** RFC 10017 (BCP 212) strongly recommends one for apps handling personal data, because tokens in memory do not stop injected script from running a fresh sign-in.
+2. **Shared cache and rate-limit store (3.5, 3.7):** add Redis or Valkey, or use Postgres (`LISTEN/NOTIFY`, a counter table). Recommendation: Postgres first; it is already highly available and avoids a new component at this scale. **Decided 2026-11-20 ([ADR-027](../decisions/ADR-027-shared-runtime-state-in-postgresql.md)): PostgreSQL for all four uses**, with a measured threshold for moving rate limits to Valkey.
 3. **Migration squash timing (4.1):** squash before phase 1's migrations (one clean baseline for the role and RLS changes), or after. Recommendation: before.
 
 ### Verification across the plan

@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { sql } from 'drizzle-orm';
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 
+import { loadSrsHandoffConfig } from '../../src/srs/handoff-config.js';
 import { buildApp, type AppOptions } from '../../src/app.js';
 import type { Config } from '../../src/config.js';
 import { createWellbeingDb, type WellbeingDb } from '../../src/db/client.js';
@@ -38,15 +39,28 @@ export async function startTestApp(appOpts: AppOptions = {}): Promise<TestWellbe
   const connectionString = container.getConnectionUri();
   const db = createWellbeingDb(connectionString);
 
-  // Apply the core platform migration first (creates the tenant table which
+  // Apply the core platform migrations first, in journal order (creates the tenant table which
   // wellbeing tables reference via FOREIGN KEY).
   const coreMigrationsDir = join(__dirname, '../../../../packages/db/migrations');
-  await applySql(db, join(coreMigrationsDir, '0000_platform_foundations.sql'));
+  const journal = JSON.parse(await readFile(join(coreMigrationsDir, 'meta/_journal.json'), 'utf8')) as { entries: Array<{ tag: string }> };
+  for (const { tag } of journal.entries) await applySql(db, join(coreMigrationsDir, `${tag}.sql`));
 
-  // Apply wellbeing module migrations
+  // Apply wellbeing module migrations, in journal order, as the owner.
   const wellbeingMigrationsDir = join(__dirname, '../../migrations');
-  await applySql(db, join(wellbeingMigrationsDir, '0000_wellbeing_foundations.sql'));
-  await applySql(db, join(wellbeingMigrationsDir, '0001_adjustment_production_hardening.sql'));
+  const wellbeingJournal = JSON.parse(await readFile(join(wellbeingMigrationsDir, 'meta/_journal.json'), 'utf8')) as { entries: Array<{ tag: string }> };
+  for (const { tag } of wellbeingJournal.entries) await applySql(db, join(wellbeingMigrationsDir, `${tag}.sql`));
+
+  // The service connects as production does: a login role inheriting srs_app
+  // (no superuser, no BYPASSRLS, not the owner), so row-level security
+  // applies to every query it makes. `db` stays the owner connection, for
+  // fixtures and assertions (BL-034).
+  await db.execute(sql`
+    CREATE ROLE wellbeing_api_test LOGIN PASSWORD 'wellbeing_api_test' NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS INHERIT;
+    GRANT srs_app TO wellbeing_api_test;
+  `);
+  const appUrl = new URL(connectionString);
+  appUrl.username = 'wellbeing_api_test';
+  appUrl.password = 'wellbeing_api_test';
 
   // Seed test tenants
   const tenantId       = '00000000-0000-0000-0000-000000000001';
@@ -63,12 +77,14 @@ export async function startTestApp(appOpts: AppOptions = {}): Promise<TestWellbe
     port:            3001,
     logLevel:        'silent',
     nodeEnv:         'test',
-    databaseUrl:     connectionString,
+    databaseUrl:     appUrl.toString(),
     srsApiUrl:       'http://localhost:3000',
     natsUrl:         'nats://localhost:4222',  // NATS not running in tests
     jwtSecret:       JWT_SECRET,
     keycloakJwksUrl: undefined,
     corsOrigins:     ['http://localhost:5173'],
+    // Tests inject their own SRS clients, or get stubs explicitly (ADR-029).
+    srsHandoff:      { ...loadSrsHandoffConfig('test', {}), clients: 'stub' },
   };
 
   const app = await buildApp(config, appOpts);

@@ -1,9 +1,11 @@
 import { Type } from '@sinclair/typebox';
 import { requirePermission, requireAnyPermission } from '@revelation-srs/auth';
+import { hasPermission, NotFoundError } from '@revelation-srs/domain';
 import type { FastifyInstance } from 'fastify';
 
 import type { ModuleResultDto } from '../platform/assessment/module-result-service.js';
 
+import { assertOwnRegistration } from './own-records.js';
 import { RuleVersionSchema } from './rule-version-schema.js';
 
 const ErrorSchema = Type.Object({
@@ -39,7 +41,13 @@ export function moduleResultRoutes(fastify: FastifyInstance): void {
     },
     async (request, reply) => {
       const { moduleRegistrationId } = request.params as { moduleRegistrationId: string };
+      // A student sees only their own result, and only once it is ratified
+      // and locked: the portal hid provisional results, the API did not (BL-177).
+      await assertOwnRegistration(fastify, request, moduleRegistrationId, 'mark:read:all');
       const result = await fastify.moduleResultService.getResult(moduleRegistrationId, request.tenantId);
+      if (!result.locked && !hasPermission(request.user.roles, 'mark:read:all')) {
+        throw new NotFoundError('Published result for module registration', moduleRegistrationId);
+      }
       await reply.send(moduleResultToWire(result));
     },
   );

@@ -8,7 +8,6 @@ metadata:
   annotations:
     # OpenBao Kubernetes auth role binds to this service account
     openbao.org/role: "srs-api"
-
 ---
 # ── Deployment ──────────────────────────────────────────────────────────────
 apiVersion: apps/v1
@@ -80,14 +79,15 @@ spec:
               value: production
             - name: PORT
               value: "3000"
-            - name: HOST
-              value: "0.0.0.0"
-            - name: KEYCLOAK_URL
-              value: http://keycloak:8080
-            - name: KEYCLOAK_REALM
-              value: srs
-            - name: KEYCLOAK_CLIENT_ID
-              value: srs-api
+            # Tokens: Keycloak RS256 only (HS256 refuses to start outside
+            # development and test). The issuer is Keycloak's public URL.
+            - name: KEYCLOAK_JWKS_URL
+              value: http://keycloak:8080/realms/srs/protocol/openid-connect/certs
+            - name: KEYCLOAK_ISSUER
+              valueFrom:
+                configMapKeyRef:
+                  name: srs-api-config
+                  key: KEYCLOAK_ISSUER
             - name: NATS_URL
               value: nats://srs-nats:4222
             - name: TEMPORAL_ADDRESS
@@ -101,15 +101,20 @@ spec:
               value: srs-production
             - name: TEMPORAL_TASK_QUEUE
               value: srs-workflows
-            - name: WELLBEING_URL
-              value: http://srs-wellbeing:3002
             - name: ATTENDANCE_API_URL
               value: http://srs-attendance:3004
-            - name: ALLOWED_ORIGINS
+            # Believe X-Forwarded-For only from private-network peers. The
+            # allow-ingress-to-api network policy admits only ingress-nginx
+            # (and monitoring), and ingress-nginx with its default
+            # use-forwarded-headers off sets the header from the real
+            # connection. A hop count would be ignored by Fastify.
+            - name: TRUST_PROXY
+              value: uniquelocal
+            - name: CORS_ORIGINS
               valueFrom:
                 configMapKeyRef:
                   name: srs-api-config
-                  key: ALLOWED_ORIGINS
+                  key: CORS_ORIGINS
             # Secrets are read from OpenBao-injected files at startup
             # DATABASE_URL is sourced from /vault/secrets/db
             # KEYCLOAK_CLIENT_SECRET is sourced from /vault/secrets/keycloak
@@ -121,7 +126,7 @@ spec:
               export DATABASE_URL="$(cat /vault/secrets/db)"
               export KEYCLOAK_CLIENT_SECRET="$(cat /vault/secrets/keycloak)"
               export NATS_NKEY_SEED="$(cat /vault/secrets/nats)"
-              exec node dist/index.js
+              exec node dist/main.js
           resources:
             requests:
               cpu: 250m
@@ -164,7 +169,21 @@ spec:
         - name: tmp
           emptyDir: {}
       terminationGracePeriodSeconds: 60
-
+      topologySpreadConstraints:
+        # Spread replicas across nodes, and zones where the cluster has them (BL-012, readiness 2.4).
+        # ScheduleAnyway: a small cluster still schedules every replica.
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: srs-api
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: srs-api
 ---
 # ── ConfigMap ────────────────────────────────────────────────────────────────
 apiVersion: v1
@@ -173,8 +192,9 @@ metadata:
   name: srs-api-config
   namespace: revelation-srs
 data:
-  ALLOWED_ORIGINS: "https://portal.example.com,https://admin.example.com"
-
+  CORS_ORIGINS: "https://portal.example.com,https://admin.example.com"
+  # Keycloak's public realm URL: the `iss` of every token the services accept.
+  KEYCLOAK_ISSUER: "https://auth.example.com/realms/srs"
 ---
 # ── Service ──────────────────────────────────────────────────────────────────
 apiVersion: v1
@@ -194,7 +214,6 @@ spec:
       targetPort: http
       protocol: TCP
   type: ClusterIP
-
 ---
 # ── HorizontalPodAutoscaler ───────────────────────────────────────────────────
 apiVersion: autoscaling/v2

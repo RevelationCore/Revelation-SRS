@@ -1,5 +1,10 @@
+import { Type } from '@sinclair/typebox';
+import { requirePermission } from '@revelation-srs/auth';
 import type { FastifyInstance } from 'fastify';
 
+import { actorFieldSent, refuseActorField } from '../http/actor.js';
+import { sendProblem } from '../http/problem.js';
+import { Uuid, Text, DateText, idParams } from '../http/schemas.js';
 import { withWellbeingTenantContext } from '../db/client.js';
 import type { SrsEcClient } from '../srs/srs-ec-client.js';
 import { appendAudit } from '../repositories/audit-log-repository.js';
@@ -12,6 +17,7 @@ import {
   listEvidenceReviews,
   recordDetermination,
   findLatestDetermination,
+  listEcClaimPreparers,
   isBoardVisible,
 } from '../repositories/ec-claim-repository.js';
 import {
@@ -22,13 +28,20 @@ import {
   ecHandoffKey,
 } from '../repositories/srs-ec-handoff-repository.js';
 import { wellbeingCases } from '../db/schema/wellbeing-case.js';
+import { EC_CLAIM_TRANSITIONS, StatusTransitionError, assertTransition } from '../domain/status-rules.js';
 
-// ── Internal helper ───────────────────────────────────────────────────────────
+import { sendTransitionProblem } from './disability-cases.js';
+
+// ── Internal helpers ──────────────────────────────────────────────────────────
 
 function generateCaseRef(): string {
   const year   = new Date().getFullYear();
   const suffix = Math.random().toString(36).toUpperCase().slice(2, 8);
   return `EC-${year}-${suffix}`;
+}
+
+class SeparationOfDutiesError extends Error {
+  constructor() { super('You recorded, changed or assessed this claim, so someone else must decide it'); }
 }
 
 // ── Route plugin ──────────────────────────────────────────────────────────────
@@ -52,7 +65,7 @@ export async function ecClaimRoutes(
       evidenceDeadline?:       string;
       assignedAdvisorId?:      string;
     };
-  }>('/api/v1/ec-claims', async (request, reply) => {
+  }>('/api/v1/ec-claims', { preHandler: [requirePermission('ec-claim:manage')], schema: { tags: ['ec-claims'], summary: 'Record an EC claim', body: Type.Object({ personId: Uuid, enrolmentId: Uuid, assessmentPeriodRef: Text, affectedModuleCodes: Type.Array(Text), circumstancesNarrative: Type.Optional(Type.String()), evidenceDeadline: Type.Optional(Type.String()), assignedAdvisorId: Type.Optional(Type.String()) }) } }, async (request, reply) => {
     const { tenantId } = request;
     const actorId      = request.user.sub;
     const body         = request.body;
@@ -86,7 +99,7 @@ export async function ecClaimRoutes(
           tenantId,
           actorId,
           actionCode:   'write',
-          resourceType: 'disability-case',
+          resourceType: 'ec-claim',
           resourceId:   id,
           personId:     body.personId,
           context:      { action: 'create-ec-claim', assessmentPeriodRef: body.assessmentPeriodRef },
@@ -103,12 +116,12 @@ export async function ecClaimRoutes(
 
   fastify.get<{
     Querystring: { personId?: string };
-  }>('/api/v1/ec-claims', async (request, reply) => {
+  }>('/api/v1/ec-claims', { preHandler: [requirePermission('ec-claim:read')], schema: { tags: ['ec-claims'], summary: 'List a person\'s EC claims', querystring: Type.Object({ personId: Type.Optional(Uuid) }) } }, async (request, reply) => {
     const { tenantId } = request;
     const { personId } = request.query;
 
     if (!personId) {
-      return reply.code(400).send({ error: 'personId query parameter is required' });
+      return sendProblem(reply, 400, 'personId query parameter is required');
     }
 
     const claims = await withWellbeingTenantContext(
@@ -124,7 +137,7 @@ export async function ecClaimRoutes(
 
   fastify.get<{
     Params: { claimId: string };
-  }>('/api/v1/ec-claims/:claimId', async (request, reply) => {
+  }>('/api/v1/ec-claims/:claimId', { preHandler: [requirePermission('ec-claim:read')], schema: { tags: ['ec-claims'], summary: 'Get an EC claim', params: idParams('claimId') } }, async (request, reply) => {
     const { tenantId } = request;
     const actorId      = request.user.sub;
     const { claimId }  = request.params;
@@ -146,7 +159,7 @@ export async function ecClaimRoutes(
           tenantId,
           actorId,
           actionCode:   'read',
-          resourceType: 'disability-case',
+          resourceType: 'ec-claim',
           resourceId:   claimId,
           personId:     c.personId,
           context:      { action: 'read-ec-claim' },
@@ -157,7 +170,7 @@ export async function ecClaimRoutes(
     );
 
     if (!result) {
-      return reply.code(404).send({ error: 'EC claim not found' });
+      return sendProblem(reply, 404, 'EC claim not found');
     }
 
     return reply.send({
@@ -174,22 +187,42 @@ export async function ecClaimRoutes(
   fastify.patch<{
     Params: { claimId: string };
     Body:   { statusCode: string; circumstancesNarrative?: string; evidenceDeadline?: string };
-  }>('/api/v1/ec-claims/:claimId/status', async (request, reply) => {
+  }>('/api/v1/ec-claims/:claimId/status', { preHandler: [requirePermission('ec-claim:manage')], schema: { tags: ['ec-claims'], summary: 'Change the claim status', params: idParams('claimId'), body: Type.Object({ statusCode: Text, circumstancesNarrative: Type.Optional(Type.String()), evidenceDeadline: Type.Optional(Type.String()) }) } }, async (request, reply) => {
     const { tenantId } = request;
     const actorId      = request.user.sub;
     const { claimId }  = request.params;
     const { statusCode, circumstancesNarrative, evidenceDeadline } = request.body;
 
-    await withWellbeingTenantContext(
-      request.server.wellbeingDb,
-      tenantId,
-      async (tx) => {
-        await transitionEcStatus(tx, tenantId, claimId, statusCode, actorId, {
-          ...(circumstancesNarrative !== undefined ? { circumstancesNarrative } : {}),
-          ...(evidenceDeadline       !== undefined ? { evidenceDeadline: new Date(evidenceDeadline) } : {}),
-        });
-      },
-    );
+    try {
+      await withWellbeingTenantContext(
+        request.server.wellbeingDb,
+        tenantId,
+        async (tx) => {
+          const c = await findCurrentEcClaim(tx, tenantId, claimId);
+          if (!c) {
+            throw Object.assign(new Error('EC claim not found'), { statusCode: 404 });
+          }
+          // Only a determination may set upheld or not_upheld (ADR-028).
+          assertTransition(EC_CLAIM_TRANSITIONS, 'EC claim', c.statusCode, statusCode);
+          await transitionEcStatus(tx, tenantId, claimId, statusCode, actorId, {
+            ...(circumstancesNarrative !== undefined ? { circumstancesNarrative } : {}),
+            ...(evidenceDeadline       !== undefined ? { evidenceDeadline: new Date(evidenceDeadline) } : {}),
+          });
+          await appendAudit(tx, {
+            tenantId,
+            actorId,
+            actionCode:   'write',
+            resourceType: 'ec-claim',
+            resourceId:   claimId,
+            personId:     c.personId,
+            context:      { action: 'status-transition', from: c.statusCode, newStatus: statusCode },
+          });
+        },
+      );
+    } catch (err) {
+      if (err instanceof StatusTransitionError) return sendTransitionProblem(reply, err);
+      throw err;
+    }
 
     return reply.code(204).send();
   });
@@ -199,16 +232,17 @@ export async function ecClaimRoutes(
   fastify.post<{
     Params: { claimId: string };
     Body: {
-      reviewerId:         string;
       reviewedAt:         string;
       evidenceStatusCode: string;
       reviewNotes?:       string;
     };
-  }>('/api/v1/ec-claims/:claimId/evidence-reviews', async (request, reply) => {
+  }>('/api/v1/ec-claims/:claimId/evidence-reviews', { preHandler: [requirePermission('ec-claim:manage')], schema: { tags: ['ec-claims'], summary: 'Record an evidence review (the reviewer is the signed-in user)', params: idParams('claimId'), body: Type.Object({ reviewedAt: DateText, evidenceStatusCode: Text, reviewNotes: Type.Optional(Type.String()) }) } }, async (request, reply) => {
     const { tenantId } = request;
     const actorId      = request.user.sub;
     const { claimId }  = request.params;
     const body         = request.body;
+
+    if (actorFieldSent(body, 'reviewerId')) return refuseActorField(reply, 'reviewerId');
 
     const reviewId = await withWellbeingTenantContext(
       request.server.wellbeingDb,
@@ -221,7 +255,7 @@ export async function ecClaimRoutes(
 
         const id = await recordEvidenceReview(tx, tenantId, {
           ecClaimId:          claimId,
-          reviewerId:         body.reviewerId,
+          reviewerId:         actorId,
           reviewedAt:         new Date(body.reviewedAt),
           evidenceStatusCode: body.evidenceStatusCode,
           ...(body.reviewNotes !== undefined ? { reviewNotes: body.reviewNotes } : {}),
@@ -236,10 +270,10 @@ export async function ecClaimRoutes(
           tenantId,
           actorId,
           actionCode:   'write',
-          resourceType: 'disability-case',
-          resourceId:   id,
+          resourceType: 'ec-claim',
+          resourceId:   claimId,
           personId:     c.personId,
-          context:      { action: 'record-evidence-review', evidenceStatusCode: body.evidenceStatusCode },
+          context:      { action: 'record-evidence-review', reviewId: id, evidenceStatusCode: body.evidenceStatusCode },
         });
 
         return id;
@@ -260,17 +294,18 @@ export async function ecClaimRoutes(
   fastify.post<{
     Params: { claimId: string };
     Body: {
-      authorisedById:          string;
       determinationCode:       string;
       determinationRationale?: string;
       moduleOutcomes:          Array<{ moduleCode: string; outcome: string }>;
       determinedAt:            string;
     };
-  }>('/api/v1/ec-claims/:claimId/determine', async (request, reply) => {
+  }>('/api/v1/ec-claims/:claimId/determine', { preHandler: [requirePermission('ec-claim:determine')], schema: { tags: ['ec-claims'], summary: 'Determine the claim (the authoriser is the signed-in user)', params: idParams('claimId'), body: Type.Object({ determinationCode: Text, determinationRationale: Type.Optional(Type.String()), moduleOutcomes: Type.Array(Type.Object({ moduleCode: Text, outcome: Text })), determinedAt: DateText }) } }, async (request, reply) => {
     const { tenantId } = request;
     const actorId      = request.user.sub;
     const { claimId }  = request.params;
     const body         = request.body;
+
+    if (actorFieldSent(body, 'authorisedById')) return refuseActorField(reply, 'authorisedById');
 
     const boardVisible = isBoardVisible(body.determinationCode);
 
@@ -281,71 +316,90 @@ export async function ecClaimRoutes(
 
     // ── Phase 1: atomic DB write ──────────────────────────────────────────
 
-    await withWellbeingTenantContext(
-      request.server.wellbeingDb,
-      tenantId,
-      async (tx) => {
-        const c = await findCurrentEcClaim(tx, tenantId, claimId);
-        if (!c) {
-          throw Object.assign(new Error('EC claim not found'), { statusCode: 404 });
+    try {
+      await withWellbeingTenantContext(
+        request.server.wellbeingDb,
+        tenantId,
+        async (tx) => {
+          const c = await findCurrentEcClaim(tx, tenantId, claimId);
+          if (!c) {
+            throw Object.assign(new Error('EC claim not found'), { statusCode: 404 });
+          }
+          personId    = c.personId;
+          enrolmentId = c.enrolmentId;
+
+          // Check for idempotent re-determine
+          const existingHandoff = boardVisible ? await findEcHandoffForClaim(tx, claimId) : null;
+          if (existingHandoff) {
+            outboxId    = existingHandoff.id;
+            alreadySent = existingHandoff.statusCode === 'sent';
+            return;
+          }
+
+          // A withdrawn or closed claim is never determined, so it never reaches SRS.
+          if (c.statusCode === 'closed') {
+            throw new StatusTransitionError('EC claim', c.statusCode, 'determined', []);
+          }
+
+          // Separation of duties (ADR-028): nobody who recorded, changed or
+        // assessed the claim may decide it.
+        if ((await listEcClaimPreparers(tx, tenantId, claimId)).has(actorId)) {
+          throw new SeparationOfDutiesError();
         }
-        personId    = c.personId;
-        enrolmentId = c.enrolmentId;
 
-        // Check for idempotent re-determine
-        const existingHandoff = boardVisible ? await findEcHandoffForClaim(tx, claimId) : null;
-        if (existingHandoff) {
-          outboxId    = existingHandoff.id;
-          alreadySent = existingHandoff.statusCode === 'sent';
-          return;
-        }
-
-        // Record the determination
-        await recordDetermination(tx, tenantId, {
-          ecClaimId:         claimId,
-          authorisedById:    body.authorisedById,
-          determinationCode: body.determinationCode,
-          moduleOutcomes:    body.moduleOutcomes,
-          determinedAt:      new Date(body.determinedAt),
-          ...(body.determinationRationale !== undefined
-            ? { determinationRationale: body.determinationRationale }
-            : {}),
-        });
-
-        // Transition claim status
-        const newStatus = body.determinationCode === 'not_upheld' ? 'not_upheld' : 'upheld';
-        await transitionEcStatus(tx, tenantId, claimId, newStatus, actorId);
-
-        if (boardVisible) {
-          // Derive F-WELL-SIS-02 outcomeCode from determinationCode
-          const outcomeCode = body.determinationCode.replace('_', '-');
-
-          await enqueueEcHandoff(tx, tenantId, claimId, personId, {
-            tenantId,
-            personId,
-            enrolmentId,
-            outcomeCode,
-            determinationDate: body.determinedAt.split('T')[0] ?? body.determinedAt,
-            determinationRationale: body.determinationRationale ?? null,
-            moduleOutcomes: body.moduleOutcomes,
+        // Record the determination; the authoriser is the signed-in user (ADR-028).
+          await recordDetermination(tx, tenantId, {
+            ecClaimId:         claimId,
+            authorisedById:    actorId,
+            determinationCode: body.determinationCode,
+            moduleOutcomes:    body.moduleOutcomes,
+            determinedAt:      new Date(body.determinedAt),
+            ...(body.determinationRationale !== undefined
+              ? { determinationRationale: body.determinationRationale }
+              : {}),
           });
 
-          const newOutbox = await findEcHandoffForClaim(tx, claimId);
-          if (!newOutbox) throw new Error('Failed to enqueue EC handoff');
-          outboxId = newOutbox.id;
-        }
+          // Transition claim status
+          const newStatus = body.determinationCode === 'not_upheld' ? 'not_upheld' : 'upheld';
+          await transitionEcStatus(tx, tenantId, claimId, newStatus, actorId);
 
-        await appendAudit(tx, {
-          tenantId,
-          actorId,
-          actionCode:   'write',
-          resourceType: 'disability-case',
-          resourceId:   claimId,
-          personId,
-          context:      { action: 'determine', determinationCode: body.determinationCode, boardVisible },
-        });
-      },
-    );
+          if (boardVisible) {
+            // Derive F-WELL-SIS-02 outcomeCode from determinationCode
+            const outcomeCode = body.determinationCode.replace('_', '-');
+
+            await enqueueEcHandoff(tx, tenantId, claimId, personId, {
+              tenantId,
+              personId,
+              enrolmentId,
+              outcomeCode,
+              determinationDate: body.determinedAt.split('T')[0] ?? body.determinedAt,
+              determinationRationale: body.determinationRationale ?? null,
+              moduleOutcomes: body.moduleOutcomes,
+            });
+
+            const newOutbox = await findEcHandoffForClaim(tx, claimId);
+            if (!newOutbox) throw new Error('Failed to enqueue EC handoff');
+            outboxId = newOutbox.id;
+          }
+
+          await appendAudit(tx, {
+            tenantId,
+            actorId,
+            actionCode:   'write',
+            resourceType: 'ec-claim',
+            resourceId:   claimId,
+            personId,
+            context:      { action: 'determine', determinationCode: body.determinationCode, boardVisible },
+          });
+        },
+      );
+    } catch (err) {
+      if (err instanceof StatusTransitionError) return sendTransitionProblem(reply, err);
+      if (err instanceof SeparationOfDutiesError) {
+        return sendProblem(reply, 403, err.message, { type: 'https://srs.example.com/errors/separation-of-duties', title: 'Separation of duties' });
+      }
+      throw err;
+    }
 
     // ── Not board-visible: return immediately ─────────────────────────────
 
@@ -354,7 +408,7 @@ export async function ecClaimRoutes(
     }
 
     if (alreadySent) {
-      const outbox = await findEcHandoffForClaim(request.server.wellbeingDb, claimId);
+      const outbox = await withWellbeingTenantContext(request.server.wellbeingDb, tenantId, (tx) => findEcHandoffForClaim(tx, claimId));
       return reply.code(200).send({
         status: 'already_sent',
         exceptionalCircumstancesId:
@@ -373,6 +427,7 @@ export async function ecClaimRoutes(
 
     try {
       const result = await srsEcClient.submitEc({
+        tenantId,
         idempotencyKey:    ecHandoffKey(claimId),
         personId,
         enrolmentId,
@@ -381,11 +436,11 @@ export async function ecClaimRoutes(
         ...(body.determinationRationale !== undefined ? { notes: body.determinationRationale } : {}),
       });
 
-      await markEcHandoffSent(
-        request.server.wellbeingDb,
+      await withWellbeingTenantContext(request.server.wellbeingDb, tenantId, (tx) => markEcHandoffSent(
+        tx,
         outboxId,
         { exceptionalCircumstancesId: result.exceptionalCircumstancesId },
-      );
+      ));
 
       return reply.code(202).send({
         status: 'submitted',
@@ -393,8 +448,8 @@ export async function ecClaimRoutes(
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      await markEcHandoffFailed(request.server.wellbeingDb, outboxId, msg);
-      return reply.code(502).send({ error: 'SRS EC handoff failed — will be retried', detail: msg });
+      await withWellbeingTenantContext(request.server.wellbeingDb, tenantId, (tx) => markEcHandoffFailed(tx, outboxId, msg));
+      return sendProblem(reply, 502, 'SRS EC handoff failed — will be retried', { cause: msg });
     }
   });
 
@@ -405,22 +460,38 @@ export async function ecClaimRoutes(
   fastify.post<{
     Params: { claimId: string };
     Body:   { reason?: string };
-  }>('/api/v1/ec-claims/:claimId/withdraw', async (request, reply) => {
+  }>('/api/v1/ec-claims/:claimId/withdraw', { preHandler: [requirePermission('ec-claim:manage')], schema: { tags: ['ec-claims'], summary: 'Withdraw the claim', params: idParams('claimId'), body: Type.Optional(Type.Object({ reason: Type.Optional(Type.String()) })) } }, async (request, reply) => {
     const { tenantId } = request;
     const actorId      = request.user.sub;
     const { claimId }  = request.params;
+    const reason       = request.body?.reason;
 
-    await withWellbeingTenantContext(
-      request.server.wellbeingDb,
-      tenantId,
-      async (tx) => {
-        const c = await findCurrentEcClaim(tx, tenantId, claimId);
-        if (!c) {
-          throw Object.assign(new Error('EC claim not found'), { statusCode: 404 });
-        }
-        await transitionEcStatus(tx, tenantId, claimId, 'closed', actorId);
-      },
-    );
+    try {
+      await withWellbeingTenantContext(
+        request.server.wellbeingDb,
+        tenantId,
+        async (tx) => {
+          const c = await findCurrentEcClaim(tx, tenantId, claimId);
+          if (!c) {
+            throw Object.assign(new Error('EC claim not found'), { statusCode: 404 });
+          }
+          assertTransition(EC_CLAIM_TRANSITIONS, 'EC claim', c.statusCode, 'closed');
+          await transitionEcStatus(tx, tenantId, claimId, 'closed', actorId);
+          await appendAudit(tx, {
+            tenantId,
+            actorId,
+            actionCode:   'write',
+            resourceType: 'ec-claim',
+            resourceId:   claimId,
+            personId:     c.personId,
+            context:      { action: 'withdraw', from: c.statusCode, ...(reason !== undefined ? { reason } : {}) },
+          });
+        },
+      );
+    } catch (err) {
+      if (err instanceof StatusTransitionError) return sendTransitionProblem(reply, err);
+      throw err;
+    }
 
     return reply.code(204).send();
   });

@@ -70,6 +70,8 @@ class ControllableSrsEcClient implements SrsEcClient {
 describe('Stage 8 — End-to-End Acceptance Review', () => {
   let ctx:        TestWellbeingApp;
   let advisorJwt: string;
+  // ADR-028: a different person, holding ec-decision-maker, decides the claim.
+  let deciderJwt: string;
   let mhJwt:      string;
   let panelJwt:   string;
   let auditorJwt: string;
@@ -86,6 +88,7 @@ describe('Stage 8 — End-to-End Acceptance Review', () => {
     });
 
     advisorJwt = ctx.makeJwt({ roles: ['wellbeing-advisor'] });
+    deciderJwt = ctx.makeJwt({ sub: 'ec-decider-001', roles: ['ec-decision-maker'] });
     mhJwt      = ctx.makeJwt({ roles: ['wellbeing-mental-health-advisor'] });
     panelJwt   = ctx.makeJwt({ roles: ['wellbeing-panel-chair'] });
     auditorJwt = ctx.makeJwt({ roles: ['wellbeing-auditor'] });
@@ -226,7 +229,6 @@ describe('Stage 8 — End-to-End Acceptance Review', () => {
         url:     `/api/v1/adjustment-cases/${adjustmentCaseId}/assessments`,
         headers: { authorization: `Bearer ${advisorJwt}` },
         payload: {
-          assessorId:        'disability-advisor-001',
           assessedAt:        '2026-06-15T10:00:00Z',
           outcomeCode:       'recommended',
           findings:          'Student meets DSA criteria for additional time.',
@@ -242,7 +244,6 @@ describe('Stage 8 — End-to-End Acceptance Review', () => {
         url:     `/api/v1/adjustment-cases/${adjustmentCaseId}/panel-decisions`,
         headers: { authorization: `Bearer ${panelJwt}` },
         payload: {
-          panelChairId: 'chair-001',
           panelDate:    '2026-06-20T14:00:00Z',
           decisionCode: 'upheld',
           decisionRationale: 'Evidence is sufficient.',
@@ -352,7 +353,6 @@ describe('Stage 8 — End-to-End Acceptance Review', () => {
         url:     `/api/v1/ec-claims/${ecClaimId}/evidence-reviews`,
         headers: { authorization: `Bearer ${advisorJwt}` },
         payload: {
-          reviewerId:         'reviewer-001',
           reviewedAt:         '2026-05-20T14:00:00Z',
           evidenceStatusCode: 'sufficient',
         },
@@ -366,9 +366,8 @@ describe('Stage 8 — End-to-End Acceptance Review', () => {
       const res = await ctx.app.inject({
         method:  'POST',
         url:     `/api/v1/ec-claims/${ecClaimId}/determine`,
-        headers: { authorization: `Bearer ${advisorJwt}` },
+        headers: { authorization: `Bearer ${deciderJwt}` },
         payload: {
-          authorisedById:    'panel-chair-001',
           determinationCode: 'upheld',
           determinedAt:      '2026-05-25T14:00:00Z',
           moduleOutcomes:    [{ moduleCode: 'CS101', outcome: 'defer' }],
@@ -421,9 +420,8 @@ describe('Stage 8 — End-to-End Acceptance Review', () => {
       await ctx.app.inject({
         method:  'POST',
         url:     `/api/v1/ec-claims/${newId}/determine`,
-        headers: { authorization: `Bearer ${advisorJwt}` },
+        headers: { authorization: `Bearer ${deciderJwt}` },
         payload: {
-          authorisedById:    'chair-001',
           determinationCode: 'not_upheld',
           determinedAt:      '2026-05-26T14:00:00Z',
           moduleOutcomes:    [{ moduleCode: 'MA201', outcome: 'no-action' }],
@@ -678,7 +676,7 @@ describe('Stage 8 — End-to-End Acceptance Review', () => {
       await ctx.app.inject({
         method: 'POST', url: `/api/v1/adjustment-cases/${adjCaseId}/assessments`,
         headers: { authorization: `Bearer ${advisorJwt}` },
-        payload: { assessorId: 'disability-advisor-001', assessedAt: '2026-06-15T10:00:00Z', outcomeCode: 'recommended' },
+        payload: { assessedAt: '2026-06-15T10:00:00Z', outcomeCode: 'recommended' },
       });
     });
 
@@ -774,7 +772,7 @@ describe('Stage 8 — End-to-End Acceptance Review', () => {
       await ctx.app.inject({
         method: 'POST', url: `/api/v1/adjustment-cases/${adjCaseId}/assessments`,
         headers: { authorization: `Bearer ${advisorJwt}` },
-        payload: { assessorId: 'disability-advisor-001', assessedAt: '2026-06-15T10:00:00Z', outcomeCode: 'recommended' },
+        payload: { assessedAt: '2026-06-15T10:00:00Z', outcomeCode: 'recommended' },
       });
     });
 
@@ -876,7 +874,7 @@ describe('Stage 8 — End-to-End Acceptance Review', () => {
       await ctx.app.inject({
         method: 'POST', url: `/api/v1/adjustment-cases/${adjId}/assessments`,
         headers: { authorization: `Bearer ${advisorJwt}` },
-        payload: { assessorId: 'disability-advisor-001', assessedAt: '2026-06-15T10:00:00Z', outcomeCode: 'recommended' },
+        payload: { assessedAt: '2026-06-15T10:00:00Z', outcomeCode: 'recommended' },
       });
 
       await ctx.app.inject({

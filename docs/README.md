@@ -11,6 +11,7 @@ This index separates maintained product knowledge from superseded delivery evide
 | Need | Document |
 |---|---|
 | Understand what works now | [Current capabilities](product/current-capabilities.md) |
+| See what is left to do | [Backlog](product/backlog.md) |
 | Understand product intent | [Core principles](core-principles.md) |
 | Learn UK HE terminology | [Domain glossary](domain-glossary.md) |
 | Browse business processes | [UK HE business process library](business-processes/README.md) |

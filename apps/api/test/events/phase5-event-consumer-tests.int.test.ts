@@ -295,7 +295,7 @@ describe('EC and misconduct events', () => {
   });
 
   it('deciding an EC outcome publishes srs.circumstances.exceptional-circumstances-updated (sensitive)', async () => {
-    const decider = await ctx.makeJwt({ sub: 'evt-ec-decider', roles: ['exam-board-chair'] });
+    const decider = await ctx.makeJwt({ sub: 'evt-ec-decider', roles: ['ec-decision-maker'] });
     const res = await ctx.app.inject({
       method: 'POST',
       url:    `/api/v1/ec-determinations/${determinationId}/decision`,

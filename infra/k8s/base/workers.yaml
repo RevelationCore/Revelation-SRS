@@ -7,7 +7,6 @@ metadata:
   namespace: revelation-srs
   annotations:
     openbao.org/role: "srs-worker"
-
 ---
 # ── Temporal Worker — Deployment ──────────────────────────────────────────────
 apiVersion: apps/v1
@@ -64,6 +63,9 @@ spec:
           env:
             - name: NODE_ENV
               value: production
+            # Background jobs may run longer than a request (BL-011): 5 minutes.
+            - name: DB_STATEMENT_TIMEOUT_MS
+              value: "300000"
             - name: TEMPORAL_ADDRESS
               value: srs-temporal:7233
             - name: TEMPORAL_EXECUTION_ENABLED
@@ -76,6 +78,10 @@ spec:
               value: nats://srs-nats:4222
             - name: WORKER_HEALTH_PORT
               value: "9466"
+            # The worker builds the API app, which refuses HS256 outside
+            # development and test (it validates no tokens itself).
+            - name: KEYCLOAK_JWKS_URL
+              value: http://keycloak:8080/realms/srs/protocol/openid-connect/certs
             - name: RECONCILE_INTERVAL_MS
               value: "15000"
             - name: OTEL_SERVICE_NAME
@@ -86,7 +92,7 @@ spec:
             - |
               export DATABASE_URL="$(cat /vault/secrets/db)"
               export NATS_NKEY_SEED="$(cat /vault/secrets/nats)"
-              exec node apps/api/dist/worker.js
+              exec node dist/worker.js
           resources:
             requests:
               cpu: 200m
@@ -119,7 +125,21 @@ spec:
         - name: tmp
           emptyDir: {}
       terminationGracePeriodSeconds: 120
-
+      topologySpreadConstraints:
+        # Spread replicas across nodes, and zones where the cluster has them (BL-012, readiness 2.4).
+        # ScheduleAnyway: a small cluster still schedules every replica.
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: srs-worker
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: srs-worker
 ---
 # ── VLE Adapter — ServiceAccount ──────────────────────────────────────────────
 apiVersion: v1
@@ -129,7 +149,6 @@ metadata:
   namespace: revelation-srs
   annotations:
     openbao.org/role: "srs-vle-adapter"
-
 ---
 # ── VLE Adapter — Deployment ──────────────────────────────────────────────────
 apiVersion: apps/v1
@@ -199,7 +218,7 @@ spec:
               export DATABASE_URL="$(cat /vault/secrets/db)"
               export NATS_NKEY_SEED="$(cat /vault/secrets/nats)"
               export VLE_API_KEY="$(cat /vault/secrets/vle)"
-              exec node dist/index.js
+              exec node dist/main.js
           resources:
             requests:
               cpu: 100m
@@ -230,7 +249,21 @@ spec:
       volumes:
         - name: tmp
           emptyDir: {}
-
+      topologySpreadConstraints:
+        # Spread replicas across nodes, and zones where the cluster has them (BL-012, readiness 2.4).
+        # ScheduleAnyway: a small cluster still schedules every replica.
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: srs-vle-adapter
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: srs-vle-adapter
 ---
 # ── VLE Adapter — Service ─────────────────────────────────────────────────────
 apiVersion: v1
@@ -249,7 +282,6 @@ spec:
       port: 3003
       targetPort: http
   type: ClusterIP
-
 ---
 # ── Wellbeing Module — ServiceAccount ────────────────────────────────────────
 apiVersion: v1
@@ -259,7 +291,6 @@ metadata:
   namespace: revelation-srs
   annotations:
     openbao.org/role: "srs-wellbeing"
-
 ---
 # ── Wellbeing Module — Deployment ────────────────────────────────────────────
 apiVersion: apps/v1
@@ -293,6 +324,14 @@ spec:
           {{- with secret "kv/data/srs/nats" -}}
           {{ .Data.data.nkey_seed }}
           {{- end }}
+        # ADR-029: the private key the wellbeing service signs its client
+        # assertions with, as a file (re-read when OpenBao re-renders it).
+        vault.hashicorp.com/agent-inject-secret-srs-client-key: "kv/data/srs/wellbeing/service-client"
+        vault.hashicorp.com/agent-inject-file-srs-client-key: "srs-client-key"
+        vault.hashicorp.com/agent-inject-template-srs-client-key: |
+          {{- with secret "kv/data/srs/wellbeing/service-client" -}}
+          {{ .Data.data.private_key_pem }}
+          {{- end }}
     spec:
       serviceAccountName: srs-wellbeing
       securityContext:
@@ -313,17 +352,36 @@ spec:
           env:
             - name: NODE_ENV
               value: production
-            - name: PORT
+            - name: WELLBEING_PORT
               value: "3002"
             - name: NATS_URL
               value: nats://srs-nats:4222
+            # Tokens: Keycloak RS256 only (HS256 refuses to start outside
+            # development and test). The issuer is Keycloak's public URL.
+            - name: KEYCLOAK_JWKS_URL
+              value: http://keycloak:8080/realms/srs/protocol/openid-connect/certs
+            # Hand-offs to core as the wellbeing service (ADR-029): real clients,
+            # a signed client assertion per tenant, the key from OpenBao.
+            - name: SRS_API_URL
+              value: http://srs-api:3000
+            - name: WELLBEING_SRS_CLIENTS
+              value: http
+            - name: WELLBEING_SRS_CLIENT_AUTH
+              value: private_key_jwt
+            - name: WELLBEING_SRS_CLIENT_KEY_FILE
+              value: /vault/secrets/srs-client-key
+            - name: KEYCLOAK_ISSUER
+              valueFrom:
+                configMapKeyRef:
+                  name: srs-api-config
+                  key: KEYCLOAK_ISSUER
           command:
             - /bin/sh
             - -c
             - |
               export DATABASE_URL="$(cat /vault/secrets/db)"
               export NATS_NKEY_SEED="$(cat /vault/secrets/nats)"
-              exec node dist/index.js
+              exec node dist/main.js
           resources:
             requests:
               cpu: 100m
@@ -354,7 +412,21 @@ spec:
       volumes:
         - name: tmp
           emptyDir: {}
-
+      topologySpreadConstraints:
+        # Spread replicas across nodes, and zones where the cluster has them (BL-012, readiness 2.4).
+        # ScheduleAnyway: a small cluster still schedules every replica.
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: srs-wellbeing
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: srs-wellbeing
 ---
 # ── Wellbeing Module — Service ────────────────────────────────────────────────
 apiVersion: v1
@@ -373,7 +445,6 @@ spec:
       port: 3002
       targetPort: http
   type: ClusterIP
-
 ---
 # ── Attendance Module — ServiceAccount ───────────────────────────────────────
 apiVersion: v1
@@ -383,7 +454,6 @@ metadata:
   namespace: revelation-srs
   annotations:
     openbao.org/role: "srs-attendance"
-
 ---
 # ── Attendance Module — Deployment ───────────────────────────────────────────
 apiVersion: apps/v1
@@ -441,6 +511,15 @@ spec:
               value: "3004"
             - name: NATS_URL
               value: nats://srs-nats:4222
+            # Tokens: Keycloak RS256 only (HS256 refuses to start outside
+            # development and test). The issuer is Keycloak's public URL.
+            - name: KEYCLOAK_JWKS_URL
+              value: http://keycloak:8080/realms/srs/protocol/openid-connect/certs
+            - name: KEYCLOAK_ISSUER
+              valueFrom:
+                configMapKeyRef:
+                  name: srs-api-config
+                  key: KEYCLOAK_ISSUER
             - name: SRS_API_URL
               value: http://srs-api:3000
           command:
@@ -480,7 +559,21 @@ spec:
       volumes:
         - name: tmp
           emptyDir: {}
-
+      topologySpreadConstraints:
+        # Spread replicas across nodes, and zones where the cluster has them (BL-012, readiness 2.4).
+        # ScheduleAnyway: a small cluster still schedules every replica.
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: srs-attendance
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: srs-attendance
 ---
 # ── Attendance Module — Service ──────────────────────────────────────────────
 apiVersion: v1

@@ -5,7 +5,7 @@ import rateLimiter from '@fastify/rate-limit';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
 import { trace } from '@opentelemetry/api';
-import { jwtPlugin, tenantContextPlugin } from '@revelation-srs/auth';
+import { assertSecureAuthConfig, jwtPlugin, jwtPluginOptions, tenantContextPlugin } from '@revelation-srs/auth';
 import { createDb } from '@revelation-srs/db';
 import type { DomainError } from '@revelation-srs/domain';
 import Fastify from 'fastify';
@@ -289,6 +289,8 @@ export async function buildApp(
   config: Config,
   overrides: { eventBus?: IntegrationBusPublisher; temporalGateway?: TemporalGateway } = {},
 ): Promise<FastifyInstance> {
+  assertSecureAuthConfig('srs-api', config.nodeEnv, config);
+
   const serializers = {
     req(req: { method: string; url: string; headers: Record<string, string | string[] | undefined> }) {
       return {
@@ -312,6 +314,9 @@ export async function buildApp(
         },
     genReqId: () => crypto.randomUUID(),
     disableRequestLogging: false,
+    // Behind the ingress, req.ip is otherwise the ingress pod, and every
+    // per-IP limit becomes one budget shared by all callers (BL-168).
+    trustProxy: config.trustProxy ?? false,
   });
 
   // Inject OTel traceId into every Fastify log line for log-trace correlation.
@@ -340,7 +345,10 @@ export async function buildApp(
 
   // - Platform infrastructure -
 
-  const db         = createDb(config.databaseUrl);
+  const db         = createDb(config.databaseUrl, {
+    statementTimeoutMs:         config.dbStatementTimeoutMs ?? 30_000,
+    idleInTransactionTimeoutMs: config.dbIdleInTransactionTimeoutMs ?? 60_000,
+  });
   const audit      = new AuditService(db);
   const rules      = new RulesEngine(db);
   const valueSets  = new ValueSetService(db);
@@ -654,10 +662,7 @@ export async function buildApp(
     keyGenerator: (req) => req.tenantId ?? req.ip,
   });
 
-  await fastify.register(jwtPlugin, {
-    secret:  config.jwtSecret,
-    ...(config.keycloakJwksUrl ? { jwksUrl: config.keycloakJwksUrl } : {}),
-  });
+  await fastify.register(jwtPlugin, jwtPluginOptions(config, 'srs-api'));
   await fastify.register(tenantContextPlugin);
 
   // - Global error handler -
@@ -896,7 +901,10 @@ export async function buildApp(
   await fastify.register(applicationRoutes,         { prefix: '/api/v1' });
   await fastify.register(applicantPortalRoutes,     { prefix: '/api/v1' });
   await fastify.register(engagementOutcomeRoutes,   { prefix: '/api/v1' });
-  await fastify.register(engagementProxyRoutes,     { prefix: '/api/v1' });
+  await fastify.register(engagementProxyRoutes,     {
+    prefix: '/api/v1',
+    ...(config.engagementProxyTimeoutMs !== undefined ? { timeoutMs: config.engagementProxyTimeoutMs } : {}),
+  });
   await fastify.register(circumstancesRoutes,       { prefix: '/api/v1' });
   await fastify.register(examBoardRoutes,           { prefix: '/api/v1' });
   await fastify.register(boardAuthorityRoutes,      { prefix: '/api/v1' });

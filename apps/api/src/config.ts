@@ -1,3 +1,5 @@
+import { DEFAULT_DEV_JWT_SECRET, tokenEnv } from '@revelation-srs/auth';
+
 /** Typed environment configuration - read once at startup. */
 export interface Config {
   port:         number;
@@ -6,6 +8,20 @@ export interface Config {
   databaseUrl:  string;
   natsUrl:      string;
   attendanceApiUrl: string;
+  /** How long the engagement proxy waits for the attendance module (default 15 s). */
+  engagementProxyTimeoutMs?: number | undefined;
+  /**
+   * Which proxies' X-Forwarded-For to believe when working out the client IP
+   * (Fastify `trustProxy`; see trustProxySetting). Off by default: with
+   * nothing in front of the API, the header is whatever the client sent.
+   * Behind the ingress, name the ingress's addresses so per-IP rate limits
+   * see callers, not the ingress pod.
+   */
+  trustProxy?: false | string | undefined;
+  /** Postgres statement_timeout for the API pool (default 30 s; the worker sets 5 minutes). */
+  dbStatementTimeoutMs?: number;
+  /** Postgres idle_in_transaction_session_timeout (default 60 s). */
+  dbIdleInTransactionTimeoutMs?: number;
   temporalAddress: string;
   /** Live Temporal execution. Off unless TEMPORAL_EXECUTION_ENABLED=true. */
   temporalExecutionEnabled?: boolean;
@@ -21,6 +37,12 @@ export interface Config {
   migrationVersion: string;
   jwtSecret:    string;
   keycloakJwksUrl: string | undefined;
+  /** Expected token issuer; defaults to the realm the JWKS URL sits under. */
+  keycloakIssuer?: string | undefined;
+  /** Expected token audience; defaults to 'srs-api'. */
+  keycloakAudience?: string[] | undefined;
+  /** Allowed clock skew for token expiry, in seconds (default 30). */
+  jwtClockToleranceSeconds?: number | undefined;
   /** Public URL of the admin app, for links in staff notices (e.g. the adjustment task queue). */
   adminAppUrl?:   string | undefined;
   /** The API's public address, printed on issued documents for verification (D-21). */
@@ -41,6 +63,24 @@ export interface Config {
 function emailTransport(value: string | undefined): 'fake' {
   if (value === undefined || value === '' || value === 'fake') return 'fake';
   throw new Error(`EMAIL_TRANSPORT '${value}' is not supported; the only transport is 'fake'`);
+}
+
+/**
+ * TRUST_PROXY names the proxies whose X-Forwarded-For is believed: a
+ * comma-separated list of addresses, CIDRs or proxy-addr's named ranges
+ * (`loopback`, `linklocal`, `uniquelocal`). Unset or 'false' trusts none.
+ *
+ * Two values are refused rather than accepted silently:
+ * - 'true' would let any client choose its own IP address;
+ * - a hop count, because Fastify 5 deliberately ignores one (it cannot
+ *   check the immediate peer), so the setting would do nothing.
+ */
+export function trustProxySetting(value: string | undefined): false | string {
+  const v = value?.trim();
+  if (!v || v === 'false') return false;
+  if (v === 'true') throw new Error("TRUST_PROXY 'true' would let any client choose its IP address; name the proxies (addresses, CIDRs or 'uniquelocal')");
+  if (/^\d+$/.test(v)) throw new Error(`TRUST_PROXY '${v}' is a hop count, which Fastify ignores; name the proxies instead (addresses, CIDRs or 'uniquelocal')`);
+  return v;
 }
 
 function required(name: string): string {
@@ -66,6 +106,10 @@ export function loadConfig(): Config {
     databaseUrl:     required('DATABASE_URL'),
     natsUrl:         process.env['NATS_URL'] ?? 'nats://localhost:4222',
     attendanceApiUrl: process.env['ATTENDANCE_API_URL'] ?? 'http://localhost:3004',
+    engagementProxyTimeoutMs: optionalInt('ENGAGEMENT_PROXY_TIMEOUT_MS', 15_000),
+    trustProxy:      trustProxySetting(process.env['TRUST_PROXY']),
+    dbStatementTimeoutMs:         optionalInt('DB_STATEMENT_TIMEOUT_MS', 30_000),
+    dbIdleInTransactionTimeoutMs: optionalInt('DB_IDLE_IN_TRANSACTION_TIMEOUT_MS', 60_000),
     temporalAddress: process.env['TEMPORAL_ADDRESS'] ?? 'localhost:7233',
     temporalExecutionEnabled: process.env['TEMPORAL_EXECUTION_ENABLED'] === 'true',
     temporalNamespace: process.env['TEMPORAL_NAMESPACE'] ?? 'srs-local',
@@ -75,9 +119,10 @@ export function loadConfig(): Config {
     deploymentEnvironmentCode: process.env['SRS_ENVIRONMENT_CODE'] ?? process.env['NODE_ENV'] ?? 'local',
     releaseVersion: process.env['SRS_RELEASE_VERSION'] ?? process.env['npm_package_version'] ?? '0.0.0',
     imageDigest: optional('SRS_IMAGE_DIGEST'),
-    migrationVersion: process.env['SRS_MIGRATION_VERSION'] ?? '0004_business_process_foundations',
-    jwtSecret:       process.env['JWT_SECRET'] ?? 'dev-secret-replace-in-production',
+    migrationVersion: process.env['SRS_MIGRATION_VERSION'] ?? '0001_security_and_tenant_isolation',
+    jwtSecret:       process.env['JWT_SECRET'] ?? DEFAULT_DEV_JWT_SECRET,  // development and test only (assertSecureAuthConfig)
     keycloakJwksUrl: optional('KEYCLOAK_JWKS_URL'),
+    ...tokenEnv(),
     adminAppUrl:     optional('ADMIN_APP_URL'),
     publicApiUrl:    optional('PUBLIC_API_URL'),
     emailTransport:  emailTransport(process.env['EMAIL_TRANSPORT']),

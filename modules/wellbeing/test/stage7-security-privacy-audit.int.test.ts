@@ -200,7 +200,6 @@ describe('Stage 7 — Security, Privacy, Audit, and Retention Hardening', () => 
         url:     `/api/v1/adjustment-cases/${adjustmentCaseId}/panel-decisions`,
         headers: { authorization: `Bearer ${advisorJwt}` },
         payload: {
-          panelChairId: 'chair-001',
           panelDate:    '2026-06-20T14:00:00Z',
           decisionCode: 'upheld',
         },
@@ -240,7 +239,6 @@ describe('Stage 7 — Security, Privacy, Audit, and Retention Hardening', () => 
         url:     `/api/v1/adjustment-cases/${adjustmentCaseId}/panel-decisions`,
         headers: { authorization: `Bearer ${panelJwt}` },
         payload: {
-          panelChairId: 'chair-001',
           panelDate:    '2026-06-20T14:00:00Z',
           decisionCode: 'upheld',
         },

@@ -11,9 +11,11 @@ import { validateScenario } from './validate.js';
 import { assertSchemaVersion, SafetyError } from './safety.js';
 
 function requireDatabaseUrl(): string {
-  const url = process.env['DATABASE_URL'];
+  // The loader writes across tenants and resets whole scenarios, so it uses the
+  // owner connection the migrations use, not the application role.
+  const url = process.env['MIGRATION_DATABASE_URL'] ?? process.env['DATABASE_URL'];
   if (!url) {
-    console.error('Error: DATABASE_URL environment variable is not set.');
+    console.error('Error: MIGRATION_DATABASE_URL (or DATABASE_URL) environment variable is not set.');
     process.exit(1);
   }
   return url;

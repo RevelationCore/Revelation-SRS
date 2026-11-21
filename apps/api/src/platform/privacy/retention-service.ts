@@ -21,6 +21,7 @@ import {
   personIdentities,
   persons,
   studentAddresses,
+  withTenantContext,
   type Db,
 } from '@revelation-srs/db';
 
@@ -31,7 +32,11 @@ import type { AuditService } from '../audit/service.js';
 // Records are eligible once ALL enrolments for the person ended > 6 years ago.
 const RETENTION_YEARS = 6;
 
-export type RetentionAction = 'anonymised' | 'flagged-for-dpo' | 'skipped-award-hold';
+export type RetentionAction =
+  | 'anonymised' | 'flagged-for-dpo' | 'skipped-award-hold'
+  // BL-284: anonymisation is irreversible, so anything that says the record
+  // must be kept, or is in use for the person's own rights, stops it.
+  | 'skipped-hold' | 'skipped-restriction' | 'skipped-open-request' | 'skipped-schedule';
 
 export interface RetentionSweepResult {
   tenantId:   string;
@@ -43,6 +48,15 @@ export interface RetentionSweepResult {
   skipped:    number;
   details:    Array<{ personId: string; action: RetentionAction; reason?: string }>;
 }
+
+type EligibleRow = {
+  person_id:        string;
+  has_award:        boolean;
+  has_hold:         boolean;
+  has_restriction:  boolean;
+  has_open_request: boolean;
+  schedule_not_due: boolean;
+};
 
 export class RetentionEnforcementService {
   constructor(
@@ -65,9 +79,37 @@ export class RetentionEnforcementService {
     // actual_end_date (or valid_from of the terminal status row) is before the cutoff.
     // Persons with an award record are flagged for DPO review instead of auto-anonymised
     // (award/transcript data is permanently retained per the data subject register).
-    const eligibleRows = await this.db.execute<{ person_id: string; has_award: boolean }>(sql`
+    const today = checkedAt.toISOString().slice(0, 10);
+    const eligibleRows = await withTenantContext(this.db, tenantId, (tx) => tx.execute<EligibleRow>(sql`
       SELECT
         e.person_id::text,
+        -- A legal hold on the person or any of their enrolments.
+        EXISTS (
+          SELECT 1 FROM record_hold h
+          JOIN retention_assignment ra ON ra.id = h.retention_assignment_id
+          WHERE ra.tenant_id = e.tenant_id AND h.lifted_at IS NULL
+            AND (ra.entity_id = e.person_id
+                 OR ra.entity_id IN (SELECT e3.id FROM enrolment e3 WHERE e3.person_id = e.person_id AND e3.tenant_id = e.tenant_id))
+        ) AS has_hold,
+        -- A processing restriction (UK GDPR art. 18): the data may only be stored.
+        EXISTS (
+          SELECT 1 FROM processing_restriction r
+          WHERE r.tenant_id = e.tenant_id AND r.person_id = e.person_id AND r.lifted_at IS NULL
+        ) AS has_restriction,
+        -- A rights request still being handled: destroying the data could be an
+        -- offence (DPA 2018 s.173).
+        EXISTS (
+          SELECT 1 FROM individual_rights_request q
+          JOIN business_case bc ON bc.id = q.business_case_id AND bc.tenant_id = q.tenant_id
+          WHERE q.tenant_id = e.tenant_id AND q.person_id = e.person_id
+            AND bc.status_code NOT IN ('closed', 'withdrawn')
+        ) AS has_open_request,
+        -- A configured retention schedule that is not yet due overrides the default.
+        EXISTS (
+          SELECT 1 FROM retention_assignment ra
+          WHERE ra.tenant_id = e.tenant_id AND ra.entity_id = e.person_id
+            AND ra.scheduled_disposal_date > ${today}::date
+        ) AS schedule_not_due,
         EXISTS (
           SELECT 1 FROM award a
           WHERE a.person_id  = e.person_id
@@ -94,7 +136,7 @@ export class RetentionEnforcementService {
             AND p2.retention_anonymised_at IS NOT NULL
         )
       GROUP BY e.person_id, e.tenant_id
-    `) as unknown as Array<{ person_id: string; has_award: boolean }>;
+    `)) as unknown as EligibleRow[];
 
     const details: RetentionSweepResult['details'] = [];
     let anonymised = 0;
@@ -105,7 +147,19 @@ export class RetentionEnforcementService {
       const { person_id: personId } = row;
 
       // Cast the boolean from SQL — it may come back as 't'/'f' from pg
-      const hasAward = row.has_award === true || String(row.has_award) === 't';
+      const flag = (v: unknown) => v === true || String(v) === 't';
+      const hasAward = flag(row.has_award);
+
+      const skip = flag(row.has_hold) ? ['skipped-hold', 'active-record-hold'] as const
+        : flag(row.has_restriction) ? ['skipped-restriction', 'active-processing-restriction'] as const
+        : flag(row.has_open_request) ? ['skipped-open-request', 'open-rights-request'] as const
+        : flag(row.schedule_not_due) ? ['skipped-schedule', 'retention-schedule-not-due'] as const
+        : null;
+      if (skip) {
+        details.push({ personId, action: skip[0], reason: skip[1] });
+        skipped++;
+        continue;
+      }
 
       if (hasAward) {
         // Award/transcript data is permanently retained — flag for DPO review
@@ -138,7 +192,7 @@ export class RetentionEnforcementService {
       // Identity/contact fields are replaced with anonymised tokens.
       const anonToken = `ANON-${personId.slice(0, 8).toUpperCase()}`;
 
-      await this.db.transaction(async (tx) => {
+      await withTenantContext(this.db, tenantId, async (tx) => {
         // Anonymise all person_identity versions for this person
         await tx
           .update(personIdentities)

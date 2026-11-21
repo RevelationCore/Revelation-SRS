@@ -171,11 +171,20 @@ export function adjustmentRoutes(fastify: FastifyInstance): void {
           422: ErrorSchema,
         },
       },
-      preHandler: [requirePermission('adjustment:write')],
+      // ADR-029: staff with adjustment:write, or the wellbeing service, whose
+      // narrow adjustment:record-approved needs the approving case.
+      preHandler: [requireAnyPermission('adjustment:write', 'adjustment:record-approved')],
     },
     async (request, reply) => {
       const { personId } = request.params as { personId: string };
       const body = request.body as RecordAdjustmentInput;
+      if (!hasPermission(request.user.roles, 'adjustment:write') && !body.sourceCaseId) {
+        await reply.code(422).type('application/problem+json').send({
+          type: 'https://srs.example.com/errors/unprocessable', title: 'Source case required', status: 422,
+          detail: 'An adjustment recorded by the wellbeing service must name the approving case (sourceCaseId)', instance: request.url,
+        });
+        return;
+      }
       // The wellbeing module sends x-idempotency-key; the platform-controls
       // routes use idempotency-key. Accept either.
       const headers = request.headers as Record<string, string | undefined>;
@@ -192,6 +201,15 @@ export function adjustmentRoutes(fastify: FastifyInstance): void {
       if (replayed) {
         await reply.code(200).send({ adjustmentId });
         return;
+      }
+
+      // The SRS is itself the 'exams' target: add the arrangement to entries
+      // already generated for exams not yet sat (BL-058). The worker's
+      // reconcile loop retries if this fails.
+      try {
+        await fastify.examEntryService.applyExamAdditions(request.tenantId);
+      } catch (err) {
+        request.log.warn({ err, adjustmentId }, 'Exam entry refresh deferred to the reconcile loop');
       }
 
       await fastify.audit.record({

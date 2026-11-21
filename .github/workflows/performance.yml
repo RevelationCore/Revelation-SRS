@@ -66,7 +66,8 @@ jobs:
       - name: Start API
         run: pnpm --filter @revelation-srs/api start &
         env:
-          DATABASE_URL: postgres://srs:srs@localhost:5432/srs
+          # The API connects as the application role (row-level security applies).
+          DATABASE_URL: postgres://srs_api:srs_api@localhost:5432/srs
           JWT_SECRET:   ${{ secrets.PERF_JWT_SECRET || 'perf-test-secret' }}
 
       - name: Wait for API ready
@@ -136,7 +137,8 @@ jobs:
       - name: Start API
         run: pnpm --filter @revelation-srs/api start &
         env:
-          DATABASE_URL: postgres://srs:srs@localhost:5432/srs
+          # The API connects as the application role (row-level security applies).
+          DATABASE_URL: postgres://srs_api:srs_api@localhost:5432/srs
           JWT_SECRET:   ${{ secrets.PERF_JWT_SECRET || 'perf-test-secret' }}
 
       - name: Wait for API ready

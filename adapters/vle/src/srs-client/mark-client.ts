@@ -1,3 +1,5 @@
+import { fetchWithTimeout } from '../http/fetch-with-timeout.js';
+
 export interface SrsMarkSubmitInput {
   assessmentComponentId: string;
   rawMark:               number;
@@ -35,7 +37,7 @@ export class HttpSrsMarkClient implements SrsMarkClient {
     input:                SrsMarkSubmitInput,
   ): Promise<{ markId: string }> {
     const url = `${this.srsBaseUrl}/api/v1/module-registrations/${encodeURIComponent(moduleRegistrationId)}/marks`;
-    const res = await fetch(url, {
+    const res = await fetchWithTimeout(url, {
       method:  'POST',
       headers: {
         'Authorization': `Bearer ${this.bearerToken}`,

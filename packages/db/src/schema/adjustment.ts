@@ -140,12 +140,12 @@ export type AdjustmentRequest = typeof adjustmentRequests.$inferSelect;
 // ─────────────────────────────────────────────────────────────────────────────
 // BPR-D09 note: an earlier `support_outcome`/shared distribution_item table
 // (originally migration 0046_support_outcome_distribution, since squashed
-// into 0004_business_process_foundations) was intended to replace
+// into 0000_baseline (section 0004_business_process_foundations)) was intended to replace
 // adjustment_distribution above. It never reached parity — no route ever
 // drove a distribution_item past creation (no acknowledge/reconcile path),
 // it published no domain events, and no writer ever superseded one — while
 // adjustment_distribution remained the live, tested, externally-contracted
 // path (two documented adapters, VLE and attendance, key their idempotency
-// on it). Retired in migration 0006_adjustments_integration_and_support.sql (section 0022_retire_support_outcome) rather than
+// on it). Retired in migration 0000_baseline.sql (section 0006_adjustments_integration_and_support / 0022_retire_support_outcome) rather than
 // finished and migrated onto, given it was unused and untested end to end.
 // See docs/user-guides/wellbeing-and-revelation-srs.md for the full account.

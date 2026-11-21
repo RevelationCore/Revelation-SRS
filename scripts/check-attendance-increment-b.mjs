@@ -1,11 +1,12 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
+import { readCoreMigrationSection } from './lib/core-migration-section.mjs';
+
 const root = resolve(import.meta.dirname, '..');
-const migration = readFileSync(resolve(root, 'packages/db/migrations/0003_engagement_and_attendance.sql'), 'utf8');
+const migration = readCoreMigrationSection(root, '0003_engagement_and_attendance') ?? '';
 const schema = readFileSync(resolve(root, 'packages/db/src/schema/engagement.ts'), 'utf8');
 const exportsFile = readFileSync(resolve(root, 'packages/db/src/schema/index.ts'), 'utf8');
-const journal = JSON.parse(readFileSync(resolve(root, 'packages/db/migrations/meta/_journal.json'), 'utf8'));
 const test = readFileSync(resolve(root, 'packages/db/test/engagement-schema.test.ts'), 'utf8');
 const errors = [];
 
@@ -58,8 +59,7 @@ for (const table of tables) {
 }
 if (!exportsFile.includes("export * from './engagement.js';")) errors.push('Engagement schema is not exported');
 
-const journalEntries = journal.entries.filter((entry) => entry.tag === '0003_engagement_and_attendance');
-if (journalEntries.length !== 1) errors.push(`Expected one migration journal entry for 0003_engagement_and_attendance, found ${journalEntries.length}`);
+if (!migration) errors.push('No core migration in the journal holds 0003_engagement_and_attendance');
 
 for (const phrase of [
   'tenant-isolated aggregate tables',

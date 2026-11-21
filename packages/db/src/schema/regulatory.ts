@@ -35,7 +35,7 @@ export const hesaStudentReturns = pgTable('hesa_student_return', {
   amendmentOfId:       uuid('amendment_of_id'),
   generatedBy:         text('generated_by').notNull(),
   generatedAt:         timestamp('generated_at', { withTimezone: true }).notNull().defaultNow(),
-  // BPR-D16 (Stage 6, migration 0004_business_process_foundations): optional bridge into the generic
+  // BPR-D16 (Stage 6, migration 0000_baseline (section 0004_business_process_foundations)): optional bridge into the generic
   // regulatory_collection model; existing HESA-specific columns/routes are
   // unaffected.
   regulatoryCollectionId: uuid('regulatory_collection_id'),
@@ -194,7 +194,7 @@ export const ofsExtracts = pgTable('ofs_extract', {
   recordCount:     integer('record_count').notNull().default(0),
   extractPayload:  jsonb('extract_payload').notNull().$type<Record<string, unknown>>().default({}),
   statusCode:      text('status_code').notNull().default('generated'),
-  // BPR-D16 (Stage 6, migration 0004_business_process_foundations): optional bridge into the generic
+  // BPR-D16 (Stage 6, migration 0000_baseline (section 0004_business_process_foundations)): optional bridge into the generic
   // regulatory_collection model.
   regulatoryCollectionId: uuid('regulatory_collection_id'),
 });
@@ -257,7 +257,7 @@ export type NewFoiRequest               = typeof foiRequests.$inferInsert;
 export type NewStudentRegulatoryProfile = typeof studentRegulatoryProfiles.$inferInsert;
 
 // ─────────────────────────────────────────────────────────────────────────────
-// BPR-D03 — CAS governance (Stage 1, migration 0004_business_process_foundations).
+// BPR-D03 — CAS governance (Stage 1, migration 0000_baseline (section 0004_business_process_foundations)).
 //
 // Since Phase 3 (D-16) cas_case is the only CAS record: ukvi_cas_request was
 // dropped in migration 0009. A case belongs to an application (new entrant)
@@ -325,7 +325,7 @@ export type SponsorReportVersion    = typeof sponsorReportVersions.$inferSelect;
 export type NewSponsorReportVersion = typeof sponsorReportVersions.$inferInsert;
 
 // ─────────────────────────────────────────────────────────────────────────────
-// BPR-D16 — regulatory collection & lineage (Stage 6, migration 0004_business_process_foundations).
+// BPR-D16 — regulatory collection & lineage (Stage 6, migration 0000_baseline (section 0004_business_process_foundations)).
 //
 // hesa_student_return/ofs_extract keep their bespoke tables and routes;
 // regulatory_collection is a regulator-neutral parent every return can

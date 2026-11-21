@@ -299,7 +299,7 @@ the code that runs it to the screens a student and a decision-maker actually
 use. Nothing here is illustrative; every path and identifier below is real.
 
 **1. The definition, its steps, and its decision gateway are declared in a
-migration — `packages/db/migrations/0005_curriculum_regulatory_and_pgr.sql` (section `0007_module_registration_change_workflow`).**
+migration — `packages/db/migrations/0000_baseline.sql` (section `0005_curriculum_regulatory_and_pgr` / `0007_module_registration_change_workflow`).**
 `apps/admin/src/pages/WorkflowDefsPage.tsx` (**Workflows** under Tenant Admin,
 `workflow:read`/`workflow:write`) lets an admin browse every definition, view
 a version's steps, create a new definition *shell* (code, name, description),
@@ -330,7 +330,7 @@ into `workflow_assignment_rule`. The `personal-tutor` assignee is instead
 hard-coded directly in the calling TypeScript (next step) rather than
 resolved from the rules table at runtime. Contrast this with the older,
 catalogue-only "Stage 2" workflow definitions seeded in
-`packages/db/migrations/0001_platform_hardening_and_refinements.sql`, which
+`packages/db/migrations/0000_baseline.sql` (section `0001_platform_hardening_and_refinements`), which
 *do* populate `workflow_assignment_rule` fully (role, priority, per-step) —
 those are more completely configured as data, but (per the honest nuance
 below) have no live caller at all. `module-registration-change-approval` is
@@ -384,7 +384,7 @@ step 2 above.
    `workflow_decision_gateway` — and, if you want assignee resolution to be
    genuinely data-driven rather than hard-coded, `workflow_assignment_rule`
    rows too (see the fully-populated Stage 2 pattern in
-   `0001_platform_hardening_and_refinements.sql` for the shape to copy).
+   `0000_baseline.sql` (section `0001_platform_hardening_and_refinements`) for the shape to copy).
 2. Construct a `WorkflowBridgeService` in the owning platform service's
    constructor (follow `registration/service.ts` as the template).
 3. Call `startWorkflowInstance` + `assignWorkflowTask` with your

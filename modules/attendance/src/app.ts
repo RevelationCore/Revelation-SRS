@@ -1,6 +1,6 @@
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
-import { jwtPlugin, tenantContextPlugin } from '@revelation-srs/auth';
+import { assertSecureAuthConfig, jwtPlugin, jwtPluginOptions, tenantContextPlugin } from '@revelation-srs/auth';
 import Fastify from 'fastify';
 import type { FastifyInstance } from 'fastify';
 
@@ -26,6 +26,8 @@ export interface AppOptions {
 }
 
 export async function buildApp(config: Config, appOpts: AppOptions = {}): Promise<FastifyInstance> {
+  assertSecureAuthConfig('srs-attendance', config.nodeEnv, config);
+
   const fastify = Fastify({
     logger: config.nodeEnv === 'development'
       ? {
@@ -46,10 +48,7 @@ export async function buildApp(config: Config, appOpts: AppOptions = {}): Promis
   });
 
   // JWT authentication (RS256 in prod, HS256 in dev/test)
-  const jwtOpts = config.keycloakJwksUrl
-    ? { jwksUrl: config.keycloakJwksUrl }
-    : { secret:  config.jwtSecret };
-  await fastify.register(jwtPlugin, jwtOpts);
+  await fastify.register(jwtPlugin, jwtPluginOptions(config, 'srs-attendance'));
 
   // Extracts tenantId from JWT and makes it available as request.tenantId
   await fastify.register(tenantContextPlugin);
@@ -74,7 +73,7 @@ export async function buildApp(config: Config, appOpts: AppOptions = {}): Promis
   });
 
   // Database
-  const db = createAttendanceDb(config.databaseUrl);
+  const db = createAttendanceDb(config.databaseUrl, { statementTimeoutMs: 30_000, idleInTransactionTimeoutMs: 60_000 });
   fastify.decorate('attendanceDb', db);
   fastify.decorate('config', config);
 

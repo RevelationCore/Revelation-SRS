@@ -4,6 +4,7 @@ import type { FastifyInstance } from 'fastify';
 import { ValidationError } from '@revelation-srs/domain';
 import { tenants } from '@revelation-srs/db';
 import { eq } from 'drizzle-orm';
+import { fetchWithTimeout } from '@revelation-srs/auth';
 
 import { addClosureDay, type GovUkBankHolidays, importBankHolidays, listNonWorkingDays } from '../platform/calendar/working-days.js';
 
@@ -44,7 +45,7 @@ export function nonWorkingDayRoutes(fastify: FastifyInstance): void {
       const [row] = await fastify.db.select({ configuration: tenants.configuration }).from(tenants).where(eq(tenants.id, request.tenantId as `${string}-${string}-${string}-${string}-${string}`)).limit(1);
       const cfg = (((row?.configuration?.['calendar'] ?? {}) as Record<string, unknown>)['bankHolidays'] ?? {}) as Record<string, unknown>;
       if (cfg['source'] !== 'gov-uk') throw new ValidationError('Upload the GOV.UK bank-holidays.json, or set calendar.bankHolidays.source to gov-uk to fetch it');
-      const res = await fetch(GOV_UK_URL);
+      const res = await fetchWithTimeout(GOV_UK_URL);
       if (!res.ok) { await reply.code(502).send({ type: 'about:blank', title: 'Bad Gateway', status: 502, detail: `GOV.UK returned ${res.status}` }); return; }
       data = await res.json() as GovUkBankHolidays;
       source = 'gov-uk';

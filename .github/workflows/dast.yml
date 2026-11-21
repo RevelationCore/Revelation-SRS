@@ -64,9 +64,11 @@ jobs:
             sleep 2
           done
         env:
-          DATABASE_URL:     postgresql://srs:srs@localhost:5432/srs
+          # The API connects as the application role (row-level security applies).
+          DATABASE_URL:     postgresql://srs_api:srs_api@localhost:5432/srs
           NATS_URL:         nats://localhost:4222
-          JWT_SECRET:       zap-dast-secret
+          # Production mode accepts only Keycloak's RS256 tokens.
+          KEYCLOAK_JWKS_URL: http://localhost:8081/realms/srs/protocol/openid-connect/certs
           NODE_ENV:         production
           LOG_LEVEL:        warn
           CORS_ORIGINS:     http://localhost:5173

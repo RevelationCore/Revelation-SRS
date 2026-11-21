@@ -7,15 +7,13 @@ kind: Kustomization
 #
 # Prerequisites:
 #   1. OpenBao initialised and policies applied (infra/scripts/apply-openbao-policies.sh)
-#   2. srs-nats-nkey Secret created (kubectl create secret generic srs-nats-nkey ...)
+#   2. srs-nats-nkey Secret created with keys public and seed (kubectl create secret generic srs-nats-nkey ...);
+#      the srs-nats-streams Job declares SRS_EVENTS with it
 #   3. srs-grafana-secret created
 #   4. cert-manager installed with letsencrypt-prod ClusterIssuer configured
 #   5. ingress-nginx installed
 #   6. Default StorageClass available for PVCs
 #   7. Temporal schema pre-created (or init container handles it on first deploy)
-
-bases:
-  - ../../base
 
 namespace: revelation-srs
 
@@ -26,11 +24,11 @@ images:
     newTag: v1.0.0
   - name: ghcr.io/revelation-srs/admin
     newTag: v1.0.0
-  - name: ghcr.io/revelation-srs/worker
-    newTag: v1.0.0
   - name: ghcr.io/revelation-srs/vle-adapter
     newTag: v1.0.0
   - name: ghcr.io/revelation-srs/wellbeing
+    newTag: v1.0.0
+  - name: ghcr.io/revelation-srs/attendance
     newTag: v1.0.0
 
 patches:
@@ -42,6 +40,7 @@ patches:
         name: srs-api
       spec:
         replicas: 3
+    target: { kind: Deployment, name: srs-api }
 
   # Production frontends: 2 replicas each
   - patch: |
@@ -51,6 +50,7 @@ patches:
         name: srs-portal
       spec:
         replicas: 2
+    target: { kind: Deployment, name: srs-portal }
   - patch: |
       apiVersion: apps/v1
       kind: Deployment
@@ -58,6 +58,7 @@ patches:
         name: srs-admin
       spec:
         replicas: 2
+    target: { kind: Deployment, name: srs-admin }
 
   # Production workers: 3 replicas
   - patch: |
@@ -67,6 +68,7 @@ patches:
         name: srs-worker
       spec:
         replicas: 3
+    target: { kind: Deployment, name: srs-worker }
 
   # NATS: 3-node cluster for production HA
   - patch: |
@@ -76,6 +78,7 @@ patches:
         name: srs-nats
       spec:
         replicas: 3
+    target: { kind: StatefulSet, name: srs-nats }
 
   # Production API resources: larger limits for peak load
   - patch: |
@@ -95,15 +98,17 @@ patches:
                   limits:
                     cpu: 2000m
                     memory: 2Gi
+    target: { kind: Deployment, name: srs-api }
 
-  # Production ALLOWED_ORIGINS — override with real hostnames
+  # Production CORS_ORIGINS — override with real hostnames
   - patch: |
       apiVersion: v1
       kind: ConfigMap
       metadata:
         name: srs-api-config
       data:
-        ALLOWED_ORIGINS: "https://portal.example.com,https://admin.example.com"
+        CORS_ORIGINS: "https://portal.example.com,https://admin.example.com"
+    target: { kind: ConfigMap, name: srs-api-config }
 
   # Production Temporal UI: restrict IP allowlist to ops CIDR
   - patch: |
@@ -113,14 +118,25 @@ patches:
         name: srs-temporal-ui-ingress
         annotations:
           nginx.ingress.kubernetes.io/whitelist-source-range: "10.0.0.0/8"
-
+    target: { kind: Ingress, name: srs-temporal-ui-ingress }
+  # JetStream: three replicas of SRS_EVENTS on the 3-node cluster (BL-012)
+  - patch: |
+      apiVersion: batch/v1
+      kind: Job
+      metadata:
+        name: srs-nats-streams
+      spec:
+        template:
+          spec:
+            containers:
+              - name: declare-streams
+                env:
+                  - name: STREAM_REPLICAS
+                    value: "3"
+    target: { kind: Job, name: srs-nats-streams }
   # Pod Disruption Budgets are added in production to protect HA
   # (separate PDB manifests below via additional resources)
 
-additionalResources:
+resources:
+  - ../../base
   - pod-disruption-budgets.yaml
-
----
-# pod-disruption-budgets.yaml (inlined as additional resource)
-# Note: must be in a separate file referenced by additionalResources above.
-# Content is shown here for documentation; create the file before applying.

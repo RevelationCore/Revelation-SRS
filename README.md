@@ -296,6 +296,10 @@ Full developer setup guide, including troubleshooting and monorepo commands: [do
 | [ADR-023](docs/decisions/ADR-023-pgr-supervision-and-examination-authority.md) | PGR supervision and examination governed as business cases |
 | [ADR-024](docs/decisions/ADR-024-live-temporal-execution.md) | Live Temporal execution behind a rollout flag |
 | [ADR-025](docs/decisions/ADR-025-self-service-audiences-and-identity-binding.md) | Self-service audiences and identity binding |
+| [ADR-026](docs/decisions/ADR-026-browser-sessions-through-a-backend-for-frontend.md) | Browser sessions through a backend-for-frontend; no tokens in the browser |
+| [ADR-027](docs/decisions/ADR-027-shared-runtime-state-in-postgresql.md) | Shared runtime state (invalidation, notification fan-out, rate limits, job locks) in PostgreSQL |
+| [ADR-028](docs/decisions/ADR-028-exceptional-circumstances-decision-authority.md) | Exceptional-circumstances decision authority and separation of duties |
+| [ADR-029](docs/decisions/ADR-029-tenant-bound-service-identity-for-wellbeing-hand-offs.md) | Tenant-bound service identity for the wellbeing-to-core hand-offs |
 
 ---
 

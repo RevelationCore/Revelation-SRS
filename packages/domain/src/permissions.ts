@@ -27,6 +27,12 @@ export const ROLES = [
   // Phase 5 D-38: self-service audiences outside the back office.
   'applicant',
   'pgr-examiner',
+  // ADR-028: exceptional-circumstances claims, named after the BP-04-005 actors.
+  'ec-case-officer',
+  'ec-decision-maker',
+  // ADR-029: the wellbeing service's own role for its two hand-offs, honoured
+  // only from its tenant-bound client (packages/auth bindServiceRoles).
+  'wellbeing-service',
 ] as const;
 
 export type Role = (typeof ROLES)[number];
@@ -51,6 +57,8 @@ export const PERMISSION_ROLES = {
   'adjustment:read:own':       ['student'] as Role[],
   'adjustment:read:all':       ['registry-administrator', 'wellbeing-advisor', 'integration-service'] as Role[],
   'adjustment:write':          ['registry-administrator', 'wellbeing-advisor'] as Role[],
+  // ADR-029: record an adjustment the wellbeing service approved; needs sourceCaseId.
+  'adjustment:record-approved':         ['wellbeing-service'] as Role[],
   // Work the adjustment task queue: confirm, by hand, that an instruction for
   // a target with no connected system was applied or removed.
   'adjustment:fulfil':         ['registry-administrator', 'engagement-officer', 'tenant-administrator'] as Role[],
@@ -132,10 +140,18 @@ export const PERMISSION_ROLES = {
   'disability:write':                   ['wellbeing-advisor', 'wellbeing-mental-health-advisor', 'registry-administrator'] as Role[],
   'exam-board:write':                   ['registry-administrator'] as Role[],
   'circumstances:read:own':             ['student'] as Role[],
-  'circumstances:read':                 ['registry-administrator', 'wellbeing-advisor'] as Role[],
-  'circumstances:write':                ['registry-administrator'] as Role[],
+  'circumstances:read':                 ['registry-administrator', 'wellbeing-advisor', 'ec-case-officer'] as Role[],
+  'circumstances:write':                ['registry-administrator', 'ec-case-officer'] as Role[],
   /** Decide a proposed EC outcome (D-41); never the proposer or the person who recorded the claim. */
-  'circumstances:decide':               ['registry-administrator', 'exam-board-chair'] as Role[],
+  // ADR-028: deciding is held only by the decision maker (amends Phase 5 D-41).
+  'circumstances:decide':               ['ec-decision-maker'] as Role[],
+  // ADR-029: record an EC outcome the wellbeing service determined (amends ADR-028 item 8).
+  'circumstances:record-determined':    ['wellbeing-service'] as Role[],
+  /** Wellbeing EC claims (modules/wellbeing): the advisers who run the claim workflow. Needs institutional sign-off. */
+  // ADR-028: registry receives the decided outcome in core (ADR-017), not the claim.
+  'ec-claim:read':                      ['ec-case-officer', 'ec-decision-maker', 'wellbeing-advisor', 'wellbeing-auditor'] as Role[],
+  'ec-claim:manage':                    ['ec-case-officer', 'wellbeing-advisor'] as Role[],
+  'ec-claim:determine':                 ['ec-decision-maker'] as Role[],
   'progression:read':                   ['registry-administrator', 'exam-board-chair', 'exam-board-member'] as Role[],
   'progression:write':                  ['registry-administrator'] as Role[],
   'regulatory:read':                    ['registry-administrator', 'regulatory-officer', 'dpo', 'tenant-administrator', 'system-administrator'] as Role[],
@@ -173,7 +189,8 @@ export const PERMISSION_ROLES = {
   'email:receive':                      ['integration-service'] as Role[],
   'email-simulator:use':                ['registry-administrator', 'tenant-administrator', 'system-administrator'] as Role[],
   'audit-log:read':                     ['dpo', 'system-administrator', 'registry-administrator', 'wellbeing-auditor'] as Role[],
-  'retention:enforce':                  ['dpo', 'system-administrator'] as Role[],
+  // BL-284: irreversible disposal is a DPO decision, not an IT operation.
+  'retention:enforce':                  ['dpo'] as Role[],
   'notifications:read':                 ['student', 'registry-administrator', 'tenant-administrator', 'system-administrator', 'external-examiner'] as Role[],
   'notifications:write':                ['registry-administrator', 'tenant-administrator', 'system-administrator'] as Role[],
   'circumstances:submit':               ['student'] as Role[],

@@ -217,7 +217,6 @@ function AssessmentForm({ caseId, onRecorded }: { caseId: string; onRecorded: ()
     setSubmitting(true); setError('');
     try {
       await recordAssessment(caseId, {
-        assessorId: user?.sub ?? '',
         assessedAt: new Date(assessedAt).toISOString(),
         outcomeCode,
         ...(findings.trim() ? { findings: findings.trim() } : {}),
@@ -276,7 +275,6 @@ function PanelDecisionForm({ caseId, onRecorded }: { caseId: string; onRecorded:
     setSubmitting(true); setError('');
     try {
       await recordPanelDecision(caseId, {
-        panelChairId: user?.sub ?? '',
         panelDate: new Date(panelDate).toISOString(),
         decisionCode,
         ...(decisionRationale.trim() ? { decisionRationale: decisionRationale.trim() } : {}),

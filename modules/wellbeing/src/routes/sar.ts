@@ -1,6 +1,7 @@
 import { requirePermission } from '@revelation-srs/auth';
 import type { FastifyInstance } from 'fastify';
 
+import { idParams } from '../http/schemas.js';
 import { withWellbeingTenantContext } from '../db/client.js';
 import { appendAudit } from '../repositories/audit-log-repository.js';
 import { exportPersonData, logSarExport } from '../repositories/sar-repository.js';
@@ -19,6 +20,7 @@ export async function sarRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.get<{
     Params: { personId: string };
   }>('/api/v1/sar/export/:personId', {
+    schema: { tags: ['sar'], summary: 'Export a person\'s wellbeing data (subject access request)', params: idParams('personId') },
     preHandler: [requirePermission('wellbeing-sar:export')],
   }, async (request, reply) => {
     const { tenantId } = request;

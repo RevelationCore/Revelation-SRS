@@ -30,5 +30,8 @@ export async function ratifyThroughDecision(ctx: TestApp, token: string, examBoa
     payload: { dataPackId: pack.dataPackId, packHash: pack.packHash, decisionTypeCode: 'ratify' },
   });
   if (decision.statusCode !== 201) return decision;
-  return ctx.app.inject({ method: 'POST', url: `/api/v1/exam-boards/${examBoardId}/ratification`, headers, payload: { packHash: pack.packHash } });
+  // Separation of duties (BL-065): someone other than the person who recorded
+  // the decision ratifies it.
+  const ratifier = await ctx.makeJwt({ sub: 'board-ratifier', roles: ['exam-board-chair'] });
+  return ctx.app.inject({ method: 'POST', url: `/api/v1/exam-boards/${examBoardId}/ratification`, headers: { authorization: `Bearer ${ratifier}` }, payload: { packHash: pack.packHash } });
 }

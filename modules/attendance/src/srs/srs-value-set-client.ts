@@ -13,6 +13,7 @@
  */
 
 const CACHE_TTL_MS = 5 * 60 * 1000;
+import { fetchWithTimeout } from '@revelation-srs/auth';
 
 interface ValueSetMember {
   code: string;
@@ -62,7 +63,7 @@ export class SrsValueSetHttpClient implements ValueSetClient {
     const url = new URL(`${this.srsApiUrl}/api/v1/fields/${entityName}/${fieldName}/value-set`);
     if (asAt) url.searchParams.set('activeAt', asAt.toISOString());
 
-    const res = await fetch(url, {
+    const res = await fetchWithTimeout(url, {
       headers: { authorization: `Bearer ${authToken}` },
     });
 

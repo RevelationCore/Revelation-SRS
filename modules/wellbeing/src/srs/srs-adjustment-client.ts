@@ -11,7 +11,11 @@
  * repeated during retry, SRS will return the same adjustmentId.
  */
 
+import { callCoreAsService, type ServiceTokenSource } from './service-token-provider.js';
+
 export interface SubmitAdjustmentInput {
+  /** The tenant the hand-off is for: picks that tenant's client (ADR-029). */
+  tenantId:           string;
   idempotencyKey:     string;
   personId:           string;
   enrolmentId:        string;
@@ -56,7 +60,7 @@ export interface SrsAdjustmentClient {
 export class SrsAdjustmentHttpClient implements SrsAdjustmentClient {
   constructor(
     private readonly srsApiUrl: string,
-    private readonly authToken: string,
+    private readonly tokens: ServiceTokenSource,
   ) {}
 
   async submitAdjustment(input: SubmitAdjustmentInput): Promise<SubmitAdjustmentResult> {
@@ -72,11 +76,10 @@ export class SrsAdjustmentHttpClient implements SrsAdjustmentClient {
       ...(input.sourceCaseId !== undefined ? { sourceCaseId: input.sourceCaseId } : {}),
     };
 
-    const res = await fetch(url, {
+    const res = await callCoreAsService(this.tokens, input.tenantId, url, {
       method:  'POST',
       headers: {
         'content-type':      'application/json',
-        'authorization':     `Bearer ${this.authToken}`,
         'x-idempotency-key': input.idempotencyKey,
       },
       body: JSON.stringify(body),

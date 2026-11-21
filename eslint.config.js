@@ -76,4 +76,12 @@ export default [
       'react-hooks/exhaustive-deps': 'warn',
     },
   },
+  // Every outbound HTTP call from a service is time-bounded (BL-011, P-09):
+  // services call fetchWithTimeout, never bare fetch.
+  {
+    files: ['apps/api/src/**/*.ts', 'modules/*/src/**/*.ts', 'adapters/*/src/**/*.ts', 'packages/auth/src/**/*.ts', 'packages/db/src/**/*.ts', 'packages/documents/src/**/*.ts', 'packages/workflow/src/**/*.ts'],
+    rules: {
+      'no-restricted-globals': ['error', { name: 'fetch', message: 'Use fetchWithTimeout (@revelation-srs/auth) so the call has a timeout.' }],
+    },
+  },
 ];

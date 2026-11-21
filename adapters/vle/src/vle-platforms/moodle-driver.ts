@@ -1,3 +1,5 @@
+import { fetchWithTimeout } from '../http/fetch-with-timeout.js';
+
 import { extraMinutesFor, formatPercent } from './time-accommodation.js';
 import {
   VlePlatformError,
@@ -61,7 +63,7 @@ export class MoodleDriver implements VlePlatformDriver {
   constructor(
     private readonly baseUrl: string,
     private readonly token: string,
-    private readonly fetchImpl: FetchLike = fetch,
+    private readonly fetchImpl: FetchLike = fetchWithTimeout,
     readonly strategy: MoodleStrategy = 'groups',
   ) {}
 

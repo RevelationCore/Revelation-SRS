@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import type { IntegrationBusPublisher } from '../src/platform/integration-bus/publisher.js';
@@ -114,10 +115,56 @@ describe('Module results', () => {
 });
 
 interface ModuleResultFixture {
+  personId: string;
+  enrolmentId: string;
   moduleRegistrationId: string;
   examComponentId: string;
   courseworkComponentId: string;
 }
+
+// BL-177: the pre-review of BP-05 found any student could read any other
+// student's module results, provisional ones included, and list every
+// registration in the tenant. The portal hid unratified results; the API did not.
+describe('student access to module results and registrations', () => {
+  it('lets a student see only their own result, and only once it is ratified', async () => {
+    const mine = await createModuleResultFixture('OWN101');
+    await ingestMark(mine.moduleRegistrationId, mine.examComponentId, 70);
+    const me = await ctx.makeJwt({ sub: 'student-own-101', roles: ['student'], srsPersonId: mine.personId });
+    const url = `/api/v1/module-registrations/${mine.moduleRegistrationId}/result`;
+    const asMe = () => ctx.app.inject({ method: 'GET', url, headers: { authorization: `Bearer ${me}` } });
+
+    expect((await asMe()).statusCode).toBe(404);   // provisional: not published to the student
+    expect((await getResult(mine.moduleRegistrationId)).statusCode).toBe(200); // staff still see it
+
+    await ctx.db.execute(sql`UPDATE module_result SET locked = true WHERE module_registration_id = ${mine.moduleRegistrationId}::uuid`);
+    const published = await asMe();
+    expect(published.statusCode).toBe(200);
+    expect(published.json<{ locked: boolean }>().locked).toBe(true);
+  });
+
+  it("refuses another student's result, registrations and timetable", async () => {
+    const theirs = await createModuleResultFixture('OWN102');
+    await ingestMark(theirs.moduleRegistrationId, theirs.examComponentId, 70);
+    await ctx.db.execute(sql`UPDATE module_result SET locked = true WHERE module_registration_id = ${theirs.moduleRegistrationId}::uuid`);
+    const mine = await createModuleResultFixture('OWN103');
+    const other = await ctx.makeJwt({ sub: 'student-own-103', roles: ['student'], srsPersonId: mine.personId });
+    const get = (url: string) => ctx.app.inject({ method: 'GET', url, headers: { authorization: `Bearer ${other}` } });
+
+    expect((await get(`/api/v1/module-registrations/${theirs.moduleRegistrationId}/result`)).statusCode).toBe(403);
+    expect((await get(`/api/v1/module-registrations?enrolmentId=${theirs.enrolmentId}`)).statusCode).toBe(403);
+    expect((await get(`/api/v1/module-registrations/timetable?enrolmentId=${theirs.enrolmentId}`)).statusCode).toBe(403);
+    expect((await get('/api/v1/module-registrations')).statusCode).toBe(403); // no tenant-wide list for students
+    expect((await get(`/api/v1/module-registrations?enrolmentId=${mine.enrolmentId}`)).statusCode).toBe(200);
+  });
+
+  it('refuses a student token with no bound person, on reads and writes', async () => {
+    const theirs = await createModuleResultFixture('OWN104');
+    const unbound = await ctx.makeJwt({ sub: 'student-unbound', roles: ['student'] });
+    const headers = { authorization: `Bearer ${unbound}` };
+    expect((await ctx.app.inject({ method: 'GET', url: `/api/v1/module-registrations?enrolmentId=${theirs.enrolmentId}`, headers })).statusCode).toBe(403);
+    expect((await ctx.app.inject({ method: 'POST', url: `/api/v1/module-registrations/${theirs.moduleRegistrationId}/withdrawal`, headers, payload: {} })).statusCode).toBe(403);
+  });
+});
 
 async function createModuleResultFixture(code: string): Promise<ModuleResultFixture> {
   const student = await ctx.app.inject({
@@ -200,7 +247,7 @@ async function createModuleResultFixture(code: string): Promise<ModuleResultFixt
     weighting: 40,
   });
 
-  return { moduleRegistrationId, examComponentId, courseworkComponentId };
+  return { personId, enrolmentId, moduleRegistrationId, examComponentId, courseworkComponentId };
 }
 
 async function createComponent(

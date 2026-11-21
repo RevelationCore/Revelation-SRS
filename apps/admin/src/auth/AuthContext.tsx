@@ -10,7 +10,7 @@ import {
 import {
   startLogin,
   handleCallback,
-  refreshTokens,
+  refreshFromStorage,
   logout,
   type OidcConfig,
   type TokenSet,
@@ -38,6 +38,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 const ACCESS_KEY  = 'srs_admin_token';
 const REFRESH_KEY = 'srs_admin_refresh_token';
+const STORAGE_KEYS = { access: ACCESS_KEY, refresh: REFRESH_KEY };
 
 const oidcConfig: OidcConfig | null = import.meta.env.VITE_KEYCLOAK_URL
   ? {
@@ -85,12 +86,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const scheduleRefresh = useCallback((access: string) => {
     if (!oidcConfig) return;
     const secs  = secondsUntilExpiry(access);
-    const delay = Math.max((secs - 60) * 1000, 0);
+    // Up to 10 s of jitter, so tabs sharing one session rarely refresh at
+    // the same moment; refreshFromStorage serialises them when they do.
+    const delay = Math.max((secs - 60 - Math.random() * 10) * 1000, 0);
     clearTimer();
     refreshTimerRef.current = setTimeout(() => {
-      const stored = localStorage.getItem(REFRESH_KEY);
-      if (!stored) { expire(); return; }
-      refreshTokens(oidcConfig, stored)
+      refreshFromStorage(oidcConfig, STORAGE_KEYS)
         .then((ts) => { applyTokens(ts.accessToken, ts.refreshToken); scheduleRefresh(ts.accessToken); })
         .catch(expire);
     }, delay);
@@ -115,7 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (isTokenExpired(access)) {
       if (refresh && oidcConfig) {
-        refreshTokens(oidcConfig, refresh)
+        refreshFromStorage(oidcConfig, STORAGE_KEYS)
           .then((ts) => { applyTokens(ts.accessToken, ts.refreshToken); scheduleRefresh(ts.accessToken); setIsReady(true); })
           .catch(() => { expire(); setIsReady(true); });
       } else {

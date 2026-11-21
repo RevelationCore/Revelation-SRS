@@ -104,7 +104,7 @@ const STUB_CONFIG: Config = {
   deploymentEnvironmentCode: 'local',
   releaseVersion:            '1.0.0',
   imageDigest:               undefined,
-  migrationVersion:          '0004_business_process_foundations',
+  migrationVersion:          '0001_security_and_tenant_isolation',
   jwtSecret:                 'test-secret',
   keycloakJwksUrl:           undefined,
   corsOrigins:               ['*'],

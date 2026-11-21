@@ -15,6 +15,7 @@
 import { createHash } from 'node:crypto';
 
 import type { Logger } from 'pino';
+import { fetchWithTimeout } from '@revelation-srs/auth';
 
 import type { WellbeingDb } from '../db/client.js';
 import { withWellbeingTenantContext } from '../db/client.js';
@@ -111,7 +112,7 @@ async function fetchSrsPersonContext(
   authToken:  string,
   personId:   string,
 ): Promise<SrsPersonSnapshot | null> {
-  const res = await fetch(`${srsApiUrl}/api/v1/students/${personId}`, {
+  const res = await fetchWithTimeout(`${srsApiUrl}/api/v1/students/${personId}`, {
     headers: { authorization: `Bearer ${authToken}` },
   });
 

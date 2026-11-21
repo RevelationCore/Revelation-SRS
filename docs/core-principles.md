@@ -1,7 +1,7 @@
 # Revelation SRS — Core Principles
 
 > Status: Draft for review
-> Last updated: 2026-06-14
+> Last updated: 2026-11-20
 
 This document defines the foundational principles that govern the design, development, and operation of Revelation SRS. These principles apply across all modules, integrations, and deployment contexts and must be respected by any party contributing to or extending the system.
 
@@ -107,6 +107,9 @@ All access to the system — human and machine — is authenticated and authoris
 - **Authorisation**: access control is role-based (RBAC) with attribute-based extensions where required. Roles are defined at the application level; group membership is resolved from the institutional directory.
 - **Row-level security**: data-access scoping (by institution, faculty, cohort, or individual student) is enforced at the database layer, not application code alone.
 - **Least privilege**: every user and integration receives the minimum permissions required to perform its function.
+- **Separation of duties**: permission to decide a governed outcome is separate from permission to prepare it, and the service refuses a decision by anyone who recorded or assessed the case. The acting user is always taken from the authenticated token, never from the request body (ADR-028).
+- **Browser sessions**: browser applications never hold OAuth tokens; they use a same-origin backend-for-frontend with an HTTP-only session cookie (ADR-026).
+- **Service identity**: a service calling another service authenticates as itself with client credentials, through a client the identity provider binds to one tenant. The tenant always comes from the verified token, never from the caller, and a service role is honoured only from its own client (ADR-029).
 - **API security**: all API endpoints are protected. No unauthenticated endpoints exist outside of publicly documented health and readiness probes.
 - **Secrets management**: credentials, certificates, and API keys are managed through a dedicated secrets store; they are never baked into container images or committed to source control.
 
@@ -318,6 +321,7 @@ The system is designed to operate responsively under the load profile of a large
 - Interactive API responses return within 500ms at the 95th percentile under normal load.
 - Batch and bulk operations (HESA return generation, exam board data preparation) are non-blocking and run asynchronously.
 - The system scales horizontally: adding instances increases throughput without requiring architectural changes.
+- State shared between instances (cache invalidation, live notification fan-out, rate-limit counters, job exclusivity) lives in PostgreSQL, never in process memory, and no second state store is added without an ADR (ADR-027).
 - Performance benchmarks are defined, documented, and verified as part of the CI/release process.
 
 ---

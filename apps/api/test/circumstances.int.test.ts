@@ -88,7 +88,11 @@ describe('Exceptional circumstances and misconduct', () => {
       method: 'POST', url: `/api/v1/ec-determinations/${id}/decision`, headers: { authorization: `Bearer ${as}` }, payload: { decisionCode },
     });
     expect((await decide(jwt, 'upheld')).statusCode).toBe(403);
-    const decider = await ctx.makeJwt({ sub: 'ec-panel-chair', roles: ['exam-board-chair'] });
+    // ADR-028: only ec-decision-maker decides; a board chair or registry administrator no longer can.
+    for (const roles of [['exam-board-chair'], ['registry-administrator']]) {
+      expect((await decide(await ctx.makeJwt({ sub: 'not-a-decider', roles }), 'upheld')).statusCode).toBe(403);
+    }
+    const decider = await ctx.makeJwt({ sub: 'ec-panel-chair', roles: ['ec-decision-maker'] });
     const upheld = await decide(decider, 'upheld');
     expect(upheld.statusCode, upheld.body).toBe(200);
     expect(upheld.json<{ statusCode: string; decidedBy: string }>()).toMatchObject({ statusCode: 'upheld', decidedBy: 'ec-panel-chair' });

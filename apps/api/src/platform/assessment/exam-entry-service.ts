@@ -34,6 +34,7 @@ import {
   NO_AMOUNT_REASON,
   buildExamAccommodations,
   isExamAccommodations,
+  withAdjustment,
   withoutAdjustment,
   type ExamComponent,
   type InForceAdjustment,
@@ -384,20 +385,116 @@ export class ExamEntryService {
     return withdrawn;
   }
 
+  /**
+   * Add newly approved adjustments to exam entries generated before them
+   * (BL-058). For each pending 'exams' distribution in 'file' mode, every
+   * current entry of that enrolment for an exam not yet sat — unscheduled,
+   * or scheduled today or later — that does not already carry the
+   * adjustment gets it, if it is in force on the exam date (unscheduled: not
+   * yet ended). Entries for exams already sat are never rewritten. The
+   * distribution stays pending until the timetabling system's next schedule
+   * for the entry confirms it, as at generation. Called after an adjustment
+   * is recorded and by the worker's reconcile loop; idempotent.
+   */
+  async applyExamAdditions(tenantId: string): Promise<number> {
+    if (!this.adjustments) return 0;
+    const pending = await withTenantContext(this.db, tenantId, async (tx) =>
+      tx
+        .select({
+          distributionId: adjustmentDistributions.id,
+          adjustmentId: reasonableAdjustments.id,
+          enrolmentId: reasonableAdjustments.enrolmentId,
+          adjustmentTypeCode: reasonableAdjustments.adjustmentTypeCode,
+          scopeCode: reasonableAdjustments.scopeCode,
+          amountValue: reasonableAdjustments.amountValue,
+          amountUnitCode: reasonableAdjustments.amountUnitCode,
+          validFrom: reasonableAdjustments.validFrom,
+          validTo: reasonableAdjustments.validTo,
+        })
+        .from(adjustmentDistributions)
+        .innerJoin(reasonableAdjustments, and(
+          eq(reasonableAdjustments.id, adjustmentDistributions.adjustmentId),
+          eq(reasonableAdjustments.tenantId, adjustmentDistributions.tenantId),
+          isNull(reasonableAdjustments.recordedUntil),
+        ))
+        .where(and(
+          eq(adjustmentDistributions.tenantId, tenantId as Uuid),
+          eq(adjustmentDistributions.targetSystem, 'exams'),
+          eq(adjustmentDistributions.fulfilmentModeCode, 'file'),
+          eq(adjustmentDistributions.statusCode, 'pending'),
+        )),
+    );
+
+    const now = clockNow();
+    const today = now.toISOString().slice(0, 10);
+    let refreshed = 0;
+    for (const p of pending) {
+      if (p.validTo !== null && p.validTo <= now) continue; // ended; withdrawal handles it
+      const entries = await withTenantContext(this.db, tenantId, async (tx) =>
+        tx
+          .select({ entry: examEntries })
+          .from(examEntries)
+          .innerJoin(moduleRegistrations, and(
+            eq(moduleRegistrations.id, examEntries.moduleRegistrationId),
+            eq(moduleRegistrations.tenantId, examEntries.tenantId),
+            isNull(moduleRegistrations.recordedUntil),
+          ))
+          .where(and(
+            eq(examEntries.tenantId, tenantId),
+            isNull(examEntries.recordedUntil),
+            eq(moduleRegistrations.enrolmentId, p.enrolmentId),
+            sql`(${examEntries.scheduledDate} IS NULL OR ${examEntries.scheduledDate} >= ${today})`,
+            sql`NOT (${examEntries.accommodations} -> 'adjustments' @> ${JSON.stringify([{ adjustmentId: p.adjustmentId }])}::jsonb)`,
+          )),
+      );
+
+      const added: InForceAdjustment = {
+        adjustmentId: p.adjustmentId,
+        distributionId: p.distributionId,
+        adjustmentTypeCode: p.adjustmentTypeCode,
+        scopeCode: p.scopeCode,
+        amount: p.amountValue !== null && p.amountUnitCode !== null ? { value: Number(p.amountValue), unitCode: p.amountUnitCode } : null,
+      };
+      for (const { entry } of entries) {
+        if (entry.scheduledDate !== null) {
+          const examDay = new Date(`${entry.scheduledDate}T00:00:00.000Z`);
+          if (p.validFrom > examDay || (p.validTo !== null && p.validTo <= examDay)) continue;
+        }
+        const current = isExamAccommodations(entry.accommodations)
+          ? entry.accommodations
+          : buildExamAccommodations([], await this.#loadExamComponents(entry.moduleRegistrationId, tenantId));
+        const rebuilt = withAdjustment(current, added);
+        const carried = rebuilt.adjustments.find((a) => a.adjustmentId === p.adjustmentId);
+        if (!carried) continue; // not an exam arrangement (scope or type)
+        await this.#replaceAccommodations(entry, tenantId, rebuilt as unknown as Record<string, unknown>);
+        refreshed += 1;
+        if (!carried.applied && carried.reason === NO_AMOUNT_REASON) {
+          await this.#reportExamsFailure(p.adjustmentId, p.distributionId, tenantId, carried.reason);
+        }
+      }
+    }
+    return refreshed;
+  }
+
   async #replaceAccommodations(entry: ExamEntry, tenantId: string, accommodations: Record<string, unknown>): Promise<void> {
     await withTenantContext(this.db, tenantId, async (tx) => {
-      const now = clockNow();
+      // The version being closed may have been recorded by the database's
+      // clock (#scheduleEntry uses NOW()), which can run ahead of this
+      // process's: close it no earlier than just after its own recorded_at,
+      // or the temporal check refuses the update. Whole milliseconds, so the
+      // new version (read back through a JS Date) starts exactly where the
+      // old one ends.
       const closed = await tx
         .update(examEntries)
-        .set({ recordedUntil: now })
+        .set({ recordedUntil: sql`GREATEST(${clockNow().toISOString()}::timestamptz, date_trunc('milliseconds', ${examEntries.recordedAt}) + interval '1 millisecond')` })
         .where(and(eq(examEntries.versionId, entry.versionId), isNull(examEntries.recordedUntil)))
-        .returning({ versionId: examEntries.versionId });
+        .returning({ versionId: examEntries.versionId, recordedUntil: examEntries.recordedUntil });
       if (closed.length === 0) return; // changed concurrently; the next run re-checks
       await tx.insert(examEntries).values({
         ...entry,
         versionId: randomUUID(),
         accommodations,
-        recordedAt: now,
+        recordedAt: closed[0]!.recordedUntil!,
         recordedUntil: null,
       });
     });

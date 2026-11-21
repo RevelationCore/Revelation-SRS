@@ -109,6 +109,21 @@ export function withoutAdjustment(current: ExamAccommodations, adjustmentId: str
   );
 }
 
+/** Recompute with one more adjustment (approved after the entry was made, BL-058), keeping the rest. */
+export function withAdjustment(current: ExamAccommodations, added: InForceAdjustment): ExamAccommodations {
+  return buildExamAccommodations(
+    [
+      ...current.adjustments
+        .filter((a) => a.adjustmentId !== added.adjustmentId)
+        .map(({ adjustmentId: id, distributionId, adjustmentTypeCode, scopeCode, amount }) => ({
+          adjustmentId: id, distributionId, adjustmentTypeCode, scopeCode, amount,
+        })),
+      added,
+    ],
+    current.components.map(({ assessmentComponentId, title, durationMinutes }) => ({ assessmentComponentId, title, durationMinutes })),
+  );
+}
+
 export function isExamAccommodations(value: unknown): value is ExamAccommodations {
   return typeof value === 'object' && value !== null
     && Array.isArray((value as { adjustments?: unknown }).adjustments)
