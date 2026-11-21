@@ -96,14 +96,14 @@ patches:
                     cpu: 2000m
                     memory: 2Gi
 
-  # Production ALLOWED_ORIGINS — override with real hostnames
+  # Production CORS_ORIGINS — override with real hostnames
   - patch: |
       apiVersion: v1
       kind: ConfigMap
       metadata:
         name: srs-api-config
       data:
-        ALLOWED_ORIGINS: "https://portal.example.com,https://admin.example.com"
+        CORS_ORIGINS: "https://portal.example.com,https://admin.example.com"
 
   # Production Temporal UI: restrict IP allowlist to ops CIDR
   - patch: |

@@ -70,14 +70,14 @@ patches:
                       port:
                         name: http
 
-  # Staging ALLOWED_ORIGINS
+  # Staging CORS_ORIGINS
   - patch: |
       apiVersion: v1
       kind: ConfigMap
       metadata:
         name: srs-api-config
       data:
-        ALLOWED_ORIGINS: "https://portal.staging.example.com,https://admin.staging.example.com"
+        CORS_ORIGINS: "https://portal.staging.example.com,https://admin.staging.example.com"
 
   # Staging: 2 API replicas (same as production floor)
   - patch: |

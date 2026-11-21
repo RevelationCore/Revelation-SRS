@@ -317,7 +317,7 @@ spec:
           env:
             - name: NODE_ENV
               value: production
-            - name: PORT
+            - name: WELLBEING_PORT
               value: "3002"
             - name: NATS_URL
               value: nats://srs-nats:4222

@@ -80,14 +80,6 @@ spec:
               value: production
             - name: PORT
               value: "3000"
-            - name: HOST
-              value: "0.0.0.0"
-            - name: KEYCLOAK_URL
-              value: http://keycloak:8080
-            - name: KEYCLOAK_REALM
-              value: srs
-            - name: KEYCLOAK_CLIENT_ID
-              value: srs-api
             # Tokens: Keycloak RS256 only (HS256 refuses to start outside
             # development and test). The issuer is Keycloak's public URL.
             - name: KEYCLOAK_JWKS_URL
@@ -110,8 +102,6 @@ spec:
               value: srs-production
             - name: TEMPORAL_TASK_QUEUE
               value: srs-workflows
-            - name: WELLBEING_URL
-              value: http://srs-wellbeing:3002
             - name: ATTENDANCE_API_URL
               value: http://srs-attendance:3004
             # Believe X-Forwarded-For only from private-network peers. The
@@ -121,11 +111,11 @@ spec:
             # connection. A hop count would be ignored by Fastify.
             - name: TRUST_PROXY
               value: uniquelocal
-            - name: ALLOWED_ORIGINS
+            - name: CORS_ORIGINS
               valueFrom:
                 configMapKeyRef:
                   name: srs-api-config
-                  key: ALLOWED_ORIGINS
+                  key: CORS_ORIGINS
             # Secrets are read from OpenBao-injected files at startup
             # DATABASE_URL is sourced from /vault/secrets/db
             # KEYCLOAK_CLIENT_SECRET is sourced from /vault/secrets/keycloak
@@ -189,7 +179,7 @@ metadata:
   name: srs-api-config
   namespace: revelation-srs
 data:
-  ALLOWED_ORIGINS: "https://portal.example.com,https://admin.example.com"
+  CORS_ORIGINS: "https://portal.example.com,https://admin.example.com"
   # Keycloak's public realm URL: the `iss` of every token the services accept.
   KEYCLOAK_ISSUER: "https://auth.example.com/realms/srs"
 
