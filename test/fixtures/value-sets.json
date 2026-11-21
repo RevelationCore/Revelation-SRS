@@ -1246,6 +1246,15 @@
     "active": true,
     "hidden": false,
     "selectable": true
+   },
+   {
+    "code": "wellbeing-service",
+    "displayLabel": "Wellbeing service (system)",
+    "description": null,
+    "sortOrder": 290,
+    "active": true,
+    "hidden": false,
+    "selectable": true
    }
   ]
  },
@@ -6406,6 +6415,15 @@
     "displayLabel": "EC decision maker",
     "description": null,
     "sortOrder": 280,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "wellbeing-service",
+    "displayLabel": "Wellbeing service (system)",
+    "description": null,
+    "sortOrder": 290,
     "active": true,
     "hidden": false,
     "selectable": true
@@ -15093,6 +15111,15 @@
     "active": true,
     "hidden": false,
     "selectable": true
+   },
+   {
+    "code": "wellbeing-service",
+    "displayLabel": "Wellbeing service (system)",
+    "description": null,
+    "sortOrder": 290,
+    "active": true,
+    "hidden": false,
+    "selectable": true
    }
   ]
  },
@@ -15350,6 +15377,15 @@
     "displayLabel": "EC decision maker",
     "description": null,
     "sortOrder": 280,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "wellbeing-service",
+    "displayLabel": "Wellbeing service (system)",
+    "description": null,
+    "sortOrder": 290,
     "active": true,
     "hidden": false,
     "selectable": true
@@ -15789,6 +15825,15 @@
     "active": true,
     "hidden": false,
     "selectable": true
+   },
+   {
+    "code": "wellbeing-service",
+    "displayLabel": "Wellbeing service (system)",
+    "description": null,
+    "sortOrder": 290,
+    "active": true,
+    "hidden": false,
+    "selectable": true
    }
   ]
  },
@@ -16108,6 +16153,15 @@
     "displayLabel": "EC decision maker",
     "description": null,
     "sortOrder": 280,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "wellbeing-service",
+    "displayLabel": "Wellbeing service (system)",
+    "description": null,
+    "sortOrder": 290,
     "active": true,
     "hidden": false,
     "selectable": true

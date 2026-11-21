@@ -4,6 +4,7 @@ import type { FastifyInstance } from 'fastify';
 import fp from 'fastify-plugin';
 
 import type { AuthenticatedUser } from '../types.js';
+import { bindServiceRoles, SERVICE_ROLE_CLIENTS } from '../service-identity.js';
 
 export interface JwtPluginOptions {
   /** Symmetric secret - development and test only (HS256). */
@@ -26,6 +27,8 @@ type RawClaims = JWTPayload & {
   email?:              string;
   preferred_username?: string;
   srs_person_id?:      string;
+  /** Authorised party: the client the token was issued to (ADR-029). */
+  azp?:                string;
   iss?:                string;
   aud?:                string | string[];
 };
@@ -119,14 +122,22 @@ async function jwtPlugin(
         throw new Error('JWT is missing required subject or tenant claim');
       }
 
+      // A service role counts only from that service's own client for this
+      // tenant (ADR-029): a mismatch fails closed by dropping the role.
+      const bound = bindServiceRoles(claims.realm_roles ?? [], { tenantId: claims.tenant_id, azp: claims.azp, srsPersonId: claims.srs_person_id });
+      if (bound.dropped.length > 0) request.log.warn({ dropped: bound.dropped, azp: claims.azp }, 'service role ignored: not from its own client for this tenant');
+      const isService = bound.roles.some((r) => r in SERVICE_ROLE_CLIENTS);
+
       const user: AuthenticatedUser = {
         sub:               claims.sub,
         tenantId:          claims.tenant_id,
-        roles:             (claims.realm_roles ?? []) as AuthenticatedUser['roles'],
-        displayName:       claims.name ?? '',
+        roles:             bound.roles as AuthenticatedUser['roles'],
+        // Service tokens carry no name: audit shows the client instead.
+        displayName:       claims.name ?? (isService ? claims.azp ?? '' : ''),
         email:             claims.email ?? '',
         preferredUsername: claims.preferred_username ?? '',
         ...(claims.srs_person_id ? { srsPersonId: claims.srs_person_id } : {}),
+        ...(claims.azp ? { authorizedParty: claims.azp } : {}),
       };
 
       request.user     = user;

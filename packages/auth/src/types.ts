@@ -15,6 +15,8 @@ export interface AuthenticatedUser {
   email: string;
   /** Raw `preferred_username` claim. */
   preferredUsername: string;
+  /** The client the token was issued to (`azp`): for a service, its tenant-bound client (ADR-029). */
+  authorizedParty?: string;
   /**
    * SRS person UUID from the srs_person_id JWT claim: present for anyone with
    * an SRS person row (students, applicants, supervisors, examiners), set by

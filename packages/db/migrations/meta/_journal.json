@@ -22,6 +22,13 @@
       "when": 1785000050000,
       "tag": "0002_ec_decision_roles",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1785000051000,
+      "tag": "0003_wellbeing_service_role",
+      "breakpoints": true
     }
   ]
 }
