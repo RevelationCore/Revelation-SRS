@@ -8,6 +8,10 @@ const RetentionDetailSchema = Type.Object({
     Type.Literal('anonymised'),
     Type.Literal('flagged-for-dpo'),
     Type.Literal('skipped-award-hold'),
+    Type.Literal('skipped-hold'),
+    Type.Literal('skipped-restriction'),
+    Type.Literal('skipped-open-request'),
+    Type.Literal('skipped-schedule'),
   ]),
   reason: Type.Optional(Type.String()),
 });

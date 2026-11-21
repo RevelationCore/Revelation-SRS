@@ -149,7 +149,7 @@ describe('AJ-21 hand-off: wellbeing → SRS → NATS → VLE adapter → VLE', (
     await wellbeing.app.inject({
       method: 'POST', url: `/api/v1/adjustment-cases/${caseId}/assessments`,
       headers: { authorization: `Bearer ${adviserJwt}` },
-      payload: { assessorId: 'adviser-1', assessedAt: '2026-09-10T10:00:00Z', outcomeCode: 'recommended' },
+      payload: { assessedAt: '2026-09-10T10:00:00Z', outcomeCode: 'recommended' },
     });
 
     const approved = await wellbeing.app.inject({

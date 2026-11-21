@@ -182,7 +182,8 @@ export const PERMISSION_ROLES = {
   'email:receive':                      ['integration-service'] as Role[],
   'email-simulator:use':                ['registry-administrator', 'tenant-administrator', 'system-administrator'] as Role[],
   'audit-log:read':                     ['dpo', 'system-administrator', 'registry-administrator', 'wellbeing-auditor'] as Role[],
-  'retention:enforce':                  ['dpo', 'system-administrator'] as Role[],
+  // BL-284: irreversible disposal is a DPO decision, not an IT operation.
+  'retention:enforce':                  ['dpo'] as Role[],
   'notifications:read':                 ['student', 'registry-administrator', 'tenant-administrator', 'system-administrator', 'external-examiner'] as Role[],
   'notifications:write':                ['registry-administrator', 'tenant-administrator', 'system-administrator'] as Role[],
   'circumstances:submit':               ['student'] as Role[],
