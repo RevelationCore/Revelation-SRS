@@ -12,9 +12,8 @@ import { createWellbeingDb } from './db/client.js';
 import type { WellbeingDb } from './db/client.js';
 import { EdrmsSimulator } from './edrms/edrms-adapter.js';
 import type { SrsAdjustmentClient } from './srs/srs-adjustment-client.js';
-import { SrsAdjustmentStubClient } from './srs/srs-adjustment-client.js';
+import { createSrsHandoffClients, isStubClient, loadSrsHandoffConfig } from './srs/handoff-config.js';
 import type { SrsEcClient } from './srs/srs-ec-client.js';
-import { SrsEcStubClient } from './srs/srs-ec-client.js';
 import { adjustmentCaseRoutes } from './routes/adjustment-cases.js';
 import { adminRetentionRoutes } from './routes/admin-retention.js';
 import { disabilityCaseRoutes } from './routes/disability-cases.js';
@@ -106,8 +105,16 @@ export async function buildApp(config: Config, appOpts: AppOptions = {}): Promis
   // Routes
   await fastify.register(healthRoutes);
   await fastify.register(disabilityCaseRoutes, { edrms: new EdrmsSimulator() });
-  const srsClient      = appOpts.srsAdjustmentClient ?? new SrsAdjustmentStubClient();
-  const srsEcClient    = appOpts.srsEcClient         ?? new SrsEcStubClient();
+  // ADR-029: real clients unless the caller injects others; never a stub
+  // outside development and test, however it arrives.
+  const fromConfig = (!appOpts.srsAdjustmentClient || !appOpts.srsEcClient)
+    ? createSrsHandoffClients(config.nodeEnv, config.srsHandoff ?? loadSrsHandoffConfig(config.nodeEnv))
+    : null;
+  const srsClient      = appOpts.srsAdjustmentClient ?? fromConfig!.adjustment;
+  const srsEcClient    = appOpts.srsEcClient         ?? fromConfig!.ec;
+  if (!['development', 'test'].includes(config.nodeEnv) && (isStubClient(srsClient) || isStubClient(srsEcClient))) {
+    throw new Error('Refusing to start srs-wellbeing with stub SRS clients outside development and test (ADR-029)');
+  }
   await fastify.register(adjustmentCaseRoutes, { srsClient });
   await fastify.register(ecClaimRoutes, { srsEcClient });
   await fastify.register(mentalHealthCaseRoutes);

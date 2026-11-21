@@ -648,6 +648,7 @@ export async function adjustmentCaseRoutes(
 
     try {
       const result = await srsClient.submitAdjustment({
+        tenantId,
         idempotencyKey:     `adj-handoff-${caseId}`,
         personId,
         enrolmentId:        body.enrolmentId,

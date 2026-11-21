@@ -427,6 +427,7 @@ export async function ecClaimRoutes(
 
     try {
       const result = await srsEcClient.submitEc({
+        tenantId,
         idempotencyKey:    ecHandoffKey(claimId),
         personId,
         enrolmentId,

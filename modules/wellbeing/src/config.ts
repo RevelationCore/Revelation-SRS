@@ -1,5 +1,7 @@
 import { DEFAULT_DEV_JWT_SECRET, tokenEnv } from '@revelation-srs/auth';
 
+import { loadSrsHandoffConfig, type SrsHandoffConfig } from './srs/handoff-config.js';
+
 export interface Config {
   port:            number;
   logLevel:        string;
@@ -16,6 +18,8 @@ export interface Config {
   /** Allowed clock skew for token expiry, in seconds (default 30). */
   jwtClockToleranceSeconds?: number | undefined;
   corsOrigins:     string[];
+  /** The hand-offs to core (ADR-029); read from the environment when omitted. */
+  srsHandoff?:     SrsHandoffConfig;
 }
 
 function required(name: string): string {
@@ -41,5 +45,6 @@ export function loadConfig(): Config {
     keycloakJwksUrl: process.env['KEYCLOAK_JWKS_URL'],
     ...tokenEnv(),
     corsOrigins:     (process.env['CORS_ORIGINS'] ?? 'http://localhost:5173').split(','),
+    srsHandoff:      loadSrsHandoffConfig(process.env['NODE_ENV'] ?? 'development'),
   };
 }

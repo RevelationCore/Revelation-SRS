@@ -11,9 +11,11 @@
  * attempt so retry loops cannot create duplicate SRS EC records.
  */
 
-import { fetchWithTimeout } from '@revelation-srs/auth';
+import { callCoreAsService, type ServiceTokenSource } from './service-token-provider.js';
 
 export interface SubmitEcInput {
+  /** The tenant the hand-off is for: picks that tenant's client (ADR-029). */
+  tenantId:           string;
   idempotencyKey:    string;
   personId:          string;
   enrolmentId:       string;
@@ -36,7 +38,7 @@ export interface SrsEcClient {
 export class SrsEcHttpClient implements SrsEcClient {
   constructor(
     private readonly srsApiUrl: string,
-    private readonly authToken: string,
+    private readonly tokens: ServiceTokenSource,
   ) {}
 
   async submitEc(input: SubmitEcInput): Promise<SubmitEcResult> {
@@ -49,11 +51,10 @@ export class SrsEcHttpClient implements SrsEcClient {
     if (input.moduleOfferingId !== undefined) body['moduleOfferingId'] = input.moduleOfferingId;
     if (input.notes            !== undefined) body['notes']            = input.notes;
 
-    const res = await fetchWithTimeout(url, {
+    const res = await callCoreAsService(this.tokens, input.tenantId, url, {
       method:  'POST',
       headers: {
         'content-type':      'application/json',
-        'authorization':     `Bearer ${this.authToken}`,
         'x-idempotency-key': input.idempotencyKey,
       },
       body: JSON.stringify(body),

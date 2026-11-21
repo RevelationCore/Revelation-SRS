@@ -1,7 +1,13 @@
+import { generateKeyPairSync } from 'node:crypto';
+import { mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
 import { describe, expect, it } from 'vitest';
 
 import { buildApp } from '../src/app.js';
 import type { Config } from '../src/config.js';
+import { loadSrsHandoffConfig } from '../src/srs/handoff-config.js';
 
 /**
  * Outside development and test the service refuses to start on HS256 tokens
@@ -24,8 +30,14 @@ describe('insecure token configuration', () => {
     await expect(buildApp({ ...base, jwtSecret })).rejects.toThrow(/srs-wellbeing refuses to start: NODE_ENV=production needs KEYCLOAK_JWKS_URL/);
   });
 
-  it('starts in production with Keycloak keys', async () => {
-    const app = await buildApp({ ...base, keycloakJwksUrl: 'http://127.0.0.1:1/realms/srs/protocol/openid-connect/certs' });
+  it('starts in production with Keycloak keys and real hand-off clients (ADR-029)', async () => {
+    const keyFile = join(mkdtempSync(join(tmpdir(), 'wb-key-')), 'key.pem');
+    writeFileSync(keyFile, generateKeyPairSync('rsa', { modulusLength: 2048 }).privateKey.export({ type: 'pkcs8', format: 'pem' }));
+    const srsHandoff = {
+      ...loadSrsHandoffConfig('production', {}), srsApiUrl: 'http://127.0.0.1:1', srsApiUrlSet: true,
+      tokenUrl: 'http://127.0.0.1:1/realms/srs/protocol/openid-connect/token', clientKeyFile: keyFile, clientKeyId: 'k1',
+    };
+    const app = await buildApp({ ...base, keycloakJwksUrl: 'http://127.0.0.1:1/realms/srs/protocol/openid-connect/certs', srsHandoff });
     await app.close();
   });
 });

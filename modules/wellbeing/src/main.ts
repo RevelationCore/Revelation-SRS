@@ -5,11 +5,14 @@ import pino from 'pino';
 
 import { loadConfig } from './config.js';
 import { buildApp } from './app.js';
+import { assertSrsHandoffConfig, loadSrsHandoffConfig } from './srs/handoff-config.js';
 import { WellbeingEventConsumer } from './consumers/consumer.js';
 import { createWellbeingDb } from './db/client.js';
 
 const config  = loadConfig();
 const log     = pino({ level: config.logLevel });
+// Refuse to start on stubs or without verifiable credentials (ADR-029); static, no token fetched.
+assertSrsHandoffConfig(config.nodeEnv, config.srsHandoff ?? loadSrsHandoffConfig(config.nodeEnv));
 const fastify = await buildApp(config);
 const db      = createWellbeingDb(config.databaseUrl, { statementTimeoutMs: 30_000, idleInTransactionTimeoutMs: 60_000 });
 const consumer = new WellbeingEventConsumer(config.natsUrl, db, log);

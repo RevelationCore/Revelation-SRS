@@ -27,6 +27,7 @@
  * projection is fed by its own event consumer, which is not part of this
  * hand-off.
  */
+import { wellbeingServiceClientId } from '@revelation-srs/auth';
 import { GenericContainer, Wait, type StartedTestContainer } from 'testcontainers';
 import { pino } from 'pino';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
@@ -54,6 +55,7 @@ let wellbeing: TestWellbeingApp;
 let vle: TestVleApp;
 let consumer: VleEventConsumer;
 let srsJwt: string;
+let serviceTokensIssued = 0;
 
 beforeAll(async () => {
   nats = await new GenericContainer('nats:2.10-alpine')
@@ -74,7 +76,13 @@ beforeAll(async () => {
 
   // Wellbeing module calling the real SRS over HTTP.
   wellbeing = await startWellbeing({
-    srsAdjustmentClient: new SrsAdjustmentHttpClient(srsUrl, srsJwt),
+    // No static token (ADR-029): a token per tenant, as its own client would
+    // get from Keycloak, so the hand-off goes through bindServiceRoles and
+    // the narrow adjustment:record-approved permission.
+    srsAdjustmentClient: new SrsAdjustmentHttpClient(srsUrl, {
+      getToken: (tenantId: string) => { serviceTokensIssued++; return srs.makeJwt({ sub: 'service-account-srs-wellbeing', name: null, roles: ['wellbeing-service'], tenantId, azp: wellbeingServiceClientId(tenantId) }); },
+      invalidate: () => undefined,
+    }),
   });
 
   // VLE adapter consuming from NATS, writing to the stub VLE, replying to the real SRS.
@@ -167,6 +175,7 @@ describe('AJ-21 hand-off: wellbeing → SRS → NATS → VLE adapter → VLE', (
       },
     });
     expect(approved.statusCode, approved.body).toBe(202);
+    expect(serviceTokensIssued).toBeGreaterThan(0); // the hand-off authenticated as the wellbeing service
     adjustmentId = approved.json<{ adjustmentId: string }>().adjustmentId;
 
     const adjustment = await srsGet(`/api/v1/adjustments/${adjustmentId}`);

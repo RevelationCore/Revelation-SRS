@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { sql } from 'drizzle-orm';
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 
+import { loadSrsHandoffConfig } from '../../src/srs/handoff-config.js';
 import { buildApp, type AppOptions } from '../../src/app.js';
 import type { Config } from '../../src/config.js';
 import { createWellbeingDb, type WellbeingDb } from '../../src/db/client.js';
@@ -82,6 +83,8 @@ export async function startTestApp(appOpts: AppOptions = {}): Promise<TestWellbe
     jwtSecret:       JWT_SECRET,
     keycloakJwksUrl: undefined,
     corsOrigins:     ['http://localhost:5173'],
+    // Tests inject their own SRS clients, or get stubs explicitly (ADR-029).
+    srsHandoff:      { ...loadSrsHandoffConfig('test', {}), clients: 'stub' },
   };
 
   const app = await buildApp(config, appOpts);
