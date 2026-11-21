@@ -43,6 +43,7 @@
     "check:review-pack": "node scripts/check-review-pack.mjs",
     "check:backlog": "node scripts/check-backlog.mjs",
     "check:deployment-env": "node scripts/check-deployment-env.mjs",
+    "check:k8s": "node scripts/check-k8s.mjs",
     "check:capability-baseline": "node scripts/check-capability-baseline.mjs",
     "check:journey-metadata": "node scripts/select-journeys.mjs validate",
     "evidence:generate": "node scripts/generate-evidence-report.mjs",

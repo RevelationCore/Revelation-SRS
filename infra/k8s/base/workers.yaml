@@ -7,7 +7,6 @@ metadata:
   namespace: revelation-srs
   annotations:
     openbao.org/role: "srs-worker"
-
 ---
 # ── Temporal Worker — Deployment ──────────────────────────────────────────────
 apiVersion: apps/v1
@@ -93,7 +92,7 @@ spec:
             - |
               export DATABASE_URL="$(cat /vault/secrets/db)"
               export NATS_NKEY_SEED="$(cat /vault/secrets/nats)"
-              exec node apps/api/dist/worker.js
+              exec node dist/worker.js
           resources:
             requests:
               cpu: 200m
@@ -126,7 +125,21 @@ spec:
         - name: tmp
           emptyDir: {}
       terminationGracePeriodSeconds: 120
-
+      topologySpreadConstraints:
+        # Spread replicas across nodes, and zones where the cluster has them (BL-012, readiness 2.4).
+        # ScheduleAnyway: a small cluster still schedules every replica.
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: srs-worker
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: srs-worker
 ---
 # ── VLE Adapter — ServiceAccount ──────────────────────────────────────────────
 apiVersion: v1
@@ -136,7 +149,6 @@ metadata:
   namespace: revelation-srs
   annotations:
     openbao.org/role: "srs-vle-adapter"
-
 ---
 # ── VLE Adapter — Deployment ──────────────────────────────────────────────────
 apiVersion: apps/v1
@@ -206,7 +218,7 @@ spec:
               export DATABASE_URL="$(cat /vault/secrets/db)"
               export NATS_NKEY_SEED="$(cat /vault/secrets/nats)"
               export VLE_API_KEY="$(cat /vault/secrets/vle)"
-              exec node dist/index.js
+              exec node dist/main.js
           resources:
             requests:
               cpu: 100m
@@ -237,7 +249,21 @@ spec:
       volumes:
         - name: tmp
           emptyDir: {}
-
+      topologySpreadConstraints:
+        # Spread replicas across nodes, and zones where the cluster has them (BL-012, readiness 2.4).
+        # ScheduleAnyway: a small cluster still schedules every replica.
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: srs-vle-adapter
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: srs-vle-adapter
 ---
 # ── VLE Adapter — Service ─────────────────────────────────────────────────────
 apiVersion: v1
@@ -256,7 +282,6 @@ spec:
       port: 3003
       targetPort: http
   type: ClusterIP
-
 ---
 # ── Wellbeing Module — ServiceAccount ────────────────────────────────────────
 apiVersion: v1
@@ -266,7 +291,6 @@ metadata:
   namespace: revelation-srs
   annotations:
     openbao.org/role: "srs-wellbeing"
-
 ---
 # ── Wellbeing Module — Deployment ────────────────────────────────────────────
 apiVersion: apps/v1
@@ -339,7 +363,7 @@ spec:
             - |
               export DATABASE_URL="$(cat /vault/secrets/db)"
               export NATS_NKEY_SEED="$(cat /vault/secrets/nats)"
-              exec node dist/index.js
+              exec node dist/main.js
           resources:
             requests:
               cpu: 100m
@@ -370,7 +394,21 @@ spec:
       volumes:
         - name: tmp
           emptyDir: {}
-
+      topologySpreadConstraints:
+        # Spread replicas across nodes, and zones where the cluster has them (BL-012, readiness 2.4).
+        # ScheduleAnyway: a small cluster still schedules every replica.
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: srs-wellbeing
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: srs-wellbeing
 ---
 # ── Wellbeing Module — Service ────────────────────────────────────────────────
 apiVersion: v1
@@ -389,7 +427,6 @@ spec:
       port: 3002
       targetPort: http
   type: ClusterIP
-
 ---
 # ── Attendance Module — ServiceAccount ───────────────────────────────────────
 apiVersion: v1
@@ -399,7 +436,6 @@ metadata:
   namespace: revelation-srs
   annotations:
     openbao.org/role: "srs-attendance"
-
 ---
 # ── Attendance Module — Deployment ───────────────────────────────────────────
 apiVersion: apps/v1
@@ -505,7 +541,21 @@ spec:
       volumes:
         - name: tmp
           emptyDir: {}
-
+      topologySpreadConstraints:
+        # Spread replicas across nodes, and zones where the cluster has them (BL-012, readiness 2.4).
+        # ScheduleAnyway: a small cluster still schedules every replica.
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: srs-attendance
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: srs-attendance
 ---
 # ── Attendance Module — Service ──────────────────────────────────────────────
 apiVersion: v1

@@ -217,6 +217,7 @@ spec:
                   - srs-vle-adapter
                   - srs-wellbeing
                   - srs-attendance
+                  - srs-nats-streams   # declares SRS_EVENTS (BL-012)
       ports:
         - port: 4222
     # NATS cluster peering (production multi-node)

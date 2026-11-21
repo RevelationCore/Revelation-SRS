@@ -5,9 +5,6 @@ kind: Kustomization
 # OpenBao agent injection is active (same as production).
 # Uses staging-specific hostnames and a pinned release candidate image tag.
 
-bases:
-  - ../../base
-
 namespace: revelation-srs-staging
 
 images:
@@ -17,11 +14,11 @@ images:
     newTag: v1.0.0-rc.1
   - name: ghcr.io/revelation-srs/admin
     newTag: v1.0.0-rc.1
-  - name: ghcr.io/revelation-srs/worker
-    newTag: v1.0.0-rc.1
   - name: ghcr.io/revelation-srs/vle-adapter
     newTag: v1.0.0-rc.1
   - name: ghcr.io/revelation-srs/wellbeing
+    newTag: v1.0.0-rc.1
+  - name: ghcr.io/revelation-srs/attendance
     newTag: v1.0.0-rc.1
 
 patches:
@@ -69,6 +66,7 @@ patches:
                       name: srs-api
                       port:
                         name: http
+    target: { kind: Ingress, name: srs-ingress }
 
   # Staging CORS_ORIGINS
   - patch: |
@@ -78,6 +76,7 @@ patches:
         name: srs-api-config
       data:
         CORS_ORIGINS: "https://portal.staging.example.com,https://admin.staging.example.com"
+    target: { kind: ConfigMap, name: srs-api-config }
 
   # Staging: 2 API replicas (same as production floor)
   - patch: |
@@ -87,6 +86,7 @@ patches:
         name: srs-api
       spec:
         replicas: 2
+    target: { kind: Deployment, name: srs-api }
 
   # Staging: 1 replica for frontends (cost saving)
   - patch: |
@@ -96,6 +96,7 @@ patches:
         name: srs-portal
       spec:
         replicas: 1
+    target: { kind: Deployment, name: srs-portal }
   - patch: |
       apiVersion: apps/v1
       kind: Deployment
@@ -103,6 +104,7 @@ patches:
         name: srs-admin
       spec:
         replicas: 1
+    target: { kind: Deployment, name: srs-admin }
 
   # NATS single-node for staging
   - patch: |
@@ -112,3 +114,6 @@ patches:
         name: srs-nats
       spec:
         replicas: 1
+    target: { kind: StatefulSet, name: srs-nats }
+resources:
+  - ../../base

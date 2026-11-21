@@ -8,7 +8,6 @@ metadata:
   annotations:
     # OpenBao Kubernetes auth role binds to this service account
     openbao.org/role: "srs-api"
-
 ---
 # ── Deployment ──────────────────────────────────────────────────────────────
 apiVersion: apps/v1
@@ -127,7 +126,7 @@ spec:
               export DATABASE_URL="$(cat /vault/secrets/db)"
               export KEYCLOAK_CLIENT_SECRET="$(cat /vault/secrets/keycloak)"
               export NATS_NKEY_SEED="$(cat /vault/secrets/nats)"
-              exec node dist/index.js
+              exec node dist/main.js
           resources:
             requests:
               cpu: 250m
@@ -170,7 +169,21 @@ spec:
         - name: tmp
           emptyDir: {}
       terminationGracePeriodSeconds: 60
-
+      topologySpreadConstraints:
+        # Spread replicas across nodes, and zones where the cluster has them (BL-012, readiness 2.4).
+        # ScheduleAnyway: a small cluster still schedules every replica.
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: srs-api
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: srs-api
 ---
 # ── ConfigMap ────────────────────────────────────────────────────────────────
 apiVersion: v1
@@ -182,7 +195,6 @@ data:
   CORS_ORIGINS: "https://portal.example.com,https://admin.example.com"
   # Keycloak's public realm URL: the `iss` of every token the services accept.
   KEYCLOAK_ISSUER: "https://auth.example.com/realms/srs"
-
 ---
 # ── Service ──────────────────────────────────────────────────────────────────
 apiVersion: v1
@@ -202,7 +214,6 @@ spec:
       targetPort: http
       protocol: TCP
   type: ClusterIP
-
 ---
 # ── HorizontalPodAutoscaler ───────────────────────────────────────────────────
 apiVersion: autoscaling/v2
