@@ -11,6 +11,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import type { IntegrationBusPublisher } from '../src/platform/integration-bus/publisher.js';
 
+import { recordApprovedAdjustment } from './helpers/adjustments.js';
 import { startTestApp, type TestApp } from './helpers/test-app.js';
 
 const bus = {
@@ -274,10 +275,10 @@ async function adjust(
   amount: { value: number; unitCode: string } | undefined,
   scopeCode = 'exam',
 ): Promise<{ adjustmentId: string }> {
-  return (await post(`/api/v1/students/${f.personId}/adjustments`, {
+  return recordApprovedAdjustment(ctx, f.personId, {
     enrolmentId: f.enrolmentId, adjustmentTypeCode, scopeCode, validFrom: f.validFrom,
     ...(amount ? { amount } : {}),
-  })).json<{ adjustmentId: string }>();
+  });
 }
 
 async function generate(f: Fixture): Promise<Entry> {

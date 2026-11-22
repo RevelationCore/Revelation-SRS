@@ -7,11 +7,14 @@
  * manual (staff work a task queue), file (an SRS file exchange) or not used,
  * so "pending" never silently means "nothing will ever do this".
  */
+import { randomUUID } from 'node:crypto';
+
 import { sql } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import type { IntegrationBusPublisher, PublishOptions } from '../src/platform/integration-bus/publisher.js';
 
+import { wellbeingServiceJwt } from './helpers/adjustments.js';
 import { startTestApp, type TestApp } from './helpers/test-app.js';
 
 const published: Array<{ type: string; payload: Record<string, unknown>; options: PublishOptions }> = [];
@@ -261,9 +264,10 @@ async function adjust(
   amount: { value: number; unitCode: string } = { value: 25, unitCode: 'percent-of-duration' },
 ): Promise<{ adjustmentId: string }> {
   const res = await post(`/api/v1/students/${f.personId}/adjustments`, {
+    sourceCaseId: randomUUID(),
     enrolmentId: f.enrolmentId, adjustmentTypeCode, scopeCode, validFrom: '2026-09-21T00:00:00.000Z',
     amount, notes: 'PRIVATE-NOTE must not reach the task queue',
-  }, registryJwt);
+  }, await wellbeingServiceJwt(ctx));
   expect(res.statusCode, res.body).toBe(201);
   return res.json<{ adjustmentId: string }>();
 }

@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 /**
  * Phase 5 Domain Event Consumer Tests
  *
@@ -13,6 +14,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import type { IntegrationBusPublisher } from '../../src/platform/integration-bus/publisher.js';
 import { ratifyThroughDecision } from '../helpers/board-ratification.js';
+import { wellbeingServiceJwt } from '../helpers/adjustments.js';
 import { startTestApp, type TestApp } from '../helpers/test-app.js';
 import { conferViaBoard } from '../helpers/award.js';
 
@@ -175,8 +177,8 @@ describe('Adjustment events', () => {
     const res = await ctx.app.inject({
       method: 'POST',
       url:    `/api/v1/students/${personId}/adjustments`,
-      headers: { authorization: `Bearer ${jwt}` },
-      payload: {
+      headers: { authorization: `Bearer ${await wellbeingServiceJwt(ctx)}` },
+      payload: { sourceCaseId: randomUUID(), 
         enrolmentId,
         adjustmentTypeCode: 'extra-time',
         scopeCode: 'exam',

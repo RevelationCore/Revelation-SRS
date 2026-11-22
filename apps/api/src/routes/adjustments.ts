@@ -39,6 +39,9 @@ const AdjustmentSchema = Type.Object({
   recordedUntil: Type.Union([Type.String(), Type.Null()]),
   sourceCaseId: Type.Union([Type.String(), Type.Null()]),
   outcomeDocumentId: Type.Union([Type.String(), Type.Null()]),
+  // ADR-033: the authority it was recorded under.
+  provenanceCode: Type.String(),
+  manualProposalId: Type.Union([Type.String(), Type.Null()]),
 });
 
 const DistributionSchema = Type.Object({
@@ -185,14 +188,15 @@ export function adjustmentRoutes(fastify: FastifyInstance): void {
           422: ErrorSchema,
         },
       },
-      // ADR-029: staff with adjustment:write, or the wellbeing service, whose
-      // narrow adjustment:record-approved needs the approving case.
-      preHandler: [requireAnyPermission('adjustment:write', 'adjustment:record-approved')],
+      // ADR-033 (BL-376): only the wellbeing service records a core adjustment
+      // here, naming the case that approved it (ADR-029). A case-less one is a
+      // manual proposal a second person approves (BL-378).
+      preHandler: [requirePermission('adjustment:record-approved')],
     },
     async (request, reply) => {
       const { personId } = request.params as { personId: string };
-      const body = request.body as RecordAdjustmentInput;
-      if (!hasPermission(request.user.roles, 'adjustment:write') && !body.sourceCaseId) {
+      const { sourceCaseId, ...body } = request.body as RecordAdjustmentInput & { sourceCaseId?: string };
+      if (!sourceCaseId) {
         await reply.code(422).type('application/problem+json').send({
           type: 'https://srs.example.com/errors/unprocessable', title: 'Source case required', status: 422,
           detail: 'An adjustment recorded by the wellbeing service must name the approving case (sourceCaseId)', instance: request.url,
@@ -203,10 +207,11 @@ export function adjustmentRoutes(fastify: FastifyInstance): void {
       // routes use idempotency-key. Accept either.
       const headers = request.headers as Record<string, string | undefined>;
       const idempotencyKey = headers['x-idempotency-key'] ?? headers['idempotency-key'];
-      const { adjustmentId, replayed } = await fastify.adjustmentService.recordAdjustment(
+      const { adjustmentId, replayed } = await fastify.adjustmentService.recordAuthorisedAdjustment(
         request.tenantId,
         personId,
         body,
+        { kind: 'wellbeing-case', sourceCaseId },
         request.user.sub,
         idempotencyKey,
       );

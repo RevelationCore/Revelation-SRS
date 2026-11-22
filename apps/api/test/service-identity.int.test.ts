@@ -86,9 +86,9 @@ describe('the two hand-off routes', () => {
     expect((await circumstances(await service(opts), f)).statusCode).toBe(403);
   });
 
-  it('leave the staff paths as they were', async () => {
+  it('leave the staff EC path as it was; staff no longer record a core adjustment (ADR-033)', async () => {
     const f = await student('Staff');
-    expect((await adjustment(registry, f)).statusCode).toBe(201);
+    expect((await adjustment(registry, f)).statusCode).toBe(403);
     expect((await circumstances(registry, f)).statusCode).toBe(201);
   });
 

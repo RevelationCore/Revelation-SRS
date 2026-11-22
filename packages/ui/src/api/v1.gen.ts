@@ -8006,6 +8006,8 @@ export interface operations {
                         recordedUntil: string | null;
                         sourceCaseId: string | null;
                         outcomeDocumentId: string | null;
+                        provenanceCode: string;
+                        manualProposalId: string | null;
                     }[];
                 };
             };
@@ -8159,6 +8161,8 @@ export interface operations {
                         recordedUntil: string | null;
                         sourceCaseId: string | null;
                         outcomeDocumentId: string | null;
+                        provenanceCode: string;
+                        manualProposalId: string | null;
                     };
                 };
             };

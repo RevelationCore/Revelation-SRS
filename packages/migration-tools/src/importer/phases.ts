@@ -397,12 +397,18 @@ export async function importAssessment(
 
 // ── Phase 6: adjustments ─────────────────────────────────────────────────
 
+/**
+ * Adjustments the previous SRS decided are imported as decided (ADR-033 item
+ * 7): provenance 'migrated', one batch per run, and the source reference. No
+ * distributions are written; a second person releases the batch (BL-379).
+ */
 export async function importAdjustments(
   db: Db,
   tenantId: string,
   payload: ImportPayload,
   idMap: IdMap,
-): Promise<{ loaded: number; failed: number }> {
+  batchId: string = randomUUID(),
+): Promise<{ loaded: number; failed: number; batchId: string }> {
   let loaded = 0;
   let failed = 0;
   const now = new Date();
@@ -423,6 +429,9 @@ export async function importAdjustments(
         scopeCode:          adj.scopeCode,
         notes:              adj.notes ?? null,
         actorId:            IMPORT_ACTOR,
+        provenanceCode:     'migrated',
+        migrationBatchId:   batchId,
+        migrationSourceReference: `${payload.meta.sourceSystem}:${adj.externalId}`,
         validFrom:          new Date(adj.validFrom),
         validTo:            adj.validTo ? new Date(adj.validTo) : null,
         recordedAt:         now,
@@ -466,5 +475,5 @@ export async function importAdjustments(
     }
   }
 
-  return { loaded, failed };
+  return { loaded, failed, batchId };
 }

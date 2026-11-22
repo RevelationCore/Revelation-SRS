@@ -12,6 +12,7 @@ import {
 import { sql } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
+import { recordApprovedAdjustment } from './helpers/adjustments.js';
 import { startTestApp, type TestApp } from './helpers/test-app.js';
 
 let mode: 'clean' | 'infected' | 'timeout' | 'disabled' = 'clean';
@@ -46,8 +47,8 @@ async function adjustment(code: string): Promise<{ personId: string; adjustmentI
   };
   const { personId } = await post('/students', { legalFirstName: code, legalFamilyName: 'Scan' });
   const { enrolmentId } = await post('/enrolments', { personId, modeOfStudyCode: 'full-time', academicYearOfEntry: '2027-28', startDate: '2027-09-20' });
-  const { adjustmentId } = await post(`/students/${personId}/adjustments`, { enrolmentId, adjustmentTypeCode: 'separate-room', scopeCode: 'exam', validFrom: '2027-09-01T00:00:00.000Z' });
-  return { personId: personId!, adjustmentId: adjustmentId! };
+  const { adjustmentId } = await recordApprovedAdjustment(ctx, personId!, { enrolmentId, adjustmentTypeCode: 'separate-room', scopeCode: 'exam', validFrom: '2027-09-01T00:00:00.000Z' });
+  return { personId: personId!, adjustmentId };
 }
 
 function upload(f: { personId: string; adjustmentId: string }, content = 'outcome specification') {

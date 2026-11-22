@@ -1,7 +1,10 @@
+import { randomUUID } from 'node:crypto';
+
 import { bindServiceRoles, vleConnectorClientId, wellbeingServiceClientId } from '@revelation-srs/auth';
 import { PERMISSION_ROLES } from '@revelation-srs/domain';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
+import { wellbeingServiceJwt } from './helpers/adjustments.js';
 import { startTestApp, type TestApp } from './helpers/test-app.js';
 
 /**
@@ -53,7 +56,7 @@ async function registered(code: string): Promise<{ personId: string; enrolmentId
 }
 
 async function distributions(personId: string, enrolmentId: string): Promise<{ adjustmentId: string; byTarget: Record<string, { distributionId: string }> }> {
-  const res = await call(registry, 'POST', `/students/${personId}/adjustments`, {
+  const res = await call(await wellbeingServiceJwt(ctx), 'POST', `/students/${personId}/adjustments`, { sourceCaseId: randomUUID(),
     enrolmentId, adjustmentTypeCode: 'extra-time', scopeCode: 'all', validFrom: '2027-09-01T00:00:00.000Z', amount: { value: 25, unitCode: 'percent-of-duration' },
   });
   expect(res.statusCode, res.body).toBe(201);

@@ -2115,7 +2115,9 @@
                       "recordedAt",
                       "recordedUntil",
                       "sourceCaseId",
-                      "outcomeDocumentId"
+                      "outcomeDocumentId",
+                      "provenanceCode",
+                      "manualProposalId"
                     ],
                     "properties": {
                       "adjustmentId": {
@@ -2217,6 +2219,19 @@
                             "type": "null"
                           }
                         ]
+                      },
+                      "provenanceCode": {
+                        "type": "string"
+                      },
+                      "manualProposalId": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
                       }
                     }
                   }
@@ -2294,7 +2309,9 @@
                     "recordedAt",
                     "recordedUntil",
                     "sourceCaseId",
-                    "outcomeDocumentId"
+                    "outcomeDocumentId",
+                    "provenanceCode",
+                    "manualProposalId"
                   ],
                   "properties": {
                     "adjustmentId": {
@@ -2388,6 +2405,19 @@
                       ]
                     },
                     "outcomeDocumentId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "provenanceCode": {
+                      "type": "string"
+                    },
+                    "manualProposalId": {
                       "anyOf": [
                         {
                           "type": "string"

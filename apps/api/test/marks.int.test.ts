@@ -5,6 +5,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import type { IntegrationBusPublisher } from '../src/platform/integration-bus/publisher.js';
 
+import { wellbeingServiceJwt } from './helpers/adjustments.js';
 import { startTestApp, type TestApp } from './helpers/test-app.js';
 
 interface CapturedEvent {
@@ -372,8 +373,8 @@ async function insertDeadlineExtension(enrolmentId: string, personId: string): P
   const adjustment = await ctx.app.inject({
     method: 'POST',
     url: `/api/v1/students/${personId}/adjustments`,
-    headers: { authorization: `Bearer ${jwt}` },
-    payload: {
+    headers: { authorization: `Bearer ${await wellbeingServiceJwt(ctx)}` },
+    payload: { sourceCaseId: randomUUID(), 
       enrolmentId,
       adjustmentTypeCode: 'deadline-extension',
       scopeCode: 'coursework',

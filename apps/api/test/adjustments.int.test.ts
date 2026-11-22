@@ -1,8 +1,11 @@
+import { randomUUID } from 'node:crypto';
+
 import { sql } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import type { IntegrationBusPublisher } from '../src/platform/integration-bus/publisher.js';
 
+import { wellbeingServiceJwt } from './helpers/adjustments.js';
 import { startTestApp, type TestApp } from './helpers/test-app.js';
 
 interface CapturedEvent {
@@ -70,22 +73,25 @@ describe('Reasonable adjustments', () => {
       .toContainEqual(expect.objectContaining({ adjustmentId: adjustment.adjustmentId, sourceCaseId }));
   });
 
-  it('leaves sourceCaseId null for a direct registry entry with no wellbeing case', async () => {
+  it('refuses a staff member recording a core adjustment directly (ADR-033)', async () => {
     const fixture = await createAdjustmentFixture('ADJ103');
-
-    const adjustment = await createAdjustment(fixture, {
-      adjustmentTypeCode: 'deadline-extension',
-      scopeCode: 'coursework',
-      validFrom: '2027-09-01T00:00:00.000Z',
-    });
-
-    const get = await ctx.app.inject({
-      method: 'GET',
+    const res = await ctx.app.inject({
+      method: 'POST',
       url: `/api/v1/students/${fixture.personId}/adjustments`,
       headers: { authorization: `Bearer ${jwt}` },
+      payload: { enrolmentId: fixture.enrolmentId, adjustmentTypeCode: 'deadline-extension', scopeCode: 'coursework', validFrom: '2027-09-01T00:00:00.000Z' },
     });
-    expect(get.json<Array<{ adjustmentId: string; sourceCaseId: string | null }>>())
-      .toContainEqual(expect.objectContaining({ adjustmentId: adjustment.adjustmentId, sourceCaseId: null }));
+    expect(res.statusCode).toBe(403);
+    const get = await ctx.app.inject({ method: 'GET', url: `/api/v1/students/${fixture.personId}/adjustments`, headers: { authorization: `Bearer ${jwt}` } });
+    expect(get.json<unknown[]>()).toEqual([]);
+  });
+
+  it('records the wellbeing case as the provenance (ADR-033)', async () => {
+    const fixture = await createAdjustmentFixture('ADJ104P');
+    const { adjustmentId } = await createAdjustment(fixture, { adjustmentTypeCode: 'separate-room', scopeCode: 'exam', validFrom: '2027-09-01T00:00:00.000Z' });
+    const get = await ctx.app.inject({ method: 'GET', url: `/api/v1/adjustments/${adjustmentId}`, headers: { authorization: `Bearer ${jwt}` } });
+    expect(get.json<{ provenanceCode: string; sourceCaseId: string | null; manualProposalId: string | null }>()).toMatchObject({ provenanceCode: 'wellbeing-case', manualProposalId: null });
+    expect(get.json<{ sourceCaseId: string | null }>().sourceCaseId).toMatch(/^[0-9a-f-]{36}$/);
   });
 
   it('attaches an outcome document and can retrieve it byte-for-byte', async () => {
@@ -353,16 +359,17 @@ describe('AJ-21 A21-AC04 — a lost response or repeated acknowledgement creates
   it('a retry with the same idempotency key and payload returns the original adjustment', async () => {
     const fixture = await createAdjustmentFixture('ADJ201');
     const payload = {
+      sourceCaseId: '9a1b2c3d-0000-4000-8000-000000000201',
       enrolmentId: fixture.enrolmentId,
       adjustmentTypeCode: 'extra-time',
       scopeCode: 'exam',
       validFrom: '2027-09-01T00:00:00.000Z',
       validTo: '2028-07-31T00:00:00.000Z',
     };
-    const send = () => ctx.app.inject({
+    const send = async () => ctx.app.inject({
       method: 'POST',
       url: `/api/v1/students/${fixture.personId}/adjustments`,
-      headers: { authorization: `Bearer ${jwt}`, 'x-idempotency-key': 'handoff-ADJ201' },
+      headers: { authorization: `Bearer ${await wellbeingServiceJwt(ctx)}`, 'x-idempotency-key': 'handoff-ADJ201' },
       payload,
     });
 
@@ -387,11 +394,11 @@ describe('AJ-21 A21-AC04 — a lost response or repeated acknowledgement creates
 
   it('reusing an idempotency key for a different request is a conflict', async () => {
     const fixture = await createAdjustmentFixture('ADJ202');
-    const send = (scopeCode: string) => ctx.app.inject({
+    const send = async (scopeCode: string) => ctx.app.inject({
       method: 'POST',
       url: `/api/v1/students/${fixture.personId}/adjustments`,
-      headers: { authorization: `Bearer ${jwt}`, 'idempotency-key': 'handoff-ADJ202' },
-      payload: {
+      headers: { authorization: `Bearer ${await wellbeingServiceJwt(ctx)}`, 'idempotency-key': 'handoff-ADJ202' },
+      payload: { sourceCaseId: randomUUID(), 
         enrolmentId: fixture.enrolmentId,
         adjustmentTypeCode: 'extra-time',
         scopeCode,
@@ -574,8 +581,8 @@ async function createAdjustment(
   const adjustment = await ctx.app.inject({
     method: 'POST',
     url: `/api/v1/students/${fixture.personId}/adjustments`,
-    headers: { authorization: `Bearer ${jwt}` },
-    payload: {
+    headers: { authorization: `Bearer ${await wellbeingServiceJwt(ctx)}` },
+    payload: { sourceCaseId: randomUUID(), 
       enrolmentId: fixture.enrolmentId,
       ...payload,
     },

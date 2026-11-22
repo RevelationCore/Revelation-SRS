@@ -78,12 +78,16 @@ export interface RecordAdjustmentInput {
   /** Structured amount, e.g. { value: 25, unitCode: 'percent-of-duration' }.
    * Target systems that compute per-assessment values need it. */
   amount?: AdjustmentAmountV1;
-  /** Wellbeing module adjustment_case logical id, when this record
-   * originated from that module's referral -> assessment -> approve
-   * workflow rather than a direct registry-administrator entry. Opaque
-   * cross-service reference, not validated against anything in this DB. */
-  sourceCaseId?: string;
 }
+
+/**
+ * The authority an adjustment is recorded under (ADR-033). There is no way to
+ * record one without it: the wellbeing case that approved it (ADR-029 hand-off),
+ * or a manual proposal a second person approved (BL-378).
+ */
+export type AdjustmentAuthority =
+  | { kind: 'wellbeing-case'; sourceCaseId: string }
+  | { kind: 'manual-proposal'; proposalId: string };
 
 export interface RecordAdjustmentResult {
   adjustmentId: string;
@@ -107,6 +111,9 @@ export interface AdjustmentDto {
   recordedUntil: Date | null;
   sourceCaseId: string | null;
   outcomeDocumentId: string | null;
+  /** ADR-033: wellbeing-case | manual-approved | migrated | legacy-direct. */
+  provenanceCode: string;
+  manualProposalId: string | null;
 }
 
 export interface AttachOutcomeDocumentInput {
@@ -151,13 +158,15 @@ export class AdjustmentService {
     private readonly documents: ApiDocumentStore,
   ) {}
 
-  async recordAdjustment(
+  async recordAuthorisedAdjustment(
     tenantId: string,
     personId: string,
     input: RecordAdjustmentInput,
+    authority: AdjustmentAuthority,
     actorId: string,
     idempotencyKey?: string,
   ): Promise<RecordAdjustmentResult> {
+    const sourceCaseId = authority.kind === 'wellbeing-case' ? authority.sourceCaseId : null;
     await this.#ensureEnrolmentBelongsToPerson(input.enrolmentId, personId, tenantId);
     await this.#validateInput(tenantId, input);
 
@@ -174,7 +183,8 @@ export class AdjustmentService {
       validTo: validTo ? validTo.toISOString() : null,
       amount: input.amount ? { value: input.amount.value, unitCode: input.amount.unitCode } : null,
       notes: input.notes ?? null,
-      sourceCaseId: input.sourceCaseId ?? null,
+      sourceCaseId,
+      manualProposalId: authority.kind === 'manual-proposal' ? authority.proposalId : null,
     });
 
     const result = await withTenantContext(this.db, tenantId, async (tx): Promise<RecordAdjustmentResult> => {
@@ -219,9 +229,11 @@ export class AdjustmentService {
         validTo,
         recordedAt: now,
         recordedUntil: null,
-        sourceCaseId: input.sourceCaseId ?? null,
+        sourceCaseId,
         amountValue: input.amount ? input.amount.value.toFixed(2) : null,
         amountUnitCode: input.amount?.unitCode ?? null,
+        provenanceCode: authority.kind === 'wellbeing-case' ? 'wellbeing-case' : 'manual-approved',
+        manualProposalId: authority.kind === 'manual-proposal' ? authority.proposalId : null,
       });
 
       // One distribution per target the tenant delivers to. A 'not-used'
@@ -985,6 +997,8 @@ function adjustmentToDto(row: typeof reasonableAdjustments.$inferSelect): Adjust
     recordedUntil: row.recordedUntil,
     sourceCaseId: row.sourceCaseId,
     outcomeDocumentId: row.outcomeDocumentId,
+    provenanceCode: row.provenanceCode,
+    manualProposalId: row.manualProposalId,
   };
 }
 

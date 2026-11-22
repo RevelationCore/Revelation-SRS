@@ -44,6 +44,13 @@ export const reasonableAdjustments = pgTable('reasonable_adjustment', {
   // (adjustment-amount-unit-code): percent-of-duration | minutes-per-hour | days.
   amountValue:       numeric('amount_value', { precision: 8, scale: 2 }),
   amountUnitCode:    text('amount_unit_code'),
+  // ADR-033: the authority this adjustment was recorded under. NOT NULL with
+  // no default, so every writer must name one; a CHECK ties each code to its
+  // reference (value set adjustment-provenance-code).
+  provenanceCode:    text('provenance_code').notNull(), // wellbeing-case | manual-approved | migrated | legacy-direct
+  manualProposalId:  uuid('manual_proposal_id'),
+  migrationBatchId:  uuid('migration_batch_id'),
+  migrationSourceReference: text('migration_source_reference'),
 });
 
 export type ReasonableAdjustment    = typeof reasonableAdjustments.$inferSelect;

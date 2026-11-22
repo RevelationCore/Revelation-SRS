@@ -1,7 +1,10 @@
+import { randomUUID } from 'node:crypto';
+
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import type { IntegrationBusPublisher } from '../src/platform/integration-bus/publisher.js';
 
+import { wellbeingServiceJwt } from './helpers/adjustments.js';
 import { startTestApp, type TestApp } from './helpers/test-app.js';
 
 interface CapturedEvent {
@@ -145,8 +148,8 @@ describe('Exceptional circumstances and misconduct', () => {
     const adjustment = await ctx.app.inject({
       method: 'POST',
       url: `/api/v1/students/${fixture.personId}/adjustments`,
-      headers: { authorization: `Bearer ${wellbeingJwt}` },
-      payload: {
+      headers: { authorization: `Bearer ${await wellbeingServiceJwt(ctx)}` },
+      payload: { sourceCaseId: randomUUID(), 
         enrolmentId: fixture.enrolmentId,
         adjustmentTypeCode: 'extra-time',
         scopeCode: 'exam',

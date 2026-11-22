@@ -10794,6 +10794,50 @@
    }
   ]
  },
+ "reasonable_adjustment/provenance_code": {
+  "setCode": "adjustment-provenance-code",
+  "displayName": "Adjustment Provenance",
+  "entityName": "reasonable_adjustment",
+  "fieldName": "provenance_code",
+  "members": [
+   {
+    "code": "wellbeing-case",
+    "displayLabel": "Approved in a wellbeing case",
+    "description": null,
+    "sortOrder": 10,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "manual-approved",
+    "displayLabel": "Manual, approved by a second person",
+    "description": null,
+    "sortOrder": 20,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "migrated",
+    "displayLabel": "Migrated from the previous system",
+    "description": null,
+    "sortOrder": 30,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "legacy-direct",
+    "displayLabel": "Recorded directly before 22 November 2026",
+    "description": null,
+    "sortOrder": 40,
+    "active": false,
+    "hidden": false,
+    "selectable": false
+   }
+  ]
+ },
  "reasonable_adjustment/scope_code": {
   "setCode": "adjustment-scope-code",
   "displayName": "Reasonable Adjustment Scope",
