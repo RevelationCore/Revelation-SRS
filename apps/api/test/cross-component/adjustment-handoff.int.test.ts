@@ -166,7 +166,7 @@ describe('AJ-21 hand-off: wellbeing → SRS → NATS → VLE adapter → VLE', (
 
     const approved = await wellbeing.app.inject({
       method: 'POST', url: `/api/v1/adjustment-cases/${caseId}/approve`,
-      headers: { authorization: `Bearer ${wellbeing.makeJwt({ roles: ['wellbeing-panel-chair'] })}` },
+      headers: { authorization: `Bearer ${wellbeing.makeJwt({ sub: 'panel-chair-001', roles: ['wellbeing-panel-chair'] })}` },
       payload: {
         enrolmentId,
         adjustmentTypeCode:    'extra-time',

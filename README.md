@@ -303,6 +303,7 @@ Full developer setup guide, including troubleshooting and monorepo commands: [do
 | [ADR-030](docs/decisions/ADR-030-malware-scanning-of-uploaded-documents.md) | Malware scanning of uploaded documents; fail closed; never serve an unscanned document (Proposed) |
 | [ADR-031](docs/decisions/ADR-031-governed-identity-merge-and-propagation.md) | Governed, reversible identity merge and its propagation (Proposed) |
 | [ADR-032](docs/decisions/ADR-032-tenant-bound-service-identity-for-the-vle-connector.md) | Tenant-bound service identity for the VLE connector |
+| [ADR-033](docs/decisions/ADR-033-authority-for-recording-a-core-adjustment.md) | Authority for recording a core reasonable adjustment: service hand-off, or a second person approves a manual proposal |
 
 ---
 

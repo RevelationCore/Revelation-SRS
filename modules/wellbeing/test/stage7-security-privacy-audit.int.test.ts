@@ -63,7 +63,7 @@ describe('Stage 7 — Security, Privacy, Audit, and Retention Hardening', () => 
     ctx        = await startTestApp();
     advisorJwt = ctx.makeJwt({ roles: ['wellbeing-advisor'] });
     mhJwt      = ctx.makeJwt({ roles: ['wellbeing-mental-health-advisor'] });
-    panelJwt   = ctx.makeJwt({ roles: ['wellbeing-panel-chair'] });
+    panelJwt   = ctx.makeJwt({ sub: 'panel-chair-001', roles: ['wellbeing-panel-chair'] });
     auditorJwt = ctx.makeJwt({ roles: ['wellbeing-auditor'] });
   });
 

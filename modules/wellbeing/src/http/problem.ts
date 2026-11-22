@@ -62,7 +62,9 @@ export function registerProblemHandlers(fastify: FastifyInstance): void {
       request.log.error({ err }, 'Unhandled error');
       return sendProblem(reply, 500, 'An unexpected error occurred');
     }
-    return sendProblem(reply, status, err.message);
+    // An error may name its problem type (e.g. separation-of-duties).
+    const type = (err as FastifyError & { problemType?: unknown }).problemType;
+    return sendProblem(reply, status, err.message, typeof type === 'string' ? { type } : {});
   });
 
   fastify.setNotFoundHandler((request, reply) => sendProblem(reply, 404, `Route ${request.method} ${request.url} not found`));

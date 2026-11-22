@@ -403,6 +403,26 @@ export async function hasApprovableDetermination(
   return assessment?.code === 'recommended';
 }
 
+/**
+ * Who recorded the determination approval rests on, when it is an
+ * assessment (BL-237): that person may not also approve. A governing panel
+ * decision is the panel's own act, so it names no one here.
+ */
+export async function decidingAssessorId(tx: WellbeingTx, tenantId: string, caseId: string): Promise<string | null> {
+  const [[assessment], [panel]] = await Promise.all([
+    tx.select({ assessorId: adjustmentAssessments.assessorId, at: adjustmentAssessments.createdAt })
+      .from(adjustmentAssessments)
+      .where(and(eq(adjustmentAssessments.tenantId, tenantId), eq(adjustmentAssessments.adjustmentCaseId, caseId)))
+      .orderBy(desc(adjustmentAssessments.createdAt)).limit(1),
+    tx.select({ at: adjustmentPanelDecisions.createdAt })
+      .from(adjustmentPanelDecisions)
+      .where(and(eq(adjustmentPanelDecisions.tenantId, tenantId), eq(adjustmentPanelDecisions.adjustmentCaseId, caseId)))
+      .orderBy(desc(adjustmentPanelDecisions.createdAt)).limit(1),
+  ]);
+  if (!assessment || (panel && panel.at >= assessment.at)) return null;
+  return assessment.assessorId;
+}
+
 export async function markPanelDecisionDistributed(
   tx:              WellbeingTx,
   tenantId:        string,

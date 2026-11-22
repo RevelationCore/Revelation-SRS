@@ -38,7 +38,7 @@ This index separates maintained product knowledge from superseded delivery evide
 
 - [Requirements](requirements/) contains functional, non-functional, actor, workflow and data-subject catalogues.
 - [Architecture](architecture/README.md) explains the current and target technical design.
-- [Architecture decisions](decisions/) records accepted and proposed design choices: ADR-001 to ADR-025, and the decision records for each gap-closure phase ([Phase 1](decisions/phase-1-gap-closure-decisions.md) to [Phase 5](decisions/phase-5-gap-closure-decisions.md)).
+- [Architecture decisions](decisions/) records accepted and proposed design choices: ADR-001 to ADR-033, and the decision records for each gap-closure phase ([Phase 1](decisions/phase-1-gap-closure-decisions.md) to [Phase 5](decisions/phase-5-gap-closure-decisions.md)).
 - [SME review register](business-processes/sme-review-register.md) records which processes have been submitted for subject-matter-expert review; the [Phases 1 to 5 change review](business-processes/sme-change-review-phases-1-5.md) is the pack awaiting reviewers.
 - [Reference model](reference/revelation-student-records-reference-model.md) describes the wider UK HE systems landscape.
 

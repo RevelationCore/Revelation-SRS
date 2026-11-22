@@ -25,7 +25,7 @@ let secondAdjustmentCaseId:  string;
 beforeAll(async () => {
   srsStub  = new SrsAdjustmentStubClient();
   ctx      = await startTestApp({ srsAdjustmentClient: srsStub });
-  panelJwt = ctx.makeJwt({ roles: ['wellbeing-panel-chair'] });
+  panelJwt = ctx.makeJwt({ sub: 'panel-chair-001', roles: ['wellbeing-panel-chair'] });
 
   // Seed the SRS context projection so module-registration validation passes
   await withWellbeingTenantContext(ctx.db, ctx.tenantId, async (tx) => {

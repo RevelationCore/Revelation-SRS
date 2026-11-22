@@ -3,8 +3,13 @@
  * - BL-235: approval is decided by the most recently recorded determination,
  *   so a panel that rejects a case after a recommending assessment stops it;
  * - BL-236: the assessor and the panel chair are the signed-in user, and a
- *   request naming its own is refused.
+ *   request naming its own is refused;
+ * - BL-237: whoever recorded the deciding assessment does not approve it, and
+ *   registry administrators no longer hold the case permissions;
+ * - BL-239: status correction has its own permission, takes known statuses
+ *   only, never sets approved, and is made by someone else.
  */
+import { hasPermission } from '@revelation-srs/domain';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
@@ -24,7 +29,7 @@ let chair: string;
 let wellbeingCaseId: string;
 let disabilityCaseId: string;
 
-async function call(app: FastifyInstance, token: string, method: 'GET' | 'POST', url: string, payload?: object) {
+async function call(app: FastifyInstance, token: string, method: 'GET' | 'POST' | 'PATCH', url: string, payload?: object) {
   return app.inject({ method, url, headers: { authorization: `Bearer ${token}` }, ...(payload ? { payload } : {}) });
 }
 
@@ -123,3 +128,49 @@ describe('the assessor and panel chair come from the token (BL-236)', () => {
     expect(detail.panelDecision?.panelChairId).toBe(CHAIR);
   });
 });
+
+describe('separation of duties in approval (BL-237)', () => {
+  it('refuses approval by the person who recorded the deciding assessment', async () => {
+    const id = await caseUnderAssessment();
+    const assessorChair = ctx.makeJwt({ sub: 'adj-both-081', roles: ['wellbeing-panel-chair', 'wellbeing-specialist-assessor'] });
+    expect((await call(ctx.app, assessorChair, 'POST', `/api/v1/adjustment-cases/${id}/assessments`, {
+      assessedAt: '2026-06-15T10:00:00Z', outcomeCode: 'recommended',
+    })).statusCode).toBe(201);
+    const self = await call(ctx.app, assessorChair, 'POST', `/api/v1/adjustment-cases/${id}/approve`, {
+      forceApprove: true, enrolmentId: ENROLMENT_ID, adjustmentTypeCode: 'extra-time', scopeCode: 'all',
+      recommendedAdjustment: '25% extra time', validFrom: '2026-09-01T00:00:00Z', amount: { value: 25, unitCode: 'percent-of-duration' },
+    });
+    expect(self.statusCode).toBe(403);
+    expect(self.json<{ type: string }>().type).toMatch(/separation-of-duties$/);
+    expect((await approve(id)).statusCode).toBe(202);
+  });
+
+  it('leaves the case and panel permissions to wellbeing staff, not registry', () => {
+    for (const p of ['adjustment-case:read:all', 'adjustment-case:manage', 'panel-decision:write'] as const) {
+      expect(hasPermission(['registry-administrator'], p)).toBe(false);
+    }
+  });
+});
+
+describe('status correction (BL-239)', () => {
+  const correct = (token: string, id: string, statusCode: string) =>
+    call(ctx.app, token, 'PATCH', `/api/v1/adjustment-cases/${id}/status-correction`, { statusCode, reason: 'Recorded in error' });
+
+  it('never sets approved, refuses an unknown status, and is made by someone else', async () => {
+    const id = await caseUnderAssessment(); // the advisor set the current status
+    const other = ctx.makeJwt({ sub: 'adj-other-081', roles: ['wellbeing-advisor'] });
+    expect((await correct(other, id, 'approved')).statusCode).toBe(422);
+    expect((await correct(other, id, 'done')).statusCode).toBe(422);
+    const self = await correct(advisor, id, 'closed');
+    expect(self.statusCode).toBe(403);
+    expect(self.json<{ type: string }>().type).toMatch(/separation-of-duties$/);
+    expect((await correct(other, id, 'closed')).statusCode).toBe(204);
+  });
+
+  it('needs adjustment-case:correct-status', async () => {
+    const id = await caseUnderAssessment();
+    const assessor = ctx.makeJwt({ sub: 'adj-assessor-081', roles: ['wellbeing-specialist-assessor'] });
+    expect((await correct(assessor, id, 'closed')).statusCode).toBe(403);
+  });
+});
+

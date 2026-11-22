@@ -21,6 +21,8 @@ import {
   recordPanelDecision,
   getCurrentPanelDecision,
   hasApprovableDetermination,
+  decidingAssessorId,
+  ADJUSTMENT_STATUSES,
   ApprovalPreconditionError,
 } from '../repositories/adjustment-case-repository.js';
 import type { AdjustmentCase } from '../db/schema/adjustment.js';
@@ -323,12 +325,15 @@ export async function adjustmentCaseRoutes(
   // other write action, and is audited distinctly from a normal transition
   // so a correction is never mistaken for ordinary case progression.
 
+  // BL-239: its own permission; a known status only; never 'approved' (which
+  // needs a determination and the hand-off); and someone other than whoever
+  // set the status being corrected.
   fastify.patch<{
     Params: { caseId: string };
     Body:   { statusCode: string; reason: string };
   }>('/api/v1/adjustment-cases/:caseId/status-correction', {
     schema: { tags: ['adjustment-cases'], summary: 'Correct the status', params: idParams('caseId'), body: Type.Object({ statusCode: Text, reason: Text }) },
-    preHandler: [requirePermission('adjustment-case:manage')],
+    preHandler: [requirePermission('adjustment-case:correct-status')],
   }, async (request, reply) => {
     const { tenantId } = request;
     const actorId      = request.user.sub;
@@ -341,6 +346,17 @@ export async function adjustmentCaseRoutes(
       async (tx) => {
         const c = await findCurrentAdjustmentCase(tx, tenantId, caseId);
         if (!c) throw Object.assign(new Error('Adjustment case not found'), { statusCode: 404 });
+        if (!(ADJUSTMENT_STATUSES as readonly string[]).includes(statusCode)) {
+          throw Object.assign(new Error(`Unknown status '${statusCode}'`), { statusCode: 422 });
+        }
+        if (statusCode === 'approved') {
+          throw Object.assign(new Error('A case is approved only through approval, which needs a determination and sends the hand-off'), { statusCode: 422 });
+        }
+        if (c.actorId === actorId) {
+          throw Object.assign(new Error('You set the status being corrected, so someone else must correct it'), {
+            statusCode: 403, problemType: 'https://srs.example.com/errors/separation-of-duties',
+          });
+        }
 
         await transitionAdjustmentStatus(tx, tenantId, caseId, statusCode, actorId, undefined, { skipValidation: true });
 
@@ -564,6 +580,13 @@ export async function adjustmentCaseRoutes(
 
         if (!await hasApprovableDetermination(tx, tenantId, caseId)) {
           throw Object.assign(new ApprovalPreconditionError(), { statusCode: 409 });
+        }
+
+        // BL-237 (P-22): whoever recorded the deciding assessment does not also approve it.
+        if (await decidingAssessorId(tx, tenantId, caseId) === actorId) {
+          throw Object.assign(new Error('You recorded the assessment this approval rests on, so someone else must approve it'), {
+            statusCode: 403, problemType: 'https://srs.example.com/errors/separation-of-duties',
+          });
         }
 
         // Validate module registrations unless caller opts out

@@ -90,7 +90,7 @@ describe('Stage 8 — End-to-End Acceptance Review', () => {
     advisorJwt = ctx.makeJwt({ roles: ['wellbeing-advisor'] });
     deciderJwt = ctx.makeJwt({ sub: 'ec-decider-001', roles: ['ec-decision-maker'] });
     mhJwt      = ctx.makeJwt({ roles: ['wellbeing-mental-health-advisor'] });
-    panelJwt   = ctx.makeJwt({ roles: ['wellbeing-panel-chair'] });
+    panelJwt   = ctx.makeJwt({ sub: 'panel-chair-001', roles: ['wellbeing-panel-chair'] });
     auditorJwt = ctx.makeJwt({ roles: ['wellbeing-auditor'] });
 
     // Seed SRS context projections so approve can validate module registrations

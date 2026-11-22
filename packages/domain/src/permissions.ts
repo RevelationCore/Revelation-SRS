@@ -108,9 +108,12 @@ export const PERMISSION_ROLES = {
   // assessment, panel, approve/reject), distinct from the `adjustment:*`
   // permissions above which gate the core-SRS *distributed outcome* record.
   'adjustment-case:read:own':  ['student'] as Role[],
-  'adjustment-case:read:all':  ['wellbeing-advisor', 'wellbeing-specialist-assessor', 'wellbeing-panel-chair', 'registry-administrator'] as Role[],
+  // BL-237: registry receives the decided outcome in core (ADR-017), not the case.
+  'adjustment-case:read:all':  ['wellbeing-advisor', 'wellbeing-specialist-assessor', 'wellbeing-panel-chair'] as Role[],
   'adjustment-case:write:own': ['student'] as Role[],
-  'adjustment-case:manage':    ['wellbeing-advisor', 'registry-administrator'] as Role[],
+  'adjustment-case:manage':    ['wellbeing-advisor'] as Role[],
+  // BL-239: correcting a case's status outside the state machine is its own permission.
+  'adjustment-case:correct-status': ['wellbeing-advisor', 'wellbeing-panel-chair'] as Role[],
   'adjustment-case:assess':    ['wellbeing-specialist-assessor', 'wellbeing-advisor'] as Role[],
   'special-category:read':     ['wellbeing-advisor', 'wellbeing-mental-health-advisor', 'wellbeing-panel-chair', 'wellbeing-auditor', 'dpo', 'registry-administrator'] as Role[],
   'mh-session-note:read':      ['wellbeing-mental-health-advisor', 'wellbeing-auditor', 'dpo'] as Role[],
@@ -121,7 +124,7 @@ export const PERMISSION_ROLES = {
   'mental-health-case:manage': ['wellbeing-advisor', 'wellbeing-mental-health-advisor'] as Role[],
   'early-warning:read':        ['wellbeing-advisor', 'wellbeing-mental-health-advisor', 'wellbeing-auditor', 'dpo'] as Role[],
   'early-warning:triage':      ['wellbeing-advisor', 'wellbeing-mental-health-advisor'] as Role[],
-  'panel-decision:write':      ['wellbeing-panel-chair', 'registry-administrator'] as Role[],
+  'panel-decision:write':      ['wellbeing-panel-chair'] as Role[],
   'wellbeing-sar:export':      ['wellbeing-auditor', 'dpo'] as Role[],
   'wellbeing-retention:write': ['wellbeing-auditor', 'registry-administrator'] as Role[],
   'config:read':               ['registry-administrator', 'tenant-administrator', 'system-administrator'] as Role[],
