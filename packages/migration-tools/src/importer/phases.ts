@@ -15,6 +15,7 @@ import {
 import type { ImportPayload } from '../contracts/payload.js';
 
 import type { IdMap } from './id-map.js';
+import type { ImportLog } from './import-log.js';
 
 const IMPORT_ACTOR = 'migration-import';
 
@@ -39,14 +40,14 @@ export async function importIdentity(
   tenantId: string,
   payload: ImportPayload,
   idMap: IdMap,
-): Promise<{ loaded: number; failed: number }> {
-  let loaded = 0;
-  let failed = 0;
+  log: ImportLog,
+): Promise<void> {
   const now = new Date();
 
   for (const p of payload.persons) {
-    try {
-      const personId = idMap.resolve(`person::${p.externalId}`);
+    const personKey = `person::${p.externalId}`;
+    const loaded = await log.row(db, 'person', p.externalId, async (db) => {
+      const personId = idMap.resolve(personKey);
 
       await db.insert(persons).values({
         id:              personId,
@@ -100,14 +101,10 @@ export async function importIdentity(
           recordedUntil:   null,
         });
       }
-
-      loaded++;
-    } catch {
-      failed++;
-    }
+    });
+    if (!loaded) idMap.forget(personKey);
   }
 
-  return { loaded, failed };
 }
 
 // ── Phase 2: catalogue ────────────────────────────────────────────────────
@@ -117,14 +114,14 @@ export async function importCatalogue(
   tenantId: string,
   payload: ImportPayload,
   idMap: IdMap,
-): Promise<{ loaded: number; failed: number }> {
-  let loaded = 0;
-  let failed = 0;
+  log: ImportLog,
+): Promise<void> {
   const now = new Date();
 
   for (const prog of payload.programmes ?? []) {
-    try {
-      const progId = idMap.resolve(`programme::${prog.externalId}`);
+    const key = `programme::${prog.externalId}`;
+    const loaded = await log.row(db, 'programme', prog.externalId, async (db) => {
+      const progId = idMap.resolve(key);
       await db.insert(programmes).values({
         versionId:             randomUUID(),
         id:                    progId,
@@ -145,15 +142,14 @@ export async function importCatalogue(
         recordedAt:            now,
         recordedUntil:         null,
       });
-      loaded++;
-    } catch {
-      failed++;
-    }
+    });
+    if (!loaded) idMap.forget(key);
   }
 
   for (const mod of payload.modules ?? []) {
-    try {
-      const modId = idMap.resolve(`module::${mod.externalId}`);
+    const key = `module::${mod.externalId}`;
+    const loaded = await log.row(db, 'module', mod.externalId, async (db) => {
+      const modId = idMap.resolve(key);
       await db.insert(modules).values({
         versionId:    randomUUID(),
         id:           modId,
@@ -167,21 +163,23 @@ export async function importCatalogue(
         recordedAt:   now,
         recordedUntil: null,
       });
-      loaded++;
-    } catch {
-      failed++;
-    }
+    });
+    if (!loaded) idMap.forget(key);
   }
 
   const periodCache = new Map<string, string>();
 
   for (const off of payload.moduleOfferings ?? []) {
-    try {
-      const modId = idMap.get(`module::${off.moduleExternalId}`);
-      if (modId === undefined) { failed++; continue; }
+    const modId = idMap.get(`module::${off.moduleExternalId}`);
+    if (modId === undefined) {
+      log.unresolved('moduleOffering', off.externalId, `Module offering ${off.externalId} was not loaded because module ${off.moduleExternalId} was not loaded`);
+      continue;
+    }
 
-      const periodCode = off.academicPeriodCode;
-      let periodId = periodCache.get(`${tenantId}::${periodCode}`);
+    const key = `offering::${off.externalId}`;
+    const periodCode = off.academicPeriodCode;
+    let periodId = periodCache.get(periodCode);
+    const loaded = await log.row(db, 'moduleOffering', off.externalId, async (db) => {
 
       if (periodId === undefined) {
         const existing = await db.execute<{ id: string }>(
@@ -203,10 +201,9 @@ export async function importCatalogue(
             endDate:        dates.endDate,
           });
         }
-        periodCache.set(`${tenantId}::${periodCode}`, periodId);
       }
 
-      const offeringId = idMap.resolve(`offering::${off.externalId}`);
+      const offeringId = idMap.resolve(key);
       await db.insert(moduleOfferings).values({
         id:               offeringId,
         tenantId,
@@ -215,13 +212,12 @@ export async function importCatalogue(
         deliveryModeCode: off.deliveryModeCode ?? null,
         capacity:         off.capacity ?? null,
       });
-      loaded++;
-    } catch {
-      failed++;
-    }
+    });
+    // The period is cached only once its savepoint has committed.
+    if (loaded && periodId !== undefined) periodCache.set(periodCode, periodId);
+    if (!loaded) idMap.forget(key);
   }
 
-  return { loaded, failed };
 }
 
 // ── Phase 3: enrolments ───────────────────────────────────────────────────
@@ -231,21 +227,24 @@ export async function importEnrolments(
   tenantId: string,
   payload: ImportPayload,
   idMap: IdMap,
-): Promise<{ loaded: number; failed: number }> {
-  let loaded = 0;
-  let failed = 0;
+  log: ImportLog,
+): Promise<void> {
   const now = new Date();
 
   for (const enr of payload.enrolments ?? []) {
-    try {
-      const personId = idMap.get(`person::${enr.personExternalId}`);
-      if (personId === undefined) { failed++; continue; }
+    const personId = idMap.get(`person::${enr.personExternalId}`);
+    if (personId === undefined) {
+      log.unresolved('enrolment', enr.externalId, `Enrolment ${enr.externalId} was not loaded because person ${enr.personExternalId} was not loaded`);
+      continue;
+    }
 
+    const key = `enrolment::${enr.externalId}`;
+    const loaded = await log.row(db, 'enrolment', enr.externalId, async (db) => {
       const programmeId = enr.programmeExternalId !== undefined
         ? (idMap.get(`programme::${enr.programmeExternalId}`) ?? null)
         : null;
 
-      const enrolmentId = idMap.resolve(`enrolment::${enr.externalId}`);
+      const enrolmentId = idMap.resolve(key);
 
       await db.insert(enrolments).values({
         versionId:           randomUUID(),
@@ -269,13 +268,9 @@ export async function importEnrolments(
         recordedAt:          now,
         recordedUntil:       null,
       });
-      loaded++;
-    } catch {
-      failed++;
-    }
+    });
+    if (!loaded) idMap.forget(key);
   }
-
-  return { loaded, failed };
 }
 
 // ── Phase 4: registrations ────────────────────────────────────────────────
@@ -285,18 +280,22 @@ export async function importRegistrations(
   tenantId: string,
   payload: ImportPayload,
   idMap: IdMap,
-): Promise<{ loaded: number; failed: number }> {
-  let loaded = 0;
-  let failed = 0;
+  log: ImportLog,
+): Promise<void> {
   const now = new Date();
 
   for (const reg of payload.moduleRegistrations ?? []) {
-    try {
-      const enrolmentId = idMap.get(`enrolment::${reg.enrolmentExternalId}`);
-      const offeringId  = idMap.get(`offering::${reg.moduleOfferingExternalId}`);
-      if (enrolmentId === undefined || offeringId === undefined) { failed++; continue; }
+    const enrolmentId = idMap.get(`enrolment::${reg.enrolmentExternalId}`);
+    const offeringId  = idMap.get(`offering::${reg.moduleOfferingExternalId}`);
+    if (enrolmentId === undefined || offeringId === undefined) {
+      log.unresolved('moduleRegistration', reg.externalId, `Module registration ${reg.externalId} was not loaded because ${
+        enrolmentId === undefined ? `enrolment ${reg.enrolmentExternalId}` : `module offering ${reg.moduleOfferingExternalId}`} was not loaded`);
+      continue;
+    }
 
-      const regId = idMap.resolve(`reg::${reg.externalId}`);
+    const key = `reg::${reg.externalId}`;
+    const loaded = await log.row(db, 'moduleRegistration', reg.externalId, async (db) => {
+      const regId = idMap.resolve(key);
 
       await db.insert(moduleRegistrations).values({
         versionId:        randomUUID(),
@@ -311,13 +310,9 @@ export async function importRegistrations(
         recordedAt:       now,
         recordedUntil:    null,
       });
-      loaded++;
-    } catch {
-      failed++;
-    }
+    });
+    if (!loaded) idMap.forget(key);
   }
-
-  return { loaded, failed };
 }
 
 // ── Phase 5: assessment ───────────────────────────────────────────────────
@@ -327,43 +322,32 @@ export async function importAssessment(
   tenantId: string,
   payload: ImportPayload,
   idMap: IdMap,
-): Promise<{ loaded: number; failed: number }> {
-  let loaded = 0;
-  let failed = 0;
+  log: ImportLog,
+): Promise<void> {
   const now = new Date();
 
+  // A component is cached only once the savepoint that created it has
+  // committed, so a mark that fails does not leave later marks pointing at a
+  // component that was rolled back.
   const componentCache = new Map<string, string>();
 
-  async function getOrCreateComponent(offeringId: string, componentTypeCode: string): Promise<string> {
-    const cacheKey = `${offeringId}::${componentTypeCode}`;
-    const cached = componentCache.get(cacheKey);
-    if (cached !== undefined) return cached;
-
-    const componentId = randomUUID();
-    await db.insert(assessmentComponents).values({
-      id:                componentId,
-      tenantId,
-      moduleOfferingId:  offeringId,
-      componentTypeCode,
-      title:             `${componentTypeCode} (imported)`,
-      weighting:         100,
-      createdAt:         now,
-      updatedAt:         now,
-    });
-    componentCache.set(cacheKey, componentId);
-    return componentId;
-  }
-
   for (const mark of payload.marks ?? []) {
-    try {
-      const regId = idMap.get(`reg::${mark.moduleRegistrationExternalId}`);
-      if (regId === undefined) { failed++; continue; }
+    const markKey = `${mark.moduleRegistrationExternalId}/${mark.componentTypeCode}`;
+    const regId = idMap.get(`reg::${mark.moduleRegistrationExternalId}`);
+    const reg = payload.moduleRegistrations?.find(r => r.externalId === mark.moduleRegistrationExternalId);
+    const offeringId = reg !== undefined ? idMap.get(`offering::${reg.moduleOfferingExternalId}`) : undefined;
+    if (regId === undefined || offeringId === undefined) {
+      log.unresolved('mark', markKey, `Mark ${markKey} was not loaded because module registration ${mark.moduleRegistrationExternalId} was not loaded`);
+      continue;
+    }
 
-      const reg = payload.moduleRegistrations?.find(r => r.externalId === mark.moduleRegistrationExternalId);
-      const offeringId = reg !== undefined ? idMap.get(`offering::${reg.moduleOfferingExternalId}`) : undefined;
-      if (offeringId === undefined) { failed++; continue; }
-
-      const componentId = await getOrCreateComponent(offeringId, mark.componentTypeCode);
+    const cacheKey = `${offeringId}::${mark.componentTypeCode}`;
+    let componentId = componentCache.get(cacheKey);
+    const loaded = await log.row(db, 'mark', markKey, async (db) => {
+      if (componentId === undefined) {
+        componentId = randomUUID();
+        await createComponent(db, componentId, offeringId, mark.componentTypeCode);
+      }
       const markDecimal = mark.rawMark.toFixed(2);
 
       await db.insert(marks).values({
@@ -386,13 +370,22 @@ export async function importAssessment(
         recordedAt:            now,
         recordedUntil:         null,
       });
-      loaded++;
-    } catch {
-      failed++;
-    }
+    });
+    if (loaded && componentId !== undefined) componentCache.set(cacheKey, componentId);
   }
 
-  return { loaded, failed };
+  async function createComponent(db: Db, componentId: string, offeringId: string, componentTypeCode: string): Promise<void> {
+    await db.insert(assessmentComponents).values({
+      id:                componentId,
+      tenantId,
+      moduleOfferingId:  offeringId,
+      componentTypeCode,
+      title:             `${componentTypeCode} (imported)`,
+      weighting:         100,
+      createdAt:         now,
+      updatedAt:         now,
+    });
+  }
 }
 
 // ── Phase 6: adjustments ─────────────────────────────────────────────────
@@ -407,18 +400,21 @@ export async function importAdjustments(
   tenantId: string,
   payload: ImportPayload,
   idMap: IdMap,
+  log: ImportLog,
   batchId: string = randomUUID(),
-): Promise<{ loaded: number; failed: number; batchId: string }> {
-  let loaded = 0;
-  let failed = 0;
+): Promise<{ batchId: string }> {
   const now = new Date();
 
   for (const adj of payload.adjustments ?? []) {
-    try {
-      const personId    = idMap.get(`person::${adj.personExternalId}`);
-      const enrolmentId = idMap.get(`enrolment::${adj.enrolmentExternalId}`);
-      if (personId === undefined || enrolmentId === undefined) { failed++; continue; }
+    const personId    = idMap.get(`person::${adj.personExternalId}`);
+    const enrolmentId = idMap.get(`enrolment::${adj.enrolmentExternalId}`);
+    if (personId === undefined || enrolmentId === undefined) {
+      log.unresolved('adjustment', adj.externalId, `Adjustment ${adj.externalId} was not loaded because ${
+        personId === undefined ? `person ${adj.personExternalId}` : `enrolment ${adj.enrolmentExternalId}`} was not loaded`);
+      continue;
+    }
 
+    await log.row(db, 'adjustment', adj.externalId, async (db) => {
       await db.insert(reasonableAdjustments).values({
         versionId:          randomUUID(),
         id:                 randomUUID(),
@@ -427,6 +423,8 @@ export async function importAdjustments(
         enrolmentId,
         adjustmentTypeCode: adj.adjustmentTypeCode,
         scopeCode:          adj.scopeCode,
+        amountValue:        adj.amount ? adj.amount.value.toFixed(2) : null,
+        amountUnitCode:     adj.amount?.unitCode ?? null,
         notes:              adj.notes ?? null,
         actorId:            IMPORT_ACTOR,
         provenanceCode:     'migrated',
@@ -437,18 +435,19 @@ export async function importAdjustments(
         recordedAt:         now,
         recordedUntil:      null,
       });
-      loaded++;
-    } catch {
-      failed++;
-    }
+    });
   }
 
   for (const ec of payload.exceptionalCircumstances ?? []) {
-    try {
-      const personId    = idMap.get(`person::${ec.personExternalId}`);
-      const enrolmentId = idMap.get(`enrolment::${ec.enrolmentExternalId}`);
-      if (personId === undefined || enrolmentId === undefined) { failed++; continue; }
+    const personId    = idMap.get(`person::${ec.personExternalId}`);
+    const enrolmentId = idMap.get(`enrolment::${ec.enrolmentExternalId}`);
+    if (personId === undefined || enrolmentId === undefined) {
+      log.unresolved('exceptionalCircumstance', ec.externalId, `Exceptional circumstance ${ec.externalId} was not loaded because ${
+        personId === undefined ? `person ${ec.personExternalId}` : `enrolment ${ec.enrolmentExternalId}`} was not loaded`);
+      continue;
+    }
 
+    await log.row(db, 'exceptionalCircumstance', ec.externalId, async (db) => {
       const moduleOfferingId = ec.moduleOfferingExternalId !== undefined
         ? (idMap.get(`offering::${ec.moduleOfferingExternalId}`) ?? null)
         : null;
@@ -469,11 +468,8 @@ export async function importAdjustments(
         recordedAt:        now,
         recordedUntil:     null,
       });
-      loaded++;
-    } catch {
-      failed++;
-    }
+    });
   }
 
-  return { loaded, failed, batchId };
+  return { batchId };
 }

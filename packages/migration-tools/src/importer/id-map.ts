@@ -22,6 +22,11 @@ export class IdMap {
     return this.map.get(externalId);
   }
 
+  /** Drop an ID whose row was not loaded, so nothing later refers to it. */
+  forget(externalId: string): void {
+    this.map.delete(externalId);
+  }
+
   has(externalId: string): boolean {
     return this.map.has(externalId);
   }

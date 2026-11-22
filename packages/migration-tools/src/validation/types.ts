@@ -8,7 +8,9 @@ export type IssueCode =
   | 'BITEMPORAL_INVALID_WINDOW'
   | 'SPECIAL_CATEGORY_DATA'
   | 'RECORD_COUNT_MISMATCH'
-  | 'REFERENTIAL_INTEGRITY_FAILURE';
+  | 'REFERENTIAL_INTEGRITY_FAILURE'
+  | 'INVALID_VALUE'
+  | 'ROW_LOAD_FAILURE';
 
 export interface ValidationIssue {
   code:       IssueCode;
