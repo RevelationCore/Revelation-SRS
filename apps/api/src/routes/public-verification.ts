@@ -1,10 +1,12 @@
-import { createHash } from 'node:crypto';
+import { createHmac } from 'node:crypto';
 
 import { Type } from '@sinclair/typebox';
 import { tenants } from '@revelation-srs/db';
 import { NotFoundError } from '@revelation-srs/domain';
 import { eq } from 'drizzle-orm';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
+
+import { publicVerifyIpKey } from '../config.js';
 
 import { VerificationSchema, resultToWire } from './award-documents.js';
 
@@ -14,14 +16,24 @@ const ErrorSchema = Type.Object({ type: Type.String(), title: Type.String(), sta
  * Verification without an account (Phase 3 D-21). Public checks work only
  * from what the holder chose to share: the verification code, or the PDF
  * itself (hashed and not kept). Rate-limited per IP; each check is logged
- * with a salted hash of the IP, never the IP. A not-found check answers in
+ * with an HMAC of the IP under a secret key, never the IP (BL-184). Without
+ * a usable key the routes answer 503 rather than log a reversible hash; the
+ * API refuses to start without one (main.ts), so only the worker, which
+ * serves no public traffic, can be in that state. A not-found check answers in
  * the same way and the same time as any other. The tenant's public signing
  * keys are published here too (D-20).
  */
 export function publicVerificationRoutes(fastify: FastifyInstance): void {
   const limit = { rateLimit: { max: Number(process.env['PUBLIC_VERIFY_RATE_LIMIT'] ?? 30), timeWindow: 60_000, keyGenerator: (req: FastifyRequest) => req.ip } };
-  const salt = process.env['PUBLIC_VERIFY_IP_SALT'] ?? 'srs-public-verify';
-  const ipHash = (req: FastifyRequest) => createHash('sha256').update(`${salt}:${req.ip}`).digest('hex');
+  const key = publicVerifyIpKey(fastify.config.nodeEnv, fastify.config.publicVerifyIpKey);
+  const ipHash = (req: FastifyRequest) => createHmac('sha256', key ?? '').update(req.ip).digest('hex');
+  fastify.addHook('onRequest', async (_request, reply) => {
+    if (key !== null) return;
+    await reply.code(503).type('application/problem+json').send({
+      type: 'https://srs.example.com/errors/service-unavailable', title: 'Service unavailable', status: 503,
+      detail: 'Public verification is not configured on this instance',
+    });
+  });
 
   fastify.addContentTypeParser('application/pdf', { parseAs: 'buffer', bodyLimit: 15 * 1024 * 1024 }, (_req, body, done) => done(null, body));
 

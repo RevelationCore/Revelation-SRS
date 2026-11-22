@@ -8,6 +8,12 @@ export interface Config {
   nodeEnv:      string;
   /** Malware scanning of uploads (ADR-030): clamd by default; noop only in development and test. */
   documentScanner?: DocumentScannerConfig;
+  /**
+   * Secret HMAC key for the IP hash in the public verification log
+   * (BL-184). Required outside development and test: a hash with a known
+   * key can be reversed by hashing every IPv4 address.
+   */
+  publicVerifyIpKey?: string | undefined;
   databaseUrl:  string;
   natsUrl:      string;
   attendanceApiUrl: string;
@@ -86,6 +92,26 @@ export function trustProxySetting(value: string | undefined): false | string {
   return v;
 }
 
+/** Used only in development and test, where no key is configured. */
+export const DEV_PUBLIC_VERIFY_IP_KEY = 'development-only-public-verify-ip-key';
+const MIN_PUBLIC_VERIFY_IP_KEY_LENGTH = 32;
+
+/**
+ * The key for the public verification IP hash, or null when there is none
+ * fit to use: then the public routes refuse rather than hash with a known
+ * key (BL-184). Development and test fall back to a fixed key.
+ */
+export function publicVerifyIpKey(nodeEnv: string, configured: string | undefined): string | null {
+  if (configured !== undefined && configured.length >= MIN_PUBLIC_VERIFY_IP_KEY_LENGTH) return configured;
+  return nodeEnv === 'development' || nodeEnv === 'test' ? (configured || DEV_PUBLIC_VERIFY_IP_KEY) : null;
+}
+
+/** Refuse to start the API outside development and test without a secret key. */
+export function assertPublicVerifyIpKey(service: string, nodeEnv: string, configured: string | undefined): void {
+  if (publicVerifyIpKey(nodeEnv, configured) !== null) return;
+  throw new Error(`Refusing to start ${service} in '${nodeEnv}' (BL-184): PUBLIC_VERIFY_IP_KEY must be a secret of at least ${MIN_PUBLIC_VERIFY_IP_KEY_LENGTH} characters`);
+}
+
 function required(name: string): string {
   const v = process.env[name];
   if (!v) throw new Error(`Required environment variable ${name} is not set`);
@@ -107,6 +133,8 @@ export function loadConfig(): Config {
     logLevel:        process.env['LOG_LEVEL'] ?? 'info',
     nodeEnv:         process.env['NODE_ENV'] ?? 'development',
     documentScanner: loadDocumentScannerConfig(),
+    // PUBLIC_VERIFY_IP_SALT is the old name, still read.
+    publicVerifyIpKey: optional('PUBLIC_VERIFY_IP_KEY') ?? optional('PUBLIC_VERIFY_IP_SALT'),
     databaseUrl:     required('DATABASE_URL'),
     natsUrl:         process.env['NATS_URL'] ?? 'nats://localhost:4222',
     attendanceApiUrl: process.env['ATTENDANCE_API_URL'] ?? 'http://localhost:3004',

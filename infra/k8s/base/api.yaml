@@ -44,6 +44,13 @@ spec:
           {{- with secret "kv/data/srs/nats" -}}
           {{ .Data.data.nkey_seed }}
           {{- end }}
+        # BL-184: the secret key for the public verification IP hash
+        # (at least 32 characters; rotate it yearly with the log retention).
+        vault.hashicorp.com/agent-inject-secret-public-verify: "kv/data/srs/api/public-verify"
+        vault.hashicorp.com/agent-inject-template-public-verify: |
+          {{- with secret "kv/data/srs/api/public-verify" -}}
+          {{ .Data.data.ip_key }}
+          {{- end }}
         prometheus.io/scrape: "true"
         prometheus.io/port: "9464"
         prometheus.io/path: "/metrics"
@@ -119,12 +126,14 @@ spec:
             # Secrets are read from OpenBao-injected files at startup
             # DATABASE_URL is sourced from /vault/secrets/db
             # NATS_NKEY_SEED is sourced from /vault/secrets/nats
+            # PUBLIC_VERIFY_IP_KEY is sourced from /vault/secrets/public-verify
           command:
             - /bin/sh
             - -c
             - |
               export DATABASE_URL="$(cat /vault/secrets/db)"
               export NATS_NKEY_SEED="$(cat /vault/secrets/nats)"
+              export PUBLIC_VERIFY_IP_KEY="$(cat /vault/secrets/public-verify)"
               exec node dist/main.js
           resources:
             requests:
