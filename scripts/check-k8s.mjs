@@ -92,6 +92,30 @@ for (const target of targets) {
       if (d && !d.spec.template.spec.containers.some((c) => (c.env ?? []).some((e) => e.name === 'DOCUMENT_SCANNER'))) errors.push(`${target}: ${name} stores documents but sets no DOCUMENT_SCANNER`);
     }
   }
+  // BL-372: every in-cluster hostname a setting names must be a Service in
+  // this build. Hosts without a dot are in-cluster; postgres and keycloak are
+  // provided by the deployment, not this repository.
+  {
+    const services = new Set(docs.filter((x) => x.kind === 'Service').map((x) => x.metadata.name));
+    const hosts = new Map();
+    const note = (host, where) => { if (!host.includes('.')) hosts.set(host, hosts.get(host) ?? where); };
+    for (const d of docs.filter((x) => x.kind === 'Deployment' || x.kind === 'StatefulSet' || x.kind === 'Job')) {
+      const pod = d.spec.template;
+      const texts = [
+        ...[...(pod.spec.containers ?? []), ...(pod.spec.initContainers ?? [])].flatMap((c) => [
+          ...(c.env ?? []).map((e) => (e.name === 'CLAMD_HOST' && e.value ? `tcp://${e.value}` : e.value ?? '')),
+          ...(c.command ?? []), ...(c.args ?? []),
+        ]),
+        ...Object.values(pod.metadata?.annotations ?? {}),
+      ];
+      for (const t of texts) for (const m of String(t).matchAll(/\b(?:https?|nats|tcp|postgres(?:ql)?):\/\/(?:[^@\s/]*@)?([a-z0-9-]+)(?=[:/\s"'}]|$)/g)) note(m[1], d.metadata.name);
+      for (const t of texts) for (const m of String(t).matchAll(/@([a-z0-9-]+):\d+/g)) note(m[1], d.metadata.name);
+    }
+    const EXTERNAL = new Set(['postgres', 'keycloak', 'localhost']);
+    for (const [host, where] of hosts) {
+      if (!EXTERNAL.has(host) && !services.has(host)) errors.push(`${target}: ${where} reaches ${host}, but this build has no Service of that name`);
+    }
+  }
   if (target === 'overlays/production') {
     if (!docs.some((x) => x.kind === 'PodDisruptionBudget' && x.metadata.name === 'srs-clamav-pdb')) errors.push('production: PodDisruptionBudget srs-clamav-pdb is missing');
     const nats = docs.find((x) => x.kind === 'StatefulSet' && x.metadata.name === 'srs-nats');

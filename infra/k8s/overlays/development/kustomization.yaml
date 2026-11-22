@@ -7,7 +7,10 @@ kind: Kustomization
 
 namespace: revelation-srs-dev
 
-namePrefix: dev-
+# No namePrefix (BL-372): the overlay has its own namespace, and a prefix
+# renames Services without rewriting the hostnames in environment values
+# (http://srs-api:3000, nats://srs-nats:4222, CLAMD_HOST=srs-clamav), so the
+# services could not reach each other. check:k8s now checks those hostnames.
 
 patches:
   # Reduce API replicas to 1 for development
