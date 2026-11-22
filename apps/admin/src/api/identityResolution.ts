@@ -40,18 +40,48 @@ export function addCandidate(
 }
 
 export type IdentityDecisionType = 'merge' | 'reject' | 'link';
+export type FactChoice = 'survivor' | 'merged';
 
+export interface MergeProposal {
+  proposalId:            string;
+  version:               number;
+  survivorPersonId:      string;
+  mergedPersonId:        string;
+  factChoices:           Record<string, FactChoice>;
+  identifierResolutions: Record<string, { keep: FactChoice; reason: string }>;
+  twoAccountsConfirmed:  boolean;
+  proposedBy:            string;
+  proposedAt:            string;
+  identifierConflicts:   Array<{ identifierClass: string; survivorValues: string[]; mergedValues: string[]; resolved: boolean }>;
+}
+
+/** ADR-031: a new version of the case's merge proposal. */
+export function putProposal(caseId: string, body: {
+  survivorPersonId: string;
+  mergedPersonId: string;
+  identifierResolutions?: Record<string, { keep: FactChoice; reason: string }>;
+  twoAccountsConfirmed?: boolean;
+}): Promise<MergeProposal> {
+  return api.put(`/api/v1/identity-resolution/cases/${caseId}/proposal`, body);
+}
+
+export function getProposal(caseId: string): Promise<MergeProposal> {
+  return api.get(`/api/v1/identity-resolution/cases/${caseId}/proposal`);
+}
+
+/** ADR-031: decided by someone who did not prepare the case, on the version they read. */
 export function decide(
   caseId: string,
-  body: { decisionTypeCode: IdentityDecisionType; survivorPersonId?: string },
+  body: { decisionTypeCode: IdentityDecisionType; proposalVersion?: number; reason: string },
 ): Promise<{ decisionId: string }> {
   return api.post(`/api/v1/identity-resolution/cases/${caseId}/decision`, body);
 }
 
+/** Related-record links only; a merge is made by a decision (ADR-031). */
 export function linkPersons(body: {
   sourcePersonId: string;
   targetPersonId: string;
-  linkTypeCode:   string;
+  linkTypeCode:   'related-record';
 }): Promise<{ linkId: string }> {
   return api.post('/api/v1/identity-resolution/links', body);
 }

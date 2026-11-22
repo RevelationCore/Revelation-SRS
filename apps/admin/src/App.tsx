@@ -226,7 +226,7 @@ export function App() {
                 {/* Governance — write-only workflow consoles (no list endpoints) */}
                 <Route path="governance/moderation" element={<RequirePermission permissions={['mark:write']}><ModerationPage /></RequirePermission>} />
                 <Route path="governance/regulatory-collections" element={<RequirePermission permissions={['regulatory:write']}><RegulatoryCollectionsPage /></RequirePermission>} />
-                <Route path="governance/identity-resolution" element={<RequirePermission permissions={['identity:manage']}><IdentityResolutionPage /></RequirePermission>} />
+                <Route path="governance/identity-resolution" element={<RequirePermission permissions={['identity-resolution:read', 'identity:manage']}><IdentityResolutionPage /></RequirePermission>} />
                 <Route path="governance/pgr-supervision" element={<RequirePermission permissions={['pgr-case:read']}><PgrSupervisionPage /></RequirePermission>} />
                 <Route path="governance/pgr-progress-review" element={<RequirePermission permissions={['pgr-case:read']}><PgrProgressReviewPage /></RequirePermission>} />
                 <Route path="governance/pgr-examination" element={<RequirePermission permissions={['pgr-case:read']}><PgrExaminationPage /></RequirePermission>} />

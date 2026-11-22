@@ -1264,6 +1264,15 @@
     "active": true,
     "hidden": false,
     "selectable": true
+   },
+   {
+    "code": "identity-resolution-officer",
+    "displayLabel": "Identity resolution officer",
+    "description": null,
+    "sortOrder": 310,
+    "active": true,
+    "hidden": false,
+    "selectable": true
    }
   ]
  },
@@ -6445,6 +6454,15 @@
     "active": true,
     "hidden": false,
     "selectable": true
+   },
+   {
+    "code": "identity-resolution-officer",
+    "displayLabel": "Identity resolution officer",
+    "description": null,
+    "sortOrder": 310,
+    "active": true,
+    "hidden": false,
+    "selectable": true
    }
   ]
  },
@@ -7091,6 +7109,32 @@
    {
     "code": "hesa-authority",
     "displayLabel": "HESA",
+    "description": null,
+    "sortOrder": 20,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   }
+  ]
+ },
+ "identity_merge_proposal/identifier_keep": {
+  "setCode": "identity-merge-keep-code",
+  "displayName": "Identity Merge: Value Kept",
+  "entityName": "identity_merge_proposal",
+  "fieldName": "identifier_keep",
+  "members": [
+   {
+    "code": "survivor",
+    "displayLabel": "The surviving record's value",
+    "description": null,
+    "sortOrder": 10,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "merged",
+    "displayLabel": "The merged record's value",
     "description": null,
     "sortOrder": 20,
     "active": true,
@@ -15226,6 +15270,15 @@
     "active": true,
     "hidden": false,
     "selectable": true
+   },
+   {
+    "code": "identity-resolution-officer",
+    "displayLabel": "Identity resolution officer",
+    "description": null,
+    "sortOrder": 310,
+    "active": true,
+    "hidden": false,
+    "selectable": true
    }
   ]
  },
@@ -15501,6 +15554,15 @@
     "displayLabel": "VLE connector (system)",
     "description": null,
     "sortOrder": 300,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "identity-resolution-officer",
+    "displayLabel": "Identity resolution officer",
+    "description": null,
+    "sortOrder": 310,
     "active": true,
     "hidden": false,
     "selectable": true
@@ -15958,6 +16020,15 @@
     "active": true,
     "hidden": false,
     "selectable": true
+   },
+   {
+    "code": "identity-resolution-officer",
+    "displayLabel": "Identity resolution officer",
+    "description": null,
+    "sortOrder": 310,
+    "active": true,
+    "hidden": false,
+    "selectable": true
    }
   ]
  },
@@ -16295,6 +16366,15 @@
     "displayLabel": "VLE connector (system)",
     "description": null,
     "sortOrder": 300,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "identity-resolution-officer",
+    "displayLabel": "Identity resolution officer",
+    "description": null,
+    "sortOrder": 310,
     "active": true,
     "hidden": false,
     "selectable": true

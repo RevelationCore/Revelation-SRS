@@ -54,7 +54,8 @@
       { "name": "ec-case-officer",         "composite": false },
       { "name": "ec-decision-maker",       "composite": false },
       { "name": "wellbeing-service",       "composite": false },
-      { "name": "vle-connector-service",       "composite": false }
+      { "name": "vle-connector-service",       "composite": false },
+      { "name": "identity-resolution-officer",       "composite": false }
     ]
   },
 

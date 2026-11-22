@@ -1,4 +1,4 @@
-import { numeric, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { boolean, integer, jsonb, numeric, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { pgTable } from 'drizzle-orm/pg-core';
 
 import { persons } from './identity.js';
@@ -31,6 +31,7 @@ export const identityResolutionCandidates = pgTable('identity_resolution_candida
   candidatePersonId:       uuid('candidate_person_id').notNull().references(() => persons.id),
   matchScore:              numeric('match_score', { precision: 5, scale: 4 }).notNull(),
   matchReasonCode:         text('match_reason_code').notNull(), // name-dob | email | student-number | manual-flag
+  addedBy:                 text('added_by'), // ADR-031: who added it may not decide the case
   createdAt:               timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -45,6 +46,37 @@ export const identityResolutionDecisions = pgTable('identity_resolution_decision
   survivorPersonId:        uuid('survivor_person_id').references(() => persons.id),
   decidedBy:               text('decided_by').notNull(),
   decidedAt:               timestamp('decided_at', { withTimezone: true }).notNull().defaultNow(),
+  proposalId:              uuid('proposal_id'),
+  reason:                  text('reason'),
+});
+
+/** ADR-031: a versioned merge proposal; a decision must name its current version. */
+export const identityMergeProposals = pgTable('identity_merge_proposal', {
+  id:                       uuid('id').primaryKey().defaultRandom(),
+  tenantId:                 uuid('tenant_id').notNull().references(() => tenants.id),
+  identityResolutionCaseId: uuid('identity_resolution_case_id').notNull().references(() => identityResolutionCases.id),
+  version:                  integer('version').notNull(),
+  survivorPersonId:         uuid('survivor_person_id').notNull().references(() => persons.id),
+  mergedPersonId:           uuid('merged_person_id').notNull().references(() => persons.id),
+  factChoices:              jsonb('fact_choices').notNull().$type<Record<string, 'survivor' | 'merged'>>().default({}),
+  identifierResolutions:    jsonb('identifier_resolutions').notNull().$type<Record<string, { keep: 'survivor' | 'merged'; reason: string }>>().default({}),
+  twoAccountsConfirmed:     boolean('two_accounts_confirmed').notNull().default(false),
+  proposedBy:               text('proposed_by').notNull(),
+  proposedAt:               timestamp('proposed_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type IdentityMergeProposal = typeof identityMergeProposals.$inferSelect;
+
+/** ADR-031: a statutory identifier value not kept by a merge still finds the survivor. */
+export const personIdentifierAliases = pgTable('person_identifier_alias', {
+  id:              uuid('id').primaryKey().defaultRandom(),
+  tenantId:        uuid('tenant_id').notNull().references(() => tenants.id),
+  personId:        uuid('person_id').notNull().references(() => persons.id),
+  identifierClass: text('identifier_class').notNull(),
+  value:           text('value').notNull(),
+  sourcePersonId:  uuid('source_person_id').notNull().references(() => persons.id),
+  decisionId:      uuid('decision_id').notNull().references(() => identityResolutionDecisions.id),
+  createdAt:       timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
 export type IdentityResolutionDecision    = typeof identityResolutionDecisions.$inferSelect;

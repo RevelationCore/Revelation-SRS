@@ -2905,6 +2905,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/identity-resolution/cases/{caseId}/proposal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getIdentityResolutionCasesByCaseIdProposal"];
+        put: operations["replaceIdentityResolutionCasesByCaseIdProposal"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/identity-resolution/cases/{caseId}/decision": {
         parameters: {
             query?: never;
@@ -20224,6 +20240,169 @@ export interface operations {
                         title: string;
                         status: number;
                         detail?: string;
+                        errors?: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    getIdentityResolutionCasesByCaseIdProposal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                caseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        proposalId: string;
+                        version: number;
+                        survivorPersonId: string;
+                        mergedPersonId: string;
+                        factChoices: {
+                            [key: string]: string;
+                        };
+                        identifierResolutions: {
+                            [key: string]: {
+                                keep: string;
+                                reason: string;
+                            };
+                        };
+                        twoAccountsConfirmed: boolean;
+                        proposedBy: string;
+                        proposedAt: string;
+                        identifierConflicts: {
+                            identifierClass: string;
+                            survivorValues: string[];
+                            mergedValues: string[];
+                            resolved: boolean;
+                        }[];
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        errors?: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    replaceIdentityResolutionCasesByCaseIdProposal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                caseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    survivorPersonId: string;
+                    /** Format: uuid */
+                    mergedPersonId: string;
+                    factChoices?: {
+                        [key: string]: "survivor" | "merged";
+                    };
+                    identifierResolutions?: {
+                        [key: string]: {
+                            keep: "survivor" | "merged";
+                            reason: string;
+                        };
+                    };
+                    twoAccountsConfirmed?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        proposalId: string;
+                        version: number;
+                        survivorPersonId: string;
+                        mergedPersonId: string;
+                        factChoices: {
+                            [key: string]: string;
+                        };
+                        identifierResolutions: {
+                            [key: string]: {
+                                keep: string;
+                                reason: string;
+                            };
+                        };
+                        twoAccountsConfirmed: boolean;
+                        proposedBy: string;
+                        proposedAt: string;
+                        identifierConflicts: {
+                            identifierClass: string;
+                            survivorValues: string[];
+                            mergedValues: string[];
+                            resolved: boolean;
+                        }[];
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        errors?: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        errors?: {
+                            [key: string]: unknown;
+                        };
                     };
                 };
             };
@@ -20242,7 +20421,8 @@ export interface operations {
             content: {
                 "application/json": {
                     decisionTypeCode: "merge" | "reject" | "link";
-                    survivorPersonId?: string;
+                    proposalVersion?: number;
+                    reason: string;
                 };
             };
         };
@@ -20259,6 +20439,40 @@ export interface operations {
                 };
             };
             /** @description Default Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        errors?: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Default Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        errors?: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Default Response */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -20269,6 +20483,26 @@ export interface operations {
                         title: string;
                         status: number;
                         detail?: string;
+                        errors?: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        errors?: {
+                            [key: string]: unknown;
+                        };
                     };
                 };
             };
@@ -20283,6 +20517,9 @@ export interface operations {
                         title: string;
                         status: number;
                         detail?: string;
+                        errors?: {
+                            [key: string]: unknown;
+                        };
                     };
                 };
             };
@@ -20313,6 +20550,23 @@ export interface operations {
                 content: {
                     "application/json": {
                         linkId: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        errors?: {
+                            [key: string]: unknown;
+                        };
                     };
                 };
             };

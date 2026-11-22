@@ -36,6 +36,8 @@ export const ROLES = [
   // ADR-032: the VLE connector's own role, honoured only from its tenant-bound
   // client; it holds the three VLE-only permissions and nothing else.
   'vle-connector-service',
+  // ADR-031: BP-08-001's Identity Resolution Officer prepares and decides merges (never both on one case).
+  'identity-resolution-officer',
 ] as const;
 
 /** The integration contracts the VLE connector serves (ADR-032). */
@@ -222,6 +224,10 @@ export const PERMISSION_ROLES = {
   'engagement-outcome:read:own':        ['student'] as Role[],
   'engagement-outcome:read:all':        ['personal-tutor', 'engagement-officer', 'registry-administrator', 'integration-service'] as Role[],
   'identity:manage':                    ['dpo', 'registry-administrator'] as Role[],
+  // ADR-031: identity resolution cases. Deciding a merge is the officer's alone, and never the preparer's.
+  'identity-resolution:read':           ['identity-resolution-officer', 'registry-administrator', 'dpo'] as Role[],
+  'identity-resolution:prepare':        ['identity-resolution-officer', 'registry-administrator'] as Role[],
+  'identity-resolution:decide':         ['identity-resolution-officer'] as Role[],
   // Identity verification results, including fraud flags: only those who act on them (D-6).
   'identity-verification:read':         ['registry-administrator', 'dpo', 'regulatory-officer'] as Role[],
   // Academic misconduct outcomes and their effects, never allegations or evidence (D-5; ADR-017).
