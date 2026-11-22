@@ -309,19 +309,18 @@ describe('retention enforcement (NFR-PRIV-003)', () => {
          AND tenant_id  = ${ctx.tenantId}::uuid
     `);
 
-    const applyResponse = await ctx.app.inject({
-      method:  'POST',
-      url:     '/api/v1/admin/retention/enforce?dryRun=false',
-      headers: { authorization: `Bearer ${adminToken}` },
-    });
-
-    expect(applyResponse.statusCode).toBe(200);
-    const applyBody = JSON.parse(applyResponse.body) as { dryRun: boolean; details: unknown };
-    expect(applyBody.dryRun).toBe(false);
-
-    const detail = (applyBody.details as Array<{ personId: string; action: string }>)
-      .find((d) => d.personId === personId);
-    expect(detail?.action).toBe('anonymised');
+    // Disposal is two-person since BL-327: prepare, a second DPO approves, execute.
+    const approverToken = await ctx.makeJwt({ sub: 'second-dpo', roles: ['dpo'] });
+    const prepared = await ctx.app.inject({ method: 'POST', url: '/api/v1/admin/retention/plans', headers: { authorization: `Bearer ${adminToken}` } });
+    expect(prepared.statusCode, prepared.body).toBe(201);
+    const plan = JSON.parse(prepared.body) as { planId: string; personIds: string[] };
+    expect(plan.personIds).toContain(personId);
+    const approved = await ctx.app.inject({ method: 'POST', url: `/api/v1/admin/retention/plans/${plan.planId}/approve`, headers: { authorization: `Bearer ${approverToken}` } });
+    expect(approved.statusCode, approved.body).toBe(200);
+    const applyResponse = await ctx.app.inject({ method: 'POST', url: `/api/v1/admin/retention/plans/${plan.planId}/execute`, headers: { authorization: `Bearer ${adminToken}` } });
+    expect(applyResponse.statusCode, applyResponse.body).toBe(200);
+    const applyBody = JSON.parse(applyResponse.body) as { certificates: Array<{ personId: string }> };
+    expect(applyBody.certificates.map((c) => c.personId)).toContain(personId);
 
     // Verify DB state — identity names replaced with ANON- token
     const identityRows = await ctx.db.execute<{ legal_first_name: string }>(sql`

@@ -114,10 +114,40 @@ export const recordHolds = pgTable('record_hold', {
 export type RecordHold    = typeof recordHolds.$inferSelect;
 export type NewRecordHold = typeof recordHolds.$inferInsert;
 
+/** BL-327: a two-person plan for irreversible retention disposal. */
+export const retentionDisposalPlans = pgTable('retention_disposal_plan', {
+  id:              uuid('id').primaryKey().defaultRandom(),
+  tenantId:        uuid('tenant_id').notNull().references(() => tenants.id),
+  statusCode:      text('status_code').notNull().default('prepared'), // prepared | approved | rejected | executed
+  preparedBy:      text('prepared_by').notNull(),
+  preparedAt:      timestamp('prepared_at', { withTimezone: true }).notNull().defaultNow(),
+  approvedBy:      text('approved_by'),
+  approvedAt:      timestamp('approved_at', { withTimezone: true }),
+  rejectedBy:      text('rejected_by'),
+  rejectedAt:      timestamp('rejected_at', { withTimezone: true }),
+  rejectionReason: text('rejection_reason'),
+  executedBy:      text('executed_by'),
+  executedAt:      timestamp('executed_at', { withTimezone: true }),
+  planHash:        text('plan_hash').notNull(),
+});
+
+export type RetentionDisposalPlan = typeof retentionDisposalPlans.$inferSelect;
+
+export const retentionDisposalPlanItems = pgTable('retention_disposal_plan_item', {
+  id:         uuid('id').primaryKey().defaultRandom(),
+  tenantId:   uuid('tenant_id').notNull().references(() => tenants.id),
+  planId:     uuid('plan_id').notNull().references(() => retentionDisposalPlans.id),
+  personId:   uuid('person_id').notNull().references(() => persons.id),
+  actionCode: text('action_code').notNull().default('anonymised'),
+});
+
 export const recordDispositions = pgTable('record_disposition', {
   id:                    uuid('id').primaryKey().defaultRandom(),
   tenantId:              uuid('tenant_id').notNull().references(() => tenants.id),
-  retentionAssignmentId: uuid('retention_assignment_id').notNull().references(() => retentionAssignments.id),
+  retentionAssignmentId: uuid('retention_assignment_id').references(() => retentionAssignments.id),
+  personId:              uuid('person_id').references(() => persons.id),
+  disposalPlanId:        uuid('disposal_plan_id').references(() => retentionDisposalPlans.id),
+  certificateRef:        text('certificate_ref'),
   dispositionTypeCode:   text('disposition_type_code').notNull(), // anonymised | deleted | transferred
   executedAt:            timestamp('executed_at', { withTimezone: true }).notNull().defaultNow(),
   executedBy:            text('executed_by').notNull(),

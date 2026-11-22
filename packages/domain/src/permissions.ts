@@ -191,6 +191,8 @@ export const PERMISSION_ROLES = {
   'audit-log:read':                     ['dpo', 'system-administrator', 'registry-administrator', 'wellbeing-auditor'] as Role[],
   // BL-284: irreversible disposal is a DPO decision, not an IT operation.
   'retention:enforce':                  ['dpo'] as Role[],
+  // BL-327: a second person approves a disposal plan; never its preparer (enforced in the service).
+  'retention:approve':                  ['dpo'] as Role[],
   'notifications:read':                 ['student', 'registry-administrator', 'tenant-administrator', 'system-administrator', 'external-examiner'] as Role[],
   'notifications:write':                ['registry-administrator', 'tenant-administrator', 'system-administrator'] as Role[],
   'circumstances:submit':               ['student'] as Role[],

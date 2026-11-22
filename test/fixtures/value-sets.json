@@ -11435,6 +11435,85 @@
    }
   ]
  },
+ "retention_disposal_plan/status_code": {
+  "setCode": "retention-disposal-plan-status-code",
+  "displayName": "Retention Disposal Plan Status",
+  "entityName": "retention_disposal_plan",
+  "fieldName": "status_code",
+  "members": [
+   {
+    "code": "prepared",
+    "displayLabel": "Prepared",
+    "description": null,
+    "sortOrder": 10,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "approved",
+    "displayLabel": "Approved",
+    "description": null,
+    "sortOrder": 20,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "rejected",
+    "displayLabel": "Rejected",
+    "description": null,
+    "sortOrder": 30,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "executed",
+    "displayLabel": "Executed",
+    "description": null,
+    "sortOrder": 40,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   }
+  ]
+ },
+ "retention_disposal_plan_item/action_code": {
+  "setCode": "record-disposition-type-code",
+  "displayName": "Record Disposition Type",
+  "entityName": "retention_disposal_plan_item",
+  "fieldName": "action_code",
+  "members": [
+   {
+    "code": "anonymised",
+    "displayLabel": "Anonymised",
+    "description": null,
+    "sortOrder": 10,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "deleted",
+    "displayLabel": "Deleted",
+    "description": null,
+    "sortOrder": 20,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "transferred",
+    "displayLabel": "Transferred",
+    "description": null,
+    "sortOrder": 30,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   }
+  ]
+ },
  "retention_schedule/trigger_event_code": {
   "setCode": "retention-trigger-event-code",
   "displayName": "Retention Trigger Event",

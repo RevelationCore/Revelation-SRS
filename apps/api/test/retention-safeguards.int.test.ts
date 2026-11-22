@@ -61,6 +61,19 @@ async function firstName(personId: string): Promise<string> {
   return row!.legal_first_name;
 }
 
+/** Prepare a plan as the DPO, approve it as a second DPO, execute it; returns the plan. */
+async function executeApprovedPlan(): Promise<string> {
+  const second = await ctx.makeJwt({ sub: 'dpo-327-second', roles: ['dpo'] });
+  const prepared = await ctx.app.inject({ method: 'POST', url: '/api/v1/admin/retention/plans', headers: { authorization: `Bearer ${dpo}` } });
+  expect(prepared.statusCode, prepared.body).toBe(201);
+  const { planId } = prepared.json<{ planId: string }>();
+  const approved = await ctx.app.inject({ method: 'POST', url: `/api/v1/admin/retention/plans/${planId}/approve`, headers: { authorization: `Bearer ${second}` } });
+  expect(approved.statusCode, approved.body).toBe(200);
+  const executed = await ctx.app.inject({ method: 'POST', url: `/api/v1/admin/retention/plans/${planId}/execute`, headers: { authorization: `Bearer ${dpo}` } });
+  expect(executed.statusCode, executed.body).toBe(200);
+  return planId;
+}
+
 describe('retention sweep safeguards (BL-284)', () => {
   it('skips anyone under a hold, restriction, open rights request or schedule that is not due, and anonymises the rest', async () => {
     const held = await endedStudent('Held');
@@ -88,7 +101,7 @@ describe('retention sweep safeguards (BL-284)', () => {
     nextYear.setFullYear(nextYear.getFullYear() + 1);
     await assignment(scheduled.personId, nextYear.toISOString().slice(0, 10));
 
-    const res = await ctx.app.inject({ method: 'POST', url: '/api/v1/admin/retention/enforce?dryRun=false', headers: { authorization: `Bearer ${dpo}` } });
+    const res = await ctx.app.inject({ method: 'POST', url: '/api/v1/admin/retention/enforce?dryRun=true', headers: { authorization: `Bearer ${dpo}` } });
     expect(res.statusCode, res.body).toBe(200);
     const details = res.json<{ details: Array<{ personId: string; action: string; reason?: string }> }>().details;
     const actionOf = (personId: string) => details.find((d) => d.personId === personId)?.action;
@@ -99,6 +112,10 @@ describe('retention sweep safeguards (BL-284)', () => {
     expect(actionOf(requesting.personId)).toBe('skipped-open-request');
     expect(actionOf(scheduled.personId)).toBe('skipped-schedule');
     expect(actionOf(control.personId)).toBe('anonymised');
+
+    // Disposal itself is two-person since BL-327.
+    const planId = await executeApprovedPlan();
+    expect(planId).toBeTruthy();
 
     for (const [who, name] of [[held, 'Held'], [heldOnEnrolment, 'HeldEnrolment'], [restricted, 'Restricted'], [requesting, 'Requesting'], [scheduled, 'Scheduled']] as const) {
       expect(await firstName(who.personId)).toBe(name);

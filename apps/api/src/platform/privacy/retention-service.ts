@@ -5,9 +5,12 @@
  * (per the Data Subject Register: duration of study + 6 years for most
  * categories; permanent for award/transcript records).
  *
- * The service operates in two modes:
- *   dry-run: identify flagged persons, return count, make no changes.
- *   apply:   anonymise in-scope non-permanent personal data for flagged persons.
+ * Disposal takes two people (BL-327):
+ *   dry run:  identify eligible persons, make no changes (runRetentionSweep).
+ *   prepare:  a DPO stores the dry run's anonymisations as a plan.
+ *   approve:  a different person holding retention:approve approves it.
+ *   execute:  only an approved plan is applied, only if every person in it
+ *             is still eligible, and each disposal gets a certificate.
  *
  * Anonymisation is irreversible.  The service records every action to the
  * audit trail and flags persons that require DPO review (where a lawful hold
@@ -16,14 +19,22 @@
  * Retention policy source: docs/requirements/data-subject-register.md
  */
 
-import { and, eq, sql } from 'drizzle-orm';
+import { createHash, randomUUID } from 'node:crypto';
+
+import { and, asc, eq, sql } from 'drizzle-orm';
 import {
   personIdentities,
   persons,
+  recordDispositions,
+  retentionDisposalPlanItems,
+  retentionDisposalPlans,
   studentAddresses,
   withTenantContext,
   type Db,
+  type RetentionDisposalPlan,
+  type TenantScopedDb,
 } from '@revelation-srs/db';
+import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '@revelation-srs/domain';
 
 import { clockNow } from '../clock.js';
 import type { AuditService } from '../audit/service.js';
@@ -65,11 +76,158 @@ export class RetentionEnforcementService {
   ) {}
 
   /**
-   * Run a retention sweep for the given tenant.
-   *
-   * @param dryRun  If true, identify eligible persons but make no changes.
+   * Dry run: who the sweep would anonymise, flag for the DPO or skip, and
+   * why. Makes no changes. Disposal itself goes through an approved plan
+   * (preparePlan, approvePlan, executePlan); dryRun=false is refused.
    */
   async runRetentionSweep(tenantId: string, dryRun = true): Promise<RetentionSweepResult> {
+    if (!dryRun) {
+      throw new ConflictError('Retention disposal needs an approved plan (BL-327): prepare one with POST /admin/retention/plans, have a second person approve it, then execute it');
+    }
+    const { checkedAt, eligible, details } = await this.#evaluate(tenantId);
+    return {
+      tenantId,
+      dryRun: true,
+      checkedAt: checkedAt.toISOString(),
+      eligible,
+      anonymised: details.filter((d) => d.action === 'anonymised').length,
+      flagged:    details.filter((d) => d.action === 'flagged-for-dpo').length,
+      skipped:    details.filter((d) => d.action.startsWith('skipped')).length,
+      details,
+    };
+  }
+
+  /** Stores the dry run's anonymisations as a plan for a second person to approve. */
+  async preparePlan(tenantId: string, actorId: string): Promise<RetentionPlanDto> {
+    const { details } = await this.#evaluate(tenantId);
+    const personIds = details.filter((d) => d.action === 'anonymised').map((d) => d.personId).sort();
+    if (personIds.length === 0) throw new ValidationError('No one is due for disposal, so there is nothing to plan');
+    const id = randomUUID();
+    await withTenantContext(this.db, tenantId, async (tx) => {
+      await tx.insert(retentionDisposalPlans).values({
+        id, tenantId: tenantId as Uuid, statusCode: 'prepared', preparedBy: actorId, preparedAt: clockNow(), planHash: planHash(personIds),
+      });
+      await tx.insert(retentionDisposalPlanItems).values(personIds.map((personId) => ({
+        tenantId: tenantId as Uuid, planId: id, personId: personId as Uuid, actionCode: 'anonymised',
+      })));
+    });
+    for (const d of details.filter((x) => x.action === 'flagged-for-dpo')) {
+      await this.audit.record({
+        tenantId, entityType: 'person', entityId: d.personId, actionType: 'update', actorType: 'user', actorId,
+        reasonCode: 'retention-dpo-flag',
+        reasonText: 'Person has award record — retention deadline passed; flagged for DPO review rather than auto-anonymised.',
+      });
+    }
+    await this.#auditPlan(tenantId, id, actorId, 'retention-plan-prepared', `Disposal plan prepared for ${personIds.length} person(s)`);
+    return this.getPlan(tenantId, id);
+  }
+
+  async getPlan(tenantId: string, planId: string): Promise<RetentionPlanDto> {
+    const { plan, personIds } = await this.#loadPlan(tenantId, planId);
+    return toPlanDto(plan, personIds);
+  }
+
+  async listPlans(tenantId: string): Promise<RetentionPlanDto[]> {
+    const rows = await withTenantContext(this.db, tenantId, (tx) =>
+      tx.select().from(retentionDisposalPlans).where(eq(retentionDisposalPlans.tenantId, tenantId as Uuid)).orderBy(asc(retentionDisposalPlans.preparedAt)));
+    return Promise.all(rows.map((p) => this.getPlan(tenantId, p.id)));
+  }
+
+  /** A second person approves; the preparer never can. */
+  async approvePlan(tenantId: string, planId: string, actorId: string): Promise<RetentionPlanDto> {
+    const { plan } = await this.#loadPlan(tenantId, planId);
+    if (plan.preparedBy === actorId) throw new ForbiddenError('A disposal plan is approved by someone other than the person who prepared it');
+    const updated = await withTenantContext(this.db, tenantId, (tx) => tx.update(retentionDisposalPlans)
+      .set({ statusCode: 'approved', approvedBy: actorId, approvedAt: clockNow() })
+      .where(and(eq(retentionDisposalPlans.id, planId as Uuid), eq(retentionDisposalPlans.statusCode, 'prepared')))
+      .returning({ id: retentionDisposalPlans.id }));
+    if (updated.length === 0) throw new ConflictError(`Only a prepared plan can be approved; this one is ${plan.statusCode}`);
+    await this.#auditPlan(tenantId, planId, actorId, 'retention-plan-approved', 'Disposal plan approved');
+    return this.getPlan(tenantId, planId);
+  }
+
+  async rejectPlan(tenantId: string, planId: string, actorId: string, reason: string): Promise<RetentionPlanDto> {
+    const { plan } = await this.#loadPlan(tenantId, planId);
+    if (plan.preparedBy === actorId) throw new ForbiddenError('A disposal plan is rejected by someone other than the person who prepared it');
+    const updated = await withTenantContext(this.db, tenantId, (tx) => tx.update(retentionDisposalPlans)
+      .set({ statusCode: 'rejected', rejectedBy: actorId, rejectedAt: clockNow(), rejectionReason: reason })
+      .where(and(eq(retentionDisposalPlans.id, planId as Uuid), eq(retentionDisposalPlans.statusCode, 'prepared')))
+      .returning({ id: retentionDisposalPlans.id }));
+    if (updated.length === 0) throw new ConflictError(`Only a prepared plan can be rejected; this one is ${plan.statusCode}`);
+    await this.#auditPlan(tenantId, planId, actorId, 'retention-plan-rejected', reason);
+    return this.getPlan(tenantId, planId);
+  }
+
+  /**
+   * Applies an approved plan, all or nothing: refused if anyone in it is no
+   * longer eligible (a hold, restriction, request or new enrolment since it
+   * was prepared). Each person gets a record_disposition with a certificate
+   * reference. A plan executes once.
+   */
+  async executePlan(tenantId: string, planId: string, actorId: string): Promise<RetentionExecutionResult> {
+    const { plan, personIds } = await this.#loadPlan(tenantId, planId);
+    if (plan.statusCode !== 'approved') throw new ConflictError(`Only an approved plan can be executed; this one is ${plan.statusCode}`);
+    if (planHash(personIds) !== plan.planHash) throw new ConflictError('The plan\'s contents no longer match what was approved');
+
+    const { details } = await this.#evaluate(tenantId, personIds);
+    const stillDue = new Set(details.filter((d) => d.action === 'anonymised').map((d) => d.personId));
+    const changed = personIds.filter((id) => !stillDue.has(id)).map((personId) =>
+      `${personId} (${details.find((d) => d.personId === personId)?.reason ?? 'no longer past retention'})`);
+    if (changed.length > 0) {
+      throw new ConflictError(`Eligibility changed since the plan was prepared, so nothing was disposed of; prepare a new plan. Changed: ${changed.join(', ')}`);
+    }
+
+    const executedAt = clockNow();
+    const certificates: Array<{ personId: string; certificateRef: string }> = [];
+    await withTenantContext(this.db, tenantId, async (tx) => {
+      // Claim the plan first, so two executions cannot both run it.
+      const claimed = await tx.update(retentionDisposalPlans)
+        .set({ statusCode: 'executed', executedBy: actorId, executedAt })
+        .where(and(eq(retentionDisposalPlans.id, planId as Uuid), eq(retentionDisposalPlans.statusCode, 'approved')))
+        .returning({ id: retentionDisposalPlans.id });
+      if (claimed.length === 0) throw new ConflictError('The plan was executed or changed by someone else');
+      for (const [i, personId] of personIds.entries()) {
+        await anonymise(tx, tenantId, personId, executedAt);
+        const certificateRef = `RDC-${planId.slice(0, 8).toUpperCase()}-${String(i + 1).padStart(4, '0')}`;
+        await tx.insert(recordDispositions).values({
+          tenantId: tenantId as Uuid, personId: personId as Uuid, disposalPlanId: planId as Uuid, certificateRef,
+          dispositionTypeCode: 'anonymised', executedAt, executedBy: actorId,
+          evidenceRef: `retention-disposal-plan:${planId}`,
+        });
+        certificates.push({ personId, certificateRef });
+      }
+    });
+
+    for (const c of certificates) {
+      await this.audit.record({
+        tenantId, entityType: 'person', entityId: c.personId, actionType: 'update', actorType: 'user', actorId,
+        reasonCode: 'retention-anonymised',
+        reasonText: `Personal data anonymised under disposal plan ${planId} (certificate ${c.certificateRef}), prepared by ${plan.preparedBy} and approved by ${plan.approvedBy ?? ''}; retention period (${RETENTION_YEARS} years post-study) expired.`,
+      });
+    }
+    await this.#auditPlan(tenantId, planId, actorId, 'retention-plan-executed', `Disposal plan executed for ${certificates.length} person(s)`);
+    return { planId, executedAt: executedAt.toISOString(), anonymised: certificates.length, certificates };
+  }
+
+  async #loadPlan(tenantId: string, planId: string): Promise<{ plan: RetentionDisposalPlan; personIds: string[] }> {
+    return withTenantContext(this.db, tenantId, async (tx) => {
+      const [plan] = await tx.select().from(retentionDisposalPlans)
+        .where(and(eq(retentionDisposalPlans.id, planId as Uuid), eq(retentionDisposalPlans.tenantId, tenantId as Uuid)));
+      if (!plan) throw new NotFoundError('Retention disposal plan', planId);
+      const items = await tx.select({ personId: retentionDisposalPlanItems.personId }).from(retentionDisposalPlanItems)
+        .where(eq(retentionDisposalPlanItems.planId, planId as Uuid));
+      return { plan, personIds: items.map((i) => i.personId).sort() };
+    });
+  }
+
+  async #auditPlan(tenantId: string, planId: string, actorId: string, reasonCode: string, reasonText: string): Promise<void> {
+    await this.audit.record({
+      tenantId, entityType: 'retention_disposal_plan', entityId: planId, actionType: 'update', actorType: 'user', actorId, reasonCode, reasonText,
+    });
+  }
+
+  /** Who is past retention, and what the sweep may do with each (no changes). */
+  async #evaluate(tenantId: string, onlyPersonIds?: string[]): Promise<{ checkedAt: Date; eligible: number; details: RetentionSweepResult['details'] }> {
     const checkedAt  = clockNow();
     const cutoffDate = new Date(checkedAt);
     cutoffDate.setFullYear(cutoffDate.getFullYear() - RETENTION_YEARS);
@@ -135,140 +293,74 @@ export class RetentionEnforcementService {
             AND p2.tenant_id  = e.tenant_id
             AND p2.retention_anonymised_at IS NOT NULL
         )
+        ${onlyPersonIds ? sql`AND e.person_id IN (${sql.join(onlyPersonIds.map((id) => sql`${id}::uuid`), sql`, `)})` : sql``}
       GROUP BY e.person_id, e.tenant_id
     `)) as unknown as EligibleRow[];
 
-    const details: RetentionSweepResult['details'] = [];
-    let anonymised = 0;
-    let flagged    = 0;
-    let skipped    = 0;
-
-    for (const row of eligibleRows) {
-      const { person_id: personId } = row;
-
-      // Cast the boolean from SQL — it may come back as 't'/'f' from pg
-      const flag = (v: unknown) => v === true || String(v) === 't';
-      const hasAward = flag(row.has_award);
-
-      const skip = flag(row.has_hold) ? ['skipped-hold', 'active-record-hold'] as const
-        : flag(row.has_restriction) ? ['skipped-restriction', 'active-processing-restriction'] as const
-        : flag(row.has_open_request) ? ['skipped-open-request', 'open-rights-request'] as const
-        : flag(row.schedule_not_due) ? ['skipped-schedule', 'retention-schedule-not-due'] as const
-        : null;
-      if (skip) {
-        details.push({ personId, action: skip[0], reason: skip[1] });
-        skipped++;
-        continue;
-      }
-
-      if (hasAward) {
-        // Award/transcript data is permanently retained — flag for DPO review
-        details.push({ personId, action: 'flagged-for-dpo', reason: 'has-award-record' });
-        flagged++;
-
-        if (!dryRun) {
-          await this.audit.record({
-            tenantId,
-            entityType: 'person',
-            entityId:   personId,
-            actionType: 'update',
-            actorType:  'system',
-            actorId:    'retention-enforcement-service',
-            reasonCode: 'retention-dpo-flag',
-            reasonText: 'Person has award record — retention deadline passed; flagged for DPO review rather than auto-anonymised.',
-          });
-        }
-        continue;
-      }
-
-      if (dryRun) {
-        details.push({ personId, action: 'anonymised' });
-        anonymised++;
-        continue;
-      }
-
-      // Apply: anonymise personal identity data in place.
-      // Award records (progression_decision.outcome_code = 'award') are preserved.
-      // Identity/contact fields are replaced with anonymised tokens.
-      const anonToken = `ANON-${personId.slice(0, 8).toUpperCase()}`;
-
-      await withTenantContext(this.db, tenantId, async (tx) => {
-        // Anonymise all person_identity versions for this person
-        await tx
-          .update(personIdentities)
-          .set({
-            legalFirstName:  anonToken,
-            legalFamilyName: anonToken,
-            preferredName:    null,
-            dateOfBirth:      null,
-            genderCode:       null,
-            nationalityCode:  null,
-            domicileCode:     null,
-            ethnicityCode:    null,
-            emailInstitutional: null,
-            emailPersonal:      null,
-            phoneMobile:        null,
-          })
-          .where(
-            and(
-              eq(personIdentities.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
-              eq(personIdentities.personId, personId as `${string}-${string}-${string}-${string}-${string}`),
-            ),
-          );
-
-        // Anonymise all student addresses
-        await tx
-          .update(studentAddresses)
-          .set({
-            line1:       anonToken,
-            line2:       null,
-            city:        null,
-            postcode:    null,
-            countryCode: null,
-          })
-          .where(
-            and(
-              eq(studentAddresses.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
-              eq(studentAddresses.personId, personId as `${string}-${string}-${string}-${string}-${string}`),
-            ),
-          );
-
-        // Mark person record as anonymised
-        await tx
-          .update(persons)
-          .set({ retentionAnonymisedAt: clockNow() })
-          .where(
-            and(
-              eq(persons.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
-              eq(persons.id,       personId as `${string}-${string}-${string}-${string}-${string}`),
-            ),
-          );
-      });
-
-      await this.audit.record({
-        tenantId,
-        entityType: 'person',
-        entityId:   personId,
-        actionType: 'update',
-        actorType:  'system',
-        actorId:    'retention-enforcement-service',
-        reasonCode: 'retention-anonymised',
-        reasonText: `Personal data anonymised — retention period (${RETENTION_YEARS} years post-study) expired.`,
-      });
-
-      details.push({ personId, action: 'anonymised' });
-      anonymised++;
-    }
-
-    return {
-      tenantId,
-      dryRun,
-      checkedAt: checkedAt.toISOString(),
-      eligible:  eligibleRows.length,
-      anonymised,
-      flagged,
-      skipped,
-      details,
-    };
+    const flag = (v: unknown) => v === true || String(v) === 't';
+    const details: RetentionSweepResult['details'] = eligibleRows.map((row) => {
+      const personId = row.person_id;
+      if (flag(row.has_hold)) return { personId, action: 'skipped-hold', reason: 'active-record-hold' };
+      if (flag(row.has_restriction)) return { personId, action: 'skipped-restriction', reason: 'active-processing-restriction' };
+      if (flag(row.has_open_request)) return { personId, action: 'skipped-open-request', reason: 'open-rights-request' };
+      if (flag(row.schedule_not_due)) return { personId, action: 'skipped-schedule', reason: 'retention-schedule-not-due' };
+      // Award/transcript data is permanently retained — flag for DPO review.
+      if (flag(row.has_award)) return { personId, action: 'flagged-for-dpo', reason: 'has-award-record' };
+      return { personId, action: 'anonymised' };
+    });
+    return { checkedAt, eligible: eligibleRows.length, details };
   }
+}
+
+type Uuid = `${string}-${string}-${string}-${string}-${string}`;
+
+export interface RetentionPlanDto {
+  planId:          string;
+  statusCode:      string;
+  preparedBy:      string;
+  preparedAt:      string;
+  approvedBy:      string | null;
+  approvedAt:      string | null;
+  rejectedBy:      string | null;
+  rejectionReason: string | null;
+  executedBy:      string | null;
+  executedAt:      string | null;
+  personIds:       string[];
+}
+
+export interface RetentionExecutionResult {
+  planId:       string;
+  executedAt:   string;
+  anonymised:   number;
+  certificates: Array<{ personId: string; certificateRef: string }>;
+}
+
+function planHash(personIds: readonly string[]): string {
+  return createHash('sha256').update([...personIds].sort().join('\n')).digest('hex');
+}
+
+function toPlanDto(p: RetentionDisposalPlan, personIds: string[]): RetentionPlanDto {
+  return {
+    planId: p.id, statusCode: p.statusCode, preparedBy: p.preparedBy, preparedAt: p.preparedAt.toISOString(),
+    approvedBy: p.approvedBy, approvedAt: p.approvedAt?.toISOString() ?? null,
+    rejectedBy: p.rejectedBy, rejectionReason: p.rejectionReason,
+    executedBy: p.executedBy, executedAt: p.executedAt?.toISOString() ?? null, personIds,
+  };
+}
+
+/** Anonymise one person's identity and contact data in place (irreversible). */
+async function anonymise(tx: TenantScopedDb, tenantId: string, personId: string, at: Date): Promise<void> {
+  const anonToken = `ANON-${personId.slice(0, 8).toUpperCase()}`;
+  await tx.update(personIdentities)
+    .set({
+      legalFirstName: anonToken, legalFamilyName: anonToken, preferredName: null, dateOfBirth: null, genderCode: null,
+      nationalityCode: null, domicileCode: null, ethnicityCode: null, emailInstitutional: null, emailPersonal: null, phoneMobile: null,
+    })
+    .where(and(eq(personIdentities.tenantId, tenantId as Uuid), eq(personIdentities.personId, personId as Uuid)));
+  await tx.update(studentAddresses)
+    .set({ line1: anonToken, line2: null, city: null, postcode: null, countryCode: null })
+    .where(and(eq(studentAddresses.tenantId, tenantId as Uuid), eq(studentAddresses.personId, personId as Uuid)));
+  await tx.update(persons)
+    .set({ retentionAnonymisedAt: at })
+    .where(and(eq(persons.tenantId, tenantId as Uuid), eq(persons.id, personId as Uuid)));
 }

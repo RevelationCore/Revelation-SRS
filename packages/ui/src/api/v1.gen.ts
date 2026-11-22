@@ -7012,9 +7012,95 @@ export interface paths {
         put?: never;
         /**
          * Retention enforcement sweep
-         * @description Run a data retention sweep for the tenant. In dry-run mode (default), identifies eligible persons and returns counts without making changes. Set dryRun=false to apply irreversible anonymisation.
+         * @description Dry run of a data retention sweep for the tenant: identifies eligible persons and returns counts without making changes. dryRun=false is refused (409); disposal needs an approved plan (POST /admin/retention/plans).
          */
         post: operations["createAdminRetentionEnforce"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/retention/plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List retention disposal plans */
+        get: operations["getAdminRetentionPlans"];
+        put?: never;
+        /** Prepare a retention disposal plan */
+        post: operations["createAdminRetentionPlans"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/retention/plans/{planId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a retention disposal plan */
+        get: operations["getAdminRetentionPlansByPlanId"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/retention/plans/{planId}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Approve a retention disposal plan (not its preparer) */
+        post: operations["createAdminRetentionPlansByPlanIdApprove"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/retention/plans/{planId}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reject a retention disposal plan (not its preparer) */
+        post: operations["createAdminRetentionPlansByPlanIdReject"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/retention/plans/{planId}/execute": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Execute an approved retention disposal plan (irreversible) */
+        post: operations["createAdminRetentionPlansByPlanIdExecute"];
         delete?: never;
         options?: never;
         head?: never;
@@ -36614,9 +36700,376 @@ export interface operations {
                         skipped: number;
                         details: {
                             personId: string;
-                            action: "anonymised" | "flagged-for-dpo" | "skipped-award-hold";
+                            action: "anonymised" | "flagged-for-dpo" | "skipped-award-hold" | "skipped-hold" | "skipped-restriction" | "skipped-open-request" | "skipped-schedule";
                             reason?: string;
                         }[];
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        instance?: string;
+                    };
+                };
+            };
+        };
+    };
+    getAdminRetentionPlans: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        planId: string;
+                        statusCode: string;
+                        preparedBy: string;
+                        preparedAt: string;
+                        approvedBy: string | null;
+                        approvedAt: string | null;
+                        rejectedBy: string | null;
+                        rejectionReason: string | null;
+                        executedBy: string | null;
+                        executedAt: string | null;
+                        personIds: string[];
+                    }[];
+                };
+            };
+        };
+    };
+    createAdminRetentionPlans: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        planId: string;
+                        statusCode: string;
+                        preparedBy: string;
+                        preparedAt: string;
+                        approvedBy: string | null;
+                        approvedAt: string | null;
+                        rejectedBy: string | null;
+                        rejectionReason: string | null;
+                        executedBy: string | null;
+                        executedAt: string | null;
+                        personIds: string[];
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        instance?: string;
+                    };
+                };
+            };
+        };
+    };
+    getAdminRetentionPlansByPlanId: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                planId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        planId: string;
+                        statusCode: string;
+                        preparedBy: string;
+                        preparedAt: string;
+                        approvedBy: string | null;
+                        approvedAt: string | null;
+                        rejectedBy: string | null;
+                        rejectionReason: string | null;
+                        executedBy: string | null;
+                        executedAt: string | null;
+                        personIds: string[];
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        instance?: string;
+                    };
+                };
+            };
+        };
+    };
+    createAdminRetentionPlansByPlanIdApprove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                planId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        planId: string;
+                        statusCode: string;
+                        preparedBy: string;
+                        preparedAt: string;
+                        approvedBy: string | null;
+                        approvedAt: string | null;
+                        rejectedBy: string | null;
+                        rejectionReason: string | null;
+                        executedBy: string | null;
+                        executedAt: string | null;
+                        personIds: string[];
+                    };
+                };
+            };
+            /** @description Default Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        instance?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        instance?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        instance?: string;
+                    };
+                };
+            };
+        };
+    };
+    createAdminRetentionPlansByPlanIdReject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                planId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    reason: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        planId: string;
+                        statusCode: string;
+                        preparedBy: string;
+                        preparedAt: string;
+                        approvedBy: string | null;
+                        approvedAt: string | null;
+                        rejectedBy: string | null;
+                        rejectionReason: string | null;
+                        executedBy: string | null;
+                        executedAt: string | null;
+                        personIds: string[];
+                    };
+                };
+            };
+            /** @description Default Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        instance?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        instance?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        instance?: string;
+                    };
+                };
+            };
+        };
+    };
+    createAdminRetentionPlansByPlanIdExecute: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                planId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        planId: string;
+                        executedAt: string;
+                        anonymised: number;
+                        certificates: {
+                            personId: string;
+                            certificateRef: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        instance?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        instance?: string;
                     };
                 };
             };
