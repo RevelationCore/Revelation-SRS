@@ -10,6 +10,7 @@
  */
 
 import type { DomainEventEnvelope } from '@revelation-srs/domain';
+import { natsConnectOptions } from '@revelation-srs/service-client';
 import type {
   ConsumerMessages,
   JetStreamClient,
@@ -26,7 +27,6 @@ import {
 import type { Logger } from 'pino';
 
 import type { VleDb } from '../db/client.js';
-import { natsConnectOptions } from '../nats-auth.js';
 import type { SrsAcknowledgementClient } from '../srs-client/acknowledgement-client.js';
 import type { VleClient } from '../vle-client/client.js';
 import type { VlePlatformDriver } from '../vle-platforms/driver.js';

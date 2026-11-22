@@ -26,6 +26,7 @@
     "@opentelemetry/semantic-conventions": "^1.45.0",
     "drizzle-orm": "^0.45.4",
     "fastify": "^5.12.8",
+    "@revelation-srs/service-client": "workspace:*",
     "nats": "^2.29.3",
     "pino": "^9.14.0",
     "postgres": "^3.4.9"

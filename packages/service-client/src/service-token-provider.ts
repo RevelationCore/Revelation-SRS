@@ -1,13 +1,14 @@
 import { readFileSync, statSync } from 'node:fs';
 
-import { createClientAssertion, fetchWithTimeout, wellbeingServiceClientId } from '@revelation-srs/auth';
+import { createClientAssertion } from './client-assertion.js';
+import { fetchWithTimeout } from './http.js';
 
 /**
- * Access tokens for the wellbeing service's hand-offs to core (ADR-029).
+ * Access tokens for a service's calls to core (ADR-029, ADR-032).
  *
- * Each tenant has its own Keycloak client, srs-wellbeing-svc-<tenantId>,
- * which puts that tenant in the token; the service never asserts a tenant
- * itself. Tokens are cached per tenant in memory and refreshed before they
+ * Each tenant has its own Keycloak client for the service (clientIdFor,
+ * for example srs-wellbeing-svc-<tenantId>), which puts that tenant in the
+ * token; the service never asserts a tenant itself. Tokens are cached per tenant in memory and refreshed before they
  * expire; concurrent requests for one tenant share a single fetch. Tokens,
  * assertions and keys are never logged.
  */
@@ -21,6 +22,8 @@ export type ClientAuth =
 export interface ServiceTokenProviderOptions {
   /** The realm's /protocol/openid-connect/token endpoint. */
   tokenUrl: string;
+  /** The service's client for a tenant: wellbeingServiceClientId or vleConnectorClientId. */
+  clientIdFor: (tenantId: string) => string;
   auth:     ClientAuth;
   /** Token endpoint call limit (default 5 s). */
   timeoutMs?: number;
@@ -81,7 +84,7 @@ export class ServiceTokenProvider implements ServiceTokenSource {
   }
 
   async #fetch(tenantId: string): Promise<string> {
-    const clientId = wellbeingServiceClientId(tenantId);
+    const clientId = this.opts.clientIdFor(tenantId);
     const form = new URLSearchParams({ grant_type: 'client_credentials', client_id: clientId });
     const headers: Record<string, string> = { 'content-type': 'application/x-www-form-urlencoded' };
     const auth = this.opts.auth;
@@ -114,7 +117,7 @@ export class ServiceTokenProvider implements ServiceTokenSource {
   }
 }
 
-/** Calls core with the tenant's token; after a 401, drops it and retries once (ADR-029). */
+/** Calls core with the tenant's token; after a 401, drops it and retries once (ADR-029 item 5). */
 export async function callCoreAsService(tokens: ServiceTokenSource, tenantId: string, url: string, init: RequestInit): Promise<Response> {
   for (let attempt = 0; ; attempt++) {
     const token = await tokens.getToken(tenantId);

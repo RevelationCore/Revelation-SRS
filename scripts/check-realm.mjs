@@ -4,9 +4,10 @@
 // - realm: access tokens of at most 300 s, refresh-token rotation with no reuse;
 // - browser clients: exact redirect URIs (no wildcards), and offline_access
 //   neither offered nor requested by the SPAs;
-// - service clients (ADR-029): srs-wellbeing-svc-<tenant> has a hard-coded
-//   tenant_id equal to its suffix, only the srs-api audience, no interactive
-//   flows, full scope off, and its service account holds only wellbeing-service.
+// - service clients (ADR-029, ADR-032): srs-wellbeing-svc-<tenant> and
+//   srs-vle-svc-<tenant> have a hard-coded tenant_id equal to their suffix,
+//   only the srs-api audience, no interactive flows, full scope off, and their
+//   service account holds only that service's role.
 import { readFileSync } from 'node:fs';
 
 const root = new URL('..', import.meta.url).pathname;
@@ -16,7 +17,8 @@ const errors = [];
 if (!(realm.accessTokenLifespan <= 300)) errors.push(`realm accessTokenLifespan is ${realm.accessTokenLifespan}, above 300`);
 if (realm.revokeRefreshToken !== true || realm.refreshTokenMaxReuse !== 0) errors.push('realm must rotate refresh tokens with no reuse (revokeRefreshToken, refreshTokenMaxReuse 0)');
 
-const SERVICE = /^srs-wellbeing-svc-([0-9a-f-]{36})$/;
+const SERVICE = /^srs-(wellbeing|vle)-svc-([0-9a-f-]{36})$/;
+const SERVICE_ROLE = { wellbeing: 'wellbeing-service', vle: 'vle-connector-service' };
 for (const c of realm.clients) {
   const m = SERVICE.exec(c.clientId);
   if (!m) {
@@ -28,7 +30,8 @@ for (const c of realm.clients) {
     }
     continue;
   }
-  const tenant = m[1];
+  const tenant = m[2];
+  const role = SERVICE_ROLE[m[1]];
   const flows = ['standardFlowEnabled', 'implicitFlowEnabled', 'directAccessGrantsEnabled'].filter((k) => c[k]);
   if (flows.length) errors.push(`${c.clientId}: interactive flows on (${flows.join(', ')})`);
   if (c.publicClient !== false || c.serviceAccountsEnabled !== true) errors.push(`${c.clientId}: must be a confidential client with a service account`);
@@ -40,9 +43,9 @@ for (const c of realm.clients) {
   if (JSON.stringify(audiences) !== JSON.stringify(['srs-api'])) errors.push(`${c.clientId}: audiences must be exactly srs-api, not ${audiences.join(', ')}`);
   if ((c.protocolMappers ?? []).some((p) => p.config?.['claim.name'] === 'srs_person_id')) errors.push(`${c.clientId}: must not map srs_person_id`);
   const user = (realm.users ?? []).find((u) => u.serviceAccountClientId === c.clientId);
-  if (JSON.stringify(user?.realmRoles ?? []) !== JSON.stringify(['wellbeing-service'])) errors.push(`${c.clientId}: its service account must hold only wellbeing-service`);
+  if (JSON.stringify(user?.realmRoles ?? []) !== JSON.stringify([role])) errors.push(`${c.clientId}: its service account must hold only ${role}`);
   const scope = (realm.scopeMappings ?? []).find((s) => s.client === c.clientId);
-  if (JSON.stringify(scope?.roles ?? []) !== JSON.stringify(['wellbeing-service'])) errors.push(`${c.clientId}: its scope must map only wellbeing-service`);
+  if (JSON.stringify(scope?.roles ?? []) !== JSON.stringify([role])) errors.push(`${c.clientId}: its scope must map only ${role}`);
 }
 
 // The SPAs must not ask for offline_access either (BL-159).

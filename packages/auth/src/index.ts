@@ -6,7 +6,6 @@ export { requireSelfOrPermission } from './middleware/require-self-or-permission
 export { requireAnyPermission } from './middleware/require-any-permission.js';
 export { type AuthSettings, assertSecureAuthConfig, DEFAULT_DEV_JWT_SECRET, tokenEnv, issuerFromJwksUrl, jwtPluginOptions } from './settings.js';
 export type { JwtPluginOptions } from './plugins/jwt.js';
-export { DEFAULT_OUTBOUND_TIMEOUT_MS, fetchWithTimeout } from './http.js';
-export { bindServiceRoles, SERVICE_ROLE_CLIENTS, WELLBEING_SERVICE_ROLE, wellbeingServiceClientId, type ServiceRoleContext } from './service-identity.js';
-export { createClientAssertion, DEFAULT_DEV_WELLBEING_CLIENT_SECRET, keycloakKeyId, type ClientAssertionInput } from './client-assertion.js';
-export { assertNatsCredentials, natsConnectOptions } from './nats.js';
+export { bindServiceRoles, SERVICE_ROLE_CLIENTS, VLE_CONNECTOR_SERVICE_ROLE, WELLBEING_SERVICE_ROLE, type ServiceRoleContext } from './service-identity.js';
+// The client side lives in the leaf package (ADR-032); re-exported so existing imports keep working.
+export * from '@revelation-srs/service-client';

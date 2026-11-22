@@ -91,6 +91,10 @@ data:
     path "kv/data/srs/vle-adapter" {
       capabilities = ["read"]
     }
+    # ADR-032: the connector's own client key for calls to core.
+    path "kv/data/srs/vle-connector/service-client" {
+      capabilities = ["read"]
+    }
 
   policy-temporal.hcl: |
     path "kv/data/srs/temporal-db" {

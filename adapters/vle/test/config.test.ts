@@ -16,7 +16,6 @@ function env(overrides: Record<string, string>): void {
     DATABASE_URL: 'postgresql://x@localhost/x',
     TENANT_ID: '00000000-0000-0000-0000-000000000001',
     INTEGRATION_REGISTRATION_ID: '2b9d2c1e-6a1f-4c8e-9a3b-0c5d7e9f1a2b',
-    SERVICE_ACCOUNT_TOKEN: 'token',
     ...overrides,
   };
 }

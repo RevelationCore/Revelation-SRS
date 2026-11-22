@@ -76,6 +76,19 @@ export default [
       'react-hooks/exhaustive-deps': 'warn',
     },
   },
+  // Connectors stay independently replaceable (ADR-032): the only workspace
+  // package they import at runtime is the leaf client package.
+  {
+    files: ['adapters/*/src/**/*.ts'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        patterns: [{
+          regex: '^@revelation-srs/(?!service-client$|domain$)',
+          message: 'Connectors import only @revelation-srs/service-client (and domain types); see ADR-032.',
+        }],
+      }],
+    },
+  },
   // Every outbound HTTP call from a service is time-bounded (BL-011, P-09):
   // services call fetchWithTimeout, never bare fetch.
   {

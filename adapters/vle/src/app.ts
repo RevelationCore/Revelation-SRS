@@ -1,5 +1,6 @@
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
+import type { ServiceTokenSource } from '@revelation-srs/service-client';
 import Fastify from 'fastify';
 import type { FastifyInstance } from 'fastify';
 
@@ -34,6 +35,8 @@ export interface BuildAppOptions {
   vleClient?: VleClient;
   /** Override the platform driver for adjustments — used in tests. */
   platformDriver?: VlePlatformDriver;
+  /** Tokens for calls to core (ADR-032); required unless registryClient is given. */
+  srsTokens?: ServiceTokenSource;
 }
 
 export async function buildApp(
@@ -61,7 +64,10 @@ export async function buildApp(
 
   const registryClient =
     opts.registryClient ??
-    new HttpSrsRegistryClient(config.srsApiUrl, config.serviceAccountToken);
+    (() => {
+      if (!opts.srsTokens) throw new Error('buildApp needs a registryClient or srsTokens to reach core (ADR-032)');
+      return new HttpSrsRegistryClient(config.srsApiUrl, opts.srsTokens, config.tenantId);
+    })();
 
   const registrationLoader = new RegistrationLoader(
     registryClient,

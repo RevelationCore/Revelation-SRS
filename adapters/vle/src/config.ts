@@ -1,3 +1,22 @@
+import { createPrivateKey } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+
+import { DEFAULT_DEV_VLE_CLIENT_SECRET } from '@revelation-srs/service-client';
+
+/**
+ * How the connector authenticates to core (ADR-032): as itself, through its
+ * tenant's srs-vle-svc-<tenant> client. private_key_jwt outside development
+ * and test; a client secret only in development and test.
+ */
+export interface VleSrsClientConfig {
+  srsApiUrlSet:  boolean;
+  tokenUrl:      string | undefined;
+  clientAuth:    'private_key_jwt' | 'client_secret_basic';
+  clientKeyFile: string | undefined;
+  clientKeyId:   string | undefined;
+  clientSecret:  string;
+}
+
 export interface Config {
   port:                      number;
   logLevel:                  string;
@@ -7,7 +26,7 @@ export interface Config {
   natsUrl:                   string;
   tenantId:                  string;
   integrationRegistrationId: string;
-  serviceAccountToken:       string;
+  srsClient:                 VleSrsClientConfig;
   vleEndpointUrl:            string;
   /** Which platform driver writes adjustments: stub | canvas | moodle. */
   vlePlatform:               'stub' | 'canvas' | 'moodle';
@@ -42,6 +61,46 @@ function optionalInt(name: string, defaultValue: number): number {
   return v ? parseInt(v, 10) : defaultValue;
 }
 
+const isDevOrTest = (nodeEnv: string) => nodeEnv === 'development' || nodeEnv === 'test';
+
+export function loadVleSrsClientConfig(nodeEnv: string, env: NodeJS.ProcessEnv = process.env): VleSrsClientConfig {
+  const jwks = env['KEYCLOAK_JWKS_URL'];
+  return {
+    srsApiUrlSet:  Boolean(env['SRS_API_URL']),
+    tokenUrl:      env['VLE_SRS_TOKEN_URL'] ?? (jwks ? jwks.replace(/\/certs\/?$/, '/token') : undefined),
+    clientAuth:    (env['VLE_SRS_CLIENT_AUTH'] as VleSrsClientConfig['clientAuth'] | undefined) ?? (isDevOrTest(nodeEnv) ? 'client_secret_basic' : 'private_key_jwt'),
+    clientKeyFile: env['VLE_SRS_CLIENT_KEY_FILE'],
+    clientKeyId:   env['VLE_SRS_CLIENT_KEY_ID'],
+    clientSecret:  env['VLE_SRS_CLIENT_SECRET'] ?? DEFAULT_DEV_VLE_CLIENT_SECRET,
+  };
+}
+
+/**
+ * Refuses a configuration that would call core without a verifiable,
+ * tenant-bound identity (ADR-032). Static: no token is fetched, so a brief
+ * Keycloak outage cannot crash-loop the pod. The retired static token fails
+ * loudly in every environment, so stale configuration is not ignored.
+ */
+export function assertVleSrsClientConfig(nodeEnv: string, cfg: VleSrsClientConfig, env: NodeJS.ProcessEnv = process.env): void {
+  if (env['SERVICE_ACCOUNT_TOKEN']) {
+    throw new Error(`Refusing to start srs-vle-adapter in '${nodeEnv}' (ADR-032): SERVICE_ACCOUNT_TOKEN is no longer used; the connector authenticates as srs-vle-svc-<tenant>`);
+  }
+  if (isDevOrTest(nodeEnv)) return;
+  const problems: string[] = [];
+  if (!cfg.srsApiUrlSet) problems.push('SRS_API_URL is not set');
+  if (!cfg.tokenUrl) problems.push('no token endpoint: set KEYCLOAK_JWKS_URL or VLE_SRS_TOKEN_URL');
+  if (cfg.clientAuth !== 'private_key_jwt') problems.push('VLE_SRS_CLIENT_AUTH must be private_key_jwt');
+  if (!cfg.clientKeyFile) problems.push('VLE_SRS_CLIENT_KEY_FILE is not set');
+  else {
+    try {
+      if (createPrivateKey(readFileSync(cfg.clientKeyFile, 'utf8')).asymmetricKeyType !== 'rsa') problems.push('VLE_SRS_CLIENT_KEY_FILE is not an RSA private key');
+    } catch {
+      problems.push('VLE_SRS_CLIENT_KEY_FILE is missing, unreadable or not a private key');
+    }
+  }
+  if (problems.length > 0) throw new Error(`Refusing to start srs-vle-adapter in '${nodeEnv}' (ADR-032): ${problems.join('; ')}`);
+}
+
 export function loadConfig(): Config {
   const safetyClass = process.env['ENDPOINT_SAFETY_CLASS'] ?? 'simulator';
   if (safetyClass !== 'simulator' && safetyClass !== 'external-test' && safetyClass !== 'live') {
@@ -72,7 +131,7 @@ export function loadConfig(): Config {
     natsUrl:                 process.env['NATS_URL'] ?? 'nats://localhost:4222',
     tenantId:                  requiredUuid('TENANT_ID'),
     integrationRegistrationId: requiredUuid('INTEGRATION_REGISTRATION_ID'),
-    serviceAccountToken:       required('SERVICE_ACCOUNT_TOKEN'),
+    srsClient:                 loadVleSrsClientConfig(process.env['NODE_ENV'] ?? 'development'),
     vleEndpointUrl:            process.env['VLE_ENDPOINT_URL'] ?? 'http://localhost:3003',
     endpointSafetyClass:     safetyClass,
     retryMaxAttempts:        optionalInt('RETRY_MAX_ATTEMPTS', 5),

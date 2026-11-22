@@ -9,7 +9,8 @@
   },
   "references": [
     { "path": "../domain" },
-    { "path": "../db" }
+    { "path": "../db" },
+    { "path": "../service-client" }
   ],
   "include": ["src"]
 }

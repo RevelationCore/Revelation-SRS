@@ -57789,6 +57789,24 @@
         ],
         "x-publication-class": "public",
         "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "markId"
+                  ],
+                  "properties": {
+                    "markId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
           "201": {
             "description": "Default Response",
             "content": {

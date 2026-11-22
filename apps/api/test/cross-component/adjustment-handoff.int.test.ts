@@ -27,7 +27,7 @@
  * projection is fed by its own event consumer, which is not part of this
  * hand-off.
  */
-import { wellbeingServiceClientId } from '@revelation-srs/auth';
+import { vleConnectorClientId, wellbeingServiceClientId } from '@revelation-srs/auth';
 import { GenericContainer, Wait, type StartedTestContainer } from 'testcontainers';
 import { pino } from 'pino';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
@@ -89,7 +89,11 @@ beforeAll(async () => {
   vle = await startVleAdapter();
   consumer = new VleEventConsumer(natsUrl, vle.db, srs.tenantId, log, {
     vleClient:      new HttpVleClient(vle.stubVleBaseUrl),
-    srsAckClient:   new HttpSrsAcknowledgementClient(srsUrl, await srs.makeJwt({ roles: ['tenant-administrator'] })),
+    // ADR-032: the connector replies as srs-vle-svc-<tenant>, with only its VLE-scoped permission.
+    srsAckClient:   new HttpSrsAcknowledgementClient(srsUrl, {
+      getToken: (tenantId: string) => srs.makeJwt({ sub: 'service-account-srs-vle-svc', name: null, roles: ['vle-connector-service'], tenantId, azp: vleConnectorClientId(tenantId) }),
+      invalidate: () => undefined,
+    }, srs.tenantId),
     platformDriver: new StubVleDriver(vle.stubVleBaseUrl),
   });
   await consumer.connect();

@@ -10,7 +10,7 @@
  * transaction.
  */
 
-import { fetchWithTimeout } from '../http/fetch-with-timeout.js';
+import { fetchWithTimeout } from '@revelation-srs/service-client';
 
 export interface VleUpsertCourseParams {
   moduleId:    string;

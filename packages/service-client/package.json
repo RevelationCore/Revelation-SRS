@@ -1,0 +1,29 @@
+{
+  "name": "@revelation-srs/service-client",
+  "version": "0.0.1",
+  "private": true,
+  "license": "AGPL-3.0-or-later",
+  "description": "Client side of service-to-service calls (ADR-032): timeouts, NATS credentials, client assertions and tenant-bound service tokens. A leaf package: no server or database dependencies, so light connectors can use it.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "dev": "tsc -p tsconfig.json --watch"
+  },
+  "dependencies": {
+    "jose": "^5.10.0",
+    "nats": "^2.29.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "typescript": "^6.0.3"
+  }
+}

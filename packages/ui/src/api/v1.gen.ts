@@ -29354,6 +29354,17 @@ export interface operations {
         };
         responses: {
             /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        markId: string;
+                    };
+                };
+            };
+            /** @description Default Response */
             201: {
                 headers: {
                     [name: string]: unknown;

@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import type { ServiceTokenSource } from '@revelation-srs/service-client';
 import { sql } from 'drizzle-orm';
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import type { FastifyInstance } from 'fastify';
@@ -85,7 +86,7 @@ export async function startTestApp(): Promise<TestVleApp> {
     natsUrl:                   'nats://localhost:4222',
     tenantId,
     integrationRegistrationId: registrationId,
-    serviceAccountToken:       'test-token',
+    srsClient:                 { srsApiUrlSet: true, tokenUrl: undefined, clientAuth: 'client_secret_basic', clientKeyFile: undefined, clientKeyId: undefined, clientSecret: 'test' },
     vleEndpointUrl:            stubVleBaseUrl,
     vlePlatform:               'stub',
     vleApiToken:               undefined,
@@ -126,3 +127,9 @@ export async function startTestApp(): Promise<TestVleApp> {
     teardown,
   };
 }
+
+/** A fixed token for the stub SRS servers, which do not check it (ADR-032 tokens are tested in core). */
+export const staticTokens: ServiceTokenSource = {
+  getToken: () => Promise.resolve('test-token'),
+  invalidate: () => undefined,
+};

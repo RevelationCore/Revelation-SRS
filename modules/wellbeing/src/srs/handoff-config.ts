@@ -1,11 +1,10 @@
 import { createPrivateKey } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 
-import { DEFAULT_DEV_WELLBEING_CLIENT_SECRET } from '@revelation-srs/auth';
+import { DEFAULT_DEV_WELLBEING_CLIENT_SECRET, ServiceTokenProvider, wellbeingServiceClientId, type ClientAuth } from '@revelation-srs/auth';
 
 import { SrsAdjustmentHttpClient, SrsAdjustmentStubClient, type SrsAdjustmentClient } from './srs-adjustment-client.js';
 import { SrsEcHttpClient, SrsEcStubClient, type SrsEcClient } from './srs-ec-client.js';
-import { ServiceTokenProvider, type ClientAuth } from './service-token-provider.js';
 
 /**
  * How the wellbeing service reaches core for its hand-offs (ADR-029).
@@ -78,7 +77,7 @@ export function createSrsHandoffClients(nodeEnv: string, cfg: SrsHandoffConfig):
   const auth: ClientAuth = cfg.clientAuth === 'private_key_jwt'
     ? { method: 'private_key_jwt', keyFile: cfg.clientKeyFile ?? '', ...(cfg.clientKeyId ? { keyId: cfg.clientKeyId } : {}) }
     : { method: 'client_secret_basic', secret: cfg.clientSecret };
-  const tokens = new ServiceTokenProvider({ tokenUrl: cfg.tokenUrl, auth });
+  const tokens = new ServiceTokenProvider({ tokenUrl: cfg.tokenUrl, clientIdFor: wellbeingServiceClientId, auth });
   return { adjustment: new SrsAdjustmentHttpClient(cfg.srsApiUrl, tokens), ec: new SrsEcHttpClient(cfg.srsApiUrl, tokens) };
 }
 

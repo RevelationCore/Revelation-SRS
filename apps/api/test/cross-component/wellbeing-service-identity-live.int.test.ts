@@ -10,10 +10,10 @@
  *     -v $PWD/infra/compose/keycloak:/opt/keycloak/data/import:ro quay.io/keycloak/keycloak:26.0.7 start-dev --import-realm
  *   KEYCLOAK_LIVE_URL=http://localhost:18082 pnpm --filter @revelation-srs/api exec vitest run --config vitest.int.config.ts test/cross-component/wellbeing-service-identity-live.int.test.ts
  */
-import { DEFAULT_DEV_WELLBEING_CLIENT_SECRET } from '@revelation-srs/auth';
+import { DEFAULT_DEV_VLE_CLIENT_SECRET, DEFAULT_DEV_WELLBEING_CLIENT_SECRET, ServiceTokenProvider, vleConnectorClientId, wellbeingServiceClientId } from '@revelation-srs/auth';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { ServiceTokenProvider } from '../../../../modules/wellbeing/src/srs/service-token-provider.js';
+import { HttpSrsRegistryClient } from '../../../../adapters/vle/src/registry/client.js';
 import { SrsAdjustmentHttpClient } from '../../../../modules/wellbeing/src/srs/srs-adjustment-client.js';
 import { startTestApp, type TestApp } from '../helpers/test-app.js';
 
@@ -40,7 +40,7 @@ describe.skipIf(!kc)('wellbeing hand-off through a real Keycloak', () => {
       INSERT INTO enrolment (id, valid_from, tenant_id, person_id, status_code, mode_of_study_code, academic_year_of_entry, start_date)
       VALUES (gen_random_uuid(), now(), ${DEMO_TENANT}::uuid, ${person!.id}::uuid, 'enrolled', 'full-time', '2027-28', '2027-09-20') RETURNING id`) as unknown as Array<{ id: string }>;
 
-    const tokens = new ServiceTokenProvider({ tokenUrl: `${kc}/realms/srs/protocol/openid-connect/token`, auth: { method: 'client_secret_basic', secret: DEFAULT_DEV_WELLBEING_CLIENT_SECRET } });
+    const tokens = new ServiceTokenProvider({ clientIdFor: wellbeingServiceClientId, tokenUrl: `${kc}/realms/srs/protocol/openid-connect/token`, auth: { method: 'client_secret_basic', secret: DEFAULT_DEV_WELLBEING_CLIENT_SECRET } });
     const client = new SrsAdjustmentHttpClient(srsUrl, tokens);
     const result = await client.submitAdjustment({
       tenantId: DEMO_TENANT, idempotencyKey: 'live-adr029-1', personId: person!.id, enrolmentId: enrolment!.id,
@@ -48,5 +48,15 @@ describe.skipIf(!kc)('wellbeing hand-off through a real Keycloak', () => {
       amount: { value: 25, unitCode: 'percent-of-duration' }, sourceCaseId: '9a1b2c3d-0000-4000-8000-0000000000aa',
     });
     expect(result.adjustmentId).toMatch(/^[0-9a-f-]{36}$/);
+  });
+
+  it('the VLE connector reads its registration with a token from its own client (ADR-032)', async () => {
+    // The app validates RS256 only, so create the registration through the service.
+    const { registrationId } = await ctx.app.integrationRegistryService.createRegistration(DEMO_TENANT, {
+      contractId: 'vle-adjustments.v1', transportCode: 'manual-api', endpointSafetyClass: 'simulator', liveTrafficApproved: false, replaySupported: false,
+    }, 'live-test');
+    const tokens = new ServiceTokenProvider({ clientIdFor: vleConnectorClientId, tokenUrl: `${kc}/realms/srs/protocol/openid-connect/token`, auth: { method: 'client_secret_basic', secret: DEFAULT_DEV_VLE_CLIENT_SECRET } });
+    const registration = await new HttpSrsRegistryClient(srsUrl, tokens, DEMO_TENANT).getRegistration(registrationId);
+    expect(registration.contractId).toBe('vle-adjustments.v1');
   });
 });

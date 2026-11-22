@@ -12,13 +12,12 @@ import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { keycloakKeyId, wellbeingServiceClientId } from '@revelation-srs/auth';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { callCoreAsService, keycloakKeyId, ServiceTokenError, ServiceTokenProvider, wellbeingServiceClientId } from '@revelation-srs/auth';
 
 import { buildApp } from '../src/app.js';
 import type { Config } from '../src/config.js';
 import { assertSrsHandoffConfig, loadSrsHandoffConfig, type SrsHandoffConfig } from '../src/srs/handoff-config.js';
-import { callCoreAsService, ServiceTokenError, ServiceTokenProvider } from '../src/srs/service-token-provider.js';
 import { SrsAdjustmentStubClient } from '../src/srs/srs-adjustment-client.js';
 import { SrsEcStubClient } from '../src/srs/srs-ec-client.js';
 
@@ -100,7 +99,7 @@ describe('assertSrsHandoffConfig', () => {
 
 describe('ServiceTokenProvider', () => {
   it('asks for the tenant\'s own client with a client secret in development, and caches per tenant', async () => {
-    const tokens = new ServiceTokenProvider({ tokenUrl, auth: { method: 'client_secret_basic', secret: 's3cret' } });
+    const tokens = new ServiceTokenProvider({ clientIdFor: wellbeingServiceClientId, tokenUrl, auth: { method: 'client_secret_basic', secret: 's3cret' } });
     const [a1, a2] = await Promise.all([tokens.getToken(TENANT_A), tokens.getToken(TENANT_A)]);
     expect(a1).toBe(a2);
     expect(await tokens.getToken(TENANT_A)).toBe(a1);
@@ -114,7 +113,7 @@ describe('ServiceTokenProvider', () => {
 
   it('refreshes once 60 s of the token\'s life is left', async () => {
     let now = 1_000_000;
-    const tokens = new ServiceTokenProvider({ tokenUrl, auth: { method: 'client_secret_basic', secret: 's' }, now: () => now });
+    const tokens = new ServiceTokenProvider({ clientIdFor: wellbeingServiceClientId, tokenUrl, auth: { method: 'client_secret_basic', secret: 's' }, now: () => now });
     const first = await tokens.getToken(TENANT_A);
     now += 239_000;
     expect(await tokens.getToken(TENANT_A)).toBe(first);
@@ -125,7 +124,7 @@ describe('ServiceTokenProvider', () => {
 
   it('signs a short-lived client assertion with the service key, and re-reads the key file after rotation', async () => {
     const key = rsaKeyFile('rotating.pem');
-    const tokens = new ServiceTokenProvider({ tokenUrl, auth: { method: 'private_key_jwt', keyFile: key.file } });
+    const tokens = new ServiceTokenProvider({ clientIdFor: wellbeingServiceClientId, tokenUrl, auth: { method: 'private_key_jwt', keyFile: key.file } });
     await tokens.getToken(TENANT_A);
     const verifyWith = (assertion: string, publicKey: ReturnType<typeof createPublicKey>) => {
       const [h, p, s] = assertion.split('.');
@@ -153,10 +152,10 @@ describe('ServiceTokenProvider', () => {
 
   it('reports a refused or unreachable token endpoint as a transient ServiceTokenError', async () => {
     tokenStatus = 401;
-    const tokens = new ServiceTokenProvider({ tokenUrl, auth: { method: 'client_secret_basic', secret: 'wrong' } });
+    const tokens = new ServiceTokenProvider({ clientIdFor: wellbeingServiceClientId, tokenUrl, auth: { method: 'client_secret_basic', secret: 'wrong' } });
     await expect(tokens.getToken(TENANT_A)).rejects.toThrow(ServiceTokenError);
     await expect(tokens.getToken(TENANT_A)).rejects.toThrow(/invalid_client/);
-    const unreachable = new ServiceTokenProvider({ tokenUrl: 'http://127.0.0.1:1/token', auth: { method: 'client_secret_basic', secret: 's' } });
+    const unreachable = new ServiceTokenProvider({ clientIdFor: wellbeingServiceClientId, tokenUrl: 'http://127.0.0.1:1/token', auth: { method: 'client_secret_basic', secret: 's' } });
     await expect(unreachable.getToken(TENANT_A)).rejects.toThrow(ServiceTokenError);
   });
 });
@@ -171,7 +170,7 @@ describe('callCoreAsService', () => {
     await new Promise<void>((resolve) => core.listen(0, '127.0.0.1', resolve));
     const url = `http://127.0.0.1:${(core.address() as AddressInfo).port}/api/v1/students/x/adjustments`;
     try {
-      const tokens = new ServiceTokenProvider({ tokenUrl, auth: { method: 'client_secret_basic', secret: 's' } });
+      const tokens = new ServiceTokenProvider({ clientIdFor: wellbeingServiceClientId, tokenUrl, auth: { method: 'client_secret_basic', secret: 's' } });
       const res = await callCoreAsService(tokens, TENANT_A, url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
       expect(res.status).toBe(201);
       expect(seen).toHaveLength(2);

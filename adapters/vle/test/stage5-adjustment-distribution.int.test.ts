@@ -38,7 +38,7 @@ import { HttpVleClient } from '../src/vle-client/client.js';
 import type { VlePlatformDriver } from '../src/vle-platforms/driver.js';
 import { StubVleDriver } from '../src/vle-platforms/stub-driver.js';
 
-import { startTestApp, type TestVleApp } from './helpers/test-app.js';
+import { startTestApp, type TestVleApp, staticTokens } from './helpers/test-app.js';
 
 const log = pino({ level: 'silent' });
 const TENANT = '00000000-0000-0000-0000-000000000001';
@@ -84,7 +84,7 @@ function envelope<T>(type: string, payload: T): DomainEventEnvelope<T> {
 function consumer(opts: { driver?: VlePlatformDriver | null; logger?: typeof log } = {}): VleEventConsumer {
   return new VleEventConsumer('nats://unused', ctx.db, TENANT, opts.logger ?? log, {
     vleClient:    new HttpVleClient(ctx.stubVleBaseUrl),
-    srsAckClient: new HttpSrsAcknowledgementClient(ctx.stubSrsAckBaseUrl, 'test-token'),
+    srsAckClient: new HttpSrsAcknowledgementClient(ctx.stubSrsAckBaseUrl, staticTokens, ctx.tenantId),
     ...(opts.driver === null ? {} : { platformDriver: opts.driver ?? new StubVleDriver(ctx.stubVleBaseUrl) }),
   });
 }

@@ -1,6 +1,6 @@
 import { Type } from '@sinclair/typebox';
 import { requireAnyPermission, requirePermission, requireSelfOrPermission } from '@revelation-srs/auth';
-import { hasPermission } from '@revelation-srs/domain';
+import { ConflictError, hasPermission, NotFoundError } from '@revelation-srs/domain';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 
 import type {
@@ -119,7 +119,21 @@ const TargetConfigBody = Type.Object({
  * for manual targets. A person's reply is audited.
  */
 function replyActor(request: FastifyRequest): ReplyActor {
-  return hasPermission(request.user.roles, 'integration:manage') ? 'connector' : 'person';
+  return hasPermission(request.user.roles, 'integration:manage') || hasPermission(request.user.roles, 'adjustment-distribution:reply:vle')
+    ? 'connector' : 'person';
+}
+
+/**
+ * A caller holding only adjustment-distribution:reply:vle (the VLE
+ * connector, ADR-032) replies only for connected 'vle' distributions:
+ * another target is 404, another mode 409.
+ */
+async function assertVleConnectorScope(fastify: FastifyInstance, request: FastifyRequest, adjustmentId: string, distributionId: string, targetSystem: string): Promise<void> {
+  const roles = request.user.roles;
+  if (hasPermission(roles, 'integration:manage') || hasPermission(roles, 'adjustment:fulfil')) return;
+  const distribution = (await fastify.adjustmentService.listDistributions(adjustmentId, request.tenantId)).find((d) => d.distributionId === distributionId);
+  if (targetSystem !== 'vle' || !distribution || distribution.targetSystem !== 'vle') throw new NotFoundError('AdjustmentDistribution', distributionId);
+  if (distribution.fulfilmentModeCode !== 'connected') throw new ConflictError(`This distribution is fulfilled by a ${distribution.fulfilmentModeCode} target; the VLE connector replies only for connected ones`);
 }
 
 async function auditPersonReply(
@@ -292,7 +306,7 @@ export function adjustmentRoutes(fastify: FastifyInstance): void {
         body: AcknowledgeDistributionBody,
         response: { 204: Type.Null(), 404: ErrorSchema, 409: ErrorSchema },
       },
-      preHandler: [requireAnyPermission('integration:manage', 'adjustment:fulfil')],
+      preHandler: [requireAnyPermission('integration:manage', 'adjustment:fulfil', 'adjustment-distribution:reply:vle')],
     },
     async (request, reply) => {
       const { adjustmentId, distributionId } = request.params as {
@@ -300,6 +314,7 @@ export function adjustmentRoutes(fastify: FastifyInstance): void {
         distributionId: string;
       };
       const body = request.body as { targetSystem: string };
+      await assertVleConnectorScope(fastify, request, adjustmentId, distributionId, body.targetSystem);
       const actor = replyActor(request);
       await fastify.adjustmentService.acknowledgeDistribution(
         adjustmentId,
@@ -324,7 +339,7 @@ export function adjustmentRoutes(fastify: FastifyInstance): void {
         body: DistributionFailureBody,
         response: { 204: Type.Null(), 404: ErrorSchema, 409: ErrorSchema },
       },
-      preHandler: [requireAnyPermission('integration:manage', 'adjustment:fulfil')],
+      preHandler: [requireAnyPermission('integration:manage', 'adjustment:fulfil', 'adjustment-distribution:reply:vle')],
     },
     async (request, reply) => {
       const { adjustmentId, distributionId } = request.params as {
@@ -332,6 +347,7 @@ export function adjustmentRoutes(fastify: FastifyInstance): void {
         distributionId: string;
       };
       const body = request.body as { targetSystem: string; reason: string };
+      await assertVleConnectorScope(fastify, request, adjustmentId, distributionId, body.targetSystem);
       const actor = replyActor(request);
       await fastify.adjustmentService.reportDistributionFailure(
         adjustmentId,
@@ -357,7 +373,7 @@ export function adjustmentRoutes(fastify: FastifyInstance): void {
         body: AcknowledgeDistributionBody,
         response: { 204: Type.Null(), 404: ErrorSchema, 409: ErrorSchema },
       },
-      preHandler: [requireAnyPermission('integration:manage', 'adjustment:fulfil')],
+      preHandler: [requireAnyPermission('integration:manage', 'adjustment:fulfil', 'adjustment-distribution:reply:vle')],
     },
     async (request, reply) => {
       const { adjustmentId, distributionId } = request.params as {
@@ -365,6 +381,7 @@ export function adjustmentRoutes(fastify: FastifyInstance): void {
         distributionId: string;
       };
       const body = request.body as { targetSystem: string };
+      await assertVleConnectorScope(fastify, request, adjustmentId, distributionId, body.targetSystem);
       const actor = replyActor(request);
       await fastify.adjustmentService.acknowledgeWithdrawal(
         adjustmentId,

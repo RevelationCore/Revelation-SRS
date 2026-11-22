@@ -1,4 +1,5 @@
-import { requirePermission } from '@revelation-srs/auth';
+import { requireAnyPermission, requirePermission } from '@revelation-srs/auth';
+import { hasPermission, NotFoundError, VLE_CONTRACT_IDS } from '@revelation-srs/domain';
 import { Type } from '@sinclair/typebox';
 import type { FastifyInstance } from 'fastify';
 
@@ -165,7 +166,8 @@ export async function integrationRegistryRoutes(fastify: FastifyInstance): Promi
   fastify.get(
     '/integration-registrations/:registrationId',
     {
-      preHandler: [requirePermission('integration:read')],
+      // ADR-032: the VLE connector reads only VLE registrations, without secretRef.
+      preHandler: [requireAnyPermission('integration:read', 'integration-registration:use:vle')],
       schema: {
         params: Type.Object({ registrationId: Type.String() }),
         response: {
@@ -178,7 +180,7 @@ export async function integrationRegistryRoutes(fastify: FastifyInstance): Promi
     async (req, reply) => {
       const { registrationId } = req.params as { registrationId: string };
       const registration = await svc().getRegistration(registrationId, req.tenantId);
-      return reply.send(registration);
+      return reply.send(asSeenBy(req.user.roles, registration));
     },
   );
 
@@ -320,7 +322,7 @@ export async function integrationRegistryRoutes(fastify: FastifyInstance): Promi
   fastify.post(
     '/integration-registrations/:registrationId/health-check',
     {
-      preHandler: [requirePermission('integration:read')],
+      preHandler: [requireAnyPermission('integration:read', 'integration-registration:use:vle')],
       schema: {
         params: Type.Object({ registrationId: Type.String() }),
         body: Type.Object({
@@ -336,13 +338,15 @@ export async function integrationRegistryRoutes(fastify: FastifyInstance): Promi
     async (req, reply) => {
       const { registrationId } = req.params as { registrationId: string };
       const { statusCode } = req.body as { statusCode: string };
+      // The connector may report health only for a VLE registration (ADR-032).
+      asSeenBy(req.user.roles, await svc().getRegistration(registrationId, req.tenantId));
       const registration = await svc().recordHealthCheck(
         registrationId,
         req.tenantId,
         statusCode,
         req.user.sub,
       );
-      return reply.send(registration);
+      return reply.send(asSeenBy(req.user.roles, registration));
     },
   );
 
@@ -431,4 +435,15 @@ export async function integrationRegistryRoutes(fastify: FastifyInstance): Promi
       return reply.send(exchange);
     },
   );
+}
+
+/**
+ * A caller holding only integration-registration:use:vle (the VLE connector,
+ * ADR-032) sees VLE registrations only, as 404 otherwise, and never the
+ * secret reference.
+ */
+function asSeenBy<T extends { registrationId: string; contractId: string; secretRef: string | null }>(roles: Parameters<typeof hasPermission>[0], registration: T): T {
+  if (hasPermission(roles, 'integration:read')) return registration;
+  if (!VLE_CONTRACT_IDS.includes(registration.contractId)) throw new NotFoundError('IntegrationRegistration', registration.registrationId);
+  return { ...registration, secretRef: null };
 }

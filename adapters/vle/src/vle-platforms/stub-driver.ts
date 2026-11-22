@@ -1,4 +1,4 @@
-import { fetchWithTimeout } from '../http/fetch-with-timeout.js';
+import { fetchWithTimeout } from '@revelation-srs/service-client';
 
 import { VlePlatformError, type AccommodationResult, type FetchLike, type PersonInCourse, type VlePlatformDriver } from './driver.js';
 

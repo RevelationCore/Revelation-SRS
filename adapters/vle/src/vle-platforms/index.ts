@@ -1,4 +1,4 @@
-import { fetchWithTimeout } from '../http/fetch-with-timeout.js';
+import { fetchWithTimeout } from '@revelation-srs/service-client';
 
 import { CanvasDriver } from './canvas-driver.js';
 import type { VlePlatform, VlePlatformDriver } from './driver.js';

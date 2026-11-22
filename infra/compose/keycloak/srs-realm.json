@@ -53,7 +53,8 @@
       { "name": "pgr-examiner",            "composite": false },
       { "name": "ec-case-officer",         "composite": false },
       { "name": "ec-decision-maker",       "composite": false },
-      { "name": "wellbeing-service",       "composite": false }
+      { "name": "wellbeing-service",       "composite": false },
+      { "name": "vle-connector-service",       "composite": false }
     ]
   },
 
@@ -315,6 +316,64 @@
           }
         }
       ]
+    },
+    {
+      "clientId": "srs-vle-svc-00000000-0000-0000-0000-000000000001",
+      "name": "VLE connector (demo tenant)",
+      "description": "ADR-032: the VLE connector's client-credentials client for one tenant. Development only uses a client secret; staging and production use private_key_jwt.",
+      "enabled": true,
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "dev-vle-connector-secret",
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "fullScopeAllowed": false,
+      "attributes": {
+        "access.token.lifespan": "300",
+        "client_credentials.use_refresh_token": "false"
+      },
+      "defaultClientScopes": [],
+      "optionalClientScopes": [],
+      "protocolMappers": [
+        {
+          "name": "audience-srs-api",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.custom.audience": "srs-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        },
+        {
+          "name": "realm-roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "config": {
+            "multivalued": "true",
+            "userinfo.token.claim": "false",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "claim.name": "realm_roles",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "tenant-id",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-hardcoded-claim-mapper",
+          "config": {
+            "claim.name": "tenant_id",
+            "claim.value": "00000000-0000-0000-0000-000000000001",
+            "jsonType.label": "String",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "false"
+          }
+        }
+      ]
     }
   ],
 
@@ -447,10 +506,19 @@
       "realmRoles": [
         "wellbeing-service"
       ]
+    },
+    {
+      "username": "service-account-srs-vle-svc-00000000-0000-0000-0000-000000000001",
+      "enabled": true,
+      "serviceAccountClientId": "srs-vle-svc-00000000-0000-0000-0000-000000000001",
+      "realmRoles": [
+        "vle-connector-service"
+      ]
     }
   ],
 
   "scopeMappings": [
-    { "client": "srs-wellbeing-svc-00000000-0000-0000-0000-000000000001", "roles": ["wellbeing-service"] }
+    { "client": "srs-wellbeing-svc-00000000-0000-0000-0000-000000000001", "roles": ["wellbeing-service"] },
+    { "client": "srs-vle-svc-00000000-0000-0000-0000-000000000001", "roles": ["vle-connector-service"] }
   ]
 }

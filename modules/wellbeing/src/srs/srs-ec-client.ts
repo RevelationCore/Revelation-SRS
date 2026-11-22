@@ -11,7 +11,7 @@
  * attempt so retry loops cannot create duplicate SRS EC records.
  */
 
-import { callCoreAsService, type ServiceTokenSource } from './service-token-provider.js';
+import { callCoreAsService, type ServiceTokenSource } from '@revelation-srs/auth';
 
 export interface SubmitEcInput {
   /** The tenant the hand-off is for: picks that tenant's client (ADR-029). */

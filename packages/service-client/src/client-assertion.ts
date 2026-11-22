@@ -9,9 +9,6 @@ import { importPKCS8, SignJWT } from 'jose';
  * key Keycloak never holds. Client secrets are for development only.
  */
 
-/** Published development secret for the wellbeing service's demo-tenant client; refused outside development and test. */
-export const DEFAULT_DEV_WELLBEING_CLIENT_SECRET = 'dev-wellbeing-service-secret';
-
 export interface ClientAssertionInput {
   clientId: string;
   /** The realm issuer URL (Keycloak also accepts the token endpoint). */

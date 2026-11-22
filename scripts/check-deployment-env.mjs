@@ -19,7 +19,7 @@ import YAML from 'yaml';
 const root = new URL('..', import.meta.url).pathname;
 
 // Which source a deployment's containers run. Shared packages are read by all.
-const SHARED = ['packages/auth/src', 'packages/db/src', 'packages/documents/src', 'packages/workflow/src', 'packages/domain/src'];
+const SHARED = ['packages/auth/src', 'packages/service-client/src', 'packages/db/src', 'packages/documents/src', 'packages/workflow/src', 'packages/domain/src'];
 const SERVICES = {
   'srs-api':         ['apps/api/src'],
   'srs-worker':      ['apps/api/src'],
@@ -104,9 +104,7 @@ function requiredOf(dirs) {
 // Required variables a deployment knowingly does not set yet, each with the
 // backlog row that removes it. The check fails if a listed gap is closed, so
 // the list cannot go stale.
-const KNOWN_GAPS = {
-  'srs-vle-adapter': { SERVICE_ACCOUNT_TOKEN: 'BL-333 (replace the static token with a tenant-bound service identity)' },
-};
+const KNOWN_GAPS = {};
 
 const errors = [];
 const gaps = [];

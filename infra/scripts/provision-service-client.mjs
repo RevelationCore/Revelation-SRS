@@ -1,26 +1,35 @@
 #!/usr/bin/env node
-// Provisions the wellbeing service's Keycloak client for one or more tenants
-// (ADR-029 item 9, BL-329). Idempotent: run it at tenant onboarding and after
+// Provisions a service's Keycloak client for one or more tenants (ADR-029
+// item 9, ADR-032 item 5). Idempotent: run it at tenant onboarding and after
 // rotating the service key, for one tenant or all of them.
 //
 //   KEYCLOAK_URL=https://auth.example.com KEYCLOAK_ADMIN_USER=… KEYCLOAK_ADMIN_PASSWORD=… \
-//   node infra/scripts/provision-wellbeing-service-client.mjs \
+//   node infra/scripts/provision-service-client.mjs --service wellbeing|vle-connector \
 //     --tenant <tenant uuid> [--tenant <uuid> …] \
 //     --certificate /path/to/wellbeing-service.crt          # staging and production: private_key_jwt
 //   or, in development only: --secret <client secret>       # client_secret_basic
 //
-// The certificate is the X.509 certificate of the deployment's wellbeing
-// service key (kv/srs/wellbeing/service-client in OpenBao). Make one with:
-//   openssl req -x509 -key private_key.pem -subj /CN=srs-wellbeing-service -days 400 -out wellbeing-service.crt
+// The certificate is the X.509 certificate of that service's key in OpenBao
+// (kv/srs/wellbeing/service-client or kv/srs/vle-connector/service-client).
+// Each service has its own key pair. Make one with:
+//   openssl req -x509 -key private_key.pem -subj /CN=srs-<service> -days 400 -out service.crt
 // Keycloak never holds the private key.
 import { readFileSync } from 'node:fs';
 
 const KC = process.env.KEYCLOAK_URL?.replace(/\/$/, '');
 const REALM = process.env.KEYCLOAK_REALM ?? 'srs';
-const ROLE = 'wellbeing-service';
 if (!KC) fail('KEYCLOAK_URL is not set');
 
 const args = process.argv.slice(2);
+// Same client-id rules as packages/service-client (client-ids.ts); the role as in packages/auth.
+const SERVICES = {
+  wellbeing:       { role: 'wellbeing-service',     clientIdFor: (t) => `srs-wellbeing-svc-${t}`, name: 'Wellbeing service',  adr: 'ADR-029' },
+  'vle-connector': { role: 'vle-connector-service', clientIdFor: (t) => `srs-vle-svc-${t}`,       name: 'VLE connector',      adr: 'ADR-032' },
+};
+const serviceName = args.includes('--service') ? args[args.indexOf('--service') + 1] : undefined;
+const service = SERVICES[serviceName];
+if (!service) fail(`name --service ${Object.keys(SERVICES).join(' or ')}`);
+const ROLE = service.role;
 const tenants = args.flatMap((a, i) => (a === '--tenant' ? [args[i + 1]] : []));
 const certFile = args[args.indexOf('--certificate') + 1] && args.includes('--certificate') ? args[args.indexOf('--certificate') + 1] : undefined;
 const secret = args.includes('--secret') ? args[args.indexOf('--secret') + 1] : undefined;
@@ -28,10 +37,9 @@ if (tenants.length === 0) fail('name at least one --tenant');
 if (!certFile === !secret) fail('give exactly one of --certificate (private_key_jwt) or --secret (development only)');
 for (const t of tenants) if (!/^[0-9a-f-]{36}$/.test(t)) fail(`not a tenant UUID: ${t}`);
 
-function fail(message) { console.error(`provision-wellbeing-service-client: ${message}`); process.exit(1); }
+function fail(message) { console.error(`provision-service-client: ${message}`); process.exit(1); }
 
-/** Same rule as wellbeingServiceClientId in packages/auth. */
-const clientIdFor = (tenantId) => `srs-wellbeing-svc-${tenantId}`;
+const clientIdFor = service.clientIdFor;
 
 const timeout = () => AbortSignal.timeout(10_000);
 let token;
@@ -60,7 +68,7 @@ const certificate = certFile
 function representation(tenantId) {
   const clientId = clientIdFor(tenantId);
   return {
-    clientId, name: `Wellbeing service (${tenantId})`, enabled: true, publicClient: false, protocol: 'openid-connect',
+    clientId, name: `${service.name} (${tenantId})`, enabled: true, publicClient: false, protocol: 'openid-connect',
     serviceAccountsEnabled: true, standardFlowEnabled: false, implicitFlowEnabled: false, directAccessGrantsEnabled: false, fullScopeAllowed: false,
     ...(certificate
       ? { clientAuthenticatorType: 'client-jwt' }
@@ -82,7 +90,7 @@ function mappers(tenantId) {
 }
 
 token = await adminToken();
-await api('POST', '/roles', { name: ROLE, description: 'ADR-029: the wellbeing service, for its hand-offs to core' }); // 409 if it exists
+await api('POST', '/roles', { name: ROLE, description: `${service.adr}: ${service.name}, for its calls to core` }); // 409 if it exists
 const role = await api('GET', `/roles/${ROLE}`);
 
 for (const tenantId of tenants) {

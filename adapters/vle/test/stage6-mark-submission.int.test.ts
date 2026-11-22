@@ -32,7 +32,7 @@ import { HttpSrsMarkClient } from '../src/srs-client/mark-client.js';
 import { MarkSubmissionService } from '../src/services/mark-submission-service.js';
 import { HttpVleClient } from '../src/vle-client/client.js';
 
-import { startTestApp, type TestVleApp } from './helpers/test-app.js';
+import { startTestApp, type TestVleApp, staticTokens } from './helpers/test-app.js';
 
 const log = pino({ level: 'silent' });
 const TENANT = '00000000-0000-0000-0000-000000000001';
@@ -70,7 +70,7 @@ function makeRatifiedEnvelope(
 }
 
 function makeMarkService(ctx: TestVleApp): MarkSubmissionService {
-  const srsMarkClient = new HttpSrsMarkClient(ctx.stubSrsMarksBaseUrl, 'test-token');
+  const srsMarkClient = new HttpSrsMarkClient(ctx.stubSrsMarksBaseUrl, staticTokens, ctx.tenantId);
   return new MarkSubmissionService(ctx.db, TENANT, srsMarkClient);
 }
 
@@ -238,7 +238,7 @@ describe('Stage 6 — mark submission idempotency', () => {
     await service1.submitMark({ moduleRegistrationId, assessmentComponentId, sourceReference, rawMark: 70 });
 
     // Second service: a different tenantId pointing at the same DB
-    const srsMarkClient2 = new HttpSrsMarkClient(ctx.stubSrsMarksBaseUrl, 'test-token');
+    const srsMarkClient2 = new HttpSrsMarkClient(ctx.stubSrsMarksBaseUrl, staticTokens, ctx.tenantId);
     const service2 = new MarkSubmissionService(ctx.db, '00000000-0000-0000-0000-000000000002', srsMarkClient2);
     await service2.submitMark({ moduleRegistrationId, assessmentComponentId, sourceReference, rawMark: 70 });
 
@@ -261,7 +261,7 @@ describe('Stage 6 — mark submission error handling', () => {
 
   it('3.1 SRS 422 error propagates and no receipt is written', async () => {
     // Use a non-existent URL to simulate SRS failure.
-    const badMarkClient = new HttpSrsMarkClient('http://127.0.0.1:1', 'test-token');
+    const badMarkClient = new HttpSrsMarkClient('http://127.0.0.1:1', staticTokens, ctx.tenantId);
     const service       = new MarkSubmissionService(ctx.db, TENANT, badMarkClient);
 
     const moduleRegistrationId  = randomUUID();

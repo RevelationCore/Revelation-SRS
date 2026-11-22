@@ -97,6 +97,26 @@ export class MarkService {
     private readonly featureFlags?: FeatureFlagService,
   ) {}
 
+  /** The current mark recorded from a source submission, if any (ADR-032 idempotency). */
+  async findMarkBySource(tenantId: string, moduleRegistrationId: string, sourceSystem: string, sourceReference: string): Promise<string | null> {
+    const rows = await withTenantContext(this.db, tenantId, (tx) => tx
+      .select({ markId: marks.id })
+      .from(marks)
+      .innerJoin(assessmentSubmissions, and(
+        eq(assessmentSubmissions.id, marks.assessmentSubmissionId),
+        eq(assessmentSubmissions.tenantId, marks.tenantId),
+      ))
+      .where(and(
+        eq(marks.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
+        eq(marks.moduleRegistrationId, moduleRegistrationId as `${string}-${string}-${string}-${string}-${string}`),
+        isNull(marks.recordedUntil),
+        eq(assessmentSubmissions.sourceSystem, sourceSystem),
+        eq(assessmentSubmissions.sourceReference, sourceReference),
+      ))
+      .limit(1));
+    return rows[0]?.markId ?? null;
+  }
+
   async ingestMark(
     tenantId: string,
     moduleRegistrationId: string,

@@ -33,7 +33,13 @@ export const ROLES = [
   // ADR-029: the wellbeing service's own role for its two hand-offs, honoured
   // only from its tenant-bound client (packages/auth bindServiceRoles).
   'wellbeing-service',
+  // ADR-032: the VLE connector's own role, honoured only from its tenant-bound
+  // client; it holds the three VLE-only permissions and nothing else.
+  'vle-connector-service',
 ] as const;
+
+/** The integration contracts the VLE connector serves (ADR-032). */
+export const VLE_CONTRACT_IDS: readonly string[] = ['vle-course-provisioning.v1', 'vle-adjustments.v1', 'vle-assessment-results.v1'];
 
 export type Role = (typeof ROLES)[number];
 
@@ -122,6 +128,10 @@ export const PERMISSION_ROLES = {
   'value-set:translate-platform': ['system-administrator'] as Role[],
   'integration:read':          ['registry-administrator', 'tenant-administrator', 'system-administrator', 'integration-service'] as Role[],
   'integration:manage':        ['tenant-administrator', 'integration-service'] as Role[],
+  // ADR-032: machine permissions named after their target; the target is enforced in the route.
+  'integration-registration:use:vle': ['vle-connector-service'] as Role[],
+  'mark:record-from-vle':             ['vle-connector-service'] as Role[],
+  'adjustment-distribution:reply:vle': ['vle-connector-service'] as Role[],
   'audit:read':                ['dpo', 'system-administrator', 'wellbeing-auditor'] as Role[],
   'tenant:manage':             ['system-administrator'] as Role[],
   'rule:read':                          ['registry-administrator', 'tenant-administrator'] as Role[],

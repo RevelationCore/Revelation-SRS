@@ -199,6 +199,13 @@ spec:
           {{- with secret "kv/data/srs/vle-adapter" -}}
           {{ .Data.data.api_key }}
           {{- end }}
+        # ADR-032: the connector's private key for private_key_jwt to Keycloak.
+        vault.hashicorp.com/agent-inject-secret-srs-client-key: "kv/data/srs/vle-connector/service-client"
+        vault.hashicorp.com/agent-inject-file-srs-client-key: "srs-client-key"
+        vault.hashicorp.com/agent-inject-template-srs-client-key: |
+          {{- with secret "kv/data/srs/vle-connector/service-client" -}}
+          {{ .Data.data.private_key_pem }}
+          {{- end }}
     spec:
       serviceAccountName: srs-vle-adapter
       securityContext:
@@ -235,6 +242,15 @@ spec:
                 configMapKeyRef:
                   name: srs-vle-adapter-config
                   key: INTEGRATION_REGISTRATION_ID
+            # ADR-032: calls to core as srs-vle-svc-<tenant>, private_key_jwt.
+            - name: SRS_API_URL
+              value: http://srs-api:3000
+            - name: KEYCLOAK_JWKS_URL
+              value: http://keycloak:8080/realms/srs/protocol/openid-connect/certs
+            - name: VLE_SRS_CLIENT_AUTH
+              value: private_key_jwt
+            - name: VLE_SRS_CLIENT_KEY_FILE
+              value: /vault/secrets/srs-client-key
           command:
             - /bin/sh
             - -c

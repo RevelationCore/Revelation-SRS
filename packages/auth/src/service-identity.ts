@@ -8,20 +8,18 @@
  * token's tenant, and that names no person; anything else loses the role.
  */
 
+import { vleConnectorClientId, wellbeingServiceClientId } from '@revelation-srs/service-client';
+
 /** The wellbeing service's role for its two hand-offs to core. */
 export const WELLBEING_SERVICE_ROLE = 'wellbeing-service';
 
-/**
- * The wellbeing service's Keycloak client for a tenant. A code constant, not
- * configuration, so the wellbeing service and core cannot drift apart.
- */
-export function wellbeingServiceClientId(tenantId: string): string {
-  return `srs-wellbeing-svc-${tenantId}`;
-}
+/** The VLE connector's role (ADR-032): registrations, mark passback and adjustment replies, VLE only. */
+export const VLE_CONNECTOR_SERVICE_ROLE = 'vle-connector-service';
 
 /** Each service role, and the function naming the only client that may carry it for a tenant. */
 export const SERVICE_ROLE_CLIENTS: Readonly<Record<string, (tenantId: string) => string>> = {
   [WELLBEING_SERVICE_ROLE]: wellbeingServiceClientId,
+  [VLE_CONNECTOR_SERVICE_ROLE]: vleConnectorClientId,
 };
 
 export interface ServiceRoleContext {

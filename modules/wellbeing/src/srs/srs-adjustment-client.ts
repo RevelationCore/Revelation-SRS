@@ -11,7 +11,7 @@
  * repeated during retry, SRS will return the same adjustmentId.
  */
 
-import { callCoreAsService, type ServiceTokenSource } from './service-token-provider.js';
+import { callCoreAsService, type ServiceTokenSource } from '@revelation-srs/auth';
 
 export interface SubmitAdjustmentInput {
   /** The tenant the hand-off is for: picks that tenant's client (ADR-029). */

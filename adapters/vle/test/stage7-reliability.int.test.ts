@@ -29,7 +29,7 @@ import { HttpSrsAcknowledgementClient } from '../src/srs-client/acknowledgement-
 import { HttpSrsMarkClient }            from '../src/srs-client/mark-client.js';
 import { HttpVleClient }                from '../src/vle-client/client.js';
 
-import { startTestApp, type TestVleApp } from './helpers/test-app.js';
+import { startTestApp, type TestVleApp, staticTokens } from './helpers/test-app.js';
 
 const log    = pino({ level: 'silent' });
 const TENANT = '00000000-0000-0000-0000-000000000001';
@@ -122,12 +122,12 @@ function makeRosterService(ctx: TestVleApp): ReconciliationService {
 }
 
 function makeAdjustmentService(ctx: TestVleApp): ReconciliationService {
-  const srsAckClient = new HttpSrsAcknowledgementClient(ctx.stubSrsAckBaseUrl, 'test-token');
+  const srsAckClient = new HttpSrsAcknowledgementClient(ctx.stubSrsAckBaseUrl, staticTokens, ctx.tenantId);
   return new ReconciliationService(ctx.db, TENANT, undefined, srsAckClient, undefined, log);
 }
 
 function makeMarkService(ctx: TestVleApp): ReconciliationService {
-  const srsMarkClient = new HttpSrsMarkClient(ctx.stubSrsMarksBaseUrl, 'test-token');
+  const srsMarkClient = new HttpSrsMarkClient(ctx.stubSrsMarksBaseUrl, staticTokens, ctx.tenantId);
   return new ReconciliationService(ctx.db, TENANT, undefined, undefined, srsMarkClient, log);
 }
 
