@@ -276,11 +276,21 @@ export class RulesEngine {
     }
   }
 
+  /**
+   * Built-in defaults are refused unless the tenant allows them (BL-179):
+   * the undergraduate pass mark and boundaries would otherwise apply silently
+   * to, say, an unconfigured level 7 programme. A demo tenant allows them
+   * unless it says otherwise; every other tenant must set
+   * `rules.builtInDefaults` to `allow` to use them.
+   */
   async #refusesBuiltInDefaults(tenantId: string): Promise<boolean> {
-    const [row] = await this.db.select({ configuration: tenants.configuration }).from(tenants)
+    const [row] = await this.db.select({ configuration: tenants.configuration, demoMode: tenants.demoMode }).from(tenants)
       .where(eq(tenants.id, tenantId as `${string}-${string}-${string}-${string}-${string}`)).limit(1);
     const rules = (row?.configuration?.['rules'] ?? {}) as Record<string, unknown>;
-    return rules['builtInDefaults'] === 'refuse';
+    const setting = rules['builtInDefaults'];
+    if (setting === 'allow') return false;
+    if (setting === 'refuse') return true;
+    return row?.demoMode !== true;
   }
 
   /** Invalidate cache for a tenant (call when a rule is updated). */

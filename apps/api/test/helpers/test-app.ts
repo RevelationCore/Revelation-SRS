@@ -64,16 +64,20 @@ export async function startTestApp(opts: StartTestAppOptions = {}): Promise<Test
 
   await applyCoreMigrations(db);
 
-  // Seed a tenant for tests
+  // Seed two tenants for tests. Both opt in to the rules engine's built-in
+  // defaults (BL-179: refused unless a tenant allows them), because most
+  // suites test calculation mechanics without configuring every rule. Tests
+  // of the refusal itself use a tenant of their own.
+  const allowDefaults = JSON.stringify({ rules: { builtInDefaults: 'allow' } });
   const tenantId = '00000000-0000-0000-0000-000000000001';
   await db.execute(sql`
-    INSERT INTO tenant (id, code, name, active)
-    VALUES (${tenantId}, 'TEST', 'Test University', true)
+    INSERT INTO tenant (id, code, name, active, configuration)
+    VALUES (${tenantId}, 'TEST', 'Test University', true, ${allowDefaults}::jsonb)
   `);
   const secondTenantId = '00000000-0000-0000-0000-000000000002';
   await db.execute(sql`
-    INSERT INTO tenant (id, code, name, active)
-    VALUES (${secondTenantId}, 'TEST2', 'Second Test University', true)
+    INSERT INTO tenant (id, code, name, active, configuration)
+    VALUES (${secondTenantId}, 'TEST2', 'Second Test University', true, ${allowDefaults}::jsonb)
   `);
 
   // The app connects as a login role that inherits srs_app, as it does in

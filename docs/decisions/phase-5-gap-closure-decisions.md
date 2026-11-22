@@ -36,7 +36,7 @@ These findings, checked on `main` at bf3d3e2, changed the plan's assumptions:
 
 **Why.** Principles 5 and 13; ADR-020; BP-05-005, BP-06-001/002 need explainable results.
 
-**Configurable.** `rules.builtInDefaults` = `allow` (default) or `refuse`.
+**Configurable.** `rules.builtInDefaults` = `allow` or `refuse`. Since 2026-11-22 (BL-179) an unset value means `refuse` for every tenant except a demo tenant (`demo_mode`), which allows them unless it says `refuse`. A real tenant that wants the built-in values must set `allow` explicitly.
 
 **Institution must confirm.** Whether built-in defaults are acceptable in production (recommended: `refuse`); its pass mark, classification boundaries and algorithm; which award-credit and discretion-zone rules apply.
 

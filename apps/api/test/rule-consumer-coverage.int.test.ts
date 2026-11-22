@@ -131,24 +131,42 @@ describe('Rule consumer coverage (Phase 5 D-35)', () => {
 });
 
 describe('Built-in defaults (D-35)', () => {
-  it('records a built-in fallback as such, and refuses it when the tenant says so', async () => {
-    const tenantId = ctx.secondTenantId;
+  it('refuses built-in defaults unless the tenant allows them, or is a demo tenant (BL-179)', async () => {
+    // A tenant as a real institution starts: no rules configured, no setting.
+    const tenantId = randomUUID();
+    await ctx.db.execute(sql`INSERT INTO tenant (id, code, name, active) VALUES (${tenantId}, 'BL179', 'Unconfigured University', true)`);
     const t = await ctx.makeJwt({ tenantId });
     const tAdmin = await ctx.makeJwt({ tenantId, roles: ['tenant-administrator'] });
     const { personId } = await call<{ personId: string }>('POST', '/api/v1/students', { legalFirstName: 'Default', legalFamilyName: 'Rules' }, t);
     const { enrolmentId } = await call<{ enrolmentId: string }>('POST', '/api/v1/enrolments', {
       personId, modeOfStudyCode: 'full-time', academicYearOfEntry: '2027-28', startDate: '2027-09-20',
     }, t);
+    const classify = () => ctx.app.inject({ method: 'GET', url: `/api/v1/enrolments/${enrolmentId}/classification`, headers: { authorization: `Bearer ${t}` } });
+    const expectRefused = async () => {
+      const refused = await classify();
+      expect(refused.statusCode).toBe(422);
+      expect(refused.json<{ detail: string }>().detail).toMatch(/built-in defaults refused/);
+    };
+    const expectBuiltIn = async () => {
+      const res = await classify();
+      expect(res.statusCode, res.body).toBe(200);
+      expect(res.json<{ ruleVersions: Citation[] }>().ruleVersions.find((c) => c.ruleTypeCode === 'classification-boundary'))
+        .toMatchObject({ source: 'built-in-default', versionId: null });
+    };
 
-    const preview = await call<{ classificationCode: string; ruleVersions: Citation[] }>('GET', `/api/v1/enrolments/${enrolmentId}/classification`, undefined, t);
-    const boundary = preview.ruleVersions.find((c) => c.ruleTypeCode === 'classification-boundary');
-    expect(boundary).toMatchObject({ source: 'built-in-default', versionId: null });
+    await expectRefused();                       // the default for a real tenant
+
+    await call('PATCH', '/api/v1/tenant/configuration', { rules: { builtInDefaults: 'allow' } }, tAdmin);
+    await expectBuiltIn();                       // allowed explicitly, and recorded as built-in
 
     await call('PATCH', '/api/v1/tenant/configuration', { rules: { builtInDefaults: 'refuse' } }, tAdmin);
-    const refused = await ctx.app.inject({ method: 'GET', url: `/api/v1/enrolments/${enrolmentId}/classification`, headers: { authorization: `Bearer ${t}` } });
-    expect(refused.statusCode).toBe(422);
-    expect(refused.json<{ detail: string }>().detail).toMatch(/built-in defaults refused/);
-    await call('PATCH', '/api/v1/tenant/configuration', { rules: { builtInDefaults: 'allow' } }, tAdmin);
+    await expectRefused();
+
+    // A demo tenant allows them unless it says otherwise.
+    await ctx.db.execute(sql`UPDATE tenant SET demo_mode = true, configuration = configuration #- '{rules,builtInDefaults}' WHERE id = ${tenantId}`);
+    await expectBuiltIn();
+    await call('PATCH', '/api/v1/tenant/configuration', { rules: { builtInDefaults: 'refuse' } }, tAdmin);
+    await expectRefused();
   });
 
   it('a progression decision whose evidence cannot be written is not recorded', async () => {
