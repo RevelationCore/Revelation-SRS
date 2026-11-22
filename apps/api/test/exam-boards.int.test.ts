@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
+import { sql } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import type { IntegrationBusPublisher } from '../src/platform/integration-bus/publisher.js';
@@ -471,10 +472,13 @@ async function createAdjustment(fixture: BoardFixture): Promise<void> {
       scopeCode: 'exam',
       validFrom: '2027-09-01T00:00:00.000Z',
       amount: { value: 25, unitCode: 'percent-of-duration' },
-      notes: 'BOARD-PRIVATE-NOTE: must never reach a board pack',
     },
   });
   expect(adjustment.statusCode).toBe(201);
+  // Core refuses notes (BL-243), but a row recorded before that, or migrated,
+  // may hold them: a board pack must still never show them.
+  const { adjustmentId } = adjustment.json<{ adjustmentId: string }>();
+  await ctx.db.execute(sql`UPDATE reasonable_adjustment SET notes = 'BOARD-PRIVATE-NOTE: must never reach a board pack' WHERE id = ${adjustmentId}`);
 }
 
 async function createExceptionalCircumstances(fixture: BoardFixture): Promise<void> {
