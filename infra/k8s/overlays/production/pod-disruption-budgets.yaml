@@ -68,3 +68,27 @@ spec:
   selector:
     matchLabels:
       app.kubernetes.io/name: srs-clamav
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: srs-admin-bff-pdb
+  namespace: revelation-srs
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: srs-admin-bff
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: srs-portal-bff-pdb
+  namespace: revelation-srs
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: srs-portal-bff
+

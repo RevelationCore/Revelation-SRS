@@ -58,6 +58,48 @@ patches:
                   - secretRef:
                       name: srs-dev-secrets
     target: { kind: Deployment, name: srs-api }
+  # The admin BFF (ADR-026): no OpenBao injection in development; its client
+  # secret, session keys and database URL come from srs-dev-admin-bff-secrets.
+  - patch: |
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: srs-admin-bff
+      spec:
+        replicas: 1
+        template:
+          metadata:
+            annotations:
+              vault.hashicorp.com/agent-inject: "false"
+          spec:
+            containers:
+              - name: bff
+                command: [node, dist/main.js]
+                envFrom:
+                  - secretRef:
+                      name: srs-dev-admin-bff-secrets
+    target: { kind: Deployment, name: srs-admin-bff }
+  # The portal BFF (ADR-026): no OpenBao injection in development; its client
+  # secret, session keys and database URL come from srs-dev-portal-bff-secrets.
+  - patch: |
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: srs-portal-bff
+      spec:
+        replicas: 1
+        template:
+          metadata:
+            annotations:
+              vault.hashicorp.com/agent-inject: "false"
+          spec:
+            containers:
+              - name: bff
+                command: [node, dist/main.js]
+                envFrom:
+                  - secretRef:
+                      name: srs-dev-portal-bff-secrets
+    target: { kind: Deployment, name: srs-portal-bff }
   # Looser resource limits for dev
   - patch: |
       apiVersion: apps/v1
@@ -95,6 +137,8 @@ images:
     newTag: dev
   - name: ghcr.io/revelation-srs/attendance
     newTag: dev
+  - name: ghcr.io/revelation-srs/bff
+    newTag: dev
 resources:
   - ../../base
 
@@ -104,3 +148,11 @@ resources:
 #   --from-literal=JWT_SECRET=dev-secret \
 #   --from-literal=KEYCLOAK_CLIENT_SECRET=dev-keycloak-secret \
 #   --from-literal=NATS_URL=nats://srs-nats:4222
+#
+# Each BFF (ADR-026) needs its own secret:
+# kubectl create secret generic srs-dev-admin-bff-secrets -n revelation-srs-dev \
+#   --from-literal=DATABASE_URL=postgresql://srs:srs@postgres:5432/srs \
+#   --from-literal=BFF_CLIENT_SECRET=<the srs-admin client secret> \
+#   --from-literal=BFF_SESSION_KEYS=k1:$(openssl rand -base64 32)
+# and the same for srs-dev-portal-bff-secrets with the srs-portal client secret.
+

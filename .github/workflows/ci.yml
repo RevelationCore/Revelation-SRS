@@ -305,6 +305,33 @@ jobs:
           severity:      CRITICAL,HIGH
           ignore-unfixed: true
 
+      - name: Build BFF image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file:    infra/docker/bff/Dockerfile
+          load:    true
+          push:    false
+          tags:    revelation-srs/bff:${{ github.sha }}
+          cache-from: type=gha
+          cache-to:   type=gha,mode=max
+          pull: true
+          no-cache-filters: runtime
+
+      - name: Trivy scan — BFF
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref:     revelation-srs/bff:${{ github.sha }}
+          format:        table
+          exit-code:     "1"
+          severity:      CRITICAL,HIGH
+          ignore-unfixed: true
+
+      # ADR-026: the SPA images allow connect-src 'self' alone, run
+      # unprivileged on 8080 with a read-only root, and block back-channel logout.
+      - name: Header check — admin and portal images
+        run: scripts/check-spa-headers.sh revelation-srs/admin:${{ github.sha }} revelation-srs/portal:${{ github.sha }}
+
       # ── SBOM generation (syft / SPDX 2.3) ──────────────────────────────────
       - name: Install syft
         uses: anchore/sbom-action/download-syft@v0

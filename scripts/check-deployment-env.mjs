@@ -26,6 +26,8 @@ const SERVICES = {
   'srs-wellbeing':   ['modules/wellbeing/src'],
   'srs-attendance':  ['modules/attendance/src'],
   'srs-vle-adapter': ['adapters/vle/src'],
+  'srs-admin-bff':   ['apps/bff/src'],
+  'srs-portal-bff':  ['apps/bff/src'],
 };
 // Read by the runtime or a library rather than our code.
 const RUNTIME = new Set(['NODE_ENV', 'NODE_OPTIONS', 'TZ', 'OTEL_EXPORTER_OTLP_ENDPOINT', 'OTEL_SERVICE_NAME', 'OTEL_RESOURCE_ATTRIBUTES', 'OTEL_TRACES_SAMPLER', 'OTEL_TRACES_SAMPLER_ARG']);

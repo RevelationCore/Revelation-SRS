@@ -21,6 +21,7 @@ const root = new URL('..', import.meta.url).pathname;
 const SOURCE = {
   'srs-api': 'apps/api', 'srs-worker': 'apps/api', 'srs-wellbeing': 'modules/wellbeing',
   'srs-attendance': 'modules/attendance', 'srs-vle-adapter': 'adapters/vle', 'srs-admin': null, 'srs-portal': null,
+  'srs-admin-bff': 'apps/bff', 'srs-portal-bff': 'apps/bff',
 };
 const targets = ['base', ...readdirSync(join(root, 'infra/k8s/overlays')).map((o) => `overlays/${o}`)];
 const errors = [];
@@ -116,7 +117,17 @@ for (const target of targets) {
       if (!EXTERNAL.has(host) && !services.has(host)) errors.push(`${target}: ${where} reaches ${host}, but this build has no Service of that name`);
     }
   }
+  // ADR-026 (BL-163): browsers reach the wellbeing module only through a BFF.
+  {
+    const wb = docs.find((x) => x.kind === 'NetworkPolicy' && x.metadata.name.endsWith('allow-ingress-to-wellbeing'));
+    const from = (wb?.spec.ingress ?? []).flatMap((r) => (r.from ?? []).flatMap((f) => f.podSelector?.matchExpressions?.flatMap((e) => e.values) ?? [f.podSelector?.matchLabels?.['app.kubernetes.io/name'] ?? '(any)']));
+    if (JSON.stringify([...from].sort()) !== JSON.stringify(['srs-admin-bff', 'srs-api', 'srs-portal-bff'])) errors.push(`${target}: allow-ingress-to-wellbeing must admit exactly srs-api and the two BFFs, not ${from.join(', ')}`);
+    for (const app of ['admin', 'portal']) {
+      if (!docs.some((x) => x.kind === 'Deployment' && x.metadata.name.endsWith(`srs-${app}-bff`))) errors.push(`${target}: Deployment srs-${app}-bff is missing`);
+    }
+  }
   if (target === 'overlays/production') {
+    for (const app of ['admin', 'portal']) if (!docs.some((x) => x.kind === 'PodDisruptionBudget' && x.metadata.name === `srs-${app}-bff-pdb`)) errors.push(`production: PodDisruptionBudget srs-${app}-bff-pdb is missing`);
     if (!docs.some((x) => x.kind === 'PodDisruptionBudget' && x.metadata.name === 'srs-clamav-pdb')) errors.push('production: PodDisruptionBudget srs-clamav-pdb is missing');
     const nats = docs.find((x) => x.kind === 'StatefulSet' && x.metadata.name === 'srs-nats');
     const job = docs.find((x) => x.kind === 'Job' && x.metadata.name === 'srs-nats-streams');

@@ -16,12 +16,15 @@ RUN apk upgrade --no-cache && apk add --no-cache nginx \
   && rm -f /etc/nginx/http.d/default.conf \
   && ln -sf /dev/stdout /var/log/nginx/access.log && ln -sf /dev/stderr /var/log/nginx/error.log
 
+COPY infra/docker/spa/nginx.conf /etc/nginx/nginx.conf
+COPY infra/docker/spa/entrypoint.sh /entrypoint.sh
 COPY infra/docker/portal/nginx.conf /etc/nginx/http.d/default.conf
 COPY --from=build /app/apps/portal/dist /usr/share/nginx/html
 
-EXPOSE 80
+USER 101:101
+EXPOSE 8080
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s \
-  CMD wget -qO- http://localhost/index.html || exit 1
+  CMD wget -qO- http://localhost:8080/index.html || exit 1
 
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["/entrypoint.sh"]

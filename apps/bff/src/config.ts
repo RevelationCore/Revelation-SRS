@@ -48,10 +48,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): BffConfig {
   const upstreams: Record<string, string> = {};
   if (env['BFF_UPSTREAM_SRS']) upstreams['srs'] = env['BFF_UPSTREAM_SRS'].replace(/\/$/, '');
   if (env['BFF_UPSTREAM_WELLBEING']) upstreams['wellbeing'] = env['BFF_UPSTREAM_WELLBEING'].replace(/\/$/, '');
-  const int = (name: string, fallback: number) => (env[name] ? Number(env[name]) : fallback);
+  const optionalInt = (name: string, fallback: number) => (env[name] ? Number(env[name]) : fallback);
   return {
     nodeEnv,
-    port:            int('PORT', 3010),
+    port:            optionalInt('PORT', 3010),
     logLevel:        env['LOG_LEVEL'] ?? 'info',
     databaseUrl:     env['DATABASE_URL'] ?? 'postgres://srs:srs@localhost:5432/srs',
     appOrigin:       (env['BFF_APP_ORIGIN'] ?? 'http://localhost:5173').replace(/\/$/, ''),
@@ -61,10 +61,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): BffConfig {
     oidcInternalUrl: (env['OIDC_INTERNAL_URL'] ?? issuer).replace(/\/$/, ''),
     upstreams,
     sessionKeys:     parseSessionKeys(env['BFF_SESSION_KEYS'] ?? DEV_SESSION_KEY),
-    idleSeconds:     int('BFF_SESSION_IDLE_SECONDS', 1800),
-    absoluteSeconds: int('BFF_SESSION_MAX_SECONDS', 36_000),
+    idleSeconds:     optionalInt('BFF_SESSION_IDLE_SECONDS', 1800),
+    absoluteSeconds: optionalInt('BFF_SESSION_MAX_SECONDS', 36_000),
     devSessions:     env['BFF_DEV_SESSIONS'] === 'true',
-    proxyTimeoutMs:  int('BFF_PROXY_TIMEOUT_MS', 30_000),
+    proxyTimeoutMs:  optionalInt('BFF_PROXY_TIMEOUT_MS', 30_000),
   };
 }
 

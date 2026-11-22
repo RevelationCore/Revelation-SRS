@@ -23,6 +23,8 @@ images:
     newTag: v1.0.0-rc.1
   - name: ghcr.io/revelation-srs/attendance
     newTag: v1.0.0-rc.1
+  - name: ghcr.io/revelation-srs/bff
+    newTag: v1.0.0-rc.1
 
 patches:
   # Staging hostnames

@@ -96,6 +96,23 @@ data:
       capabilities = ["read"]
     }
 
+  # ADR-026: each BFF reads its own client secret and session keys, and the shared srs-bff database role.
+  policy-admin-bff.hcl: |
+    path "database/creds/srs-bff" {
+      capabilities = ["read"]
+    }
+    path "kv/data/srs/bff/admin" {
+      capabilities = ["read"]
+    }
+
+  policy-portal-bff.hcl: |
+    path "database/creds/srs-bff" {
+      capabilities = ["read"]
+    }
+    path "kv/data/srs/bff/portal" {
+      capabilities = ["read"]
+    }
+
   policy-temporal.hcl: |
     path "kv/data/srs/temporal-db" {
       capabilities = ["read"]
@@ -109,7 +126,7 @@ data:
 
     NAMESPACE=revelation-srs
 
-    for svc in api worker wellbeing attendance temporal; do
+    for svc in api worker wellbeing attendance temporal admin-bff portal-bff; do
       echo "Applying policy: srs-${svc}"
       bao policy write "srs-${svc}" - < /dev/stdin <<POLICY
     $(cat "/etc/openbao-policies/policy-${svc}.hcl")
@@ -122,7 +139,7 @@ data:
     POLICY
 
     # Create Kubernetes auth roles (TTL 1h; max 24h)
-    for svc in api worker wellbeing attendance temporal; do
+    for svc in api worker wellbeing attendance temporal admin-bff portal-bff; do
       echo "Creating Kubernetes auth role: srs-${svc}"
       bao write "auth/kubernetes/role/srs-${svc}" \
         bound_service_account_names="srs-${svc}" \

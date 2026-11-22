@@ -33,6 +33,8 @@ images:
     newTag: v1.0.0
   - name: ghcr.io/revelation-srs/attendance
     newTag: v1.0.0
+  - name: ghcr.io/revelation-srs/bff
+    newTag: v1.0.0
 
 patches:
   # Production API: 3 replicas floor; HPA scales to 10

@@ -157,3 +157,24 @@ The RFC also says that keeping tokens in memory or in a Web Worker does not stop
   - `revokeRefreshToken` is true;
   - no default or optional client scope is `offline_access`.
 - **Header check in CI against the built images:** `connect-src 'self'` with no scheme sources (readiness 1.9 "Done when").
+
+## Implementation notes (2026-11-22)
+
+All three stages are built (BL-030, BL-160 to BL-163). These differ from the decision, or add to it:
+
+- **One public pass-through.** The sign-in page's demo banner reads `/api/v1/demo/status` before anyone signs in, and the CSP lets the browser reach only its own origin. So the BFF forwards that one exact path, GET only, without a session or a token. The allow-list is `PUBLIC_PATHS` in `apps/bff/src/app.ts`.
+- **nginx looks up the BFF per request.** The SPA images use a shared main config (`infra/docker/spa/nginx.conf`) and an entrypoint that writes the pod's DNS resolver. nginx then starts even before the BFF's name resolves, and returns 502 rather than failing.
+- **The SPA images were not deployable before this.** Kubernetes ran them as UID 101 with every capability dropped, a read-only root and port 8080. The image ran nginx as root on port 80. They now listen on 8080 and keep pid and temporary files in `/tmp`. `scripts/check-spa-headers.sh` runs each built image that way in CI, and checks `connect-src 'self'` and the blocked back-channel route.
+- **Development.** `apps/bff` `dev` runs both BFFs in one process (admin on 3010, portal on 3011), and each Vite server proxies `/bff` to its BFF. The realm's back-channel logout URLs use `host.docker.internal`, because compose runs Keycloak in Docker and the BFFs on the host.
+- **Mocked UI tests answer `/bff/session` instead of running a BFF.** Full-stack suites (the golden journey, the UAT personas) create real BFF development sessions.
+- **The display name follows the SPAs' order:** `name`, then given and family names, then the username.
+- **The refresh lock moved.** The tab-locked browser refresh from BL-159 is gone; refresh happens in the BFF under the row lock (item 6).
+- **Verified live** against Keycloak 26.0.7 in Chromium:
+  - sign-in through the BFF;
+  - the session's roles and tenant;
+  - cookie attributes, with no cookie visible to page scripts;
+  - tokens encrypted at rest;
+  - logout.
+
+  Back-channel logout is covered by the integration tests with signed logout tokens, not yet against a live Keycloak.
+

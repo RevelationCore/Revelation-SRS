@@ -16,6 +16,7 @@ resources:
   - ingress.yaml
   - observability.yaml
   - clamav.yaml
+  - bff.yaml
 
 commonLabels:
   app.kubernetes.io/part-of: revelation-srs
