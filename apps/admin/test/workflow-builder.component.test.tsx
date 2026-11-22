@@ -7,7 +7,7 @@ import { server } from '../../../test/msw-server.mjs';
 import { renderWithProviders } from './render.js';
 import { WorkflowDefsPage } from '../src/pages/WorkflowDefsPage.js';
 
-const API = 'http://localhost:3000';
+const API = 'http://localhost:3000/bff/srs';
 
 const customDefinition = {
   workflowDefinitionId: 'def-001',

@@ -15,6 +15,8 @@
 
 import type { Page } from '@playwright/test';
 
+import { devSession } from '../helpers/auth.js';
+
 // ── App base URLs ─────────────────────────────────────────────────────────────
 
 export const ADMIN  = 'http://localhost:5173';
@@ -90,18 +92,10 @@ export type PersonaKey = keyof typeof PERSONAS;
 
 // ── Auth injection helpers ────────────────────────────────────────────────────
 
+/** A BFF development session holding the persona's real Keycloak token (ADR-026, BL-162). */
 export async function injectPersona(page: Page, persona: Persona): Promise<void> {
-  const { access, refresh } = await fetchTokens(persona.username);
-  const storageKey = persona.app === 'admin' ? 'srs_admin_token'         : 'srs_portal_token';
-  const refreshKey = persona.app === 'admin' ? 'srs_admin_refresh_token' : 'srs_portal_refresh_token';
-
-  await page.addInitScript(
-    ({ acc, ref, sk, rk }: { acc: string; ref: string; sk: string; rk: string }) => {
-      localStorage.setItem(sk, acc);
-      localStorage.setItem(rk, ref);
-    },
-    { acc: access, ref: refresh, sk: storageKey, rk: refreshKey },
-  );
+  const { access } = await fetchTokens(persona.username);
+  await devSession(page, appBase(persona), access);
 }
 
 export function appBase(persona: Persona): string {

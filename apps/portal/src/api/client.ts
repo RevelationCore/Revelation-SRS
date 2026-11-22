@@ -2,14 +2,12 @@ import { createApiClient, ApiError } from '@revelation-srs/ui';
 
 export { ApiError };
 
-const ACCESS_KEY = 'srs_portal_token';
+/** Where a 401 sends the browser: sign in again, then come back here (ADR-026). */
+export function signInAgain(): void {
+  window.location.href = `/login?returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+}
 
-export const api = createApiClient({
-  baseUrl:        import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000',
-  getToken:       () => localStorage.getItem(ACCESS_KEY),
-  onUnauthorized: () => {
-    localStorage.removeItem(ACCESS_KEY);
-    localStorage.removeItem('srs_portal_refresh_token');
-    window.location.href = '/login';
-  },
-});
+/** Core SRS, through this app's BFF (ADR-026): the BFF adds the access token. */
+export const SRS_BASE = '/bff/srs';
+
+export const api = createApiClient({ baseUrl: SRS_BASE, onUnauthorized: signInAgain });

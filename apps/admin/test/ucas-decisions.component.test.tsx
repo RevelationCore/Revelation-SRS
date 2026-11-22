@@ -7,7 +7,7 @@ import { server } from '../../../test/msw-server.mjs';
 import { renderWithProviders } from './render.js';
 import { UcasDecisionsCard } from '../src/pages/UcasDecisionsCard.js';
 
-const API = 'http://localhost:3000';
+const API = 'http://localhost:3000/bff/srs';
 const item = (over: Record<string, unknown>) => ({
   exchangeId: 'x-1', applicationId: 'app-1', sourceReference: '2027:7200000001', outcome: 'offer-conditional', ucasCode: 'C',
   statusCode: 'queued', queuedAt: '2027-05-01T00:00:00Z', sentAt: null, attention: null, ...over,

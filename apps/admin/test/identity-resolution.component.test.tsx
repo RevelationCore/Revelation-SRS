@@ -8,7 +8,7 @@ import { renderWithProviders } from './render.js';
 import { IdentityResolutionPage } from '../src/pages/IdentityResolutionPage.js';
 
 /** ADR-031: one officer proposes a merge, another decides it on the version they read. */
-const API = 'http://localhost:3000';
+const API = 'http://localhost:3000/bff/srs';
 
 const proposal = {
   proposalId: 'prop-1', version: 2, survivorPersonId: 'person-keep', mergedPersonId: 'person-dup',

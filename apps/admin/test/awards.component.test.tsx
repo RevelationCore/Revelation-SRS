@@ -7,7 +7,7 @@ import { server } from '../../../test/msw-server.mjs';
 import { renderWithProviders } from './render.js';
 import { AwardsTab, type AwardsTabPermissions } from '../src/pages/AwardsTab.js';
 
-const API = 'http://localhost:3000';
+const API = 'http://localhost:3000/bff/srs';
 const ME = 'test-user-001';
 const ALL: AwardsTabPermissions = { canRecommend: true, canConfer: true, canReadPlans: true, canWritePlans: true, canReadBoards: true };
 

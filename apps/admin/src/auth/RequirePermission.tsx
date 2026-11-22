@@ -16,7 +16,7 @@ export function RequirePermission({
   permissions: Permission[];
   children: ReactNode;
 }) {
-  const { token, roles, isReady } = useAuth();
+  const { authenticated, roles, isReady } = useAuth();
 
   if (!isReady) {
     return (
@@ -25,7 +25,7 @@ export function RequirePermission({
       </div>
     );
   }
-  if (!token) return <Navigate to="/login" replace />;
+  if (!authenticated) return <Navigate to="/login" replace />;
   if (!userHasAnyPermission(roles, permissions)) return <Navigate to="/403" replace />;
   return <>{children}</>;
 }

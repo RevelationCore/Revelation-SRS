@@ -1,6 +1,8 @@
+import { bffFetch } from '@revelation-srs/ui';
+
 import type { RuleVersion } from '../components/RuleVersionsPanel.js';
 
-import { ApiError, api, getStoredToken } from './client.js';
+import { ApiError, api, SRS_BASE } from './client.js';
 
 /** Award recommendation and conferment, and reassessment plans (BPR-D14; BP-06-002/003). */
 
@@ -150,8 +152,7 @@ export const decideRevocation = (caseId: string, outcome: 'approved' | 'rejected
 
 /** Downloads an issued PDF and saves it. */
 export async function downloadDocumentPdf(documentIssueId: string, filename: string): Promise<void> {
-  const token = getStoredToken();
-  const res = await fetch(`${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000'}/api/v1/document-issues/${documentIssueId}/pdf`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+  const res = await bffFetch(`${SRS_BASE}/api/v1/document-issues/${documentIssueId}/pdf`, { headers: {} });
   if (!res.ok) throw new ApiError(res.status, `Download failed (${res.status})`);
   const url = URL.createObjectURL(await res.blob());
   const a = document.createElement('a');

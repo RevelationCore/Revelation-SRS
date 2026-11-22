@@ -7,7 +7,7 @@ import { server } from '../../../test/msw-server.mjs';
 import { renderWithProviders } from './render.js';
 import { ModuleRegistrationRequestsPage } from '../src/pages/ModuleRegistrationRequestsPage.js';
 
-const API = 'http://localhost:3000';
+const API = 'http://localhost:3000/bff/srs';
 
 const pendingRequest = {
   workflowInstanceId: 'wf-001', workflowTaskId: 'task-001', statusCode: 'running',

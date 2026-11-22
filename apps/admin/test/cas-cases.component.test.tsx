@@ -7,7 +7,7 @@ import { server } from '../../../test/msw-server.mjs';
 import { renderWithProviders } from './render.js';
 import { UkviPage } from '../src/pages/UkviPage.js';
 
-const API = 'http://localhost:3000';
+const API = 'http://localhost:3000/bff/srs';
 const base = {
   casCaseId: 'cc-1', personId: 'p-1', applicationId: 'app-1', enrolmentId: null, casReference: null, statusCode: 'eligibility-checked',
   preparedBy: null, preparedPayload: null, openedAt: '2027-05-01T00:00:00Z',

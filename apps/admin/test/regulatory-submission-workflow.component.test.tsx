@@ -7,7 +7,7 @@ import { server } from '../../../test/msw-server.mjs';
 import { renderWithProviders } from './render.js';
 import { RegulatoryCollectionsPage } from '../src/pages/RegulatoryCollectionsPage.js';
 
-const API = 'http://localhost:3000';
+const API = 'http://localhost:3000/bff/srs';
 const COLLECTION_ID = 'collection-001';
 const SNAPSHOT_ID = 'snapshot-001';
 

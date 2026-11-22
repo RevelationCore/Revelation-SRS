@@ -125,4 +125,22 @@ export default [
       }],
     },
   },
+  // ADR-026 (BL-160): the browser holds no token, so the SPAs keep nothing in
+  // web storage. One preferences.ts per app may hold non-secret UI preferences.
+  {
+    files: ['apps/admin/src/**/*.{ts,tsx}', 'apps/portal/src/**/*.{ts,tsx}', 'packages/ui/src/**/*.{ts,tsx}'],
+    ignores: ['**/preferences.ts'],
+    rules: {
+      'no-restricted-globals': ['error',
+        { name: 'localStorage', message: 'No web storage in the SPAs (ADR-026); non-secret UI preferences go in preferences.ts.' },
+        { name: 'sessionStorage', message: 'No web storage in the SPAs (ADR-026); non-secret UI preferences go in preferences.ts.' },
+        { name: 'indexedDB', message: 'No web storage in the SPAs (ADR-026).' },
+      ],
+      'no-restricted-properties': ['error',
+        { object: 'window', property: 'localStorage', message: 'No web storage in the SPAs (ADR-026).' },
+        { object: 'window', property: 'sessionStorage', message: 'No web storage in the SPAs (ADR-026).' },
+        { object: 'window', property: 'indexedDB', message: 'No web storage in the SPAs (ADR-026).' },
+      ],
+    },
+  },
 ];

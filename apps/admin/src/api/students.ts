@@ -1,4 +1,6 @@
-import { api, ApiError, getStoredToken } from './client.js';
+import { bffFetch } from '@revelation-srs/ui';
+
+import { api, ApiError, SRS_BASE } from './client.js';
 
 export interface StudentSummary {
   personId:        string;
@@ -149,11 +151,9 @@ export async function uploadOutcomeDocument(
 ): Promise<{ documentId: string; checksumSha256: string }> {
   const form = new FormData();
   form.append('file', file);
-
-  const token = getStoredToken();
-  const res = await fetch(
-    `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000'}/api/v1/students/${personId}/adjustments/${adjustmentId}/outcome-document`,
-    { method: 'POST', headers: token ? { Authorization: `Bearer ${token}` } : {}, body: form },
+  const res = await bffFetch(
+    `${SRS_BASE}/api/v1/students/${personId}/adjustments/${adjustmentId}/outcome-document`,
+    { method: 'POST', headers: {}, body: form },
   );
   if (!res.ok) {
     let message = `Upload failed (${res.status})`;
@@ -169,10 +169,9 @@ export async function uploadOutcomeDocument(
 }
 
 export async function downloadOutcomeDocument(personId: string, adjustmentId: string): Promise<Blob> {
-  const token = getStoredToken();
-  const res = await fetch(
-    `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000'}/api/v1/students/${personId}/adjustments/${adjustmentId}/outcome-document`,
-    { headers: token ? { Authorization: `Bearer ${token}` } : {} },
+  const res = await bffFetch(
+    `${SRS_BASE}/api/v1/students/${personId}/adjustments/${adjustmentId}/outcome-document`,
+    { headers: {} },
   );
   if (!res.ok) throw new ApiError(res.status, `Download failed (${res.status})`);
   return res.blob();

@@ -9,7 +9,7 @@ import { renderWithProviders } from './render.js';
 import { AdjustmentCasesPage } from '../src/pages/AdjustmentCasesPage.js';
 import { AdjustmentCaseDetailPage } from '../src/pages/AdjustmentCaseDetailPage.js';
 
-const WELLBEING_API = 'http://localhost:3002';
+const WELLBEING_API = 'http://localhost:3000/bff/wellbeing';
 const CASE_ID = 'case-001';
 
 const queuedCase = {

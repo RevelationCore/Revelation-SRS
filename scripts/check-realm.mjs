@@ -2,8 +2,9 @@
 // The Keycloak realm export keeps the token rules the services rely on
 // (BL-161, BL-332):
 // - realm: access tokens of at most 300 s, refresh-token rotation with no reuse;
-// - browser clients: exact redirect URIs (no wildcards), and offline_access
-//   neither offered nor requested by the SPAs;
+// - browser clients (ADR-026, BL-161): confidential (the BFF holds the
+//   tokens), redirecting only to /bff/auth/callback with no wildcards, with
+//   back-channel logout, and offline_access neither offered nor requested;
 // - service clients (ADR-029, ADR-032): srs-wellbeing-svc-<tenant> and
 //   srs-vle-svc-<tenant> have a hard-coded tenant_id equal to their suffix,
 //   only the srs-api audience, no interactive flows, full scope off, and their
@@ -15,6 +16,8 @@ const realm = JSON.parse(readFileSync(`${root}infra/compose/keycloak/srs-realm.j
 const errors = [];
 
 if (!(realm.accessTokenLifespan <= 300)) errors.push(`realm accessTokenLifespan is ${realm.accessTokenLifespan}, above 300`);
+// ADR-026 item 7: SSO limits match the BFF's 30-minute idle and 10-hour absolute session limits.
+if (realm.ssoSessionIdleTimeout !== 1800 || realm.ssoSessionMaxLifespan !== 36000) errors.push(`realm SSO session limits must be 1800 s idle and 36000 s maximum (BFF_SESSION_IDLE_SECONDS, BFF_SESSION_MAX_SECONDS), not ${realm.ssoSessionIdleTimeout} and ${realm.ssoSessionMaxLifespan}`);
 if (realm.revokeRefreshToken !== true || realm.refreshTokenMaxReuse !== 0) errors.push('realm must rotate refresh tokens with no reuse (revokeRefreshToken, refreshTokenMaxReuse 0)');
 
 const SERVICE = /^srs-(wellbeing|vle)-svc-([0-9a-f-]{36})$/;
@@ -23,7 +26,12 @@ for (const c of realm.clients) {
   const m = SERVICE.exec(c.clientId);
   if (!m) {
     if (c.standardFlowEnabled) {
-      for (const uri of c.redirectUris ?? []) if (uri.includes('*')) errors.push(`${c.clientId}: wildcard redirect URI ${uri}`);
+      if (c.publicClient !== false) errors.push(`${c.clientId}: browser clients are confidential, behind the BFF (ADR-026)`);
+      for (const uri of c.redirectUris ?? []) {
+        if (uri.includes('*')) errors.push(`${c.clientId}: wildcard redirect URI ${uri}`);
+        if (!uri.endsWith('/bff/auth/callback')) errors.push(`${c.clientId}: redirect URI ${uri} is not the BFF callback`);
+      }
+      if (!c.attributes?.['backchannel.logout.url'] || c.attributes?.['backchannel.logout.session.required'] !== 'true') errors.push(`${c.clientId}: needs back-channel logout with the session required`);
       const lifespan = Number(c.attributes?.['access.token.lifespan'] ?? realm.accessTokenLifespan);
       if (lifespan > 300) errors.push(`${c.clientId}: access tokens last ${lifespan} s`);
       if ([...(c.defaultClientScopes ?? []), ...(c.optionalClientScopes ?? [])].includes('offline_access')) errors.push(`${c.clientId}: offers offline_access`);
@@ -48,9 +56,9 @@ for (const c of realm.clients) {
   if (JSON.stringify(scope?.roles ?? []) !== JSON.stringify([role])) errors.push(`${c.clientId}: its scope must map only ${role}`);
 }
 
-// The SPAs must not ask for offline_access either (BL-159).
-const oidc = readFileSync(`${root}packages/ui/src/auth/oidc.ts`, 'utf8');
-if (/scope:\s*'[^']*offline_access/.test(oidc)) errors.push('packages/ui/src/auth/oidc.ts requests offline_access');
+// The BFF must not ask for offline_access either (BL-159, ADR-026).
+const oidc = readFileSync(`${root}apps/bff/src/oidc.ts`, 'utf8');
+if (/scope:\s*'[^']*offline_access/.test(oidc)) errors.push('apps/bff/src/oidc.ts requests offline_access');
 
 if (errors.length) {
   console.error(`check:realm found ${errors.length} problem(s):`);

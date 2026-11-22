@@ -2,7 +2,7 @@
  * Stage 8 — Authenticated admin page rendering + WCAG 2.1 AA axe scans.
  *
  * Each test:
- *  1. Injects a valid staff JWT into localStorage before the page loads.
+ *  1. Answers /bff/session for a staff user before the page loads (ADR-026: no token in the browser).
  *  2. Mocks all /api/v1/** routes to return safe empty responses.
  *  3. Navigates to the route and waits for the page heading to appear.
  *  4. Runs axe and asserts zero violations.

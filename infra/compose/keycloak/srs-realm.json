@@ -12,8 +12,8 @@
   "accessTokenLifespan":    300,
   "revokeRefreshToken":     true,
   "refreshTokenMaxReuse":   0,
-  "ssoSessionIdleTimeout":  28800,
-  "ssoSessionMaxLifespan":  86400,
+  "ssoSessionIdleTimeout":  1800,
+  "ssoSessionMaxLifespan":  36000,
 
   "components": {
     "org.keycloak.userprofile.UserProfileProvider": [
@@ -63,24 +63,25 @@
     {
       "clientId":              "srs-admin",
       "name":                  "SRS Administration Portal",
-      "description":           "Revelation SRS staff-facing admin portal (PKCE public client)",
+      "description":           "ADR-026: the staff-facing admin portal's backend-for-frontend (confidential client). The secret here is for development only; deployments set it from OpenBao.",
       "enabled":               true,
-      "publicClient":          true,
+      "publicClient":          false,
+      "clientAuthenticatorType": "client-secret",
+      "secret":                "dev-admin-bff-secret",
       "standardFlowEnabled":   true,
       "implicitFlowEnabled":   false,
       "directAccessGrantsEnabled": false,
       "serviceAccountsEnabled":    false,
-      "frontchannelLogout":        true,
+      "frontchannelLogout":        false,
       "redirectUris": [
-        "http://localhost:5173/callback"
+        "http://localhost:5173/bff/auth/callback"
       ],
-      "webOrigins": [
-        "http://localhost:5173",
-        "+"
-      ],
+      "webOrigins": [],
       "attributes": {
         "pkce.code.challenge.method": "S256",
-        "post.logout.redirect.uris": "http://localhost:5173/login"
+        "post.logout.redirect.uris": "http://localhost:5173/",
+        "backchannel.logout.url": "http://host.docker.internal:3010/bff/auth/backchannel-logout",
+        "backchannel.logout.session.required": "true"
       },
       "protocolMappers": [
         {
@@ -163,24 +164,25 @@
     {
       "clientId":              "srs-portal",
       "name":                  "SRS Student Portal",
-      "description":           "Revelation SRS student-facing portal (PKCE public client)",
+      "description":           "ADR-026: the student portal's backend-for-frontend (confidential client). The secret here is for development only; deployments set it from OpenBao.",
       "enabled":               true,
-      "publicClient":          true,
+      "publicClient":          false,
+      "clientAuthenticatorType": "client-secret",
+      "secret":                "dev-portal-bff-secret",
       "standardFlowEnabled":   true,
       "implicitFlowEnabled":   false,
       "directAccessGrantsEnabled": false,
       "serviceAccountsEnabled":    false,
-      "frontchannelLogout":        true,
+      "frontchannelLogout":        false,
       "redirectUris": [
-        "http://localhost:5174/callback"
+        "http://localhost:5174/bff/auth/callback"
       ],
-      "webOrigins": [
-        "http://localhost:5174",
-        "+"
-      ],
+      "webOrigins": [],
       "attributes": {
         "pkce.code.challenge.method": "S256",
-        "post.logout.redirect.uris": "http://localhost:5174/login"
+        "post.logout.redirect.uris": "http://localhost:5174/",
+        "backchannel.logout.url": "http://host.docker.internal:3011/bff/auth/backchannel-logout",
+        "backchannel.logout.session.required": "true"
       },
       "protocolMappers": [
         {

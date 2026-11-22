@@ -108,7 +108,8 @@ export function sessionClaims(accessToken: string): Record<string, unknown> {
     srsPersonId: str(c['srs_person_id']),
     tenantId: str(c['tenant_id']),
     roles,
-    displayName: str(c['name']) ?? str(c['preferred_username']),
+    // The same order as the SPAs' getDisplayName: name, then given and family names, then the username.
+    displayName: str(c['name']) ?? ([str(c['given_name']), str(c['family_name'])].filter(Boolean).join(' ') || null) ?? str(c['preferred_username']),
     email: str(c['email']),
   };
 }

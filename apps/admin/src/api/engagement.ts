@@ -1,4 +1,6 @@
-import { ApiError, api, getStoredToken } from './client.js';
+import { bffFetch } from '@revelation-srs/ui';
+
+import { ApiError, api, SRS_BASE } from './client.js';
 
 /**
  * The attendance/engagement admin surface is served by the standalone
@@ -72,14 +74,13 @@ export function reviewCase(caseId: string, body: Record<string, unknown>) {
 }
 
 async function idempotentPost<T = unknown>(path: string, body: Record<string, unknown>): Promise<T> {
-  const baseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000';
-  const response = await fetch(`${baseUrl}${path}`, {
+  const baseUrl = SRS_BASE;
+  const response = await bffFetch(`${baseUrl}${path}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Idempotency-Key': crypto.randomUUID(),
-      ...(getStoredToken() ? { Authorization: `Bearer ${getStoredToken()!}` } : {}),
-    },
+          },
     body: JSON.stringify(body),
   });
   if (!response.ok) {

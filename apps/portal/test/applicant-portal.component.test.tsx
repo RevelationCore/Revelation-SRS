@@ -9,7 +9,7 @@ import { renderWithProviders } from './render.js';
 import { ApplicationDetailPage } from '../src/pages/ApplicationDetailPage.js';
 import { ApplicationsPage } from '../src/pages/ApplicationsPage.js';
 
-const API = 'http://localhost:3000';
+const API = 'http://localhost:3000/bff/srs';
 const ME = 'applicant-001';
 
 const application = (over: Record<string, unknown> = {}) => ({

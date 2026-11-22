@@ -7,7 +7,7 @@ import { server } from '../../../test/msw-server.mjs';
 import { renderWithProviders } from './render.js';
 import { ClearingPage } from '../src/pages/ClearingPage.js';
 
-const API = 'http://localhost:3000';
+const API = 'http://localhost:3000/bff/srs';
 const open = { open: true, opensAt: '2027-07-01T00:00:00Z', closesAt: '2099-09-30T00:00:00Z', programmeIds: ['prog-1'], verbalOfferHours: 48 };
 const review = {
   caseId: 'cr-1', statusCode: 'open', applicationId: 'app-1', sourceReference: '2027:1234567890', offerId: 'o-1', offerTypeCode: 'clearing-verbal',

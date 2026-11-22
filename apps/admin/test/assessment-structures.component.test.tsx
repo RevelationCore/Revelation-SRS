@@ -7,7 +7,7 @@ import { server } from '../../../test/msw-server.mjs';
 import { renderWithProviders } from './render.js';
 import { AssessmentStructuresPage } from '../src/pages/AssessmentStructuresPage.js';
 
-const API = 'http://localhost:3000';
+const API = 'http://localhost:3000/bff/srs';
 const component = (overrides: Record<string, unknown> = {}) => ({
   assessmentComponentId: 'ac-1', moduleOfferingId: 'mo-1', componentTypeCode: 'coursework', title: 'Essay', weighting: 40,
   passMarkOverride: null, durationMinutes: null, createdAt: '2026-09-01T00:00:00Z', updatedAt: '2026-09-01T00:00:00Z', ...overrides,

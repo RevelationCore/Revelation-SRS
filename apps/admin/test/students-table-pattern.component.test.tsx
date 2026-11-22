@@ -7,7 +7,7 @@ import { server } from '../../../test/msw-server.mjs';
 import { renderWithProviders } from './render.js';
 import { StudentsPage } from '../src/pages/StudentsPage.js';
 
-const API = 'http://localhost:3000';
+const API = 'http://localhost:3000/bff/srs';
 const student = { personId: 'p1', studentNumber: 'S000001', legalFirstName: 'Alice', legalFamilyName: 'Demo' };
 const valueSet = { setCode: 'person_status_code', displayName: 'Person status', members: [{ code: 'student', displayLabel: 'Student', description: null, sortOrder: 1 }] };
 

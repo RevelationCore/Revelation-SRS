@@ -7,7 +7,7 @@ import { server } from '../../../test/msw-server.mjs';
 import { renderWithProviders } from './render.js';
 import { CasCasePanel } from '../src/components/CasCasePanel.js';
 
-const API = 'http://localhost:3000';
+const API = 'http://localhost:3000/bff/srs';
 const item = {
   casCaseId: 'cas-1', personId: 'p-1', applicationId: 'a-1', enrolmentId: null, casReference: 'E4G7X2', statusCode: 'assigned',
   preparedBy: 'officer-1', preparedPayload: null, openedAt: '2026-05-01T00:00:00Z',

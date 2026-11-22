@@ -8,7 +8,7 @@ import { renderWithProviders } from './render.js';
 import { RightToStudySection } from '../src/pages/RightToStudySection.js';
 import { FinancialRegistrationSection } from '../src/pages/FinancialRegistrationSection.js';
 
-const API = 'http://localhost:3000';
+const API = 'http://localhost:3000/bff/srs';
 // Only these fields; every other field falls through to the real value sets.
 const OVERRIDES: Record<string, Array<{ code: string; displayLabel: string }>> = {
   basis_code: [{ code: 'british-irish', displayLabel: 'British or Irish citizen' }],

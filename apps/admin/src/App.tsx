@@ -4,7 +4,6 @@ import { useAuth } from './auth/AuthContext.js';
 import { RequireRole } from './auth/RequireRole.js';
 import { RequirePermission } from './auth/RequirePermission.js';
 import { Layout } from './components/Layout.js';
-import { CallbackPage } from './pages/CallbackPage.js';
 import { LoginPage } from './pages/LoginPage.js';
 
 const AcademicRulesPage = lazy(() => import('./pages/AcademicRulesPage.js').then((m) => ({ default: m.AcademicRulesPage })));
@@ -99,9 +98,9 @@ const ADMIN_PERMISSIONS = [
 ] as const;
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
-  const { token, isReady } = useAuth();
+  const { authenticated, isReady } = useAuth();
   if (!isReady) return null;
-  if (!token)   return <Navigate to="/login" replace />;
+  if (!authenticated) return <Navigate to="/login" replace />;
   return <>{children}</>;
 }
 
@@ -111,7 +110,6 @@ export function App() {
     <Routes>
       {/* Public routes */}
       <Route path="/login"           element={<LoginPage />} />
-      <Route path="/callback"        element={<CallbackPage />} />
       <Route path="/403"             element={<ForbiddenPage />} />
       <Route path="/accessibility-statement" element={<AccessibilityStatementPage />} />
 

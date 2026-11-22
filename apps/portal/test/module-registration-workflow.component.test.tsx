@@ -9,7 +9,7 @@ import { renderWithProviders } from './render.js';
 import { ModuleAddPage } from '../src/pages/ModuleAddPage.js';
 import { ModulesPage } from '../src/pages/ModulesPage.js';
 
-const API = 'http://localhost:3000';
+const API = 'http://localhost:3000/bff/srs';
 const ENROLMENT_ID = 'enrolment-001';
 const OFFERING_ID = 'offering-001';
 

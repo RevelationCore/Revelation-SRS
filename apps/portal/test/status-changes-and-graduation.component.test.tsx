@@ -9,7 +9,7 @@ import { StatusChangesSection } from '../src/pages/StatusChangesSection.js';
 import { DocumentsPage } from '../src/pages/DocumentsPage.js';
 import { GraduationPage } from '../src/pages/GraduationPage.js';
 
-const API = 'http://localhost:3000';
+const API = 'http://localhost:3000/bff/srs';
 const ME = 'test-student-001';
 
 function common(options: Record<string, unknown>, cases: unknown[] = []) {

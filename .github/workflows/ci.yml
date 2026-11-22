@@ -581,8 +581,11 @@ jobs:
       - name: Start API and admin application
         run: |
           DEMO_DATA_ENABLED=true pnpm --filter @revelation-srs/api dev > /tmp/srs-api.log 2>&1 &
+          # ADR-026: the admin app reaches the API only through its BFF (development sessions on).
+          pnpm --filter @revelation-srs/bff dev > /tmp/srs-bff.log 2>&1 &
           pnpm --filter @revelation-srs/admin dev > /tmp/srs-admin.log 2>&1 &
           node scripts/environment.mjs ready api admin
+          timeout 60 bash -c 'until curl -sf http://localhost:3010/health; do sleep 2; done'
 
       - name: Run real full-stack journey
         id: real_journey
@@ -616,7 +619,7 @@ jobs:
         if: failure()
         run: |
           mkdir -p test-results/real-journey
-          cp /tmp/srs-api.log /tmp/srs-admin.log test-results/real-journey/ 2>/dev/null || true
+          cp /tmp/srs-api.log /tmp/srs-bff.log /tmp/srs-admin.log test-results/real-journey/ 2>/dev/null || true
           docker compose -f infra/compose/docker-compose.yml ps > test-results/real-journey/compose-status.txt
 
       - name: Upload journey diagnostics

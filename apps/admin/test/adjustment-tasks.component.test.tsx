@@ -7,7 +7,7 @@ import { server } from '../../../test/msw-server.mjs';
 import { renderWithProviders } from './render.js';
 import { AdjustmentTasksPage } from '../src/pages/AdjustmentTasksPage.js';
 
-const API = 'http://localhost:3000';
+const API = 'http://localhost:3000/bff/srs';
 
 const applyTask = {
   distributionId: 'dist-001',

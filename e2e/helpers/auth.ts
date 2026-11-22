@@ -54,28 +54,51 @@ export const STUDENT_TOKEN = makeJwt({
   iat:                IAT,
 });
 
+// ── Session helpers (ADR-026) ─────────────────────────────────────────────────
+// The SPAs hold no token: they read GET /bff/session, and the BFF holds the
+// tokens. Mocked UI suites run no BFF, so they answer /bff/session from the
+// token's claims; full-stack suites create a real BFF development session.
+
+function claimsOf(token: string): Record<string, unknown> {
+  return JSON.parse(Buffer.from(token.split('.')[1]!, 'base64url').toString()) as Record<string, unknown>;
+}
+
+/** Answers GET /bff/session as the BFF would for this token (mocked UI suites). */
+export async function mockSession(page: Page, token: string): Promise<void> {
+  const c = claimsOf(token);
+  const roles = (c['realm_roles'] as string[] | undefined) ?? (c['realm_access'] as { roles?: string[] } | undefined)?.roles ?? [];
+  await page.route('**/bff/session', (route) => route.fulfill({
+    contentType: 'application/json',
+    body: JSON.stringify({
+      authenticated: true, sub: c['sub'], srsPersonId: c['srs_person_id'] ?? null, tenantId: c['tenant_id'] ?? null, roles,
+      displayName: c['name'] ?? ([c['given_name'], c['family_name']].filter(Boolean).join(' ') || c['preferred_username']) ?? null, email: c['email'] ?? null,
+      expiresAt: new Date(Number(c['exp'] ?? 0) * 1000).toISOString(),
+    }),
+  }));
+}
+
+/**
+ * A real BFF development session (POST /bff/dev/session, development and
+ * test only) for full-stack suites (BL-162). The cookie lands in the page's
+ * browser context, as a real sign-in's would.
+ */
+export async function devSession(page: Page, appOrigin: string, token: string): Promise<void> {
+  const res = await page.request.post(`${appOrigin}/bff/dev/session`, {
+    headers: { Origin: appOrigin, 'X-SRS-Request': '1', 'Content-Type': 'application/json' },
+    data: { token },
+  });
+  if (!res.ok()) throw new Error(`BFF development session refused: ${res.status()} ${await res.text()}`);
+}
+
 // ── Injection helpers ─────────────────────────────────────────────────────────
-// Must be called before page.goto so addInitScript runs on the first load.
+// Call before page.goto, so the first /bff/session read is answered.
 
 export async function injectAdminAuth(page: Page, roles?: string[]): Promise<void> {
-  const staffToken = roles ? makeStaffToken(roles) : STAFF_TOKEN;
-  await page.addInitScript(
-    ({ token }: { token: string }) => {
-      localStorage.setItem('srs_admin_token',         token);
-      localStorage.setItem('srs_admin_refresh_token', token);
-    },
-    { token: staffToken },
-  );
+  await mockSession(page, roles ? makeStaffToken(roles) : STAFF_TOKEN);
 }
 
 export async function injectPortalAuth(page: Page): Promise<void> {
-  await page.addInitScript(
-    ({ token }: { token: string }) => {
-      localStorage.setItem('srs_portal_token',         token);
-      localStorage.setItem('srs_portal_refresh_token', token);
-    },
-    { token: STUDENT_TOKEN },
-  );
+  await mockSession(page, STUDENT_TOKEN);
 }
 
 /** A portal token for any audience (Phase 5 D-38): an applicant, a supervisor or an examiner. */
@@ -87,11 +110,5 @@ export function makePortalToken(roles: string[], personId: string): string {
 }
 
 export async function injectPortalAuthAs(page: Page, roles: string[], personId: string): Promise<void> {
-  await page.addInitScript(
-    ({ token }: { token: string }) => {
-      localStorage.setItem('srs_portal_token',         token);
-      localStorage.setItem('srs_portal_refresh_token', token);
-    },
-    { token: makePortalToken(roles, personId) },
-  );
+  await mockSession(page, makePortalToken(roles, personId));
 }

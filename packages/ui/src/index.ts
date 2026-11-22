@@ -1,7 +1,7 @@
 export * from './api/client.js';
 export * from './api/v1.gen.js';
 export * from './auth/jwt.js';
-export * from './auth/oidc.js';
+export * from './auth/session.js';
 export * from './auth/roles.js';
 export * from './components/Badge.js';
 export * from './components/Button.js';
@@ -23,3 +23,4 @@ export * from './form/Field.js';
 export * from './theme/tokens.js';
 export * from './i18n/format.js';
 export * from './i18n/index.js';
+export * from './auth/BffAuthProvider.js';

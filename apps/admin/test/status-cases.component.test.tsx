@@ -9,7 +9,7 @@ import { renderWithProviders } from './render.js';
 import { StatusCasesPage } from '../src/pages/StatusCasesPage.js';
 import { StatusCaseDetailPage } from '../src/pages/StatusCaseDetailPage.js';
 
-const API = 'http://localhost:3000';
+const API = 'http://localhost:3000/bff/srs';
 const ME = 'test-user-001';
 const subject = { personId: 'p-1', studentNumber: 'S1001', studentName: 'Ada Lovelace', programmeCode: 'BSC-CS', programmeTitle: 'BSc CS' };
 

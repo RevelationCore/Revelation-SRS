@@ -1,4 +1,6 @@
-import { api } from './client.js';
+import { bffFetch } from '@revelation-srs/ui';
+
+import { api, SRS_BASE } from './client.js';
 
 // ── HESA ──────────────────────────────────────────────────────────────────────
 
@@ -71,10 +73,10 @@ export function decideHesaSubmissionRequest(
   return api.post(`/api/v1/regulatory/hesa/returns/submission-requests/${workflowInstanceId}/decision`, { decisionCode, reason });
 }
 
-export async function downloadHesaFile(returnId: string, token: string | null): Promise<void> {
-  const baseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000';
-  const res = await fetch(`${baseUrl}/api/v1/regulatory/hesa/returns/${returnId}/file`, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
+export async function downloadHesaFile(returnId: string): Promise<void> {
+  const baseUrl = SRS_BASE;
+  const res = await bffFetch(`${baseUrl}/api/v1/regulatory/hesa/returns/${returnId}/file`, {
+    headers: {},
   });
   if (!res.ok) throw new Error(`Download failed (${res.status})`);
   const blob = await res.blob();

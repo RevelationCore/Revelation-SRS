@@ -1,4 +1,6 @@
-import { api, ApiError } from './client.js';
+import { bffFetch } from '@revelation-srs/ui';
+
+import { api, ApiError, SRS_BASE } from './client.js';
 
 /** An applicant's own application, as the API shows it to them (Phase 5 D-39). */
 export interface ApplicantApplication {
@@ -36,9 +38,8 @@ export const withdrawApplication = (personId: string, applicationId: string, rea
 export async function uploadConditionEvidence(personId: string, conditionId: string, file: File): Promise<{ evidenceId: string }> {
   const form = new FormData();
   form.append('file', file);
-  const token = localStorage.getItem('srs_portal_token');
-  const res = await fetch(`${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000'}/api/v1/applicants/${personId}/conditions/${conditionId}/evidence`, {
-    method: 'POST', headers: token ? { Authorization: `Bearer ${token}` } : {}, body: form,
+  const res = await bffFetch(`${SRS_BASE}/api/v1/applicants/${personId}/conditions/${conditionId}/evidence`, {
+    method: 'POST', headers: {}, body: form,
   });
   if (!res.ok) {
     let message = `Upload failed (${res.status})`;

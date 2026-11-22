@@ -153,6 +153,17 @@ describe('the proxy (ADR-026 item 8)', () => {
     await app.close();
   });
 
+  it('forwards only allow-listed public paths without a session, and with no token', async () => {
+    const app = await buildBff(config(), { sql });
+    upstreamCalls.length = 0;
+    const res = await app.inject({ method: 'GET', url: '/bff/srs/api/v1/demo/status' });
+    expect(res.statusCode).toBe(200);
+    expect(upstreamCalls[0]).toMatchObject({ url: '/api/v1/demo/status', authorization: undefined });
+    expect((await app.inject({ method: 'GET', url: '/bff/wellbeing/api/v1/demo/status' })).statusCode).toBe(401);
+    expect((await app.inject({ method: 'GET', url: '/bff/srs/api/v1/demo/status/../students' })).statusCode).toBe(401);
+    await app.close();
+  });
+
   it('after an upstream 401, refreshes once and retries once', async () => {
     const app = await buildBff(config(), { sql });
     const { cookie } = await signIn(app);

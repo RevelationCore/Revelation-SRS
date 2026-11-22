@@ -7,7 +7,7 @@ import { server } from '../../../test/msw-server.mjs';
 import { renderWithProviders } from './render.js';
 import { ValueSetsPage } from '../src/pages/ValueSetsPage.js';
 
-const API = 'http://localhost:3000';
+const API = 'http://localhost:3000/bff/srs';
 const locales = http.get(`${API}/api/v1/admin/globalisation/locales`, () => HttpResponse.json([
   { localeCode: 'en-GB', displayName: 'English (UK)', nativeDisplayName: 'English (UK)', isRtl: false, isPlatformDefault: true, active: true },
   { localeCode: 'cy-GB', displayName: 'Welsh', nativeDisplayName: 'Cymraeg', isRtl: false, isPlatformDefault: false, active: true },

@@ -17,8 +17,8 @@ export function DemoBanner() {
 
   useEffect(() => {
     if (!DEMO_MODE) return;
-    const baseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000';
-    fetch(`${baseUrl}/api/v1/demo/status`)
+    // Through the BFF, which forwards this one public path without a session (ADR-026).
+    fetch('/bff/srs/api/v1/demo/status', { credentials: 'same-origin' })
       .then(r => r.json() as Promise<DemoStatus>)
       .then(data => setStatus(data))
       .catch(() => { /* banner is non-critical — ignore failures */ });

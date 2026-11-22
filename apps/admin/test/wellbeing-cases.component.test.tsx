@@ -11,8 +11,8 @@ import { DisabilityCasesPage } from '../src/pages/DisabilityCasesPage.js';
 import { DisabilityCaseDetailPage } from '../src/pages/DisabilityCaseDetailPage.js';
 import { MentalHealthCaseDetailPage } from '../src/pages/MentalHealthCaseDetailPage.js';
 
-const API = 'http://localhost:3000';
-const WB = 'http://localhost:3002';
+const API = 'http://localhost:3000/bff/srs';
+const WB = 'http://localhost:3000/bff/wellbeing';
 const PERSON = 'person-001';
 
 const CODES: Record<string, Array<{ code: string; displayLabel: string }>> = {

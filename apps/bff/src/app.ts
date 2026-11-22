@@ -20,6 +20,12 @@ import { SessionStore } from './session-store.js';
 export interface BffDeps { sql: postgres.Sql; oidc?: OidcClient }
 
 const SAFE = new Set(['GET', 'HEAD', 'OPTIONS']);
+/**
+ * Upstream paths a signed-out page may read, forwarded with no token: the
+ * demo banner shows on the sign-in page, and the CSP lets the browser reach
+ * only this origin. GET only, exact paths only.
+ */
+const PUBLIC_PATHS: Record<string, readonly string[]> = { srs: ['/api/v1/demo/status'] };
 const HOP_BY_HOP = new Set(['connection', 'keep-alive', 'proxy-authenticate', 'proxy-authorization', 'te', 'trailer', 'transfer-encoding', 'upgrade', 'host', 'content-length']);
 const NEVER_FORWARD = new Set(['cookie', 'authorization', 'origin', 'referer', 'x-srs-request']);
 
@@ -128,13 +134,23 @@ export async function buildBff(cfg: BffConfig, deps: BffDeps): Promise<FastifyIn
 
   for (const [name, base] of Object.entries(cfg.upstreams)) {
     const prefix = `/bff/${name}`;
-    const handler = (req: FastifyRequest, reply: FastifyReply) => proxy(req, reply, prefix, base);
+    const handler = (req: FastifyRequest, reply: FastifyReply) => proxy(req, reply, prefix, base, PUBLIC_PATHS[name] ?? []);
     app.all(`${prefix}/*`, handler);
   }
 
-  async function proxy(req: FastifyRequest, reply: FastifyReply, prefix: string, base: string): Promise<FastifyReply> {
+  async function proxy(req: FastifyRequest, reply: FastifyReply, prefix: string, base: string, publicPaths: readonly string[]): Promise<FastifyReply> {
     const cookie = readCookie(req.headers.cookie, SESSION_COOKIE);
     let session = cookie ? await store.withFreshToken(cookie) : null;
+    const path = req.url.slice(prefix.length);
+    if (!session && req.method === 'GET' && publicPaths.includes(path.split('?')[0]!)) {
+      try {
+        const res = await fetchWithTimeout(`${base}${path}`, { headers: { accept: 'application/json' } }, cfg.proxyTimeoutMs);
+        reply.code(res.status).header('content-type', res.headers.get('content-type') ?? 'application/json');
+        return reply.send(Buffer.from(await res.arrayBuffer()));
+      } catch {
+        return reply.code(502).type('application/problem+json').send(problem(502, 'The service is unavailable; try again', req.url));
+      }
+    }
     if (!cookie || !session) return reply.code(401).type('application/problem+json').send(problem(401, 'Sign in again', req.url));
 
     const target = `${base}${req.url.slice(prefix.length)}`;

@@ -13,7 +13,7 @@ import { IdentityVerificationSection } from '../src/pages/IdentityVerificationSe
 import { CurriculumPublicationDetailPage } from '../src/pages/CurriculumPublicationsPage.js';
 import { GraduationCycleDetailPage } from '../src/pages/GraduationCycleDetailPage.js';
 
-const API = 'http://localhost:3000';
+const API = 'http://localhost:3000/bff/srs';
 const ME = 'test-user-001';
 const valueSets = http.get(`${API}/api/v1/fields/:entity/:field/value-set`, ({ params }) => HttpResponse.json({
   setCode: 'x', displayName: 'x',
