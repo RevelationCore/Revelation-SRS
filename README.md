@@ -300,6 +300,9 @@ Full developer setup guide, including troubleshooting and monorepo commands: [do
 | [ADR-027](docs/decisions/ADR-027-shared-runtime-state-in-postgresql.md) | Shared runtime state (invalidation, notification fan-out, rate limits, job locks) in PostgreSQL |
 | [ADR-028](docs/decisions/ADR-028-exceptional-circumstances-decision-authority.md) | Exceptional-circumstances decision authority and separation of duties |
 | [ADR-029](docs/decisions/ADR-029-tenant-bound-service-identity-for-wellbeing-hand-offs.md) | Tenant-bound service identity for the wellbeing-to-core hand-offs |
+| [ADR-030](docs/decisions/ADR-030-malware-scanning-of-uploaded-documents.md) | Malware scanning of uploaded documents; fail closed; never serve an unscanned document (Proposed) |
+| [ADR-031](docs/decisions/ADR-031-governed-identity-merge-and-propagation.md) | Governed, reversible identity merge and its propagation (Proposed) |
+| [ADR-032](docs/decisions/ADR-032-tenant-bound-service-identity-for-the-vle-connector.md) | Tenant-bound service identity for the VLE connector |
 
 ---
 

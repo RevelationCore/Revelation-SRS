@@ -1,7 +1,7 @@
 # Revelation SRS — Core Principles
 
 > Status: Draft for review
-> Last updated: 2026-11-20
+> Last updated: 2026-11-22
 
 This document defines the foundational principles that govern the design, development, and operation of Revelation SRS. These principles apply across all modules, integrations, and deployment contexts and must be respected by any party contributing to or extending the system.
 
@@ -53,7 +53,7 @@ Bitemporal recording applies to (but is not limited to):
 - Institutional rules, assessment regulations, and classification algorithms
 - Address and contact data
 
-There is no destructive update of temporal records. Prior states are always recoverable. This principle is distinct from, but complementary to, the audit trail (§5): bitemporal data records *what was true and when*; the audit trail records *who changed it and why*.
+There is no destructive update of temporal records. Prior states are always recoverable. An identity merge follows the same rule: it is a governed decision that moves current ownership to the surviving person as new versions, leaves the record of what happened in place, redirects the old identifier, and can be reversed by a governed unmerge (ADR-031). This principle is distinct from, but complementary to, the audit trail (§5): bitemporal data records *what was true and when*; the audit trail records *who changed it and why*.
 
 ---
 
@@ -109,7 +109,8 @@ All access to the system — human and machine — is authenticated and authoris
 - **Least privilege**: every user and integration receives the minimum permissions required to perform its function.
 - **Separation of duties**: permission to decide a governed outcome is separate from permission to prepare it, and the service refuses a decision by anyone who recorded or assessed the case. The acting user is always taken from the authenticated token, never from the request body (ADR-028).
 - **Browser sessions**: browser applications never hold OAuth tokens; they use a same-origin backend-for-frontend with an HTTP-only session cookie (ADR-026).
-- **Service identity**: a service calling another service authenticates as itself with client credentials, through a client the identity provider binds to one tenant. The tenant always comes from the verified token, never from the caller, and a service role is honoured only from its own client (ADR-029).
+- **Service identity**: a service calling another service authenticates as itself with client credentials, through a client the identity provider binds to one tenant. The tenant always comes from the verified token, never from the caller, and a service role is honoured only from its own client (ADR-029, ADR-032).
+- **Uploaded files**: every uploaded file is scanned for malware before it is stored, and a document that has not passed the scan is never served. When the scanner cannot answer, the upload is refused (ADR-030).
 - **API security**: all API endpoints are protected. No unauthenticated endpoints exist outside of publicly documented health and readiness probes.
 - **Secrets management**: credentials, certificates, and API keys are managed through a dedicated secrets store; they are never baked into container images or committed to source control.
 
