@@ -429,7 +429,6 @@ async function loadWellbeing(db: Db, tenantId: string): Promise<void> {
         scopeCode:          'exam',
         amountValue:        '25.00',
         amountUnitCode:     'percent-of-duration',
-        notes:              'DEMO - additional time on timed written exams. Synthetic record.',
         actorId:            ACTOR,
         validFrom:          VALID_FROM,
         recordedAt:         VALID_FROM,

@@ -7,7 +7,8 @@
  * - BL-237: whoever recorded the deciding assessment does not approve it, and
  *   registry administrators no longer hold the case permissions;
  * - BL-239: status correction has its own permission, takes known statuses
- *   only, never sets approved, and is made by someone else.
+ *   only, never sets approved, and is made by someone else;
+ * - BL-243: the hand-off to the SRS carries no free-text notes.
  */
 import { hasPermission } from '@revelation-srs/domain';
 import type { FastifyInstance } from 'fastify';
@@ -174,3 +175,24 @@ describe('status correction (BL-239)', () => {
   });
 });
 
+describe('the hand-off carries no free text (BL-243)', () => {
+  it('refuses notes on approval and hands nothing off', async () => {
+    const id = await caseUnderAssessment();
+    expect((await call(ctx.app, advisor, 'POST', `/api/v1/adjustment-cases/${id}/assessments`, {
+      assessedAt: '2026-06-15T10:00:00Z', outcomeCode: 'recommended',
+    })).statusCode).toBe(201);
+    const before = stub.submissions.length;
+    const res = await call(ctx.app, chair, 'POST', `/api/v1/adjustment-cases/${id}/approve`, {
+      forceApprove: true, enrolmentId: ENROLMENT_ID, adjustmentTypeCode: 'extra-time', scopeCode: 'all',
+      recommendedAdjustment: '25% extra time', validFrom: '2026-09-01T00:00:00Z', amount: { value: 25, unitCode: 'percent-of-duration' },
+      notes: 'Diagnosis detail',
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.json<{ detail: string }>().detail).toMatch(/notes is not accepted/);
+    expect(stub.submissions).toHaveLength(before);
+
+    const ok = await approve(id);
+    expect(ok.statusCode, ok.body).toBe(202);
+    expect(stub.submissions.at(-1)).not.toHaveProperty('notes');
+  });
+});

@@ -174,7 +174,6 @@ describe('AJ-21 hand-off: wellbeing → SRS → NATS → VLE adapter → VLE', (
         recommendedAdjustment: '25% extra time in timed assessments',
         validFrom:             '2026-09-21T00:00:00.000Z',
         amount:                { value: 25, unitCode: 'percent-of-duration' },
-        notes:                 'Cross-component note that must not reach the VLE',
         forceApprove:          true,
       },
     });

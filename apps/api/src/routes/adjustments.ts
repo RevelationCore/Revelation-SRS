@@ -67,7 +67,6 @@ const RecordAdjustmentBody = Type.Object({
   validFrom: Type.String({ format: 'date-time' }),
   validTo: Type.Optional(Type.String({ format: 'date-time' })),
   amount: Type.Optional(AmountSchema),
-  notes: Type.Optional(Type.String()),
   sourceCaseId: Type.Optional(Type.String()),
 });
 
@@ -183,6 +182,7 @@ export function adjustmentRoutes(fastify: FastifyInstance): void {
         response: {
           200: Type.Object({ adjustmentId: Type.String() }),
           201: Type.Object({ adjustmentId: Type.String() }),
+          400: ErrorSchema,
           404: ErrorSchema,
           409: ErrorSchema,
           422: ErrorSchema,
@@ -195,6 +195,16 @@ export function adjustmentRoutes(fastify: FastifyInstance): void {
     },
     async (request, reply) => {
       const { personId } = request.params as { personId: string };
+      // No free text reaches core: its readers include registry and the
+      // integration service, and a note is where a diagnosis ends up (ADR-017,
+      // BL-243). Refused rather than ignored, so an old caller fails loudly.
+      if (typeof request.body === 'object' && request.body !== null && 'notes' in request.body) {
+        await reply.code(400).type('application/problem+json').send({
+          type: 'https://srs.example.com/errors/bad-request', title: 'Free text not accepted', status: 400,
+          detail: 'notes is not accepted: a core adjustment carries type, scope, amount and dates only; the narrative stays on the wellbeing case', instance: request.url,
+        });
+        return;
+      }
       const { sourceCaseId, ...body } = request.body as RecordAdjustmentInput & { sourceCaseId?: string };
       if (!sourceCaseId) {
         await reply.code(422).type('application/problem+json').send({

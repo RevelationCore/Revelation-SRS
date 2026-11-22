@@ -279,6 +279,14 @@ export function validatePayload(
       }
     }
 
+    // Free text is not carried into core (ADR-017, BL-243): it is where the
+    // previous system's diagnosis or narrative ends up.
+    if ('notes' in adj && (adj as { notes?: unknown }).notes != null) {
+      issues.push(issue('warning', 'SPECIAL_CATEGORY_DATA', 'adjustment',
+        `Adjustment ${adj.externalId}: notes are not imported. Keep the narrative in the wellbeing or disability case records.`,
+        { externalId: adj.externalId, field: 'notes' }));
+    }
+
     // Bitemporal window check
     if (adj.validTo !== undefined && adj.validTo <= adj.validFrom) {
       issues.push(issue('error', 'BITEMPORAL_INVALID_WINDOW', 'adjustment',

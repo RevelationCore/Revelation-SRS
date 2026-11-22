@@ -790,9 +790,6 @@
                   "validTo": {
                     "type": "string"
                   },
-                  "notes": {
-                    "type": "string"
-                  },
                   "amount": {
                     "type": "object",
                     "required": [

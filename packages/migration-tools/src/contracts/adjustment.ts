@@ -14,7 +14,8 @@ export interface ImportAdjustment {
    * a number (exam entries, the VLE) cannot apply the adjustment.
    */
   amount?:             { value: number; unitCode: string } | undefined;
-  notes?:              string | undefined;
+  // No notes: a core adjustment carries no free text (ADR-017, BL-243). A
+  // payload that still has them is warned about and they are not imported.
   validFrom:           string;
   validTo?:            string | undefined;
 }

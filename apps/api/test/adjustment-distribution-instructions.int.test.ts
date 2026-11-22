@@ -154,13 +154,12 @@ describe('Structured amount', () => {
 });
 
 describe('distribution-requested instructions', () => {
-  it('publishes one instruction per target, addressed by subject, without notes', async () => {
+  it('publishes one instruction per target, addressed by subject, with no free text', async () => {
     const f = await createFixture('INS101');
     const { adjustmentId } = await record(f, {
       adjustmentTypeCode: 'extra-time', scopeCode: 'all',
       amount: { value: 15, unitCode: 'minutes-per-hour' },
       validTo: '2028-07-31T00:00:00.000Z',
-      notes: 'Diagnosis detail that must not reach target systems',
     });
 
     const instructions = eventsOf(REQUESTED).filter((e) => e.payload['adjustmentId'] === adjustmentId);
@@ -182,7 +181,8 @@ describe('distribution-requested instructions', () => {
         validFrom: '2027-09-01T00:00:00.000Z',
         validTo: '2028-07-31T00:00:00.000Z',
       });
-      expect(JSON.stringify(instruction.payload)).not.toContain('Diagnosis');
+      // Core refuses notes (BL-243); the instruction has no field for them either.
+      expect(instruction.payload).not.toHaveProperty('notes');
       expect(row.requestPublishedAt).not.toBeNull();
       expect(row.statusCode).toBe('pending');
     }
@@ -409,7 +409,7 @@ async function createFixture(code: string): Promise<Fixture> {
 
 async function record(
   f: Fixture,
-  body: { adjustmentTypeCode: string; scopeCode: string; amount?: { value: number; unitCode: string }; validTo?: string; notes?: string },
+  body: { adjustmentTypeCode: string; scopeCode: string; amount?: { value: number; unitCode: string }; validTo?: string },
   idempotencyKey?: string,
   expectedStatus = 201,
 ): Promise<{ adjustmentId: string }> {

@@ -8054,7 +8054,6 @@ export interface operations {
                         value: number;
                         unitCode: string;
                     };
-                    notes?: string;
                     sourceCaseId?: string;
                 };
             };
@@ -8079,6 +8078,20 @@ export interface operations {
                 content: {
                     "application/json": {
                         adjustmentId: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
                     };
                 };
             };

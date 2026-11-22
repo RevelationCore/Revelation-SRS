@@ -74,7 +74,6 @@ export interface RecordAdjustmentInput {
   scopeCode: string;
   validFrom: string;
   validTo?: string;
-  notes?: string;
   /** Structured amount, e.g. { value: 25, unitCode: 'percent-of-duration' }.
    * Target systems that compute per-assessment values need it. */
   amount?: AdjustmentAmountV1;
@@ -182,7 +181,8 @@ export class AdjustmentService {
       validFrom: validFrom.toISOString(),
       validTo: validTo ? validTo.toISOString() : null,
       amount: input.amount ? { value: input.amount.value, unitCode: input.amount.unitCode } : null,
-      notes: input.notes ?? null,
+      // Kept so request hashes recorded before notes were refused still match.
+      notes: null,
       sourceCaseId,
       manualProposalId: authority.kind === 'manual-proposal' ? authority.proposalId : null,
     });
@@ -223,7 +223,7 @@ export class AdjustmentService {
         personId: personId as `${string}-${string}-${string}-${string}-${string}`,
         adjustmentTypeCode: input.adjustmentTypeCode,
         scopeCode: input.scopeCode,
-        notes: input.notes ?? null,
+        notes: null,
         actorId,
         validFrom,
         validTo,

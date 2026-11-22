@@ -86,6 +86,23 @@ describe('Reasonable adjustments', () => {
     expect(get.json<unknown[]>()).toEqual([]);
   });
 
+  it('refuses free-text notes and records nothing (BL-243)', async () => {
+    const fixture = await createAdjustmentFixture('ADJ105N');
+    const res = await ctx.app.inject({
+      method: 'POST',
+      url: `/api/v1/students/${fixture.personId}/adjustments`,
+      headers: { authorization: `Bearer ${await wellbeingServiceJwt(ctx)}` },
+      payload: {
+        sourceCaseId: randomUUID(), enrolmentId: fixture.enrolmentId, adjustmentTypeCode: 'extra-time', scopeCode: 'all',
+        validFrom: '2027-09-01T00:00:00.000Z', notes: 'Diagnosis detail',
+      },
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.json<{ detail: string }>().detail).toMatch(/notes is not accepted/);
+    const get = await ctx.app.inject({ method: 'GET', url: `/api/v1/students/${fixture.personId}/adjustments`, headers: { authorization: `Bearer ${jwt}` } });
+    expect(get.json<unknown[]>()).toEqual([]);
+  });
+
   it('records the wellbeing case as the provenance (ADR-033)', async () => {
     const fixture = await createAdjustmentFixture('ADJ104P');
     const { adjustmentId } = await createAdjustment(fixture, { adjustmentTypeCode: 'separate-room', scopeCode: 'exam', validFrom: '2027-09-01T00:00:00.000Z' });
@@ -202,7 +219,6 @@ describe('Reasonable adjustments', () => {
       scopeCode: 'all',
       validFrom: '2027-09-01T00:00:00.000Z',
       validTo: '2028-01-31T00:00:00.000Z',
-      notes: '25 percent extra time',
     });
 
     const list = await ctx.app.inject({
@@ -574,7 +590,6 @@ async function createAdjustment(
     scopeCode: string;
     validFrom: string;
     validTo?: string;
-    notes?: string;
     sourceCaseId?: string;
   },
 ): Promise<{ adjustmentId: string }> {

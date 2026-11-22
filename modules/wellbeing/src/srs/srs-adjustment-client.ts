@@ -2,7 +2,8 @@
  * SRS adjustment handoff client — wraps the F-WELL-SIS-01 POST endpoint.
  *
  * POST /api/v1/students/:personId/adjustments
- * Body: { enrolmentId, adjustmentTypeCode, scopeCode, validFrom, validTo?, amount?, notes?, sourceCaseId? }
+ * Body: { enrolmentId, adjustmentTypeCode, scopeCode, validFrom, validTo?, amount?, sourceCaseId? }
+ * No free text: the outcome is the minimum the SRS needs (ADR-017, BL-243).
  * Headers: { X-Idempotency-Key }
  * Returns: 201 { adjustmentId }
  *
@@ -23,7 +24,6 @@ export interface SubmitAdjustmentInput {
   scopeCode:          string;
   validFrom:          string;
   validTo?:           string;
-  notes?:             string;
   /** Structured amount, e.g. { value: 25, unitCode: 'percent-of-duration' }. */
   amount?:            { value: number; unitCode: string };
   /** This wellbeing module case's logical id — carried through so the
@@ -71,7 +71,6 @@ export class SrsAdjustmentHttpClient implements SrsAdjustmentClient {
       scopeCode:          input.scopeCode,
       validFrom:          input.validFrom,
       ...(input.validTo !== undefined ? { validTo: input.validTo } : {}),
-      ...(input.notes   !== undefined ? { notes:   input.notes }   : {}),
       ...(input.amount  !== undefined ? { amount:  input.amount }  : {}),
       ...(input.sourceCaseId !== undefined ? { sourceCaseId: input.sourceCaseId } : {}),
     };

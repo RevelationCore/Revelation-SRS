@@ -116,7 +116,6 @@ export function approveAdjustmentCase(caseId: string, input: {
   recommendedAdjustment: string;
   validFrom: string;
   validTo?: string;
-  notes?: string;
   /** Structured amount forwarded to the SRS, e.g. { value: 25, unitCode: 'percent-of-duration' }. */
   amount?: { value: number; unitCode: string };
   forceApprove?: boolean;

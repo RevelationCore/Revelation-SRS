@@ -266,10 +266,14 @@ async function adjust(
   const res = await post(`/api/v1/students/${f.personId}/adjustments`, {
     sourceCaseId: randomUUID(),
     enrolmentId: f.enrolmentId, adjustmentTypeCode, scopeCode, validFrom: '2026-09-21T00:00:00.000Z',
-    amount, notes: 'PRIVATE-NOTE must not reach the task queue',
+    amount,
   }, await wellbeingServiceJwt(ctx));
   expect(res.statusCode, res.body).toBe(201);
-  return res.json<{ adjustmentId: string }>();
+  const recorded = res.json<{ adjustmentId: string }>();
+  // Core no longer accepts notes (BL-243), but rows recorded before that, or
+  // migrated, may hold them: the task queue must still never show them.
+  await ctx.db.execute(sql`UPDATE reasonable_adjustment SET notes = 'PRIVATE-NOTE must not reach the task queue' WHERE id = ${recorded.adjustmentId}`);
+  return recorded;
 }
 
 async function distributions(adjustmentId: string): Promise<Distribution[]> {

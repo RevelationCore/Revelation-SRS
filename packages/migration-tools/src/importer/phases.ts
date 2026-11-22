@@ -425,7 +425,7 @@ export async function importAdjustments(
         scopeCode:          adj.scopeCode,
         amountValue:        adj.amount ? adj.amount.value.toFixed(2) : null,
         amountUnitCode:     adj.amount?.unitCode ?? null,
-        notes:              adj.notes ?? null,
+        notes:              null,
         actorId:            IMPORT_ACTOR,
         provenanceCode:     'migrated',
         migrationBatchId:   batchId,

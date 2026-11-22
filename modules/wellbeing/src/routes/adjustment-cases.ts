@@ -529,7 +529,6 @@ export async function adjustmentCaseRoutes(
       recommendedAdjustment: string;
       validFrom:             string;
       validTo?:              string;
-      notes?:                string;
       /** Structured amount passed to the SRS, e.g. { value: 25,
        * unitCode: 'percent-of-duration' } for 25% extra time. Target systems
        * such as a VLE need it to compute per-assessment values. */
@@ -537,13 +536,21 @@ export async function adjustmentCaseRoutes(
       forceApprove?:         boolean;
     };
   }>('/api/v1/adjustment-cases/:caseId/approve', {
-    schema: { tags: ['adjustment-cases'], summary: 'Approve and hand off to the SRS', params: idParams('caseId'), body: Type.Object({ enrolmentId: Uuid, adjustmentTypeCode: Type.Optional(Type.String()), scopeCode: Text, recommendedAdjustment: Text, validFrom: DateText, validTo: Type.Optional(Type.String()), notes: Type.Optional(Type.String()), amount: Type.Optional(Type.Object({ value: Type.Number(), unitCode: Text })), forceApprove: Type.Optional(Type.Boolean()) }) },
+    schema: { tags: ['adjustment-cases'], summary: 'Approve and hand off to the SRS', params: idParams('caseId'), body: Type.Object({ enrolmentId: Uuid, adjustmentTypeCode: Type.Optional(Type.String()), scopeCode: Text, recommendedAdjustment: Text, validFrom: DateText, validTo: Type.Optional(Type.String()), amount: Type.Optional(Type.Object({ value: Type.Number(), unitCode: Text })), forceApprove: Type.Optional(Type.Boolean()) }) },
     preHandler: [requirePermission('panel-decision:write')],
   }, async (request, reply) => {
     const { tenantId } = request;
     const actorId      = request.user.sub;
     const { caseId }   = request.params;
     const body         = request.body;
+
+    // The outcome sent to the SRS is the minimum an assessment needs (type,
+    // scope, amount, dates, case link), never narrative: core readers include
+    // registry and integrations, and a note is where a diagnosis ends up
+    // (ADR-017, BL-243). Refused, not ignored, so an old caller fails loudly.
+    if (typeof request.body === 'object' && request.body !== null && 'notes' in request.body) {
+      return sendProblem(reply, 400, 'notes is not accepted: the outcome sent to the SRS carries no free text. Record the narrative on the case.', { title: 'Free text not handed off' });
+    }
 
     // ── Phase 1: DB — validate, transition, enqueue (atomic) ──────────────
 
@@ -618,7 +625,6 @@ export async function adjustmentCaseRoutes(
           sourceCaseId:       caseId,
         };
         if (body.validTo !== undefined) payload['validTo'] = body.validTo;
-        if (body.notes   !== undefined) payload['notes']   = body.notes;
         if (body.amount  !== undefined) payload['amount']  = body.amount;
 
         await enqueueHandoff(tx, tenantId, caseId, personId, payload);
@@ -674,7 +680,6 @@ export async function adjustmentCaseRoutes(
         validFrom:          body.validFrom,
         sourceCaseId:       caseId,
         ...(body.validTo !== undefined ? { validTo: body.validTo } : {}),
-        ...(body.notes   !== undefined ? { notes:   body.notes }   : {}),
         ...(body.amount  !== undefined ? { amount:  body.amount }  : {}),
       });
 
