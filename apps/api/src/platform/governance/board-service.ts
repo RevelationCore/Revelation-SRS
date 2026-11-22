@@ -44,6 +44,7 @@ import { DEFAULT_RESIT_MARK_CAP, planReassessmentsAtRatification } from '../prog
 import { clockNow } from '../clock.js';
 import type { RuleVersionCitation } from '../rules-engine/engine.js';
 
+import { BoardAuthorityService } from './board-authority-service.js';
 import { buildRuleManifest, citedInProfiles, packHash, storeRuleManifest } from './pack-evidence.js';
 
 export interface DeferBoardInput {
@@ -514,13 +515,13 @@ export class BoardService {
       ]);
     }
 
-    // Stage 4: quorum guard — only enforced when flag is on
-    const quorumRequired = await this.#evaluateBooleanFlag(tenantId, 'exam-board.quorum.required', false);
-    if (quorumRequired && board.quorumCount === null) {
-      throw new ValidationError('Quorum must be recorded before ratification', [
-        { field: 'quorumCount', message: 'Record a quorum count first (POST /exam-boards/:id/quorum)' },
-      ]);
-    }
+    // BL-265 (BP-05-009 E1.1, D-05 pre-review F2/F3): a board ratifies only
+    // when its latest quorum decision found it quorate, every declared
+    // conflict is recused, and the ratifier has no conflict about a candidate.
+    // Always: the exam-board.quorum.required flag no longer turns this off.
+    const authority = new BoardAuthorityService(this.db);
+    await authority.assertQuorumMet(tenantId, examBoardId);
+    await authority.assertConflictsResolved(tenantId, examBoardId, actorId);
 
     const coveredResults = await this.#getCoveredModuleResults(board, tenantId);
     const moduleResultIds = coveredResults.map((result) => result.moduleResultId);

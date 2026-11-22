@@ -25,6 +25,13 @@ export async function ratifyThroughDecision(ctx: TestApp, token: string, examBoa
   const pack = await currentPack(ctx, examBoardId);
   if ('statusCode' in pack) return pack;
   const headers = { authorization: `Bearer ${token}` };
+  // BL-265: a board ratifies only when quorate; record that the quorum was met.
+  const quorum = await ctx.app.inject({
+    method: 'POST', url: `/api/v1/exam-boards/${examBoardId}/quorum-decision`,
+    headers: { authorization: `Bearer ${await ctx.makeJwt({ sub: 'board-secretary', roles: ['exam-board-chair'] })}` },
+    payload: { requiredCount: 3, attendingCount: 3 },
+  });
+  if (quorum.statusCode !== 201) return quorum;
   const decision = await ctx.app.inject({
     method: 'POST', url: `/api/v1/exam-boards/${examBoardId}/decisions`, headers,
     payload: { dataPackId: pack.dataPackId, packHash: pack.packHash, decisionTypeCode: 'ratify' },

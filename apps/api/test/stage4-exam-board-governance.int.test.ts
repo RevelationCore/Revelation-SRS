@@ -17,7 +17,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { sql } from 'drizzle-orm';
 
-import { ratifyThroughDecision } from './helpers/board-ratification.js';
+import { currentPack, ratifyThroughDecision } from './helpers/board-ratification.js';
 import { startTestApp, type TestApp } from './helpers/test-app.js';
 
 let ctx: TestApp;
@@ -186,54 +186,60 @@ describe('exam-board.external-examiner.required flag gate', () => {
 
 // ── Quorum flag gate ──────────────────────────────────────────────────────────
 
-describe('exam-board.quorum.required flag gate', () => {
-  it('when on, ratification is blocked if quorum has not been recorded', async () => {
-    await enableFlag('exam-board.quorum.required', 'on');
-
-    const examBoardId = await createMinimalBoard();
-    await signoffBoard(examBoardId);
-
-    const statusCode = await ratifyBoard(examBoardId);
-    expect(statusCode).toBe(422);
-
-    await enableFlag('exam-board.quorum.required', 'off');
+// BL-265 (pre-review BP-05 F2): a board ratifies only when quorate. The
+// exam-board.quorum.required flag used to switch this off, by default.
+describe('quorum gate at ratification (BL-265)', () => {
+  /** Decide and ratify directly, without the helper's quorum decision. */
+  async function decideAndRatify(examBoardId: string): Promise<number> {
+    const pack = await currentPack(ctx, examBoardId);
+    if ('statusCode' in pack) return pack.statusCode;
+    const d = await ctx.app.inject({ method: 'POST', url: `/api/v1/exam-boards/${examBoardId}/decisions`, headers: { authorization: `Bearer ${chairJwt}` }, payload: { dataPackId: pack.dataPackId, packHash: pack.packHash, decisionTypeCode: 'ratify' } });
+    expect(d.statusCode, d.body).toBe(201);
+    const ratifier = await ctx.makeJwt({ sub: 'quorum-ratifier', roles: ['exam-board-chair'] });
+    return (await ctx.app.inject({ method: 'POST', url: `/api/v1/exam-boards/${examBoardId}/ratification`, headers: { authorization: `Bearer ${ratifier}` }, payload: { packHash: pack.packHash } })).statusCode;
+  }
+  const quorum = (examBoardId: string, attendingCount: number) => ctx.app.inject({
+    method: 'POST', url: `/api/v1/exam-boards/${examBoardId}/quorum-decision`, headers: { authorization: `Bearer ${chairJwt}` },
+    payload: { requiredCount: 4, attendingCount },
   });
 
-  it('when on, ratification succeeds after quorum is recorded', async () => {
-    await enableFlag('exam-board.quorum.required', 'on');
-
+  it('refuses ratification with no quorum decision, whatever the old flag says', async () => {
+    await enableFlag('exam-board.quorum.required', 'off');
     const examBoardId = await createMinimalBoard();
     await signoffBoard(examBoardId);
-
-    const quorumRes = await ctx.app.inject({
-      method:  'POST',
-      url:     `/api/v1/exam-boards/${examBoardId}/quorum`,
-      headers: { authorization: `Bearer ${chairJwt}` },
-      payload: { memberCount: 5 },
-    });
-    expect(quorumRes.statusCode).toBe(204);
-
-    // Verify the board DTO now shows the quorum
-    const getRes = await ctx.app.inject({
-      method:  'GET',
-      url:     `/api/v1/exam-boards/${examBoardId}`,
-      headers: { authorization: `Bearer ${jwt}` },
-    });
-    const board = getRes.json<{ quorumCount: number | null; quorumRecordedAt: string | null }>();
-    expect(board.quorumCount).toBe(5);
-    expect(board.quorumRecordedAt).not.toBeNull();
-
-    const statusCode = await ratifyBoard(examBoardId);
-    expect(statusCode).toBe(204);
-
-    await enableFlag('exam-board.quorum.required', 'off');
+    expect(await decideAndRatify(examBoardId)).toBe(422);
   });
 
-  it('when off (default), ratification does not require quorum', async () => {
+  it('refuses ratification when the latest quorum decision found it not quorate', async () => {
     const examBoardId = await createMinimalBoard();
     await signoffBoard(examBoardId);
-    const statusCode = await ratifyBoard(examBoardId);
-    expect(statusCode).toBe(204);
+    expect((await quorum(examBoardId, 4)).statusCode).toBe(201);
+    expect((await quorum(examBoardId, 2)).statusCode).toBe(201); // members left: the latest governs
+    expect(await decideAndRatify(examBoardId)).toBe(422);
+  });
+
+  it('ratifies when the latest quorum decision found it quorate', async () => {
+    const examBoardId = await createMinimalBoard();
+    await signoffBoard(examBoardId);
+    expect((await quorum(examBoardId, 5)).statusCode).toBe(201);
+    expect(await decideAndRatify(examBoardId)).toBe(204);
+  });
+
+  it('refuses a decision while a declared conflict is unrecused, and ratification by a conflicted member', async () => {
+    const examBoardId = await createMinimalBoard();
+    await signoffBoard(examBoardId);
+    expect((await quorum(examBoardId, 5)).statusCode).toBe(201);
+    const conflicted = await ctx.makeJwt({ sub: 'conflicted-member', roles: ['exam-board-chair'] });
+    const declare = await ctx.app.inject({ method: 'POST', url: `/api/v1/exam-boards/${examBoardId}/conflicts`, headers: { authorization: `Bearer ${conflicted}` }, payload: { conflictTypeCode: 'family', enrolmentId: '11111111-1111-4111-8111-111111111111' } });
+    expect(declare.statusCode, declare.body).toBe(201);
+    const pack = await currentPack(ctx, examBoardId);
+    if ('statusCode' in pack) throw new Error('no pack');
+    const decide = (token: string) => ctx.app.inject({ method: 'POST', url: `/api/v1/exam-boards/${examBoardId}/decisions`, headers: { authorization: `Bearer ${token}` }, payload: { dataPackId: pack.dataPackId, packHash: pack.packHash, decisionTypeCode: 'ratify' } });
+    expect((await decide(chairJwt)).statusCode).toBe(409);
+    const conflictId = declare.json<{ conflictId: string }>().conflictId;
+    expect((await ctx.app.inject({ method: 'PATCH', url: `/api/v1/board-conflicts/${conflictId}/recuse`, headers: { authorization: `Bearer ${chairJwt}` } })).statusCode).toBeLessThan(300);
+    expect((await decide(conflicted)).statusCode).toBe(403);
+    expect((await decide(chairJwt)).statusCode).toBe(201);
   });
 
   it('requires exam-board:ratify to record quorum', async () => {

@@ -13,7 +13,9 @@ import {
 } from '@revelation-srs/db';
 import {
   EVENT_TYPES,
+  ForbiddenError,
   NotFoundError,
+  RecordLockedError,
   RuleNotConfiguredError,
   ValidationError,
 } from '@revelation-srs/domain';
@@ -133,6 +135,22 @@ export class MarkService {
     let assessmentSubmissionId: string | null = null;
 
     await withTenantContext(this.db, tenantId, async (tx) => {
+      // BL-269 (pre-review BP-05 F7): a ratified registration takes no new mark;
+      // a late mark goes through a correction case. Checked under a row lock on
+      // the current result, so ratification and this insert cannot interleave.
+      const lockedResult = await tx.execute(sql`
+        SELECT id FROM module_result
+        WHERE tenant_id = ${tenantId}::uuid AND module_registration_id = ${moduleRegistrationId}::uuid
+          AND recorded_until IS NULL AND locked
+        FOR UPDATE`) as unknown as unknown[];
+      const lockedMark = await tx.execute(sql`
+        SELECT id FROM mark
+        WHERE tenant_id = ${tenantId}::uuid AND module_registration_id = ${moduleRegistrationId}::uuid
+          AND recorded_until IS NULL AND locked
+        LIMIT 1`) as unknown as unknown[];
+      if (lockedResult.length > 0 || lockedMark.length > 0) {
+        throw new RecordLockedError('ModuleRegistration', moduleRegistrationId);
+      }
       if (input.sourceSystem) {
         assessmentSubmissionId = randomUUID();
         await tx.insert(assessmentSubmissions).values({
@@ -172,7 +190,20 @@ export class MarkService {
       await this.#writeMarkEvidence(tx, tenantId, markId, input.attemptNumber ?? 1, input.rawMark, penalty);
     });
 
-    await this.moduleResults?.recalculate(moduleRegistrationId, tenantId);
+    try {
+      await this.moduleResults?.recalculate(moduleRegistrationId, tenantId);
+    } catch (err) {
+      // The result was locked after the mark was written (ratification in
+      // between): take the mark back out rather than leave an unlocked mark
+      // under a locked result (BL-269), and refuse as a locked record.
+      await withTenantContext(this.db, tenantId, async (tx) => {
+        await tx.execute(sql`DELETE FROM mark_calculation_evidence WHERE mark_id = ${markId}::uuid AND tenant_id = ${tenantId}::uuid`);
+        await tx.execute(sql`DELETE FROM mark WHERE id = ${markId}::uuid AND tenant_id = ${tenantId}::uuid`);
+        if (assessmentSubmissionId) await tx.execute(sql`DELETE FROM assessment_submission WHERE id = ${assessmentSubmissionId}::uuid AND tenant_id = ${tenantId}::uuid`);
+      });
+      if (err instanceof ForbiddenError) throw new RecordLockedError('ModuleRegistration', moduleRegistrationId);
+      throw err;
+    }
 
     if (this.eventBus.isConnected()) {
       const payload: AssessmentMarkReceivedV1Payload = {

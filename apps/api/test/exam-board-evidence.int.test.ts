@@ -150,6 +150,8 @@ describe('Decisions and ratification cite the exact pack (D-36)', () => {
     const { examBoardId } = await boardWithCandidate();
     const pack = await generate(examBoardId);
     expect((await decide(examBoardId, pack)).statusCode).toBe(201); // recorded by `chair`
+    // BL-265: quorate, so ratification reaches the separation-of-duties check.
+    expect((await raw('POST', `/api/v1/exam-boards/${examBoardId}/quorum-decision`, { requiredCount: 3, attendingCount: 3 }, chair)).statusCode).toBe(201);
 
     const own = await raw('POST', `/api/v1/exam-boards/${examBoardId}/ratification`, { packHash: pack.packHash }, chair);
     expect(own.statusCode).toBe(403);
