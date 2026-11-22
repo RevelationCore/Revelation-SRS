@@ -1,3 +1,4 @@
+import { createDocumentScanner, loadDocumentScannerConfig, type DocumentScanner } from '@revelation-srs/documents';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import multipart from '@fastify/multipart';
@@ -11,6 +12,8 @@ import type { DomainError } from '@revelation-srs/domain';
 import Fastify from 'fastify';
 import type { FastifyInstance } from 'fastify';
 
+import { createApiDocumentStore, type ApiDocumentStore } from './platform/documents/document-store.js';
+import { documentProblem } from './platform/documents/problems.js';
 import type { Config } from './config.js';
 import { AdjustmentService } from './platform/adjustments/adjustment-service.js';
 import { AdjustmentDistributionDispatcher } from './platform/adjustments/distribution-dispatcher.js';
@@ -287,7 +290,7 @@ function classifyOperation(method: string, url: string): string {
  */
 export async function buildApp(
   config: Config,
-  overrides: { eventBus?: IntegrationBusPublisher; temporalGateway?: TemporalGateway } = {},
+  overrides: { eventBus?: IntegrationBusPublisher; temporalGateway?: TemporalGateway; documentScanner?: DocumentScanner } = {},
 ): Promise<FastifyInstance> {
   assertSecureAuthConfig('srs-api', config.nodeEnv, config);
 
@@ -353,6 +356,14 @@ export async function buildApp(
   const rules      = new RulesEngine(db);
   const valueSets  = new ValueSetService(db);
   const eventBus   = overrides.eventBus ?? new IntegrationBusPublisher(config.natsUrl);
+  // ADR-030: every upload is scanned before it is stored. The configuration
+  // is explicit: clamd by default, noop only in development and test.
+  const documentStore = createApiDocumentStore(
+    db,
+    overrides.documentScanner ?? createDocumentScanner(config.nodeEnv, config.documentScanner ?? loadDocumentScannerConfig()),
+    fastify.log,
+  );
+  fastify.decorate('documentStore', documentStore);
   const featureFlags = new FeatureFlagService(db);
   const triggerRules = new TriggerRuleEvaluator(db, featureFlags);
   const workflowBridge = new WorkflowBridgeService(db, audit, eventBus);
@@ -405,7 +416,7 @@ export async function buildApp(
     fastify.log.warn({ err, ...context }, 'Adjustment instruction not yet published; it stays due for the reconcile loop');
   });
   const adjustmentTargets = new AdjustmentTargetConfigService(db, valueSets);
-  const adjustments = new AdjustmentService(db, eventBus, valueSets, adjustmentDispatcher, adjustmentTargets);
+  const adjustments = new AdjustmentService(db, eventBus, valueSets, adjustmentDispatcher, adjustmentTargets, documentStore);
   const businessCases = new BusinessCaseService(db);
   const auditReview = new AuditReviewService(db, businessCases);
   const identityResolution = new IdentityResolutionService(db, businessCases);
@@ -416,7 +427,7 @@ export async function buildApp(
   const awards      = new AwardService(db, eventBus, rules, enrolments);
   const conferment = new ConfermentService(db, valueSets, enrolments, awards);
   // Rendered with pdfmake and signed by the configured signer (Phase 3 D-20).
-  const awardDocuments = new AwardDocumentService(db, valueSets, businessCases, signerFromEnv(), new PdfmakeRenderer(), config.publicApiUrl ?? `http://localhost:${config.port}`);
+  const awardDocuments = new AwardDocumentService(db, valueSets, documentStore, businessCases, signerFromEnv(), new PdfmakeRenderer(), config.publicApiUrl ?? `http://localhost:${config.port}`);
   const graduation = new GraduationService(db);
   const boards = new BoardService(db, eventBus, valueSets, awards, featureFlags, rules);
   const boardAuthority = new BoardAuthorityService(db);
@@ -566,7 +577,7 @@ export async function buildApp(
   fastify.decorate('applicationService', applications);
   // A person bound to an application gets an applicant account (D-38, D-39).
   applications.useAccountRequests((tenantId, personId, changeKey) => requestAccountAccess(deliveries, db, tenantId, { personId, changeKey }));
-  fastify.decorate('applicantPortalService', new ApplicantPortalService(db, applications, valueSets));
+  fastify.decorate('applicantPortalService', new ApplicantPortalService(db, applications, valueSets, documentStore));
   fastify.decorate('employmentService', employment);
   fastify.decorate('businessCaseService', businessCases);
   fastify.decorate('identityResolutionService', identityResolution);
@@ -612,7 +623,7 @@ export async function buildApp(
   fastify.decorate('progressReviewService', pgrProgressReview);
   fastify.decorate('examinationService', pgrExamination);
   pgrExamination.useAccountRequests((tenantId, personId, changeKey) => requestAccountAccess(deliveries, db, tenantId, { personId, changeKey }));
-  fastify.decorate('researchStaffService', new ResearchStaffService(db, pgrProgressReview, pgrExamination));
+  fastify.decorate('researchStaffService', new ResearchStaffService(db, pgrProgressReview, pgrExamination, documentStore));
   fastify.decorate('completionService', pgrCompletion);
   fastify.decorate('localeService',       localeService);
   fastify.decorate('currencyService',     currencyService);
@@ -668,7 +679,16 @@ export async function buildApp(
   // - Global error handler -
 
   fastify.setErrorHandler((err, req, reply) => {
-    const error = err as Error & Partial<DomainError> & { statusCode?: number; fields?: unknown };
+    // ADR-030: the document store's errors, mapped once here rather than by each caller.
+    const doc = documentProblem(err);
+    if (doc) {
+      if (doc.retryAfter) void reply.header('Retry-After', String(doc.retryAfter));
+      void reply.code(doc.status).send({
+        type: `https://srs.example.com/errors/${doc.type}`, title: doc.title, status: doc.status, detail: doc.detail, instance: req.url, correlationId: req.id,
+      });
+      return;
+    }
+    const error = err as Error & Partial<DomainError> & { statusCode?: number; fields?: unknown; retryAfterSeconds?: number };
     const isDomain = typeof error.code === 'string' && typeof error.statusCode === 'number';
     const status   = isDomain ? error.statusCode! : (error.statusCode ?? 500);
 
@@ -676,11 +696,14 @@ export async function buildApp(
       req.log.error({ err }, 'Unhandled error');
     }
 
+    // A 503 domain error (ServiceUnavailableError) says what is unavailable; any other 5xx stays generic.
+    const unavailable = isDomain && status === 503;
+    if (unavailable && error.retryAfterSeconds) void reply.header('Retry-After', String(error.retryAfterSeconds));
     void reply.code(status).send({
       type:          `https://srs.example.com/errors/${isDomain ? error.code : 'internal-error'}`,
-      title:         status >= 500 ? 'Internal Server Error' : error.message,
+      title:         status >= 500 && !unavailable ? 'Internal Server Error' : error.message,
       status,
-      detail:        status < 500 ? error.message : 'An unexpected error occurred',
+      detail:        status < 500 || unavailable ? error.message : 'An unexpected error occurred',
       instance:      req.url,
       correlationId: req.id,
       ...(isDomain && error.fields
@@ -965,6 +988,7 @@ export async function buildApp(
 // Fastify module augmentation for decorated properties
 declare module 'fastify' {
   interface FastifyInstance {
+    documentStore: ApiDocumentStore;
     db:               ReturnType<typeof createDb>;
     config:           Config;
     audit:            AuditService;

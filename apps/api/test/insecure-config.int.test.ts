@@ -1,3 +1,4 @@
+import { assertDocumentScannerConfig, loadDocumentScannerConfig } from '@revelation-srs/documents';
 import { describe, expect, it } from 'vitest';
 
 import { buildApp } from '../src/app.js';
@@ -17,6 +18,7 @@ const base: Config = {
   deploymentEnvironmentCode: 'production', releaseVersion: '0.0.0-test', imageDigest: undefined,
   migrationVersion: 'test', jwtSecret: 'dev-secret-replace-in-production', keycloakJwksUrl: undefined,
   corsOrigins: [], otelEndpoint: undefined, otelServiceName: 'srs-api-test',
+  documentScanner: { mode: 'clamd', clamdHost: '127.0.0.1', clamdPort: 1, timeoutMs: 30_000, maxConcurrency: 4 },
 };
 
 describe('insecure token configuration', () => {
@@ -35,5 +37,18 @@ describe('insecure token configuration', () => {
   it('starts in production with Keycloak keys', async () => {
     const app = await buildApp({ ...base, keycloakJwksUrl: 'http://127.0.0.1:1/realms/srs/protocol/openid-connect/certs' });
     await app.close();
+  });
+});
+
+describe('insecure document scanning (ADR-030)', () => {
+  const jwks = 'http://127.0.0.1:1/realms/srs/protocol/openid-connect/certs';
+  it('refuses the no-op scanner outside development and test', async () => {
+    await expect(buildApp({ ...base, keycloakJwksUrl: jwks, documentScanner: { mode: 'noop', clamdPort: 3310, timeoutMs: 30_000, maxConcurrency: 4 } })).rejects.toThrow(/no-op document scanner is for development and test only/);
+    expect(() => assertDocumentScannerConfig('srs-api', 'production', loadDocumentScannerConfig({ DOCUMENT_SCANNER: 'noop' }))).toThrow(/Refusing to start srs-api/);
+  });
+
+  it('refuses clamd without CLAMD_HOST outside development and test', async () => {
+    await expect(buildApp({ ...base, keycloakJwksUrl: jwks, documentScanner: { mode: 'clamd', clamdPort: 3310, timeoutMs: 30_000, maxConcurrency: 4 } })).rejects.toThrow(/CLAMD_HOST is not set/);
+    expect(() => assertDocumentScannerConfig('srs-api', 'production', loadDocumentScannerConfig({}))).toThrow(/CLAMD_HOST is not set/);
   });
 });

@@ -63,6 +63,13 @@ spec:
           env:
             - name: NODE_ENV
               value: production
+            # Malware scanning of uploads (ADR-030).
+            - name: DOCUMENT_SCANNER
+              value: clamd
+            - name: CLAMD_HOST
+              value: srs-clamav
+            - name: CLAMD_PORT
+              value: "3310"
             # Background jobs may run longer than a request (BL-011): 5 minutes.
             - name: DB_STATEMENT_TIMEOUT_MS
               value: "300000"
@@ -392,6 +399,13 @@ spec:
           env:
             - name: NODE_ENV
               value: production
+            # Malware scanning of uploads (ADR-030).
+            - name: DOCUMENT_SCANNER
+              value: clamd
+            - name: CLAMD_HOST
+              value: srs-clamav
+            - name: CLAMD_PORT
+              value: "3310"
             - name: WELLBEING_PORT
               value: "3002"
             - name: NATS_URL

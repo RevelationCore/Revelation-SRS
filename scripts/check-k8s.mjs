@@ -59,7 +59,41 @@ for (const target of targets) {
       if (/\bnode\s+apps\//.test(cmd)) errors.push(`${target}: ${d.metadata.name} runs a repository path; the image holds the deployed package at /app`);
     }
   }
+  // ADR-030: the malware scanner, who may reach it, and who uses it.
+  {
+    const named = (kind, name) => docs.find((x) => x.kind === kind && x.metadata.name.endsWith(name)); // overlays may prefix names
+    const clamav = named('Deployment', 'srs-clamav');
+    if (!clamav) errors.push(`${target}: Deployment srs-clamav is missing`);
+    else {
+      const spec = clamav.spec.template.spec;
+      const keys = (spec.topologySpreadConstraints ?? []).map((c) => c.topologyKey);
+      if (!keys.includes('kubernetes.io/hostname') || !keys.includes('topology.kubernetes.io/zone')) errors.push(`${target}: srs-clamav does not spread across nodes and zones`);
+      const clamd = spec.containers.find((c) => c.name === 'clamd');
+      if (!clamd?.startupProbe || !clamd?.readinessProbe || !clamd?.livenessProbe) errors.push(`${target}: srs-clamav needs startup, readiness and liveness probes`);
+      const scanTmp = spec.volumes?.find((v) => v.name === 'scan-tmp');
+      if (scanTmp?.emptyDir?.medium !== 'Memory') errors.push(`${target}: srs-clamav must spool scans to memory, not node disk`);
+    }
+    const conf = named('ConfigMap', 'srs-clamav-config')?.data?.['clamd.conf'] ?? '';
+    const mb = (k) => { const m = new RegExp(`^${k}\\s+(\\d+)M$`, 'm').exec(conf); return m ? Number(m[1]) : 0; };
+    // The document store refuses anything over 15 MB; clamd must accept at least that much.
+    for (const k of ['StreamMaxLength', 'MaxFileSize']) if (mb(k) < 15) errors.push(`${target}: clamd ${k} must be at least 15M (the upload limit)`);
+    if (!/^AlertExceedsMax yes$/m.test(conf)) errors.push(`${target}: clamd must refuse content it cannot fully scan (AlertExceedsMax yes)`);
+    const policy = named('NetworkPolicy', 'allow-ingress-to-clamav');
+    const allowed = (policy?.spec.ingress ?? []).flatMap((r) => (r.from ?? []).flatMap((f) => f.podSelector?.matchExpressions?.flatMap((e) => e.values) ?? [f.podSelector?.matchLabels?.['app.kubernetes.io/name']]));
+    if (JSON.stringify([...allowed].sort()) !== JSON.stringify(['srs-api', 'srs-wellbeing', 'srs-worker'])) errors.push(`${target}: allow-ingress-to-clamav must admit exactly srs-api, srs-worker and srs-wellbeing, not ${allowed.join(', ')}`);
+    for (const d of docs.filter((x) => x.kind === 'Deployment')) {
+      for (const c of d.spec.template.spec.containers) {
+        const env = Object.fromEntries((c.env ?? []).map((e) => [e.name, e.value]));
+        if ('DOCUMENT_SCANNER' in env && (env['DOCUMENT_SCANNER'] !== 'clamd' || !env['CLAMD_HOST'])) errors.push(`${target}: ${d.metadata.name} must use DOCUMENT_SCANNER=clamd with CLAMD_HOST`);
+      }
+    }
+    for (const name of ['srs-api', 'srs-worker', 'srs-wellbeing']) {
+      const d = named('Deployment', name);
+      if (d && !d.spec.template.spec.containers.some((c) => (c.env ?? []).some((e) => e.name === 'DOCUMENT_SCANNER'))) errors.push(`${target}: ${name} stores documents but sets no DOCUMENT_SCANNER`);
+    }
+  }
   if (target === 'overlays/production') {
+    if (!docs.some((x) => x.kind === 'PodDisruptionBudget' && x.metadata.name === 'srs-clamav-pdb')) errors.push('production: PodDisruptionBudget srs-clamav-pdb is missing');
     const nats = docs.find((x) => x.kind === 'StatefulSet' && x.metadata.name === 'srs-nats');
     const job = docs.find((x) => x.kind === 'Job' && x.metadata.name === 'srs-nats-streams');
     const streamReplicas = Number(job?.spec.template.spec.containers[0].env?.find((e) => e.name === 'STREAM_REPLICAS')?.value);

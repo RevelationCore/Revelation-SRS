@@ -5,6 +5,7 @@ import { createServer, type Server } from 'node:http';
 import { hostname } from 'node:os';
 
 import { assertNatsCredentials } from '@revelation-srs/auth';
+import { assertDocumentScannerConfig, loadDocumentScannerConfig } from '@revelation-srs/documents';
 import { connectWorker, createSrsWorker } from '@revelation-srs/workflow';
 
 import { buildApp } from './app.js';
@@ -28,6 +29,7 @@ import { clockNow } from './platform/clock.js';
 
 const config = loadConfig();
 assertNatsCredentials('srs-worker', config.nodeEnv);
+assertDocumentScannerConfig('srs-worker', config.nodeEnv, config.documentScanner ?? loadDocumentScannerConfig());
 const namespace = config.temporalNamespace ?? 'srs-local';
 const taskQueue = config.temporalTaskQueue ?? 'srs-workflows';
 const reconcileIntervalMs = Number(process.env['RECONCILE_INTERVAL_MS'] ?? 15_000);

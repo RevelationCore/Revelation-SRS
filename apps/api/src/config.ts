@@ -1,3 +1,4 @@
+import { loadDocumentScannerConfig, type DocumentScannerConfig } from '@revelation-srs/documents';
 import { DEFAULT_DEV_JWT_SECRET, tokenEnv } from '@revelation-srs/auth';
 
 /** Typed environment configuration - read once at startup. */
@@ -5,6 +6,8 @@ export interface Config {
   port:         number;
   logLevel:     string;
   nodeEnv:      string;
+  /** Malware scanning of uploads (ADR-030): clamd by default; noop only in development and test. */
+  documentScanner?: DocumentScannerConfig;
   databaseUrl:  string;
   natsUrl:      string;
   attendanceApiUrl: string;
@@ -103,6 +106,7 @@ export function loadConfig(): Config {
     port:            optionalInt('PORT', 3000),
     logLevel:        process.env['LOG_LEVEL'] ?? 'info',
     nodeEnv:         process.env['NODE_ENV'] ?? 'development',
+    documentScanner: loadDocumentScannerConfig(),
     databaseUrl:     required('DATABASE_URL'),
     natsUrl:         process.env['NATS_URL'] ?? 'nats://localhost:4222',
     attendanceApiUrl: process.env['ATTENDANCE_API_URL'] ?? 'http://localhost:3004',

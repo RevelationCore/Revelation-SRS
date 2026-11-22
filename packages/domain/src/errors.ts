@@ -54,3 +54,11 @@ export class RuleNotConfiguredError extends DomainError {
     this.name = 'RuleNotConfiguredError';
   }
 }
+
+/** A dependency cannot answer, so the request is refused for now (503); safe to retry. */
+export class ServiceUnavailableError extends DomainError {
+  constructor(message: string, public readonly retryAfterSeconds?: number) {
+    super(message, 'service-unavailable', 503);
+    this.name = 'ServiceUnavailableError';
+  }
+}

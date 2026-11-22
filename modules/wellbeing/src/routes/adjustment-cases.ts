@@ -1,12 +1,6 @@
 import { Type } from '@sinclair/typebox';
 import { requirePermission } from '@revelation-srs/auth';
-import {
-  createPostgresDocumentAdapter,
-  DocumentNotFoundError,
-  DocumentTooLargeError,
-  DocumentTypeNotAllowedError,
-  type RetrievedDocument,
-} from '@revelation-srs/documents';
+import { DocumentNotFoundError, type RetrievedDocument } from '@revelation-srs/documents';
 import { hasPermission, type Permission } from '@revelation-srs/domain';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 
@@ -745,24 +739,25 @@ export async function adjustmentCaseRoutes(
       const evidenceTypeCode = (file.fields['evidenceTypeCode'] as { value?: string } | undefined)?.value ?? 'other';
       const content = await file.toBuffer();
 
-      try {
+      // ADR-030: check access, scan with no transaction open, then re-check and write.
+      const caseFor = async (tx: Parameters<Parameters<typeof withWellbeingTenantContext>[2]>[0]) => {
+        const c = await findCurrentAdjustmentCase(tx, tenantId, caseId);
+        if (!c) throw Object.assign(new Error('Adjustment case not found'), { statusCode: 404 });
+        await assertCaseAccess(request, c, { ownPermission: 'adjustment-case:write:own', allPermission: 'adjustment-case:manage' });
+        return c;
+      };
+      await withWellbeingTenantContext(request.server.wellbeingDb, tenantId, caseFor);
+      const scanned = await request.server.documentStore.scanUpload({
+        tenantId, ownerService: 'wellbeing', ownerRef: caseId, filename: file.filename, mimeType: file.mimetype, content, actorId,
+      });
+
+      {
         const evidenceId = await withWellbeingTenantContext(
           request.server.wellbeingDb,
           tenantId,
           async (tx) => {
-            const c = await findCurrentAdjustmentCase(tx, tenantId, caseId);
-            if (!c) throw Object.assign(new Error('Adjustment case not found'), { statusCode: 404 });
-            await assertCaseAccess(request, c, { ownPermission: 'adjustment-case:write:own', allPermission: 'adjustment-case:manage' });
-
-            const stored = await createPostgresDocumentAdapter(tx).store({
-              tenantId,
-              ownerService: 'wellbeing',
-              ownerRef:     caseId,
-              filename:     file.filename,
-              mimeType:     file.mimetype,
-              content,
-              actorId,
-            });
+            const c = await caseFor(tx);
+            const stored = await request.server.documentStore.adapter(tx).store(scanned);
 
             const id = await createEvidence(tx, tenantId, {
               adjustmentCaseId: caseId,
@@ -782,11 +777,6 @@ export async function adjustmentCaseRoutes(
         );
 
         return reply.code(201).send(evidenceId);
-      } catch (err) {
-        if (err instanceof DocumentTooLargeError || err instanceof DocumentTypeNotAllowedError) {
-          return sendProblem(reply, 422, err.message);
-        }
-        throw err;
       }
     },
   );
@@ -811,7 +801,7 @@ export async function adjustmentCaseRoutes(
           const evidence = await findEvidence(tx, tenantId, caseId, evidenceId);
           if (!evidence) throw Object.assign(new Error('Evidence not found'), { statusCode: 404 });
 
-          return createPostgresDocumentAdapter(tx).retrieve(tenantId, evidence.documentId, actorId);
+          return request.server.documentStore.adapter(tx).retrieve(tenantId, evidence.documentId, actorId);
         },
       );
     } catch (err) {
@@ -845,7 +835,7 @@ export async function adjustmentCaseRoutes(
         const evidence = await findEvidence(tx, tenantId, caseId, evidenceId);
         if (!evidence) throw Object.assign(new Error('Evidence not found'), { statusCode: 404 });
 
-        await createPostgresDocumentAdapter(tx).softDelete(tenantId, evidence.documentId, actorId, 'removed from adjustment case');
+        await request.server.documentStore.adapter(tx).softDelete(tenantId, evidence.documentId, actorId, 'removed from adjustment case');
         await softDeleteEvidence(tx, tenantId, evidenceId);
         await appendAudit(tx, {
           tenantId, actorId, actionCode: 'write', resourceType: 'disability-case',

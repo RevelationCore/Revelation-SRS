@@ -43,7 +43,11 @@ export const documents = docs.table('document', {
   sizeBytes:       integer('size_bytes').notNull(),
   checksumSha256:  text('checksum_sha256').notNull(),
   content:         bytea('content'),
-  statusCode:      text('status_code').notNull().default('pending-scan'), // pending-scan | clean | infected
+  statusCode:      text('status_code').notNull().default('pending-scan'), // pending-scan | clean | infected | system-generated (ADR-030)
+  scannedAt:       timestamp('scanned_at', { withTimezone: true }),
+  scanEngine:      text('scan_engine'),
+  scanDatabaseVersion: text('scan_database_version'),
+  scanSignature:   text('scan_signature'),
   uploadedBy:      text('uploaded_by').notNull(),
   uploadedAt:      timestamp('uploaded_at', { withTimezone: true }).notNull().defaultNow(),
   deletedAt:       timestamp('deleted_at', { withTimezone: true }),
@@ -67,7 +71,7 @@ export const documentAccessLog = docs.table('document_access_log', {
   documentId:  uuid('document_id').notNull(),
   tenantId:    uuid('tenant_id').notNull(),
   actorId:     text('actor_id').notNull(),
-  action:      text('action').notNull(), // store | retrieve | delete
+  action:      text('action').notNull(), // store | retrieve | delete | upload-rejected | rescan
   occurredAt:  timestamp('occurred_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   index('document_access_log_document_idx').on(table.documentId),

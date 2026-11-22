@@ -21,6 +21,7 @@ const config: Config = {
   port:                      3000,
   logLevel:                  'silent',
   nodeEnv:                   'test',  // generation only: no tokens are validated
+  documentScanner:           { mode: 'reject', clamdPort: 3310, timeoutMs: 30_000, maxConcurrency: 4 }, // nothing is uploaded
   databaseUrl:               'postgres://unused/openapi-generation',
   natsUrl:                   'nats://unused:4222',
   temporalAddress:           'unused:7233',

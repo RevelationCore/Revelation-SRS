@@ -15,6 +15,7 @@ resources:
   - network-policies.yaml
   - ingress.yaml
   - observability.yaml
+  - clamav.yaml
 
 commonLabels:
   app.kubernetes.io/part-of: revelation-srs

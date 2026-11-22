@@ -85,6 +85,7 @@ export async function startTestApp(appOpts: AppOptions = {}): Promise<TestWellbe
     corsOrigins:     ['http://localhost:5173'],
     // Tests inject their own SRS clients, or get stubs explicitly (ADR-029).
     srsHandoff:      { ...loadSrsHandoffConfig('test', {}), clients: 'stub' },
+    documentScanner: { mode: 'noop', clamdPort: 3310, timeoutMs: 30_000, maxConcurrency: 4 },
   };
 
   const app = await buildApp(config, appOpts);

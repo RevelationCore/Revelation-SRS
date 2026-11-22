@@ -92,6 +92,7 @@ describe('assertSrsHandoffConfig', () => {
       port: 0, logLevel: 'silent', nodeEnv: 'production', databaseUrl: 'postgres://x:y@127.0.0.1:1/z', srsApiUrl: 'http://srs-api:3000',
       natsUrl: 'nats://127.0.0.1:1', jwtSecret: 'unused', keycloakJwksUrl: 'https://kc.example/realms/srs/protocol/openid-connect/certs',
       corsOrigins: [], srsHandoff: production(),
+      documentScanner: { mode: 'clamd', clamdHost: '127.0.0.1', clamdPort: 1, timeoutMs: 30_000, maxConcurrency: 4 },
     };
     await expect(buildApp(config, { srsAdjustmentClient: new SrsAdjustmentStubClient(), srsEcClient: new SrsEcStubClient() })).rejects.toThrow(/stub SRS clients/);
   });

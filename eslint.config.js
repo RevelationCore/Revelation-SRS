@@ -19,6 +19,17 @@ const sharedTsRules = {
 };
 
 /** @type {import('eslint').Linter.FlatConfig[]} */
+// The deployed NATS requires nkey auth (BL-337).
+const NATS_CONNECT = {
+  selector: 'CallExpression[callee.name="connect"] > ObjectExpression:first-child:has(Property[key.name="servers"])',
+  message: 'Use connect(natsConnectOptions(url)) so the connection carries the NATS credentials.',
+};
+// ADR-030: system content is stored unscanned, so only the award renderer may make it.
+const SYSTEM_CONTENT = {
+  selector: 'CallExpression[callee.property.name="systemContent"]',
+  message: 'Uploads are scanned (documentStore.scanUpload); systemContent is for server-rendered award documents only (ADR-030).',
+};
+
 export default [
   { ignores: ['**/dist/**', '**/node_modules/**', '**/*.js', '**/*.cjs', '**/*.mjs', '**/*.d.ts'] },
   {
@@ -95,11 +106,22 @@ export default [
     files: ['apps/api/src/**/*.ts', 'modules/*/src/**/*.ts', 'adapters/*/src/**/*.ts', 'packages/auth/src/**/*.ts', 'packages/db/src/**/*.ts', 'packages/documents/src/**/*.ts', 'packages/workflow/src/**/*.ts'],
     rules: {
       'no-restricted-globals': ['error', { name: 'fetch', message: 'Use fetchWithTimeout (@revelation-srs/auth) so the call has a timeout.' }],
-      // The deployed NATS requires nkey auth (BL-337): connect through
-      // natsConnectOptions, never with an options literal that has no credentials.
-      'no-restricted-syntax': ['error', {
-        selector: 'CallExpression[callee.name="connect"] > ObjectExpression:first-child',
-        message: 'Use connect(natsConnectOptions(url)) so the connection carries the NATS credentials.',
+      // NATS credentials (BL-337) and scanning (ADR-030).
+      'no-restricted-syntax': ['error', NATS_CONNECT, SYSTEM_CONTENT],
+    },
+  },
+  // ADR-030: only the award-document renderer stores unscanned (system) content.
+  {
+    files: ['apps/api/src/platform/progression/award-document-service.ts'],
+    rules: { 'no-restricted-syntax': ['error', NATS_CONNECT] },
+  },
+  // ADR-030: services never build a no-op scanner themselves; configuration
+  // (createDocumentScanner) chooses it, and refuses it outside development and test.
+  {
+    files: ['apps/api/src/**/*.ts', 'modules/*/src/**/*.ts'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        paths: [{ name: '@revelation-srs/documents', importNames: ['NoopScanner'], message: 'Set DOCUMENT_SCANNER=noop (development and test only) instead; see ADR-030.' }],
       }],
     },
   },

@@ -7,6 +7,7 @@ const TEST_CONFIG: Config = {
   port:             3001,
   logLevel:         'silent',
   nodeEnv:          'test',
+  documentScanner:  { mode: 'noop', clamdPort: 3310, timeoutMs: 30_000, maxConcurrency: 4 },
   databaseUrl:      'postgres://srs:srs@localhost:5432/srs_test',
   natsUrl:          'nats://localhost:4222',
   temporalAddress:  'localhost:7233',

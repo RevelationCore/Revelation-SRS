@@ -17,7 +17,12 @@ CREATE TABLE documents.document (
   size_bytes       integer NOT NULL,
   checksum_sha256  text NOT NULL,
   content          bytea,
-  status_code      text NOT NULL DEFAULT 'pending-scan',
+  status_code      text NOT NULL DEFAULT 'pending-scan'
+                   CONSTRAINT document_status_code_check CHECK (status_code IN ('pending-scan','clean','infected','system-generated')),
+  scanned_at       timestamptz,
+  scan_engine      text,
+  scan_database_version text,
+  scan_signature   text,
   uploaded_by      text NOT NULL,
   uploaded_at      timestamptz NOT NULL DEFAULT now(),
   deleted_at       timestamptz,

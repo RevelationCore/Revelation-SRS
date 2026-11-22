@@ -1,3 +1,4 @@
+import { loadDocumentScannerConfig, type DocumentScannerConfig } from '@revelation-srs/documents';
 import { DEFAULT_DEV_JWT_SECRET, tokenEnv } from '@revelation-srs/auth';
 
 import { loadSrsHandoffConfig, type SrsHandoffConfig } from './srs/handoff-config.js';
@@ -6,6 +7,8 @@ export interface Config {
   port:            number;
   logLevel:        string;
   nodeEnv:         string;
+  /** Malware scanning of evidence (ADR-030): clamd by default; noop only in development and test. */
+  documentScanner?: DocumentScannerConfig;
   databaseUrl:     string;
   srsApiUrl:       string;
   natsUrl:         string;
@@ -38,6 +41,7 @@ export function loadConfig(): Config {
     port:            optionalInt('WELLBEING_PORT', 3002),
     logLevel:        process.env['LOG_LEVEL'] ?? 'info',
     nodeEnv:         process.env['NODE_ENV'] ?? 'development',
+    documentScanner: loadDocumentScannerConfig(),
     databaseUrl:     required('DATABASE_URL'),
     srsApiUrl:       process.env['SRS_API_URL'] ?? 'http://localhost:3000',
     natsUrl:         process.env['NATS_URL'] ?? 'nats://localhost:4222',

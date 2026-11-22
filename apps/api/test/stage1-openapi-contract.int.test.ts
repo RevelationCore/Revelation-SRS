@@ -98,6 +98,7 @@ const STUB_CONFIG: Config = {
   port:                      3000,
   logLevel:                  'silent',
   nodeEnv:                   'test',
+  documentScanner:           { mode: 'noop', clamdPort: 3310, timeoutMs: 30_000, maxConcurrency: 4 },
   databaseUrl:               'postgres://unused/openapi-test',
   natsUrl:                   'nats://unused:4222',
   temporalAddress:           'unused:7233',

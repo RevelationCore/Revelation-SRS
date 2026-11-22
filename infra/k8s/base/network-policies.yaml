@@ -51,6 +51,13 @@ spec:
       ports:
         - port: 9464
   egress:
+    # To the malware scanner (ADR-030)
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: srs-clamav
+      ports:
+        - port: 3310
     # To PostgreSQL (operator-managed, may be external)
     - to:
         - ipBlock:
@@ -173,6 +180,13 @@ spec:
       ports:
         - port: 9465
   egress:
+    # To the malware scanner (ADR-030)
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: srs-clamav
+      ports:
+        - port: 3310
     - to:
         - ipBlock:
             cidr: 0.0.0.0/0
@@ -377,3 +391,39 @@ spec:
       ports:
         - port: 53
           protocol: UDP
+---
+# ── ClamAV: accept scans from the uploading services only (ADR-030) ─────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-to-clamav
+  namespace: revelation-srs
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: srs-clamav
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - podSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values: [srs-api, srs-worker, srs-wellbeing]
+      ports:
+        - port: 3310
+  egress:
+    # DNS, and freshclam to the signature mirror (NetworkPolicy cannot select
+    # by DNS name; an overlay can point PrivateMirror at an internal mirror).
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - port: 443

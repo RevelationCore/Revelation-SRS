@@ -3,11 +3,13 @@ import helmet from '@fastify/helmet';
 import multipart from '@fastify/multipart';
 import swagger from '@fastify/swagger';
 import { assertSecureAuthConfig, jwtPlugin, jwtPluginOptions, tenantContextPlugin } from '@revelation-srs/auth';
+import { createDocumentScanner, loadDocumentScannerConfig, type DocumentScanner } from '@revelation-srs/documents';
 import Fastify from 'fastify';
 import type { FastifyInstance } from 'fastify';
 
 import type { Config } from './config.js';
 import { registerProblemHandlers } from './http/problem.js';
+import { createWellbeingDocumentStore, type WellbeingDocumentStore } from './documents.js';
 import { createWellbeingDb } from './db/client.js';
 import type { WellbeingDb } from './db/client.js';
 import { EdrmsSimulator } from './edrms/edrms-adapter.js';
@@ -26,6 +28,8 @@ import { sarRoutes } from './routes/sar.js';
 export interface AppOptions {
   srsAdjustmentClient?: SrsAdjustmentClient;
   srsEcClient?:         SrsEcClient;
+  /** Replace the configured malware scanner (tests). */
+  documentScanner?:     DocumentScanner;
 }
 
 // Fields redacted from all structured log output to prevent special-category
@@ -101,6 +105,12 @@ export async function buildApp(config: Config, appOpts: AppOptions = {}): Promis
   const db = createWellbeingDb(config.databaseUrl, { statementTimeoutMs: 30_000, idleInTransactionTimeoutMs: 60_000 });
   fastify.decorate('wellbeingDb', db);
   fastify.decorate('config',      config);
+  // ADR-030: evidence is scanned before it is stored; clamd by default.
+  fastify.decorate('documentStore', createWellbeingDocumentStore(
+    db,
+    appOpts.documentScanner ?? createDocumentScanner(config.nodeEnv, config.documentScanner ?? loadDocumentScannerConfig()),
+    fastify.log,
+  ));
 
   // Routes
   await fastify.register(healthRoutes);
@@ -129,5 +139,6 @@ declare module 'fastify' {
   interface FastifyInstance {
     wellbeingDb: WellbeingDb;
     config:      Config;
+    documentStore: WellbeingDocumentStore;
   }
 }

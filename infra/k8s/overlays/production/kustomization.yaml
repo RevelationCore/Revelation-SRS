@@ -18,6 +18,9 @@ kind: Kustomization
 namespace: revelation-srs
 
 images:
+  # ClamAV 1.5.5 by digest (ADR-030); refresh at least monthly so signature downloads stay allowed.
+  - name: clamav/clamav
+    digest: sha256:12177441d1b40cef3c47b44c4090d59d4babc4c67bedd5af0fa315e603aa6dd8
   - name: ghcr.io/revelation-srs/api
     newTag: v1.0.0
   - name: ghcr.io/revelation-srs/portal

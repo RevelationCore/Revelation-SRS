@@ -78,6 +78,9 @@ jobs:
           DATABASE_URL:     postgresql://srs_api:srs_api@localhost:5432/srs
           NATS_URL:         nats://localhost:4222
           NATS_NKEY_SEED:   ${{ steps.nkey.outputs.seed }}
+          # Production mode needs a real scanner or none at all (ADR-030): no
+          # clamd here, so uploads are refused with 503 rather than stored unscanned.
+          DOCUMENT_SCANNER: reject
           # Production mode accepts only Keycloak's RS256 tokens.
           KEYCLOAK_JWKS_URL: http://localhost:8081/realms/srs/protocol/openid-connect/certs
           NODE_ENV:         production

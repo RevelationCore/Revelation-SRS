@@ -289,10 +289,11 @@ independently of core SRS's own hash-chained audit trail, readable via the
 
 ### What isn't built yet
 
-In the interest of not overstating the capability: real virus/malware
-scanning for uploaded evidence is a documented placeholder
-(`packages/documents`' `NoopScanner` always returns "clean" — a real
-ClamAV-style integration is a deployment-time seam, not yet wired in). The
+**Update, 2026-11-22 — evidence is now scanned.** Every upload is scanned by
+ClamAV before it is stored, and evidence that has not passed is never served
+(ADR-030; operators see `docs/runbooks/10-document-scanning.md`). An infected
+file is refused with a message telling the uploader to remove any password or
+macros. If the scanner is down, uploads are refused until it is back. The
 older `evidence_reference`/EDRMS-reference pattern used by disability support
 and the newer in-house `packages/documents` pattern used by reasonable
 adjustments coexist deliberately rather than having been consolidated onto

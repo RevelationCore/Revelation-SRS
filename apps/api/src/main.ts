@@ -2,12 +2,14 @@
 import './telemetry.js';
 
 import { assertNatsCredentials } from '@revelation-srs/auth';
+import { assertDocumentScannerConfig, loadDocumentScannerConfig } from '@revelation-srs/documents';
 
 import { loadConfig } from './config.js';
 import { buildApp } from './app.js';
 
 const config = loadConfig();
 assertNatsCredentials('srs-api', config.nodeEnv);
+assertDocumentScannerConfig('srs-api', config.nodeEnv, config.documentScanner ?? loadDocumentScannerConfig());
 const app    = await buildApp(config);
 
 // Connect event bus (non-blocking on startup failure in dev to allow health check to pass)

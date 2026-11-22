@@ -9,15 +9,10 @@ import {
   persons,
   reasonableAdjustments,
   type Db,
+  type TenantScopedDb,
   withTenantContext,
 } from '@revelation-srs/db';
-import {
-  createPostgresDocumentAdapter,
-  DocumentNotFoundError,
-  DocumentTooLargeError,
-  DocumentTypeNotAllowedError,
-  type RetrievedDocument,
-} from '@revelation-srs/documents';
+import { DocumentNotFoundError, type RetrievedDocument } from '@revelation-srs/documents';
 import {
   ConflictError,
   EVENT_TYPES,
@@ -31,6 +26,7 @@ import type {
   AdjustmentExpiredV1Payload,
 } from '@revelation-srs/domain';
 
+import type { ApiDocumentStore } from '../documents/document-store.js';
 import type { IntegrationBusPublisher } from '../integration-bus/publisher.js';
 import type { ValueSetService } from '../value-sets/service.js';
 import { clockNow } from '../clock.js';
@@ -152,6 +148,7 @@ export class AdjustmentService {
     private readonly valueSets: ValueSetService,
     private readonly dispatcher: AdjustmentDistributionDispatcher,
     private readonly targetConfig: AdjustmentTargetConfigService,
+    private readonly documents: ApiDocumentStore,
   ) {}
 
   async recordAdjustment(
@@ -715,7 +712,8 @@ export class AdjustmentService {
     actorId:      string,
     input:        AttachOutcomeDocumentInput,
   ): Promise<{ documentId: string; checksumSha256: string }> {
-    return withTenantContext(this.db, tenantId, async (tx) => {
+    // ADR-030: check, then scan with no transaction open, then re-check and write.
+    const current = async (tx: TenantScopedDb) => {
       const rows = await tx
         .select()
         .from(reasonableAdjustments)
@@ -727,39 +725,32 @@ export class AdjustmentService {
           ),
         )
         .limit(1);
-
-      const current = rows[0];
+      const row = rows[0];
       // Not-found (rather than forbidden) for a personId/adjustmentId
       // mismatch — consistent with #ensureEnrolmentBelongsToPerson, and
       // avoids letting a caller probe which adjustment IDs exist.
-      if (!current || current.personId !== personId) throw new NotFoundError('ReasonableAdjustment', adjustmentId);
+      if (!row || row.personId !== personId) throw new NotFoundError('ReasonableAdjustment', adjustmentId);
+      return row;
+    };
+    await withTenantContext(this.db, tenantId, current);
 
-      let stored;
-      try {
-        stored = await createPostgresDocumentAdapter(tx).store({
-          tenantId,
-          ownerService: 'srs-adjustments',
-          ownerRef:     adjustmentId,
-          filename:     input.filename,
-          mimeType:     input.mimeType,
-          content:      input.content,
-          actorId,
-        });
-      } catch (err) {
-        if (err instanceof DocumentTooLargeError || err instanceof DocumentTypeNotAllowedError) {
-          throw new ValidationError(err.message);
-        }
-        throw err;
-      }
+    const scanned = await this.documents.scanUpload({
+      tenantId, ownerService: 'srs-adjustments', ownerRef: adjustmentId,
+      filename: input.filename, mimeType: input.mimeType, content: input.content, actorId,
+    });
+
+    return withTenantContext(this.db, tenantId, async (tx) => {
+      const row = await current(tx);
+      const stored = await this.documents.adapter(tx).store(scanned);
 
       const now = clockNow();
       await tx
         .update(reasonableAdjustments)
         .set({ recordedUntil: now })
-        .where(eq(reasonableAdjustments.versionId, current.versionId));
+        .where(eq(reasonableAdjustments.versionId, row.versionId));
 
       await tx.insert(reasonableAdjustments).values({
-        ...current,
+        ...row,
         versionId:         randomUUID(),
         actorId,
         recordedAt:        now,
@@ -790,7 +781,7 @@ export class AdjustmentService {
       if (!current.outcomeDocumentId) throw new NotFoundError('AdjustmentOutcomeDocument', adjustmentId);
 
       try {
-        return await createPostgresDocumentAdapter(tx).retrieve(tenantId, current.outcomeDocumentId, actorId);
+        return await this.documents.adapter(tx).retrieve(tenantId, current.outcomeDocumentId, actorId);
       } catch (err) {
         if (err instanceof DocumentNotFoundError) throw new NotFoundError('AdjustmentOutcomeDocument', adjustmentId);
         throw err;

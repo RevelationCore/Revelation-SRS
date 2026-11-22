@@ -1,3 +1,10 @@
+import {
+  DocumentNotAvailableError,
+  DocumentRejectedError,
+  DocumentScannerUnavailableError,
+  DocumentTooLargeError,
+  DocumentTypeNotAllowedError,
+} from '@revelation-srs/documents';
 import type { FastifyError, FastifyInstance, FastifyReply } from 'fastify';
 
 /**
@@ -39,6 +46,16 @@ export function registerProblemHandlers(fastify: FastifyInstance): void {
   fastify.setErrorHandler((err: FastifyError, request, reply) => {
     if (err.validation) {
       return sendProblem(reply, 400, err.message, { validation: err.validation });
+    }
+    // ADR-030: the document store's errors, mapped here rather than by each route.
+    const e: unknown = err;
+    if (e instanceof DocumentRejectedError) return sendProblem(reply, 422, e.message, { type: 'https://srs.example.com/errors/document-rejected' });
+    if (e instanceof DocumentNotAvailableError) return sendProblem(reply, 409, e.message, { type: 'https://srs.example.com/errors/document-not-available' });
+    if (e instanceof DocumentTooLargeError || e instanceof DocumentTypeNotAllowedError) return sendProblem(reply, 422, e.message);
+    if (e instanceof DocumentScannerUnavailableError) {
+      if (e.cause === 'disabled') return sendProblem(reply, 503, 'Uploads are not available in this environment.', { type: 'https://srs.example.com/errors/scanner-unavailable' });
+      void reply.header('Retry-After', '60');
+      return sendProblem(reply, 503, 'Uploads are temporarily unavailable. Try again in a few minutes.', { type: 'https://srs.example.com/errors/scanner-unavailable' });
     }
     const status = typeof err.statusCode === 'number' && err.statusCode >= 400 && err.statusCode < 500 ? err.statusCode : 500;
     if (status === 500) {

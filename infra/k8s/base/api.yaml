@@ -71,6 +71,13 @@ spec:
           env:
             - name: NODE_ENV
               value: production
+            # Malware scanning of uploads (ADR-030).
+            - name: DOCUMENT_SCANNER
+              value: clamd
+            - name: CLAMD_HOST
+              value: srs-clamav
+            - name: CLAMD_PORT
+              value: "3310"
             - name: PORT
               value: "3000"
             # Tokens: Keycloak RS256 only (HS256 refuses to start outside

@@ -1,4 +1,3 @@
-import { createPostgresDocumentAdapter, DocumentTooLargeError, DocumentTypeNotAllowedError } from '@revelation-srs/documents';
 import {
   admissionsOffers,
   casAssignmentVersions,
@@ -16,6 +15,7 @@ import { ConflictError, NotFoundError, ValidationError } from '@revelation-srs/d
 import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm';
 
 import { clockNow } from '../clock.js';
+import type { ApiDocumentStore } from '../documents/document-store.js';
 import type { ValueSetService } from '../value-sets/service.js';
 
 import type { ApplicationService } from './application-service.js';
@@ -80,6 +80,7 @@ export class ApplicantPortalService {
     private readonly db: Db,
     private readonly applications: ApplicationService,
     private readonly valueSets: ValueSetService,
+    private readonly documents: ApiDocumentStore,
   ) {}
 
   async list(tenantId: string, personId: string): Promise<ApplicantApplicationView[]> {
@@ -121,16 +122,12 @@ export class ApplicantPortalService {
     if (!['made', 'accepted'].includes(offer.statusCode)) throw new ConflictError(`This offer is ${offer.statusCode}; evidence is no longer needed`);
     if (condition.statusCode !== 'pending') throw new ConflictError(`This condition is already ${condition.statusCode}`);
 
+    // ADR-030: scan with no transaction open, then write.
+    const scanned = await this.documents.scanUpload({
+      tenantId, ownerService: 'srs-admissions', ownerRef: condition.id, filename: file.filename, mimeType: file.mimeType, content: file.content, actorId,
+    });
     return withTenantContext(this.db, tenantId, async (tx) => {
-      let stored;
-      try {
-        stored = await createPostgresDocumentAdapter(tx).store({
-          tenantId, ownerService: 'srs-admissions', ownerRef: condition.id, filename: file.filename, mimeType: file.mimeType, content: file.content, actorId,
-        });
-      } catch (err) {
-        if (err instanceof DocumentTooLargeError || err instanceof DocumentTypeNotAllowedError) throw new ValidationError(err.message);
-        throw err;
-      }
+      const stored = await this.documents.adapter(tx).store(scanned);
       const [row] = await tx.insert(conditionEvidence).values({
         tenantId: tenantId as Uuid, conditionId: condition.id, provenanceCode: 'applicant',
         evidenceRef: `documents:${stored.documentId}`, reportedValue: null, verified: false, receivedBy: actorId,

@@ -43,6 +43,13 @@
       "when": 1785000053000,
       "tag": "0005_vle_connector_service_role",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1785000054000,
+      "tag": "0006_document_scanning",
+      "breakpoints": true
     }
   ]
 }

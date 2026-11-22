@@ -2,6 +2,7 @@ import { createHmac } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 
+import type { DocumentScanner } from '@revelation-srs/documents';
 import { sql } from 'drizzle-orm';
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { createDb, type Db } from '@revelation-srs/db';
@@ -42,6 +43,8 @@ export interface StartTestAppOptions {
   auth?: Pick<Config, 'keycloakJwksUrl' | 'keycloakIssuer' | 'keycloakAudience' | 'jwtClockToleranceSeconds'>;
   /** Inject a spy or stub event bus instead of the default disconnected NATS publisher. */
   eventBus?: IntegrationBusPublisher;
+  /** Replace the no-op scanner, to test infected or unavailable scans (ADR-030). */
+  documentScanner?: DocumentScanner;
   /** Enable live Temporal execution against this server (the rollout flag still applies). */
   temporal?: {
     address: string;
@@ -89,6 +92,7 @@ export async function startTestApp(opts: StartTestAppOptions = {}): Promise<Test
     port:             3001,
     logLevel:         process.env['TEST_LOG_LEVEL'] ?? 'silent',  // TEST_LOG_LEVEL=error shows server errors
     nodeEnv:          'test',
+    documentScanner:  { mode: 'noop', clamdPort: 3310, timeoutMs: 30_000, maxConcurrency: 4 },
     databaseUrl:      appUrl.toString(),
     natsUrl:          'nats://localhost:4222',  // NATS not needed for these tests
     temporalAddress:  opts.temporal?.address ?? 'localhost:7233',
@@ -114,7 +118,7 @@ export async function startTestApp(opts: StartTestAppOptions = {}): Promise<Test
     otelServiceName:  'srs-api-test',
   };
 
-  const app = await buildApp(config, { eventBus: opts.eventBus });
+  const app = await buildApp(config, { eventBus: opts.eventBus, ...(opts.documentScanner ? { documentScanner: opts.documentScanner } : {}) });
   await app.ready();
 
   // Build HS256 JWTs using Node.js built-in crypto — matches the jwtPlugin's
