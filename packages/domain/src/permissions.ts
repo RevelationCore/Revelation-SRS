@@ -43,6 +43,9 @@ export const ROLES = [
   'adjustment-approver',
   // SME-6: proposes a manual adjustment, for disability-service staff outside registry.
   'adjustment-proposer',
+  // BP-06 pre-review G5 (BL-279): the academic authority that confers awards
+  // (a Registrar or Senate delegate), not an IT role.
+  'conferment-authority',
 ] as const;
 
 /** The integration contracts the VLE connector serves (ADR-032). */
@@ -298,7 +301,8 @@ export const PERMISSION_ROLES = {
   // Award recommendation and conferment (BPR-D14): the board recommends,
   // a delegated authority who is not the recommender confers.
   'award:recommend':                     ['exam-board-chair', 'registry-administrator'] as Role[],
-  'award:confer':                        ['registry-administrator', 'tenant-administrator'] as Role[],
+  // G5 (BL-279): not tenant-administrator, an IT role with no academic authority.
+  'award:confer':                        ['registry-administrator', 'conferment-authority'] as Role[],
   // Reassessment plans follow a ratified progression decision.
   'reassessment:read':                   ['registry-administrator', 'exam-board-chair', 'exam-board-member', 'module-tutor', 'personal-tutor'] as Role[],
   'reassessment:write':                  ['registry-administrator'] as Role[],

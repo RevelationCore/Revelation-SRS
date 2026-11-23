@@ -1458,6 +1458,15 @@
     "active": true,
     "hidden": false,
     "selectable": true
+   },
+   {
+    "code": "conferment-authority",
+    "displayLabel": "Conferment authority",
+    "description": null,
+    "sortOrder": 340,
+    "active": true,
+    "hidden": false,
+    "selectable": true
    }
   ]
  },
@@ -6663,6 +6672,15 @@
     "displayLabel": "Adjustment proposer",
     "description": null,
     "sortOrder": 330,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "conferment-authority",
+    "displayLabel": "Conferment authority",
+    "description": null,
+    "sortOrder": 340,
     "active": true,
     "hidden": false,
     "selectable": true
@@ -15632,6 +15650,15 @@
     "active": true,
     "hidden": false,
     "selectable": true
+   },
+   {
+    "code": "conferment-authority",
+    "displayLabel": "Conferment authority",
+    "description": null,
+    "sortOrder": 340,
+    "active": true,
+    "hidden": false,
+    "selectable": true
    }
   ]
  },
@@ -15934,6 +15961,15 @@
     "displayLabel": "Adjustment proposer",
     "description": null,
     "sortOrder": 330,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "conferment-authority",
+    "displayLabel": "Conferment authority",
+    "description": null,
+    "sortOrder": 340,
     "active": true,
     "hidden": false,
     "selectable": true
@@ -16418,6 +16454,15 @@
     "active": true,
     "hidden": false,
     "selectable": true
+   },
+   {
+    "code": "conferment-authority",
+    "displayLabel": "Conferment authority",
+    "description": null,
+    "sortOrder": 340,
+    "active": true,
+    "hidden": false,
+    "selectable": true
    }
   ]
  },
@@ -16782,6 +16827,15 @@
     "displayLabel": "Adjustment proposer",
     "description": null,
     "sortOrder": 330,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "conferment-authority",
+    "displayLabel": "Conferment authority",
+    "description": null,
+    "sortOrder": 340,
     "active": true,
     "hidden": false,
     "selectable": true
