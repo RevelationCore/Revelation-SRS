@@ -230,7 +230,7 @@ export function App() {
                 <Route path="governance/pgr-examination" element={<RequirePermission permissions={['pgr-case:read']}><PgrExaminationPage /></RequirePermission>} />
                 <Route path="governance/pgr-completion" element={<RequirePermission permissions={['pgr-case:read']}><PgrCompletionPage /></RequirePermission>} />
                 <Route path="governance/rights-requests" element={<RequirePermission permissions={['identity:manage', 'retention:enforce']}><RightsRequestsPage /></RequirePermission>} />
-                <Route path="governance/audit-review" element={<RequirePermission permissions={['audit-log:read']}><AuditReviewPage /></RequirePermission>} />
+                <Route path="governance/audit-review" element={<RequirePermission permissions={['audit-review:manage']}><AuditReviewPage /></RequirePermission>} />
                 <Route path="governance/adjustment-cases" element={<RequirePermission permissions={['adjustment-case:read:all']}><AdjustmentCasesPage /></RequirePermission>} />
                 <Route path="governance/adjustment-cases/:caseId" element={<RequirePermission permissions={['adjustment-case:read:all']}><AdjustmentCaseDetailPage /></RequirePermission>} />
 

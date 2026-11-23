@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+
 import { and, desc, eq } from 'drizzle-orm';
 import { auditRecords } from '@revelation-srs/db';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -11,7 +13,8 @@ let dpoJwt: string;
 beforeAll(async () => {
   ctx    = await startTestApp();
   jwt    = await ctx.makeJwt();
-  dpoJwt = await ctx.makeJwt({ roles: ['dpo'] });
+  // A reviewer distinct from the default test user, whose actions are what is audited (BL-287).
+  dpoJwt = await ctx.makeJwt({ sub: 'dpo-reviewer-1', roles: ['dpo'] });
 }, 120_000);
 
 afterAll(async () => { await ctx?.teardown(); });
@@ -108,4 +111,31 @@ describe('Audit hash-chaining & review (BPR-D19)', () => {
     expect(list.json<Array<{ auditReviewCaseId: string; ownerId: string; statusCode: string }>>())
       .toContainEqual(expect.objectContaining({ auditReviewCaseId, ownerId: 'dpo-03', statusCode: 'open' }));
   });
+
+  it('BL-287: review is for the DPO, not for registry, and no one records a finding on their own action', async () => {
+    const registry = await ctx.makeJwt({ sub: 'registry-reviewer', roles: ['registry-administrator'] });
+    for (const [method, url, payload] of [
+      ['GET', '/api/v1/audit-review/cases', undefined],
+      ['POST', '/api/v1/audit-review/cases', { ownerId: 'r-1' }],
+      ['POST', '/api/v1/audit-review/seal', { rangeStart: '2020-01-01T00:00:00.000Z', rangeEnd: new Date().toISOString() }],
+    ] as const) {
+      expect((await ctx.app.inject({ method, url, headers: { authorization: `Bearer ${registry}` }, ...(payload ? { payload } : {}) })).statusCode, url).toBe(403);
+    }
+
+    const opened = await ctx.app.inject({ method: 'POST', url: '/api/v1/audit-review/cases', headers: { authorization: `Bearer ${dpoJwt}` }, payload: { ownerId: 'dpo-04' } });
+    const { auditReviewCaseId } = opened.json<{ auditReviewCaseId: string }>();
+    // Something the reviewer did, on the audit trail.
+    await ctx.app.audit.record({ tenantId: ctx.tenantId, entityType: 'person', entityId: randomUUID(), actionType: 'update', actorType: 'user', actorId: 'dpo-reviewer-1', reasonText: 'An action of the reviewer' });
+    const [own] = await ctx.db.select({ id: auditRecords.id }).from(auditRecords)
+      .where(and(eq(auditRecords.tenantId, ctx.tenantId as `${string}-${string}-${string}-${string}-${string}`), eq(auditRecords.actorId, 'dpo-reviewer-1')))
+      .limit(1);
+    expect(own).toBeTruthy();
+    const selfReview = await ctx.app.inject({
+      method: 'POST', url: `/api/v1/audit-review/cases/${auditReviewCaseId}/findings`, headers: { authorization: `Bearer ${dpoJwt}` },
+      payload: { auditRecordId: own!.id, findingTypeCode: 'no-concern' },
+    });
+    expect(selfReview.statusCode).toBe(403);
+    expect(selfReview.json<{ type: string }>().type).toMatch(/separation-of-duties$/);
+  });
 });
+

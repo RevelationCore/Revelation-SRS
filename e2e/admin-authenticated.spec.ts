@@ -66,10 +66,15 @@ const PAGES: [string, string | RegExp][] = [
   ['/operations/integrations',     'Integration operations'],
 ];
 
+// Routes the default staff session may not open; each is visited as the role that may (BL-287).
+const ROLES_FOR: Record<string, string[]> = {
+  '/governance/audit-review': ['dpo'],
+};
+
 test.describe('Admin — authenticated page rendering and axe scans', () => {
   for (const [route, heading] of PAGES) {
     test(`${route} renders and passes axe`, async ({ page }) => {
-      await injectAdminAuth(page);
+      await injectAdminAuth(page, ROLES_FOR[route]);
       await mockApiRoutes(page);
 
       await page.goto(`${ADMIN}${route}`);

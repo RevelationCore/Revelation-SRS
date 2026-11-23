@@ -225,6 +225,10 @@ export const PERMISSION_ROLES = {
   'email:receive':                      ['integration-service'] as Role[],
   'email-simulator:use':                ['registry-administrator', 'tenant-administrator', 'system-administrator'] as Role[],
   'audit-log:read':                     ['dpo', 'system-administrator', 'registry-administrator', 'wellbeing-auditor'] as Role[],
+  // BP-08 pre-review R08-8 (BL-287): reviewing the audit trail is not part of
+  // reading it, and is not open to the people whose actions are audited.
+  'audit-review:manage':                ['dpo'] as Role[],
+  'audit:seal':                         ['dpo', 'system-administrator'] as Role[],
   // BL-284: irreversible disposal is a DPO decision, not an IT operation.
   'retention:enforce':                  ['dpo'] as Role[],
   // BL-327: a second person approves a disposal plan; never its preparer (enforced in the service).
