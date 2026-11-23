@@ -27,7 +27,7 @@
     "test:e2e": "node scripts/deprecated-test-e2e.mjs",
     "test:ui:mocked": "node scripts/run-mocked-ui.mjs",
     "test:journey": "node scripts/run-real-journey.mjs",
-    "test:uat": "playwright test uat/remaining-stories.spec.ts",
+    "test:uat": "playwright test --config playwright.uat.config.ts",
     "test:capability": "node scripts/select-journeys.mjs capability",
     "test:persona": "node scripts/select-journeys.mjs persona",
     "test:all": "node scripts/run-test-class.mjs all",
