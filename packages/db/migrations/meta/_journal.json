@@ -120,6 +120,13 @@
       "when": 1785000064000,
       "tag": "0016_hesa_mode_crosswalk",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1785000065000,
+      "tag": "0017_right_to_study_exempt_nationalities",
+      "breakpoints": true
     }
   ]
 }

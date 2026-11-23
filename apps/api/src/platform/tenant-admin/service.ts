@@ -140,6 +140,15 @@ export class TenantAdminService {
     }
 
     const configuration = { ...current.configuration, ...patch };
+    // F-5 (BL-182): a sponsor-licence holder must check every entrant's right
+    // to study, so 'none' needs the tenant to record that it holds no licence.
+    const rts = configuration['rightToStudy'] as Record<string, unknown> | undefined;
+    const ukvi = configuration['ukvi'] as Record<string, unknown> | undefined;
+    if (rts?.['scope'] === 'none' && ukvi?.['holdsSponsorLicence'] !== false) {
+      throw new ValidationError("rightToStudy.scope = 'none' is only for an institution with no sponsor licence: set ukvi.holdsSponsorLicence to false, or use 'all' or 'sponsored'", [
+        { field: 'rightToStudy.scope', message: "A sponsor-licence holder checks right to study; 'none' needs ukvi.holdsSponsorLicence = false" },
+      ]);
+    }
     await this.updateTenant(tenantId, { configuration });
     return configuration;
   }
