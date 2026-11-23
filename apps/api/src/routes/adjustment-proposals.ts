@@ -93,7 +93,7 @@ function proposalToWire(p: AdjustmentProposalDto) {
   };
 }
 
-/** ADR-033 item 5: manual adjustment proposals and their decision (BL-378). */
+/** ADR-033 item 5: manual adjustment proposals and their decision (BL-378), and migration batch release (BL-379). */
 export function adjustmentProposalRoutes(fastify: FastifyInstance): void {
   fastify.post(
     '/students/:personId/adjustment-proposals',
@@ -184,6 +184,63 @@ export function adjustmentProposalRoutes(fastify: FastifyInstance): void {
       await reply.code(decided.decisionStatus === 'pending' ? 202 : 200).send({
         proposalId, statusCode: decided.statusCode, adjustmentId: decided.adjustmentId, decisionStatus: decided.decisionStatus,
       });
+    },
+  );
+
+  // ── Migration batches (ADR-033 item 7, SME-8, BL-379) ────────────────────
+
+  const BatchSummary = Type.Object({
+    batchId: Type.String(), total: Type.Integer(), current: Type.Integer(),
+    released: Type.Integer(), unreleased: Type.Integer(), ended: Type.Integer(),
+  });
+  const ReleaseBody = Type.Object({
+    expectedCount: Type.Integer({ minimum: 0, description: 'The number of current adjustments the legacy report shows for this batch' }),
+    reconciliationReference: Type.String({ minLength: 1, maxLength: 100, description: 'The reference of the legacy report the count was checked against. An identifier, never narrative.' }),
+  }, { additionalProperties: false });
+
+  fastify.get(
+    '/adjustment-migration-batches/:batchId',
+    {
+      schema: { params: Type.Object({ batchId: Type.String({ format: 'uuid' }) }), response: { 200: BatchSummary, 404: ErrorSchema } },
+      preHandler: [requirePermission('adjustment:release-migrated')],
+    },
+    async (request, reply) => {
+      const { batchId } = request.params as { batchId: string };
+      await reply.send(await fastify.adjustmentService.summariseMigrationBatch(request.tenantId, batchId));
+    },
+  );
+
+  fastify.post(
+    '/adjustment-migration-batches/:batchId/release',
+    {
+      schema: {
+        params: Type.Object({ batchId: Type.String({ format: 'uuid' }) }),
+        body: ReleaseBody,
+        response: {
+          200: Type.Object({ released: Type.Integer(), alreadyReleased: Type.Integer(), ended: Type.Integer() }),
+          400: ErrorSchema, 404: ErrorSchema, 409: ErrorSchema, 422: ErrorSchema,
+        },
+      },
+      preHandler: [requirePermission('adjustment:release-migrated')],
+      preValidation: refuseUnknownFields(Object.keys(ReleaseBody.properties)),
+    },
+    async (request, reply) => {
+      const { batchId } = request.params as { batchId: string };
+      const body = request.body as { expectedCount: number; reconciliationReference: string };
+      const result = await fastify.adjustmentService.releaseMigrationBatch(request.tenantId, batchId, body, request.user.sub);
+      if (result.released > 0) {
+        try {
+          await fastify.examEntryService.applyExamAdditions(request.tenantId);
+        } catch (err) {
+          request.log.warn({ err, batchId }, 'Exam entry refresh deferred to the reconcile loop');
+        }
+      }
+      await fastify.audit.record({
+        tenantId: request.tenantId, entityType: 'adjustment_migration_batch', entityId: batchId, actionType: 'update', actorType: 'user',
+        actorId: request.user.sub, actorDisplayName: request.user.displayName, correlationId: request.id,
+        reasonText: `Released ${result.released} migrated adjustments (${result.alreadyReleased} already released, ${result.ended} ended); expected ${body.expectedCount}, reconciled against ${body.reconciliationReference.trim()}`,
+      });
+      await reply.send(result);
     },
   );
 }

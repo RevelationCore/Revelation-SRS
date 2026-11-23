@@ -18,11 +18,15 @@ import {
 export interface ImportOptions {
   dryRun:   boolean;
   tenantId: string;
+  /** The adjustment migration batch to record (ADR-033 item 7); generated when omitted. */
+  batchId?: string;
 }
 
 export interface ImportResult {
   report:  ValidationReport;
   idMap?:  IdMap;
+  /** The batch the imported adjustments belong to; released for distribution separately. */
+  adjustmentBatchId?: string;
 }
 
 /**
@@ -62,6 +66,7 @@ export async function runImport(
   const idMap = new IdMap();
   const log = new ImportLog();
 
+  let adjustmentBatchId: string | undefined;
   await db.transaction(async (tx) => {
     const t = tx as unknown as Db;
     await importIdentity(t, opts.tenantId, payload, idMap, log);
@@ -69,7 +74,7 @@ export async function runImport(
     await importEnrolments(t, opts.tenantId, payload, idMap, log);
     await importRegistrations(t, opts.tenantId, payload, idMap, log);
     await importAssessment(t, opts.tenantId, payload, idMap, log);
-    await importAdjustments(t, opts.tenantId, payload, idMap, log);
+    ({ batchId: adjustmentBatchId } = await importAdjustments(t, opts.tenantId, payload, idMap, log, opts.batchId));
   });
 
   for (const entity of log.entities()) {
@@ -78,5 +83,5 @@ export async function runImport(
   }
   addIssues(report, log.issues);
 
-  return { report, idMap };
+  return { report, idMap, ...(adjustmentBatchId ? { adjustmentBatchId } : {}) };
 }

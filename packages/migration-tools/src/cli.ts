@@ -3,7 +3,7 @@
  * Migration CLI — import historical SRS data from SITS-style or Banner-style exports.
  *
  * Usage:
- *   node src/cli.ts import --source sits|banner --file <path> --tenant-id <uuid> [--dry-run]
+ *   node src/cli.ts import --source sits|banner --file <path> --tenant-id <uuid> [--batch-id <uuid>] [--dry-run]
  *   node src/cli.ts validate --source sits|banner --file <path> --tenant-id <uuid>
  *
  * Environment:
@@ -27,6 +27,7 @@ interface CliArgs {
   source:   SourceSystem;
   file:     string;
   tenantId: string;
+  batchId?: string;
   dryRun:   boolean;
 }
 
@@ -46,8 +47,12 @@ function parseArgs(argv: string[]): CliArgs {
 
   if (!file)     throw new Error('--file is required');
   if (!tenantId) throw new Error('--tenant-id is required');
+  const batchId = flag('batch-id');
+  if (batchId !== undefined && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(batchId)) {
+    throw new Error('--batch-id must be a UUID');
+  }
 
-  return { command, source, file, tenantId, dryRun };
+  return { command, source, file, tenantId, dryRun, ...(batchId ? { batchId } : {}) };
 }
 
 async function loadPayload(args: CliArgs): Promise<ImportPayload> {
@@ -117,6 +122,7 @@ async function main(): Promise<void> {
   const result = await runImport(db, payload, {
     dryRun:   args.dryRun,
     tenantId: args.tenantId,
+    ...(args.batchId ? { batchId: args.batchId } : {}),
   });
 
   printReport(result.report);
@@ -125,6 +131,12 @@ async function main(): Promise<void> {
     console.log('Dry run complete — no data was written.');
   } else if (!result.report.summary.hasErrors) {
     console.log(`Import complete. ${result.idMap?.size() ?? 0} IDs mapped.`);
+    if (result.adjustmentBatchId && (payload.adjustments?.length ?? 0) > 0) {
+      // ADR-033 item 7: imported adjustments are live but not yet sent to the VLE or exams.
+      console.log(`Adjustment migration batch: ${result.adjustmentBatchId}`);
+      console.log('  Not yet distributed. After reconciling the count against the legacy report, an adjustment approver releases it:');
+      console.log(`  POST /api/v1/adjustment-migration-batches/${result.adjustmentBatchId}/release { expectedCount, reconciliationReference }`);
+    }
   }
 
   process.exit(result.report.summary.hasErrors ? 1 : 0);

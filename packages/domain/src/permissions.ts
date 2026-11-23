@@ -76,6 +76,8 @@ export const PERMISSION_ROLES = {
   // approves. SME-6: not wellbeing-advisor, who has the governed case instead.
   'adjustment:propose':        ['registry-administrator', 'adjustment-proposer'] as Role[],
   'adjustment:approve-manual': ['adjustment-approver'] as Role[],
+  // ADR-033 item 7, SME-8: distribute a reconciled migration batch.
+  'adjustment:release-migrated': ['adjustment-approver'] as Role[],
   // Work the adjustment task queue: confirm, by hand, that an instruction for
   // a target with no connected system was applied or removed.
   'adjustment:fulfil':         ['registry-administrator', 'engagement-officer', 'tenant-administrator'] as Role[],

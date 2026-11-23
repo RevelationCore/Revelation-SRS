@@ -791,6 +791,8 @@ export async function buildApp(
       ['/adjustments',               'adjustments'],
       ['/adjustment-tasks',          'adjustments'],
       ['/adjustment-targets',        'adjustments'],
+      ['/adjustment-proposals',      'adjustments'],
+      ['/adjustment-migration-batches', 'adjustments'],
       ['/delivery-',                 'integration-registry'],
       ['/inbound',                   'integration-registry'],
       ['/support-',                  'students'],

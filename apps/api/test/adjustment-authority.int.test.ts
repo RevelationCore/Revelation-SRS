@@ -98,6 +98,7 @@ describe('who holds the authority permissions', () => {
   it('only the wellbeing service records a case adjustment; only an approver approves a manual one', () => {
     expect(holders('adjustment:record-approved')).toEqual(['wellbeing-service']);
     expect(holders('adjustment:approve-manual')).toEqual(['adjustment-approver']);
+    expect(holders('adjustment:release-migrated')).toEqual(['adjustment-approver']);
   });
 
   it('SME-6: registry and adjustment-proposer propose; never a wellbeing adviser or an approver', () => {
@@ -308,5 +309,88 @@ describe('manual adjustment proposals', () => {
     expect(approve.json<{ type: string }>().type).toBe('https://srs.example.com/errors/manual-adjustments-disabled');
     expect((await decide(approverJwt, b.proposalId, { decisionCode: 'rejected', reason: 'Path closed' })).statusCode).toBe(200);
     expect(await coreRowsFor(s.personId)).toEqual({ adjustments: 0, distributions: 0 });
+  });
+});
+
+describe('migration batch release (ADR-033 item 7, SME-8)', () => {
+  /** Writes an adjustment as the importer does: migrated, in a batch, no distributions. */
+  async function migrated(batchId: string, s: { personId: string; enrolmentId: string }, ref: string, opts: { scopeCode?: string; validTo?: string } = {}): Promise<string> {
+    const id = randomUUID();
+    await ctx.db.execute(sql`INSERT INTO reasonable_adjustment
+      (version_id, id, tenant_id, enrolment_id, person_id, adjustment_type_code, scope_code, actor_id, valid_from, valid_to, recorded_at,
+       provenance_code, migration_batch_id, migration_source_reference, amount_value, amount_unit_code)
+      VALUES (gen_random_uuid(), ${id}::uuid, ${ctx.tenantId}::uuid, ${s.enrolmentId}::uuid, ${s.personId}::uuid, 'extra-time', ${opts.scopeCode ?? 'all'},
+       'migration-import', '2024-09-01T00:00:00Z', ${opts.validTo ?? null}::timestamptz, now(), 'migrated', ${batchId}::uuid, ${`sits:${ref}`}, 25, 'percent-of-duration')`);
+    return id;
+  }
+  const distributionsOf = async (id: string) =>
+    ((await ctx.db.execute(sql`SELECT count(*)::int AS n FROM adjustment_distribution WHERE adjustment_id = ${id}::uuid`)) as unknown as Array<{ n: number }>)[0]!.n;
+  const summary = (jwt: string, batchId: string) => ctx.app.inject({ method: 'GET', url: `/api/v1/adjustment-migration-batches/${batchId}`, headers: auth(jwt) });
+  const release = (jwt: string, batchId: string, payload: Record<string, unknown>) =>
+    ctx.app.inject({ method: 'POST', url: `/api/v1/adjustment-migration-batches/${batchId}/release`, headers: auth(jwt), payload });
+
+  it('releases the current, in-force adjustments of a reconciled batch, once', async () => {
+    const batchId = randomUUID();
+    const s1 = await student('MIG01'); const s2 = await student('MIG02'); const s3 = await student('MIG03');
+    const inForce = await migrated(batchId, s1, 'ADJ-1');
+    const ended = await migrated(batchId, s2, 'ADJ-2', { validTo: '2025-06-30T00:00:00Z' });
+    const future = await migrated(batchId, s3, 'ADJ-3', { validTo: '2099-06-30T00:00:00Z' });
+
+    expect((await summary(registryJwt, batchId)).statusCode).toBe(403);
+    const before = await summary(approverJwt, batchId);
+    expect(before.json()).toEqual({ batchId, total: 3, current: 3, released: 0, unreleased: 2, ended: 1 });
+
+    // The count must match the legacy report, and the release must name it.
+    const mismatch = await release(approverJwt, batchId, { expectedCount: 2, reconciliationReference: 'SITS-RPT-0042' });
+    expect(mismatch.statusCode).toBe(409);
+    expect(mismatch.json<{ type: string }>().type).toBe('https://srs.example.com/errors/migration-count-mismatch');
+    expect((await release(approverJwt, batchId, { expectedCount: 3 })).statusCode).toBe(400);
+    expect((await release(approverJwt, batchId, { expectedCount: 3, reconciliationReference: '   ' })).statusCode).toBe(422);
+    expect((await release(approverJwt, batchId, { expectedCount: 3, reconciliationReference: 'SITS-RPT-0042', notes: 'ok' })).statusCode).toBe(400);
+    expect((await release(registryJwt, batchId, { expectedCount: 3, reconciliationReference: 'SITS-RPT-0042' })).statusCode).toBe(403);
+    expect(await distributionsOf(inForce)).toBe(0);
+
+    const res = await release(approverJwt, batchId, { expectedCount: 3, reconciliationReference: 'SITS-RPT-0042' });
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toEqual({ released: 2, alreadyReleased: 0, ended: 1 });
+    expect(await distributionsOf(inForce)).toBeGreaterThan(0);
+    expect(await distributionsOf(future)).toBeGreaterThan(0);
+    expect(await distributionsOf(ended)).toBe(0);
+    const approved = published.filter((e) => e.type === EVENT_TYPES.ADJUSTMENT_APPROVED).map((e) => (e.payload as { adjustmentId: string }).adjustmentId);
+    expect(approved.sort()).toEqual([inForce, future].sort());
+
+    const audit = (await ctx.db.execute(sql`SELECT actor_id, reason_text FROM audit_record
+      WHERE entity_type = 'adjustment_migration_batch' AND entity_id = ${batchId}::uuid`)) as unknown as Array<{ actor_id: string; reason_text: string }>;
+    expect(audit).toEqual([expect.objectContaining({ actor_id: 'disability-head-1' })]);
+    expect(audit[0]!.reason_text).toContain('SITS-RPT-0042');
+    expect(audit[0]!.reason_text).toContain('Released 2');
+
+    const n = await distributionsOf(inForce);
+    const again = await release(secondApproverJwt, batchId, { expectedCount: 3, reconciliationReference: 'SITS-RPT-0042' });
+    expect(again.json()).toEqual({ released: 0, alreadyReleased: 2, ended: 1 });
+    expect(await distributionsOf(inForce)).toBe(n);
+    expect((await summary(approverJwt, batchId)).json()).toMatchObject({ released: 2, unreleased: 0, ended: 1 });
+  });
+
+  it('a repeat releases nothing even where every target is not used', async () => {
+    const put = (mode: string) => ctx.app.inject({ method: 'PUT', url: '/api/v1/adjustment-targets/exams', headers: auth(adminJwt), payload: { fulfilmentModeCode: mode } });
+    expect((await put('not-used')).statusCode).toBe(200);
+    try {
+      const batchId = randomUUID();
+      const s = await student('MIG10');
+      const id = await migrated(batchId, s, 'ADJ-10', { scopeCode: 'exam' });
+      expect((await release(approverJwt, batchId, { expectedCount: 1, reconciliationReference: 'R-1' })).json()).toEqual({ released: 1, alreadyReleased: 0, ended: 0 });
+      expect(await distributionsOf(id)).toBe(0);
+      published.length = 0;
+      expect((await release(approverJwt, batchId, { expectedCount: 1, reconciliationReference: 'R-1' })).json()).toEqual({ released: 0, alreadyReleased: 1, ended: 0 });
+      expect(published.filter((e) => e.type === EVENT_TYPES.ADJUSTMENT_APPROVED)).toEqual([]);
+    } finally {
+      await put('file');
+    }
+  });
+
+  it('an unknown batch is 404', async () => {
+    expect((await summary(approverJwt, randomUUID())).statusCode).toBe(404);
+    expect((await release(approverJwt, randomUUID(), { expectedCount: 0, reconciliationReference: 'R' })).statusCode).toBe(404);
   });
 });

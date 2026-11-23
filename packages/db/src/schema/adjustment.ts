@@ -182,6 +182,20 @@ export const adjustmentProposals = pgTable('adjustment_proposal', {
 
 export type AdjustmentProposal = typeof adjustmentProposals.$inferSelect;
 
+/**
+ * The release of one migrated adjustment for distribution (ADR-033 item 7,
+ * migration 0010). Append-only; its presence is what makes a repeated batch
+ * release a no-op, including for adjustments every target ignores.
+ */
+export const adjustmentMigrationReleases = pgTable('adjustment_migration_release', {
+  tenantId:                uuid('tenant_id').notNull().references(() => tenants.id),
+  adjustmentId:            uuid('adjustment_id').notNull(),
+  migrationBatchId:        uuid('migration_batch_id').notNull(),
+  reconciliationReference: text('reconciliation_reference').notNull(),
+  releasedBy:              text('released_by').notNull(),
+  releasedAt:              timestamp('released_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [primaryKey({ columns: [table.tenantId, table.adjustmentId] })]);
+
 // ─────────────────────────────────────────────────────────────────────────────
 // BPR-D09 note: an earlier `support_outcome`/shared distribution_item table
 // (originally migration 0046_support_outcome_distribution, since squashed

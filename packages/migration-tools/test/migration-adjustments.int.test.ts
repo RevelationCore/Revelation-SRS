@@ -126,3 +126,33 @@ describe('adjustment import', () => {
     expect(Number(persons[0]?.n)).toBe(2);
   });
 });
+
+describe('adjustment migration batch (ADR-033 item 7)', () => {
+  it('records the given batch on every imported adjustment, or generates one, and returns it', async () => {
+    const given = '0c6c1f3e-6a43-4d1b-9a55-6b2d1c0e7a11';
+    const payload: ImportPayload = {
+      meta: { sourceSystem: 'sits' },
+      persons: [person('B1', 'B0001'), person('B2', 'B0002')],
+      enrolments: [enrolment('BE1', 'B1'), enrolment('BE2', 'B2')],
+      adjustments: [adjustment('BADJ-1', 'B1', 'BE1'), adjustment('BADJ-2', 'B2', 'BE2')],
+    };
+    const first = await runImport(db, payload, { dryRun: false, tenantId: TENANT_ID, batchId: given });
+    expect(first.adjustmentBatchId).toBe(given);
+    const rows = await db.execute<{ batch: string; ref: string }>(sql`
+      SELECT migration_batch_id AS batch, migration_source_reference AS ref FROM reasonable_adjustment
+      WHERE tenant_id = ${TENANT_ID} AND migration_source_reference LIKE 'sits:BADJ-%' ORDER BY 2`);
+    expect(rows.map((r) => ({ ...r }))).toEqual([{ batch: given, ref: 'sits:BADJ-1' }, { batch: given, ref: 'sits:BADJ-2' }]);
+    // No distributions until the batch is released.
+    const dist = await db.execute<{ n: string }>(sql`SELECT count(*) AS n FROM adjustment_distribution d
+      JOIN reasonable_adjustment a ON a.id = d.adjustment_id WHERE a.migration_batch_id = ${given}`);
+    expect(Number(dist[0]?.n)).toBe(0);
+
+    const second = await runImport(db, {
+      meta: { sourceSystem: 'sits' }, persons: [person('B3', 'B0003')], enrolments: [enrolment('BE3', 'B3')],
+      adjustments: [adjustment('BADJ-3', 'B3', 'BE3')],
+    }, { dryRun: false, tenantId: TENANT_ID });
+    expect(second.adjustmentBatchId).toMatch(/^[0-9a-f-]{36}$/);
+    expect(second.adjustmentBatchId).not.toBe(given);
+  });
+});
+

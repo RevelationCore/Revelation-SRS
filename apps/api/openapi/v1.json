@@ -3725,7 +3725,7 @@
       "post": {
         "operationId": "createStudentsByPersonIdAdjustmentProposals",
         "tags": [
-          "students"
+          "adjustments"
         ],
         "requestBody": {
           "required": true,
@@ -3953,6 +3953,9 @@
     "/api/v1/adjustment-proposals": {
       "get": {
         "operationId": "getAdjustmentProposals",
+        "tags": [
+          "adjustments"
+        ],
         "parameters": [
           {
             "schema": {
@@ -4152,6 +4155,9 @@
     "/api/v1/adjustment-proposals/{proposalId}": {
       "get": {
         "operationId": "getAdjustmentProposalsByProposalId",
+        "tags": [
+          "adjustments"
+        ],
         "parameters": [
           {
             "schema": {
@@ -4350,6 +4356,9 @@
     "/api/v1/adjustment-proposals/{proposalId}/decision": {
       "post": {
         "operationId": "createAdjustmentProposalsByProposalIdDecision",
+        "tags": [
+          "adjustments"
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -4529,6 +4538,287 @@
             }
           },
           "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/adjustment-migration-batches/{batchId}": {
+      "get": {
+        "operationId": "getAdjustmentMigrationBatchesByBatchId",
+        "tags": [
+          "adjustments"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "batchId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "batchId",
+                    "total",
+                    "current",
+                    "released",
+                    "unreleased",
+                    "ended"
+                  ],
+                  "properties": {
+                    "batchId": {
+                      "type": "string"
+                    },
+                    "total": {
+                      "type": "integer"
+                    },
+                    "current": {
+                      "type": "integer"
+                    },
+                    "released": {
+                      "type": "integer"
+                    },
+                    "unreleased": {
+                      "type": "integer"
+                    },
+                    "ended": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/adjustment-migration-batches/{batchId}/release": {
+      "post": {
+        "operationId": "createAdjustmentMigrationBatchesByBatchIdRelease",
+        "tags": [
+          "adjustments"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "expectedCount",
+                  "reconciliationReference"
+                ],
+                "properties": {
+                  "expectedCount": {
+                    "minimum": 0,
+                    "description": "The number of current adjustments the legacy report shows for this batch",
+                    "type": "integer"
+                  },
+                  "reconciliationReference": {
+                    "minLength": 1,
+                    "maxLength": 100,
+                    "description": "The reference of the legacy report the count was checked against. An identifier, never narrative.",
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "batchId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "released",
+                    "alreadyReleased",
+                    "ended"
+                  ],
+                  "properties": {
+                    "released": {
+                      "type": "integer"
+                    },
+                    "alreadyReleased": {
+                      "type": "integer"
+                    },
+                    "ended": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
             "description": "Default Response",
             "content": {
               "application/json": {

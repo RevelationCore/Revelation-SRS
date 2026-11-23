@@ -1,8 +1,9 @@
 import { createHash, randomUUID } from 'node:crypto';
 
-import { and, eq, inArray, isNull } from 'drizzle-orm';
+import { and, eq, gt, inArray, isNull, or, sql } from 'drizzle-orm';
 import {
   adjustmentDistributions,
+  adjustmentMigrationReleases,
   adjustmentRequests,
   enrolments,
   personIdentities,
@@ -15,6 +16,7 @@ import {
 import { DocumentNotFoundError, type RetrievedDocument } from '@revelation-srs/documents';
 import {
   ConflictError,
+  DomainError,
   EVENT_TYPES,
   NotFoundError,
   ValidationError,
@@ -140,6 +142,33 @@ export interface AdjustmentDistributionDto {
   updatedAt: Date;
 }
 
+export interface MigrationBatchSummary {
+  batchId: string;
+  /** Every version recorded in the batch. */
+  total: number;
+  /** Current versions: what expectedCount is checked against. */
+  current: number;
+  released: number;
+  /** Current, in force or future, and not yet released. */
+  unreleased: number;
+  /** Current but ended before release; never distributed. */
+  ended: number;
+}
+
+export interface MigrationBatchRelease {
+  released: number;
+  alreadyReleased: number;
+  ended: number;
+}
+
+/** 409: the batch does not hold the number of adjustments the legacy report says. */
+export class MigrationCountMismatchError extends DomainError {
+  constructor(actual: number, expected: number) {
+    super(`This batch holds ${actual} current adjustments, not ${expected}; reconcile it against the legacy report before releasing`, 'migration-count-mismatch', 409);
+    this.name = 'MigrationCountMismatchError';
+  }
+}
+
 const TARGET_SYSTEMS_BY_SCOPE: Record<string, string[]> = {
   all: ['vle', 'attendance', 'exams'],
   coursework: ['vle'],
@@ -238,29 +267,7 @@ export class AdjustmentService {
         manualProposalId: authority.kind === 'manual-proposal' ? authority.proposalId : null,
       });
 
-      // One distribution per target the tenant delivers to. A 'not-used'
-      // target gets none; manual and file targets are issued straight away
-      // (a task in the queue, or the next file exchange), so only connected
-      // targets wait for the dispatcher to publish an event.
-      const modes = await this.targetConfig.modesIn(tx, tenantId);
-      const delivered = targetSystems
-        .map((targetSystem) => ({ targetSystem, mode: isAdjustmentTarget(targetSystem) ? modes[targetSystem] : 'connected' }))
-        .filter((t) => t.mode !== 'not-used');
-      if (delivered.length > 0) {
-        await tx.insert(adjustmentDistributions).values(delivered.map(({ targetSystem, mode }) => ({
-          id: randomUUID(),
-          tenantId: tenantId as `${string}-${string}-${string}-${string}-${string}`,
-          adjustmentId,
-          targetSystem,
-          fulfilmentModeCode: mode,
-          statusCode: 'pending',
-          distributedAt: null,
-          failureReason: null,
-          requestPublishedAt: mode === 'connected' ? null : now,
-          createdAt: now,
-          updatedAt: now,
-        })));
-      }
+      await this.#createDistributions(tx, tenantId, adjustmentId, targetSystems, now);
 
       if (inTransaction) await inTransaction(tx, adjustmentId);
       return { adjustmentId, replayed: false };
@@ -273,26 +280,10 @@ export class AdjustmentService {
     }
     const { adjustmentId } = result;
 
-    if (this.eventBus.isConnected()) {
-      const payload: AdjustmentApprovedV1Payload = {
-        adjustmentId,
-        enrolmentId: input.enrolmentId,
-        personId,
-        adjustmentTypeCode: input.adjustmentTypeCode,
-        scopeCode: input.scopeCode,
-        ...(input.amount ? { amount: { value: input.amount.value, unitCode: input.amount.unitCode } } : {}),
-        validFrom: validFrom.toISOString(),
-        ...(validTo ? { validTo: validTo.toISOString() } : {}),
-      };
-      await this.eventBus.publish(
-        EVENT_TYPES.ADJUSTMENT_APPROVED,
-        '1.0.0',
-        tenantId,
-        actorId,
-        'sensitive',
-        payload,
-      );
-    }
+    await this.#publishApproved(tenantId, actorId, {
+      adjustmentId, enrolmentId: input.enrolmentId, personId, adjustmentTypeCode: input.adjustmentTypeCode,
+      scopeCode: input.scopeCode, amount: input.amount ?? null, validFrom, validTo,
+    });
 
     // Instruct each target. Failures leave the rows due; the worker's
     // reconcile loop republishes them.
@@ -310,6 +301,98 @@ export class AdjustmentService {
     await this.#ensurePersonExists(personId, tenantId);
     await this.#ensureEnrolmentBelongsToPerson(input.enrolmentId, personId, tenantId);
     await this.#validateInput(tenantId, input);
+  }
+
+  /**
+   * A migration batch (ADR-033 item 7): its current adjustments, how many are
+   * released, how many are still to release, and how many have ended.
+   */
+  async summariseMigrationBatch(tenantId: string, batchId: string): Promise<MigrationBatchSummary> {
+    return withTenantContext(this.db, tenantId, (tx) => this.#summarise(tx, tenantId, batchId));
+  }
+
+  /**
+   * Distributes a reconciled migration batch: for each current adjustment in
+   * the batch still in force and not yet released, the same per-target
+   * distributions a newly approved adjustment gets, and its approved event.
+   * Ended adjustments are skipped. expectedCount must equal the batch's
+   * current adjustments (SME-8), and the release names the legacy report it
+   * was checked against. Safe to repeat: a released adjustment is skipped.
+   */
+  async releaseMigrationBatch(
+    tenantId: string,
+    batchId: string,
+    input: { expectedCount: number; reconciliationReference: string },
+    actorId: string,
+  ): Promise<MigrationBatchRelease> {
+    const reference = input.reconciliationReference.trim();
+    if (reference.length < 1 || reference.length > 100) {
+      throw new ValidationError('reconciliationReference must be 1 to 100 characters', [{ field: 'reconciliationReference', message: 'The reference of the legacy report the count was checked against' }]);
+    }
+    const now = clockNow();
+    const outcome = await withTenantContext(this.db, tenantId, async (tx) => {
+      // One release of a batch at a time.
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${`adjustment-migration-batch:${batchId}`}))`);
+      const summary = await this.#summarise(tx, tenantId, batchId);
+      if (summary.current !== input.expectedCount) throw new MigrationCountMismatchError(summary.current, input.expectedCount);
+
+      const toRelease = await tx.select().from(reasonableAdjustments)
+        .leftJoin(adjustmentMigrationReleases, and(
+          eq(adjustmentMigrationReleases.tenantId, reasonableAdjustments.tenantId),
+          eq(adjustmentMigrationReleases.adjustmentId, reasonableAdjustments.id),
+        ))
+        .where(and(
+          eq(reasonableAdjustments.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
+          eq(reasonableAdjustments.migrationBatchId, batchId as `${string}-${string}-${string}-${string}-${string}`),
+          isNull(reasonableAdjustments.recordedUntil),
+          isNull(adjustmentMigrationReleases.adjustmentId),
+          or(isNull(reasonableAdjustments.validTo), gt(reasonableAdjustments.validTo, now)),
+        ));
+      for (const { reasonable_adjustment: a } of toRelease) {
+        await this.#createDistributions(tx, tenantId, a.id, this.#targetSystemsForScope(a.scopeCode), now);
+        await tx.insert(adjustmentMigrationReleases).values({
+          tenantId: tenantId as `${string}-${string}-${string}-${string}-${string}`,
+          adjustmentId: a.id, migrationBatchId: batchId as `${string}-${string}-${string}-${string}-${string}`,
+          reconciliationReference: reference, releasedBy: actorId, releasedAt: now,
+        });
+      }
+      return { released: toRelease.map((r) => r.reasonable_adjustment), summary };
+    });
+
+    for (const a of outcome.released) {
+      await this.#publishApproved(tenantId, actorId, {
+        adjustmentId: a.id, enrolmentId: a.enrolmentId, personId: a.personId, adjustmentTypeCode: a.adjustmentTypeCode,
+        scopeCode: a.scopeCode, amount: amountFromRow(a), validFrom: a.validFrom, validTo: a.validTo,
+      });
+    }
+    if (outcome.released.length > 0) await this.dispatcher.dispatchTenant(tenantId);
+    return {
+      released: outcome.released.length,
+      alreadyReleased: outcome.summary.released,
+      ended: outcome.summary.ended,
+    };
+  }
+
+  async #summarise(tx: TenantScopedDb, tenantId: string, batchId: string): Promise<MigrationBatchSummary> {
+    const now = clockNow();
+    const rows = await tx.select({
+      validTo: reasonableAdjustments.validTo,
+      recordedUntil: reasonableAdjustments.recordedUntil,
+      releasedAt: adjustmentMigrationReleases.releasedAt,
+    }).from(reasonableAdjustments)
+      .leftJoin(adjustmentMigrationReleases, and(
+        eq(adjustmentMigrationReleases.tenantId, reasonableAdjustments.tenantId),
+        eq(adjustmentMigrationReleases.adjustmentId, reasonableAdjustments.id),
+      ))
+      .where(and(
+        eq(reasonableAdjustments.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
+        eq(reasonableAdjustments.migrationBatchId, batchId as `${string}-${string}-${string}-${string}-${string}`),
+      ));
+    if (rows.length === 0) throw new NotFoundError('AdjustmentMigrationBatch', batchId);
+    const current = rows.filter((r) => r.recordedUntil === null);
+    const ended = current.filter((r) => r.validTo !== null && r.validTo <= now && r.releasedAt === null).length;
+    const released = current.filter((r) => r.releasedAt !== null).length;
+    return { batchId, total: rows.length, current: current.length, released, unreleased: current.length - released - ended, ended };
   }
 
   async listAdjustments(
@@ -813,6 +896,51 @@ export class AdjustmentService {
         throw err;
       }
     });
+  }
+
+  /**
+   * One distribution per target the tenant delivers to. A 'not-used' target
+   * gets none; manual and file targets are issued straight away (a task in the
+   * queue, or the next file exchange), so only connected targets wait for the
+   * dispatcher to publish an event.
+   */
+  async #createDistributions(tx: TenantScopedDb, tenantId: string, adjustmentId: string, targetSystems: string[], now: Date): Promise<void> {
+    const modes = await this.targetConfig.modesIn(tx, tenantId);
+    const delivered = targetSystems
+      .map((targetSystem) => ({ targetSystem, mode: isAdjustmentTarget(targetSystem) ? modes[targetSystem] : 'connected' }))
+      .filter((t) => t.mode !== 'not-used');
+    if (delivered.length === 0) return;
+    await tx.insert(adjustmentDistributions).values(delivered.map(({ targetSystem, mode }) => ({
+      id: randomUUID(),
+      tenantId: tenantId as `${string}-${string}-${string}-${string}-${string}`,
+      adjustmentId,
+      targetSystem,
+      fulfilmentModeCode: mode,
+      statusCode: 'pending',
+      distributedAt: null,
+      failureReason: null,
+      requestPublishedAt: mode === 'connected' ? null : now,
+      createdAt: now,
+      updatedAt: now,
+    })));
+  }
+
+  async #publishApproved(tenantId: string, actorId: string, a: {
+    adjustmentId: string; enrolmentId: string; personId: string; adjustmentTypeCode: string; scopeCode: string;
+    amount: AdjustmentAmountV1 | null; validFrom: Date; validTo: Date | null;
+  }): Promise<void> {
+    if (!this.eventBus.isConnected()) return;
+    const payload: AdjustmentApprovedV1Payload = {
+      adjustmentId: a.adjustmentId,
+      enrolmentId: a.enrolmentId,
+      personId: a.personId,
+      adjustmentTypeCode: a.adjustmentTypeCode,
+      scopeCode: a.scopeCode,
+      ...(a.amount ? { amount: { value: a.amount.value, unitCode: a.amount.unitCode } } : {}),
+      validFrom: a.validFrom.toISOString(),
+      ...(a.validTo ? { validTo: a.validTo.toISOString() } : {}),
+    };
+    await this.eventBus.publish(EVENT_TYPES.ADJUSTMENT_APPROVED, '1.0.0', tenantId, actorId, 'sensitive', payload);
   }
 
   async #validateInput(tenantId: string, input: RecordAdjustmentInput): Promise<void> {
