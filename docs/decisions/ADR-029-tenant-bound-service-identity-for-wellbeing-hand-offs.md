@@ -1,6 +1,6 @@
 # ADR-029: Tenant-Bound Service Identity for the Wellbeing-to-Core Hand-offs
 
-**Status**: Accepted; item 3 amended by [ADR-033](ADR-033-authority-for-recording-a-core-adjustment.md) (2026-11-22)
+**Status**: Accepted; item 3 amended by [ADR-033](ADR-033-authority-for-recording-a-core-adjustment.md) (2026-11-22) and by [ADR-034](ADR-034-authority-for-withdrawing-a-core-adjustment.md) (2026-11-23: a third permission, `adjustment:withdraw-approved`)
 **Date**: 2026-11-21
 **Amends**: [ADR-028](ADR-028-exceptional-circumstances-decision-authority.md) item 8 (the holder of `circumstances:record-determined` changes from `integration-service` to the new `wellbeing-service` role)
 **Follows**: [ADR-006](ADR-006-identity-provider.md) (Keycloak); [ADR-017](ADR-017-minimum-necessary-outcomes-and-restricted-evidence.md) (minimum-necessary outcomes); [ADR-026](ADR-026-browser-sessions-through-a-backend-for-frontend.md) (BFF, realm settings)

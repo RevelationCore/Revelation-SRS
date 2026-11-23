@@ -306,6 +306,7 @@ Full developer setup guide, including troubleshooting and monorepo commands: [do
 | [ADR-031](docs/decisions/ADR-031-governed-identity-merge-and-propagation.md) | Governed, reversible identity merge and its propagation |
 | [ADR-032](docs/decisions/ADR-032-tenant-bound-service-identity-for-the-vle-connector.md) | Tenant-bound service identity for the VLE connector |
 | [ADR-033](docs/decisions/ADR-033-authority-for-recording-a-core-adjustment.md) | Authority for recording a core reasonable adjustment: service hand-off, or a second person approves a manual proposal |
+| [ADR-034](docs/decisions/ADR-034-authority-for-withdrawing-a-core-adjustment.md) | Authority for withdrawing a core reasonable adjustment: through its case, by a second person, or when the enrolment ends |
 
 ---
 
