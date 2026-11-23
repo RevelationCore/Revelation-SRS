@@ -353,7 +353,7 @@ export async function buildApp(
     idleInTransactionTimeoutMs: config.dbIdleInTransactionTimeoutMs ?? 60_000,
   });
   const audit      = new AuditService(db);
-  const rules      = new RulesEngine(db);
+  const rules      = new RulesEngine(db, { nodeEnv: config.nodeEnv, log: fastify.log });
   const valueSets  = new ValueSetService(db);
   const eventBus   = overrides.eventBus ?? new IntegrationBusPublisher(config.natsUrl);
   // ADR-030: every upload is scanned before it is stored. The configuration

@@ -36,7 +36,7 @@ These findings, checked on `main` at bf3d3e2, changed the plan's assumptions:
 
 **Why.** Principles 5 and 13; ADR-020; BP-05-005, BP-06-001/002 need explainable results.
 
-**Configurable.** `rules.builtInDefaults` = `allow` or `refuse`. Since 2026-11-22 (BL-179) an unset value means `refuse` for every tenant except a demo tenant (`demo_mode`), which allows them unless it says `refuse`. A real tenant that wants the built-in values must set `allow` explicitly.
+**Configurable.** `rules.builtInDefaults` = `allow` or `refuse`. Since 2026-11-22 (BL-179) an unset value means `refuse` for every tenant except a demo tenant (`demo_mode`), which allows them unless it says `refuse`. A real tenant cannot use them at all (SME-9, BL-391, 2026-11-23): setting `allow` on a tenant that is not a demo tenant is refused (422), and the engine ignores it outside development and test. A real tenant configures its rules per programme; the D-35 values ship only as a starter rule set (SME-10, BL-392).
 
 **Institution must confirm.** Whether built-in defaults are acceptable in production (recommended: `refuse`); its pass mark, classification boundaries and algorithm; which award-credit and discretion-zone rules apply.
 

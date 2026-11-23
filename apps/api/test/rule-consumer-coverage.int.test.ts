@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { RULE_TYPE_DOMAIN, type RuleTypeCode } from '../src/platform/rules-engine/engine.js';
+import { RULE_TYPE_DOMAIN, RulesEngine, type RuleTypeCode } from '../src/platform/rules-engine/engine.js';
 
 import { startTestApp, type TestApp } from './helpers/test-app.js';
 
@@ -131,7 +131,7 @@ describe('Rule consumer coverage (Phase 5 D-35)', () => {
 });
 
 describe('Built-in defaults (D-35)', () => {
-  it('refuses built-in defaults unless the tenant allows them, or is a demo tenant (BL-179)', async () => {
+  it('refuses built-in defaults outside demo tenants, and a real tenant cannot opt in (BL-179, BL-391)', async () => {
     // A tenant as a real institution starts: no rules configured, no setting.
     const tenantId = randomUUID();
     await ctx.db.execute(sql`INSERT INTO tenant (id, code, name, active) VALUES (${tenantId}, 'BL179', 'Unconfigured University', true)`);
@@ -156,17 +156,32 @@ describe('Built-in defaults (D-35)', () => {
 
     await expectRefused();                       // the default for a real tenant
 
-    await call('PATCH', '/api/v1/tenant/configuration', { rules: { builtInDefaults: 'allow' } }, tAdmin);
-    await expectBuiltIn();                       // allowed explicitly, and recorded as built-in
+    // A real tenant cannot opt in (SME-9, BL-391).
+    const optIn = await ctx.app.inject({ method: 'PATCH', url: '/api/v1/tenant/configuration', headers: { authorization: `Bearer ${tAdmin}` }, payload: { rules: { builtInDefaults: 'allow' } } });
+    expect(optIn.statusCode).toBe(422);
+    await expectRefused();
+
+    // Set behind the route's back, 'allow' is ignored outside development and test.
+    await ctx.db.execute(sql`UPDATE tenant SET configuration = jsonb_set(configuration, '{rules}', '{"builtInDefaults":"allow"}') WHERE id = ${tenantId}`);
+    const warnings: string[] = [];
+    const production = new RulesEngine(ctx.db, { nodeEnv: 'production', log: { warn: (_o, msg) => warnings.push(msg) } });
+    const ruleCtx = { tenantId, programmeId: randomUUID() };
+    await expect(production.builtInDefault(ruleCtx, 'classification-boundary', 'undergraduate', {})).rejects.toThrow(/built-in defaults refused/);
+    expect(warnings).toEqual([expect.stringMatching(/ignored outside demo tenants/)]);
+    expect(await new RulesEngine(ctx.db, { nodeEnv: 'test' }).builtInDefault(ruleCtx, 'classification-boundary', 'undergraduate', 1)).toBe(1);
+    await expectBuiltIn();                       // the test API itself runs under NODE_ENV=test
 
     await call('PATCH', '/api/v1/tenant/configuration', { rules: { builtInDefaults: 'refuse' } }, tAdmin);
     await expectRefused();
 
-    // A demo tenant allows them unless it says otherwise.
+    // A demo tenant allows them unless it says otherwise, and may opt in.
     await ctx.db.execute(sql`UPDATE tenant SET demo_mode = true, configuration = configuration #- '{rules,builtInDefaults}' WHERE id = ${tenantId}`);
     await expectBuiltIn();
+    expect(await production.builtInDefault(ruleCtx, 'classification-boundary', 'undergraduate', 2)).toBe(2);
     await call('PATCH', '/api/v1/tenant/configuration', { rules: { builtInDefaults: 'refuse' } }, tAdmin);
     await expectRefused();
+    await call('PATCH', '/api/v1/tenant/configuration', { rules: { builtInDefaults: 'allow' } }, tAdmin);
+    await expectBuiltIn();
   });
 
   it('a progression decision whose evidence cannot be written is not recorded', async () => {

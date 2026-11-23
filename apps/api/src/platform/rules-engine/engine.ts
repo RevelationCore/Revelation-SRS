@@ -173,11 +173,24 @@ function citationOf<T>(ruleType: string, ruleKey: string, p: RuleWithProvenance<
  *
  * See docs/architecture/configuration-rules-framework.md.
  */
+/** Where `allow` may be honoured on a non-demo tenant; also used by the configuration route. */
+export function isDevOrTest(nodeEnv: string | undefined): boolean {
+  return nodeEnv === 'development' || nodeEnv === 'test';
+}
+
 export class RulesEngine {
   // In-memory cache per tenant, 5 minute TTL
   private cache = new Map<string, { value: unknown; expiresAt: number }>();
 
-  constructor(private readonly db: Db) {}
+  constructor(
+    private readonly db: Db,
+    /**
+     * Where `rules.builtInDefaults = 'allow'` is honoured on a tenant that is
+     * not a demo tenant: development and test only (SME-9). Elsewhere it is
+     * treated as `refuse`, with a warning.
+     */
+    private readonly opts: { nodeEnv?: string; log?: { warn: (obj: object, msg: string) => void } } = {},
+  ) {}
 
   async getRule<T>(
     ctx:      RuleContext,
@@ -280,17 +293,23 @@ export class RulesEngine {
    * Built-in defaults are refused unless the tenant allows them (BL-179):
    * the undergraduate pass mark and boundaries would otherwise apply silently
    * to, say, an unconfigured level 7 programme. A demo tenant allows them
-   * unless it says otherwise; every other tenant must set
-   * `rules.builtInDefaults` to `allow` to use them.
+   * unless it says `refuse`. A production tenant never uses them (SME-9,
+   * BL-391): `allow` is honoured on a non-demo tenant only in development
+   * and test, where the test suites rely on it.
    */
   async #refusesBuiltInDefaults(tenantId: string): Promise<boolean> {
     const [row] = await this.db.select({ configuration: tenants.configuration, demoMode: tenants.demoMode }).from(tenants)
       .where(eq(tenants.id, tenantId as `${string}-${string}-${string}-${string}-${string}`)).limit(1);
     const rules = (row?.configuration?.['rules'] ?? {}) as Record<string, unknown>;
     const setting = rules['builtInDefaults'];
-    if (setting === 'allow') return false;
+    const demo = row?.demoMode === true;
     if (setting === 'refuse') return true;
-    return row?.demoMode !== true;
+    if (setting === 'allow') {
+      if (demo || isDevOrTest(this.opts.nodeEnv)) return false;
+      this.opts.log?.warn({ tenantId }, "rules.builtInDefaults = 'allow' is ignored outside demo tenants (SME-9); built-in defaults are refused");
+      return true;
+    }
+    return !demo;
   }
 
   /** Invalidate cache for a tenant (call when a rule is updated). */
