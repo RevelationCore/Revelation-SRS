@@ -56,4 +56,19 @@ describe('CAS cases on the UKVI page (D-16)', () => {
     await userEvent.type(screen.getByLabelText(/CAS number/), 'E4G1H2J3K4L5M6');
     expect(record).toBeEnabled();
   });
+
+  it('BL-403: without cas:read (the DPO) there is no CAS tab and no CAS request; compliance alerts open first', async () => {
+    let casRequested = false;
+    server.use(
+      ...handlers([]),
+      http.get(`${API}/api/v1/regulatory/cas-cases`, () => { casRequested = true; return HttpResponse.json({ type: 'forbidden' }, { status: 403 }); }),
+      http.get(`${API}/api/v1/regulatory/ukvi/compliance-alerts`, () => HttpResponse.json([])),
+    );
+    const { container } = renderWithProviders(<UkviPage />, { roles: ['dpo'] });
+    expect(await screen.findByText('No compliance alerts.')).toBeVisible();
+    expect(screen.queryByRole('tab', { name: 'CAS' })).toBeNull();
+    expect(screen.getByRole('tab', { name: 'Compliance alerts' })).toHaveAttribute('aria-selected', 'true');
+    expect(casRequested).toBe(false);
+    await expectNoA11yViolations(container);
+  });
 });
