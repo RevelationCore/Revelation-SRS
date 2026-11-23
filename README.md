@@ -70,6 +70,8 @@ Revelation SRS is a fully open source Student Information System designed specif
 | [Technology Stack](docs/decisions/technology-stack.md) | Complete stack summary with licence and ADR references |
 | [ADR Index](#architecture-decision-records) | All architecture decision records |
 | [Gap-closure decisions](docs/decisions/phase-5-gap-closure-decisions.md) | Decision records for each delivery phase ([1](docs/decisions/phase-1-gap-closure-decisions.md), [2](docs/decisions/phase-2-gap-closure-decisions.md), [3](docs/decisions/phase-3-gap-closure-decisions.md), [4](docs/decisions/phase-4-gap-closure-decisions.md), [5](docs/decisions/phase-5-gap-closure-decisions.md)) |
+| [SME delegate decisions](docs/decisions/sme-delegate-decisions-2026-11-23.md) | Policy defaults decided by the AI SME delegate on 2026-11-23 (ADR-030, ADR-031, ADR-033, built-in rule defaults), open to ratification |
+| [Institution adoption checklist](docs/product/institution-adoption-checklist.md) | What an adopting institution must supply before go-live, and the safe default until then |
 
 ---
 
@@ -300,8 +302,8 @@ Full developer setup guide, including troubleshooting and monorepo commands: [do
 | [ADR-027](docs/decisions/ADR-027-shared-runtime-state-in-postgresql.md) | Shared runtime state (invalidation, notification fan-out, rate limits, job locks) in PostgreSQL |
 | [ADR-028](docs/decisions/ADR-028-exceptional-circumstances-decision-authority.md) | Exceptional-circumstances decision authority and separation of duties |
 | [ADR-029](docs/decisions/ADR-029-tenant-bound-service-identity-for-wellbeing-hand-offs.md) | Tenant-bound service identity for the wellbeing-to-core hand-offs |
-| [ADR-030](docs/decisions/ADR-030-malware-scanning-of-uploaded-documents.md) | Malware scanning of uploaded documents; fail closed; never serve an unscanned document (Proposed) |
-| [ADR-031](docs/decisions/ADR-031-governed-identity-merge-and-propagation.md) | Governed, reversible identity merge and its propagation (Proposed) |
+| [ADR-030](docs/decisions/ADR-030-malware-scanning-of-uploaded-documents.md) | Malware scanning of uploaded documents; fail closed; never serve an unscanned document (Accepted) |
+| [ADR-031](docs/decisions/ADR-031-governed-identity-merge-and-propagation.md) | Governed, reversible identity merge and its propagation |
 | [ADR-032](docs/decisions/ADR-032-tenant-bound-service-identity-for-the-vle-connector.md) | Tenant-bound service identity for the VLE connector |
 | [ADR-033](docs/decisions/ADR-033-authority-for-recording-a-core-adjustment.md) | Authority for recording a core reasonable adjustment: service hand-off, or a second person approves a manual proposal |
 

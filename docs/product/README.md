@@ -5,6 +5,7 @@
 
 - [Current capabilities](current-capabilities.md) — authoritative implemented/partial/proposed status.
 - [Backlog](backlog.md) — the one list of outstanding work ([`backlog.csv`](backlog.csv), filterable in Excel), kept in step with the readiness plan and the process pages' open questions by `pnpm check:backlog`.
+- [Institution adoption checklist](institution-adoption-checklist.md) — what an adopting institution must supply before go-live or before enabling a feature, the safe default until then, and how the product enforces it.
 - [UK HE business processes](../business-processes/README.md) — researched target processes.
 - [Academic journey gap-closure plan](academic-journey-gap-closure-plan.md) — the five phases, now delivered, that brought all 49 academic-journey processes into the app, with links to each phase's decisions.
 - [Academic journey narrative catalogue](academic-journey-narrative-catalogue.md) — proposed high-level stories, interlocking outcomes, coverage of all reference-model systems/interactions and candidate gaps to investigate.
