@@ -172,4 +172,14 @@ data:
         max_ttl=24h
     done
 
+    # Secrets the platform generates itself: created when absent, never
+    # overwritten (rotation is a deliberate `bao kv put`), never printed.
+    # BL-184: the key for the public verification IP hash, 64 hex characters.
+    if bao kv get -field=ip_key kv/srs/api/public-verify >/dev/null 2>&1; then
+      echo "kv/srs/api/public-verify already set"
+    else
+      echo "Generating kv/srs/api/public-verify"
+      bao kv put kv/srs/api/public-verify ip_key="$(head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n')" >/dev/null
+    fi
+
     echo "OpenBao policy and role setup complete."

@@ -10,7 +10,10 @@
 // - every container command that runs `node <file>` names an entry point
 //   the service's source compiles to (src/<name>.ts -> dist/<name>.js);
 // - in production, NATS runs at least 3 nodes and SRS_EVENTS has as many
-//   replicas.
+//   replicas;
+// - every OpenBao secret a pod injects is readable under its role's policy,
+//   and every secret file a start command reads is injected (BL-184): a
+//   missing grant leaves the pod waiting on its init container.
 import { execFileSync } from 'node:child_process';
 import { existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -124,6 +127,33 @@ for (const target of targets) {
     if (JSON.stringify([...from].sort()) !== JSON.stringify(['srs-admin-bff', 'srs-api', 'srs-portal-bff'])) errors.push(`${target}: allow-ingress-to-wellbeing must admit exactly srs-api and the two BFFs, not ${from.join(', ')}`);
     for (const app of ['admin', 'portal']) {
       if (!docs.some((x) => x.kind === 'Deployment' && x.metadata.name.endsWith(`srs-${app}-bff`))) errors.push(`${target}: Deployment srs-${app}-bff is missing`);
+    }
+  }
+  // OpenBao: injected secrets are readable under the pod's role's policy.
+  {
+    const policies = docs.find((x) => x.kind === 'ConfigMap' && x.metadata.name.endsWith('srs-openbao-policies'))?.data ?? {};
+    // apply-policies.sh: role srs-<svc> uses policy-<svc>.hcl; srs-vle-adapter uses policy-adapter.hcl.
+    const policyFor = (role) => policies[`policy-${role === 'srs-vle-adapter' ? 'adapter' : role.replace(/^srs-/, '')}.hcl`];
+    for (const d of docs.filter((x) => x.kind === 'Deployment' || x.kind === 'StatefulSet')) {
+      const ann = d.spec.template.metadata?.annotations ?? {};
+      if (ann['vault.hashicorp.com/agent-inject'] !== 'true') continue;
+      const role = ann['vault.hashicorp.com/role'];
+      const policy = role ? policyFor(role) : undefined;
+      if (!policy) { errors.push(`${target}: ${d.metadata.name} injects OpenBao secrets under role ${role ?? '(none)'}, which has no policy`); continue; }
+      const granted = new Set([...policy.matchAll(/path\s+"([^"]+)"/g)].map((m) => m[1]));
+      const injected = new Set();
+      for (const [k, v] of Object.entries(ann)) {
+        const m = /^vault\.hashicorp\.com\/agent-inject-secret-(.+)$/.exec(k);
+        if (!m) continue;
+        injected.add(m[1]);
+        if (!granted.has(v)) errors.push(`${target}: ${d.metadata.name} injects ${v}, but policy for ${role} does not grant it`);
+      }
+      for (const c of d.spec.template.spec.containers) {
+        const cmd = [...(c.command ?? []), ...(c.args ?? [])].join(' ');
+        for (const m of cmd.matchAll(/\/vault\/secrets\/([\w-]+)/g)) {
+          if (!injected.has(m[1])) errors.push(`${target}: ${d.metadata.name} reads /vault/secrets/${m[1]}, which is not injected`);
+        }
+      }
     }
   }
   if (target === 'overlays/production') {
