@@ -101,6 +101,18 @@ describe('OfS reporting and FOI support', () => {
     );
   });
 
+  it('BL-178 (F-1): an institution closure inside the period does not move the FOI deadline (FOIA s.10(6))', async () => {
+    const admin = await ctx.makeJwt({ roles: ['tenant-administrator'] });
+    expect((await ctx.app.inject({ method: 'POST', url: '/api/v1/calendar/non-working-days', headers: { authorization: `Bearer ${admin}` }, payload: { date: '2029-03-14', description: 'Institution closure' } })).statusCode).toBe(201);
+    const created = await ctx.app.inject({
+      method: 'POST', url: '/api/v1/regulatory/foi/requests', headers: { authorization: `Bearer ${jwt}` },
+      payload: { requestReference: 'FOI-2029-CLOSURE', receivedDate: '2029-03-01', description: 'Closure in the period' },
+    });
+    expect(created.statusCode).toBe(201);
+    // 20 working days from Thursday 1 March 2029, with no bank holiday: Thursday 29 March.
+    expect(created.json<{ statutoryDeadlineDate: string }>().statutoryDeadlineDate).toBe('2029-03-29');
+  });
+
   it('records FOI requests with a 20-working-day statutory deadline and generates aggregate extracts', async () => {
     await createEnrolment('Foi', 'Aggregate', '2029-30');
 

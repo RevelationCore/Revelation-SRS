@@ -142,7 +142,7 @@ export class UcasDecisionOutbox {
     const items: UcasOutboundItem[] = [];
     for (const r of rows as IntegrationExchange[]) items.push(await (async (): Promise<UcasOutboundItem> => {
       const s = r.payloadSummary as Record<string, unknown>;
-      const overdue = r.statusCode === 'sent' && r.sentAt !== null && (await addWorkingDaysFor(this.db, tenantId, r.sentAt, limit)) < now;
+      const overdue = r.statusCode === 'sent' && r.sentAt !== null && (await addWorkingDaysFor(this.db, tenantId, r.sentAt, limit, 'institutional')) < now;
       return {
         exchangeId: r.id, applicationId: String(s['applicationId']), sourceReference: String(s['sourceReference']), outcome: String(s['outcome']),
         ucasCode: crosswalk.get(String(s['outcome']))?.ucasCode ?? null, statusCode: r.statusCode, queuedAt: r.createdAt, sentAt: r.sentAt,
