@@ -5,7 +5,7 @@
  */
 import { randomUUID } from 'node:crypto';
 
-import { EVENT_TYPES, PERMISSION_ROLES } from '@revelation-srs/domain';
+import { EVENT_TYPES } from '@revelation-srs/domain';
 import { sql } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
@@ -92,29 +92,7 @@ async function coreRowsFor(personId: string): Promise<{ adjustments: number; dis
   return (r as unknown as Array<{ adjustments: number; distributions: number }>)[0]!;
 }
 
-describe('who holds the authority permissions', () => {
-  const holders = (p: keyof typeof PERMISSION_ROLES) => [...(PERMISSION_ROLES[p] as string[])].sort();
-
-  it('only the wellbeing service records a case adjustment; only an approver approves a manual one', () => {
-    expect(holders('adjustment:record-approved')).toEqual(['wellbeing-service']);
-    expect(holders('adjustment:approve-manual')).toEqual(['adjustment-approver']);
-    expect(holders('adjustment:release-migrated')).toEqual(['adjustment-approver']);
-  });
-
-  it('SME-6: registry and adjustment-proposer propose; never a wellbeing adviser or an approver', () => {
-    expect(holders('adjustment:propose')).toEqual(['adjustment-proposer', 'registry-administrator']);
-  });
-
-  it('no role holds both adjustment:propose and adjustment:approve-manual', () => {
-    const both = holders('adjustment:propose').filter((r) => holders('adjustment:approve-manual').includes(r));
-    expect(both).toEqual([]);
-  });
-
-  it('adjustment-proposer holds adjustment:propose and nothing else', () => {
-    const held = Object.entries(PERMISSION_ROLES).filter(([, roles]) => (roles as string[]).includes('adjustment-proposer')).map(([p]) => p);
-    expect(held).toEqual(['adjustment:propose']);
-  });
-});
+// Who holds which permission: test/architecture/adjustment-permissions.test.ts.
 
 describe('POST /students/:personId/adjustments (service only)', () => {
   it('refuses registry administrators and wellbeing advisers', async () => {

@@ -41,6 +41,8 @@ describe('adjustment provenance (ADR-033)', () => {
   it('refuses a provenance without its reference, and an unknown one', async () => {
     await expect(insert('wellbeing-case', {})).rejects.toThrow();
     await expect(insert('manual-approved', {})).rejects.toThrow();
+    // 0009: the proposal must exist (foreign key to adjustment_proposal).
+    await expect(insert('manual-approved', { manualProposalId: randomUUID() })).rejects.toMatchObject({ cause: { constraint_name: 'reasonable_adjustment_manual_proposal_fk' } });
     await expect(insert('migrated', { batch: randomUUID() })).rejects.toThrow();
     await expect(insert('made-up', { sourceCaseId: randomUUID() })).rejects.toThrow();
     await expect(insert('migrated', { batch: randomUUID(), ref: 'sits:ADJ-1' })).resolves.toBeDefined();
