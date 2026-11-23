@@ -7,6 +7,7 @@ import type {
   AdjustmentDistributionDto,
   AdjustmentDto,
   AdjustmentTaskDto,
+  CaseWithdrawalReason,
   RecordAdjustmentInput,
   ReplyActor,
 } from '../platform/adjustments/adjustment-service.js';
@@ -42,6 +43,9 @@ const AdjustmentSchema = Type.Object({
   // ADR-033: the authority it was recorded under.
   provenanceCode: Type.String(),
   manualProposalId: Type.Union([Type.String(), Type.Null()]),
+  // ADR-034: set when it was ended early.
+  withdrawalAuthorityCode: Type.Union([Type.String(), Type.Null()]),
+  withdrawalReasonCode: Type.Union([Type.String(), Type.Null()]),
 });
 
 const DistributionSchema = Type.Object({
@@ -68,6 +72,20 @@ const RecordAdjustmentBody = Type.Object({
   validTo: Type.Optional(Type.String({ format: 'date-time' })),
   amount: Type.Optional(AmountSchema),
   sourceCaseId: Type.Optional(Type.String()),
+});
+
+const CaseWithdrawalBody = Type.Object({
+  sourceCaseId: Type.String({ format: 'uuid' }),
+  withdrawalReasonCode: Type.String({ minLength: 1 }),
+  replacementAdjustmentId: Type.Optional(Type.String({ format: 'uuid' })),
+}, { additionalProperties: false });
+
+const WithdrawalResponse = Type.Object({
+  adjustmentId: Type.String(),
+  validTo: Type.String(),
+  withdrawalAuthorityCode: Type.Union([Type.String(), Type.Null()]),
+  withdrawalReasonCode: Type.Union([Type.String(), Type.Null()]),
+  changed: Type.Boolean(),
 });
 
 const ListAdjustmentQuery = Type.Object({
@@ -474,45 +492,53 @@ export function adjustmentRoutes(fastify: FastifyInstance): void {
     },
   );
 
+  // ADR-034 (BL-406): POST /adjustments/:adjustmentId/expire is retired. An
+  // adjustment is ended early only under an authority: its wellbeing case
+  // (below), a withdrawal a second person approved, or the end of its enrolment.
+
   fastify.post(
-    '/adjustments/:adjustmentId/expire',
+    '/students/:personId/adjustments/:adjustmentId/withdrawal',
     {
       schema: {
-        params: Type.Object({ adjustmentId: Type.String() }),
-        response: { 204: Type.Null(), 404: ErrorSchema },
+        params: Type.Object({ personId: Type.String({ format: 'uuid' }), adjustmentId: Type.String({ format: 'uuid' }) }),
+        body: CaseWithdrawalBody,
+        response: { 200: WithdrawalResponse, 400: ErrorSchema, 404: ErrorSchema, 409: ErrorSchema, 422: ErrorSchema },
       },
-      preHandler: [requirePermission('adjustment:write')],
+      // ADR-034 item 4: only the wellbeing service, for the case that recorded it.
+      preHandler: [requirePermission('adjustment:withdraw-approved')],
+      preValidation: async (request, reply) => {
+        const raw = request.body as Record<string, unknown> | undefined;
+        const unknown = raw && typeof raw === 'object' ? Object.keys(raw).filter((k) => !Object.keys(CaseWithdrawalBody.properties).includes(k)) : [];
+        if (unknown.length > 0) {
+          await reply.code(400).type('application/problem+json').send({
+            type: 'https://srs.example.com/errors/bad-request', title: 'Bad request', status: 400,
+            detail: `Not accepted: ${unknown.join(', ')}`, instance: request.url,
+          });
+        }
+      },
     },
     async (request, reply) => {
-      const { adjustmentId } = request.params as { adjustmentId: string };
-      await fastify.adjustmentService.expireAdjustment(adjustmentId, request.tenantId, request.user.sub);
-      // The SRS is itself the 'exams' target: remove the ended arrangement
-      // from entries for exams not yet sat and confirm the withdrawal.
-      await fastify.examEntryService.applyExamWithdrawals(request.tenantId);
-
-      await fastify.audit.record({
-        tenantId: request.tenantId,
-        entityType: 'reasonable_adjustment',
-        entityId: adjustmentId,
-        actionType: 'update',
-        actorType: 'user',
-        actorId: request.user.sub,
-        actorDisplayName: request.user.displayName,
-        correlationId: request.id,
-        reasonText: 'Adjustment expired',
+      const { personId, adjustmentId } = request.params as { personId: string; adjustmentId: string };
+      const body = request.body as { sourceCaseId: string; withdrawalReasonCode: string; replacementAdjustmentId?: string };
+      const adjustment = await fastify.adjustmentService.getAdjustment(adjustmentId, request.tenantId);
+      if (adjustment.personId !== personId) throw new NotFoundError('ReasonableAdjustment', adjustmentId);
+      const result = await fastify.adjustmentService.withdrawAuthorisedAdjustment(request.tenantId, adjustmentId, {
+        kind: 'wellbeing-case', sourceCaseId: body.sourceCaseId, reasonCode: body.withdrawalReasonCode as CaseWithdrawalReason,
+        ...(body.replacementAdjustmentId ? { replacementAdjustmentId: body.replacementAdjustmentId } : {}),
+      }, {
+        actorId: request.user.sub, actorType: 'integration', actorDisplayName: request.user.authorizedParty ?? request.user.displayName, correlationId: request.id,
       });
-
-      await reply.code(204).send();
+      if (result.changed) {
+        // The SRS is itself the 'exams' target; the worker loop is the backstop.
+        try {
+          await fastify.examEntryService.applyExamWithdrawals(request.tenantId);
+        } catch (err) {
+          request.log.warn({ err, adjustmentId }, 'Exam entry withdrawal deferred to the reconcile loop');
+        }
+      }
+      await reply.send({ ...result, validTo: result.validTo.toISOString() });
     },
   );
-
-  // ── Outcome document ────────────────────────────────────────────────────
-  //
-  // Detail document expanding on the coded adjustment (e.g. a specific
-  // seating/equipment/software specification), when type/scope/notes alone
-  // aren't expressive enough. Staff-authored (upload is adjustment:write
-  // only — a student can view but not attach their own "official" outcome
-  // document); download is self-or-all, matching the list route above.
 
   fastify.post(
     '/students/:personId/adjustments/:adjustmentId/outcome-document',

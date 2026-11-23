@@ -33,6 +33,7 @@ import { pino } from 'pino';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { IntegrationBusPublisher } from '../../src/platform/integration-bus/publisher.js';
+import { withdrawApprovedAdjustment } from '../helpers/adjustments.js';
 import { startTestApp, type TestApp } from '../helpers/test-app.js';
 // Other components, imported from their own source — this test sits in the
 // API package only because that is where the SRS test harness lives.
@@ -209,11 +210,8 @@ describe('AJ-21 hand-off: wellbeing → SRS → NATS → VLE adapter → VLE', (
 
   it('expiry withdraws it from the VLE and the SRS records the withdrawal', async () => {
     const vleCourseId = vle.stubVle.stubStore.courses.get(moduleId)!.vleCourseId;
-    const expired = await srs.app.inject({
-      method: 'POST', url: `/api/v1/adjustments/${adjustmentId}/expire`,
-      headers: { authorization: `Bearer ${srsJwt}` },
-    });
-    expect(expired.statusCode).toBe(204);
+    const expired = await withdrawApprovedAdjustment(srs, adjustmentId);
+    expect(expired.statusCode).toBe(200);
 
     await vi.waitFor(async () => {
       expect(vle.stubVle.stubStore.timeAccommodations.has(`${vleCourseId}:${personId}`)).toBe(false);

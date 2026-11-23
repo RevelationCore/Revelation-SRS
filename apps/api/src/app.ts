@@ -242,6 +242,9 @@ function classifyOperation(method: string, url: string): string {
   if (path.includes('/feature-flags') && (path.includes('/assignments') || path.includes('/evaluation-preview'))) return 'admin';
   if (path.startsWith('/integration-contracts') || path.startsWith('/integration-registrations') || path.startsWith('/integration-exchanges')) return 'admin';
 
+  // ADR-034: the wellbeing case's withdrawal hand-off is integration, not the /withdraw workflow command.
+  if (/^\/students\/[^/]+\/adjustments\/[^/]+\/withdrawal$/.test(path)) return 'integration';
+
   // Workflow — commands that trigger state machine transitions
   const WORKFLOW_ACTIONS = [
     '/transitions', '/withdraw', '/graduation',
@@ -419,7 +422,7 @@ export async function buildApp(
     fastify.log.warn({ err, ...context }, 'Adjustment instruction not yet published; it stays due for the reconcile loop');
   });
   const adjustmentTargets = new AdjustmentTargetConfigService(db, valueSets);
-  const adjustments = new AdjustmentService(db, eventBus, valueSets, adjustmentDispatcher, adjustmentTargets, documentStore);
+  const adjustments = new AdjustmentService(db, eventBus, valueSets, adjustmentDispatcher, adjustmentTargets, documentStore, audit);
   const businessCases = new BusinessCaseService(db);
   const auditReview = new AuditReviewService(db, businessCases);
   const identityResolution = new IdentityResolutionService(db, businessCases);

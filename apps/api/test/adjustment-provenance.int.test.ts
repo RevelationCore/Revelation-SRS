@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { recordApprovedAdjustment } from './helpers/adjustments.js';
+import { recordApprovedAdjustment, withdrawApprovedAdjustment } from './helpers/adjustments.js';
 import { startTestApp, type TestApp } from './helpers/test-app.js';
 
 /**
@@ -48,11 +48,31 @@ describe('adjustment provenance (ADR-033)', () => {
     await expect(insert('migrated', { batch: randomUUID(), ref: 'sits:ADJ-1' })).resolves.toBeDefined();
   });
 
-  it('keeps the provenance on the new version an expiry writes', async () => {
+  it('keeps the provenance on the new version a withdrawal writes', async () => {
     const { adjustmentId } = await recordApprovedAdjustment(ctx, person.personId, { enrolmentId: person.enrolmentId, adjustmentTypeCode: 'separate-room', scopeCode: 'exam', validFrom: '2027-09-01T00:00:00.000Z' });
-    expect((await ctx.app.inject({ method: 'POST', url: `/api/v1/adjustments/${adjustmentId}/expire`, headers: { authorization: `Bearer ${jwt}` } })).statusCode).toBe(204);
+    expect((await withdrawApprovedAdjustment(ctx, adjustmentId)).statusCode).toBe(200);
     const rows = await ctx.db.execute(sql`SELECT provenance_code FROM reasonable_adjustment WHERE id = ${adjustmentId}::uuid`) as unknown as Array<{ provenance_code: string }>;
     expect(rows.length).toBeGreaterThan(1);
     expect(new Set(rows.map((r) => r.provenance_code))).toEqual(new Set(['wellbeing-case']));
   });
+
+  it('ADR-034: refuses a withdrawal without its authority, reason or reference, or on the wrong provenance', async () => {
+    const w = (cols: string) => ctx.db.execute(sql.raw(`
+      INSERT INTO reasonable_adjustment (version_id, id, tenant_id, enrolment_id, person_id, adjustment_type_code, scope_code, actor_id, valid_from, recorded_at,
+        provenance_code, source_case_id, ${cols.split('|')[0]})
+      VALUES (gen_random_uuid(), gen_random_uuid(), '${ctx.tenantId}', '${person.enrolmentId}', '${person.personId}', 'separate-room', 'exam', 'test', now() - interval '1 day', now(),
+        'wellbeing-case', gen_random_uuid(), ${cols.split('|')[1]})`));
+    const bad = [
+      "withdrawal_authority_code|'wellbeing-case'",
+      "withdrawal_authority_code, withdrawal_reason_code|'wellbeing-case', 'no-longer-needed'",
+      "valid_to, withdrawal_authority_code, withdrawal_reason_code, withdrawal_id|now(), 'approved-withdrawal', 'no-longer-needed', gen_random_uuid()",
+      "valid_to, withdrawal_authority_code, withdrawal_reason_code|now(), 'wellbeing-case', 'enrolment-ended'",
+      "valid_to, withdrawal_authority_code, withdrawal_reason_code|now(), 'wellbeing-case', 'superseded'",
+      "valid_to, withdrawal_authority_code, withdrawal_reason_code|now(), 'enrolment-ended', 'enrolment-ended'",
+      "valid_to, withdrawal_authority_code, withdrawal_reason_code|now(), 'made-up', 'no-longer-needed'",
+    ];
+    for (const cols of bad) await expect(w(cols), cols).rejects.toMatchObject({ cause: { constraint_name: 'reasonable_adjustment_withdrawal_ck' } });
+    await expect(w("valid_to, withdrawal_authority_code, withdrawal_reason_code|now(), 'wellbeing-case', 'no-longer-needed'")).resolves.toBeDefined();
+  });
 });
+

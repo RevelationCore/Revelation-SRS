@@ -10,6 +10,7 @@ const holders = (p: keyof typeof PERMISSION_ROLES) => [...(PERMISSION_ROLES[p] a
 describe('adjustment authority permissions', () => {
   it('only the wellbeing service records a case adjustment; only an approver approves or releases', () => {
     expect(holders('adjustment:record-approved')).toEqual(['wellbeing-service']);
+    expect(holders('adjustment:withdraw-approved')).toEqual(['wellbeing-service']);
     expect(holders('adjustment:approve-manual')).toEqual(['adjustment-approver']);
     expect(holders('adjustment:release-migrated')).toEqual(['adjustment-approver']);
   });

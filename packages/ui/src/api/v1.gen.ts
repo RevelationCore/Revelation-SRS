@@ -276,7 +276,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/adjustments/{adjustmentId}/expire": {
+    "/api/v1/students/{personId}/adjustments/{adjustmentId}/withdrawal": {
         parameters: {
             query?: never;
             header?: never;
@@ -285,7 +285,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["createAdjustmentsByAdjustmentIdExpire"];
+        post: operations["createStudentsByPersonIdAdjustmentsByAdjustmentIdWithdrawal"];
         delete?: never;
         options?: never;
         head?: never;
@@ -8104,6 +8104,8 @@ export interface operations {
                         outcomeDocumentId: string | null;
                         provenanceCode: string;
                         manualProposalId: string | null;
+                        withdrawalAuthorityCode: string | null;
+                        withdrawalReasonCode: string | null;
                     }[];
                 };
             };
@@ -8272,6 +8274,8 @@ export interface operations {
                         outcomeDocumentId: string | null;
                         provenanceCode: string;
                         manualProposalId: string | null;
+                        withdrawalAuthorityCode: string | null;
+                        withdrawalReasonCode: string | null;
                     };
                 };
             };
@@ -8650,26 +8654,87 @@ export interface operations {
             };
         };
     };
-    createAdjustmentsByAdjustmentIdExpire: {
+    createStudentsByPersonIdAdjustmentsByAdjustmentIdWithdrawal: {
         parameters: {
             query?: never;
             header?: never;
             path: {
+                personId: string;
                 adjustmentId: string;
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    sourceCaseId: string;
+                    withdrawalReasonCode: string;
+                    /** Format: uuid */
+                    replacementAdjustmentId?: string;
+                };
+            };
+        };
         responses: {
             /** @description Default Response */
-            204: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        adjustmentId: string;
+                        validTo: string;
+                        withdrawalAuthorityCode: string | null;
+                        withdrawalReasonCode: string | null;
+                        changed: boolean;
+                    };
+                };
+            };
+            /** @description Default Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
             };
             /** @description Default Response */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

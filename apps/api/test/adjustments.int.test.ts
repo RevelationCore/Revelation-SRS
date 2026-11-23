@@ -5,7 +5,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import type { IntegrationBusPublisher } from '../src/platform/integration-bus/publisher.js';
 
-import { wellbeingServiceJwt } from './helpers/adjustments.js';
+import { wellbeingServiceJwt, withdrawApprovedAdjustment } from './helpers/adjustments.js';
 import { startTestApp, type TestApp } from './helpers/test-app.js';
 
 interface CapturedEvent {
@@ -311,12 +311,8 @@ describe('Reasonable adjustments', () => {
     });
     expect(ack.statusCode).toBe(204);
 
-    const expire = await ctx.app.inject({
-      method: 'POST',
-      url: `/api/v1/adjustments/${adjustment.adjustmentId}/expire`,
-      headers: { authorization: `Bearer ${jwt}` },
-    });
-    expect(expire.statusCode).toBe(204);
+    const expire = await withdrawApprovedAdjustment(ctx, adjustment.adjustmentId);
+    expect(expire.statusCode).toBe(200);
 
     const list = await ctx.app.inject({
       method: 'GET',
@@ -472,12 +468,8 @@ describe('AJ-21 A21-AC06 — expiry keeps past arrangements and the current date
       validTo: '2099-07-31T00:00:00.000Z',
     });
 
-    const expire = await ctx.app.inject({
-      method: 'POST',
-      url: `/api/v1/adjustments/${adjustment.adjustmentId}/expire`,
-      headers: { authorization: `Bearer ${jwt}` },
-    });
-    expect(expire.statusCode).toBe(204);
+    const expire = await withdrawApprovedAdjustment(ctx, adjustment.adjustmentId);
+    expect(expire.statusCode).toBe(200);
 
     const versions = await ctx.db.execute<{ valid_to: Date | string | null; recorded_until: Date | string | null }>(sql`
       SELECT valid_to, recorded_until FROM reasonable_adjustment
@@ -508,11 +500,7 @@ describe('AJ-21 A21-AC06 — expiry keeps past arrangements and the current date
     const distribution = (await listDistributions(adjustment.adjustmentId))
       .json<Array<{ distributionId: string; targetSystem: string }>>()[0]!;
 
-    await ctx.app.inject({
-      method: 'POST',
-      url: `/api/v1/adjustments/${adjustment.adjustmentId}/expire`,
-      headers: { authorization: `Bearer ${jwt}` },
-    });
+    await withdrawApprovedAdjustment(ctx, adjustment.adjustmentId);
 
     const lateAck = await ctx.app.inject({
       method: 'POST',
@@ -536,14 +524,15 @@ describe('AJ-21 A21-AC06 — expiry keeps past arrangements and the current date
       scopeCode: 'exam',
       validFrom: '2027-09-01T00:00:00.000Z',
     });
-    const expire = () => ctx.app.inject({
-      method: 'POST',
-      url: `/api/v1/adjustments/${adjustment.adjustmentId}/expire`,
-      headers: { authorization: `Bearer ${jwt}` },
-    });
+    const expire = () => withdrawApprovedAdjustment(ctx, adjustment.adjustmentId);
 
-    expect((await expire()).statusCode).toBe(204);
-    expect((await expire()).statusCode).toBe(204);
+    // ADR-034: idempotent by state; the repeat changes nothing.
+    const first = await expire();
+    expect(first.statusCode).toBe(200);
+    expect(first.json<{ changed: boolean }>().changed).toBe(true);
+    const again = await expire();
+    expect(again.statusCode).toBe(200);
+    expect(again.json<{ changed: boolean }>().changed).toBe(false);
 
     const versions = await ctx.db.execute(sql`
       SELECT 1 FROM reasonable_adjustment WHERE id = ${adjustment.adjustmentId}

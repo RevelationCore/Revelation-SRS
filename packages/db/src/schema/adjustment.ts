@@ -51,6 +51,13 @@ export const reasonableAdjustments = pgTable('reasonable_adjustment', {
   manualProposalId:  uuid('manual_proposal_id'),
   migrationBatchId:  uuid('migration_batch_id'),
   migrationSourceReference: text('migration_source_reference'),
+  // ADR-034: set on the version that ended the adjustment early, naming the
+  // authority and reason; a CHECK ties each authority to its reference.
+  withdrawalAuthorityCode:  text('withdrawal_authority_code'), // wellbeing-case | approved-withdrawal | enrolment-ended
+  withdrawalReasonCode:     text('withdrawal_reason_code'),    // value set adjustment-withdrawal-reason-code
+  withdrawalId:             uuid('withdrawal_id'),
+  withdrawalEnrolmentTransitionId: uuid('withdrawal_enrolment_transition_id'),
+  replacementAdjustmentId:  uuid('replacement_adjustment_id'),
 });
 
 export type ReasonableAdjustment    = typeof reasonableAdjustments.$inferSelect;

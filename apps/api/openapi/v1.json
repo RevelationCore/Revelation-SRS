@@ -2143,7 +2143,9 @@
                       "sourceCaseId",
                       "outcomeDocumentId",
                       "provenanceCode",
-                      "manualProposalId"
+                      "manualProposalId",
+                      "withdrawalAuthorityCode",
+                      "withdrawalReasonCode"
                     ],
                     "properties": {
                       "adjustmentId": {
@@ -2258,6 +2260,26 @@
                             "type": "null"
                           }
                         ]
+                      },
+                      "withdrawalAuthorityCode": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "withdrawalReasonCode": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
                       }
                     }
                   }
@@ -2337,7 +2359,9 @@
                     "sourceCaseId",
                     "outcomeDocumentId",
                     "provenanceCode",
-                    "manualProposalId"
+                    "manualProposalId",
+                    "withdrawalAuthorityCode",
+                    "withdrawalReasonCode"
                   ],
                   "properties": {
                     "adjustmentId": {
@@ -2444,6 +2468,26 @@
                       "type": "string"
                     },
                     "manualProposalId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "withdrawalAuthorityCode": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "withdrawalReasonCode": {
                       "anyOf": [
                         {
                           "type": "string"
@@ -3474,15 +3518,54 @@
         }
       }
     },
-    "/api/v1/adjustments/{adjustmentId}/expire": {
+    "/api/v1/students/{personId}/adjustments/{adjustmentId}/withdrawal": {
       "post": {
-        "operationId": "createAdjustmentsByAdjustmentIdExpire",
+        "operationId": "createStudentsByPersonIdAdjustmentsByAdjustmentIdWithdrawal",
         "tags": [
           "adjustments"
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "sourceCaseId",
+                  "withdrawalReasonCode"
+                ],
+                "properties": {
+                  "sourceCaseId": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "withdrawalReasonCode": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "replacementAdjustmentId": {
+                    "format": "uuid",
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
         "parameters": [
           {
             "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "personId",
+            "required": true
+          },
+          {
+            "schema": {
+              "format": "uuid",
               "type": "string"
             },
             "in": "path",
@@ -3490,12 +3573,144 @@
             "required": true
           }
         ],
-        "x-publication-class": "workflow",
+        "x-publication-class": "integration",
         "responses": {
-          "204": {
-            "description": "Default Response"
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "adjustmentId",
+                    "validTo",
+                    "withdrawalAuthorityCode",
+                    "withdrawalReasonCode",
+                    "changed"
+                  ],
+                  "properties": {
+                    "adjustmentId": {
+                      "type": "string"
+                    },
+                    "validTo": {
+                      "type": "string"
+                    },
+                    "withdrawalAuthorityCode": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "withdrawalReasonCode": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "changed": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
           },
           "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
             "description": "Default Response",
             "content": {
               "application/json": {

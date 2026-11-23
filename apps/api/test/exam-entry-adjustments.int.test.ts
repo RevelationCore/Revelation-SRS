@@ -11,7 +11,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import type { IntegrationBusPublisher } from '../src/platform/integration-bus/publisher.js';
 
-import { recordApprovedAdjustment } from './helpers/adjustments.js';
+import { recordApprovedAdjustment, withdrawApprovedAdjustment } from './helpers/adjustments.js';
 import { startTestApp, type TestApp } from './helpers/test-app.js';
 
 const bus = {
@@ -321,11 +321,9 @@ async function distributions(adjustmentId: string): Promise<Array<{ distribution
 }
 
 async function expire(adjustmentId: string): Promise<void> {
-  const res = await ctx.app.inject({
-    method: 'POST', url: `/api/v1/adjustments/${adjustmentId}/expire`,
-    headers: { authorization: `Bearer ${jwt}` },
-  });
-  expect(res.statusCode).toBe(204);
+  // ADR-034: ended through its wellbeing case; the /expire route is retired.
+  const res = await withdrawApprovedAdjustment(ctx, adjustmentId);
+  expect(res.statusCode).toBe(200);
 }
 
 async function post(url: string, payload: Record<string, unknown>) {

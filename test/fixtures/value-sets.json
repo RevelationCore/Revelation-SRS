@@ -10997,6 +10997,94 @@
    }
   ]
  },
+ "reasonable_adjustment/withdrawal_authority_code": {
+  "setCode": "adjustment-withdrawal-authority-code",
+  "displayName": "Adjustment Withdrawal Authority",
+  "entityName": "reasonable_adjustment",
+  "fieldName": "withdrawal_authority_code",
+  "members": [
+   {
+    "code": "wellbeing-case",
+    "displayLabel": "Withdrawn through its wellbeing case",
+    "description": null,
+    "sortOrder": 10,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "approved-withdrawal",
+    "displayLabel": "Withdrawn, approved by a second person",
+    "description": null,
+    "sortOrder": 20,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "enrolment-ended",
+    "displayLabel": "Ended with the enrolment",
+    "description": null,
+    "sortOrder": 30,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   }
+  ]
+ },
+ "reasonable_adjustment/withdrawal_reason_code": {
+  "setCode": "adjustment-withdrawal-reason-code",
+  "displayName": "Adjustment Withdrawal Reason",
+  "entityName": "reasonable_adjustment",
+  "fieldName": "withdrawal_reason_code",
+  "members": [
+   {
+    "code": "student-request",
+    "displayLabel": "The student asked to stop it",
+    "description": null,
+    "sortOrder": 10,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "no-longer-needed",
+    "displayLabel": "A review found it is no longer needed",
+    "description": null,
+    "sortOrder": 20,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "recorded-in-error",
+    "displayLabel": "It should never have been recorded",
+    "description": null,
+    "sortOrder": 30,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "superseded",
+    "displayLabel": "Replaced by another adjustment",
+    "description": null,
+    "sortOrder": 40,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "enrolment-ended",
+    "displayLabel": "The enrolment it belongs to has ended",
+    "description": null,
+    "sortOrder": 50,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   }
+  ]
+ },
  "reassessment_plan/plan_type_code": {
   "setCode": "reassessment-plan-type-code",
   "displayName": "Reassessment Plan Type",

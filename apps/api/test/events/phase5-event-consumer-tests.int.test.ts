@@ -14,7 +14,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import type { IntegrationBusPublisher } from '../../src/platform/integration-bus/publisher.js';
 import { ratifyThroughDecision } from '../helpers/board-ratification.js';
-import { wellbeingServiceJwt } from '../helpers/adjustments.js';
+import { wellbeingServiceJwt, withdrawApprovedAdjustment } from '../helpers/adjustments.js';
 import { startTestApp, type TestApp } from '../helpers/test-app.js';
 import { conferViaBoard } from '../helpers/award.js';
 
@@ -183,7 +183,9 @@ describe('Adjustment events', () => {
         adjustmentTypeCode: 'extra-time',
         scopeCode: 'exam',
         validFrom: '2025-09-22T00:00:00.000Z',
-        validTo:   '2026-07-31T00:00:00.000Z',
+        // In force, so ending it early publishes srs.adjustment.expired (ADR-034:
+        // one already ended is left as it is and publishes nothing).
+        validTo:   '2099-07-31T00:00:00.000Z',
       },
     });
     expect(res.statusCode).toBe(201);
@@ -236,12 +238,8 @@ describe('Adjustment events', () => {
   });
 
   it('expiring an adjustment publishes srs.adjustment.expired (sensitive)', async () => {
-    const res = await ctx.app.inject({
-      method: 'POST',
-      url:    `/api/v1/adjustments/${adjustmentId}/expire`,
-      headers: { authorization: `Bearer ${jwt}` },
-    });
-    expect(res.statusCode).toBe(204);
+    const res = await withdrawApprovedAdjustment(ctx, adjustmentId);
+    expect(res.statusCode).toBe(200);
 
     const evt = findEvent('srs.adjustment.expired');
     expect(evt).toBeDefined();

@@ -72,6 +72,8 @@ export const PERMISSION_ROLES = {
   'adjustment:write':          ['registry-administrator', 'wellbeing-advisor'] as Role[],
   // ADR-029: record an adjustment the wellbeing service approved; needs sourceCaseId.
   'adjustment:record-approved':         ['wellbeing-service'] as Role[],
+  // ADR-034 item 4: end an adjustment its wellbeing case recorded, naming that case.
+  'adjustment:withdraw-approved':       ['wellbeing-service'] as Role[],
   // ADR-033 item 2: a case-less adjustment is a proposal a second person
   // approves. SME-6: not wellbeing-advisor, who has the governed case instead.
   'adjustment:propose':        ['registry-administrator', 'adjustment-proposer'] as Role[],

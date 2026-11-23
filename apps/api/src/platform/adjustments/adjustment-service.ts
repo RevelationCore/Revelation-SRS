@@ -28,6 +28,7 @@ import type {
   AdjustmentExpiredV1Payload,
 } from '@revelation-srs/domain';
 
+import type { AuditService } from '../audit/service.js';
 import type { ApiDocumentStore } from '../documents/document-store.js';
 import type { IntegrationBusPublisher } from '../integration-bus/publisher.js';
 import type { ValueSetService } from '../value-sets/service.js';
@@ -90,6 +91,37 @@ export type AdjustmentAuthority =
   | { kind: 'wellbeing-case'; sourceCaseId: string }
   | { kind: 'manual-proposal'; proposalId: string };
 
+/** The reasons a case or a withdrawal proposal may give (ADR-034 item 9). */
+export const CASE_WITHDRAWAL_REASONS = ['student-request', 'no-longer-needed', 'recorded-in-error', 'superseded'] as const;
+export type CaseWithdrawalReason = (typeof CASE_WITHDRAWAL_REASONS)[number];
+
+/**
+ * The authority an adjustment is ended early under (ADR-034). There is no way
+ * to end one without it: its wellbeing case, a withdrawal a second person
+ * approved, or the end of its enrolment.
+ */
+export type WithdrawalAuthority =
+  | { kind: 'wellbeing-case'; sourceCaseId: string; reasonCode: CaseWithdrawalReason; replacementAdjustmentId?: string }
+  | { kind: 'approved-withdrawal'; withdrawalId: string; reasonCode: CaseWithdrawalReason; replacementAdjustmentId?: string }
+  | { kind: 'enrolment-ended'; enrolmentStatusTransitionId: string };
+
+/** Who is ending it, for the version and the audit row. */
+export interface WithdrawalActor {
+  actorId: string;
+  actorType: 'user' | 'system' | 'integration';
+  actorDisplayName?: string | undefined;
+  correlationId?: string | undefined;
+}
+
+export interface WithdrawalResult {
+  adjustmentId: string;
+  /** False when it had already ended: nothing was written or published. */
+  changed: boolean;
+  validTo: Date;
+  withdrawalAuthorityCode: string | null;
+  withdrawalReasonCode: string | null;
+}
+
 export interface RecordAdjustmentResult {
   adjustmentId: string;
   /** True when an earlier request with the same idempotency key and payload
@@ -115,6 +147,9 @@ export interface AdjustmentDto {
   /** ADR-033: wellbeing-case | manual-approved | migrated | legacy-direct. */
   provenanceCode: string;
   manualProposalId: string | null;
+  /** ADR-034: set when the adjustment was ended early. */
+  withdrawalAuthorityCode: string | null;
+  withdrawalReasonCode: string | null;
 }
 
 export interface AttachOutcomeDocumentInput {
@@ -184,6 +219,7 @@ export class AdjustmentService {
     private readonly dispatcher: AdjustmentDistributionDispatcher,
     private readonly targetConfig: AdjustmentTargetConfigService,
     private readonly documents: ApiDocumentStore,
+    private readonly audit: AuditService,
   ) {}
 
   async recordAuthorisedAdjustment(
@@ -680,18 +716,12 @@ export class AdjustmentService {
   }
 
   /**
-   * End an adjustment's valid period now (or immediately after it starts,
-   * if it has not started yet).
-   *
-   * A bitemporal update, like attachOutcomeDocument: the current version is
-   * closed in transaction time and a successor is recorded with the new
-   * validTo. The closed version keeps its original validTo, so a query
-   * "as recorded before the expiry" still shows what was then believed, and
-   * the expired adjustment stays visible (with its end date) for history,
-   * board packs and later reconstruction. An adjustment whose period has
-   * already ended keeps its recorded end date and gains no new version.
-   * The expired event is still published, as before: there is no scheduler
-   * that announces a natural end, so this call may be consumers' only signal.
+   * Ends an adjustment early under a named authority (ADR-034): closes the
+   * current version and writes its successor with valid_to = now (never
+   * backdated) and the withdrawal columns; withdraws or supersedes its
+   * distributions; writes the audit row in the same transaction; then
+   * publishes srs.adjustment.expired and dispatches. Idempotent by state: an
+   * adjustment that has already ended is left as it is (changed: false).
    *
    * Distributions: a row whose instruction was never published is simply
    * superseded. A row whose instruction was published — acknowledged or not,
@@ -700,104 +730,130 @@ export class AdjustmentService {
    * instruction. The rows are locked first, so a dispatcher mid-publish
    * finishes (and stamps request_published_at) before this decides.
    */
-  async expireAdjustment(adjustmentId: string, tenantId: string, actorId: string): Promise<void> {
+  async withdrawAuthorisedAdjustment(
+    tenantId: string,
+    adjustmentId: string,
+    authority: WithdrawalAuthority,
+    actor: WithdrawalActor,
+  ): Promise<WithdrawalResult> {
     const now = clockNow();
+    const reasonCode = authority.kind === 'enrolment-ended' ? 'enrolment-ended' : authority.reasonCode;
+    const replacementAdjustmentId = authority.kind === 'enrolment-ended' ? undefined : authority.replacementAdjustmentId;
+    if (authority.kind !== 'enrolment-ended') {
+      if (!(CASE_WITHDRAWAL_REASONS as readonly string[]).includes(reasonCode)) {
+        throw new ValidationError(`'${reasonCode}' is not a withdrawal reason this authority may give`, [{ field: 'withdrawalReasonCode', message: 'One of student-request, no-longer-needed, recorded-in-error, superseded' }]);
+      }
+      await this.#validateFieldValue(tenantId, 'reasonable_adjustment', 'withdrawal_reason_code', reasonCode);
+      if (reasonCode === 'superseded' && !replacementAdjustmentId) {
+        throw new ValidationError('A superseded adjustment must name its replacement', [{ field: 'replacementAdjustmentId', message: 'Required for superseded' }]);
+      }
+      if (reasonCode !== 'superseded' && replacementAdjustmentId) {
+        throw new ValidationError('Only a superseded adjustment names a replacement', [{ field: 'replacementAdjustmentId', message: 'Only with superseded' }]);
+      }
+    }
 
     const outcome = await withTenantContext(this.db, tenantId, async (tx) => {
-      const rows = await tx
-        .select()
-        .from(reasonableAdjustments)
-        .where(
-          and(
-            eq(reasonableAdjustments.id, adjustmentId as `${string}-${string}-${string}-${string}-${string}`),
-            eq(reasonableAdjustments.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
-            isNull(reasonableAdjustments.recordedUntil),
-          ),
-        )
-        .for('update')
-        .limit(1);
+      const rows = await tx.select().from(reasonableAdjustments).where(and(
+        eq(reasonableAdjustments.id, adjustmentId as Uuid),
+        eq(reasonableAdjustments.tenantId, tenantId as Uuid),
+        isNull(reasonableAdjustments.recordedUntil),
+      )).for('update').limit(1);
       const current = rows[0];
       if (!current) throw new NotFoundError('ReasonableAdjustment', adjustmentId);
 
-      const endAt = now > current.validFrom
-        ? now
-        : new Date(current.validFrom.getTime() + 1);
-      const alreadyEnded = current.validTo !== null && current.validTo <= endAt;
-
-      if (!alreadyEnded) {
-        await tx
-          .update(reasonableAdjustments)
-          .set({ recordedUntil: now })
-          .where(eq(reasonableAdjustments.versionId, current.versionId));
-
-        await tx.insert(reasonableAdjustments).values({
-          ...current,
-          versionId:     randomUUID(),
-          validTo:       endAt,
-          actorId,
-          recordedAt:    now,
-          recordedUntil: null,
-        });
+      // The way out matches the way in (ADR-034 item 1).
+      if (authority.kind === 'wellbeing-case' && current.sourceCaseId !== authority.sourceCaseId) {
+        throw new DomainError('This adjustment was not recorded from that wellbeing case', 'source-case-mismatch', 409);
+      }
+      if (authority.kind === 'approved-withdrawal' && current.provenanceCode === 'wellbeing-case') {
+        throw new DomainError('An adjustment recorded from a wellbeing case is withdrawn through its case', 'withdrawal-through-case', 409);
       }
 
-      const distributions = await tx
-        .select({
-          id: adjustmentDistributions.id,
-          statusCode: adjustmentDistributions.statusCode,
-          requestPublishedAt: adjustmentDistributions.requestPublishedAt,
-        })
-        .from(adjustmentDistributions)
-        .where(and(
-          eq(adjustmentDistributions.adjustmentId, adjustmentId as Uuid),
-          eq(adjustmentDistributions.tenantId, tenantId as Uuid),
-        ))
-        .for('update');
+      const endAt = now > current.validFrom ? now : new Date(current.validFrom.getTime() + 1);
+      if (current.validTo !== null && current.validTo <= endAt) {
+        return { current, changed: false as const, validTo: current.validTo };
+      }
 
-      for (const d of distributions) {
-        if (!['pending', 'distributed', 'failed'].includes(d.statusCode)) continue;
-        if (d.requestPublishedAt === null && d.statusCode !== 'distributed') {
-          await tx
-            .update(adjustmentDistributions)
-            .set({ statusCode: 'superseded', updatedAt: now })
-            .where(eq(adjustmentDistributions.id, d.id));
-        } else {
-          await tx
-            .update(adjustmentDistributions)
-            .set({
-              statusCode: 'withdrawal-requested',
-              withdrawalEventId: randomUUID(),
-              withdrawalRequestedAt: now,
-              failureReason: null,
-              updatedAt: now,
-            })
-            .where(eq(adjustmentDistributions.id, d.id));
+      if (replacementAdjustmentId) {
+        const replacement = await tx.select({ id: reasonableAdjustments.id }).from(reasonableAdjustments).where(and(
+          eq(reasonableAdjustments.id, replacementAdjustmentId as Uuid),
+          eq(reasonableAdjustments.tenantId, tenantId as Uuid),
+          eq(reasonableAdjustments.personId, current.personId),
+          isNull(reasonableAdjustments.recordedUntil),
+          or(isNull(reasonableAdjustments.validTo), gt(reasonableAdjustments.validTo, now)),
+        )).limit(1);
+        if (replacementAdjustmentId === adjustmentId || replacement.length === 0) {
+          throw new ValidationError('The replacement must be a different adjustment of the same student, in force now', [{ field: 'replacementAdjustmentId', message: 'Not a current adjustment of this student' }]);
         }
       }
 
-      return {
-        current,
-        endedAt: alreadyEnded ? current.validTo! : endAt,
-      };
+      await tx.update(reasonableAdjustments).set({ recordedUntil: now }).where(eq(reasonableAdjustments.versionId, current.versionId));
+      await tx.insert(reasonableAdjustments).values({
+        ...current,
+        versionId: randomUUID(),
+        validTo: endAt,
+        actorId: actor.actorId,
+        recordedAt: now,
+        recordedUntil: null,
+        withdrawalAuthorityCode: authority.kind,
+        withdrawalReasonCode: reasonCode,
+        withdrawalId: authority.kind === 'approved-withdrawal' ? authority.withdrawalId as Uuid : null,
+        withdrawalEnrolmentTransitionId: authority.kind === 'enrolment-ended' ? authority.enrolmentStatusTransitionId as Uuid : null,
+        replacementAdjustmentId: (replacementAdjustmentId ?? null) as Uuid | null,
+      });
+
+      const distributions = await tx.select({
+        id: adjustmentDistributions.id,
+        statusCode: adjustmentDistributions.statusCode,
+        requestPublishedAt: adjustmentDistributions.requestPublishedAt,
+      }).from(adjustmentDistributions).where(and(
+        eq(adjustmentDistributions.adjustmentId, adjustmentId as Uuid),
+        eq(adjustmentDistributions.tenantId, tenantId as Uuid),
+      )).for('update');
+      for (const d of distributions) {
+        if (!['pending', 'distributed', 'failed'].includes(d.statusCode)) continue;
+        if (d.requestPublishedAt === null && d.statusCode !== 'distributed') {
+          await tx.update(adjustmentDistributions).set({ statusCode: 'superseded', updatedAt: now }).where(eq(adjustmentDistributions.id, d.id));
+        } else {
+          await tx.update(adjustmentDistributions).set({
+            statusCode: 'withdrawal-requested', withdrawalEventId: randomUUID(), withdrawalRequestedAt: now, failureReason: null, updatedAt: now,
+          }).where(eq(adjustmentDistributions.id, d.id));
+        }
+      }
+
+      const reference = authority.kind === 'wellbeing-case' ? `case ${authority.sourceCaseId}`
+        : authority.kind === 'approved-withdrawal' ? `withdrawal ${authority.withdrawalId}`
+          : `enrolment transition ${authority.enrolmentStatusTransitionId}`;
+      await this.audit.record({
+        tenantId, entityType: 'reasonable_adjustment', entityId: adjustmentId, actionType: 'update',
+        fieldName: 'valid_to', beforeValue: current.validTo?.toISOString() ?? null, afterValue: endAt.toISOString(),
+        actorType: actor.actorType, actorId: actor.actorId,
+        ...(actor.actorDisplayName ? { actorDisplayName: actor.actorDisplayName } : {}),
+        ...(actor.correlationId ? { correlationId: actor.correlationId } : {}),
+        reasonCode, reasonText: `Adjustment withdrawn: ${reasonCode} (${reference})`,
+      }, tx);
+
+      return { current, changed: true as const, validTo: endAt };
     });
+
+    if (!outcome.changed) {
+      return {
+        adjustmentId, changed: false, validTo: outcome.validTo,
+        withdrawalAuthorityCode: outcome.current.withdrawalAuthorityCode, withdrawalReasonCode: outcome.current.withdrawalReasonCode,
+      };
+    }
 
     if (this.eventBus.isConnected()) {
       const payload: AdjustmentExpiredV1Payload = {
         adjustmentId,
         enrolmentId: outcome.current.enrolmentId,
         personId: outcome.current.personId,
-        expiredAt: outcome.endedAt.toISOString(),
+        expiredAt: outcome.validTo.toISOString(),
       };
-      await this.eventBus.publish(
-        EVENT_TYPES.ADJUSTMENT_EXPIRED,
-        '1.0.0',
-        tenantId,
-        actorId,
-        'sensitive',
-        payload,
-      );
+      await this.eventBus.publish(EVENT_TYPES.ADJUSTMENT_EXPIRED, '1.0.0', tenantId, actor.actorId, 'sensitive', payload);
     }
-
     await this.dispatcher.dispatchTenant(tenantId);
+    return { adjustmentId, changed: true, validTo: outcome.validTo, withdrawalAuthorityCode: authority.kind, withdrawalReasonCode: reasonCode };
   }
 
   /**
@@ -1044,7 +1100,7 @@ export class AdjustmentService {
    * Checks any version (current or historical) exists — deliberately not
    * limited to the current version. listDistributions is a read/history
    * operation and must still work after the adjustment has been expired
-   * (expireAdjustment closes the current version with no replacement row),
+   * (withdrawAuthorisedAdjustment closes the current version with no replacement row),
    * otherwise there would be no way to see that its pending distributions
    * were marked superseded.
    */
@@ -1141,6 +1197,8 @@ function adjustmentToDto(row: typeof reasonableAdjustments.$inferSelect): Adjust
     outcomeDocumentId: row.outcomeDocumentId,
     provenanceCode: row.provenanceCode,
     manualProposalId: row.manualProposalId,
+    withdrawalAuthorityCode: row.withdrawalAuthorityCode,
+    withdrawalReasonCode: row.withdrawalReasonCode,
   };
 }
 

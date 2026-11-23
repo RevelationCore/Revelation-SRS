@@ -16,7 +16,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import type { IntegrationBusPublisher, PublishOptions } from '../src/platform/integration-bus/publisher.js';
 
-import { wellbeingServiceJwt } from './helpers/adjustments.js';
+import { wellbeingServiceJwt, withdrawApprovedAdjustment } from './helpers/adjustments.js';
 import { startTestApp, type TestApp } from './helpers/test-app.js';
 
 interface CapturedEvent {
@@ -436,11 +436,9 @@ async function listDistributions(adjustmentId: string): Promise<DistributionWire
 }
 
 async function expire(adjustmentId: string): Promise<void> {
-  const res = await ctx.app.inject({
-    method: 'POST', url: `/api/v1/adjustments/${adjustmentId}/expire`,
-    headers: { authorization: `Bearer ${jwt}` },
-  });
-  expect(res.statusCode).toBe(204);
+  // ADR-034: ended through its wellbeing case; the /expire route is retired.
+  const res = await withdrawApprovedAdjustment(ctx, adjustmentId);
+  expect(res.statusCode).toBe(200);
 }
 
 function post(url: string, payload: unknown) {

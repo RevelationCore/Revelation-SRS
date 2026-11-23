@@ -41,7 +41,7 @@ const BATCH_SIZE = 100;
  *
  * Rows are claimed with FOR UPDATE SKIP LOCKED and stay locked until their
  * published_at is stamped. Concurrent dispatchers therefore never both publish
- * a row, and expireAdjustment, which locks the same rows first, waits and
+ * a row, and withdrawAuthorisedAdjustment, which locks the same rows first, waits and
  * then sees whether the request went out (withdraw it) or not (supersede it).
  * Each row's event id is fixed, so a republish after a crash between publish
  * and commit is absorbed by JetStream's duplicate window and by consumers'

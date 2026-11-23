@@ -14,7 +14,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import type { IntegrationBusPublisher, PublishOptions } from '../src/platform/integration-bus/publisher.js';
 
-import { wellbeingServiceJwt } from './helpers/adjustments.js';
+import { wellbeingServiceJwt, withdrawApprovedAdjustment } from './helpers/adjustments.js';
 import { startTestApp, type TestApp } from './helpers/test-app.js';
 
 const published: Array<{ type: string; payload: Record<string, unknown>; options: PublishOptions }> = [];
@@ -166,7 +166,7 @@ describe('Manual task queue', () => {
     const task = (await tasks()).find((t) => t.adjustmentId === adjustmentId)!;
     await post(`/api/v1/adjustments/${adjustmentId}/distributions/${task.distributionId}/acknowledge`, { targetSystem: 'attendance' }, officerJwt);
 
-    expect((await post(`/api/v1/adjustments/${adjustmentId}/expire`, {}, registryJwt)).statusCode).toBe(204);
+    expect((await withdrawApprovedAdjustment(ctx, adjustmentId)).statusCode).toBe(200);
 
     expect((await tasks()).find((t) => t.adjustmentId === adjustmentId)).toMatchObject({ action: 'remove', statusCode: 'withdrawal-requested' });
     expect(published.some((e) => e.type === 'srs.adjustment.distribution-withdrawal-requested' && e.options.subjectSuffix === 'attendance')).toBe(false);
