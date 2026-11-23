@@ -52,8 +52,8 @@ export async function startTestApp(): Promise<TestVleApp> {
   const db               = createVleDb(connectionString);
 
   const migrationsDir = join(__dirname, '../../migrations');
-  await applySql(db, join(migrationsDir, '0000_vle_foundations.sql'));
-  await applySql(db, join(migrationsDir, '0001_adjustment_instructions.sql'));
+  const journal = JSON.parse(await readFile(join(migrationsDir, 'meta', '_journal.json'), 'utf8')) as { entries: Array<{ tag: string }> };
+  for (const { tag } of journal.entries) await applySql(db, join(migrationsDir, `${tag}.sql`));
 
   const tenantId       = '00000000-0000-0000-0000-000000000001';
   const registrationId = '00000000-0000-0000-0000-000000000099';

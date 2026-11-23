@@ -29,6 +29,13 @@
       "when": 1786002000000,
       "tag": "0003_document_scanning",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1786003000000,
+      "tag": "0004_person_merge",
+      "breakpoints": true
     }
   ]
 }

@@ -16,7 +16,9 @@ async function main(): Promise<void> {
   const db = createVleDb(databaseUrl);
 
   const migrationsDir = join(__dirname, '../../migrations');
-  for (const file of ['0000_vle_foundations.sql', '0001_adjustment_instructions.sql']) {
+  // Every migration in the journal, in order, so a new file cannot be missed.
+  const journal = JSON.parse(await readFile(join(migrationsDir, 'meta', '_journal.json'), 'utf8')) as { entries: Array<{ tag: string }> };
+  for (const file of journal.entries.map((e) => `${e.tag}.sql`)) {
     const migrationSql = await readFile(join(migrationsDir, file), 'utf8');
     await db.execute(sql.raw(migrationSql));
   }

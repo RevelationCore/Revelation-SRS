@@ -15,6 +15,13 @@
       "when": 1753601000000,
       "tag": "0002_row_level_security_hardening",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1753602000000,
+      "tag": "0003_person_merge",
+      "breakpoints": true
     }
   ]
 }

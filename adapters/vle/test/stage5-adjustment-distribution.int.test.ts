@@ -13,7 +13,7 @@
 
 import { randomUUID } from 'node:crypto';
 
-import { and, eq } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { pino } from 'pino';
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import type {
@@ -419,5 +419,29 @@ describe('Stage 5 — coverage as courses and assessments change', () => {
     const service = new ReconciliationService(ctx.db, TENANT, undefined, undefined, undefined, log);
     const result = await service.reconcileAdjustmentCoverage();
     expect(result).toMatchObject({ driftCount: 0, repairedCount: 0 });
+  });
+});
+
+describe('srs.person.merged (ADR-031 item 7, BL-358)', () => {
+  it('moves the merged person\'s VLE mappings to the survivor, once', async () => {
+    const c = consumer();
+    const merged = await enrolStudent(c);
+    await registerOnNewCourse(c, merged, 'MRG101');
+    const survivorPersonId = randomUUID();
+    const mergeId = randomUUID();
+    const event = () => envelope('srs.person.merged', { mergeId, survivorPersonId, mergedPersonId: merged.personId, effectiveAt: new Date().toISOString() });
+
+    await c.dispatch(event());
+    const maps = await ctx.db.select({ personId: enrolmentMap.personId }).from(enrolmentMap).where(eq(enrolmentMap.enrolmentId, merged.enrolmentId));
+    expect(maps.length).toBeGreaterThan(0);
+    expect(maps.every((m) => m.personId === survivorPersonId)).toBe(true);
+    const students = await ctx.db.select({ personId: studentEnrolmentMap.personId }).from(studentEnrolmentMap).where(eq(studentEnrolmentMap.enrolmentId, merged.enrolmentId));
+    expect(students.map((s) => s.personId)).toEqual([survivorPersonId]);
+
+    const count = async () => ((await ctx.db.execute(sql`SELECT count(*)::int AS n FROM vle_connector.person_merge_move WHERE merge_id = ${mergeId}::uuid`)) as unknown as Array<{ n: number }>)[0]!.n;
+    const moved = await count();
+    expect(moved).toBeGreaterThanOrEqual(2);
+    await c.dispatch(event());
+    expect(await count()).toBe(moved);
   });
 });

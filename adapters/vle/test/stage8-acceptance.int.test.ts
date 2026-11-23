@@ -195,6 +195,8 @@ const STAGE_0_SUBJECTS = [
   // meant nothing was ever applied.
   'srs.adjustment.distribution-requested.vle',
   'srs.adjustment.distribution-withdrawal-requested.vle',
+  // ADR-031 item 7 (BL-358): re-key mappings when two people are merged.
+  'srs.person.merged',
 ] as const;
 
 describe('Stage 8 — event contract compliance (static)', () => {

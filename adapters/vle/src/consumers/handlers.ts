@@ -1,4 +1,4 @@
-import type { DomainEventEnvelope } from '@revelation-srs/domain';
+import type { DomainEventEnvelope, PersonMergedV1Payload } from '@revelation-srs/domain';
 import type {
   AdjustmentDistributionRequestedV1Payload,
   AdjustmentDistributionWithdrawalRequestedV1Payload,
@@ -30,6 +30,7 @@ import {
   handleDistributionRequested,
   handleDistributionWithdrawalRequested,
 } from './f-sis-vle-02/handlers.js';
+import { handlePersonMerged } from './person-merge.js';
 
 export const VLE_SUBSCRIBED_SUBJECTS = [
   'srs.catalogue.programme-updated',
@@ -46,6 +47,8 @@ export const VLE_SUBSCRIBED_SUBJECTS = [
   // its own. The envelope type omits the suffix.
   'srs.adjustment.distribution-requested.vle',
   'srs.adjustment.distribution-withdrawal-requested.vle',
+  // ADR-031 item 7 (BL-358).
+  'srs.person.merged',
 ] as const;
 
 export type VleEventSubject = (typeof VLE_SUBSCRIBED_SUBJECTS)[number];
@@ -137,6 +140,10 @@ export async function routeToHandler(
         envelope as DomainEventEnvelope<AdjustmentDistributionWithdrawalRequestedV1Payload>,
         ctx,
       );
+      return 'handled';
+
+    case 'srs.person.merged':
+      await handlePersonMerged(envelope as DomainEventEnvelope<PersonMergedV1Payload>, ctx);
       return 'handled';
 
     default:

@@ -7,3 +7,4 @@ export * from './adjustment-time.js';
 export * from './adjustment-amount.js';
 export * from './canonical-json.js';
 export * from './person-references.js';
+export * from './person-merge-apply.js';

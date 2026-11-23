@@ -27,6 +27,7 @@ import {
   handleModuleRegistrationWithdrawn,
   handleModuleRegistrationCompleted,
 } from '../projections/context-projection.js';
+import { handlePersonMerged } from '../projections/person-merge.js';
 
 const STREAM_NAME   = 'SRS_EVENTS';
 const CONSUMER_NAME = 'attendance-context-consumer';
@@ -38,6 +39,8 @@ const SUBSCRIBED_SUBJECTS = [
   EVENT_TYPES.ENROLMENT_MODULE_REGISTERED,
   EVENT_TYPES.ENROLMENT_MODULE_REGISTRATION_WITHDRAWN,
   EVENT_TYPES.ENROLMENT_MODULE_REGISTRATION_COMPLETED,
+  // ADR-031 item 7 (BL-358).
+  EVENT_TYPES.PERSON_MERGED,
 ] as const;
 
 export class AttendanceEventConsumer {
@@ -156,7 +159,13 @@ export class AttendanceEventConsumer {
       });
       this.log.info({ consumer: CONSUMER_NAME }, 'Durable consumer created');
     } catch {
-      // Consumer already exists (normal on restart).
+      // Consumer already exists (normal on restart). Bring its filter up to
+      // date, or a subject added since it was created would never arrive.
+      try {
+        await jsm.consumers.update(STREAM_NAME, CONSUMER_NAME, { filter_subjects: [...SUBSCRIBED_SUBJECTS] });
+      } catch (err) {
+        this.log.warn({ err, consumer: CONSUMER_NAME }, 'Could not update the consumer filter');
+      }
       this.log.debug({ consumer: CONSUMER_NAME }, 'Consumer already exists — re-attaching');
     }
   }
@@ -180,6 +189,9 @@ export async function routeToHandler(
       return handleModuleRegistrationWithdrawn(tx, envelope as DomainEventEnvelope<any>);
     case EVENT_TYPES.ENROLMENT_MODULE_REGISTRATION_COMPLETED:
       return handleModuleRegistrationCompleted(tx, envelope as DomainEventEnvelope<any>);
+    case EVENT_TYPES.PERSON_MERGED:
+      await handlePersonMerged(tx, envelope as DomainEventEnvelope<any>);
+      return;
     default:
       // Unknown subject — silently skip; event_log records it for observability.
       break;

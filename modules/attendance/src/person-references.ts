@@ -12,4 +12,6 @@ export const ATTENDANCE_PERSON_REFERENCES: readonly PersonReference[] = [
   { table: 'expected_engagement_event',    column: 'person_id', mode: 'versioned-move' },
   { table: 'enrolment_person_map',         column: 'person_id', mode: 'ledgered-move', note: 'Projection of core enrolments' },
   { table: 'module_registration_map',      column: 'person_id', mode: 'ledgered-move', note: 'Projection of core registrations' },
+  { table: 'person_merge_move', column: 'from_person_id', mode: 'identity-infra' },
+  { table: 'person_merge_move', column: 'to_person_id', mode: 'identity-infra' },
 ];

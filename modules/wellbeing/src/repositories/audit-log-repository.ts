@@ -14,7 +14,9 @@ export interface AuditEntry {
     | 'mental-health-case'
     | 'mh-session-note'
     | 'intervention-plan'
-    | 'early-warning-alert';
+    | 'early-warning-alert'
+    // ADR-031 item 7: a core identity merge applied to this schema.
+    | 'identity-merge';
   resourceId:   string;
   personId:     string;
   context?:     Record<string, unknown>;

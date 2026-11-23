@@ -9,4 +9,6 @@ export const VLE_CONNECTOR_PERSON_REFERENCES: readonly PersonReference[] = [
   { table: 'vle_adjustment_map',        column: 'person_id', mode: 'ledgered-move' },
   { table: 'vle_enrolment_map',         column: 'person_id', mode: 'ledgered-move', note: 'The person-to-VLE-user mapping a merge updates (ADR-031 item 7)' },
   { table: 'vle_student_enrolment_map', column: 'person_id', mode: 'ledgered-move' },
+  { table: 'person_merge_move', column: 'from_person_id', mode: 'identity-infra' },
+  { table: 'person_merge_move', column: 'to_person_id', mode: 'identity-infra' },
 ];

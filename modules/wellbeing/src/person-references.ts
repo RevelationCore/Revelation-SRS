@@ -22,4 +22,6 @@ export const WELLBEING_PERSON_REFERENCES: readonly PersonReference[] = [
   { table: 'sar_export_log',          column: 'exported_for_person_id', mode: 'history-in-place', note: 'Who an export was made for' },
   { table: 'srs_ec_handoff_outbox',   column: 'person_id', mode: 'history-in-place', note: 'Messages already sent to core' },
   { table: 'srs_handoff_outbox',      column: 'person_id', mode: 'history-in-place', note: 'Messages already sent to core' },
+  { table: 'person_merge_move', column: 'from_person_id', mode: 'identity-infra' },
+  { table: 'person_merge_move', column: 'to_person_id', mode: 'identity-infra' },
 ];
