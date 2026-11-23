@@ -113,6 +113,13 @@
       "when": 1785000063000,
       "tag": "0015_conferment_authority",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1785000064000,
+      "tag": "0016_hesa_mode_crosswalk",
+      "breakpoints": true
     }
   ]
 }
