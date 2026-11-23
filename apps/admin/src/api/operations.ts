@@ -26,7 +26,11 @@ export interface DeploymentEnvironment {
 }
 
 export interface EnvironmentRuntime {
-  environment:         DeploymentEnvironment;
+  /** The code this deployment runs as (SRS_ENVIRONMENT_CODE). */
+  environmentCode:     string;
+  /** False until an environment with that code is registered. */
+  registered:          boolean;
+  environment:         DeploymentEnvironment | null;
   releaseVersion:      string;
   imageDigest:         string | null;
   migrationVersion:    string;

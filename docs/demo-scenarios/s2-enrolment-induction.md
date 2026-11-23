@@ -211,7 +211,7 @@ This is the best scenario for exploring the platform configuration area and the 
 
 1. In the sidebar, navigate to **Operations** and then select **Environment**, or go to `/operations/environment`.
 2. The page displays the API version, Node.js version, environment code, and connected service statuses.
-3. Confirm the **SRS_ENVIRONMENT_CODE** shows `demo`.
+3. Confirm the environment is **Local development** (code `development`, which `pnpm evaluate` runs as). A deployment running as a code nobody registered shows a "not registered" notice with how to fix it.
 4. Review the connected services panel — PostgreSQL, NATS, and Temporal should all show as connected.
 
 ---

@@ -44,7 +44,9 @@ async function start(scenario) {
   const child = spawn('pnpm', ['--parallel', '--filter', '@revelation-srs/api', '--filter', '@revelation-srs/bff', '--filter', '@revelation-srs/admin', '--filter', '@revelation-srs/portal', 'dev'], {
     detached: true,
     stdio: ['ignore', log, log],
-    env: { ...process.env, DEMO_DATA_ENABLED: 'true', VITE_DEMO_MODE: 'true' },
+    // The demo scenarios register the 'development' environment; run as it, so
+    // Operations → Environment runtime shows it (BL-402).
+    env: { ...process.env, DEMO_DATA_ENABLED: 'true', VITE_DEMO_MODE: 'true', SRS_ENVIRONMENT_CODE: process.env.SRS_ENVIRONMENT_CODE ?? 'development' },
   });
   child.unref();
   writeFileSync(statePath, JSON.stringify({ pid: child.pid, previouslyRunning, startedAt: new Date().toISOString(), scenario }, null, 2));

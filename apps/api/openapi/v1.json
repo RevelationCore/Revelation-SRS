@@ -74412,6 +74412,8 @@
                 "schema": {
                   "type": "object",
                   "required": [
+                    "environmentCode",
+                    "registered",
                     "environment",
                     "releaseVersion",
                     "imageDigest",
@@ -74420,53 +74422,66 @@
                     "featureFlags"
                   ],
                   "properties": {
+                    "environmentCode": {
+                      "type": "string"
+                    },
+                    "registered": {
+                      "type": "boolean"
+                    },
                     "environment": {
-                      "type": "object",
-                      "required": [
-                        "deploymentEnvironmentId",
-                        "environmentCode",
-                        "displayName",
-                        "environmentTypeCode",
-                        "productionLike",
-                        "liveIntegrationsAllowed",
-                        "configuration",
-                        "active",
-                        "createdAt",
-                        "updatedAt"
-                      ],
-                      "properties": {
-                        "deploymentEnvironmentId": {
-                          "type": "string"
-                        },
-                        "environmentCode": {
-                          "type": "string"
-                        },
-                        "displayName": {
-                          "type": "string"
-                        },
-                        "environmentTypeCode": {
-                          "type": "string"
-                        },
-                        "productionLike": {
-                          "type": "boolean"
-                        },
-                        "liveIntegrationsAllowed": {
-                          "type": "boolean"
-                        },
-                        "configuration": {
+                      "anyOf": [
+                        {
                           "type": "object",
-                          "additionalProperties": {}
+                          "required": [
+                            "deploymentEnvironmentId",
+                            "environmentCode",
+                            "displayName",
+                            "environmentTypeCode",
+                            "productionLike",
+                            "liveIntegrationsAllowed",
+                            "configuration",
+                            "active",
+                            "createdAt",
+                            "updatedAt"
+                          ],
+                          "properties": {
+                            "deploymentEnvironmentId": {
+                              "type": "string"
+                            },
+                            "environmentCode": {
+                              "type": "string"
+                            },
+                            "displayName": {
+                              "type": "string"
+                            },
+                            "environmentTypeCode": {
+                              "type": "string"
+                            },
+                            "productionLike": {
+                              "type": "boolean"
+                            },
+                            "liveIntegrationsAllowed": {
+                              "type": "boolean"
+                            },
+                            "configuration": {
+                              "type": "object",
+                              "additionalProperties": {}
+                            },
+                            "active": {
+                              "type": "boolean"
+                            },
+                            "createdAt": {
+                              "type": "string"
+                            },
+                            "updatedAt": {
+                              "type": "string"
+                            }
+                          }
                         },
-                        "active": {
-                          "type": "boolean"
-                        },
-                        "createdAt": {
-                          "type": "string"
-                        },
-                        "updatedAt": {
-                          "type": "string"
+                        {
+                          "type": "null"
                         }
-                      }
+                      ]
                     },
                     "releaseVersion": {
                       "type": "string"
@@ -74530,35 +74545,6 @@
                           }
                         }
                       }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "type",
-                    "title",
-                    "status"
-                  ],
-                  "properties": {
-                    "type": {
-                      "type": "string"
-                    },
-                    "title": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "number"
-                    },
-                    "detail": {
-                      "type": "string"
                     }
                   }
                 }

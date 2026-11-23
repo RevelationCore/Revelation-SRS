@@ -35591,6 +35591,8 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
+                        environmentCode: string;
+                        registered: boolean;
                         environment: {
                             deploymentEnvironmentId: string;
                             environmentCode: string;
@@ -35604,7 +35606,7 @@ export interface operations {
                             active: boolean;
                             createdAt: string;
                             updatedAt: string;
-                        };
+                        } | null;
                         releaseVersion: string;
                         imageDigest: string | null;
                         migrationVersion: string;
@@ -35617,20 +35619,6 @@ export interface operations {
                             statusCode: string;
                             defaultVariantKey: string;
                         }[];
-                    };
-                };
-            };
-            /** @description Default Response */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        type: string;
-                        title: string;
-                        status: number;
-                        detail?: string;
                     };
                 };
             };
