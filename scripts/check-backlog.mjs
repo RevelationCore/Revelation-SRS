@@ -20,7 +20,7 @@ const BACKLOG = 'docs/product/backlog.csv';
 const READINESS = 'docs/product/enterprise-readiness-audit.md';
 const BP_DIR = 'docs/business-processes';
 
-const HEADER = ['ID', 'Title', 'Detail', 'Type', 'Area', 'Quality', 'Root cause', 'Pattern', 'Priority', 'Size', 'Status', 'Owner', 'Waiting on', 'Milestone', 'Source', 'Source ref', 'Added', 'Updated'];
+const HEADER = ['ID', 'Title', 'Detail', 'Type', 'Area', 'Quality', 'Root cause', 'Pattern', 'Priority', 'Go-live tier', 'Size', 'Status', 'Owner', 'Waiting on', 'Milestone', 'Source', 'Source ref', 'Added', 'Updated'];
 export const ALLOWED = {
   Type: ['Defect', 'Feature', 'Improvement', 'Integration', 'Tech debt', 'Test', 'Docs', 'Operations', 'Decision', 'Question', 'Review'],
   Area: [
@@ -33,6 +33,7 @@ export const ALLOWED = {
   Quality: ['Security', 'Availability', 'Performance', 'Scalability', 'Maintainability', 'Extensibility', 'Accessibility', 'Usability', 'Compliance', 'Functionality'],
   'Root cause': ['Missing pattern', 'Principle not enforced', 'Planned scope', 'External', 'Not assessed'],
   Priority: ['P0', 'P1', 'P2', 'P3', 'Triage'],
+  'Go-live tier': ['Tier 1', 'Tier 2', 'Tier 3'],
   Size: ['S', 'M', 'L', 'XL', '?'],
   Status: ['Open', 'In progress', 'Blocked', 'Awaiting decision', 'Awaiting review', 'Done', "Won't do"],
   Owner: ['Engineering', 'Architecture', 'Product', 'Institution', 'SME', 'DPO'],
@@ -67,6 +68,8 @@ for (const it of items) {
   for (const [col, values] of Object.entries(ALLOWED)) {
     if (it[col] && !values.includes(it[col])) errors.push(`${where}: ${col} "${it[col]}" is not one of: ${values.join(', ')}`);
   }
+  // A go-live tier ranks only the items that block go-live (P0 and P1).
+  if (it['Go-live tier'] && !['P0', 'P1'].includes(it.Priority)) errors.push(`${where}: Go-live tier is only for P0 and P1 items, not ${it.Priority}`);
   for (const col of ['Added', 'Updated']) {
     if (it[col] && !DATE.test(it[col])) errors.push(`${where}: ${col} "${it[col]}" is not a date (YYYY-MM-DD)`);
   }

@@ -13,6 +13,7 @@
 Open `backlog.csv`, select the header row and choose **Data → Filter**. Each classification column has a fixed set of values, so the filter drop-downs stay short. Some useful views:
 
 - **What blocks go-live:** Priority `P0` or `P1`, and Status anything except `Done` and `Won't do`.
+- **Which go-live blockers matter most:** filter `Go-live tier` to `Tier 1`. The tiers rank open engineering P1s by what goes wrong if the SRS goes live without them (ranked 2026-11-23).
 - **What is waiting on someone else:** Owner `Institution`, `SME` or `DPO`, or Status `Awaiting decision` or `Awaiting review`.
 - **One domain:** filter on Area.
 - **Not yet prioritised:** Priority `Triage`.
@@ -32,6 +33,7 @@ If you save from Excel, keep the file as **CSV UTF-8**. Keep dates as `YYYY-MM-D
 | Root cause | Why the item exists (values below) |
 | Pattern | For a root cause of `Missing pattern` or `Principle not enforced`: the ID (`P-01` to `P-22`) of the design pattern that would have prevented it, in the maintainers' engineering patterns catalogue |
 | Priority | `P0` before real institutional data is loaded; `P1` before go-live; `P2` planned after go-live; `P3` worth doing, no date; `Triage` not yet prioritised |
+| Go-live tier | P0 and P1 only. `Tier 1` a real go-live gate: a statutory or legal breach, harm to students' data, wrong or corrupted records, or running blind; `Tier 2` fix before go-live, with a smaller blast radius (hardening, notices, assessment rules, consumer law, accessibility); `Tier 3` needed for go-live but conditional (scale, Temporal when enabled, other nations) or low risk (screens, docs). Empty for reviews, questions and decisions, which wait on people |
 | Size | `S` under a day, `M` 1 to 3 days, `L` 3 to 8 days, `XL` more than 8 days, `?` not estimated |
 | Status | `Open`, `In progress`, `Blocked`, `Awaiting decision`, `Awaiting review`, `Done`, `Won't do` |
 | Owner | Who acts next: `Engineering`, `Architecture`, `Product`, `Institution`, `SME`, `DPO` |
