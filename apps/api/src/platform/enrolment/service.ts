@@ -162,6 +162,7 @@ const ALLOWED_TRANSITIONS: Record<EnrolmentStatusCode, EnrolmentStatusCode[]> = 
 export class EnrolmentService {
   private readonly transitionValidator: TransitionValidator;
   private readonly triggerRules: TriggerRuleEvaluator;
+  readonly #terminalListeners: Array<(tenantId: string, enrolmentId: string) => Promise<unknown>> = [];
 
   constructor(
     private readonly db:       Db,
@@ -541,6 +542,16 @@ export class EnrolmentService {
    * Validates the transition is legal, closes the current row, inserts a new
    * bitemporal version, and publishes the status-changed event.
    */
+  /**
+   * Called after a transition to withdrawn or graduated commits (ADR-034
+   * item 7: ending the enrolment's adjustments). Only for latency: a failure
+   * is logged and never fails the transition; the worker sweep is the
+   * guarantee.
+   */
+  onTerminalStatus(listener: (tenantId: string, enrolmentId: string) => Promise<unknown>): void {
+    this.#terminalListeners.push(listener);
+  }
+
   async transitionStatus(
     enrolmentId: string,
     tenantId:    string,
@@ -677,6 +688,12 @@ export class EnrolmentService {
         changeKey: `enrolment-status:${enrolmentId}:${newStatus}:${validFrom.toISOString()}`,
         effectiveFrom: validFrom,
       });
+    }
+
+    if (newStatus === 'withdrawn' || newStatus === 'graduated') {
+      for (const listener of this.#terminalListeners) {
+        try { await listener(tenantId, enrolmentId); } catch { /* the worker sweep retries */ }
+      }
     }
 
     if (this.eventBus.isConnected()) {

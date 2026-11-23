@@ -516,6 +516,8 @@ export async function buildApp(
   const adjustmentWithdrawals = new AdjustmentWithdrawalService(db, adjustments, valueSets, workflowBridge, examEntries, reviewExecution, fastify.log);
   adjustmentWithdrawals.registerWorkflowEffects(reviewActivities);
   fastify.decorate('adjustmentWithdrawalService', adjustmentWithdrawals);
+  // ADR-034 item 7: an ended enrolment ends its adjustments (the worker sweep is the guarantee).
+  enrolments.onTerminalStatus((tenantId) => adjustmentWithdrawals.withdrawForEndedEnrolments(tenantId));
   const pgrSupervision = new SupervisionService(db, businessCases, regulatoryExchanges, deliveries);
   const pgrProgressReview = new ProgressReviewService(db, businessCases, regulatoryExchanges, valueSets);
   const pgrExamination = new ExaminationService(db, businessCases, valueSets);

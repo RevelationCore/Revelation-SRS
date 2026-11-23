@@ -271,3 +271,68 @@ describe('withdrawal proposals for manual, migrated and legacy adjustments (ADR-
     expect(published.filter((e) => e.type === EVENT_TYPES.ADJUSTMENT_EXPIRED)).toEqual([]);
   });
 });
+
+describe('enrolment end withdraws adjustments (ADR-034 item 7)', () => {
+  async function migratedFor(s: { personId: string; enrolmentId: string }): Promise<string> {
+    const id = randomUUID();
+    await ctx.db.execute(sql`INSERT INTO reasonable_adjustment (version_id, id, tenant_id, enrolment_id, person_id, adjustment_type_code, scope_code, actor_id, valid_from, recorded_at, provenance_code, migration_batch_id, migration_source_reference)
+      VALUES (gen_random_uuid(), ${id}::uuid, ${ctx.tenantId}::uuid, ${s.enrolmentId}::uuid, ${s.personId}::uuid, 'separate-room', 'exam', 'migration-import', '2026-09-01', now(), 'migrated', gen_random_uuid(), ${`sits:${id}`})`);
+    return id;
+  }
+  const transition = (enrolmentId: string, status: 'withdrawn' | 'graduated' | 'suspended', at = new Date(Date.now() + 1000)) =>
+    ctx.app.enrolmentService.transitionStatus(enrolmentId, ctx.tenantId, status, at, 'registry-officer-1');
+  const sweep = () => ctx.app.adjustmentWithdrawalService.withdrawForEndedEnrolments(ctx.tenantId);
+  const latestTransition = async (enrolmentId: string) => ((await ctx.db.execute(sql`SELECT id::text AS id FROM enrolment_status_transition
+    WHERE enrolment_id = ${enrolmentId}::uuid ORDER BY created_at DESC LIMIT 1`)) as unknown as Array<{ id: string }>)[0]!.id;
+  const endedRow = async (adjustmentId: string) => ((await ctx.db.execute(sql`SELECT withdrawal_authority_code, withdrawal_reason_code, withdrawal_enrolment_transition_id::text AS transition, actor_id, valid_to
+    FROM reasonable_adjustment WHERE id = ${adjustmentId}::uuid AND recorded_until IS NULL`)) as unknown as Array<{ withdrawal_authority_code: string | null; withdrawal_reason_code: string | null; transition: string | null; actor_id: string; valid_to: Date | null }>)[0]!;
+
+  it('withdrawing the student ends every current adjustment, whatever its provenance, as the system', async () => {
+    const s = await student('WE01');
+    const { adjustmentId: fromCase } = await caseAdjustment(s);
+    const fromMigration = await migratedFor(s);
+    await ctx.db.execute(sql`UPDATE enrolment SET valid_from = now() - interval '1 day' WHERE id = ${s.enrolmentId}::uuid AND recorded_until IS NULL`);
+    await transition(s.enrolmentId, 'withdrawn', new Date(Date.now() - 1000));
+    const transitionId = await latestTransition(s.enrolmentId);
+    for (const id of [fromCase, fromMigration]) {
+      expect(await endedRow(id)).toMatchObject({ withdrawal_authority_code: 'enrolment-ended', withdrawal_reason_code: 'enrolment-ended', transition: transitionId, actor_id: 'system:enrolment-ended' });
+    }
+    const audit = (await ctx.db.execute(sql`SELECT actor_type FROM audit_record WHERE entity_type = 'reasonable_adjustment' AND entity_id = ${fromMigration}::uuid AND action_type = 'update'`)) as unknown as Array<{ actor_type: string }>;
+    expect(audit).toEqual([{ actor_type: 'system' }]);
+    expect(published.filter((e) => e.type === EVENT_TYPES.ADJUSTMENT_EXPIRED)).toHaveLength(2);
+
+    // Idempotent: nothing more to do.
+    published.length = 0;
+    expect(await sweep()).toMatchObject({ withdrawn: 0 });
+    expect(published.filter((e) => e.type === EVENT_TYPES.ADJUSTMENT_EXPIRED)).toEqual([]);
+  });
+
+  it('a graduation effective now is applied straight away by the listener', async () => {
+    const s = await student('WE02');
+    const id = await migratedFor(s);
+    await ctx.db.execute(sql`UPDATE enrolment SET valid_from = now() - interval '1 day' WHERE id = ${s.enrolmentId}::uuid AND recorded_until IS NULL`);
+    await transition(s.enrolmentId, 'graduated', new Date(Date.now() - 1000));
+    expect(await endedRow(id)).toMatchObject({ withdrawal_authority_code: 'enrolment-ended' });
+  });
+
+  it('a future-dated withdrawal waits until it takes effect', async () => {
+    const s = await student('WE03');
+    const id = await migratedFor(s);
+    await transition(s.enrolmentId, 'withdrawn', new Date(Date.now() + 30 * 24 * 3600 * 1000));
+    await sweep();
+    expect((await endedRow(id)).valid_to).toBeNull();
+    // The date passes.
+    await ctx.db.execute(sql`UPDATE enrolment SET valid_from = now() - interval '1 minute' WHERE id = ${s.enrolmentId}::uuid AND recorded_until IS NULL`);
+    await sweep();
+    expect(await endedRow(id)).toMatchObject({ withdrawal_authority_code: 'enrolment-ended' });
+  });
+
+  it('a suspension does not end adjustments', async () => {
+    const s = await student('WE04');
+    const id = await migratedFor(s);
+    await ctx.db.execute(sql`UPDATE enrolment SET valid_from = now() - interval '1 day' WHERE id = ${s.enrolmentId}::uuid AND recorded_until IS NULL`);
+    await transition(s.enrolmentId, 'suspended', new Date(Date.now() - 1000));
+    await sweep();
+    expect((await endedRow(id)).valid_to).toBeNull();
+  });
+});

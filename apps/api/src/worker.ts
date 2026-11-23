@@ -70,7 +70,10 @@ const reconcile = async (): Promise<void> => {
     // and add approved adjustments to entries generated before them (BL-058).
     let examWithdrawals = 0;
     let examAdditions = 0;
+    // Adjustments of enrolments that have ended (ADR-034 item 7).
+    let adjustmentsEnded = 0;
     for (const tenantId of await app.adjustmentDispatcher.tenantIds()) {
+      adjustmentsEnded += (await app.adjustmentWithdrawalService.withdrawForEndedEnrolments(tenantId)).withdrawn;
       examWithdrawals += await app.examEntryService.applyExamWithdrawals(tenantId);
       examAdditions += await app.examEntryService.applyExamAdditions(tenantId);
     }
@@ -84,7 +87,7 @@ const reconcile = async (): Promise<void> => {
       const r = await app.rightToStudyService.scanExpiry(tenantId);
       rightToStudy = { warned: rightToStudy.warned + r.warned, alerts: rightToStudy.alerts + r.alerts };
     }
-    const result = { ...workflows, adjustmentInstructions, examWithdrawals, examAdditions, overdueNotices, deliveryItems, rightToStudy };
+    const result = { ...workflows, adjustmentInstructions, adjustmentsEnded, examWithdrawals, examAdditions, overdueNotices, deliveryItems, rightToStudy };
     lastReconcile = { at: clockNow().toISOString(), ok: true, result };
   } catch (err) {
     lastReconcile = { at: clockNow().toISOString(), ok: false, error: err instanceof Error ? err.message : String(err) };

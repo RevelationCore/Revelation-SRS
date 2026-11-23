@@ -9,7 +9,7 @@ import {
   withTenantContext,
 } from '@revelation-srs/db';
 import { ConflictError, NotFoundError, ValidationError } from '@revelation-srs/domain';
-import { and, asc, eq } from 'drizzle-orm';
+import { and, asc, eq, sql } from 'drizzle-orm';
 
 import { clockNow } from '../clock.js';
 import { GovernedReview } from '../platform-controls/governed-review.js';
@@ -175,6 +175,51 @@ export class AdjustmentWithdrawalService {
 
   async get(tenantId: string, withdrawalId: string): Promise<AdjustmentWithdrawalDto> {
     return toDto(await this.#get(tenantId, withdrawalId));
+  }
+
+  /**
+   * ADR-034 item 7 (BL-409): ends the current adjustments of every enrolment
+   * whose current version is withdrawn or graduated and already in effect.
+   * The authority is the latest transition to that status, itself the effect
+   * of a governed decision. Idempotent: an ended adjustment is not found
+   * again. A future-dated end waits until it takes effect; interruption and
+   * suspension never end adjustments. Runs in the worker loop (the
+   * guarantee) and after a terminal transition (for latency).
+   */
+  async withdrawForEndedEnrolments(tenantId: string): Promise<{ withdrawn: number; skipped: number }> {
+    const due = await withTenantContext(this.db, tenantId, (tx) => tx.execute(sql`
+      SELECT ra.id::text AS adjustment_id,
+             (SELECT t.id::text FROM enrolment_status_transition t
+               WHERE t.tenant_id = e.tenant_id AND t.enrolment_id = e.id AND t.to_status_code = e.status_code
+               ORDER BY t.effective_at DESC, t.created_at DESC LIMIT 1) AS transition_id
+      FROM reasonable_adjustment ra
+      JOIN enrolment e ON e.tenant_id = ra.tenant_id AND e.id = ra.enrolment_id AND e.recorded_until IS NULL
+      WHERE ra.tenant_id = ${tenantId}::uuid AND ra.recorded_until IS NULL
+        AND (ra.valid_to IS NULL OR ra.valid_to > now())
+        AND e.status_code IN ('withdrawn', 'graduated') AND e.valid_from <= now()`)) as unknown as Array<{ adjustment_id: string; transition_id: string | null }>;
+
+    let withdrawn = 0; let skipped = 0;
+    for (const row of due) {
+      if (!row.transition_id) {
+        // No recorded transition to name as the authority (an enrolment loaded
+        // directly in that status): left for a person to resolve.
+        this.log?.warn({ adjustmentId: row.adjustment_id }, 'Enrolment ended with no recorded transition; adjustment not withdrawn');
+        skipped += 1;
+        continue;
+      }
+      const result = await this.adjustments.withdrawAuthorisedAdjustment(tenantId, row.adjustment_id,
+        { kind: 'enrolment-ended', enrolmentStatusTransitionId: row.transition_id },
+        { actorId: 'system:enrolment-ended', actorType: 'system' });
+      if (result.changed) withdrawn += 1;
+    }
+    if (withdrawn > 0) {
+      try {
+        await this.examEntries?.applyExamWithdrawals(tenantId);
+      } catch (err) {
+        this.log?.warn({ err }, 'Exam entry withdrawal deferred to the reconcile loop');
+      }
+    }
+    return { withdrawn, skipped };
   }
 
   /** The review's effect for either decision; safe to repeat, as a retried activity does. */
