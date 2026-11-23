@@ -134,6 +134,13 @@
       "when": 1785000066000,
       "tag": "0018_cas_mandatory_checks",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1785000067000,
+      "tag": "0019_progression_defer",
+      "breakpoints": true
     }
   ]
 }

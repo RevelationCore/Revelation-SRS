@@ -10891,6 +10891,15 @@
     "selectable": true
    },
    {
+    "code": "defer",
+    "displayLabel": "Deferred until results are complete",
+    "description": null,
+    "sortOrder": 25,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
     "code": "repeat-year",
     "displayLabel": "Repeat Year",
     "description": null,
@@ -10930,6 +10939,15 @@
     "displayLabel": "Resit Required",
     "description": null,
     "sortOrder": 20,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "defer",
+    "displayLabel": "Deferred until results are complete",
+    "description": null,
+    "sortOrder": 25,
     "active": true,
     "hidden": false,
     "selectable": true

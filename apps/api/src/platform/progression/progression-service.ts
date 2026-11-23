@@ -117,7 +117,8 @@ export class ProgressionService {
     const enrolment = await this.#getEnrolment(enrolmentId, tenantId);
     const outcomes = await this.#getModuleOutcomes(enrolmentId, tenantId, academicYear);
     const rules = await this.#getProgressionRules(tenantId, enrolmentId, enrolment.programmeId, academicYear, outcomes);
-    const evidence = this.#decide(outcomes, rules);
+    const missingResults = await this.#countMissingResults(enrolmentId, tenantId, academicYear);
+    const evidence = this.#decide(outcomes, rules, missingResults);
     const { decisionCode } = evidence;
     const current = await this.#getCurrentDecision(enrolmentId, tenantId, academicYear);
     if (current) assertNotLocked(current, 'ProgressionDecision', current.progressionDecisionId);
@@ -316,6 +317,18 @@ export class ProgressionService {
     return rows[0];
   }
 
+  /** Module registrations of the year still active that have no current result (G1). */
+  async #countMissingResults(enrolmentId: string, tenantId: string, academicYear: string): Promise<number> {
+    const rows = await withTenantContext(this.db, tenantId, (tx) => tx.execute(sql`
+      SELECT count(*)::int AS n FROM module_registration r
+      JOIN module_offering o ON o.id = r.module_offering_id AND o.tenant_id = r.tenant_id
+      JOIN academic_period p ON p.id = o.academic_period_id AND p.tenant_id = r.tenant_id
+      WHERE r.tenant_id = ${tenantId}::uuid AND r.enrolment_id = ${enrolmentId}::uuid AND r.recorded_until IS NULL
+        AND r.status_code <> 'withdrawn' AND p.academic_year = ${academicYear}
+        AND NOT EXISTS (SELECT 1 FROM module_result mr WHERE mr.tenant_id = r.tenant_id AND mr.module_registration_id = r.id AND mr.recorded_until IS NULL)`)) as unknown as Array<{ n: number }>;
+    return rows[0]?.n ?? 0;
+  }
+
   async #getModuleOutcomes(enrolmentId: string, tenantId: string, academicYear: string): Promise<ModuleOutcome[]> {
     const rows = await withTenantContext(this.db, tenantId, async (tx) =>
       tx.select({
@@ -437,7 +450,7 @@ export class ProgressionService {
     }
   }
 
-  #decide(outcomes: ModuleOutcome[], rules: ProgressionRules): DecisionEvidence {
+  #decide(outcomes: ModuleOutcome[], rules: ProgressionRules, missingResults = 0): DecisionEvidence {
     let earnedCredits = rules.recognisedCredits;
     let compensationCredits = 0;
     let unresolvedCredits = 0;
@@ -470,9 +483,14 @@ export class ProgressionService {
     // Progression needs the credit and, where configured, a minimum number of modules passed outright.
     const passesMet = rules.minimumModulePasses === null || modulesPassed >= rules.minimumModulePasses;
     let decisionCode: string;
-    if (earnedCredits >= rules.requiredCredits && passesMet) decisionCode = 'progress';
-    else if (unresolvedCredits > 0 || outcomes.length > 0) decisionCode = 'resit';
-    else decisionCode = 'repeat-year';
+    // G1 (BL-277): missing or uncertain results defer the decision (E1.1), and
+    // no results at all is never a repeat year.
+    if (missingResults > 0 || outcomes.some((o) => o.resultCode === 'deferred')) decisionCode = 'defer';
+    // Recognised prior credit alone can meet the requirement.
+    else if (earnedCredits >= rules.requiredCredits && passesMet) decisionCode = 'progress';
+    // Nothing to judge: never a repeat year on no results.
+    else if (outcomes.length === 0) decisionCode = 'defer';
+    else decisionCode = 'resit';
 
     return { modulesPassed, earnedCredits, compensationCredits, unresolvedCredits, decisionCode };
   }

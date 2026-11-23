@@ -56,14 +56,15 @@ describe('Progression decisions', () => {
       ctx.app.inject({ method: 'POST', url: `/api/v1${url}`, headers: { authorization: `Bearer ${as}` }, payload });
     const approve = (url: string) => post(url, approverJwt, { decisionCode: 'approved', reason: 'Approved' });
 
-    // No module results: without credit the student would repeat the year.
+    // No module results: without credit there is nothing to decide on yet.
     const credited = await createProgressionFixture('PRG110');
     const otherYear = await post(`/enrolments/${credited.enrolmentId}/recognised-credits`, proposerJwt, {
       recognitionTypeCode: 'rpcl', sourceDescription: 'Prior study', creditValue: 20, academicYear: '2028-29', evidenceRef: 'docs:prior-1',
     });
     await approve(`/recognised-credits/${otherYear.json<{ recognisedCreditId: string }>().recognisedCreditId}/decision`);
     await evaluateProgression(credited.enrolmentId);
-    expect((await getProgression(credited.enrolmentId)).json<{ decisionCode: string }>().decisionCode).toBe('repeat-year');
+    // BL-277 (G1): no results is deferred, never a repeat year (an intended contract change).
+    expect((await getProgression(credited.enrolmentId)).json<{ decisionCode: string }>().decisionCode).toBe('defer');
 
     const thisYear = await post(`/enrolments/${credited.enrolmentId}/recognised-credits`, proposerJwt, {
       recognitionTypeCode: 'rpcl', sourceDescription: 'Prior study', creditValue: 20, academicYear: '2027-28', evidenceRef: 'docs:prior-2',
@@ -94,6 +95,25 @@ describe('Progression decisions', () => {
     await approve(`/rule-exceptions/${exception.json<{ ruleExceptionId: string }>().ruleExceptionId}/decision`);
     await evaluateProgression(varied.enrolmentId);
     expect((await getProgression(varied.enrolmentId)).json<{ decisionCode: string }>().decisionCode).toBe('resit');
+  });
+
+  it('BL-277 (G1): a missing or deferred result defers the decision', async () => {
+    const resultOf = (code: string) => sql`(SELECT mr.version_id FROM module_result mr
+      JOIN module_registration r ON r.id = mr.module_registration_id JOIN module_offering o ON o.id = r.module_offering_id
+      JOIN module m ON m.id = o.module_id WHERE m.code = ${code} AND mr.recorded_until IS NULL)`;
+
+    const missing = await createProgressionFixture('PDEF1');
+    await addModuleResult(missing, 'PDEF1A', 72);
+    await addModuleResult(missing, 'PDEF1B', 68);
+    await ctx.db.execute(sql`DELETE FROM module_result WHERE version_id IN ${resultOf('PDEF1B')}`);
+    expect((await evaluateProgression(missing.enrolmentId)).statusCode).toBe(201);
+    expect((await getProgression(missing.enrolmentId)).json<{ decisionCode: string }>().decisionCode).toBe('defer');
+
+    const deferred = await createProgressionFixture('PDEF2');
+    await addModuleResult(deferred, 'PDEF2A', 72);
+    await ctx.db.execute(sql`UPDATE module_result SET result_code = 'deferred' WHERE version_id IN ${resultOf('PDEF2A')}`);
+    expect((await evaluateProgression(deferred.enrolmentId)).statusCode).toBe(201);
+    expect((await getProgression(deferred.enrolmentId)).json<{ decisionCode: string }>().decisionCode).toBe('defer');
   });
 
   it('evaluates a passing progression decision and publishes an event', async () => {
