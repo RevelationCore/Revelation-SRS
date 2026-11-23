@@ -90,3 +90,74 @@ export async function requestPostMergeSnapshots(delivery: DeliveryService, db: D
   }
   await delivery.dispatchTenant(tenantId);
 }
+
+export interface UnmergeForNotices {
+  mergeId: string;
+  survivorPersonId: string;
+  restoredPersonId: string;
+  effectiveAt: Date;
+}
+
+/**
+ * ADR-031 items 8 and 10 (BL-359), in the unmerge's transaction: the flows
+ * that know either person get a person-unmerged notice, and IAM reverses what
+ * the merge told it: an account the merge rebound to the survivor is bound
+ * back to the restored person (rebind), and one it ended is restored.
+ */
+export async function requestUnmergeNotices(delivery: DeliveryService, tx: TenantScopedDb, tenantId: string, unmerge: UnmergeForNotices): Promise<MergeNoticePlan> {
+  const delivered = await tx.execute(sql`SELECT DISTINCT flow_code FROM delivery_item
+    WHERE tenant_id = ${tenantId}::uuid AND status_code = 'delivered'
+      AND person_id IN (${unmerge.survivorPersonId}::uuid, ${unmerge.restoredPersonId}::uuid)`) as unknown as Array<{ flow_code: string }>;
+  const flows = [...new Set(delivered.map((d) => d.flow_code))].filter((f) => DELIVERY_FLOWS.some((d) => d.flowCode === f)).sort();
+  const numbers = await tx.execute(sql`SELECT id::text AS id, student_number FROM person
+    WHERE tenant_id = ${tenantId}::uuid AND id IN (${unmerge.survivorPersonId}::uuid, ${unmerge.restoredPersonId}::uuid)`) as unknown as Array<{ id: string; student_number: string | null }>;
+  const numberOf = (id: string) => numbers.find((n) => n.id === id)?.student_number ?? null;
+  const effectiveAt = unmerge.effectiveAt.toISOString();
+
+  for (const flowCode of flows.filter((f) => f !== IAM_FLOW)) {
+    await delivery.requestIn(tx, tenantId, {
+      flowCode, subjectType: 'person-merge', subjectId: unmerge.mergeId, personId: unmerge.restoredPersonId,
+      idempotencyKey: `person-unmerged:${unmerge.mergeId}`,
+      payload: {
+        messageType: 'person-unmerged', mergeId: unmerge.mergeId,
+        survivorPersonId: unmerge.survivorPersonId, restoredPersonId: unmerge.restoredPersonId,
+        survivorStudentNumber: numberOf(unmerge.survivorPersonId), restoredStudentNumber: numberOf(unmerge.restoredPersonId), effectiveAt,
+      },
+      summary: `Records ${numberOf(unmerge.restoredPersonId) ?? unmerge.restoredPersonId} and ${numberOf(unmerge.survivorPersonId) ?? unmerge.survivorPersonId} are two people again`,
+    });
+  }
+
+  // What the merge told IAM decides what the unmerge tells it.
+  const [merged] = await tx.execute(sql`SELECT payload->>'instruction' AS instruction FROM delivery_item
+    WHERE tenant_id = ${tenantId}::uuid AND flow_code = ${IAM_FLOW} AND idempotency_key = ${`person-merged:${unmerge.mergeId}:iam`} LIMIT 1`) as unknown as Array<{ instruction: string | null }>;
+  let iamInstruction: MergeNoticePlan['iamInstruction'] = null;
+  if (merged?.instruction === 'rebind' || merged?.instruction === 'ended') {
+    const instruction = merged.instruction === 'rebind' ? 'rebind' : 'restore';
+    iamInstruction = merged.instruction;
+    await delivery.requestIn(tx, tenantId, {
+      flowCode: IAM_FLOW, subjectType: 'person', subjectId: unmerge.restoredPersonId, personId: unmerge.restoredPersonId,
+      idempotencyKey: `person-unmerged:${unmerge.mergeId}:iam`,
+      payload: {
+        contractVersion: 2, contractMinorVersion: 1, instruction, personId: unmerge.restoredPersonId,
+        studentNumber: numberOf(unmerge.restoredPersonId), fromPersonId: unmerge.survivorPersonId, mergeId: unmerge.mergeId, effectiveFrom: effectiveAt,
+      },
+      summary: instruction === 'rebind'
+        ? `Bind the account back to ${numberOf(unmerge.restoredPersonId) ?? unmerge.restoredPersonId} (merge reversed)`
+        : `Restore the account of ${numberOf(unmerge.restoredPersonId) ?? unmerge.restoredPersonId} (merge reversed)`,
+    });
+  }
+  return { flows, iamInstruction };
+}
+
+/** After the unmerge commits: fresh snapshots for both people, then dispatch. */
+export async function requestPostUnmergeSnapshots(delivery: DeliveryService, db: Db, tenantId: string, unmerge: UnmergeForNotices, plan: MergeNoticePlan, enrolmentIds: string[]): Promise<void> {
+  const key = `person-unmerged:${unmerge.mergeId}:snapshot`;
+  for (const personId of [unmerge.survivorPersonId, unmerge.restoredPersonId]) {
+    if (plan.flows.includes(IAM_FLOW) || plan.iamInstruction) await requestAccountAccess(delivery, db, tenantId, { personId, changeKey: `${key}:iam:${personId}` });
+    if (plan.flows.includes(ITSM_FLOW)) await requestItsmSnapshot(delivery, db, tenantId, personId, `${key}:itsm:${personId}`);
+  }
+  for (const enrolmentId of enrolmentIds) {
+    await onEnrolmentChanged(delivery, db, tenantId, { enrolmentId, changeKey: `${key}:enrolment:${enrolmentId}`, effectiveFrom: unmerge.effectiveAt });
+  }
+  await delivery.dispatchTenant(tenantId);
+}

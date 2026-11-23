@@ -27,7 +27,7 @@ import {
   handleModuleRegistrationWithdrawn,
   handleModuleRegistrationCompleted,
 } from '../projections/context-projection.js';
-import { handlePersonMerged } from '../projections/person-merge.js';
+import { handlePersonMerged, handlePersonUnmerged } from '../projections/person-merge.js';
 
 const STREAM_NAME   = 'SRS_EVENTS';
 const CONSUMER_NAME = 'attendance-context-consumer';
@@ -41,6 +41,7 @@ const SUBSCRIBED_SUBJECTS = [
   EVENT_TYPES.ENROLMENT_MODULE_REGISTRATION_COMPLETED,
   // ADR-031 item 7 (BL-358).
   EVENT_TYPES.PERSON_MERGED,
+  EVENT_TYPES.PERSON_UNMERGED,
 ] as const;
 
 export class AttendanceEventConsumer {
@@ -191,6 +192,9 @@ export async function routeToHandler(
       return handleModuleRegistrationCompleted(tx, envelope as DomainEventEnvelope<any>);
     case EVENT_TYPES.PERSON_MERGED:
       await handlePersonMerged(tx, envelope as DomainEventEnvelope<any>);
+      return;
+    case EVENT_TYPES.PERSON_UNMERGED:
+      await handlePersonUnmerged(tx, envelope as DomainEventEnvelope<any>);
       return;
     default:
       // Unknown subject — silently skip; event_log records it for observability.

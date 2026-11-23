@@ -444,4 +444,18 @@ describe('srs.person.merged (ADR-031 item 7, BL-358)', () => {
     await c.dispatch(event());
     expect(await count()).toBe(moved);
   });
+
+  it('srs.person.unmerged moves the mappings back (BL-359)', async () => {
+    const c = consumer();
+    const merged = await enrolStudent(c);
+    await registerOnNewCourse(c, merged, 'UNM101');
+    const survivorPersonId = randomUUID();
+    const mergeId = randomUUID();
+    await c.dispatch(envelope('srs.person.merged', { mergeId, survivorPersonId, mergedPersonId: merged.personId, effectiveAt: new Date().toISOString() }));
+    await c.dispatch(envelope('srs.person.unmerged', { mergeId, survivorPersonId, restoredPersonId: merged.personId, effectiveAt: new Date().toISOString(), reallocatedToRestored: {} }));
+    const maps = await ctx.db.select({ personId: enrolmentMap.personId }).from(enrolmentMap).where(eq(enrolmentMap.enrolmentId, merged.enrolmentId));
+    expect(maps.length).toBeGreaterThan(0);
+    expect(maps.every((m) => m.personId === merged.personId)).toBe(true);
+  });
 });
+

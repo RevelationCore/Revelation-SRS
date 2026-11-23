@@ -19,7 +19,7 @@ import type { Logger } from 'pino';
 
 import type { WellbeingDb, WellbeingTx } from '../db/client.js';
 import { withWellbeingTenantContext } from '../db/client.js';
-import { handlePersonMerged } from '../projections/person-merge.js';
+import { handlePersonMerged, handlePersonUnmerged } from '../projections/person-merge.js';
 import { CONSUMER_GROUP, isAlreadyProcessed, markProcessed } from '../repositories/event-log-repository.js';
 import {
   handleStudentEnrolled,
@@ -59,6 +59,7 @@ const SUBSCRIBED_SUBJECTS = [
   EVENT_TYPES.REGULATORY_UKVI_COMPLIANCE_ALERT,
   // ADR-031 item 7 (BL-358).
   EVENT_TYPES.PERSON_MERGED,
+  EVENT_TYPES.PERSON_UNMERGED,
 ] as const;
 
 export class WellbeingEventConsumer {
@@ -227,6 +228,9 @@ export async function routeToHandler(
       return handleUkviComplianceAlertRaised(tx, envelope as DomainEventEnvelope<any>);
     case EVENT_TYPES.PERSON_MERGED:
       await handlePersonMerged(tx, envelope as DomainEventEnvelope<any>);
+      return;
+    case EVENT_TYPES.PERSON_UNMERGED:
+      await handlePersonUnmerged(tx, envelope as DomainEventEnvelope<any>);
       return;
     default:
       // Unknown subject — silently skip; event_log records it for observability.

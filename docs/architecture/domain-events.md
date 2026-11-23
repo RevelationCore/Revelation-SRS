@@ -73,8 +73,9 @@ interface DomainEventEnvelope<T> {
 | Subject | Data class | Partition key | Consumers |
 |---|---|---|---|
 | `srs.person.merged` | personal | `survivorPersonId` | wellbeing-module, attendance-module, vle-connector |
+| `srs.person.unmerged` | personal | `survivorPersonId` | wellbeing-module, attendance-module, vle-connector |
 
-Published from the core outbox when an identity merge has moved current ownership to the survivor (ADR-031 item 7). The payload is `{ mergeId, survivorPersonId, mergedPersonId, effectiveAt }`: ids only, never names or identifiers. Consumers re-key their own records idempotently by `mergeId` (BL-358). `srs.person.unmerged` follows with unmerge (BL-359).
+Published from the core outbox when an identity merge has moved current ownership to the survivor (ADR-031 item 7). The payload is `{ mergeId, survivorPersonId, mergedPersonId, effectiveAt }`: ids only, never names or identifiers. Consumers re-key their own records idempotently by `mergeId` (BL-358). `srs.person.unmerged` `{ mergeId, survivorPersonId, restoredPersonId, effectiveAt, reallocatedToRestored }` is published when a governed unmerge reverses the merge; consumers reverse the moves they recorded for that `mergeId` (BL-359).
 
 ### Enrolment (`srs.enrolment.*`)
 

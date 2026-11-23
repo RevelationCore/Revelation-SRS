@@ -284,6 +284,15 @@ export const PUBLISHED_EVENTS: EventDef[] = [
     consumers: ['wellbeing-module', 'attendance-module', 'vle-connector'],
   },
   {
+    typeName: 'PersonUnmergedV1Payload',
+    file: 'person/unmerged.v1.ts',
+    subject: 'srs.person.unmerged',
+    schemaPath: 'person/unmerged',
+    dataClass: 'personal',
+    partitionKey: 'survivorPersonId',
+    consumers: ['wellbeing-module', 'attendance-module', 'vle-connector'],
+  },
+  {
     typeName: 'AdjustmentDistributionRequestedV1Payload',
     file: 'adjustment/distribution-requested.v1.ts',
     subject: 'srs.adjustment.distribution-requested',

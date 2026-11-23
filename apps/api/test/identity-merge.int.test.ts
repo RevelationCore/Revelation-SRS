@@ -201,3 +201,115 @@ describe('external systems learn of a merge (ADR-031 items 8 and 9, BL-357)', ()
     expect(iam!.payload).toMatchObject({ instruction: 'ended', accessLevel: 'ended', endReason: 'merged', personId: merged, successorPersonId: survivor });
   });
 });
+
+describe('unmerge (ADR-031 item 10, BL-359)', () => {
+  let officerC: string; let officerD: string;
+  beforeAll(async () => {
+    officerC = await ctx.makeJwt({ sub: 'officer-c', roles: ['identity-resolution-officer'] });
+    officerD = await ctx.makeJwt({ sub: 'officer-d', roles: ['identity-resolution-officer'] });
+  });
+  const mergeOf = async (decisionId: string) => (await rows<{ id: string }>(sql`SELECT id::text FROM identity_merge WHERE decision_id = ${decisionId}::uuid`))[0]!.id;
+  const open = async (mergeId: string, token = officerC) => {
+    const res = await call(token, 'POST', `/identity-merges/${mergeId}/unmerge-cases`);
+    expect(res.statusCode, res.body).toBe(201);
+    return res.json<{ unmergeCaseId: string }>().unmergeCaseId;
+  };
+  const decideUnmerge = (token: string, caseId: string, body: Record<string, unknown>) =>
+    call(token, 'POST', `/identity-unmerge-cases/${caseId}/decision`, { decisionTypeCode: 'unmerge', reason: 'Two different people', ...body });
+
+  it('reverses the merge, gives post-merge records where the proposal says, and lets the two be merged again', async () => {
+    const merged = await person('UnOld'); const survivor = await person('UnNew');
+    await ctx.db.execute(sql`UPDATE person SET hesa_id = '1833333333333' WHERE id = ${merged}::uuid`);
+    await ctx.db.execute(sql`UPDATE person SET hesa_id = '1844444444444' WHERE id = ${survivor}::uuid`);
+    const movedEnrolment = await enrol(merged);
+    const mergeId = await mergeOf(await mergeInto(merged, survivor, {
+      factChoices: { 'person-identity': 'merged' }, identifierResolutions: { husid: { keep: 'survivor', reason: 'HESA confirmed' } },
+    }));
+    const statusBefore = (await rows<{ s: string }>(sql`SELECT person_status_code AS s FROM person WHERE id = ${merged}::uuid`))[0]!.s;
+    expect(statusBefore).toBe('merged');
+    // Made on the survivor after the merge, then found to be the other person's.
+    const laterEnrolment = await enrol(survivor);
+
+    const caseId = await open(mergeId);
+    const viewed = (await call(officerC, 'GET', `/identity-unmerge-cases/${caseId}`)).json<{ postMergeRecords: Array<{ key: string; table: string; rowKey: string }> }>();
+    const later = viewed.postMergeRecords.find((r) => r.table === 'enrolment' && r.rowKey === laterEnrolment);
+    expect(later, JSON.stringify(viewed.postMergeRecords)).toBeDefined();
+    expect(viewed.postMergeRecords.some((r) => r.rowKey === movedEnrolment)).toBe(false);
+    const proposed = await call(officerC, 'PUT', `/identity-unmerge-cases/${caseId}/proposal`, { allocations: { [later!.key]: 'restored' } });
+    expect(proposed.statusCode, proposed.body).toBe(200);
+
+    const res = await decideUnmerge(officerD, caseId, { proposalVersion: 1 });
+    expect(res.statusCode, res.body).toBe(200);
+    expect(res.json()).toMatchObject({ statusCode: 'unmerged' });
+
+    const ownerOf = async (enrolmentId: string) => (await rows<{ p: string }>(sql`SELECT person_id::text AS p FROM enrolment WHERE id = ${enrolmentId}::uuid AND recorded_until IS NULL`))[0]!.p;
+    expect(await ownerOf(movedEnrolment)).toBe(merged);
+    expect(await ownerOf(laterEnrolment)).toBe(merged);
+    expect((await rows<{ p: string }>(sql`SELECT DISTINCT person_id::text AS p FROM fee_liability WHERE enrolment_id = ${movedEnrolment}::uuid`)).map((r) => r.p)).toEqual([merged]);
+    // Each person has their own identity again.
+    const nameOf = async (p: string) => (await rows<{ n: string }>(sql`SELECT legal_first_name AS n FROM person_identity WHERE person_id = ${p}::uuid AND recorded_until IS NULL`)).map((r) => r.n);
+    expect(await nameOf(merged)).toEqual(['UnOld']);
+    expect(await nameOf(survivor)).toEqual(['UnNew']);
+    expect((await rows<{ s: string }>(sql`SELECT person_status_code AS s FROM person WHERE id = ${merged}::uuid`))[0]!.s).not.toBe('merged');
+    expect(await rows(sql`SELECT 1 FROM person_identifier_alias WHERE value = '1833333333333'`)).toEqual([]);
+    expect((await call(registry, 'GET', `/students/${merged}/adjustments`)).statusCode).toBe(200);
+
+    const [event] = await rows<{ payload: { reallocatedToRestored: Record<string, string[]>; restoredPersonId: string } }>(sql`SELECT payload FROM workflow_event_outbox WHERE event_type = 'srs.person.unmerged' AND correlation_id = ${caseId}`);
+    expect(event!.payload).toMatchObject({ restoredPersonId: merged, reallocatedToRestored: { enrolment: [laterEnrolment] } });
+    expect((await rows<{ u: Date | null }>(sql`SELECT unmerged_at AS u FROM identity_merge WHERE id = ${mergeId}::uuid`))[0]!.u).not.toBeNull();
+
+    // A second unmerge is refused; the two people can be merged again.
+    expect((await call(officerC, 'POST', `/identity-merges/${mergeId}/unmerge-cases`)).statusCode).toBe(409);
+    await mergeInto(merged, survivor, { identifierResolutions: { husid: { keep: 'survivor', reason: 'Confirmed again' } } });
+  });
+
+  it('is decided by someone who did not open or propose it, on the version they read', async () => {
+    const merged = await person('SodOld'); const survivor = await person('SodNew');
+    const mergeId = await mergeOf(await mergeInto(merged, survivor));
+    const caseId = await open(mergeId);
+    expect((await decideUnmerge(officerD, caseId, { proposalVersion: 1 })).statusCode).toBe(409); // no proposal yet
+    expect((await call(officerD, 'PUT', `/identity-unmerge-cases/${caseId}/proposal`, { allocations: {} })).statusCode).toBe(200);
+    for (const token of [officerC, officerD]) {
+      const res = await decideUnmerge(token, caseId, { proposalVersion: 1 });
+      expect(res.statusCode).toBe(403);
+      expect(res.json<{ type: string }>().type).toMatch(/separation-of-duties$/);
+    }
+    const officerE = await ctx.makeJwt({ sub: 'officer-e', roles: ['identity-resolution-officer'] });
+    expect((await decideUnmerge(officerE, caseId, { proposalVersion: 2 })).statusCode).toBe(409);
+    const own = await ctx.makeJwt({ sub: 'officer-own2', roles: ['identity-resolution-officer'], srsPersonId: merged });
+    expect((await decideUnmerge(own, caseId, { proposalVersion: 1 })).statusCode).toBe(403);
+    expect((await decideUnmerge(registry, caseId, { proposalVersion: 1 })).statusCode).toBe(403);
+    expect((await decideUnmerge(officerE, caseId, { proposalVersion: 1 })).statusCode).toBe(200);
+  });
+
+  it('is refused when the merged person has been anonymised since', async () => {
+    const merged = await person('AnonOld'); const survivor = await person('AnonNew');
+    const mergeId = await mergeOf(await mergeInto(merged, survivor));
+    await ctx.db.execute(sql`UPDATE person SET retention_anonymised_at = now() WHERE id = ${merged}::uuid`);
+    const caseId = await open(mergeId);
+    await call(officerC, 'PUT', `/identity-unmerge-cases/${caseId}/proposal`, { allocations: {} });
+    const res = await decideUnmerge(officerD, caseId, { proposalVersion: 1 });
+    expect(res.statusCode).toBe(422);
+    expect(res.json<{ type: string }>().type).toBe('https://srs.example.com/errors/unmerge-not-allowed');
+    expect((await rows<{ u: Date | null }>(sql`SELECT unmerged_at AS u FROM identity_merge WHERE id = ${mergeId}::uuid`))[0]!.u).toBeNull();
+  });
+
+  it('tells the ledger and IAM: an account the merge ended is restored', async () => {
+    const merged = await person('IamUnOld'); const survivor = await person('IamUnNew');
+    for (const p of [merged, survivor]) {
+      await ctx.db.execute(sql`INSERT INTO delivery_item (tenant_id, flow_code, target_system, subject_type, subject_id, person_id, idempotency_key, payload, summary, fulfilment_mode_code, status_code)
+        VALUES (${ctx.tenantId}::uuid, 'F-SIS-IAM-01', 'iam', 'person', ${p}::uuid, ${p}::uuid, ${`seed-un:${p}`}, '{}', 'seed', 'manual', 'delivered')`);
+    }
+    await ctx.db.execute(sql`INSERT INTO delivery_item (tenant_id, flow_code, target_system, subject_type, subject_id, person_id, idempotency_key, payload, summary, fulfilment_mode_code, status_code)
+      VALUES (${ctx.tenantId}::uuid, 'F-SIS-LIB-01', 'lib', 'person', ${merged}::uuid, ${merged}::uuid, ${`seed-un-lib:${merged}`}, '{}', 'seed', 'manual', 'delivered')`);
+    const mergeId = await mergeOf(await mergeInto(merged, survivor, { twoAccountsConfirmed: true }));
+    const caseId = await open(mergeId);
+    await call(officerC, 'PUT', `/identity-unmerge-cases/${caseId}/proposal`, { allocations: {} });
+    expect((await decideUnmerge(officerD, caseId, { proposalVersion: 1 })).statusCode).toBe(200);
+    const [iam] = await rows<{ payload: Record<string, unknown>; person_id: string }>(sql`SELECT payload, person_id::text FROM delivery_item WHERE idempotency_key = ${`person-unmerged:${mergeId}:iam`}`);
+    expect(iam).toMatchObject({ person_id: merged, payload: expect.objectContaining({ instruction: 'restore', fromPersonId: survivor }) });
+    const notices = await rows<{ flow_code: string; payload: Record<string, unknown> }>(sql`SELECT flow_code, payload FROM delivery_item WHERE idempotency_key = ${`person-unmerged:${mergeId}`}`);
+    expect(notices.map((n) => n.flow_code)).toEqual(['F-SIS-LIB-01']);
+    expect(notices[0]!.payload).toMatchObject({ messageType: 'person-unmerged', restoredPersonId: merged });
+  });
+});

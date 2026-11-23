@@ -255,10 +255,12 @@ export class IdentityResolutionService {
           id: randomUUID(), tenantId: tenantId as Uuid, sourcePersonId: proposal.mergedPersonId, targetPersonId: proposal.survivorPersonId,
           linkTypeCode: 'merged-into', createdAt: now,
         });
+        const [before] = await tx.select({ status: persons.personStatusCode }).from(persons)
+          .where(and(eq(persons.tenantId, tenantId as Uuid), eq(persons.id, proposal.mergedPersonId as Uuid))).limit(1);
         await tx.insert(identityMerges).values({
           id: mergeId, tenantId: tenantId as Uuid, identityResolutionCaseId: identityResolutionCaseId as Uuid, decisionId: decisionId,
           proposalVersion: proposal.version, survivorPersonId: proposal.survivorPersonId as Uuid, mergedPersonId: proposal.mergedPersonId as Uuid,
-          effectiveAt: now, decidedBy: actor.sub,
+          effectiveAt: now, decidedBy: actor.sub, mergedPersonStatusCode: before?.status ?? null,
         });
         // ADR-031 item 5 (BL-355): move current ownership, keep history in place, record each move.
         const moved = await moveToSurvivor(tx, {
@@ -468,7 +470,7 @@ async function identifierConflicts(tx: TenantScopedDb, tenantId: string, p: Iden
 async function assertMergeAllowed(tx: TenantScopedDb, tenantId: string, p: IdentityMergeProposal): Promise<void> {
   const pair = [p.survivorPersonId, p.mergedPersonId] as Uuid[];
   const redirects = await tx.select({ id: identityRedirects.id }).from(identityRedirects)
-    .where(and(eq(identityRedirects.tenantId, tenantId as Uuid), inArray(identityRedirects.oldPersonId, pair))).limit(1);
+    .where(and(eq(identityRedirects.tenantId, tenantId as Uuid), inArray(identityRedirects.oldPersonId, pair), isNull(identityRedirects.endedAt))).limit(1);
   if (redirects.length > 0) throw new MergeNotAllowedError('already-merged', 'One of these people has already been merged into another record; merges never chain');
   const anonymised = await tx.select({ id: persons.id }).from(persons)
     .where(and(eq(persons.tenantId, tenantId as Uuid), inArray(persons.id, pair), isNotNull(persons.retentionAnonymisedAt))).limit(1);

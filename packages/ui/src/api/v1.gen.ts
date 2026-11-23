@@ -3113,6 +3113,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/identity-merges/{mergeId}/unmerge-cases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createIdentityMergesByMergeIdUnmergeCases"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/identity-unmerge-cases/{unmergeCaseId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getIdentityUnmergeCasesByUnmergeCaseId"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/identity-unmerge-cases/{unmergeCaseId}/proposal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["replaceIdentityUnmergeCasesByUnmergeCaseIdProposal"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/identity-unmerge-cases/{unmergeCaseId}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createIdentityUnmergeCasesByUnmergeCaseIdDecision"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/pgr/supervision-cases": {
         parameters: {
             query?: never;
@@ -21572,6 +21636,339 @@ export interface operations {
             };
             /** @description Default Response */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        errors?: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    createIdentityMergesByMergeIdUnmergeCases: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mergeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        unmergeCaseId: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        errors?: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        errors?: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    getIdentityUnmergeCasesByUnmergeCaseId: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                unmergeCaseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        unmergeCaseId: string;
+                        mergeId: string;
+                        survivorPersonId: string;
+                        restoredPersonId: string;
+                        statusCode: string;
+                        proposalVersion: number;
+                        allocations: {
+                            [key: string]: "survivor" | "restored";
+                        };
+                        postMergeRecords: {
+                            key: string;
+                            table: string;
+                            column: string;
+                            rowKey: string;
+                        }[];
+                        openedBy: string;
+                        proposedBy: string | null;
+                        decidedBy: string | null;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        errors?: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    replaceIdentityUnmergeCasesByUnmergeCaseIdProposal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                unmergeCaseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    allocations: {
+                        [key: string]: "survivor" | "restored";
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        unmergeCaseId: string;
+                        mergeId: string;
+                        survivorPersonId: string;
+                        restoredPersonId: string;
+                        statusCode: string;
+                        proposalVersion: number;
+                        allocations: {
+                            [key: string]: "survivor" | "restored";
+                        };
+                        postMergeRecords: {
+                            key: string;
+                            table: string;
+                            column: string;
+                            rowKey: string;
+                        }[];
+                        openedBy: string;
+                        proposedBy: string | null;
+                        decidedBy: string | null;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        errors?: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        errors?: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        errors?: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    createIdentityUnmergeCasesByUnmergeCaseIdDecision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                unmergeCaseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    decisionTypeCode: "unmerge" | "reject";
+                    proposalVersion?: number;
+                    reason: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        unmergeCaseId: string;
+                        mergeId: string;
+                        survivorPersonId: string;
+                        restoredPersonId: string;
+                        statusCode: string;
+                        proposalVersion: number;
+                        allocations: {
+                            [key: string]: "survivor" | "restored";
+                        };
+                        postMergeRecords: {
+                            key: string;
+                            table: string;
+                            column: string;
+                            rowKey: string;
+                        }[];
+                        openedBy: string;
+                        proposedBy: string | null;
+                        decidedBy: string | null;
+                    };
+                };
+            };
+            /** @description Default Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        errors?: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        errors?: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        errors?: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

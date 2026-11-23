@@ -120,7 +120,30 @@ export const identityMerges = pgTable('identity_merge', {
   decidedBy:                text('decided_by').notNull(),
   unmergedAt:               timestamp('unmerged_at', { withTimezone: true }),
   unmergeDecisionId:        uuid('unmerge_decision_id'),
+  /** The merged person's status before the merge, restored by an unmerge (0014). */
+  mergedPersonStatusCode:   text('merged_person_status_code'),
 });
+
+/** An unmerge case (ADR-031 item 10, migration 0014): prepared by one officer, decided by another. */
+export const identityUnmergeCases = pgTable('identity_unmerge_case', {
+  id:              uuid('id').primaryKey().defaultRandom(),
+  tenantId:        uuid('tenant_id').notNull().references(() => tenants.id),
+  mergeId:         uuid('merge_id').notNull(),
+  businessCaseId:  uuid('business_case_id').notNull(),
+  statusCode:      text('status_code').notNull().default('open'), // open | proposed | unmerged | rejected
+  openedBy:        text('opened_by').notNull(),
+  openedAt:        timestamp('opened_at', { withTimezone: true }).notNull().defaultNow(),
+  proposalVersion: integer('proposal_version').notNull().default(0),
+  allocations:     jsonb('allocations').notNull().$type<Record<string, 'survivor' | 'restored'>>().default({}),
+  proposedBy:      text('proposed_by'),
+  proposedAt:      timestamp('proposed_at', { withTimezone: true }),
+  decidedBy:       text('decided_by'),
+  decidedAt:       timestamp('decided_at', { withTimezone: true }),
+  decisionReason:  text('decision_reason'),
+});
+export type IdentityUnmergeCase = typeof identityUnmergeCases.$inferSelect;
+
+export type IdentityMerge = typeof identityMerges.$inferSelect;
 
 /** One row moved by a merge, so unmerge can reverse exactly what it did. */
 export const identityMergeMoves = pgTable('identity_merge_move', {

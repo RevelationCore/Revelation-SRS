@@ -141,3 +141,116 @@ async function copyableColumns(tx: TenantScopedDb, table: string): Promise<strin
   columnCache.set(table, columns);
   return columns;
 }
+
+export interface PostMergeRecord {
+  /** `<table>.<column>:<rowKey>`, the key an unmerge proposal allocates by. */
+  key: string;
+  table: string;
+  column: string;
+  rowKey: string;
+}
+
+/**
+ * ADR-031 item 10: records created on (or moved to) the survivor after the
+ * merge that the merge did not move, which an unmerge proposal allocates to
+ * the survivor or the restored person. A bitemporal row counts when its first
+ * version was recorded after the merge; a current-state row when it has a
+ * created_at after the merge (tables without one cannot be told apart and
+ * stay with the survivor).
+ */
+export async function postMergeRecords(tx: TenantScopedDb, input: { tenantId: string; mergeId: string; survivorPersonId: string; effectiveAt: Date }): Promise<PostMergeRecord[]> {
+  const out: PostMergeRecord[] = [];
+  for (const ref of PERSON_REFERENCES) {
+    if (ref.mode !== 'versioned-move' && ref.mode !== 'ledgered-move') continue;
+    const table = sql.identifier(ref.table);
+    const column = sql.identifier(ref.column);
+    const subject = ref.subjectType ? sql` AND t.subject_type = ${ref.subjectType}` : sql``;
+    const notMoved = sql`t.id::text NOT IN (SELECT row_key FROM identity_merge_move WHERE merge_id = ${input.mergeId}::uuid AND table_name = ${ref.table} AND column_name = ${ref.column})`;
+    let rows: Array<{ key: string }>;
+    if (ref.mode === 'versioned-move') {
+      rows = await tx.execute(sql`SELECT DISTINCT t.id::text AS key FROM ${table} t
+        WHERE t.tenant_id = ${input.tenantId}::uuid AND t.${column} = ${input.survivorPersonId}::uuid AND t.recorded_until IS NULL${subject}
+          AND ${notMoved}
+          AND (SELECT min(f.recorded_at) FROM ${table} f WHERE f.tenant_id = t.tenant_id AND f.id = t.id) > ${input.effectiveAt}`) as unknown as Array<{ key: string }>;
+    } else {
+      const hasCreatedAt = (await copyableColumns(tx, ref.table)).includes('created_at');
+      if (!hasCreatedAt) continue;
+      rows = await tx.execute(sql`SELECT t.id::text AS key FROM ${table} t
+        WHERE t.tenant_id = ${input.tenantId}::uuid AND t.${column} = ${input.survivorPersonId}::uuid${subject}
+          AND ${notMoved} AND t.created_at > ${input.effectiveAt}`) as unknown as Array<{ key: string }>;
+    }
+    for (const r of rows) out.push({ key: `${ref.table}.${ref.column}:${r.key}`, table: ref.table, column: ref.column, rowKey: r.key });
+  }
+  return out;
+}
+
+export interface ReverseInput {
+  tenantId: string;
+  mergeId: string;
+  survivorPersonId: string;
+  restoredPersonId: string;
+  /** Post-merge records the decision gives to the restored person. */
+  toRestored: PostMergeRecord[];
+  now: Date;
+}
+
+/**
+ * ADR-031 item 10, inside the unmerge decision's transaction: reverses each
+ * move the merge recorded, then gives the restored person the post-merge
+ * records allocated to them. Rows that have since moved elsewhere are left.
+ * - versioned-move: if the row's current version is still the survivor's, a
+ *   new version is written back to the restored person.
+ * - ledgered-move: the row is set back if it still points at the survivor.
+ * - survivor-chooses: the survivor's copy (if any) is closed and each closed
+ *   version is restored as current, on the person it belonged to.
+ * Returns, per table, the ids reallocated to the restored person.
+ */
+export async function reverseMoves(tx: TenantScopedDb, input: ReverseInput): Promise<Record<string, string[]>> {
+  const moves = await tx.execute(sql`SELECT table_name, column_name, row_key, mode, closed_version_id::text AS closed, new_version_id::text AS created
+    FROM identity_merge_move WHERE tenant_id = ${input.tenantId}::uuid AND merge_id = ${input.mergeId}::uuid ORDER BY table_name, mode DESC`) as unknown as Array<{ table_name: string; column_name: string; row_key: string; mode: string; closed: string | null; created: string | null }>;
+  const refOf = (table: string, column: string) => PERSON_REFERENCES.find((r) => r.table === table && r.column === column);
+
+  const moveBack = async (ref: PersonReference, rowKey: string) => {
+    const table = sql.identifier(ref.table);
+    const column = sql.identifier(ref.column);
+    if (ref.mode === 'ledgered-move') {
+      await tx.execute(sql`UPDATE ${table} SET ${column} = ${input.restoredPersonId}::uuid
+        WHERE tenant_id = ${input.tenantId}::uuid AND id::text = ${rowKey} AND ${column} = ${input.survivorPersonId}::uuid`);
+      return;
+    }
+    const [current] = await tx.execute(sql`SELECT version_id::text AS version_id FROM ${table}
+      WHERE tenant_id = ${input.tenantId}::uuid AND id::text = ${rowKey} AND recorded_until IS NULL AND ${column} = ${input.survivorPersonId}::uuid FOR UPDATE`) as unknown as Array<{ version_id: string }>;
+    if (current) await copyVersion(tx, ref, await copyableColumns(tx, ref.table), current.version_id, input.restoredPersonId, input.now);
+  };
+
+  for (const m of moves) {
+    const ref = refOf(m.table_name, m.column_name);
+    if (!ref) continue;
+    if (m.mode === 'survivor-chooses') {
+      const table = sql.identifier(ref.table);
+      if (m.created) await tx.execute(sql`UPDATE ${table} SET recorded_until = ${input.now} WHERE version_id = ${m.created}::uuid AND recorded_until IS NULL`);
+      if (m.closed) {
+        const columns = await copyableColumns(tx, ref.table);
+        const targets = sql.join(columns.map((c) => sql.identifier(c)), sql`, `);
+        const values = sql.join(columns.map((c) => {
+          if (c === 'version_id') return sql`${randomUUID()}::uuid`;
+          if (c === 'recorded_at') return sql`${input.now}`;
+          if (c === 'recorded_until') return sql`NULL`;
+          return sql.identifier(c);
+        }), sql`, `);
+        await tx.execute(sql`INSERT INTO ${table} (${targets}) SELECT ${values} FROM ${table} WHERE version_id = ${m.closed}::uuid`);
+      }
+      continue;
+    }
+    await moveBack(ref, m.row_key);
+  }
+
+  const reallocated: Record<string, string[]> = {};
+  for (const r of input.toRestored) {
+    const ref = refOf(r.table, r.column);
+    if (!ref) continue;
+    await moveBack(ref, r.rowKey);
+    (reallocated[r.table] ??= []).push(r.rowKey);
+  }
+  return reallocated;
+}

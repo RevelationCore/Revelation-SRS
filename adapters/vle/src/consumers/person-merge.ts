@@ -1,4 +1,4 @@
-import { applyPersonMerge, type DomainEventEnvelope, type MergeSqlKit, type PersonMergedV1Payload } from '@revelation-srs/domain';
+import { applyPersonMerge, reversePersonMerge, type DomainEventEnvelope, type MergeSqlKit, type PersonMergedV1Payload, type PersonUnmergedV1Payload } from '@revelation-srs/domain';
 import { sql, type SQLWrapper } from 'drizzle-orm';
 
 import { VLE_CONNECTOR_PERSON_REFERENCES } from '../person-references.js';
@@ -24,4 +24,20 @@ export async function handlePersonMerged(envelope: DomainEventEnvelope<PersonMer
     mergeId: p.mergeId, survivorPersonId: p.survivorPersonId, mergedPersonId: p.mergedPersonId, now: new Date(),
   });
   ctx.log.info({ eventId: envelope.id, mergeId: p.mergeId, alreadyApplied: result.alreadyApplied, moved: result.moved, kept: result.kept }, 'Applied identity merge to VLE mappings');
+}
+
+/** ADR-031 item 10 (BL-359): moves the mappings back when the merge is undone. */
+export async function handlePersonUnmerged(envelope: DomainEventEnvelope<PersonUnmergedV1Payload>, ctx: HandlerContext): Promise<void> {
+  const p = envelope.payload;
+  const tx = ctx.tx;
+  const kit: MergeSqlKit<SQLWrapper> = {
+    sql: sql as unknown as MergeSqlKit<SQLWrapper>['sql'],
+    execute: (q) => tx.execute(q),
+    savepoint: (fn) => tx.transaction((sp) => fn((q) => sp.execute(q))),
+  };
+  const result = await reversePersonMerge(kit, {
+    schema: 'vle_connector', registry: VLE_CONNECTOR_PERSON_REFERENCES, tenantId: envelope.tenantId, mergeId: p.mergeId,
+    survivorPersonId: p.survivorPersonId, restoredPersonId: p.restoredPersonId, reallocatedToRestored: p.reallocatedToRestored ?? {}, now: new Date(),
+  });
+  ctx.log.info({ eventId: envelope.id, mergeId: p.mergeId, ...result }, 'Reversed identity merge in VLE mappings');
 }

@@ -629,3 +629,33 @@ describe('srs.person.merged (ADR-031 item 7, BL-358)', () => {
     expect(again[0]!.n).toBe(moves.length);
   });
 });
+
+describe('srs.person.unmerged (ADR-031 item 10, BL-359)', () => {
+  it('reverses the moves, gives the restored person reallocated enrolments\' rows, and applies once', async () => {
+    const merged = await createFixture('UNM01');
+    const survivor = await createFixture('UNM02');
+    const mergedEvent = await createEvent(merged, 'TT-UNM01');
+    const survivorEvent = await createEvent(survivor, 'TT-UNM02');
+    const mergeId = randomUUID();
+    await consumer.dispatch(makeEnvelope(EVENT_TYPES.PERSON_MERGED,
+      { mergeId, survivorPersonId: survivor.personId, mergedPersonId: merged.personId, effectiveAt: new Date().toISOString() }, ctx.tenantId));
+
+    const unmerge = () => makeEnvelope(EVENT_TYPES.PERSON_UNMERGED, {
+      mergeId, survivorPersonId: survivor.personId, restoredPersonId: merged.personId, effectiveAt: new Date().toISOString(),
+      reallocatedToRestored: { enrolment: [survivor.enrolmentId] },
+    }, ctx.tenantId);
+    await consumer.dispatch(unmerge());
+
+    const ownerOf = async (id: string) => ((await ctx.db.execute(sql`SELECT person_id::text FROM attendance.expected_engagement_event WHERE id = ${id}::uuid AND recorded_until IS NULL`)) as unknown as Array<{ person_id: string }>)[0]!.person_id;
+    expect(await ownerOf(mergedEvent)).toBe(merged.personId);
+    // The decision gave the survivor's enrolment to the restored person, so its rows follow.
+    expect(await ownerOf(survivorEvent)).toBe(merged.personId);
+    const map = await ctx.db.execute(sql`SELECT person_id::text FROM attendance.enrolment_person_map WHERE enrolment_id = ${merged.enrolmentId}::uuid`) as unknown as Array<{ person_id: string }>;
+    expect(map.map((m) => m.person_id)).toEqual([merged.personId]);
+
+    const versions = async () => ((await ctx.db.execute(sql`SELECT count(*)::int AS n FROM attendance.expected_engagement_event WHERE id = ${mergedEvent}::uuid`)) as unknown as Array<{ n: number }>)[0]!.n;
+    const before = await versions();
+    await consumer.dispatch(unmerge());
+    expect(await versions()).toBe(before);
+  });
+});

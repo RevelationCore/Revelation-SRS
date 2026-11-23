@@ -280,4 +280,92 @@ export function identityResolutionRoutes(fastify: FastifyInstance): void {
       await reply.code(201).send({ dataCorrectionCaseId });
     },
   );
+
+  // ── Unmerge (ADR-031 item 10, BL-359) ─────────────────────────────────────
+
+  const UnmergeCaseSchema = Type.Object({
+    unmergeCaseId: Type.String(), mergeId: Type.String(), survivorPersonId: Type.String(), restoredPersonId: Type.String(),
+    statusCode: Type.String(), proposalVersion: Type.Integer(),
+    allocations: Type.Record(Type.String(), Type.Union([Type.Literal('survivor'), Type.Literal('restored')])),
+    postMergeRecords: Type.Array(Type.Object({ key: Type.String(), table: Type.String(), column: Type.String(), rowKey: Type.String() })),
+    openedBy: Type.String(), proposedBy: Type.Union([Type.String(), Type.Null()]), decidedBy: Type.Union([Type.String(), Type.Null()]),
+  });
+  const actorOf = (request: { user: { sub: string; srsPersonId?: string } }) => ({ sub: request.user.sub, srsPersonId: request.user.srsPersonId });
+
+  fastify.post(
+    '/identity-merges/:mergeId/unmerge-cases',
+    {
+      schema: { params: Type.Object({ mergeId: Type.String({ format: 'uuid' }) }), response: { 201: Type.Object({ unmergeCaseId: Type.String() }), 404: ErrorSchema, 409: ErrorSchema } },
+      preHandler: [requirePermission('identity-resolution:prepare')],
+    },
+    async (request, reply) => {
+      const { mergeId } = request.params as { mergeId: string };
+      const unmergeCaseId = await fastify.identityUnmergeService.openCase(request.tenantId, mergeId, actorOf(request));
+      await fastify.audit.record({
+        tenantId: request.tenantId, entityType: 'identity_unmerge_case', entityId: unmergeCaseId, actionType: 'create', actorType: 'user',
+        actorId: request.user.sub, actorDisplayName: request.user.displayName, correlationId: request.id, reasonText: `Unmerge of merge ${mergeId} opened`,
+      });
+      await reply.code(201).send({ unmergeCaseId });
+    },
+  );
+
+  fastify.get(
+    '/identity-unmerge-cases/:unmergeCaseId',
+    {
+      schema: { params: Type.Object({ unmergeCaseId: Type.String({ format: 'uuid' }) }), response: { 200: UnmergeCaseSchema, 404: ErrorSchema } },
+      preHandler: [requirePermission('identity-resolution:read')],
+    },
+    async (request, reply) => {
+      const { unmergeCaseId } = request.params as { unmergeCaseId: string };
+      await reply.send(await fastify.identityUnmergeService.getCase(request.tenantId, unmergeCaseId));
+    },
+  );
+
+  fastify.put(
+    '/identity-unmerge-cases/:unmergeCaseId/proposal',
+    {
+      schema: {
+        params: Type.Object({ unmergeCaseId: Type.String({ format: 'uuid' }) }),
+        body: Type.Object({ allocations: Type.Record(Type.String(), Type.Union([Type.Literal('survivor'), Type.Literal('restored')])) }),
+        response: { 200: UnmergeCaseSchema, 404: ErrorSchema, 409: ErrorSchema, 422: ErrorSchema },
+      },
+      preHandler: [requirePermission('identity-resolution:prepare')],
+    },
+    async (request, reply) => {
+      const { unmergeCaseId } = request.params as { unmergeCaseId: string };
+      const { allocations } = request.body as { allocations: Record<string, 'survivor' | 'restored'> };
+      const kase = await fastify.identityUnmergeService.propose(request.tenantId, unmergeCaseId, allocations, actorOf(request));
+      await fastify.audit.record({
+        tenantId: request.tenantId, entityType: 'identity_unmerge_case', entityId: unmergeCaseId, actionType: 'update', actorType: 'user',
+        actorId: request.user.sub, actorDisplayName: request.user.displayName, correlationId: request.id, reasonText: `Unmerge proposal version ${kase.proposalVersion}`,
+      });
+      await reply.send(kase);
+    },
+  );
+
+  fastify.post(
+    '/identity-unmerge-cases/:unmergeCaseId/decision',
+    {
+      schema: {
+        params: Type.Object({ unmergeCaseId: Type.String({ format: 'uuid' }) }),
+        body: Type.Object({
+          decisionTypeCode: Type.Union([Type.Literal('unmerge'), Type.Literal('reject')]),
+          proposalVersion: Type.Optional(Type.Integer({ minimum: 1 })),
+          reason: Type.String({ minLength: 1, maxLength: 2000 }),
+        }),
+        response: { 200: UnmergeCaseSchema, 403: ErrorSchema, 404: ErrorSchema, 409: ErrorSchema, 422: ErrorSchema },
+      },
+      preHandler: [requirePermission('identity-resolution:decide')],
+    },
+    async (request, reply) => {
+      const { unmergeCaseId } = request.params as { unmergeCaseId: string };
+      const body = request.body as { decisionTypeCode: 'unmerge' | 'reject'; proposalVersion?: number; reason: string };
+      const kase = await fastify.identityUnmergeService.decide(request.tenantId, unmergeCaseId, body, actorOf(request));
+      await fastify.audit.record({
+        tenantId: request.tenantId, entityType: 'identity_unmerge_case', entityId: unmergeCaseId, actionType: 'update', actorType: 'user',
+        actorId: request.user.sub, actorDisplayName: request.user.displayName, correlationId: request.id, reasonText: `Unmerge decision ${body.decisionTypeCode}`,
+      });
+      await reply.send(kase);
+    },
+  );
 }

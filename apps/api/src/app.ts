@@ -18,6 +18,7 @@ import type { Config } from './config.js';
 import { AdjustmentProposalService } from './platform/adjustments/adjustment-proposal-service.js';
 import { AdjustmentService } from './platform/adjustments/adjustment-service.js';
 import { AdjustmentWithdrawalService } from './platform/adjustments/adjustment-withdrawal-service.js';
+import { IdentityUnmergeService } from './platform/identity/identity-unmerge-service.js';
 import { PersonRedirectResolver } from './platform/identity/person-redirects.js';
 import { AdjustmentDistributionDispatcher } from './platform/adjustments/distribution-dispatcher.js';
 import { AdjustmentTargetConfigService } from './platform/adjustments/target-config.js';
@@ -269,6 +270,7 @@ function classifyOperation(method: string, url: string): string {
   if (m === 'PATCH' && path.includes('/publish')) return 'workflow';
   if (m === 'POST' && path.includes('/signoff')) return 'workflow';
   if (m === 'POST' && path.includes('/identity-resolution')) return 'workflow';
+  if ((m === 'POST' || m === 'PUT') && (path.includes('/identity-merges') || path.includes('/identity-unmerge-cases'))) return 'workflow';
   if ((m === 'POST' || m === 'PATCH') && path.includes('/rights-requests')) return 'workflow';
   if ((m === 'POST' || m === 'PATCH') && path.includes('/rights-restrictions')) return 'workflow';
   if (m === 'POST' && path.includes('/retention-schedules')) return 'workflow';
@@ -429,6 +431,7 @@ export async function buildApp(
   const businessCases = new BusinessCaseService(db);
   const auditReview = new AuditReviewService(db, businessCases);
   const identityResolution = new IdentityResolutionService(db, businessCases, audit, deliveries);
+  fastify.decorate('identityUnmergeService', new IdentityUnmergeService(db, businessCases, audit, deliveries));
   // ADR-031 items 6 and 9 (BL-356): old, merged-away ids are resolved at the edge.
   const personRedirects = new PersonRedirectResolver(db);
   fastify.decorate('personRedirectResolver', personRedirects);
@@ -835,6 +838,8 @@ export async function buildApp(
       ['/adjustment-proposals',      'adjustments'],
       ['/adjustment-migration-batches', 'adjustments'],
       ['/adjustment-withdrawals',    'adjustments'],
+      ['/identity-merges',           'governance'],
+      ['/identity-unmerge-cases',    'governance'],
       ['/delivery-',                 'integration-registry'],
       ['/inbound',                   'integration-registry'],
       ['/support-',                  'students'],
@@ -1080,6 +1085,7 @@ declare module 'fastify' {
     adjustmentProposalService: AdjustmentProposalService;
     adjustmentWithdrawalService: AdjustmentWithdrawalService;
     personRedirectResolver: PersonRedirectResolver;
+    identityUnmergeService: IdentityUnmergeService;
     adjustmentDispatcher: AdjustmentDistributionDispatcher;
     adjustmentTargetConfigService: AdjustmentTargetConfigService;
     adjustmentTaskNoticeService: AdjustmentTaskNoticeService;

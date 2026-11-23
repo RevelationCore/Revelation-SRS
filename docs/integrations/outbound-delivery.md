@@ -121,6 +121,8 @@ The item's subject is the merge (`subjectType: person-merge`), so it never super
 - `rebind`: only the merged person had an account; bind it to the survivor.
 - `ended`, with `accessLevel: ended` and `endReason: merged`: both had accounts (the merge proposal confirmed it); end the merged person's, and the survivor keeps theirs.
 
+**Unmerge (BL-359).** When a merge is reversed, the same flows get a `person-unmerged` item (`survivorPersonId`, `restoredPersonId` and their student numbers), and IAM reverses what the merge told it: `rebind` binds an account the merge rebound back to the restored person, and `restore` re-enables one it ended (both with `fromPersonId`). Fresh snapshots for both people follow.
+
 HESA, UCAS, SLC and UKVI are not ledger targets; a regulatory correction for a dropped identifier is BL-419.
 
 ## Inbound: what other systems report back

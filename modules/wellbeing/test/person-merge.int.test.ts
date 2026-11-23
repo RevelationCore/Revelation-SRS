@@ -66,4 +66,24 @@ describe('srs.person.merged in the wellbeing module', () => {
     expect((await rows<{ n: number }>(sql`SELECT count(*)::int AS n FROM wellbeing.person_merge_move WHERE merge_id = ${mergeId}::uuid`))[0]!.n).toBe(moves);
     expect(await rows(sql`SELECT 1 FROM wellbeing.audit_log WHERE resource_type = 'identity-merge' AND resource_id = ${mergeId}::uuid`)).toHaveLength(1);
   });
+
+  it('srs.person.unmerged moves the cases back, audits it, and applies once (BL-359)', async () => {
+    const merged = randomUUID(); const survivor = randomUUID();
+    const dc = await ctx.app.inject({
+      method: 'POST', url: '/api/v1/disability-cases', headers: { authorization: `Bearer ${ctx.makeJwt()}` },
+      payload: { personId: merged, supportTypeCode: 'dsa', dsaAwardRef: 'DSA-UNMERGE' },
+    });
+    const { id: caseId } = dc.json<{ id: string }>();
+    const mergeId = randomUUID();
+    await consumer.dispatch(envelope(EVENT_TYPES.PERSON_MERGED, { mergeId, survivorPersonId: survivor, mergedPersonId: merged, effectiveAt: new Date().toISOString() }));
+    const unmerge = () => envelope(EVENT_TYPES.PERSON_UNMERGED, { mergeId, survivorPersonId: survivor, restoredPersonId: merged, effectiveAt: new Date().toISOString(), reallocatedToRestored: {} });
+    await consumer.dispatch(unmerge());
+    await consumer.dispatch(unmerge());
+
+    const current = await rows<{ person_id: string }>(sql`SELECT person_id::text FROM wellbeing.disability_support_case WHERE id = ${caseId}::uuid AND recorded_until IS NULL`);
+    expect(current.map((c) => c.person_id)).toEqual([merged]);
+    const audit = await rows<{ context: { unmerged?: boolean } }>(sql`SELECT context FROM wellbeing.audit_log WHERE resource_type = 'identity-merge' AND resource_id = ${mergeId}::uuid ORDER BY recorded_at`);
+    expect(audit.map((a) => Boolean(a.context.unmerged))).toEqual([false, true]);
+  });
 });
+
