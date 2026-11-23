@@ -39,4 +39,18 @@ describe('adjustment authority permissions', () => {
     expect(holders('adjustment:propose-withdrawal')).toEqual(['adjustment-proposer', 'registry-administrator', 'wellbeing-advisor']);
     expect(holders('adjustment:propose-withdrawal').filter((r) => holders('adjustment:approve-withdrawal').includes(r))).toEqual([]);
   });
+
+  it('ADR-034: adjustment:write guards one route only, the outcome-document upload', async () => {
+    const { readdir, readFile } = await import('node:fs/promises');
+    const dir = new URL('../../src/routes/', import.meta.url);
+    const uses: string[] = [];
+    for (const name of await readdir(dir)) {
+      if (!name.endsWith('.ts')) continue;
+      const text = await readFile(new URL(name, dir), 'utf8');
+      for (const m of text.matchAll(/'adjustment:write'/g)) uses.push(`${name}@${m.index}`);
+    }
+    expect(uses).toHaveLength(1);
+    expect(uses[0]).toMatch(/^adjustments\.ts@/);
+  });
 });
+

@@ -28,6 +28,19 @@ const WRITE = [
   /INSERT\s+INTO\s+"?(?:reasonable_adjustment|adjustment_distribution)"?[\s(]/i,
 ];
 
+// ADR-034 Guard: updates too, since ending a version (recorded_until, valid_to)
+// or a distribution (withdrawal statuses) is how an adjustment is withdrawn.
+const UPDATE = [
+  /\bupdate\s*\(\s*(?:reasonableAdjustments|adjustmentDistributions)\s*\)/,
+  /UPDATE\s+"?(?:reasonable_adjustment|adjustment_distribution)"?\s/i,
+];
+
+/** Each path that may update them, with why. */
+const ALLOWED_UPDATERS: Array<[RegExp, string]> = [
+  [/^apps\/api\/src\/platform\/adjustments\/adjustment-service\.ts$/, 'withdrawAuthorisedAdjustment, outcome documents, distribution replies'],
+  [/^apps\/api\/src\/platform\/adjustments\/distribution-dispatcher\.ts$/, 'stamps when an instruction was published; never ends one'],
+];
+
 async function sourceFiles(dir: string): Promise<string[]> {
   const out: string[] = [];
   let entries;
@@ -41,16 +54,17 @@ async function sourceFiles(dir: string): Promise<string[]> {
   return out;
 }
 
-async function writers(): Promise<string[]> {
+async function matching(patterns: RegExp[]): Promise<string[]> {
   const found: string[] = [];
   for (const root of ROOTS) {
     for (const file of await sourceFiles(join(REPO, root))) {
       const text = await readFile(file, 'utf8');
-      if (WRITE.some((re) => re.test(text))) found.push(relative(REPO, file).split('\\').join('/'));
+      if (patterns.some((re) => re.test(text))) found.push(relative(REPO, file).split('\\').join('/'));
     }
   }
   return found.sort();
 }
+const writers = () => matching(WRITE);
 
 describe('writers of reasonable_adjustment and adjustment_distribution', () => {
   it('are only the code that holds an authority for them', async () => {
@@ -67,3 +81,18 @@ describe('writers of reasonable_adjustment and adjustment_distribution', () => {
     ]));
   });
 });
+
+describe('updaters of reasonable_adjustment and adjustment_distribution (ADR-034)', () => {
+  it('are only the recording and withdrawal path and the dispatcher', async () => {
+    const outside = (await matching(UPDATE)).filter((f) => !ALLOWED_UPDATERS.some(([re]) => re.test(f)));
+    expect(outside, 'end an adjustment through AdjustmentService.withdrawAuthorisedAdjustment, under an authority').toEqual([]);
+  });
+
+  it('finds the updaters it knows about', async () => {
+    expect(await matching(UPDATE)).toEqual(expect.arrayContaining([
+      'apps/api/src/platform/adjustments/adjustment-service.ts',
+      'apps/api/src/platform/adjustments/distribution-dispatcher.ts',
+    ]));
+  });
+});
+
