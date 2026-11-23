@@ -186,7 +186,7 @@ export class SlcService {
       seenTriggers.add(row.trigger.id);
 
       const record = buildConfirmationRecord(row.trigger.id, row.enrolment, row.fee,
-        (row.trigger.payloadSummary as Record<string, unknown> | null)?.['notificationType'] === 'resumption');
+        (row.trigger.payloadSummary)?.['notificationType'] === 'resumption');
       confirmations.push(record);
 
       if (opts.dryRun) continue;
