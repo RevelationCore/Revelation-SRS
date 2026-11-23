@@ -428,7 +428,7 @@ export async function buildApp(
   const adjustments = new AdjustmentService(db, eventBus, valueSets, adjustmentDispatcher, adjustmentTargets, documentStore, audit);
   const businessCases = new BusinessCaseService(db);
   const auditReview = new AuditReviewService(db, businessCases);
-  const identityResolution = new IdentityResolutionService(db, businessCases, audit);
+  const identityResolution = new IdentityResolutionService(db, businessCases, audit, deliveries);
   // ADR-031 items 6 and 9 (BL-356): old, merged-away ids are resolved at the edge.
   const personRedirects = new PersonRedirectResolver(db);
   fastify.decorate('personRedirectResolver', personRedirects);

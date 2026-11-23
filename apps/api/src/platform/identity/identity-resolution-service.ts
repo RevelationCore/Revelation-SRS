@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import { and, desc, eq, inArray, isNotNull, isNull, or } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNotNull, isNull, or, sql } from 'drizzle-orm';
 import {
   businessCases,
   deliveryItems,
@@ -24,6 +24,8 @@ import {
 import { ConflictError, DomainError, EVENT_TYPES, ForbiddenError, NotFoundError, ValidationError, type PersonMergedV1Payload } from '@revelation-srs/domain';
 
 import type { AuditService } from '../audit/service.js';
+import type { DeliveryService } from '../delivery/delivery-service.js';
+import { requestMergeNotices, requestPostMergeSnapshots, type MergeForNotices, type MergeNoticePlan } from '../delivery/producers/merge-notices.js';
 import type { BusinessCaseService } from '../cases/business-case-service.js';
 import { clockNow } from '../clock.js';
 import { enqueueWorkflowEvent } from '../platform-controls/workflow-event-outbox.js';
@@ -118,6 +120,7 @@ export class IdentityResolutionService {
     private readonly db: Db,
     private readonly businessCases: BusinessCaseService,
     private readonly audit?: AuditService,
+    private readonly delivery?: DeliveryService,
   ) {}
 
   async openCase(tenantId: string, input: OpenResolutionCaseInput, actorId: string): Promise<string> {
@@ -199,6 +202,7 @@ export class IdentityResolutionService {
   async decide(tenantId: string, identityResolutionCaseId: string, input: DecideInput, actor: IdentityActor): Promise<string> {
     await this.#ensureCaseExists(tenantId, identityResolutionCaseId);
     const decisionId = randomUUID();
+    let executed: { merge: MergeForNotices; plan: MergeNoticePlan } | null = null;
     await withTenantContext(this.db, tenantId, async (tx) => {
       const [kase] = await tx.select({ subjectId: businessCases.subjectId, openedBy: businessCases.actorId })
         .from(identityResolutionCases)
@@ -269,6 +273,9 @@ export class IdentityResolutionService {
           id: randomUUID(), tenantId: tenantId as Uuid, oldPersonId: proposal.mergedPersonId, newPersonId: proposal.survivorPersonId,
           effectiveFrom: now, propagatedAt: now, mergeId: mergeId,
         });
+        // ADR-031 items 8 and 9 (BL-357): ledger notices and IAM instructions, in this transaction.
+        const merge: MergeForNotices = { mergeId, survivorPersonId: proposal.survivorPersonId, mergedPersonId: proposal.mergedPersonId, effectiveAt: now };
+        if (this.delivery) executed = { merge, plan: await requestMergeNotices(this.delivery, tx, tenantId, merge) };
         const payload: PersonMergedV1Payload = { mergeId, survivorPersonId: proposal.survivorPersonId, mergedPersonId: proposal.mergedPersonId, effectiveAt: now.toISOString() };
         await enqueueWorkflowEvent(tx, {
           tenantId, eventType: EVENT_TYPES.PERSON_MERGED, correlationId: decisionId, dataClassification: 'personal',
@@ -299,6 +306,13 @@ export class IdentityResolutionService {
         }
       }
     });
+    if (executed && this.delivery) {
+      const { merge, plan } = executed as { merge: MergeForNotices; plan: MergeNoticePlan };
+      const moved = await withTenantContext(this.db, tenantId, (tx) => tx.execute(sql`SELECT DISTINCT row_key FROM identity_merge_move
+        WHERE tenant_id = ${tenantId}::uuid AND merge_id = ${merge.mergeId}::uuid AND table_name = 'enrolment'`)) as unknown as Array<{ row_key: string }>;
+      // The fresh snapshots read the merged state, so they follow the commit; a failure leaves the notices already queued.
+      await requestPostMergeSnapshots(this.delivery, this.db, tenantId, merge, plan, moved.map((m) => m.row_key));
+    }
     return decisionId;
   }
 

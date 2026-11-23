@@ -153,3 +153,51 @@ describe('old ids are resolved at the edge (ADR-031 items 6 and 9, BL-356)', () 
     }
   });
 });
+
+describe('external systems learn of a merge (ADR-031 items 8 and 9, BL-357)', () => {
+  /** Something already delivered about a person on a flow, as the ledger records it. */
+  const delivered = (personId: string, flowCode: string, targetSystem: string) => ctx.db.execute(sql`INSERT INTO delivery_item
+    (tenant_id, flow_code, target_system, subject_type, subject_id, person_id, idempotency_key, payload, summary, fulfilment_mode_code, status_code)
+    VALUES (${ctx.tenantId}::uuid, ${flowCode}, ${targetSystem}, 'person', ${personId}::uuid, ${personId}::uuid, ${`seed:${flowCode}:${personId}`}, '{}', 'seed', 'manual', 'delivered')`);
+  const items = (where: ReturnType<typeof sql>) => rows<{ flow_code: string; subject_type: string; person_id: string; idempotency_key: string; payload: Record<string, unknown> }>(sql`
+    SELECT flow_code, subject_type, person_id::text, idempotency_key, payload FROM delivery_item WHERE tenant_id = ${ctx.tenantId}::uuid AND ${where}`);
+
+  it('flows that delivered something about either person get a person-merged notice; others get nothing', async () => {
+    const merged = await person('LedgerOld'); const survivor = await person('LedgerNew');
+    await delivered(merged, 'F-SIS-LIB-01', 'lib');
+    await delivered(survivor, 'F-SIS-ITSM-01', 'itsm');
+    const decisionId = await mergeInto(merged, survivor);
+    const [{ id: mergeId }] = await rows<{ id: string }>(sql`SELECT id::text FROM identity_merge WHERE decision_id = ${decisionId}::uuid`) as [{ id: string }];
+
+    const notices = await items(sql`subject_type = 'person-merge' AND subject_id = ${mergeId}::uuid`);
+    expect(notices.map((n) => n.flow_code).sort()).toEqual(['F-SIS-ITSM-01', 'F-SIS-LIB-01']);
+    expect(notices[0]!.payload).toMatchObject({ messageType: 'person-merged', mergeId, survivorPersonId: survivor, mergedPersonId: merged });
+    expect(notices.every((n) => n.person_id === survivor)).toBe(true);
+    // No IAM account for either: no IAM instruction; the ITSM producer sends the survivor's fresh snapshot.
+    expect(await items(sql`flow_code = 'F-SIS-IAM-01' AND idempotency_key LIKE ${`person-merged:${mergeId}%`}`)).toEqual([]);
+    expect((await items(sql`flow_code = 'F-SIS-ITSM-01' AND idempotency_key = ${`person-merged:${mergeId}:snapshot:itsm`}`)).map((i) => i.person_id)).toEqual([survivor]);
+  });
+
+  it('IAM: an account only the merged person has is rebound to the survivor', async () => {
+    const merged = await person('IamOld'); const survivor = await person('IamNew');
+    await enrol(merged);
+    await delivered(merged, 'F-SIS-IAM-01', 'iam');
+    const decisionId = await mergeInto(merged, survivor);
+    const [{ id: mergeId }] = await rows<{ id: string }>(sql`SELECT id::text FROM identity_merge WHERE decision_id = ${decisionId}::uuid`) as [{ id: string }];
+    const [iam] = await items(sql`idempotency_key = ${`person-merged:${mergeId}:iam`}`);
+    expect(iam).toMatchObject({ flow_code: 'F-SIS-IAM-01', person_id: merged });
+    expect(iam!.payload).toMatchObject({ contractVersion: 2, contractMinorVersion: 1, instruction: 'rebind', personId: merged, successorPersonId: survivor });
+    // The survivor's recomputed account follows the commit.
+    expect((await items(sql`idempotency_key = ${`person-merged:${mergeId}:snapshot:iam`}`)).map((i) => i.person_id)).toEqual([survivor]);
+  });
+
+  it('IAM: when both have accounts the merged person\'s is ended, with reason merged', async () => {
+    const merged = await person('BothOld'); const survivor = await person('BothNew');
+    await delivered(merged, 'F-SIS-IAM-01', 'iam');
+    await delivered(survivor, 'F-SIS-IAM-01', 'iam');
+    const decisionId = await mergeInto(merged, survivor, { twoAccountsConfirmed: true });
+    const [{ id: mergeId }] = await rows<{ id: string }>(sql`SELECT id::text FROM identity_merge WHERE decision_id = ${decisionId}::uuid`) as [{ id: string }];
+    const [iam] = await items(sql`idempotency_key = ${`person-merged:${mergeId}:iam`}`);
+    expect(iam!.payload).toMatchObject({ instruction: 'ended', accessLevel: 'ended', endReason: 'merged', personId: merged, successorPersonId: survivor });
+  });
+});
